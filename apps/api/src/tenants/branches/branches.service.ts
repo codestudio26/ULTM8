@@ -153,7 +153,7 @@ export class BranchesService {
    * Instructor RoleGrant scoped to it would silently destroy that person's
    * access grant, not just "remove a Branch" — the task's own standing
    * instruction to apply the safest reasonable rule when a hint turns out to
-   * be incomplete once checked against the real schema. Decision 280 adds
+   * be incomplete once checked against the real schema. Decision 293 adds
    * TimetableSlot; the counting lives in branch-dependents.ts so the purge
    * job rechecks exactly the same rule before deleting. */
   private async assertNoActiveDependents(callerId: string, branchId: string): Promise<void> {

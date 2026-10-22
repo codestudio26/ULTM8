@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -207,14 +207,83 @@ export function useSetBoardActive(disciplineId: string) {
   );
 }
 
+/** The API takes at most this many students per request (Decision 130). */
+const BULK_BATCH = 200;
+
+/**
+ * A batch that stopped part-way: `done` holds what the earlier batches already
+ * promoted, so the window can still report them (Decision 282), and
+ * `remaining` the students not promoted yet, to try again (Decision 284).
+ */
+export class BulkPromotePartialError extends Error {
+  constructor(
+    readonly done: BulkPromoteResult,
+    readonly remaining: string[],
+    readonly reason: unknown,
+  ) {
+    super(reason instanceof Error ? reason.message : 'Bulk promote stopped part-way');
+  }
+}
+
+/** A refusal (4xx) won't change on a second try; anything else (no answer, 5xx) may. */
+const worthRetrying = (err: unknown) => !(err instanceof ApiError && err.status >= 400 && err.status < 500);
+
+/**
+ * Promote any number of students (Decision 282): the window sends them to the
+ * API 200 at a time and joins the answers, so a coach never meets a limit. A
+ * batch that gets no answer is sent once more on its own (Decision 284); that
+ * is safe because each student carries the rung the check found them on
+ * (`expected`), so one already promoted is skipped, never promoted twice.
+ */
+async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): Promise<BulkPromoteResult> {
+  const merged: BulkPromoteResult = { ready: [], needsAcknowledgement: [], cannotPromote: [] };
+  for (let i = 0; i < body.studentIds.length; i += BULK_BATCH) {
+    const studentIds = body.studentIds.slice(i, i + BULK_BATCH);
+    const inBatch = new Set(studentIds);
+    const acknowledged = body.acknowledgedStudentIds?.filter((id) => inBatch.has(id));
+    const expected = body.expected?.filter((e) => inBatch.has(e.studentId));
+    const send = async () =>
+      (await unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', {
+          params: { path: { schoolId } },
+          body: {
+            ...body,
+            studentIds,
+            acknowledgedStudentIds: acknowledged?.length ? acknowledged : undefined,
+            expected: expected?.length ? expected : undefined,
+          },
+        }),
+      )) as BulkPromoteResult;
+    let part: BulkPromoteResult;
+    try {
+      part = await send();
+    } catch (err) {
+      if (body.dryRun) throw err;
+      try {
+        if (!worthRetrying(err)) throw err;
+        await new Promise((r) => setTimeout(r, 1500));
+        part = await send();
+      } catch (again) {
+        // Nothing promoted and the API refused: a plain error, as before.
+        if (i === 0 && !worthRetrying(again)) throw again;
+        throw new BulkPromotePartialError(merged, body.studentIds.slice(i), again);
+      }
+    }
+    merged.ready.push(...part.ready);
+    merged.needsAcknowledgement.push(...part.needsAcknowledgement);
+    merged.cannotPromote.push(...part.cannotPromote);
+  }
+  return merged;
+}
+
 /** Bulk promote (Decision 130). With dryRun it only checks, for the confirm window. */
 export function useBulkPromote(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: BulkPromoteInput) =>
-      unwrap(apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', { params: { path: { schoolId } }, body })) as Promise<BulkPromoteResult>,
-    onSuccess: async (_result, body) => {
+    mutationFn: (body: BulkPromoteInput) => bulkPromoteInBatches(schoolId, body),
+    onSettled: async (_result, error, body) => {
       if (body.dryRun) return; // a check changes nothing
+      if (error && !(error instanceof BulkPromotePartialError)) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
         queryClient.invalidateQueries({ queryKey: ['student-grading'] }),

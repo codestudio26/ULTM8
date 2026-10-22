@@ -15,7 +15,7 @@ export interface BranchDependentCounts {
 
 /** Decision 252's "active dependents" for a Branch: any Class, Instructor
  * profile, home-branch Student or non-revoked RoleGrant pointing at it —
- * plus any TimetableSlot (Decision 280), since the class-occurrence-generation
+ * plus any TimetableSlot (Decision 293), since the class-occurrence-generation
  * job copies a slot's branchId onto every Class it creates, so a slot left
  * on an archived Branch keeps adding Classes to it. Counted the same way as
  * Class (every row, not only active ones) to keep Decision 252's rule. */

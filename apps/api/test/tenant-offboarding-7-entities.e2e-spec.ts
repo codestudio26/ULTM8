@@ -234,7 +234,7 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       expect(succeeds.body.archivedAt).toBeTruthy();
     });
 
-    // Decision 280 — the class-occurrence-generation job copies a slot's
+    // Decision 293 — the class-occurrence-generation job copies a slot's
     // branchId onto every Class it creates, so a slot left on an archived
     // Branch would keep adding Classes to it.
     it('is blocked (409) while a weekly timetable slot still points at it, and succeeds once the slot is gone', async () => {

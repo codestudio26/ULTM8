@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision 280 — archiving a Branch asks first and shows what still belongs
+ * Decision 293 — archiving a Branch asks first and shows what still belongs
  * to it inside the dialog; archived Branches are left out of Branch pickers,
  * except the one a record being edited already points at.
  */

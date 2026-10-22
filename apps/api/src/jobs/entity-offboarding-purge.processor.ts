@@ -198,7 +198,7 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     );
   }
 
-  /** Branch's own sweep (Decision 280). Every FK pointing at Branch is
+  /** Branch's own sweep (Decision 293). Every FK pointing at Branch is
    * CASCADE or SET NULL, never RESTRICT, so a plain delete always succeeds:
    * anything attached after archiving (a home-branch Student, a staff role,
    * a coach invite, a Class) would be silently deleted or detached. Rechecks

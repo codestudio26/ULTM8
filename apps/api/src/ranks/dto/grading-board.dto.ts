@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsBoolean, IsEnum, IsISO8601, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsBoolean, IsEnum, IsISO8601, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { EligibilityResponseDto } from './student-rank-response.dto';
 
 export const BOARD_COLUMNS = ['JUST_STARTING', 'GETTING_THERE', 'READY_TO_GRADE'] as const;
@@ -83,6 +84,20 @@ export class GradingBoardResponseDto {
 
   @ApiProperty({ description: 'Students left out by activeOnly.' })
   hiddenInactive!: number;
+
+  @ApiProperty({ description: 'Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items.' })
+  atTopRank!: number;
+}
+
+/** The rung a student was on when the batch was checked (Decision 284). */
+export class BulkExpectedRungDto {
+  @ApiProperty()
+  @IsUUID()
+  studentId!: string;
+
+  @ApiProperty({ description: 'The student\'s rung in the dry run (its fromRungId).' })
+  @IsUUID()
+  rungId!: string;
 }
 
 /** Bulk promote (Decision 130): each student moves up one rung, on one date. */
@@ -125,6 +140,18 @@ export class BulkPromoteDto {
   @IsOptional()
   @IsBoolean()
   dryRun?: boolean;
+
+  @ApiPropertyOptional({
+    type: () => [BulkExpectedRungDto],
+    description:
+      'Each student\'s rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => BulkExpectedRungDto)
+  expected?: BulkExpectedRungDto[];
 }
 
 export class BulkPromoteStudentDto {

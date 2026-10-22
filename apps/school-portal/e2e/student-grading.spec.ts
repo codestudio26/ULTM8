@@ -49,6 +49,9 @@ test('signing off the last skill makes the student ready to grade', async ({ pag
 });
 
 test('grading without the skill needs the acknowledgement, and is recorded', async ({ page }) => {
+  // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
+  const { db } = await import('./fixtures');
+  await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
   await page.goto(`/students/${s.student.id}`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Grade' }).click();
@@ -67,6 +70,15 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
   await expect(history.getByText('White 1 → White 2')).toBeVisible();
   await expect(history.getByText('Graded without all skills signed off (acknowledged).')).toBeVisible();
   await expect(history.getByText('Note: Great roll today')).toBeVisible();
+});
+
+test('an inactive student can\'t be graded up, and the dialog says why (Decision 283)', async ({ page }) => {
+  await page.goto(`/students/${s.student.id}`);
+  await bjj(page).getByRole('button', { name: 'Grade' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
+  await dialog.getByLabel(/Grade without all skills signed off/).check();
+  await dialog.getByRole('button', { name: 'Award stripe' }).click();
+  await expect(dialog.getByText(/Only active students can be graded/)).toBeVisible();
 });
 
 test('a style that requires skills blocks grading until they are signed off', async ({ page }) => {

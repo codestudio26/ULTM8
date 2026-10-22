@@ -106,7 +106,7 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     expect(await superuser.branch.findUnique({ where: { id: branch.id } })).toBeNull();
   });
 
-  // Decision 280 — every FK pointing at Branch is CASCADE or SET NULL, so
+  // Decision 293 — every FK pointing at Branch is CASCADE or SET NULL, so
   // nothing in the database stops the purge; the job rechecks the archive
   // dependents rule itself.
   it('an archived Branch that gained a home-branch Student after archiving is left archived, and the Student keeps their home branch', async () => {

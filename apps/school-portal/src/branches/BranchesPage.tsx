@@ -42,7 +42,7 @@ export function BranchesPage() {
   // archived) is always fetched (useBranches passes includeArchived: true)
   // so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
-  // Decision 280 — archiving asks first; a refusal (what still belongs to
+  // Decision 293 — archiving asks first; a refusal (what still belongs to
   // the Branch) shows inside the dialog rather than as a page banner.
   const [archiving, setArchiving] = useState<BranchResponse | null>(null);
 

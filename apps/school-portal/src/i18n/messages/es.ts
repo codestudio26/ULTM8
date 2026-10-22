@@ -1112,6 +1112,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inactivo oculto",
         other: "{count} inactivos ocultos",
       },
+      atTopRank: {
+        one: "· {count} en el rango más alto, no se muestra",
+        other: "· {count} en el rango más alto, no se muestran",
+      },
+      hiddenBySearch: {
+        one: "{count} de ellos oculto por tu búsqueda",
+        other: "{count} de ellos ocultos por tu búsqueda",
+      },
+      showThem: "Mostrarlos",
+      showAll: "Mostrar los {count}",
       columns: {
         justStarting: "Empezando",
         gettingThere: "En camino",
@@ -1127,6 +1137,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Habilidades obligatorias",
         skillsNotSignedOff: "Habilidades sin aprobar",
         inactive: "Inactivo",
+        inactiveAria: "{name} no se puede seleccionar: inactivo",
+        inactiveTitle: "Solo se puede graduar a alumnos activos. Activa su interruptor Activo o dale una membresía vigente.",
         notVerified: "Sin verificar",
         moveAria: "Mover a {name} a otra columna",
         move: "Mover",
@@ -1161,6 +1173,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "No se pudo comprobar a estos alumnos. Inténtalo de nuevo.",
+      stoppedPartWay: "Se promovieron {done} de {total} y luego algo falló. El resto no se promovió; inténtalo de nuevo con ellos.",
+      tryRemaining: {
+        one: "Reintentar con el alumno restante",
+        other: "Reintentar con los {count} alumnos restantes",
+      },
+      stopHere: "Parar aquí y ver el informe",
+      notReached: "no promovido: el lote se detuvo antes",
       doneTitle: "Alumnos promovidos",
       notPromoted: "No promovidos: {list}.",
       openReport: "Abrir informe imprimible",
