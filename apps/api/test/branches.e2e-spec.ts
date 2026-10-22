@@ -210,13 +210,13 @@ describeIfDb('BranchesModule — Decision 231 settings fields', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // GET /schools/:schoolId/branches?city= — v1.2 backend backlog, "Branches page",
-  // City filter: previously client-side only, no backend filter param existed.
-  // Branch has no dedicated city column (schema.prisma), so this is a
-  // case-insensitive substring match against `address` (BranchesQueryDto).
+  // GET /schools/:schoolId/branches?city= — v1.2 backend backlog, "Branches page".
+  // These two Branches only have the free-text `address` (no structured
+  // `addressCity`), so since Decision 294 they go through the legacy fallback:
+  // the address text containing the city.
   // ---------------------------------------------------------------------------
 
-  it('filters GET /schools/:schoolId/branches by city, case-insensitively, against address', async () => {
+  it('filters GET /schools/:schoolId/branches by city, case-insensitively, against a legacy address', async () => {
     const toronto = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/branches`)
       .set('Authorization', `Bearer ${tokenOwner}`)
@@ -246,5 +246,148 @@ describeIfDb('BranchesModule — Decision 231 settings fields', () => {
     const unfilteredIds = unfiltered.body.items.map((b: { id: string }) => b.id);
     expect(unfilteredIds).toContain(toronto.body.id);
     expect(unfilteredIds).toContain(vaughan.body.id);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Decision 294 — City matches the city field only (case and accents
+  // ignored), one search box over name/city/postcode, a country filter, A to Z
+  // order with name+id paging, `%`/`_` as plain text, and per-Branch Student
+  // and upcoming-class counts. Its own School, so the lists are exact.
+  // ---------------------------------------------------------------------------
+
+  describe('Decision 294 — list filters, order and counts', () => {
+    let filterSchool: { id: string };
+    let tokenFilterOwner: string;
+    const ids: Record<string, string> = {};
+    const studentIds: string[] = [];
+
+    const list = (query: Record<string, string | number | boolean> = {}) =>
+      request(app.getHttpServer())
+        .get(`/v1/schools/${filterSchool.id}/branches`)
+        .query(query)
+        .set('Authorization', `Bearer ${tokenFilterOwner}`);
+    const names = (res: request.Response) => res.body.items.map((b: { name: string }) => b.name);
+
+    beforeAll(async () => {
+      filterSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Branch Filter HTTP School' } });
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: filterSchool.id },
+      });
+      tokenFilterOwner = jwt.sign({
+        sub: owner.id,
+        email: owner.email,
+        grants: [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: filterSchool.id, branchId: null }],
+      });
+      const rows = [
+        { key: 'london', name: 'Westminster', addressCity: 'London', addressPostalCode: 'SW1A 1AA', addressCountry: 'GB', address: '1 Parliament St, London SW1A 1AA, United Kingdom' },
+        { key: 'manchester', name: 'Northern Quarter', addressCity: 'Manchester', addressPostalCode: 'M1 1AA', addressCountry: 'GB', address: '22 London Road, Manchester M1 1AA, United Kingdom' },
+        { key: 'saoPaulo', name: 'Paulista', addressCity: 'São Paulo', addressPostalCode: '01310-100', addressCountry: 'BR', address: 'Av. Paulista 1000, São Paulo - SP, 01310-100, Brazil' },
+        { key: 'percent', name: '100% Fight Club', addressCity: 'Leeds', addressPostalCode: 'LS1 1AA', addressCountry: 'GB', address: '5 Briggate, Leeds LS1 1AA, United Kingdom' },
+        { key: 'accented', name: 'École du Nord', addressCity: 'Lyon', addressPostalCode: '69001', addressCountry: 'FR', address: '3 Rue de la République, 69001 Lyon, France' },
+      ];
+      for (const { key, ...data } of rows) {
+        const b = await superuser.branch.create({ data: { id: randomUUID(), schoolId: filterSchool.id, ...data } });
+        ids[key] = b.id;
+      }
+
+      // Two Students at London, one at Manchester.
+      for (const branchId of [ids.london, ids.london, ids.manchester]) {
+        const student = await superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `branch-filter-student-${randomUUID()}@example.test`,
+            phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+            firstName: 'Student',
+            surname: 'BranchFilter',
+            passcodeHash: 'x',
+            dateOfBirth: new Date('2000-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        });
+        studentIds.push(student.id);
+        await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: filterSchool.id, studentId: student.id, branchId } });
+      }
+
+      // London: one upcoming class counts; a past one and an archived future one don't.
+      const hour = 3_600_000;
+      const future = new Date(Date.now() + 7 * 24 * hour);
+      const past = new Date(Date.now() - 7 * 24 * hour);
+      await superuser.class.createMany({
+        data: [
+          { id: randomUUID(), schoolId: filterSchool.id, branchId: ids.london, title: 'Upcoming', startDate: future, endDate: new Date(future.getTime() + hour) },
+          { id: randomUUID(), schoolId: filterSchool.id, branchId: ids.london, title: 'Past', startDate: past, endDate: new Date(past.getTime() + hour) },
+          { id: randomUUID(), schoolId: filterSchool.id, branchId: ids.london, title: 'Archived', startDate: future, endDate: new Date(future.getTime() + hour), archivedAt: new Date() },
+        ],
+      });
+    });
+
+    afterAll(async () => {
+      await superuser.class.deleteMany({ where: { schoolId: filterSchool.id } });
+      await superuser.studentHomeBranch.deleteMany({ where: { schoolId: filterSchool.id } });
+      await superuser.branch.deleteMany({ where: { schoolId: filterSchool.id } });
+      await superuser.user.deleteMany({ where: { id: { in: studentIds } } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: filterSchool.id } });
+      await superuser.school.deleteMany({ where: { id: filterSchool.id } });
+    });
+
+    it('lists every Branch A to Z, ignoring case and accents', async () => {
+      const res = await list();
+      expect(res.status).toBe(200);
+      expect(names(res)).toEqual(['100% Fight Club', 'École du Nord', 'Northern Quarter', 'Paulista', 'Westminster']);
+      expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('matches City against the city field only, not the street', async () => {
+      // "22 London Road, Manchester" used to match London.
+      const res = await list({ city: 'london' });
+      expect(res.status).toBe(200);
+      expect(names(res)).toEqual(['Westminster']);
+    });
+
+    it('ignores accents in City and search', async () => {
+      expect(names(await list({ city: 'Sao Paulo' }))).toEqual(['Paulista']);
+      expect(names(await list({ q: 'ecole' }))).toEqual(['École du Nord']);
+    });
+
+    it('searches name, city and postcode (postcode without spaces)', async () => {
+      expect(names(await list({ q: 'westmin' }))).toEqual(['Westminster']);
+      expect(names(await list({ q: 'MANCHESTER' }))).toEqual(['Northern Quarter']);
+      expect(names(await list({ q: 'sw1a1aa' }))).toEqual(['Westminster']);
+      expect(names(await list({ q: 'SW1A 1AA' }))).toEqual(['Westminster']);
+      // A street name isn't searched — only name, city and postcode.
+      expect(names(await list({ q: 'Briggate' }))).toEqual([]);
+    });
+
+    it('treats % and _ as plain text, not wildcards', async () => {
+      expect(names(await list({ q: '%' }))).toEqual(['100% Fight Club']);
+      expect(names(await list({ q: '_' }))).toEqual([]);
+      expect(names(await list({ city: 'Lond_n' }))).toEqual([]);
+    });
+
+    it('filters by country and rejects a code that is not ISO 3166-1 alpha-2', async () => {
+      expect(names(await list({ country: 'GB' }))).toEqual(['100% Fight Club', 'Northern Quarter', 'Westminster']);
+      expect(names(await list({ country: 'BR', q: 'paulo' }))).toEqual(['Paulista']);
+      expect((await list({ country: 'XX' })).status).toBe(400);
+    });
+
+    it('pages in name order with a name+id cursor and rejects a bad cursor', async () => {
+      const first = await list({ limit: 2 });
+      expect(names(first)).toEqual(['100% Fight Club', 'École du Nord']);
+      expect(first.body.nextCursor).toEqual(expect.any(String));
+      const second = await list({ limit: 2, cursor: first.body.nextCursor });
+      expect(names(second)).toEqual(['Northern Quarter', 'Paulista']);
+      const third = await list({ limit: 2, cursor: second.body.nextCursor });
+      expect(names(third)).toEqual(['Westminster']);
+      expect(third.body.nextCursor).toBeNull();
+      expect((await list({ cursor: 'not-a-cursor' })).status).toBe(400);
+    });
+
+    it('returns each Branch\'s Student count and upcoming (non-archived) class count', async () => {
+      const res = await list();
+      const byName = Object.fromEntries(res.body.items.map((b: { name: string; studentCount: number; upcomingClassCount: number }) => [b.name, b]));
+      expect(byName.Westminster).toMatchObject({ studentCount: 2, upcomingClassCount: 1 });
+      expect(byName['Northern Quarter']).toMatchObject({ studentCount: 1, upcomingClassCount: 0 });
+      expect(byName.Paulista).toMatchObject({ studentCount: 0, upcomingClassCount: 0 });
+    });
   });
 });

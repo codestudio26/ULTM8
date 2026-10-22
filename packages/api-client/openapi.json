@@ -909,7 +909,25 @@
             "name": "city",
             "required": false,
             "in": "query",
-            "description": "Case-insensitive substring match against Branch.address (no dedicated city column exists).",
+            "description": "Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — ISO 3166-1 alpha-2 country code of the structured address.",
             "schema": {
               "type": "string"
             }
@@ -12035,13 +12053,142 @@
           "updatedAt"
         ]
       },
+      "BranchListItemDto": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Branch has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "Students whose home branch this is."
+          },
+          "upcomingClassCount": {
+            "type": "number",
+            "description": "Classes at this Branch that have not started yet (archived ones left out)."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "activities",
+          "facilities",
+          "createdAt",
+          "updatedAt",
+          "studentCount",
+          "upcomingClassCount"
+        ]
+      },
       "BranchListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BranchResponseDto"
+              "$ref": "#/components/schemas/BranchListItemDto"
             }
           },
           "nextCursor": {

@@ -1,27 +1,37 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsISO31661Alpha2, IsOptional, IsString, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 /**
  * GET /schools/:schoolId/branches query — cursor-based pagination (Decision 22/70)
- * plus an optional `city` filter, same extension shape TranslationsQueryDto already
- * established for `GET /translations?screen=&locale=` (PaginationQueryDto subclass,
- * every filter optional/independent).
+ * plus optional filters, every one independent.
  *
- * There is no dedicated `city` column on Branch (confirmed against schema.prisma —
- * Decision 76's field list gives Branch only a single free-text `address` field, no
- * structured city/street/postcode breakdown). `city` is therefore a case-insensitive
- * substring match against `Branch.address` (BranchesService.findAllForSchool), not a
- * new column — the honest, additive interpretation of the mockup's "City filter" given
- * what's actually on the model today, not a product decision to invent a new field.
+ * Decision 294: results come back sorted by name (A to Z), and the filters
+ * ignore case and accents — see branch-list-filter.ts for why that runs in
+ * memory rather than SQL. `nextCursor` is opaque (name + id), no longer a
+ * bare Branch id.
  */
 export class BranchesQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ description: 'Case-insensitive substring match against Branch.address (no dedicated city column exists).' })
+  @ApiPropertyOptional({
+    description:
+      'Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   city?: string;
+
+  @ApiPropertyOptional({ description: 'Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
+
+  @ApiPropertyOptional({ description: 'Decision 294 — ISO 3166-1 alpha-2 country code of the structured address.' })
+  @IsOptional()
+  @IsISO31661Alpha2()
+  country?: string;
 
   /** Decision 226 — archived Branches are excluded by default (same
    * "excluded by default, visible via a filter" convention this build applies
