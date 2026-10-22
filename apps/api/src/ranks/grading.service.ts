@@ -79,11 +79,9 @@ async function isActiveForGrading(
 }
 
 /**
- * Phase 10b scope only: single-Student grading actions (promote/downgrade/
- * stripe-award/skill-sign-off) + reads (ranks, eligibility, rank-history).
- * Bulk-promote/bulk-stripe-award are deferred (Phase 10b kickoff prompt §1.d) —
- * not built here, even partially. Booking-time rank-gating enforcement is out of
- * scope (Booking doesn't exist yet — Phase 11).
+ * Grading actions (promote/downgrade/stripe-award/skill-sign-off), the Grading
+ * Board and bulk promote (Decisions 130, 282-284), plus reads (ranks,
+ * eligibility, rank-history). Started as Phase 10b's single-student scope.
  *
  * RLS shape for StudentRank/StudentRankSkillStatus/PromotionEvent: the narrow
  * "School Owner/Manager or the row's own Student" shape (this phase's migration —
