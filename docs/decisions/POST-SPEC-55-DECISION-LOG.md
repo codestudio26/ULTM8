@@ -4111,6 +4111,125 @@ Since Decision 282 the portal sends a large batch 200 students at a time. If som
 
 User, choosing option A for a batch that stops part-way, 22 Oct 2026.
 
+---
+
+## Decision 285 — Kids → Adult: the four open questions answered (completes Decision 281)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 281 "Still open" (all four) · **Changes:** Decision 281 item 3
+
+### Decision
+
+1. **The first adult rank is Blue Belt.** A Kids student at the top of the Kids ladder goes to Blue Belt on the Adult ladder. The product owner: *"Yes from Blue"*.
+2. **The age is a rule, not only a reminder.** A coach can grade a kid into Adult from the School's "Ready for Adult from age" (default 16, the IBJJF age). To do it earlier, the School changes that age in its grading settings first. The product owner: *"Yes but they will need to change the settings, however 99.99% of the academies around the world will follow the IBJJF rules, but still they can change it"*. This replaces Decision 281 item 3 ("the age setting is only a reminder").
+3. **Everything carries over, except the class count.** History, notes and skill sign-offs move with the student to the Adult ladder. Only the class count toward the next rank starts again from zero. The product owner: *"Everything, however it sets the class count from zero"*. This is an exception to an ordinary grade, which clears sign-offs (Decision 128 item 16).
+4. **Who may change the age:** the School owner and anyone granted the grading settings right. The product owner: *"who has been granted grading settings rights"*. Today the closest right is "Change board %" (`canChangeBoardThresholds`). There is no "grading settings" right yet.
+
+### Still open
+
+- **Name and scope of the grading settings right.** Either rename and widen "Change board %" into "Change grading settings" (board %, Ready for Adult age, promotion fee switch), or add a new right next to it. Confirm.
+- **Which skill sign-offs carry over** when the Adult ladder's skills differ from the Kids ladder's. A sign-off is on a skill; if the same skill is on the Adult rank, it counts. Confirm.
+
+### Recorded by
+
+User, answering Decision 281's open questions, 22 Oct 2026.
+
+---
+
+## Decision 286 — Students can ask the School to correct their belt
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.13 (MS6a, Q38)
+
+### Decision
+
+1. **A student can request a correction** when their recorded belt is wrong. The product owner: *"yes if there is mistake"*.
+2. **Students still can't change their own rank.** Only coaches promote (Decision 124 onward). The request goes to the School.
+3. **A coach approves or rejects it.** An approval goes through the normal grading path, so the history shows the correction and who made it.
+
+### Still open
+
+- **Who reviews a request:** the owner and coaches with "Verify ranks" (`canVerifyRanks`), as for self-declared belts (Decision 137)? Confirm.
+- **What a student can request:** any rank on the ladder, or only a fix of the current one.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 287 — Promotion fee: a switch in the grading settings
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.12 (PR16, Q33), in part
+
+### Decision
+
+1. **Each School chooses whether a promotion has a fee.** It is a switch in the grading settings, off by default. The product owner: *"We will be on the grading setting a toggle for fee on or off"*.
+2. With the switch off, nothing changes. Decisions 162/163 (the grading-day pass) are not affected.
+
+### Still open `[UNRESOLVED]`
+
+- **The amount:** one fee, or a fee per rank or per belt?
+- **When it is charged, and how:** at promotion, automatically through the student's saved card? Or added to their balance? (Staff-created charges are themselves still open, v1.3 §3.6.)
+- **Whether an unpaid fee blocks the promotion,** and who pays for a child (the Guardian).
+- **Does a stripe count,** or only a new belt? And does a bulk promote charge each student?
+
+Don't build the charge until these are answered. The switch itself can be built.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 288 — Attendance hours can count toward grading
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.5 (A8, Q51), in part
+
+### Decision
+
+1. **ULTM8 tracks attendance hours as well as classes.** The product owner: *"We can count that too, it is a great idea"*.
+2. **Hours can be a grading requirement,** alongside classes and days at the rank.
+
+### Still open `[UNRESOLVED]`
+
+- **Where hours come from:** the class's scheduled length, or the real check-in and check-out time?
+- **How a rank uses them:** hours instead of classes, or as well as classes, chosen per rank?
+- **Whether open mat counts** (v1.3 §5.9 is still open).
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 289 — Skipping ranks keeps the next rank's checks
+
+**Date:** 22 Oct 2026 · **Status:** Records the product owner's 21 Oct 2026 rule · **Answers:** Decision 280's open question
+
+When a coach grades a student past more than one rank (e.g. White Belt · 2 Stripes straight to Blue Belt), the checks of the **next** rank still apply. "Skills required" still blocks, and missing skills or days short still need the "Needs a look" acknowledgement. Skipping can't be used to get round them. This is how the API already works (`changeRung`). The product owner set it after the grading stress test, 21 Oct 2026 (*"fix it"*). It is in DESIGN.md (Grading screens), and this entry puts it in the log.
+
+### Recorded by
+
+User, 21 Oct 2026; logged 22 Oct 2026.
+
+---
+
+## Decision 290 — Ranks without a belt: Levels (No-Gi)
+
+**Date:** 21 Oct 2026, logged 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.19 (it was flagged "NEEDS A DECISION ENTRY")
+
+The product owner set this on 21 Oct 2026 for the New Portal grading screens. It was written into the v1.3 backlog and DESIGN.md, but never logged.
+
+### Decision
+
+1. **Each style shows its ranks either as Belts or as Levels (no belt),** never a mix. The setting is "Ranks shown as" in Grading → Settings.
+2. **A level is a coloured badge.** The School picks the colour.
+3. **A level has numbered steps** (Beginner 1, 2, 3), each with its own requirements, like stripe grades.
+4. **Grading itself doesn't change.** Steps are rungs. Requirements, progress, the board, promote, bulk promote and history work as they do for stripes. Only how a rank is stored and shown changes.
+
+### Recorded by
+
+User, 21 Oct 2026; logged 22 Oct 2026.
+
 ## Decision 295 — One email, one account, whatever the capitals
 
 **Date:** 22 Oct 2026 · **Status:** Bug fix the product owner asked for · **Builds on:** Decisions 116 and 251
