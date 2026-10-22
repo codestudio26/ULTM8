@@ -1072,6 +1072,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       inactiveHidden: {
         other: "ซ่อนผู้ไม่ใช้งาน {count} คน",
       },
+      atTopRank: {
+        other: "· {count} คนอยู่ระดับสูงสุด ไม่แสดง",
+      },
+      hiddenBySearch: {
+        other: "ในนั้น {count} คนถูกซ่อนโดยการค้นหา",
+      },
+      showThem: "แสดง",
+      showAll: "แสดงทั้งหมด {count} คน",
       columns: {
         justStarting: "เพิ่งเริ่มต้น",
         gettingThere: "กำลังก้าวหน้า",
@@ -1087,6 +1095,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "ต้องมีทักษะ",
         skillsNotSignedOff: "ทักษะยังไม่ได้รับรอง",
         inactive: "ไม่ใช้งาน",
+        inactiveAria: "เลือก {name} ไม่ได้: ไม่ใช้งาน",
+        inactiveTitle: "เลื่อนระดับได้เฉพาะนักเรียนที่ใช้งานอยู่ เปิดสวิตช์ใช้งานอยู่ หรือให้สมาชิกภาพที่ยังมีผล",
         notVerified: "ยังไม่ยืนยัน",
         moveAria: "ย้าย {name} ไปคอลัมน์อื่น",
         move: "ย้าย",
@@ -1120,6 +1130,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "ตรวจสอบนักเรียนเหล่านี้ไม่ได้ โปรดลองอีกครั้ง",
+      stoppedPartWay: "เลื่อนระดับแล้ว {done} จาก {total} คน จากนั้นเกิดปัญหา คนที่เหลือยังไม่ได้เลื่อนระดับ — โปรดลองอีกครั้ง",
       doneTitle: "เลื่อนระดับนักเรียนแล้ว",
       notPromoted: "ไม่ได้เลื่อนระดับ: {list}",
       openReport: "เปิดรายงานสำหรับพิมพ์",
