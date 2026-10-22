@@ -4229,3 +4229,121 @@ The product owner set this on 21 Oct 2026 for the New Portal grading screens. It
 ### Recorded by
 
 User, 21 Oct 2026; logged 22 Oct 2026.
+
+---
+
+## Decision 295 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (the grading settings right)
+
+### Decision
+
+1. **The coach right "Change board %" (`canChangeBoardThresholds`) becomes "Change grading settings".** It still works per coach and per style. It now covers everything on Grading → Settings for that style: the board %, "Ranks shown as" (Belts or Levels), the Ready for Adult age and the other per-style grading settings. Coaches who have "Change board %" today keep it under the new name.
+2. **The School-wide promotion fee switches are owner-only** (see Decision 298): no coach right covers them.
+
+The product owner chose option A: *"A, and yes fee switch owner only"*.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 296 — Kids → Adult: skill sign-offs carry over by matching name
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (which sign-offs carry over)
+
+Kids and Adult are separate ladders, so each has its own skills; a Kids "Armbar" and an Adult "Armbar" are two different skills.
+
+### Decision
+
+1. When a kid is graded into the Adult program, **each Kids skill they had signed off counts as signed off on the Adult ladder if the Adult ladder has a skill with exactly the same name.**
+2. Kids sign-offs with no matching Adult skill stay in the student's history, still visible, but don't count toward Adult ranks.
+
+The product owner chose option A (match by name).
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 297 — Belt correction requests: who reviews, and what can be asked
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 286 "Still open"
+
+### Decision
+
+1. **Reviewers:** the School owner, and coaches who have **"Verify ranks"** for that style and cover the student's branch. These are the same people who verify the belts students declare when they join (Decisions 137, 147, 189).
+2. **What a student can ask for:** any rank on that style's ladder, e.g. "my belt shows Blue, but I'm Purple · 2 Stripes". **A short note explaining why is required.**
+
+The product owner chose A and A.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 298 — Promotion fee: prices per grade, the student accepts before paying, and an owner switch for grading before payment
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 287 "Still open"
+
+### Decision
+
+1. **The fee is per grade.** With the promotion fee switch on (Decision 287), the owner can set a price on any belt and on any stripe grade. **A grade with no price is free.** Stripes are free unless the owner prices them.
+2. **Nothing is charged directly.** At grading, a fee request appears in the student's account (the Guardian's, for a child). The student or Guardian **accepts** it, and only then is it charged, by saved card or as the school takes payment.
+3. **A new owner switch in grading settings: "Allow grading before the fee is paid".**
+   - **On:** the promotion happens straight away and the fee request waits. If the student declines, the owner sees **"Fee declined"** on the student and sorts it out with them. The promotion stays.
+   - **Off:** the promotion waits, shown as **"Waiting for fee"** on the board, and goes through only once the fee is accepted and paid. If the student declines, nothing changes and the owner sees "Fee declined".
+   - With no answer, the request stays open.
+   - **The owner can waive or cancel a fee at any time.** Waiving a waiting promotion applies it straight away.
+4. **The grading date** on the history is the date the coach chose when grading, not the date the fee was paid.
+5. **Children:** the Guardian accepts and pays, as for the child's other payments.
+6. **Bulk promote:** each promoted student gets a request for their own grade's fee.
+7. **Owner-only:** the promotion fee switch, the "Allow grading before the fee is paid" switch and the prices (Decision 295 item 2).
+
+### Still open
+
+- **How an accepted fee is paid** depends on student charges and balances, v1.3 backlog §3.6, which is itself still open ("NEEDS A DECISION ENTRY"). The fee request and acceptance can be built first; payment follows §3.6.
+
+### Recorded by
+
+User, answering one by one, 22 Oct 2026. On a declined or unanswered fee: *"agree with your recommendation"*.
+
+---
+
+## Decision 299 — Attendance hours in grading
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 288 "Still open"
+
+### Decision
+
+1. **Where hours come from:** the scheduled length of the class the student checked in to (a 90-minute class adds 1.5 hours). ULTM8 records check-in only, so students don't check out.
+2. **What a grade requires:** for each grade, the School picks **classes**, **hours** or **both**. Classes stay the default, so nothing changes for existing ladders.
+3. **Board progress** for a grade needing both follows **whichever is further behind**. For example, 80% of the classes but 50% of the hours shows 50%, so a student is "Ready to Grade" only when both are met.
+4. **The student's page shows a breakdown** of their grading progress, with each requirement on its own (classes, hours, days at the rank, skills), next to the overall %.
+5. **"Log a class" by hand** adds the length of the class picked. With no class, the coach enters the time, 60 minutes by default.
+6. **Open mat:** a switch in Grading → Settings, **"Open mat counts toward hours"**, changeable by the owner and coaches with "Change grading settings" (Decision 295). It takes effect once open mat itself exists. What open mat is remains open (v1.3 backlog §5.9).
+
+### Recorded by
+
+User, 22 Oct 2026: *"Agree with everything go ahead"*, with the two notes in items 4 and 6.
+
+---
+
+## Decision 300 — Portal browser tests in Firefox and Safari: nightly and on demand
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Closes:** the Firefox/WebKit gap from Decision 179 item 3
+
+### Decision
+
+1. Every night, all the School Portal's browser tests run in **Firefox and WebKit** (Safari's engine), at desktop and tablet widths: `.github/workflows/browsers-nightly.yml`.
+2. The same run can be started by hand ("Run workflow" in GitHub Actions), e.g. before a release.
+3. Pull requests keep running Chromium only, so they stay fast.
+
+The product owner chose option A.
+
+### Recorded by
+
+User, 22 Oct 2026.

@@ -12,7 +12,7 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **Sources, highest first** (from `CLAUDE.md`):
 1. Spec 55, then `skills/ultm8-domain-rules/SKILL.md`.
-2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290**.
+2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290 and 295–300**.
 3. The New Portal design: `DESIGN.md` → "Grading screens" (on the design branch `claude/relaxed-bohr-j3ilir` until it merges), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
 
 **Rules that always apply:**
@@ -49,7 +49,7 @@ Read this before starting. Each task says what it must do, where the code is tod
   - The age comes from `User.dateOfBirth`. Students without a date of birth: refuse with a clear message.
 - **Board:** return `readyForAdult: boolean` on Kids cards (age reached), and the program on each discipline.
 - **Changing the age:** the owner, or a coach with the grading settings right (see B2).
-- **Open (ask the product owner):** which skill sign-offs carry over when the Adult skills differ (285 "Still open"). Suggested default: a sign-off counts if the same skill is on the Adult rank.
+- **Which sign-offs carry over (Decision 296):** a Kids skill that was signed off counts on the Adult ladder when the Adult ladder has a skill with exactly the same name. Unmatched sign-offs stay in the history only.
 
 **Done when:** a kid at or over the age can be graded onto Blue Belt (or any adult rank) from the Grade dialog, the board and bulk promote; under the age it's refused; afterwards they show under Adult, with "Moved to Adult program" in their history, their sign-offs and history kept and 0 classes; the tag shows from the age; a School never sees another School's programs.
 
@@ -59,19 +59,20 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **What it must do:**
 - The designed **Grading → Settings** page has these sections: How ranks are shown, Grading rules, Grading Board columns, Whole school.
-- **Who may change grading settings:** the School owner and coaches granted the grading settings right (285 item 4).
-- New settings to store:
-  - **Ready for Adult from age** (per Kids ladder, B1).
-  - **Ranks shown as: Belts / Levels** (per style, B4).
-  - **Promotion fee: on / off** (Decision 287), off by default.
+- **Who may change grading settings (Decision 295):** the School owner, and coaches with **"Change grading settings"** for that style. This is today's "Change board %" right, renamed and widened to the whole page. **The promotion fee switches are owner-only.**
+- Settings to store:
+  - per style: board %, **Ready for Adult from age** (Kids ladder, B1), **Ranks shown as: Belts / Levels** (B4);
+  - School-wide, **owner only**: **Promotion fee on/off** (Decision 287, off by default) and **"Allow grading before the fee is paid"** (Decision 298, B10);
+  - School-wide, owner or "Change grading settings": **"Open mat counts toward hours"** (Decision 299 item 6, B11).
 
 **Today:** the right closest to this is `GradingPermission.canChangeBoardThresholds` ("Change board %"). Board % is saved with `PUT disciplines/:id/board-thresholds`. Other style settings are on `PATCH disciplines/:id`.
 
 **Suggested build:**
-- **Open (ask the product owner first):** rename and widen `canChangeBoardThresholds` into "Change grading settings", or add a new right next to it. Suggested: widen it (one right for the whole settings page) with a migration that keeps everyone's current value.
-- Per-style settings go on `Discipline`; School-wide ones (the promotion fee switch) on `School` or a small `GradingSettings` row per School. Expose one read and one save endpoint the settings page can use, or extend `PATCH disciplines/:id`, guarded by the right above.
+- **Rename the right:** `canChangeBoardThresholds` → `canChangeGradingSettings` (migration renames the column, so everyone keeps their current value). It now guards every per-style setting, not only board %. Update the Grading permissions page label to "Change grading settings".
+- Per-style settings go on `Discipline`. School-wide ones on `School` or a small `GradingSettings` row per School. Expose one read and one save endpoint the settings page can use, or extend `PATCH disciplines/:id`.
+- The two fee switches check for the owner only; "Open mat counts toward hours" accepts the owner or a coach with `canChangeGradingSettings` for any style at the School.
 
-**Done when:** the owner and a coach with the right can change each setting; a coach without it gets 403; the values come back on reload.
+**Done when:** the owner and a coach with the right can change each per-style setting; only the owner can change the fee switches; a coach without the right gets 403; the values come back on reload.
 
 ---
 
@@ -153,7 +154,8 @@ Read this before starting. Each task says what it must do, where the code is tod
 - `RankCorrectionRequest { id, schoolId, studentId, disciplineId, currentRungId, requestedRungId, note, status (PENDING | APPROVED | REJECTED), reviewedById, reviewedAt, reviewNote }` with RLS like `StudentRank`.
 - Student: create and list their own; one pending request per style.
 - Staff: list pending for the School (like `GET schools/:schoolId/rank-verifications`), approve (applies through `changeRung` with a system note "Corrected at the student's request") or reject with a reason. Notify the student either way.
-- **Open (ask first):** who reviews (suggested: the owner and coaches with "Verify ranks", as for self-declared belts) and whether a student can request any rank or only a fix of their current one.
+- **Reviewers (Decision 297):** the owner, and coaches with **"Verify ranks"** (`canVerifyRanks`) for that style covering the student's branch, the same people as for declared belts.
+- **What can be asked (Decision 297):** any rank on that style's ladder. **A note is required** (400 without one).
 
 **Done when:** a student can request, a reviewer can approve or reject, an approval changes the rank with history, a School never sees another's requests.
 
@@ -169,12 +171,58 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-## 3. Build only the decided part
+### B10. Promotion fee — Decisions 287, 295, 298
 
-| # | Feature | Decided | Still open — ask before building that part |
-|---|---|---|---|
-| P1 | **Promotion fee** (Decision 287) | A grading setting, fee on/off, off by default. Build the switch (B2). | The amount (one fee, per rank or per belt); when and how it's charged (card, balance); whether unpaid blocks the promotion; who pays for a child; stripes and bulk. **Don't build the charge yet.** |
-| P2 | **Attendance hours** (Decision 288) | Hours are tracked as well as classes, and can be a grading requirement. | Where hours come from (scheduled length or real check-in/out); hours instead of or as well as classes, per rank; whether open mat counts (backlog §5.9). **Don't build until answered.** |
+**What it must do:**
+- **Prices per grade.** With the fee switch on, the owner can set a price on any belt and any stripe grade. **No price = free.** Stripes are free unless priced.
+- **Never charged directly.** At grading, a **fee request** appears in the student's account (the Guardian's, for a child). They **accept** it, then it's charged.
+- **"Allow grading before the fee is paid"** (owner switch):
+  - **On:** the promotion happens straight away; the request waits. Declined → the owner sees **"Fee declined"** on the student; the promotion stays.
+  - **Off:** the promotion waits, shown as **"Waiting for fee"** on the board, and applies only once the fee is accepted and paid. Declined → nothing changes, the owner sees "Fee declined".
+  - No answer → the request stays open.
+- **The owner can waive or cancel a fee at any time.** Waiving a waiting promotion applies it straight away.
+- The history keeps **the grading date the coach chose**, not the payment date.
+- **Bulk promote:** one request per promoted student, for their own grade's price.
+- Owner-only: the switches and the prices.
+
+**Suggested build:**
+- `RankStripeTier.promotionFeeMinor Int?` (plus the School's currency), null = free.
+- `PromotionFeeRequest { id, schoolId, studentId, payerId (student or Guardian), disciplineId, toRungId, amountMinor, currency, status (PENDING | ACCEPTED | PAID | DECLINED | WAIVED | CANCELLED), promotionEventId?, pendingGrade (target, grading date, note, acknowledgement) when the promotion waits, timestamps }` with RLS for the School and the payer.
+- In `changeRung` / bulk: if the target grade has a price and the fee switch is on, create the request. With "grade before paying" off, store the planned grade on the request instead of applying it; apply it (through `changeRung`, with the stored grading date) when the request is paid or waived. Keep the `expected` rung guard so a waiting grade can't apply twice.
+- Board: return `feeStatus` (waiting / declined) on cards.
+- Notify the payer when a request is created.
+- **Payment step:** depends on student charges and balances (v1.3 backlog §3.6, still open). Build prices, requests, accept/decline, waiting promotions, waive and cancel first; plug the charge in when §3.6 is decided.
+
+**Done when:** a priced grade creates a request; accepting (then paying) applies a waiting promotion; declining shows "Fee declined"; waiving applies it; bulk creates one request each; an unpriced grade is free; another School never sees the requests.
+
+---
+
+### B11. Attendance hours — Decision 299
+
+**What it must do:**
+- Each check-in adds the **scheduled length** of the class (90 min = 1.5 h).
+- Each grade requires **classes**, **hours** or **both** (School's choice per grade; classes is the default).
+- **Progress** for a grade needing both = the **lower** of the two percentages. "Ready to Grade" only when both are met.
+- **"Log a class"** adds the picked class's length, or a time the coach enters (default 60 min).
+- **Open mat** counts toward hours only if the School's switch "Open mat counts toward hours" is on, and only once open mat exists (backlog §5.9).
+- The **student's page** gets a progress breakdown per requirement (classes, hours, days at the rank, skills).
+
+**Suggested build:**
+- `RankStripeTier.requirementKind` (`CLASSES | HOURS | BOTH`, default `CLASSES`) and `hoursRequired Int?` (minutes, to avoid fractions).
+- `StudentRank.minutesAttendedTowardCheckpoint`, incremented with the class count wherever classes are counted today (check-in, log a class, board move), and reset with it on a grade.
+- `eligibilityOnLadder` (`grading-eligibility.ts`): add hours to the readiness and `progressPercent` rules above; return each requirement's own progress for the breakdown.
+- A migration that leaves every existing grade on `CLASSES`, so nothing changes until a School opts in.
+
+**Done when:** an hours grade becomes ready from check-ins' lengths; a "both" grade shows the lower %; existing ladders behave exactly as before; the student page API returns the breakdown.
+
+---
+
+## 3. Waiting on something else
+
+| Item | Waits on |
+|---|---|
+| Paying an accepted promotion fee (B10) | Student charges and balances, v1.3 backlog §3.6 (not decided yet) |
+| Open mat counting toward hours (B11) | What open mat is, v1.3 backlog §5.9 (not decided yet) |
 
 ## 4. Deferred on purpose (not for now)
 
@@ -193,7 +241,7 @@ The New Portal grading redesign (DESIGN.md → "Grading screens") is designed bu
 | Frontend | Needs |
 |---|---|
 | Kids · Adult switch, "Adult program" group in Promote to, "Ready for Adult program" tag | B1 |
-| Grading → Settings page (5th tab) | B2, B4, P1 switch |
+| Grading → Settings page (5th tab) | B2, B4, B10, B11 |
 | "Promote to" picker per student in bulk promote | B3 |
 | Levels badge instead of a belt | B4 |
 | Colour wheel with saved colours in the belt editor | B5 |
@@ -201,7 +249,11 @@ The New Portal grading redesign (DESIGN.md → "Grading screens") is designed bu
 | Clean history notes and errors | B7 |
 | Belt correction requests (student app and portal) | B8 |
 | Belt progress on check-in | B9 |
+| Belt editor: price per grade; requirement per grade (classes / hours / both) | B10, B11 |
+| Board: "Waiting for fee" / "Fee declined"; owner waives or cancels a fee | B10 |
+| Student app: accept or decline a promotion fee (Guardian for a child) | B10 |
+| Student page: grading progress breakdown per requirement | B11 |
 
 Frontend-only (no backend): Grid/Rows views, sort by belt or name, the student panel and selection panel, click a progress bar to promote, the printable report with belts, the one-grade-at-a-time belt editor, duplicate a rank, drag and drop with touch, the two-tone belt picture, the 5-tab menu. In the student app, the coach screens still leave some actions to the web portal (skipping ranks, bulk promote, moving columns, editing rank dates, first rank); see `docs/TRACK-B-ROADMAP.md`.
 
-**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9. B1 and B3 touch the same promote code; do them together or B1 first.
+**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9 → B11 → B10. B1 and B3 touch the same promote code; do them together or B1 first.

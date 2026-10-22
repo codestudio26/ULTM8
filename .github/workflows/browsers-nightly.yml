@@ -1,0 +1,110 @@
+# The School Portal's browser tests in Firefox and WebKit (Safari's engine):
+# every night, and on demand with "Run workflow" in the Actions tab (e.g. before
+# a release). Pull requests still run Chromium only (ci.yml), so they stay fast.
+# Product owner, 22 Oct 2026 (Decision 300).
+name: Browser tests (Firefox, WebKit)
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portal-browser-tests-other-engines:
+    name: Portal browser tests (Firefox, WebKit)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ultm8
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Same throwaway values as the isolation gate above (see its comments).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ultm8?schema=public
+      DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_JOBS: postgresql://ultm8_jobs:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_GRADING_ERASURE: postgresql://ultm8_grading_erasure:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_PLATFORM_ADMIN: postgresql://ultm8_platform_admin:changeme@localhost:5432/ultm8?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
+      PLATFORM_ADMIN_JWT_SECRET: ci-test-platform-admin-secret-not-for-production-use-32-chars-min
+      STRIPE_SECRET_KEY: sk_test_ci_dummy_not_a_real_stripe_key
+      STRIPE_WEBHOOK_SECRET: ci-test-webhook-secret-not-a-real-stripe-secret
+      QR_CLASS_TOKEN_SECRET: ci-test-qr-class-token-secret-not-for-production-use-32-chars
+      QR_STUDENT_TOKEN_SECRET: ci-test-qr-student-token-secret-not-for-production-32-chars
+      # R2ClientService's private bucket (waiver signatures, certifications) plus
+      # the newer public gallery-photo bucket (Decision — see
+      # common/object-storage/r2-client.service.ts's own header comment) —
+      # throwaway values, same convention as every other vendor secret here: real
+      # uploads aren't exercised against live R2 in CI, this only satisfies the
+      # service's own "is configured" checks so presign requests don't 500.
+      R2_ACCOUNT_ID: ci-test-r2-account
+      R2_ACCESS_KEY_ID: ci-test-r2-access-key
+      R2_SECRET_ACCESS_KEY: ci-test-r2-secret-key-not-a-real-credential
+      R2_BUCKET_NAME: ci-test-waiver-signatures
+      R2_PUBLIC_BUCKET_NAME: ci-test-public-photos
+      R2_PUBLIC_BASE_URL: https://ci-test-public-photos.example.invalid
+      # Playwright starts the API and the portal itself (playwright.config.ts);
+      # CI=true makes it start fresh servers instead of reusing running ones.
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Apply migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Build the API
+        run: npx turbo run build --filter=@ultm8/api
+
+      - name: Install Firefox and WebKit for Playwright
+        working-directory: apps/school-portal
+        run: npx playwright install --with-deps firefox webkit
+
+      - name: Run the portal browser tests
+        working-directory: apps/school-portal
+        run: npm run e2e -- --project=firefox-desktop --project=firefox-tablet --project=webkit-desktop --project=webkit-tablet
+
+      - name: Keep the traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-playwright-results-firefox-webkit
+          path: apps/school-portal/test-results
+          retention-days: 7
