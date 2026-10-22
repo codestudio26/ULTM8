@@ -18,6 +18,8 @@ const COACH_NAV: NavItem[] = [
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
+/** Decision 291 — Branch Staff may give credit back on cancelled bookings. */
+const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/cancellations' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
 /** Decision 1/217/237 — self-service completion of the fields "Add
@@ -40,6 +42,7 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.timetable', to: '/timetable' },
   { label: 'layout.nav.membershipPlans', to: '/membership-plans' },
   { label: 'layout.nav.transactions', to: '/transactions' },
+  { label: 'layout.nav.cancellations', to: '/cancellations' },
   { label: 'layout.nav.waivers', to: '/waivers' },
   { label: 'layout.nav.franchises', to: '/franchises' },
   { label: 'layout.nav.notifications', to: '/notifications' },
@@ -52,12 +55,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
   const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
+  const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
   return (
     <AppShell
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [CANCELLATIONS_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

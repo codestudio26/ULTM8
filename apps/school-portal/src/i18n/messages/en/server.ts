@@ -102,6 +102,12 @@ export const server = {
     disputeLostBody: 'A disputed {charge} of {amount} was lost — the charge is no longer considered paid.',
     disputeResolvedBody: 'A disputed {charge} of {amount} was resolved in your favor.',
     disputeOpenedBody: 'A {charge} of {amount} has been disputed by the payer (status: {status}).',
+    classCancelledTitle: 'Class cancelled',
+    classCancelledBody: '{class} on {when} has been cancelled by the school.',
+    classCancelledBodyWithReason: '{class} on {when} has been cancelled by the school. Reason: {reason}',
+    cancellationsTitle: 'Cancellations to resolve',
+    cancellationReviewBody: 'A cancelled booking needs a refund decision or a cash refund paid. See Cancellations to resolve.',
+    cancellationClassReviewBody: 'Bookings from the cancelled class {class} need a refund decision or a cash refund paid ({count}). See Cancellations to resolve.',
     disputeStatus: {
       warning_needs_response: 'inquiry, needs a response',
       warning_under_review: 'inquiry under review',

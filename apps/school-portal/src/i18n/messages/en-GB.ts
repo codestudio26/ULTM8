@@ -5,6 +5,7 @@ import { auth } from './en/auth';
 import { schools } from './en/schools';
 import { branches } from './en/branches';
 import { transactions } from './en/transactions';
+import { cancellations } from './en/cancellations';
 import { lib } from './en/lib';
 import { dashboard } from './en/dashboard';
 import { students } from './en/students';
@@ -43,6 +44,7 @@ export const messages = {
   schools,
   branches,
   transactions,
+  cancellations,
   lib,
   dashboard,
   students,

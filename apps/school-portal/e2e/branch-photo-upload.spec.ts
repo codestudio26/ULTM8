@@ -84,7 +84,7 @@ test('picking a logo file uploads it via the real presign endpoint and saves the
   // have completed, not a fixed sleep.
   await expect(page.getByRole('button', { name: 'Change photo' }).first()).toBeVisible({ timeout: 10_000 });
 
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Branch settings saved.')).toBeVisible();
 
   const updated = await db.branch.findUniqueOrThrow({ where: { id: branchId } });

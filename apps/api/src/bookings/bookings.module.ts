@@ -6,6 +6,7 @@ import { SubscriptionPlansModule } from '../subscription-plans/subscription-plan
 import { PaymentsModule } from '../payments/payments.module';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
+import { CancellationService } from './cancellation.service';
 import { WaitlistController } from './waitlist.controller';
 import { WaitlistService } from './waitlist.service';
 
@@ -41,6 +42,6 @@ import { WaitlistService } from './waitlist.service';
 @Module({
   imports: [TenantsModule, QueueModule, GuardiansModule, SubscriptionPlansModule, PaymentsModule],
   controllers: [BookingsController, WaitlistController],
-  providers: [BookingsService, WaitlistService],
+  providers: [BookingsService, WaitlistService, CancellationService],
 })
 export class BookingsModule {}

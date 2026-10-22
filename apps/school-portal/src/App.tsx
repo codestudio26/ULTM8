@@ -39,6 +39,7 @@ import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage';
+import { CancellationsPage } from './cancellations/CancellationsPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -386,6 +387,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cancellations"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CancellationsPage />
             </Shell>
           </RequireAuth>
         }

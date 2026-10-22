@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
-import { ClassCancellationPolicyDto } from './create-school.dto';
+import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from './create-school.dto';
 import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /**
@@ -101,6 +101,24 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
 
   @ApiProperty()
   waitlistClaimWindowMinutes!: number;
+
+  @ApiProperty({ enum: ClassCancellationPolicyWindowDto })
+  classCancellationPolicyWindow!: ClassCancellationPolicyWindowDto;
+
+  @ApiProperty()
+  chargeLateCancellationFee!: boolean;
+
+  @ApiProperty({ enum: SchoolCancelledClassResolutionDto })
+  schoolCancelledClassResolution!: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  defaultRefundCutoffHours!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  noShowFee!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to.' })
+  cancellationPolicyChosenAt!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;

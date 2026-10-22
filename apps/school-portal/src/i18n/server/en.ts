@@ -6,6 +6,18 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Only the School Owner/Manager or that branch's Branch Staff may do this.",
+ "This class is already cancelled.",
+ "This class has already finished.",
+ "Only the School Owner/Manager can send money back (Spec §8.2).",
+ "Guest not found on this booking",
+ "This booking has nothing left to resolve.",
+ "A refund is already owed on this booking — mark it paid once the money has gone back.",
+ "There is no cash refund owed on this booking yet.",
+ "Someone else has already resolved this booking.",
+ "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.",
+ "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.",
+ "This class has been cancelled by the school.",
  "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).",
  "\"Getting There\" must start below \"Ready to Grade\".",
  "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.",

@@ -15,6 +15,23 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Class cancellations, chosen by each academy** (Decision 291) — the
+  School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
+  actually applies, in its own "Class cancellations" section with new
+  settings: whether it applies only before a class's cutoff or any time, a
+  default cutoff for classes without one, whether the late fee is charged, an
+  optional no-show fee, and what students get when the school cancels a whole
+  class. New **Cancel class** button on a class's page (with a reason sent to
+  students), and a new **Cancellations** page where staff resolve cancelled
+  bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
+  Pass always gets its credit back, and only an Owner or Manager can send money
+  back.
+- **Cancellation settings per branch** (Decision 292) — on a branch's
+  settings page, the owner can keep "Same as the school" (the default) or give
+  that branch its own cancellation settings. Existing schools keep giving the
+  class credit back, as before, and the dashboard and School page ask the
+  owner to choose a policy until they save one.
+
 - **Bulk promote can finish after a failure** (Decision 284) — if a large
   batch stops part-way, the group that failed is sent again once by itself,
   then the window offers "Try the remaining N again" or "Stop here and see the
