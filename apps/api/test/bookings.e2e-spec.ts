@@ -121,7 +121,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    // AUTO_CREDIT: these cancellation tests predate Decision 279 and cover the
+    // AUTO_CREDIT: these cancellation tests predate Decision 291 and cover the
     // credit-back path, which was every School's behaviour before the policy
     // was read. The other policies are covered in class-cancellation-policy.e2e-spec.ts.
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT' } });

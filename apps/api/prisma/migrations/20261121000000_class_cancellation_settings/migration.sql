@@ -1,4 +1,4 @@
--- Decision 279 — the School's "Class cancellations" settings, the
+-- Decision 291 — the School's "Class cancellations" settings, the
 -- cancel-whole-class action, the money side of a refund, and the no-show fee.
 -- See schema.prisma's own comments on each field.
 --

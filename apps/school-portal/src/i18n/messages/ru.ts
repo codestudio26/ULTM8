@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Поиск пока недоступен",
     notificationsAria: "Уведомления",
     languageAria: "Язык",
+    accountMenu: {
+      label: "Аккаунт",
+      myProfile: "Мой профиль",
+      schoolSettings: "Настройки школы",
+    },
     roles: {
       owner: "Владелец школы",
       branchStaff: "Сотрудник филиала",
@@ -1181,6 +1186,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         many: "Скрыто {count} неактивных",
         other: "Скрыто {count} неактивных",
       },
+      atTopRank: {
+        one: "· {count} на высшей ступени, не показан",
+        few: "· {count} на высшей ступени, не показаны",
+        many: "· {count} на высшей ступени, не показаны",
+        other: "· {count} на высшей ступени, не показаны",
+      },
+      hiddenBySearch: {
+        one: "{count} из них скрыт поиском",
+        few: "{count} из них скрыты поиском",
+        many: "{count} из них скрыты поиском",
+        other: "{count} из них скрыты поиском",
+      },
+      showThem: "Показать",
+      showAll: "Показать все ({count})",
       columns: {
         justStarting: "В начале пути",
         gettingThere: "На подходе",
@@ -1196,6 +1215,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Нужны навыки",
         skillsNotSignedOff: "Навыки не приняты",
         inactive: "Неактивен",
+        inactiveAria: "{name} нельзя выбрать: неактивен",
+        inactiveTitle: "Аттестовать можно только активных учеников. Включите переключатель «Активен» или оформите действующий абонемент.",
         notVerified: "Не подтверждено",
         moveAria: "Перенести {name} в другую колонку",
         move: "Перенести",
@@ -1232,6 +1253,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Не удалось проверить этих учеников. Попробуйте ещё раз.",
+      stoppedPartWay: "Повышено {done} из {total}, затем произошла ошибка. Остальные не повышены — попробуйте ещё раз.",
+      tryRemaining: {
+        one: "Повторить для оставшегося ученика",
+        few: "Повторить для оставшихся {count} учеников",
+        many: "Повторить для оставшихся {count} учеников",
+        other: "Повторить для оставшихся {count} учеников",
+      },
+      stopHere: "Остановиться и открыть отчёт",
+      notReached: "не повышен: пакет остановился раньше",
       doneTitle: "Ученики повышены",
       notPromoted: "Не повышены: {list}.",
       openReport: "Открыть отчёт для печати",
@@ -2200,5 +2230,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Поддержка",
     comingSoon: "{label} (скоро)",
     notAvailableYet: "{label} — пока недоступно",
+  },
+  profile: {
+    title: "Мой профиль",
+    loadFailed: "Не удалось загрузить ваш профиль.",
+    signInNote: "Вы входите по эл. почте и номеру телефона, поэтому их нельзя изменить здесь.",
   },
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -19,7 +19,7 @@ export interface FranchiseFormValues {
    * page-level caller maps `null` back to `undefined` for the CREATE path,
    * which has nothing to clear. */
   mobileNumber?: string | null;
-  address?: string | null;
+  postalAddress?: PostalAddress | null;
   type?: string | null;
   activities: string[];
   facilities: string[];
@@ -76,7 +76,7 @@ export function FranchiseFormModal({
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     mobileNumber: initial?.mobileNumber ?? '',
-    address: initial?.address ?? '',
+    address: postalAddressFromRecord(initial, guessDefaultCountry()),
     type: initial?.type ?? '',
     activities: initial?.activities?.join(', ') ?? '',
     facilities: initial?.facilities?.join(', ') ?? '',
@@ -90,6 +90,8 @@ export function FranchiseFormModal({
     perHeadcountRate: initial?.perHeadcountRate?.toString() ?? '',
   });
   const [feeRateChangeStrategy, setFeeRateChangeStrategy] = useState<(typeof FEE_RATE_CHANGE_STRATEGIES)[number] | ''>('');
+  const [initialAddress] = useState(() => (initial ? postalAddressFromRecord(initial, guessDefaultCountry()) : undefined));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
 
   // Decision 99's own follow-up — mirrors FranchisesService.update()'s own
@@ -109,11 +111,17 @@ export function FranchiseFormModal({
       setError(t('franchises.form.rateChangeRequired', { count: schoolsAlreadyBillingCount }));
       return;
     }
+    const prepared = preparePostalAddress(form.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await onSubmit({
         name: form.name,
         mobileNumber: form.mobileNumber || null,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         type: form.type || null,
         activities: form.activities.split(',').map((s) => s.trim()).filter(Boolean),
         facilities: form.facilities.split(',').map((s) => s.trim()).filter(Boolean),
@@ -146,9 +154,13 @@ export function FranchiseFormModal({
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label={t('franchises.form.addressLabel')} htmlFor="franchise-address">
-          <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-        </Field>
+        <AddressFields
+          idPrefix="franchise-address"
+          value={form.address}
+          onChange={(address) => setForm((f) => ({ ...f, address }))}
+          errors={addressErrors}
+          legacy={hasLegacyAddressOnly(initial) && !form.address.country}
+        />
         <Field label={t('franchises.form.typeLabel')} htmlFor="franchise-type">
           <TextField value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
         </Field>

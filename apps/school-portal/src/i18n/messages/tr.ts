@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Arama henüz kullanılamıyor",
     notificationsAria: "Bildirimler",
     languageAria: "Dil",
+    accountMenu: {
+      label: "Hesap",
+      myProfile: "Profilim",
+      schoolSettings: "Okul ayarları",
+    },
     roles: {
       owner: "Okul sahibi",
       branchStaff: "Şube personeli",
@@ -1131,6 +1136,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} pasif gizlendi",
         other: "{count} pasif gizlendi",
       },
+      atTopRank: {
+        one: "· En üst kuşakta {count} kişi, gösterilmiyor",
+        other: "· En üst kuşakta {count} kişi, gösterilmiyor",
+      },
+      hiddenBySearch: {
+        one: "{count} tanesi aramanız nedeniyle gizli",
+        other: "{count} tanesi aramanız nedeniyle gizli",
+      },
+      showThem: "Göster",
+      showAll: "Tümünü göster ({count})",
       columns: {
         justStarting: "Yeni başlayanlar",
         gettingThere: "Yolda",
@@ -1146,6 +1161,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Teknikler zorunlu",
         skillsNotSignedOff: "Teknikler onaylanmadı",
         inactive: "Pasif",
+        inactiveAria: "{name} seçilemez: pasif",
+        inactiveTitle: "Yalnızca aktif öğrenciler terfi ettirilebilir. Aktif anahtarını açın veya geçerli bir üyelik verin.",
         notVerified: "Doğrulanmadı",
         moveAria: "{name} öğrencisini başka sütuna taşı",
         move: "Taşı",
@@ -1180,6 +1197,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Bu öğrenciler kontrol edilemedi. Lütfen tekrar deneyin.",
+      stoppedPartWay: "{total} kişiden {done} tanesi terfi etti, sonra bir sorun oluştu. Diğerleri terfi etmedi — onlarla tekrar deneyin.",
+      tryRemaining: {
+        one: "Kalan öğrenciyi tekrar dene",
+        other: "Kalan {count} öğrenciyi tekrar dene",
+      },
+      stopHere: "Burada dur ve raporu gör",
+      notReached: "terfi etmedi: toplu işlem ondan önce durdu",
       doneTitle: "Öğrenciler terfi etti",
       notPromoted: "Terfi etmeyenler: {list}.",
       openReport: "Yazdırılabilir raporu aç",
@@ -2122,5 +2146,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Destek",
     comingSoon: "{label} (yakında)",
     notAvailableYet: "{label} — henüz kullanılamıyor",
+  },
+  profile: {
+    title: "Profilim",
+    loadFailed: "Profiliniz yüklenemedi.",
+    signInNote: "Giriş yaparken e-posta adresinizi ve telefon numaranızı kullanırsınız, bu yüzden burada değiştirilemezler.",
   },
 };

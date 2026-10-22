@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "การค้นหายังไม่พร้อมใช้งาน",
     notificationsAria: "การแจ้งเตือน",
     languageAria: "ภาษา",
+    accountMenu: {
+      label: "บัญชี",
+      myProfile: "โปรไฟล์ของฉัน",
+      schoolSettings: "การตั้งค่าโรงเรียน",
+    },
     roles: {
       owner: "เจ้าของโรงเรียน",
       branchStaff: "พนักงานสาขา",
@@ -1106,6 +1111,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       inactiveHidden: {
         other: "ซ่อนผู้ไม่ใช้งาน {count} คน",
       },
+      atTopRank: {
+        other: "· {count} คนอยู่ระดับสูงสุด ไม่แสดง",
+      },
+      hiddenBySearch: {
+        other: "ในนั้น {count} คนถูกซ่อนโดยการค้นหา",
+      },
+      showThem: "แสดง",
+      showAll: "แสดงทั้งหมด {count} คน",
       columns: {
         justStarting: "เพิ่งเริ่มต้น",
         gettingThere: "กำลังก้าวหน้า",
@@ -1121,6 +1134,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "ต้องมีทักษะ",
         skillsNotSignedOff: "ทักษะยังไม่ได้รับรอง",
         inactive: "ไม่ใช้งาน",
+        inactiveAria: "เลือก {name} ไม่ได้: ไม่ใช้งาน",
+        inactiveTitle: "เลื่อนระดับได้เฉพาะนักเรียนที่ใช้งานอยู่ เปิดสวิตช์ใช้งานอยู่ หรือให้สมาชิกภาพที่ยังมีผล",
         notVerified: "ยังไม่ยืนยัน",
         moveAria: "ย้าย {name} ไปคอลัมน์อื่น",
         move: "ย้าย",
@@ -1154,6 +1169,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "ตรวจสอบนักเรียนเหล่านี้ไม่ได้ โปรดลองอีกครั้ง",
+      stoppedPartWay: "เลื่อนระดับแล้ว {done} จาก {total} คน จากนั้นเกิดปัญหา คนที่เหลือยังไม่ได้เลื่อนระดับ — โปรดลองอีกครั้ง",
+      tryRemaining: {
+        other: "ลองอีกครั้งกับ {count} คนที่เหลือ",
+      },
+      stopHere: "หยุดตรงนี้และดูรายงาน",
+      notReached: "ยังไม่ได้เลื่อนระดับ: การทำงานหยุดก่อนถึง",
       doneTitle: "เลื่อนระดับนักเรียนแล้ว",
       notPromoted: "ไม่ได้เลื่อนระดับ: {list}",
       openReport: "เปิดรายงานสำหรับพิมพ์",
@@ -2083,5 +2104,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "ฝ่ายสนับสนุน",
     comingSoon: "{label} (เร็ว ๆ นี้)",
     notAvailableYet: "{label} — ยังไม่พร้อมใช้งาน",
+  },
+  profile: {
+    title: "โปรไฟล์ของฉัน",
+    loadFailed: "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
+    signInNote: "คุณใช้อีเมลและหมายเลขโทรศัพท์ในการเข้าสู่ระบบ จึงไม่สามารถเปลี่ยนได้ที่นี่",
   },
 };

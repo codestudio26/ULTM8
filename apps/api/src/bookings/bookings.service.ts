@@ -117,7 +117,7 @@ export class BookingsService {
     // for `let`" limitation MembershipsService.updatePlan() already found and
     // worked around the same way (see its own comment on scopedClassIdToValidate).
     const resolvedClass = cls;
-    // Decision 279 — the School cancelled this class.
+    // Decision 291 — the School cancelled this class.
     if (resolvedClass.cancelledAt) {
       throw new ConflictException('This class has been cancelled by the school.');
     }
@@ -278,7 +278,7 @@ export class BookingsService {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
-    // Decision 279 — only a School Owner/Manager can send money back. A Student
+    // Decision 291 — only a School Owner/Manager can send money back. A Student
     // or Guardian cancelling their own booking gets whatever the owner chose;
     // any other staff member's refund waits for an Owner/Manager instead.
     const mayRefund = isGuardianAction || resolvedBooking.studentId === callerId
@@ -294,7 +294,7 @@ export class BookingsService {
       const school = await tx.school.findUniqueOrThrow({ where: { id: resolvedBooking.schoolId } });
       const now = new Date();
       // Kickoff prompt §1.c: the Class's own refundFeeDate cutoff — or, since
-      // Decision 279, the School's default cutoff for a class with none. No
+      // Decision 291, the School's default cutoff for a class with none. No
       // cutoff at all means never past it.
       const cutoff = this.cancellation.effectiveCutoff(cls, school);
       const pastCutoff = cutoff !== null && now >= cutoff;
@@ -305,7 +305,7 @@ export class BookingsService {
       // resolvedBooking's sourceMembership are both cheaply available) but the
       // actual Stripe call happens AFTER this transaction commits (no external
       // I/O inside a transaction, same discipline every other Stripe-calling
-      // write in this codebase follows) — see the try/catch below. Decision 279
+      // write in this codebase follows) — see the try/catch below. Decision 291
       // lets the owner switch it off.
       if (pastCutoff && school.chargeLateCancellationFee && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
         cancellationChargeAmount = cls.cancellationCharge;
@@ -332,7 +332,7 @@ export class BookingsService {
         throw new ConflictException('This Booking is no longer Upcoming — it may already be Cancelled, Completed, or marked No-Show.');
       }
 
-      // Decision 279 — each seat (the Student's own, then each guest's) is
+      // Decision 291 — each seat (the Student's own, then each guest's) is
       // resolved by the School's policy: credit back, nothing back, money back,
       // or left for staff. See CancellationService.resolveSeat.
       const seats: SeatRef[] = [

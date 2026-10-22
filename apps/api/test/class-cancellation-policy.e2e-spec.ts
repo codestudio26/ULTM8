@@ -1,5 +1,5 @@
 /**
- * Decision 279 — the School's "Class cancellations" settings, over real HTTP:
+ * Decision 291 — the School's "Class cancellations" settings, over real HTTP:
  * the policy (Manual / Auto-refund / Auto-credit), when it applies (before the
  * cutoff or any time), the late fee switch, the School's default cutoff, the
  * cancel-whole-class action, and the staff "to resolve" list — plus the two
@@ -32,7 +32,7 @@ if (!hasDb) {
   console.warn('[class-cancellation-policy.e2e-spec] Skipped — DATABASE_URL / DATABASE_URL_APP / JWT_ACCESS_SECRET not set.');
 }
 
-describeIfDb('Decision 279 — class cancellation settings', () => {
+describeIfDb('Decision 291 — class cancellation settings', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

@@ -62,7 +62,7 @@ export class ClassResponseDto {
   @ApiProperty()
   membershipInclusion!: boolean;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 279 — set when the School cancelled this class. A cancelled class can\'t be booked or waitlisted.' })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 291 — set when the School cancelled this class. A cancelled class can\'t be booked or waitlisted.' })
   cancelledAt!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })

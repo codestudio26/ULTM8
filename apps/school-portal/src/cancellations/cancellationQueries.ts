@@ -6,7 +6,7 @@ import { apiClient } from '../api';
 export type OpenCancellation = components['schemas']['OpenCancellationResponseDto'];
 export type ResolveAction = components['schemas']['ResolveCancellationDto']['action'];
 
-/** Decision 279 — the "to resolve" list (School Owner/Manager or Branch Staff;
+/** Decision 291 — the "to resolve" list (School Owner/Manager or Branch Staff;
  * plan/payment details come back for the Owner/Manager only). */
 export function useOpenCancellations(schoolId: string | null) {
   return useQuery({
@@ -32,7 +32,7 @@ export function useResolveCancellation(schoolId: string | null) {
   });
 }
 
-/** Decision 279 — the School cancels a whole class. */
+/** Decision 291 — the School cancels a whole class. */
 export function useCancelClass(classId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -863,7 +863,7 @@ export class PaymentsService {
   }
 
   /**
-   * Decision 279 — a partial refund of a Student's own Stripe payment (one
+   * Decision 291 — a partial refund of a Student's own Stripe payment (one
    * class's share of a Class Pack, sent by CancellationService). Same
    * connected-account scoping as refundOffSessionCharge() above, plus an
    * idempotency key from the caller (one per cancelled seat) so a retry can

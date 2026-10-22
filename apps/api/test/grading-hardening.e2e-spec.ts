@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -55,6 +56,7 @@ describeIfDb('Grading hardening (Phase 7, Decision 185)', () => {
   async function student(first: string, rung: number | null, opts: { classes?: number; active?: boolean; surname?: string } = {}) {
     const u = await mkUser(first, opts.surname);
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
+    await giveLiveMembership(superuser, school.id, u.id);
     if (rung !== null) {
       await superuser.studentRank.create({
         data: {

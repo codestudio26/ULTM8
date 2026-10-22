@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from './create-school.dto';
+import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /**
  * Response shape — added in Phase 3 for packages/api-client generation (see
@@ -14,7 +15,7 @@ import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCan
  * `Record<string, never>` — a real bug caught by the generated client failing to
  * typecheck against these DTOs' actual shapes, not a style preference.
  */
-export class SchoolResponseDto {
+export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   id!: string;
 

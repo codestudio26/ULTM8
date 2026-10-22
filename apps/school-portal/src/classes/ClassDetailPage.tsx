@@ -11,7 +11,7 @@ import { formatLocale } from '../i18n/format';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useCancelClass } from '../cancellations/cancellationQueries';
 
-/** Decision 279 — the School cancels this whole class: every booking is
+/** Decision 291 — the School cancels this whole class: every booking is
  * resolved by the School's "When the school cancels a whole class" setting,
  * the waitlist is closed, and everyone booked or waiting is notified with the
  * reason. Owner/Manager or Branch Staff (the API re-checks, and refuses

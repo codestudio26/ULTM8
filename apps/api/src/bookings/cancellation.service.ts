@@ -63,7 +63,7 @@ function formatClassTime(date: Date, timeZone: string): string {
 const MONEY_RESOLUTIONS: RefundResolution[] = ['MONEY_REFUNDED', 'REFUND_OWED'];
 
 /**
- * Decision 279 — the School's "Class cancellations" settings, applied.
+ * Decision 291 — the School's "Class cancellations" settings, applied.
  *
  * BookingsService.cancelBooking() still owns a single cancellation (who may
  * cancel, the UPCOMING -> CANCELLED guard, the late fee); this service decides

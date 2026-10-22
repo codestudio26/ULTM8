@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Wyszukiwanie — jeszcze niedostępne",
     notificationsAria: "Powiadomienia",
     languageAria: "Język",
+    accountMenu: {
+      label: "Konto",
+      myProfile: "Mój profil",
+      schoolSettings: "Ustawienia szkoły",
+    },
     roles: {
       owner: "Właściciel szkoły",
       branchStaff: "Personel oddziału",
@@ -1181,6 +1186,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         many: "Ukryto {count} nieaktywnych",
         other: "Ukryto {count} nieaktywnych",
       },
+      atTopRank: {
+        one: "· {count} na najwyższym stopniu, niepokazany",
+        few: "· {count} na najwyższym stopniu, niepokazani",
+        many: "· {count} na najwyższym stopniu, niepokazanych",
+        other: "· {count} na najwyższym stopniu, niepokazanych",
+      },
+      hiddenBySearch: {
+        one: "{count} z nich ukryty przez wyszukiwanie",
+        few: "{count} z nich ukrytych przez wyszukiwanie",
+        many: "{count} z nich ukrytych przez wyszukiwanie",
+        other: "{count} z nich ukrytych przez wyszukiwanie",
+      },
+      showThem: "Pokaż ich",
+      showAll: "Pokaż wszystkie ({count})",
       columns: {
         justStarting: "Na początku",
         gettingThere: "W drodze",
@@ -1196,6 +1215,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Wymagane techniki",
         skillsNotSignedOff: "Techniki niezaliczone",
         inactive: "Nieaktywny",
+        inactiveAria: "Nie można wybrać {name}: nieaktywny",
+        inactiveTitle: "Stopnie można nadawać tylko aktywnym uczniom. Włącz przełącznik Aktywny lub nadaj ważne członkostwo.",
         notVerified: "Niezweryfikowany",
         moveAria: "Przenieś {name} do innej kolumny",
         move: "Przenieś",
@@ -1232,6 +1253,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Nie udało się sprawdzić tych uczniów. Spróbuj ponownie.",
+      stoppedPartWay: "Awansowano {done} z {total}, potem coś poszło nie tak. Pozostali nie zostali awansowani — spróbuj ponownie.",
+      tryRemaining: {
+        one: "Spróbuj ponownie dla pozostałego ucznia",
+        few: "Spróbuj ponownie dla pozostałych {count} uczniów",
+        many: "Spróbuj ponownie dla pozostałych {count} uczniów",
+        other: "Spróbuj ponownie dla pozostałych {count} uczniów",
+      },
+      stopHere: "Zatrzymaj i zobacz raport",
+      notReached: "nie awansowano: partia zatrzymała się wcześniej",
       doneTitle: "Uczniowie promowani",
       notPromoted: "Nie promowano: {list}.",
       openReport: "Otwórz raport do druku",
@@ -2200,5 +2230,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Pomoc",
     comingSoon: "{label} (wkrótce)",
     notAvailableYet: "{label} — jeszcze niedostępne",
+  },
+  profile: {
+    title: "Mój profil",
+    loadFailed: "Nie udało się wczytać Twojego profilu.",
+    signInNote: "Logujesz się za pomocą adresu e-mail i numeru telefonu, dlatego nie można ich tu zmienić.",
   },
 };

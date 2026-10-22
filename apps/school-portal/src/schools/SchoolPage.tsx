@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -24,7 +24,7 @@ export function SchoolPage() {
   const [form, setForm] = useState<{
     name: string;
     mobileNumber: string;
-    address: string;
+    address: PostalAddress;
     businessType: string;
     activities: string;
     facilities: string;
@@ -35,15 +35,20 @@ export function SchoolPage() {
     description: string;
     waitlistClaimWindowMinutes: number;
   } | null>(null);
+  const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!school) return;
+    const address = postalAddressFromRecord(school, guessDefaultCountry());
+    setInitialAddress(address);
+    setAddressErrors({});
     setForm({
       name: school.name,
       mobileNumber: school.mobileNumber ?? '',
-      address: school.address ?? '',
+      address,
       businessType: school.businessType ?? '',
       activities: school.activities.join(', '),
       facilities: school.facilities.join(', '),
@@ -65,6 +70,12 @@ export function SchoolPage() {
     if (!form) return;
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(form.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       // `null` (not `undefined`) for a cleared field — UpdateSchoolDto accepts
       // null on these fields to mean "clear it" (FOUND ON REVIEW, Phase 18:
@@ -75,7 +86,7 @@ export function SchoolPage() {
       await updateSchool.mutateAsync({
         name: form.name,
         mobileNumber: form.mobileNumber || null,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         businessType: form.businessType || null,
         activities: form.activities.split(',').map((s) => s.trim()).filter(Boolean),
         facilities: form.facilities.split(',').map((s) => s.trim()).filter(Boolean),
@@ -108,9 +119,13 @@ export function SchoolPage() {
           <Field label={t('schools.form.mobileNumber')} htmlFor="edit-mobile">
             <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
           </Field>
-          <Field label={t('schools.form.address')} htmlFor="edit-address">
-            <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
-          </Field>
+          <AddressFields
+            idPrefix="edit-address"
+            value={form.address}
+            onChange={(v) => set('address', v)}
+            errors={addressErrors}
+            legacy={hasLegacyAddressOnly(school) && !form.address.country}
+          />
           <Field label={t('schools.form.businessType')} htmlFor="edit-businessType">
             <TextField value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
           </Field>
@@ -171,7 +186,7 @@ export function SchoolPage() {
 }
 
 /**
- * Decision 279 — the owner's "Class cancellations" settings: what a cancelled
+ * Decision 291 — the owner's "Class cancellations" settings: what a cancelled
  * booking gets back, when that applies, the late and no-show fees, and what
  * happens when the School cancels a whole class. Its own Card and save, same
  * pattern as FooterSettingsCard below, so saving the main form never

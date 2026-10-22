@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Pesquisa — ainda não disponível",
     notificationsAria: "Notificações",
     languageAria: "Idioma",
+    accountMenu: {
+      label: "Conta",
+      myProfile: "Meu perfil",
+      schoolSettings: "Configurações da escola",
+    },
     roles: {
       owner: "Proprietário da escola",
       branchStaff: "Equipe da filial",
@@ -1144,6 +1149,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inativo oculto",
         other: "{count} inativos ocultos",
       },
+      atTopRank: {
+        one: "· {count} na graduação mais alta, não mostrado",
+        other: "· {count} na graduação mais alta, não mostrados",
+      },
+      hiddenBySearch: {
+        one: "{count} deles oculto pela sua busca",
+        other: "{count} deles ocultos pela sua busca",
+      },
+      showThem: "Mostrar",
+      showAll: "Mostrar todos os {count}",
       columns: {
         justStarting: "Começando",
         gettingThere: "Progredindo",
@@ -1159,6 +1174,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Habilidades obrigatórias",
         skillsNotSignedOff: "Habilidades não aprovadas",
         inactive: "Inativo",
+        inactiveAria: "{name} não pode ser selecionado: inativo",
+        inactiveTitle: "Só alunos ativos podem ser graduados. Ative o interruptor Ativo ou dê a eles uma matrícula válida.",
         notVerified: "Não verificado",
         moveAria: "Mover {name} para outra coluna",
         move: "Mover",
@@ -1193,6 +1210,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Não foi possível verificar estes alunos. Tente novamente.",
+      stoppedPartWay: "{done} de {total} promovidos, depois algo deu errado. Os demais não foram promovidos — tente novamente com eles.",
+      tryRemaining: {
+        one: "Tentar de novo o aluno restante",
+        other: "Tentar de novo os {count} alunos restantes",
+      },
+      stopHere: "Parar aqui e ver o relatório",
+      notReached: "não promovido: o lote parou antes",
       doneTitle: "Alunos promovidos",
       notPromoted: "Não promovidos: {list}.",
       openReport: "Abrir relatório para impressão",
@@ -2135,5 +2159,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Suporte",
     comingSoon: "{label} (em breve)",
     notAvailableYet: "{label} — ainda não disponível",
+  },
+  profile: {
+    title: "Meu perfil",
+    loadFailed: "Não foi possível carregar seu perfil.",
+    signInNote: "Você entra com seu e-mail e seu telefone, por isso eles não podem ser alterados aqui.",
   },
 };

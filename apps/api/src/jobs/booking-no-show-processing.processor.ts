@@ -102,7 +102,7 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
       },
       select: { id: true, classId: true, studentId: true, schoolId: true, sourceMembershipId: true },
     });
-    // Decision 279 — each School's no-show fee (Booking has no School relation).
+    // Decision 291 — each School's no-show fee (Booking has no School relation).
     const schools = await this.prismaJobs.school.findMany({
       where: { id: { in: [...new Set(overdueUpcoming.map((b) => b.schoolId))] } },
       select: { id: true, noShowFee: true },
@@ -143,7 +143,7 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
       }
     }
 
-    // Decision 279 — the School's optional no-show fee, charged to the
+    // Decision 291 — the School's optional no-show fee, charged to the
     // Student's saved card exactly like Decision 234's late-cancellation fee:
     // only after the status flip committed, never blocking it, outcome recorded
     // on the Booking. Only a booking this run actually flipped is charged, so a

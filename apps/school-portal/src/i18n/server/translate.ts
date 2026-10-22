@@ -227,7 +227,7 @@ const body = (source: string) => new RegExp(source, 's');
 
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
-  // Decision 279 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
+  // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
   [
     /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,
     (m, { t }) => n(t, 'classCancelledBodyWithReason', { class: m[1], when: m[2], reason: m[3] }),

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, TextField } from '@ultm8/ui';
+import { AddressFields, AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -29,8 +29,9 @@ export function RegisterPage() {
     nationality: '',
     language: '',
     currency: '',
-    address: '',
   });
+  const [address, setAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState(false);
@@ -47,6 +48,12 @@ export function RegisterPage() {
       setError(t('auth.register.passcodeMismatch'));
       return;
     }
+    const prepared = preparePostalAddress(address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
 
     setSubmitting(true);
     try {
@@ -65,7 +72,7 @@ export function RegisterPage() {
             nationality: form.nationality || undefined,
             language: form.language || undefined,
             currency: form.currency || undefined,
-            address: form.address || undefined,
+            postalAddress: prepared.postalAddress ?? undefined,
           },
         }),
       );
@@ -155,9 +162,7 @@ export function RegisterPage() {
           <Field label={t('auth.register.currency')} htmlFor="reg-currency">
             <TextField value={form.currency} onChange={(e) => set('currency', e.target.value)} />
           </Field>
-          <Field label={t('auth.register.address')} htmlFor="reg-address">
-            <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
-          </Field>
+          <AddressFields idPrefix="reg-address" value={address} onChange={setAddress} errors={addressErrors} />
         </details>
 
         <div style={{ marginTop: 16 }}>

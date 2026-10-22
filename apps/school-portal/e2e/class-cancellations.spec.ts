@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision 279 — the School page's "Class cancellations" settings, the
+ * Decision 291 — the School page's "Class cancellations" settings, the
  * Cancellations to resolve page, and the Cancel class button.
  */
 let s: GradingSchool;

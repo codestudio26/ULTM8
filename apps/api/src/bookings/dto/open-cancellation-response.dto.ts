@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** Decision 279 — one row of the staff "to resolve" list. Plan and payment
+/** Decision 291 — one row of the staff "to resolve" list. Plan and payment
  * details are null for Branch Staff (no raw Membership/Transaction access). */
 export class OpenCancellationResponseDto {
   @ApiProperty() bookingId!: string;

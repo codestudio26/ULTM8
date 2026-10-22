@@ -11,7 +11,7 @@ import { useOpenCancellations, useResolveCancellation, type OpenCancellation, ty
 type Row = OpenCancellation & { id: string };
 
 /**
- * Decision 279 — Cancellations to resolve: every cancelled booking waiting for
+ * Decision 291 — Cancellations to resolve: every cancelled booking waiting for
  * a staff decision (the Manual policy, a refund only an Owner/Manager may
  * send, or a Stripe refund that failed), and every cash/bank refund still to
  * be paid back. The Owner/Manager may refund, give the credit back, keep it, or

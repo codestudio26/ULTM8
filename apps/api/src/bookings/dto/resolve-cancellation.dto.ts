@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 
-/** Decision 279 — what staff decide for one seat in the "to resolve" list. */
+/** Decision 291 — what staff decide for one seat in the "to resolve" list. */
 export enum ResolveCancellationAction {
   REFUND = 'REFUND',
   CREDIT = 'CREDIT',

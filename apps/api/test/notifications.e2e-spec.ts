@@ -465,6 +465,93 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   });
 
   // ---------------------------------------------------------------------------
+  // Soft delete + "Clear all read" (Decision 277).
+  // ---------------------------------------------------------------------------
+
+  describe('DELETE /notifications/:id and POST /notifications/me/clear-read', () => {
+    async function listIds(token: string): Promise<string[]> {
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me?limit=100').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      return (res.body.items as Array<{ id: string }>).map((n) => n.id);
+    }
+
+    it('hides one Notification from the list and Total/Unread counts but keeps the row; self-only; a second delete is a 404', async () => {
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Delete me', body: 'body' },
+      });
+      notificationIds.push(n.id);
+      const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+
+      // Cross-caller delete is RLS-blocked, indistinguishable from not-found.
+      const cross = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentB}`);
+      expect(cross.status).toBe(404);
+      expect((await superuser.notification.findUniqueOrThrow({ where: { id: n.id } })).deletedAt).toBeNull();
+
+      const del = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(del.status).toBe(204);
+
+      // Soft delete: the record is still there, only hidden.
+      const row = await superuser.notification.findUniqueOrThrow({ where: { id: n.id } });
+      expect(row.deletedAt).not.toBeNull();
+      expect(await listIds(tokenStudentA)).not.toContain(n.id);
+
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.total).toBe(before.body.total - 1);
+      expect(after.body.unread).toBe(before.body.unread - 1);
+
+      // Already deleted: gone from the caller's point of view.
+      const again = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(again.status).toBe(404);
+      const markRead = await request(app.getHttpServer()).patch(`/v1/notifications/${n.id}/read`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(markRead.status).toBe(404);
+      const snooze = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ minutes: 60 });
+      expect(snooze.status).toBe(404);
+
+      const unauth = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`);
+      expect(unauth.status).toBe(401);
+    });
+
+    it("clears only the caller's READ Notifications, leaves unread ones and other callers' alone, and keeps the read metric", async () => {
+      const readOne = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Read one', body: 'b', read: true, readAt: new Date() },
+      });
+      const unreadOne = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Unread one', body: 'b' },
+      });
+      const otherCallersRead = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentB.id, title: "B's read one", body: 'b', read: true, readAt: new Date() },
+      });
+      notificationIds.push(readOne.id, unreadOne.id, otherCallersRead.id);
+
+      const metricBefore = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+
+      const res = await request(app.getHttpServer()).post('/v1/notifications/me/clear-read').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(200);
+      expect(res.body.cleared).toBeGreaterThanOrEqual(1);
+
+      const idsA = await listIds(tokenStudentA);
+      expect(idsA).not.toContain(readOne.id);
+      expect(idsA).toContain(unreadOne.id);
+      expect(await listIds(tokenStudentB)).toContain(otherCallersRead.id);
+
+      // Every read row A had is now hidden; Total is just the unread ones left.
+      expect(await superuser.notification.count({ where: { userId: studentA.id, read: true, deletedAt: null } })).toBe(0);
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.total).toBe(await superuser.notification.count({ where: { userId: studentA.id, deletedAt: null } }));
+      // Hidden rows were still read, so the Read-within-24h metric keeps them.
+      expect(after.body.readTotalCount).toBe(metricBefore.body.readTotalCount);
+
+      // Nothing read left: a plain zero, not an error.
+      const second = await request(app.getHttpServer()).post('/v1/notifications/me/clear-read').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(second.status).toBe(200);
+      expect(second.body.cleared).toBe(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------
 

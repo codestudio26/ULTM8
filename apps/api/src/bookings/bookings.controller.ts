@@ -118,7 +118,7 @@ export class BookingsController {
     return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
   }
 
-  /** Decision 279 — the School cancels a whole class. School Owner/Manager or
+  /** Decision 291 — the School cancels a whole class. School Owner/Manager or
    * that branch's Branch Staff. See CancellationService.cancelClass. */
   @ApiOkResponse({ type: ClassResponseDto })
   @Post('classes/:id/cancel')
@@ -126,14 +126,14 @@ export class BookingsController {
     return this.cancellationService.cancelClass(user.sub, id, dto.reason);
   }
 
-  /** Decision 279 — the staff "to resolve" list. See CancellationService.listOpen. */
+  /** Decision 291 — the staff "to resolve" list. See CancellationService.listOpen. */
   @ApiOkResponse({ type: [OpenCancellationResponseDto] })
   @Get('schools/:schoolId/cancellations')
   listOpenCancellations(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
     return this.cancellationService.listOpen(user.sub, schoolId);
   }
 
-  /** Decision 279 — a staff decision on one seat in that list. */
+  /** Decision 291 — a staff decision on one seat in that list. */
   @ApiOkResponse({ type: BookingResponseDto })
   @Throttle(BOOKING_ACTION_THROTTLE)
   @Patch('bookings/:id/resolution')

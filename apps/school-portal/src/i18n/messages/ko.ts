@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "검색은 아직 사용할 수 없습니다",
     notificationsAria: "알림",
     languageAria: "언어",
+    accountMenu: {
+      label: "계정",
+      myProfile: "내 프로필",
+      schoolSettings: "도장 설정",
+    },
     roles: {
       owner: "도장 원장",
       branchStaff: "지점 직원",
@@ -1106,6 +1111,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       inactiveHidden: {
         other: "비활성 {count}명 숨김",
       },
+      atTopRank: {
+        other: "· 최고 등급 {count}명, 표시 안 함",
+      },
+      hiddenBySearch: {
+        other: "그중 {count}명은 검색으로 숨겨짐",
+      },
+      showThem: "보기",
+      showAll: "{count}명 모두 보기",
       columns: {
         justStarting: "시작 단계",
         gettingThere: "진행 중",
@@ -1121,6 +1134,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "기술 필요",
         skillsNotSignedOff: "기술 미인정",
         inactive: "비활성",
+        inactiveAria: "{name}은(는) 선택할 수 없음: 비활성",
+        inactiveTitle: "활성 학생만 승급할 수 있습니다. 활성 스위치를 켜거나 유효한 멤버십을 부여하세요.",
         notVerified: "미확인",
         moveAria: "{name}님을 다른 열로 이동",
         move: "이동",
@@ -1154,6 +1169,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "이 수련생들을 확인하지 못했습니다. 다시 시도해 주세요.",
+      stoppedPartWay: "{total}명 중 {done}명을 승급한 뒤 문제가 발생했습니다. 나머지는 승급되지 않았습니다. 다시 시도해 주세요.",
+      tryRemaining: {
+        other: "남은 {count}명 다시 시도",
+      },
+      stopHere: "여기서 멈추고 보고서 보기",
+      notReached: "승급되지 않음: 일괄 처리가 그 전에 멈춤",
       doneTitle: "수련생 승급 완료",
       notPromoted: "승급되지 않음: {list}.",
       openReport: "인쇄용 보고서 열기",
@@ -2083,5 +2104,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "지원",
     comingSoon: "{label}(준비 중)",
     notAvailableYet: "{label} — 아직 사용할 수 없음",
+  },
+  profile: {
+    title: "내 프로필",
+    loadFailed: "프로필을 불러올 수 없습니다.",
+    signInNote: "이메일과 전화번호는 로그인에 사용되므로 여기서 변경할 수 없습니다.",
   },
 };

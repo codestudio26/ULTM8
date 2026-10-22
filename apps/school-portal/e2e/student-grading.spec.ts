@@ -49,6 +49,9 @@ test('signing off the last skill makes the student ready to grade', async ({ pag
 });
 
 test('grading without the skill needs the acknowledgement, and is recorded', async ({ page }) => {
+  // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
+  const { db } = await import('./fixtures');
+  await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
   await page.goto(`/students/${s.student.id}`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Grade' }).click();
@@ -67,6 +70,15 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
   await expect(history.getByText('White 1 → White 2')).toBeVisible();
   await expect(history.getByText('Graded without all skills signed off (acknowledged).')).toBeVisible();
   await expect(history.getByText('Note: Great roll today')).toBeVisible();
+});
+
+test('an inactive student can\'t be graded up, and the dialog says why (Decision 283)', async ({ page }) => {
+  await page.goto(`/students/${s.student.id}`);
+  await bjj(page).getByRole('button', { name: 'Grade' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
+  await dialog.getByLabel(/Grade without all skills signed off/).check();
+  await dialog.getByRole('button', { name: 'Award stripe' }).click();
+  await expect(dialog.getByText(/Only active students can be graded/)).toBeVisible();
 });
 
 test('a style that requires skills blocks grading until they are signed off', async ({ page }) => {
@@ -218,7 +230,11 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   await expect(page.getByLabel('Phone')).toHaveCount(0);
 
   await page.getByLabel('Surname').fill('Park-Smith');
-  await page.getByLabel('Address').fill('221B Dojo Lane');
+  // Decision 276 — country first; the UK form asks for a post town and postcode.
+  await page.getByLabel('Country').selectOption('GB');
+  await page.getByLabel('Address line 1').fill('221B Dojo Lane');
+  await page.getByLabel('Town/City').fill('London');
+  await page.getByLabel('Postcode').fill('nw1 6xe');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
 
@@ -227,7 +243,9 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   await expect(page.getByRole('heading', { level: 1, name: 'Nia Park-Smith' })).toBeVisible();
   const user = await db.user.findUniqueOrThrow({ where: { id: s.newStudent.id } });
   expect(user.surname).toBe('Park-Smith');
-  expect(user.address).toBe('221B Dojo Lane');
+  expect(user.address).toBe('221B Dojo Lane, London, NW1 6XE, United Kingdom');
+  expect(user.addressCountry).toBe('GB');
+  expect(user.addressPostalCode).toBe('NW1 6XE');
 });
 
 test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ page }) => {

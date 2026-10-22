@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Class cancellations, chosen by each academy** (Decision 279) — the
+- **Class cancellations, chosen by each academy** (Decision 291) — the
   School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
   actually applies, in its own "Class cancellations" section with new
   settings: whether it applies only before a class's cutoff or any time, a
@@ -26,6 +26,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
   Pass always gets its credit back, and only an Owner or Manager can send money
   back.
+
+- **Bulk promote can finish after a failure** (Decision 284) — if a large
+  batch stops part-way, the group that failed is sent again once by itself,
+  then the window offers "Try the remaining N again" or "Stop here and see the
+  report". Each student carries the rank the check found them on, so nobody is
+  ever promoted twice. Removing a student from the batch no longer re-checks
+  the whole batch.
+- **Grading Board: no bulk promote limit** (Decision 282) — a coach can
+  promote any number of ticked students at once. The portal sends them 200 at a
+  time, as Spec 55 always intended; before, more than 200 failed outright.
+- **Only active students are graded up** (Decision 283) — promote and stripe
+  award (single and bulk) now need the student to be active: their board Active
+  switch, or a live membership. Inactive students can't be ticked on the board,
+  and bulk promote lists them as "can't be promoted". Moving down still works.
+- **Grading Board at scale** — 25 cards per column with "Show all N", a
+  "N of them hidden by your search" note (with "Show them") when ticked students
+  are filtered out, and a count of students already on the top rank.
+- **Shorter default waitlist claim window** (Decision 279) — new Schools now
+  give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
+  more people on the list get a chance before class. Existing Schools keep
+  their current setting, which owners can still change on the School page.
 - **School Portal translation, 15 languages** (Decision 273) — the header's
   language picker now actually switches the portal's text instead of only
   saving a preference. Languages: English (UK), Portuguese (BR), Spanish,
@@ -46,6 +67,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   stores in English (style template belt names, generated stripe names),
   Platform Admin and the student app. Non-English text is a first draft
   awaiting native-speaker review.
+- **Account menu and My profile page** (School Portal) — the header's avatar,
+  name and role are now a menu button: it shows your name, email and role,
+  then My profile, School settings (only for those who see School in the
+  sidebar) and Log out (the same sign-out as the sidebar button). It works
+  from the keyboard and closes on Escape or a click outside. The new My
+  profile page (`/profile`, open to every portal user) edits your own photo,
+  first name, surname, username, date of birth, language, currency and
+  address through the existing `PATCH /users/me`; email and phone are shown
+  read-only, since they're how you sign in. Saving a new language switches
+  the portal's text, as the header picker does. Translated into all 15
+  languages, and a new check fails if any language is missing a key.
 - **Saving after 15 minutes on a page works again** — when the access token
   had expired, the session refreshed correctly but the save itself was never
   re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
@@ -60,6 +92,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   they appear, and a request that gets no answer at all says "Could not reach
   the server" instead of "Something went wrong". The Curriculum list's Instructor column
   shows the coach's name instead of an id.
+- **Country-first addresses** (Decision 276) — every address form in the
+  School Portal (School profile and creation, Branch add and settings,
+  Franchise, Instructor profile, Student profile, registration) now starts with
+  a Country picker and then shows that country's own fields: e.g. ZIP code and
+  a State list for the US, Postcode for the UK, Emirate and no postcode for the
+  UAE, CEP for Brazil. Required fields and postal-code formats are checked per
+  country, in the form and again by the API. Addresses are stored as separate
+  fields; the one-line address shown elsewhere is built from them. Existing
+  one-line addresses are kept and can be converted the next time they're
+  edited. Google Places suggestions can be plugged in once an API key exists.
+- **Delete notifications** (Decision 277) — each notification's ⋮ menu on
+  the Notifications page now has **Delete**, and the page header has
+  **Clear all read**, which removes every notification you have already
+  read (unread ones stay). Both ask for confirmation. Removed notifications
+  are hidden, not erased, so payment and waiver alerts stay on record.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

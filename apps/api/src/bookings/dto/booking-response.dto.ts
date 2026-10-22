@@ -13,7 +13,7 @@ export class BookingAttendeeResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   resolvedById!: string | null;
 
-  // Decision 279 — see Booking's own fields of the same names.
+  // Decision 291 — see Booking's own fields of the same names.
   @ApiPropertyOptional({ type: Number, nullable: true })
   refundAmount!: number | null;
 
@@ -81,7 +81,7 @@ export class BookingResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   stripeCancellationPaymentIntentId!: string | null;
 
-  // Decision 279 — the money side of a refund (refundResolution
+  // Decision 291 — the money side of a refund (refundResolution
   // MONEY_REFUNDED/REFUND_OWED/PENDING) and the no-show fee.
   @ApiPropertyOptional({ type: Number, nullable: true })
   refundAmount!: number | null;

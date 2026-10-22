@@ -2327,6 +2327,32 @@
         ]
       }
     },
+    "/v1/notifications/me/clear-read": {
+      "post": {
+        "operationId": "NotificationsController_clearRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearReadNotificationsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -2395,6 +2421,34 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_softDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "tags": [
@@ -10836,6 +10890,38 @@
       }
     },
     "schemas": {
+      "PostalAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "description": "Street address, line 1."
+          },
+          "line2": {
+            "type": "string",
+            "description": "Apartment, suite, building, floor, etc."
+          },
+          "city": {
+            "type": "string",
+            "description": "City, town, post town or suburb, depending on the country."
+          },
+          "region": {
+            "type": "string",
+            "description": "State, province, county, emirate, prefecture, etc. For countries with a fixed list (US, CA, AU, AE, BR, MY) this is the list value, e.g. \"CA\" for California."
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Postal code / ZIP / postcode, validated against the country’s own format."
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code, e.g. \"GB\". Required unless every other field is blank."
+          }
+        },
+        "required": [
+          "country"
+        ]
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
@@ -10881,6 +10967,14 @@
           },
           "address": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           }
         },
         "required": [
@@ -11064,6 +11158,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "businessType": {
             "type": "string"
           },
@@ -11144,7 +11246,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           },
           "classCancellationPolicyWindow": {
             "type": "string",
@@ -11185,6 +11287,32 @@
       "SchoolResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -11417,6 +11545,14 @@
           "name": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "activities": {
             "type": "array",
             "items": {
@@ -11443,7 +11579,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           },
           "classCancellationPolicyWindow": {
             "type": "string",
@@ -11703,6 +11839,14 @@
             "description": "Null clears it.",
             "nullable": true
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "profilePhotoUrl": {
             "type": "string"
           },
@@ -11726,6 +11870,32 @@
       "UserResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -11914,6 +12084,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "contactPhone": {
             "type": "string"
           },
@@ -11960,6 +12138,32 @@
       "BranchResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -12073,6 +12277,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -12446,6 +12658,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "type": {
             "type": "string"
           },
@@ -12502,6 +12722,32 @@
       "FranchiseResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -12623,6 +12869,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -13369,6 +13623,18 @@
           "readTotalCount"
         ]
       },
+      "ClearReadNotificationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "cleared": {
+            "type": "number",
+            "description": "How many read Notifications were cleared (hidden; the records are kept)."
+          }
+        },
+        "required": [
+          "cleared"
+        ]
+      },
       "SnoozeNotificationDto": {
         "type": "object",
         "properties": {
@@ -13478,6 +13744,14 @@
             "type": "string",
             "description": "Null clears it.",
             "nullable": true
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "profilePhotoUrl": {
             "type": "string"
@@ -13688,7 +13962,7 @@
           "cancelledAt": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 279 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted."
+            "description": "Decision 291 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted."
           },
           "cancellationReason": {
             "type": "string",
@@ -14774,6 +15048,32 @@
       "InstructorResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -15081,6 +15381,32 @@
       "CreateInstructorManuallyResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -15205,6 +15531,14 @@
         "properties": {
           "address": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -17725,11 +18059,16 @@
           "hiddenInactive": {
             "type": "number",
             "description": "Students left out by activeOnly."
+          },
+          "atTopRank": {
+            "type": "number",
+            "description": "Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items."
           }
         },
         "required": [
           "items",
-          "hiddenInactive"
+          "hiddenInactive",
+          "atTopRank"
         ]
       },
       "BoardThresholdsDto": {
@@ -17793,6 +18132,22 @@
           "active"
         ]
       },
+      "BulkExpectedRungDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "rungId": {
+            "type": "string",
+            "description": "The student's rung in the dry run (its fromRungId)."
+          }
+        },
+        "required": [
+          "studentId",
+          "rungId"
+        ]
+      },
       "BulkPromoteDto": {
         "type": "object",
         "properties": {
@@ -17826,6 +18181,13 @@
           "dryRun": {
             "type": "boolean",
             "description": "Check only: return what would happen, change nothing."
+          },
+          "expected": {
+            "description": "Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkExpectedRungDto"
+            }
           }
         },
         "required": [

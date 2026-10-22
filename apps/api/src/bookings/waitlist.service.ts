@@ -66,7 +66,7 @@ export class WaitlistService {
     // Hoisted to a local const — same closure-narrowing fix bookClass()'s own
     // resolvedClass already applies.
     const resolvedClass = cls;
-    // Decision 279 — the School cancelled this class.
+    // Decision 291 — the School cancelled this class.
     if (resolvedClass.cancelledAt) {
       throw new ConflictException('This class has been cancelled by the school.');
     }

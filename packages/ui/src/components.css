@@ -1065,3 +1065,22 @@
     padding: var(--space-6);
   }
 }
+
+/* ---------------------------------------------------------------- Address (Decision 276) */
+/* A fieldset of ordinary .ultm8-field rows; city/region/postal code share one
+   row on wide screens and stack on narrow ones. */
+.ultm8-address {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.ultm8-address > legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+}
+.ultm8-address__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  column-gap: var(--space-3);
+}

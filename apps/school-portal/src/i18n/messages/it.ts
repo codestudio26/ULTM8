@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Ricerca — non ancora disponibile",
     notificationsAria: "Notifiche",
     languageAria: "Lingua",
+    accountMenu: {
+      label: "Account",
+      myProfile: "Il mio profilo",
+      schoolSettings: "Impostazioni della scuola",
+    },
     roles: {
       owner: "Titolare della scuola",
       branchStaff: "Staff della sede",
@@ -1144,6 +1149,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inattivo nascosto",
         other: "{count} inattivi nascosti",
       },
+      atTopRank: {
+        one: "· {count} al grado più alto, non mostrato",
+        other: "· {count} al grado più alto, non mostrati",
+      },
+      hiddenBySearch: {
+        one: "{count} di loro nascosto dalla ricerca",
+        other: "{count} di loro nascosti dalla ricerca",
+      },
+      showThem: "Mostrali",
+      showAll: "Mostra tutti i {count}",
       columns: {
         justStarting: "All'inizio",
         gettingThere: "A buon punto",
@@ -1159,6 +1174,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Tecniche obbligatorie",
         skillsNotSignedOff: "Tecniche non approvate",
         inactive: "Inattivo",
+        inactiveAria: "{name} non può essere selezionato: inattivo",
+        inactiveTitle: "Solo gli allievi attivi possono essere graduati. Attiva l’interruttore Attivo o assegna un abbonamento valido.",
         notVerified: "Non verificato",
         moveAria: "Sposta {name} in un'altra colonna",
         move: "Sposta",
@@ -1193,6 +1210,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Impossibile verificare questi allievi. Riprova.",
+      stoppedPartWay: "Promossi {done} su {total}, poi qualcosa è andato storto. Gli altri non sono stati promossi: riprova con loro.",
+      tryRemaining: {
+        one: "Riprova con l’allievo rimanente",
+        other: "Riprova con i {count} allievi rimanenti",
+      },
+      stopHere: "Fermati qui e vedi il report",
+      notReached: "non promosso: il gruppo si è fermato prima",
       doneTitle: "Allievi promossi",
       notPromoted: "Non promossi: {list}.",
       openReport: "Apri il report stampabile",
@@ -2135,5 +2159,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Assistenza",
     comingSoon: "{label} (in arrivo)",
     notAvailableYet: "{label} — non ancora disponibile",
+  },
+  profile: {
+    title: "Il mio profilo",
+    loadFailed: "Impossibile caricare il tuo profilo.",
+    signInNote: "Accedi con la tua email e il tuo numero di telefono, quindi non si possono modificare qui.",
   },
 };

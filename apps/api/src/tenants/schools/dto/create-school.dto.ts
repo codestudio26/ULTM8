@@ -12,7 +12,10 @@ import {
   Matches,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../../common/address/postal-address.dto';
 
 /**
  * Mirrors the confirmed School.classCancellationPolicy enum (schema.prisma /
@@ -25,13 +28,13 @@ export enum ClassCancellationPolicyDto {
   AUTO_CREDIT = 'AUTO_CREDIT',
 }
 
-/** Decision 279 — School.classCancellationPolicyWindow. */
+/** Decision 291 — School.classCancellationPolicyWindow. */
 export enum ClassCancellationPolicyWindowDto {
   BEFORE_CUTOFF = 'BEFORE_CUTOFF',
   ANY_TIME = 'ANY_TIME',
 }
 
-/** Decision 279 — School.schoolCancelledClassResolution. */
+/** Decision 291 — School.schoolCancelledClassResolution. */
 export enum SchoolCancelledClassResolutionDto {
   REFUND_ALL = 'REFUND_ALL',
   CREDIT_ALL = 'CREDIT_ALL',
@@ -78,6 +81,15 @@ export class CreateSchoolDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -219,13 +231,13 @@ export class CreateSchoolDto {
   // No `default:` in the Swagger metadata, for the same reason as
   // classCancellationPolicy above — the default is documented in the
   // description instead.
-  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 120 — Decision 24).' })
+  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279).' })
   @IsOptional()
   @IsInt()
   @Min(1)
   waitlistClaimWindowMinutes?: number;
 
-  // Decision 279 — the rest of the owner's "Class cancellations" settings.
+  // Decision 291 — the rest of the owner's "Class cancellations" settings.
   // Defaults live in the schema and are documented in each description, same
   // reasoning as classCancellationPolicy above.
   @ApiPropertyOptional({ enum: ClassCancellationPolicyWindowDto, description: 'Whether the policy applies only before a class\'s refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).' })

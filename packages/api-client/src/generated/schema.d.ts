@@ -820,6 +820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/clear-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_clearRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -850,6 +866,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["NotificationsController_snooze"];
+        trace?: never;
+    };
+    "/v1/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NotificationsController_softDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/notifications/device-tokens": {
@@ -3560,6 +3592,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PostalAddressDto: {
+            /** @description Street address, line 1. */
+            line1?: string;
+            /** @description Apartment, suite, building, floor, etc. */
+            line2?: string;
+            /** @description City, town, post town or suburb, depending on the country. */
+            city?: string;
+            /** @description State, province, county, emirate, prefecture, etc. For countries with a fixed list (US, CA, AU, AE, BR, MY) this is the list value, e.g. "CA" for California. */
+            region?: string;
+            /** @description Postal code / ZIP / postcode, validated against the country’s own format. */
+            postalCode?: string;
+            /** @description ISO 3166-1 alpha-2 country code, e.g. "GB". Required unless every other field is blank. */
+            country: string;
+        };
         RegisterDto: {
             email: string;
             /** @description E.164 format */
@@ -3578,6 +3624,7 @@ export interface components {
             language?: string;
             currency?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
         };
         AuthMessageResponseDto: {
             message: string;
@@ -3636,6 +3683,7 @@ export interface components {
             name: string;
             mobileNumber?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             businessType?: string;
             activities?: string[];
             facilities?: string[];
@@ -3666,7 +3714,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
             /**
              * @description Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).
@@ -3686,6 +3734,14 @@ export interface components {
             noShowFee?: number | null;
         };
         SchoolResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             franchiseId?: string | null;
             name: string;
@@ -3746,6 +3802,7 @@ export interface components {
         };
         UpdateSchoolDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             ranksToggle?: boolean;
@@ -3754,7 +3811,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
             /**
              * @description Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).
@@ -3841,6 +3898,7 @@ export interface components {
             currency?: string | null;
             /** @description Null clears it. */
             address?: string | null;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             profilePhotoUrl?: string;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
@@ -3850,6 +3908,14 @@ export interface components {
             beltSize?: string | null;
         };
         UserResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             email: string;
             phone: string;
@@ -3904,6 +3970,7 @@ export interface components {
         CreateBranchDto: {
             name: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             contactPhone?: string;
             /** @description IANA timezone name. */
             timezone?: string;
@@ -3918,6 +3985,14 @@ export interface components {
             bannerUrl?: string;
         };
         BranchResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             schoolId: string;
             name: string;
@@ -3948,6 +4023,7 @@ export interface components {
         };
         UpdateBranchDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             address?: string | null;
@@ -4044,6 +4120,7 @@ export interface components {
             name: string;
             mobileNumber?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             type?: string;
             activities?: string[];
             facilities?: string[];
@@ -4065,6 +4142,14 @@ export interface components {
             perHeadcountRate?: number;
         };
         FranchiseResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             name: string;
             mobileNumber?: string | null;
@@ -4095,6 +4180,7 @@ export interface components {
         };
         UpdateFranchiseDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             /**
@@ -4307,6 +4393,10 @@ export interface components {
             /** @description How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over. */
             readTotalCount: number;
         };
+        ClearReadNotificationsResponseDto: {
+            /** @description How many read Notifications were cleared (hidden; the records are kept). */
+            cleared: number;
+        };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both. */
             until?: string;
@@ -4344,6 +4434,7 @@ export interface components {
             currency?: string | null;
             /** @description Null clears it. */
             address?: string | null;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             profilePhotoUrl?: string;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
@@ -4415,7 +4506,7 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
-            /** @description Decision 279 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted. */
+            /** @description Decision 291 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted. */
             cancelledAt?: string | null;
             cancellationReason?: string | null;
             /** @description Decision 226 — set when this Class has been archived. Null when active. */
@@ -4766,6 +4857,14 @@ export interface components {
             bio?: string;
         };
         InstructorResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             userId: string;
             firstName: string;
@@ -4848,6 +4947,14 @@ export interface components {
             branchId?: string;
         };
         CreateInstructorManuallyResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             userId: string;
             firstName: string;
@@ -4882,6 +4989,7 @@ export interface components {
         };
         CompleteInstructorProfileDto: {
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             /** @description The key returned by POST /instructors/me/certification-upload-url, after uploading to it. */
             certificationKey?: string;
@@ -5663,6 +5771,8 @@ export interface components {
             items: components["schemas"]["GradingBoardItemDto"][];
             /** @description Students left out by activeOnly. */
             hiddenInactive: number;
+            /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
+            atTopRank: number;
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -5685,6 +5795,11 @@ export interface components {
             /** @description true or false: set by hand. null: follow whether the student has an active membership. */
             active: boolean | null;
         };
+        BulkExpectedRungDto: {
+            studentId: string;
+            /** @description The student's rung in the dry run (its fromRungId). */
+            rungId: string;
+        };
         BulkPromoteDto: {
             disciplineId: string;
             /** @description Up to 200 students (Spec 55). */
@@ -5700,6 +5815,8 @@ export interface components {
             acknowledgedStudentIds?: string[];
             /** @description Check only: return what would happen, change nothing. */
             dryRun?: boolean;
+            /** @description Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure. */
+            expected?: components["schemas"]["BulkExpectedRungDto"][];
         };
         BulkPromoteStudentDto: {
             studentId: string;
@@ -7812,6 +7929,25 @@ export interface operations {
             };
         };
     };
+    NotificationsController_clearRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClearReadNotificationsResponseDto"];
+                };
+            };
+        };
+    };
     NotificationsController_markRead: {
         parameters: {
             query?: never;
@@ -7855,6 +7991,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["NotificationResponseDto"];
                 };
+            };
+        };
+    };
+    NotificationsController_softDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

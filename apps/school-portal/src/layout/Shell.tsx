@@ -18,7 +18,7 @@ const COACH_NAV: NavItem[] = [
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
-/** Decision 279 — Branch Staff may give credit back on cancelled bookings. */
+/** Decision 291 — Branch Staff may give credit back on cancelled bookings. */
 const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/cancellations' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };

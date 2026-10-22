@@ -3927,7 +3927,191 @@ The student app (`apps/student`) and Platform Admin are not translated (both def
 
 User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.
 
-## Decision 279 — Class cancellations: owner-chosen settings, cancel a whole class, and a staff "to resolve" list
+---
+
+## Decision 276 — Addresses are structured and country-first (market-standard address form)
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** every address in the product (School, Branch, Franchise, Instructor profile, and a person's own `User` address) was one free-text box. The product owner asked for addresses to work the way most worldwide apps do: "Let's set it as per market standards, country field etc."
+
+### Decision
+
+1. **Country first, then that country's fields.** Every address form starts with a Country picker; the country decides which of city / state-or-region / postal code are shown, what each is called (ZIP code, Postcode, Eircode, CEP, PIN code; State, Province, County, Emirate, Prefecture…), which are required, and what a valid postal code looks like. Countries with a short fixed list of regions (US, CA, AU, AE, BR, MY) get a dropdown. The rules follow the per-country address metadata Google publishes for its own address forms (libaddressinput), hand-trimmed for ~45 countries covering the platform's launch currencies; every other country gets a forgiving default (street and city required, region and postal code optional, no format check), so no country is ever blocked. The country defaults to the browser's locale (a new Branch defaults to its School's country).
+2. **Stored as structured columns, with the old text kept in step.** `User`, `Franchise`, `School`, `Branch` and `Instructor` each gain `addressLine1`, `addressLine2`, `addressCity`, `addressRegion`, `addressPostalCode`, `addressCountry` (ISO 3166-1 alpha-2). The existing `address` column stays and is rebuilt by the API as one line in the country's own order ("Unter den Linden 1, 10117 Berlin, Germany") whenever the structured fields are written, so every existing reader — Academies discovery, the School footer, platform-admin, `apps/student` — keeps working unchanged.
+3. **API contract.** Write DTOs take a nested `postalAddress` object (`null` clears the address). The API enforces the same per-country rules as the form and answers 400 naming the field (`postalAddress.postalCode …`). The legacy `address` string is still accepted (`apps/student`'s profile and registration still send it); it clears the structured columns so the two can never disagree. Responses carry the six flat columns next to `address`.
+4. **Existing data is not rewritten.** The migration is purely additive. A record saved before this decision keeps its text; the School Portal shows it in line 1 with a note and asks for the country the next time someone edits it. An untouched legacy address is left out of the save, so it never blocks editing the rest of a form.
+5. **One shared rule file.** `packages/ui/src/postalAddress.ts` (pure TypeScript) is used by the portal; `apps/api/src/common/address/postal-address.ts` is a byte-identical copy (apps/api doesn't import workspace packages), and a unit test fails if they drift.
+
+### What this does NOT resolve
+
+- **Google Places autocomplete** (Decision 212) is still not connected: it needs a Google Cloud API key with the Places API enabled, which hasn't been provisioned, and it stays deferred to v1.3 (Decision 267). `AddressFields` already accepts an `autocomplete` provider (suggest + resolve), so connecting Places means writing that one adapter and passing it in — no form or API change.
+- **`apps/student`** (Track B) still uses its own single address field; it keeps working through the legacy `address` path. Bringing the country-first form to the mobile app is separate work.
+- The form's text is English, collected in one `ADDRESS_TEXT` object so the translation layer (Decision 273) can supply translations through the `text` prop.
+
+### Recorded by
+
+User ("Let's set it as per market standards, country field etc."), 21 Oct 2026, after the recommendation to follow the Shopify/Stripe/Airbnb country-first pattern.
+
+---
+
+## Decision 277 — Notifications: users can Delete one or "Clear all read"; a soft delete that keeps the record
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Delete item `docs/v1.2-backend-backlog.md` ("Notifications page") still listed as open, and Decision 242's note that Delete was out of scope. **Amends Decision 244** (no delete): the record-keeping half of 244 stands, the "never user-deletable" half does not.
+
+### Decision
+
+1. Each notification's ⋮ menu on the School Portal Notifications page gets **Delete** (with a confirmation), and the page header gets **Clear all read**, which removes every notification the user has already read. Unread notifications are never touched by Clear all read, snoozed or not.
+2. Both are a **soft delete**: a new `Notification.deletedAt` column is set and the row is hidden, never erased. Payment, waiver and other alerts stay on record, which is the part of Decision 244 that still holds. There is still no hard delete: `ultm8_app` has no DELETE grant on `Notification`, and none is added.
+3. API: `DELETE /notifications/:id` (204, self-only, a 404 for someone else's row or one already deleted) and `POST /notifications/me/clear-read` (returns `{ cleared }`). A deleted notification leaves `GET /notifications/me` and the Total/Unread counts of `GET /notifications/me/counts`, and `PATCH :id/read` / `PATCH :id/snooze` on it are a 404.
+4. The Read-within-24h metric keeps counting deleted notifications that were read. They were read, and otherwise every Clear all read would reset that metric to empty. A Developer-level choice, flagged here for review.
+
+### What this does NOT resolve
+
+- No restore/undo, and no "deleted items" view. Nothing reads a deleted row back today; an admin-facing view or a restore action would be a new decision.
+- No automatic clean-up of old notifications (other products clear them after 30 to 90 days). Not requested.
+- `apps/student` gets the API behaviour (deleted rows disappear from its list too) but no Delete button of its own yet.
+- The new School Portal text (Delete, Clear all read, the two confirmations and their error messages) is English only until the translation layer (Decision 273, PR #266) merges; it then needs adding to that catalogue.
+
+### Recorded by
+
+User ("Go for the notification change"), approving the recommendation to add Delete and "Clear all read" as a hide-not-erase soft delete, 21 Oct 2026.
+
+---
+
+## Decision 279 — New Schools start with a 60-minute waitlist claim window (was 120)
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Changes:** the default Spec 55 §6.1 / domain rules §10 give for `School.waitlistClaimWindowMinutes` (120 minutes). The product owner changed it directly; this is a default value only, not a change to how the waitlist works.
+
+### Decision
+
+New Schools default to **60 minutes**. Only one person is offered a freed seat at a time, so a shorter window lets more people on the list get a chance before class (a seat freed four hours before class reaches up to four people instead of two). It isn't shorter because students are told only in the app until push/SMS delivery is live (Decision 267); revisit 30 minutes once it is.
+
+Existing Schools keep the window they already have (the migration changes the column default only), and owners can still set any value of 1 minute or more on the School page. The deadline is still capped at the class start time.
+
+### Recorded by
+
+User, approving the recommendation of 60 minutes ("go for it .. and then merge it"), 21 Oct 2026.
+
+---
+
+## Decision 280 — Brazilian Jiu-Jitsu: Kids and Adult on one linked ladder, split by an editable age (default under 16)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Resolves:** how kids move up to the adult belts, and how the Grading Board separates them (raised while reviewing the New Portal grading screens)
+
+### Decision
+
+1. **One linked ladder.** Kids and Adult are not separate styles. A Brazilian Jiu-Jitsu style keeps the one ladder the IBJJF templates already build (Decision 131): White Belt, the kids belts (Grey/White to Green/Black), then the adult belts.
+2. **Kids are split by age.** A student under the style's **"Kids until age"** is Kids; from that age they are Adult. The default is **under 16** (the IBJJF adult age). It is a setting in Grading → Settings (and Settings → Grading), and coaches can change it as well as the owner. The product owner's words: *"THE UNDER 16 RULES, however coaches will be able to edit the age too"*.
+3. **The Grading Board shows a Kids · Adult switch** inside the style.
+4. **Kid → Adult is a normal promotion, with a nudge.** Nothing moves on its own. When a student on a kids belt reaches the age, they show under Adult with a **"Ready for Adult belts"** tag. The coach promotes them as usual and picks the adult belt in "Promote to" (e.g. Green Belt → Blue Belt). It is recorded on the history like any grade.
+5. **Adults skip the kids belts.** For an Adult student, the next rank after White Belt · 4 Stripes is **Blue Belt**, not Grey/White Belt, and it is not recorded as a skip.
+
+### Effect
+
+Needs a schema and engine change: the age on the style, a "kids belt" flag on a belt, and the next-rank rule in item 5. See `docs/v1.3-backend-backlog.md` §3.20.
+
+### Still open
+
+- **Which coaches can change the age.** Is it any coach with grading access, or a new permission on the Permissions page?
+- **Which rank's requirements apply when a grade skips ranks.** The built API hard-blocks a skip when the next rank's required skills aren't signed off. It doesn't say whether the target rank's own requirements apply.
+
+### Recorded by
+
+User, answering the Kids/Adult questions on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 281 — Kids and Adult stay separate programs; a Kids student can be graded into the Adult program (corrects Decision 280)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 280 items 1, 2 and 5
+
+Decision 280 combined Kids and Adult into one linked ladder. That was a misreading. The product owner's words: *"before we have the kids and the adult program separate, this is correct. What I did ask was to be able to grade from kids to adult, not to combine them."*
+
+### Decision
+
+1. **Two separate programs.** Each has its own ladder:
+   - **Adult:** White, Blue, Purple, Brown, Black.
+   - **Kids:** White, then the kids belts.
+   
+   Both programs sit under one discipline, Brazilian Jiu-Jitsu. Screens show them as a **Kids · Adult** switch next to the discipline.
+2. **Grading Kids → Adult.** For a Kids student, "Promote to" lists their next kids ranks, then an **"Adult program"** group with the adult ranks. Picking an adult rank moves the student to the Adult program at that rank. Their history records **"Moved to Adult program"**. This works from the board (single and bulk) and from the Ranks tab.
+3. **The age setting is only a reminder** (Decision 280 items 2 and 4, reworded). From **"Ready for Adult from age"** (default 16, editable by the owner and coaches), a Kids student gets the **"Ready for Adult program"** tag. Nothing moves on its own.
+4. **Decision 280 item 5 is withdrawn.** It existed only because of the combined ladder.
+
+### Still open
+
+- **The default adult rank** for a kid at the top of the kids ladder. The sample uses the first adult rank above White Belt (Blue Belt). This is a placeholder, not a confirmed rule.
+- **Whether a coach may grade a kid into Adult before the age.** The design allows it, because the age is only a reminder. Confirm.
+- **What carries over on the move.** This covers classes, skills and history. The design treats it like any grade: counting restarts, sign-offs are wiped (Decision 128 item 16) and history is kept.
+- Decision 280's open item on which coaches can change the age.
+
+### Recorded by
+
+User, correcting the combined ladder on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 282 — Bulk promote has no limit a coach can see; the portal sends 200 at a time
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Builds:** Spec 55 Section 7 (bulk-grading batch cap), Decision 130
+
+The stress test (20 academies, 300–500 students, 50–90% graded at once) found the School Portal sent every ticked student in one request. Over 200 students, the API refused the whole batch. The product owner asked: *"Since when we have limit, who has agreed with that, we should not have a limit."*
+
+Where the 200 came from: Spec 55's logic review of 27 Aug 2026 put a fixed cap on each bulk-grading **request** (e.g. 200 students), *"with the School Portal client batching sequential calls beyond it"*. Decision 130 repeated the cap. The cap was always meant to be per request, never a limit for the coach. The portal never did the batching.
+
+### Decision
+
+1. **No limit for the coach.** A coach can tick and promote any number of students in one go.
+2. **The portal sends them 200 at a time**, one request after another, and joins the answers. The check before promoting (the dry run) works the same way. The API keeps its 200-per-request guard.
+3. **If a later batch fails**, the students the earlier batches promoted stay promoted. The window says *"Promoted N of M, then something went wrong"* and the report lists the ones done.
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 283 — Only active students are graded up; unverified students can still be graded
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision
+
+The stress test showed inactive students could be ticked and promoted. Asked whether they should be, the product owner said: *"No, only active students"*. Asked the same about students whose rank is self-declared and not yet verified: *"Yes, because grading is a human decision done by the coach"*.
+
+### Decision
+
+1. **Active means** what the Grading Board already shows (Decision 152): the student's **Active switch** on the board if a coach has set it, otherwise **a live membership** at the School.
+2. **Promote and stripe award need an active student.** This covers a single grade and bulk promote. Bulk promote lists an inactive student under "can't be promoted" (*"inactive (only active students can be graded)"*) and skips them. A single grade is refused with *"Only active students can be graded. Make the student active on the Grading Board, or give them a live membership."*
+3. **The board does not let an inactive student be ticked.** Their tick box is off, with the reason.
+4. **Moving a student down is still allowed** when inactive. It is a correction, not a grade up.
+5. **Unverified (self-declared) students can be graded.** No change: grading never checked verification.
+6. **A first rank can be given to an inactive student.** For a student with no rank in the style yet, "Give first rank" records the belt they start at; it is not a grade up. The product owner confirmed: *"yes"* (21 Oct 2026).
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 284 — A bulk promote that stops part-way can be finished safely
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 130, 185 and 282
+
+Since Decision 282 the portal sends a large batch 200 students at a time. If something breaks part-way (the connection drops, the server restarts), the groups already sent stay promoted and the rest are not. Three fixes were offered: a "try the rest" button, all-or-nothing (which needs Spec 55's per-request cap changed), or undoing the part that went through. The product owner chose the first: *"go with A, build it"*.
+
+### Decision
+
+1. **One automatic retry.** A group that gets no answer (no reply, or a server error) is sent once more on its own after a short pause. A refusal (4xx, e.g. too many requests) is not retried automatically.
+2. **"Try the remaining N again".** If the retry also fails, the window says *"Promoted 200 of 450, then something went wrong. The rest were not promoted yet."* It offers **Try the remaining N again**, which sends only the students not yet promoted, and **Stop here and see the report**, which lists them as *"not promoted: the batch stopped before them"*.
+3. **Never promoted twice.** With each student, the portal sends the rung the check found them on (`expected`). A student who has moved since is skipped, not promoted again: *"already promoted since the check"* (one rung up, e.g. a batch whose reply was lost) or *"rank changed since the check"* (anything else). This is the same guard a single grade already has (Decision 185). It makes every retry safe.
+4. **Fewer checks.** Removing a student from the batch no longer re-checks the whole batch, because each student's check stands on its own. Only a date change, or a failed check, runs it again. This keeps a large batch inside the bulk endpoint's limit of 30 requests a minute, which is unchanged.
+
+### Recorded by
+
+User, choosing option A for a batch that stops part-way, 22 Oct 2026.
+
+## Decision 291 — Class cancellations: owner-chosen settings, cancel a whole class, and a staff "to resolve" list
 
 **Date:** 21 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** `School.classCancellationPolicy` (Manual / Auto-refund / Auto-credit, domain rules §7) was saved but never read; a cancellation only ever followed the class's own refund cutoff. Questions 2–5 of item 2 in the "discuss with Gus" list.
