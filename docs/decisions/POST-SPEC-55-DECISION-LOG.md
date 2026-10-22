@@ -4142,10 +4142,30 @@ Recommendations the product owner accepted by default (21 Oct 2026, "use your re
 
 ### What this does NOT resolve
 
-- Existing Schools all hold the default, Manual, which until now behaved like Auto-credit. After this ships, their cancellations wait in the list until an owner picks another policy.
-- New text is English only; other languages fall back to English until translated (Decision 273). Student notifications are in-app only (push is deferred, Decision 267).
+- Existing Schools: see Decision 292 (they move to Auto-credit, today's behaviour, until their owner chooses).
+- The new text has first-draft translations in all 14 languages (Decision 273) that need a native-speaker review. Student notifications are in-app only (push is deferred, Decision 267).
 - Later ideas not built: stopping students cancelling close to class time, and a monthly limit on late cancellations.
 
 ### Recorded by
 
 User (Code), 21 Oct 2026: "this must in setting for the academy owners to choose", "These all decisions should be for the academy owner", approving the proposed layout and asking for a deeper comparison before building.
+
+## Decision 292 — Each Branch can use its own class cancellation settings; every owner chooses their policy
+
+**Date:** 22 Oct 2026. **Builds on:** Decision 291.
+
+### What was decided
+
+- A **Branch** can use its own "Class cancellations" settings instead of its School's: the same six settings as Decision 291 (policy, when it applies, default cutoff, late-fee switch, no-show fee, what happens when the school cancels a whole class). The default is **"Same as the school"**.
+- A class held at a Branch with its own settings follows that Branch for a student's cancellation, a whole-class cancel and the no-show fee. A class with no Branch ("Whole School"), or at a Branch set to "Same as the school", follows the School.
+- Only the School Owner/Manager edits a Branch's settings, on the Branch's settings page (the same permission as every other Branch field, Spec §8.2). Choosing "This branch's own settings" starts from the School's current values.
+- **Existing Schools** move to **Auto-credit**. Until now every cancellation before the cutoff gave the class credit back whatever the stored policy said, because the policy was never applied, and Auto-credit is exactly that, so nothing changes for their students. The owner then chooses: the dashboard and the School page ask "Choose your cancellation policy" until the owner saves one (`School.cancellationPolicyChosenAt`). New Schools still start on Manual and see the same prompt.
+- The fixed rules from Decision 291 still hold at every Branch: a Friend Pass always gets its credit back, and only an Owner/Manager can send money back.
+
+### Why
+
+The owner wanted each Branch to be able to differ ("Each branch can differ" on the decision card) and wanted owners, not a migration, to make the choice ("I want to let owner of the branch choose this").
+
+### Recorded by
+
+User (Code), 22 Oct 2026, choosing "Each branch can differ" on the decision card, after: "I want to let owner of the branch choose this".

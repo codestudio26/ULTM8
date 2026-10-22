@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Rendre son crédit à chacun (par défaut)",
       classCancelledFollow: "Suivre la politique ci-dessus",
       fixedRules: "Toujours : un Pass ami récupère son crédit, et seul un Propriétaire ou un Gérant peut rendre de l'argent. Un remboursement que déclencherait le Personnel d'agence ou un professeur vous attend dans Annulations à traiter.",
+      chooseTitle: "Choisissez votre politique d'annulation.",
+      chooseBody: "D'ici là, les réservations annulées rendent le crédit du cours, comme toujours.",
+      chooseLink: "Choisir maintenant",
+      branchHint: "Chaque établissement peut utiliser ces paramètres ou les siens, sur la page de paramètres de l'établissement.",
     },
     form: {
       schoolName: "Nom de l’école",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Ce que les élèves récupèrent quand une réservation d'un cours de cet établissement est annulée.",
+      sourceLabel: "Paramètres de cet établissement",
+      sameAsSchool: "Comme l'école (par défaut)",
+      own: "Paramètres propres à cet établissement",
+    },
     title: "Succursales",
     subtitle: "Les lieux physiques de votre école.",
     addBranch: "Ajouter une succursale",

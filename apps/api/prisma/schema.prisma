@@ -917,6 +917,9 @@ model School {
   schoolCancelledClassResolution SchoolCancelledClassResolution  @default(CREDIT_ALL)
   defaultRefundCutoffHours       Int?
   noShowFee                      Int?
+  /// Decision 292 — when the owner last saved the cancellation policy. Null
+  /// until they do: the portal asks them to choose until then.
+  cancellationPolicyChosenAt     DateTime?
   waitlistClaimWindowMinutes     Int                             @default(60)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
@@ -1026,6 +1029,19 @@ model Branch {
 
   logoUrl   String?
   bannerUrl String?
+
+  /// Decision 292 — a Branch may use its own "Class cancellations" settings
+  /// instead of its School's. Off (the default) = same as the School, and the
+  /// six columns below are ignored. On = they apply to every class held at this
+  /// Branch; a class with no Branch always follows the School. Same meanings
+  /// and defaults as School's identically-named columns (Decision 291).
+  cancellationSettingsOverride   Boolean                        @default(false)
+  classCancellationPolicy        ClassCancellationPolicy        @default(MANUAL)
+  classCancellationPolicyWindow  ClassCancellationPolicyWindow  @default(BEFORE_CUTOFF)
+  chargeLateCancellationFee      Boolean                        @default(true)
+  schoolCancelledClassResolution SchoolCancelledClassResolution @default(CREDIT_ALL)
+  defaultRefundCutoffHours       Int?
+  noShowFee                      Int?
 
   /// Decision 226 (POST-SPEC-55-DECISION-LOG.md) — entity-level tenant
   /// offboarding. Same full archivedAt/purgeAt/purgedAt trio and 90-day

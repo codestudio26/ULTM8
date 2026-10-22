@@ -140,6 +140,8 @@ export class SchoolsService {
           schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
           defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
           noShowFee: dto.noShowFee,
+          // Decision 292 — saving a policy is the owner choosing it.
+          ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
         },
       });
 
@@ -721,6 +723,8 @@ export class SchoolsService {
           schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
           defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
           noShowFee: dto.noShowFee,
+          // Decision 292 — saving a policy is the owner choosing it.
+          ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
         },
       }),
     );

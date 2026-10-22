@@ -32,6 +32,7 @@ test.afterEach(async () => {
   await db.transaction.deleteMany({ where: { schoolId: s.schoolId } });
   await db.membership.deleteMany({ where: { schoolId: s.schoolId } });
   await db.membershipPlan.deleteMany({ where: { schoolId: s.schoolId } });
+  await db.branch.deleteMany({ where: { schoolId: s.schoolId } });
 });
 
 test.afterAll(async () => {
@@ -91,4 +92,40 @@ test('the owner cancels a whole class with a reason', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Cancel class' })).toHaveCount(0);
   const after = await db.class.findUniqueOrThrow({ where: { id: cls.id } });
   expect(after.cancellationReason).toBe('Coach is ill');
+});
+
+test('an owner who has not chosen a policy is asked to, until they save one', async ({ page }) => {
+  await db.school.update({ where: { id: s.schoolId }, data: { cancellationPolicyChosenAt: null } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+  await expect(page.getByText('Choose your cancellation policy.')).toBeVisible();
+  await page.getByRole('link', { name: 'Choose now' }).click();
+
+  const card = page.locator('form').filter({ hasText: 'Class cancellations' });
+  await expect(card.getByText('Choose your cancellation policy.')).toBeVisible();
+  await card.getByLabel('Class cancellation policy').selectOption('AUTO_CREDIT');
+  await card.getByRole('button', { name: 'Save changes' }).click();
+  await expect(card.getByText('Saved.')).toBeVisible();
+  await expect(card.getByText('Choose your cancellation policy.')).toHaveCount(0);
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).cancellationPolicyChosenAt).not.toBeNull();
+});
+
+test('a branch can use its own cancellation settings instead of the school\'s', async ({ page }) => {
+  const branch = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Riverside' } });
+  await signIn(page, s.ownerToken);
+  await page.goto(`/branches/${branch.id}`);
+  const card = page.locator('form').filter({ hasText: 'Settings for this branch' });
+  // Same as the school: the school's values, read-only.
+  await expect(card.getByLabel('Class cancellation policy')).toBeDisabled();
+  await card.getByLabel('Settings for this branch').selectOption('OWN');
+  await card.getByLabel('Class cancellation policy').selectOption('AUTO_REFUND');
+  await card.getByLabel('No-show fee').fill('250');
+  await card.getByRole('button', { name: 'Save changes' }).click();
+  await expect(card.getByText('Branch settings saved.')).toBeVisible();
+
+  expect(await db.branch.findUniqueOrThrow({ where: { id: branch.id } })).toMatchObject({
+    cancellationSettingsOverride: true,
+    classCancellationPolicy: 'AUTO_REFUND',
+    noShowFee: 250,
+  });
 });

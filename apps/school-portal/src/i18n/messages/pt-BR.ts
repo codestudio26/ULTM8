@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Devolver o crédito a todos (padrão)",
       classCancelledFollow: "Seguir a política acima",
       fixedRules: "Sempre: um Passe de Amigo recebe o crédito de volta, e só um Proprietário ou Gerente pode devolver dinheiro. Um reembolso que a Equipe da Filial ou um professor acionaria aguarda você em Cancelamentos a resolver.",
+      chooseTitle: "Escolha sua política de cancelamento.",
+      chooseBody: "Até lá, reservas canceladas devolvem o crédito da aula, como sempre.",
+      chooseLink: "Escolher agora",
+      branchHint: "Cada filial pode usar estas configurações ou as suas próprias, na página de configurações da filial.",
     },
     form: {
       schoolName: "Nome da escola",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "O que os alunos recebem de volta quando uma reserva de uma aula desta filial é cancelada.",
+      sourceLabel: "Configurações desta filial",
+      sameAsSchool: "Iguais às da escola (padrão)",
+      own: "Configurações próprias desta filial",
+    },
     title: "Filiais",
     subtitle: "Locais físicos da sua escola.",
     addBranch: "Adicionar filial",

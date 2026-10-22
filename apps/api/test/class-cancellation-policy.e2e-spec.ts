@@ -168,6 +168,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.paymentAccount.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.branch.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.delete({ where: { id: school.id } });
@@ -388,5 +389,86 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     await noShowProcessor.process({} as never);
     expect(chargeSpy.mock.calls.filter((c) => c[1] === school.id)).toHaveLength(1);
     await setSchool({ noShowFee: null });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Decision 292 — a Branch's own settings, and the owner choosing a policy.
+
+  const mkBranch = (data: Partial<Prisma.BranchUncheckedCreateInput> = {}) =>
+    superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: `Branch ${randomUUID().slice(0, 6)}`, ...data } });
+
+  it('Branch settings round-trip through PATCH /branches/:id (Owner only), "same as school" by default', async () => {
+    const branch = await mkBranch();
+    const fresh = await request(app.getHttpServer()).get(`/v1/branches/${branch.id}`).set('Authorization', `Bearer ${tokenOwner}`);
+    expect(fresh.status).toBe(200);
+    expect(fresh.body).toMatchObject({ cancellationSettingsOverride: false, classCancellationPolicy: 'MANUAL', noShowFee: null });
+
+    const body = { cancellationSettingsOverride: true, classCancellationPolicy: 'AUTO_CREDIT', classCancellationPolicyWindow: 'ANY_TIME', chargeLateCancellationFee: false, schoolCancelledClassResolution: 'REFUND_ALL', defaultRefundCutoffHours: 6, noShowFee: 300 };
+    const byStaff = await request(app.getHttpServer()).patch(`/v1/branches/${branch.id}`).set('Authorization', `Bearer ${tokenStaff}`).send(body);
+    expect(byStaff.status).toBe(403);
+    const res = await request(app.getHttpServer()).patch(`/v1/branches/${branch.id}`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(body);
+  });
+
+  it('A cancelled booking follows its class\'s Branch when that Branch has its own settings, and the School otherwise', async () => {
+    const own = await mkBranch({ cancellationSettingsOverride: true, classCancellationPolicy: 'AUTO_CREDIT' });
+    const same = await mkBranch({ cancellationSettingsOverride: false, classCancellationPolicy: 'AUTO_CREDIT' });
+    const pack = await mkPack();
+
+    const atOwn = await book((await mkClass({ branchId: own.id })).id);
+    await cancel(atOwn.id);
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: atOwn.id } })).refundResolution).toBe('REFUNDED');
+
+    // Override off: the Branch's stored values are ignored — the School is Manual.
+    const atSame = await book((await mkClass({ branchId: same.id })).id);
+    await cancel(atSame.id);
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: atSame.id } })).refundResolution).toBe('PENDING');
+
+    const wholeSchool = await book((await mkClass()).id);
+    await cancel(wholeSchool.id);
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: wholeSchool.id } })).refundResolution).toBe('PENDING');
+    expect(await credits(pack.id)).toBe(3);
+  });
+
+  it('The Branch\'s own cutoff and whole-class setting apply to its classes', async () => {
+    const branch = await mkBranch({ cancellationSettingsOverride: true, classCancellationPolicy: 'AUTO_CREDIT', defaultRefundCutoffHours: 48, schoolCancelledClassResolution: 'REFUND_ALL' });
+    await mkPack();
+    // 24h away, inside the Branch's 48h cutoff: kept (applies before the cutoff only).
+    const late = await book((await mkClass({ branchId: branch.id })).id);
+    await cancel(late.id);
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: late.id } })).refundResolution).toBe('WITHHELD');
+
+    const cls = await mkClass({ branchId: branch.id });
+    const booked = await book(cls.id);
+    await request(app.getHttpServer()).post(`/v1/classes/${cls.id}/cancel`).set('Authorization', `Bearer ${tokenOwner}`).send({});
+    // Refund everyone (the Branch's choice, not the School's credit-all), paid in cash: owed.
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: booked.id } })).toMatchObject({ refundResolution: 'REFUND_OWED', refundAmount: 600 });
+  });
+
+  it('No-show fee: the Branch\'s own fee (or none) replaces the School\'s for its classes', async () => {
+    await setSchool({ noShowFee: 500 });
+    const branch = await mkBranch({ cancellationSettingsOverride: true, noShowFee: 250 });
+    const noFee = await mkBranch({ cancellationSettingsOverride: true, noShowFee: null });
+    const pack = await mkPack();
+    const ended = async (branchId: string) => {
+      const start = new Date(Date.now() - 3 * 3_600_000);
+      const cls = await mkClass({ branchId, startDate: start, endDate: new Date(start.getTime() + 3_600_000) });
+      return superuser.booking.create({ data: { id: randomUUID(), studentId: student.id, classId: cls.id, schoolId: school.id, branchId, sourceMembershipId: pack.id, status: 'UPCOMING' } });
+    };
+    const a = await ended(branch.id);
+    const b = await ended(noFee.id);
+    await noShowProcessor.process({} as never);
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ noShowFeeOutcome: 'CHARGED', noShowFeeAmount: 250 });
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ status: 'NO_SHOW', noShowFeeOutcome: null });
+  });
+
+  it('Saving a policy records that the owner chose it; other School edits do not', async () => {
+    await setSchool({ cancellationPolicyChosenAt: null });
+    const other = await request(app.getHttpServer()).patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokenOwner}`).send({ noShowFee: 100 });
+    expect(other.body.cancellationPolicyChosenAt).toBeNull();
+    const chosen = await request(app.getHttpServer()).patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokenOwner}`).send({ classCancellationPolicy: 'MANUAL' });
+    expect(chosen.status).toBe(200);
+    expect(chosen.body.cancellationPolicyChosenAt).toBeTruthy();
   });
 });

@@ -11453,6 +11453,11 @@
             "type": "number",
             "nullable": true
           },
+          "cancellationPolicyChosenAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to."
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -12222,6 +12227,44 @@
             "type": "string",
             "nullable": true
           },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "Decision 292 — true when this Branch uses its own cancellation settings below instead of its School's."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -12250,6 +12293,11 @@
           "name",
           "activities",
           "facilities",
+          "cancellationSettingsOverride",
+          "classCancellationPolicy",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
           "createdAt",
           "updatedAt"
         ]
@@ -12335,6 +12383,46 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "true = this Branch uses the six settings below instead of its School's. Defaults to false (same as the School)."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start. null = no cutoff."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount. null = off."
           }
         }
       },

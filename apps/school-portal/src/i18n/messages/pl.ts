@@ -237,6 +237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Oddaj wszystkim kredyt (domyślnie)",
       classCancelledFollow: "Stosuj zasadę powyżej",
       fixedRules: "Zawsze: Karnet dla znajomego odzyskuje kredyt, a tylko Właściciel lub Menedżer może zwrócić pieniądze. Zwrot, który uruchomiłby Personel oddziału lub trener, czeka na Ciebie w sekcji Anulowania do rozpatrzenia.",
+      chooseTitle: "Wybierz zasady anulowania.",
+      chooseBody: "Do tego czasu anulowane rezerwacje zwracają kredyt za zajęcia, jak dotąd.",
+      chooseLink: "Wybierz teraz",
+      branchHint: "Każdy oddział może używać tych ustawień lub własnych, na stronie ustawień oddziału.",
     },
     form: {
       schoolName: "Nazwa szkoły",
@@ -298,6 +302,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Co uczniowie odzyskują, gdy rezerwacja zajęć w tym oddziale zostanie anulowana.",
+      sourceLabel: "Ustawienia tego oddziału",
+      sameAsSchool: "Takie jak w szkole (domyślnie)",
+      own: "Własne ustawienia tego oddziału",
+    },
     title: "Oddziały",
     subtitle: "Fizyczne lokalizacje Twojej szkoły.",
     addBranch: "Dodaj oddział",

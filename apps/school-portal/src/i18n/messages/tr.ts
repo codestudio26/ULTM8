@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Herkese ders hakkını geri ver (varsayılan)",
       classCancelledFollow: "Yukarıdaki politikayı uygula",
       fixedRules: "Her zaman: Arkadaş Kartı ders hakkını geri alır ve yalnızca Sahip veya Yönetici para iade edebilir. Şube Personelinin ya da bir eğitmenin tetikleyeceği iade, Çözülecek iptaller sayfasında sizi bekler.",
+      chooseTitle: "İptal politikanızı seçin.",
+      chooseBody: "Seçene kadar, iptal edilen rezervasyonlar her zamanki gibi ders hakkını geri verir.",
+      chooseLink: "Şimdi seç",
+      branchHint: "Her şube bu ayarları veya kendi ayarlarını kullanabilir; şubenin ayarlar sayfasından.",
     },
     form: {
       schoolName: "Okul adı",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Bu şubenin bir dersi için rezervasyon iptal edildiğinde öğrencilerin geri aldıkları.",
+      sourceLabel: "Bu şubenin ayarları",
+      sameAsSchool: "Okulla aynı (varsayılan)",
+      own: "Bu şubenin kendi ayarları",
+    },
     title: "Şubeler",
     subtitle: "Okulunuzun fiziksel konumları.",
     addBranch: "Şube ekle",

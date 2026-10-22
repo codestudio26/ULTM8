@@ -234,6 +234,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "全部退回课时（默认）",
       classCancelledFollow: "按上面的政策处理",
       fixedRules: "始终适用：好友通行证会退回课时，且只有所有者或经理可以退款。分校员工或教练触发的退款会在“待处理的取消”中等待您处理。",
+      chooseTitle: "请选择您的取消政策。",
+      chooseBody: "在您选择之前，已取消的预约会像以前一样退回课时。",
+      chooseLink: "立即选择",
+      branchHint: "每个分校都可以在分校设置页面使用这些设置或自己的设置。",
     },
     form: {
       schoolName: "学校名称",
@@ -295,6 +299,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "此分校课程的预约被取消时学员能拿回什么。",
+      sourceLabel: "此分校的设置",
+      sameAsSchool: "与学校相同（默认）",
+      own: "此分校自己的设置",
+    },
     title: "分校",
     subtitle: "你学校的实体地点。",
     addBranch: "添加分校",

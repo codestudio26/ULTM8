@@ -100,14 +100,25 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
           ],
         },
       },
-      select: { id: true, classId: true, studentId: true, schoolId: true, sourceMembershipId: true },
+      select: { id: true, classId: true, studentId: true, schoolId: true, sourceMembershipId: true, class: { select: { branchId: true } } },
     });
-    // Decision 291 — each School's no-show fee (Booking has no School relation).
+    // Decision 291 — each School's no-show fee (Booking has no School relation),
+    // or, Decision 292, the class's Branch's own when that Branch overrides it.
     const schools = await this.prismaJobs.school.findMany({
       where: { id: { in: [...new Set(overdueUpcoming.map((b) => b.schoolId))] } },
       select: { id: true, noShowFee: true },
     });
     const noShowFeeBySchool = new Map(schools.map((sc) => [sc.id, sc.noShowFee]));
+    const branchIds = [...new Set(overdueUpcoming.map((b) => b.class.branchId).filter((id): id is string => id !== null))];
+    const overridingBranches = await this.prismaJobs.branch.findMany({
+      where: { id: { in: branchIds }, cancellationSettingsOverride: true },
+      select: { id: true, noShowFee: true },
+    });
+    const noShowFeeByBranch = new Map(overridingBranches.map((br) => [br.id, br.noShowFee]));
+    const noShowFeeFor = (booking: (typeof overdueUpcoming)[number]) =>
+      booking.class.branchId && noShowFeeByBranch.has(booking.class.branchId)
+        ? noShowFeeByBranch.get(booking.class.branchId)
+        : noShowFeeBySchool.get(booking.schoolId);
 
     let marked = 0;
     const toCharge: Array<{ booking: (typeof overdueUpcoming)[number]; fee: number }> = [];
@@ -138,7 +149,7 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
       if (result.count > 0) {
         marked += 1;
         affectedClassIds.push(booking.classId);
-        const fee = noShowFeeBySchool.get(booking.schoolId);
+        const fee = noShowFeeFor(booking);
         if (fee !== null && fee !== undefined && fee > 0) toCharge.push({ booking, fee });
       }
     }

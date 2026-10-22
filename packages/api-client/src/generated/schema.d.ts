@@ -3780,6 +3780,8 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
+            /** @description Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to. */
+            cancellationPolicyChosenAt?: string | null;
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4008,6 +4010,17 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description Decision 292 — true when this Branch uses its own cancellation settings below instead of its School's. */
+            cancellationSettingsOverride: boolean;
+            /** @enum {string} */
+            classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
+            /** @enum {string} */
+            classCancellationPolicyWindow: "BEFORE_CUTOFF" | "ANY_TIME";
+            chargeLateCancellationFee: boolean;
+            /** @enum {string} */
+            schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
+            defaultRefundCutoffHours?: number | null;
+            noShowFee?: number | null;
             /** @description Decision 226 — set when this Branch has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
@@ -4037,6 +4050,19 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description true = this Branch uses the six settings below instead of its School's. Defaults to false (same as the School). */
+            cancellationSettingsOverride?: boolean;
+            /** @enum {string} */
+            classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
+            /** @enum {string} */
+            classCancellationPolicyWindow?: "BEFORE_CUTOFF" | "ANY_TIME";
+            chargeLateCancellationFee?: boolean;
+            /** @enum {string} */
+            schoolCancelledClassResolution?: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
+            /** @description Hours before start. null = no cutoff. */
+            defaultRefundCutoffHours?: number | null;
+            /** @description Minor-unit amount. null = off. */
+            noShowFee?: number | null;
         };
         CreateRoleGrantDto: {
             /** @enum {string} */

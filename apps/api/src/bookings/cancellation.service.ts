@@ -46,7 +46,17 @@ export type CancellationSchoolSettings = Pick<
   | 'chargeLateCancellationFee'
   | 'schoolCancelledClassResolution'
   | 'defaultRefundCutoffHours'
+  | 'noShowFee'
 >;
+
+const SETTINGS_SELECT = {
+  classCancellationPolicy: true,
+  classCancellationPolicyWindow: true,
+  chargeLateCancellationFee: true,
+  schoolCancelledClassResolution: true,
+  defaultRefundCutoffHours: true,
+  noShowFee: true,
+} as const;
 
 const OPEN_RESOLUTIONS: RefundResolution[] = ['PENDING', 'REFUND_OWED'];
 
@@ -91,6 +101,25 @@ export class CancellationService {
     private readonly paymentsService: PaymentsService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
+
+  /**
+   * Decision 292 — the settings that apply to a class: its Branch's own, when
+   * that Branch overrides the School's, else the School's. Read through the
+   * jobs role so a Student's own cancellation can see its Branch row.
+   */
+  async settingsFor(schoolId: string, branchId: string | null): Promise<CancellationSchoolSettings> {
+    if (branchId) {
+      const branch = await this.prismaJobs.branch.findFirst({
+        where: { id: branchId, schoolId },
+        select: { cancellationSettingsOverride: true, ...SETTINGS_SELECT },
+      });
+      if (branch?.cancellationSettingsOverride) {
+        const { cancellationSettingsOverride: _override, ...settings } = branch;
+        return settings;
+      }
+    }
+    return this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: SETTINGS_SELECT });
+  }
 
   /** The class's own refundFeeDate, else the School's default cutoff, else none. */
   effectiveCutoff(cls: { refundFeeDate: Date | null; startDate: Date }, school: Pick<School, 'defaultRefundCutoffHours'>): Date | null {
@@ -359,7 +388,7 @@ export class CancellationService {
     if (marked.count === 0) throw new ConflictException('This class is already cancelled.');
 
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: cls.schoolId } });
-    const base = this.outcomeForClassCancel(school);
+    const base = this.outcomeForClassCancel(await this.settingsFor(cls.schoolId, cls.branchId));
 
     const bookings = await this.prismaJobs.booking.findMany({
       where: { classId, status: 'UPCOMING' },

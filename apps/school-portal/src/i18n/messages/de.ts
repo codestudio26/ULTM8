@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Allen das Guthaben zurückgeben (Standard)",
       classCancelledFollow: "Der Regel oben folgen",
       fixedRules: "Immer: Ein Freundespass bekommt sein Guthaben zurück, und nur ein Inhaber oder Manager kann Geld zurückgeben. Eine Erstattung, die Filialmitarbeiter oder ein Trainer auslösen würden, wartet unter Offene Stornierungen auf dich.",
+      chooseTitle: "Wählen Sie Ihre Stornierungsrichtlinie.",
+      chooseBody: "Bis dahin geben stornierte Buchungen das Kursguthaben zurück, wie bisher.",
+      chooseLink: "Jetzt wählen",
+      branchHint: "Jede Filiale kann diese Einstellungen oder eigene verwenden, auf der Einstellungsseite der Filiale.",
     },
     form: {
       schoolName: "Name der Schule",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Was Schüler zurückbekommen, wenn eine Buchung für einen Kurs dieser Filiale storniert wird.",
+      sourceLabel: "Einstellungen für diese Filiale",
+      sameAsSchool: "Wie die Schule (Standard)",
+      own: "Eigene Einstellungen dieser Filiale",
+    },
     title: "Filialen",
     subtitle: "Die Standorte deiner Schule.",
     addBranch: "Filiale hinzufügen",

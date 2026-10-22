@@ -1,4 +1,10 @@
 export const branches = {
+  cancellations: {
+    subtitle: "What students get back when a booking for one of this branch's classes is cancelled.",
+    sourceLabel: 'Settings for this branch',
+    sameAsSchool: 'Same as the school (default)',
+    own: "This branch's own settings",
+  },
   title: 'Branches',
   subtitle: 'Physical locations under your School.',
   addBranch: 'Add branch',

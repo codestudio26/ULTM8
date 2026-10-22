@@ -52,6 +52,10 @@ export const schools = {
     classCancelledCredit: 'Give everyone their credit back (default)',
     classCancelledFollow: 'Follow the policy above',
     fixedRules: 'Always: a Friend Pass gets its credit back, and only an Owner or Manager can send money back. A refund Branch Staff or a coach would trigger waits for you in Cancellations to resolve.',
+    chooseTitle: 'Choose your cancellation policy.',
+    chooseBody: "Until you do, cancelled bookings give the class credit back, as they always have.",
+    chooseLink: 'Choose now',
+    branchHint: "Each branch can use these settings or its own, on the branch's settings page.",
   },
   profile: {
     title: 'School profile',

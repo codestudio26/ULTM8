@@ -117,6 +117,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true })
   noShowFee!: number | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to.' })
+  cancellationPolicyChosenAt!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
 

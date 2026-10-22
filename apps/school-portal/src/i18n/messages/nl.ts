@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Iedereen het tegoed teruggeven (standaard)",
       classCancelledFollow: "Het beleid hierboven volgen",
       fixedRules: "Altijd: een Vriendenpas krijgt zijn tegoed terug, en alleen een Eigenaar of Manager kan geld teruggeven. Een terugbetaling die Vestigingsmedewerkers of een trainer zouden starten, wacht op jou bij Open annuleringen.",
+      chooseTitle: "Kies je annuleringsbeleid.",
+      chooseBody: "Tot die tijd geven geannuleerde boekingen het lestegoed terug, zoals altijd.",
+      chooseLink: "Nu kiezen",
+      branchHint: "Elke vestiging kan deze instellingen of eigen instellingen gebruiken, op de instellingenpagina van de vestiging.",
     },
     form: {
       schoolName: "Naam van de school",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Wat leerlingen terugkrijgen als een boeking voor een les van deze vestiging wordt geannuleerd.",
+      sourceLabel: "Instellingen voor deze vestiging",
+      sameAsSchool: "Hetzelfde als de school (standaard)",
+      own: "Eigen instellingen van deze vestiging",
+    },
     title: "Vestigingen",
     subtitle: "De fysieke locaties van je school.",
     addBranch: "Vestiging toevoegen",

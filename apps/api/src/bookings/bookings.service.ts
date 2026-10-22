@@ -291,11 +291,12 @@ export class BookingsService {
     let needsStaff = 0;
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
-      const school = await tx.school.findUniqueOrThrow({ where: { id: resolvedBooking.schoolId } });
+      // Decision 292 — the class's Branch's own settings when it has them.
+      const school = await this.cancellation.settingsFor(resolvedBooking.schoolId, cls.branchId);
       const now = new Date();
       // Kickoff prompt §1.c: the Class's own refundFeeDate cutoff — or, since
-      // Decision 291, the School's default cutoff for a class with none. No
-      // cutoff at all means never past it.
+      // Decision 291, the School's (or Branch's) default cutoff for a class
+      // with none. No cutoff at all means never past it.
       const cutoff = this.cancellation.effectiveCutoff(cls, school);
       const pastCutoff = cutoff !== null && now >= cutoff;
       const base = this.cancellation.outcomeForBookingCancel(school, pastCutoff);

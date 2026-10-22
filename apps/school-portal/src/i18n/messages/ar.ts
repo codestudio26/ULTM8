@@ -239,6 +239,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "إعادة الرصيد للجميع (افتراضي)",
       classCancelledFollow: "اتباع السياسة أعلاه",
       fixedRules: "دائمًا: يسترد تصريح الصديق رصيده، ولا يمكن إعادة الأموال إلا للمالك أو المدير. أي استرداد قد يطلقه موظف الفرع أو مدرب ينتظرك في الإلغاءات المطلوب حسمها.",
+      chooseTitle: "اختر سياسة الإلغاء الخاصة بك.",
+      chooseBody: "حتى تختار، تعيد الحجوزات الملغاة رصيد الحصة كما كانت دائمًا.",
+      chooseLink: "اختر الآن",
+      branchHint: "يمكن لكل فرع استخدام هذه الإعدادات أو إعداداته الخاصة، من صفحة إعدادات الفرع.",
     },
     form: {
       schoolName: "اسم المدرسة",
@@ -300,6 +304,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "ما يسترده الطلاب عند إلغاء حجز لإحدى حصص هذا الفرع.",
+      sourceLabel: "إعدادات هذا الفرع",
+      sameAsSchool: "مثل المدرسة (افتراضي)",
+      own: "إعدادات خاصة بهذا الفرع",
+    },
     title: "الفروع",
     subtitle: "المواقع الفعلية التابعة لمدرستك.",
     addBranch: "إضافة فرع",

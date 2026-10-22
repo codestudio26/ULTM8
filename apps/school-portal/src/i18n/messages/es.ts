@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Devolver el crédito a todos (predeterminado)",
       classCancelledFollow: "Seguir la política de arriba",
       fixedRules: "Siempre: un Pase de amigo recupera su crédito, y solo un Propietario o Gerente puede devolver dinero. Un reembolso que activaría el Personal de sucursal o un instructor te espera en Cancelaciones por resolver.",
+      chooseTitle: "Elige tu política de cancelación.",
+      chooseBody: "Hasta entonces, las reservas canceladas devuelven el crédito de la clase, como siempre.",
+      chooseLink: "Elegir ahora",
+      branchHint: "Cada sucursal puede usar estos ajustes o los suyos propios, en la página de ajustes de la sucursal.",
     },
     form: {
       schoolName: "Nombre de la escuela",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Lo que recuperan los alumnos cuando se cancela una reserva de una clase de esta sucursal.",
+      sourceLabel: "Ajustes de esta sucursal",
+      sameAsSchool: "Igual que la escuela (predeterminado)",
+      own: "Ajustes propios de esta sucursal",
+    },
     title: "Sedes",
     subtitle: "Ubicaciones físicas de tu escuela.",
     addBranch: "Añadir sede",

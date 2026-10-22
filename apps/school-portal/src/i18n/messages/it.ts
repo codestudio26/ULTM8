@@ -235,6 +235,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "Restituisci il credito a tutti (predefinito)",
       classCancelledFollow: "Segui la regola sopra",
       fixedRules: "Sempre: un Pass amico riavrà il suo credito, e solo un Titolare o un Responsabile può restituire soldi. Un rimborso che attiverebbe lo Staff di sede o un istruttore ti aspetta in Cancellazioni da gestire.",
+      chooseTitle: "Scegli la tua politica di cancellazione.",
+      chooseBody: "Fino ad allora, le prenotazioni cancellate restituiscono il credito della lezione, come sempre.",
+      chooseLink: "Scegli ora",
+      branchHint: "Ogni sede può usare queste impostazioni o le proprie, nella pagina delle impostazioni della sede.",
     },
     form: {
       schoolName: "Nome della scuola",
@@ -296,6 +300,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "Cosa ricevono indietro gli allievi quando viene cancellata una prenotazione per una lezione di questa sede.",
+      sourceLabel: "Impostazioni di questa sede",
+      sameAsSchool: "Come la scuola (predefinito)",
+      own: "Impostazioni proprie di questa sede",
+    },
     title: "Sedi",
     subtitle: "Le sedi fisiche della tua scuola.",
     addBranch: "Aggiungi sede",

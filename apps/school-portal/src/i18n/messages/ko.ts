@@ -234,6 +234,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "모두에게 수업 횟수 돌려주기(기본값)",
       classCancelledFollow: "위 정책 따르기",
       fixedRules: "항상: 친구 패스는 수업 횟수를 돌려받으며, 돈을 돌려줄 수 있는 사람은 소유자 또는 관리자뿐입니다. 지점 직원이나 코치가 발생시킨 환불은 '처리할 취소'에서 기다립니다.",
+      chooseTitle: "취소 정책을 선택하세요.",
+      chooseBody: "선택하기 전까지는 지금처럼 취소된 예약의 수업 횟수가 돌아갑니다.",
+      chooseLink: "지금 선택",
+      branchHint: "각 지점은 지점 설정 페이지에서 이 설정을 쓰거나 자체 설정을 쓸 수 있습니다.",
     },
     form: {
       schoolName: "도장 이름",
@@ -295,6 +299,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "이 지점 수업의 예약이 취소될 때 학생이 돌려받는 것.",
+      sourceLabel: "이 지점의 설정",
+      sameAsSchool: "학교와 동일(기본값)",
+      own: "이 지점 자체 설정",
+    },
     title: "지점",
     subtitle: "도장의 실제 위치입니다.",
     addBranch: "지점 추가",

@@ -234,6 +234,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       classCancelledCredit: "全員に受講回数を戻す（既定）",
       classCancelledFollow: "上のポリシーに従う",
       fixedRules: "常に適用：フレンドパスは受講回数が戻り、返金できるのはオーナーまたはマネージャーのみです。支店スタッフやコーチの操作で発生する返金は、「対応が必要なキャンセル」でお待ちしています。",
+      chooseTitle: "キャンセルポリシーを選んでください。",
+      chooseBody: "選ぶまでは、これまでどおりキャンセルされた予約の受講回数が戻ります。",
+      chooseLink: "今すぐ選ぶ",
+      branchHint: "各支店は、支店の設定ページでこの設定を使うか、独自の設定を使うかを選べます。",
     },
     form: {
       schoolName: "スクール名",
@@ -295,6 +299,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   branches: {
+    cancellations: {
+      subtitle: "この支店のクラスの予約がキャンセルされたときに生徒に返されるもの。",
+      sourceLabel: "この支店の設定",
+      sameAsSchool: "スクールと同じ（既定）",
+      own: "この支店独自の設定",
+    },
     title: "支店",
     subtitle: "スクールの所在地一覧。",
     addBranch: "支店を追加",
