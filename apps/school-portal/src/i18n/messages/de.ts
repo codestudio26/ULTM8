@@ -1159,6 +1159,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "Diese Schüler konnten nicht geprüft werden. Bitte versuche es erneut.",
       stoppedPartWay: "{done} von {total} befördert, dann ist ein Fehler aufgetreten. Die übrigen wurden nicht befördert — bitte versuche es mit ihnen erneut.",
+      tryRemaining: {
+        one: "Den verbleibenden Schüler erneut versuchen",
+        other: "Die verbleibenden {count} Schüler erneut versuchen",
+      },
+      stopHere: "Hier aufhören und den Bericht ansehen",
+      notReached: "nicht befördert: der Durchgang brach vorher ab",
       doneTitle: "Schüler befördert",
       notPromoted: "Nicht befördert: {list}.",
       openReport: "Druckbaren Bericht öffnen",

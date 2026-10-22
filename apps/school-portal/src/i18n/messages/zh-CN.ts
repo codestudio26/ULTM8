@@ -1131,6 +1131,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "无法检查这些学员，请重试。",
       stoppedPartWay: "已晋级 {total} 人中的 {done} 人，之后出现问题。其余学员未晋级，请重试。",
+      tryRemaining: {
+        other: "重试剩余的 {count} 名学员",
+      },
+      stopHere: "到此为止并查看报告",
+      notReached: "未晋级：批处理在此之前停止",
       doneTitle: "学员已晋级",
       notPromoted: "未晋级：{list}。",
       openReport: "打开可打印报告",

@@ -1131,6 +1131,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "これらの生徒を確認できませんでした。もう一度お試しください。",
       stoppedPartWay: "{total}人中{done}人を昇級した後、問題が発生しました。残りは昇級していません。もう一度お試しください。",
+      tryRemaining: {
+        other: "残りの{count}人をもう一度試す",
+      },
+      stopHere: "ここで終えてレポートを見る",
+      notReached: "昇級していません：処理がその前に止まりました",
       doneTitle: "生徒を昇級しました",
       notPromoted: "昇級されなかった生徒：{list}。",
       openReport: "印刷用レポートを開く",

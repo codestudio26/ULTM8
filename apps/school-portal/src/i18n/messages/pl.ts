@@ -1215,6 +1215,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "Nie udało się sprawdzić tych uczniów. Spróbuj ponownie.",
       stoppedPartWay: "Awansowano {done} z {total}, potem coś poszło nie tak. Pozostali nie zostali awansowani — spróbuj ponownie.",
+      tryRemaining: {
+        one: "Spróbuj ponownie dla pozostałego ucznia",
+        few: "Spróbuj ponownie dla pozostałych {count} uczniów",
+        many: "Spróbuj ponownie dla pozostałych {count} uczniów",
+        other: "Spróbuj ponownie dla pozostałych {count} uczniów",
+      },
+      stopHere: "Zatrzymaj i zobacz raport",
+      notReached: "nie awansowano: partia zatrzymała się wcześniej",
       doneTitle: "Uczniowie promowani",
       notPromoted: "Nie promowano: {list}.",
       openReport: "Otwórz raport do druku",

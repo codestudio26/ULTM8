@@ -169,6 +169,73 @@ test('bulk promote has no limit: over 200 students go through, 200 at a time (De
   expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId, type: 'BULK_STRIPE_AWARD' } })).toBe(206);
 });
 
+/** 205 more students in Just Starting (206 with Ben), ticked and sent to the promote window. */
+async function bigBatch(page: Page) {
+  for (let i = 0; i < 205; i++) await addStudent(s, 'Bulk', `Student ${String(i).padStart(3, '0')}`, { rung: 'White 0', activeOverride: true });
+  await page.goto('/grading');
+  await column(page, 'Just Starting').getByRole('checkbox', { name: 'Select all in Just Starting' }).check();
+  await page.getByRole('button', { name: 'Promote selected' }).click();
+  return page.getByRole('dialog', { name: 'Promote these students' });
+}
+/** The real (not dry-run) bulk-promote requests, numbered from 1. */
+function onSend(page: Page, handle: (n: number, route: import('@playwright/test').Route) => Promise<void>) {
+  let n = 0;
+  return page.route('**/grading/bulk-promote', async (route) => {
+    if (route.request().postDataJSON()?.dryRun) return route.fallback();
+    n += 1;
+    await handle(n, route);
+  });
+}
+
+test('a lost reply is sent again by itself, and nobody is promoted twice (Decision 284)', async ({ page }) => {
+  test.setTimeout(150_000);
+  const dialog = await bigBatch(page);
+  // The second batch reaches the server, but its answer is lost.
+  await onSend(page, async (n, route) => {
+    if (n === 2) {
+      await route.fetch();
+      return route.fulfill({ status: 503, body: 'lost' });
+    }
+    return route.fallback();
+  });
+  await dialog.getByRole('button', { name: 'Promote 206 students' }).click();
+  await expect(page.getByRole('dialog', { name: 'Students promoted' })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/already promoted since the check/)).toBeVisible();
+  expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId } })).toBe(206);
+});
+
+test('a batch that keeps failing offers "Try the remaining students again" (Decision 284)', async ({ page }) => {
+  test.setTimeout(150_000);
+  const dialog = await bigBatch(page);
+  let down = true;
+  await onSend(page, async (n, route) => (n >= 2 && down ? route.fulfill({ status: 503, body: 'down' }) : route.fallback()));
+  await dialog.getByRole('button', { name: 'Promote 206 students' }).click();
+  const stopped = page.getByRole('dialog', { name: 'Promote these students' });
+  await expect(stopped.getByText('Promoted 200 of 206, then something went wrong. The rest were not promoted yet.')).toBeVisible({ timeout: 60_000 });
+  expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId } })).toBe(200);
+  down = false;
+  await stopped.getByRole('button', { name: 'Try the remaining 6 students again' }).click();
+  await expect(page.getByRole('dialog', { name: 'Students promoted' }).getByText('You promoted 206 students.')).toBeVisible({ timeout: 60_000 });
+  expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId } })).toBe(206);
+});
+
+test('"Stop here" lists the students the batch never reached (Decision 284)', async ({ page }) => {
+  // No answer at all, even after the automatic retry: nothing is promoted yet.
+  await onSend(page, async (_n, route) => route.fulfill({ status: 503, body: 'down' }));
+  await page.goto('/grading');
+  await page.getByLabel(`Select ${ben.name}`).check();
+  await page.getByLabel(`Select ${cat.name}`).check();
+  await page.getByRole('button', { name: 'Promote selected' }).click();
+  await page.getByRole('dialog', { name: 'Promote these students' }).getByRole('button', { name: 'Promote 2 students' }).click();
+  await expect(page.getByText('Promoted 0 of 2, then something went wrong. The rest were not promoted yet.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Try the remaining 2 students again' })).toBeVisible();
+  await page.getByRole('button', { name: 'Stop here and see the report' }).click();
+  const done = page.getByRole('dialog', { name: 'Students promoted' });
+  await expect(done.getByText('You promoted 0 students.')).toBeVisible();
+  await expect(done.getByText(/not promoted: the batch stopped before them/)).toBeVisible();
+  expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId } })).toBe(0);
+});
+
 test('an inactive student can\'t be ticked (Decision 283)', async ({ page }) => {
   await page.goto('/grading');
   await expect(card(page, s.student.name).getByText('Inactive')).toBeVisible();
