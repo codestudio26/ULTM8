@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BroadcastNotificationInput, BroadcastResponse } from './notificationQueries';
 
@@ -111,7 +111,7 @@ export function BroadcastNotificationModal({
               required
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
-              options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
           </Field>
         ) : null}

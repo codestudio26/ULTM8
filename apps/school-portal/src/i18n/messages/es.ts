@@ -294,6 +294,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Desarchivar",
     archiveFailed: "No se pudo archivar esta sede.",
     unarchiveFailed: "No se pudo desarchivar esta sede.",
+    archiveConfirmTitle: "¿Archivar {name}?",
+    archiveConfirmDescription: "Se ocultará de las listas y de los selectores de sede, y se eliminará definitivamente a los 90 días salvo que la restaures. Si todavía tiene clases, horarios semanales, instructores, alumnos o personal, verás qué debes mover primero.",
     columnName: "Nombre",
     columnAddress: "Dirección",
     columnContactPhone: "Teléfono de contacto",

@@ -7,7 +7,7 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useRanks } from '../ranks/rankQueries';
 import { BeltChip } from './BeltChip';
 import { flattenLadder, type Rung } from './ladder';
-import { useBranches } from '../branches/branchQueries';
+import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds, useSetHomeBranch } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
@@ -411,7 +411,7 @@ function AssignHomeBranch({ schoolId, item }: { schoolId: string; item: GradingB
             id={id}
             value={branchId}
             onChange={(e) => setBranchId(e.target.value)}
-            options={[{ value: '', label: t('grading.board.assign.placeholder') }, ...(branches.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('grading.board.assign.placeholder') }, ...branchSelectOptions(branches.data?.items ?? [], t('branches.archivedBadge'))]}
           />
         </Field>
       </div>

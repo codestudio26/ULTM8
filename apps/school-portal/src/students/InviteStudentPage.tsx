@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useBranches } from '../branches/branchQueries';
+import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrants/roleGrantQueries';
@@ -151,7 +151,7 @@ export function InviteStudentPage() {
                 <SelectField
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
-                  options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                  options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
                 />
               </Field>
             ) : null}

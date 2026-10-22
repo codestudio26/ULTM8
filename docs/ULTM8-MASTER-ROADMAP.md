@@ -288,9 +288,10 @@ implementation) are both merged to master.
    yet given one. Nothing is blocked on it; worth a short pass.
 
 **Smaller, individually-flagged items worth a decision at some point** (none currently
-block a module, but each is a real, live gap): `grading.service.ts`'s
-`assertStaffAtSchool` may be over-broad for mutating grading actions (shipped on an
-unconfirmed assumption — real rework risk if narrowed later); `SettingsController`'s
+block a module, but each is a real, live gap): ~~`grading.service.ts`'s
+`assertStaffAtSchool` may be over-broad for mutating grading actions~~ (resolved:
+grading writes now go through `assertCanGrade`, per style, action and branch —
+Decisions 138, 168, 181); `SettingsController`'s
 "permissions metadata" was named in the spec but never given an endpoint; no general
 refresh-token endpoint exists (Spec §8.3 describes one; the current 15-minute
 forced-relogin window is the accepted tradeoff); `user_self_or_shared_school`'s RLS

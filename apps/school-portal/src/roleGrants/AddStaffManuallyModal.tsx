@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
 
 /**
@@ -62,7 +62,7 @@ export function AddStaffManuallyModal({
             required
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('roleGrants.addManually.selectBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('roleGrants.addManually.selectBranch') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
           />
         </Field>
         <Button type="submit" loading={submitting}>

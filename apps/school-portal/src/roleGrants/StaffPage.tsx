@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge, Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useBranches } from '../branches/branchQueries';
+import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
@@ -237,7 +237,7 @@ export function StaffPage() {
                   required
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
-                  options={[{ value: '', label: t('roleGrants.staff.selectBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                  options={[{ value: '', label: t('roleGrants.staff.selectBranch') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
                 />
               </Field>
             ) : null}
