@@ -4444,3 +4444,49 @@ User, 22 Oct 2026.
 ### Recorded by
 
 User ("open a PR for bug fixes 1 to 4"), 21 Oct 2026.
+
+---
+
+## Decision 306 — Hours are logged, not graded (corrects Decisions 288 and 301)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 288 item 2 and Decision 301 items 2 and 3 · **Amends:** Decision 301 item 4
+
+Decisions 288 and 301 made hours a grading requirement. That was a misreading. The product owner: *"Leave grading as it is, I think you have misunderstood me. We will log the hours they have trained, not do the grading based on hours. Do not change the grading logic."*
+
+### Decision
+
+1. **Grading doesn't change.** A grade still requires classes (or time at the rank for a time-only rank), days at the rank and skills, as today. There is no "classes, hours or both" choice per grade and no hours requirement. Progress and "Ready to Grade" work exactly as they do now.
+2. **ULTM8 logs the hours each student has trained**, as a record. Decision 301 items 1, 5 and 6 still apply:
+   - each check-in adds the scheduled length of the class (90 minutes = 1.5 hours);
+   - "Log a class" by hand adds the length of the class picked, or the time the coach enters (60 minutes by default);
+   - "Open mat counts toward hours" (Grading → Settings) decides whether open mat time is logged in the hours.
+3. **Where hours show:** the student's hours trained are shown on their grading page and in the student app, next to the progress breakdown, as information. They never change the %.
+4. **The progress breakdown stays** (Decision 301 item 4), with the requirements grading already uses: classes, days at the rank and skills.
+
+### Recorded by
+
+User, 22 Oct 2026, reviewing the New Portal design.
+
+---
+
+## Decision 307 — Promotion fee: defaults, prices hidden when off, and the coach decides after a waive or cancel
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decision 300 · **Answers:** the four design questions of 22 Oct 2026 on the promotion fee
+
+### Decision
+
+1. **Both fee switches are off by default.** The promotion fee switch stays off by default (Decision 287). **"Allow grading before the fee is paid" is off by default**, so a priced promotion waits until the fee is paid.
+2. **With the promotion fee off, prices don't show anywhere:** the belt editor (Add rank and Edit) has no price field and the ladder shows no prices. They appear only once the owner turns the fee on.
+3. **Waiving or cancelling a fee never promotes on its own.** Whether the student is promoted stays a coach's decision:
+   - **Cancelling a fee while the promotion waits** leaves the student on their current rank, with the planned promotion waiting for a coach to decide. The product owner: *"should be a decision for the coach"*.
+   - **Waiving a fee the student declined** asks the coach to confirm the promotion; nothing is applied until they agree. The product owner: *"promotion should come from the coach, so we should prompt a question and they should agree to promote, meaning it should not be auto promote"*.
+   - A coach who may promote that student (or the owner) confirms it with the normal Promote dialog, and the history keeps the date they choose. No new fee request is created for a fee that was waived or cancelled.
+4. **Waiving a fee while the promotion waits** applies the promotion the coach already made (Decision 300 item 3, unchanged).
+
+### Still open
+
+- Whether a promotion left "to decide" after a cancel or waive should time out or remind the coach.
+
+### Recorded by
+
+User, 22 Oct 2026, answering the design questions one by one.
