@@ -286,7 +286,7 @@ export class RanksService {
     // transaction — no inner one needed.
     const rankId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const rank = await tx.rank.create({
+      await tx.rank.create({
         data: {
           id: rankId,
           disciplineId,
@@ -385,7 +385,7 @@ export class RanksService {
     // fix applies here.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await lockLadder(tx, existing.disciplineId);
-      const rank = await tx.rank.update({
+      await tx.rank.update({
         where: { id: rankId },
         data: {
           order: dto.order,
