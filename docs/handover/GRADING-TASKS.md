@@ -2,7 +2,7 @@
 
 **Date:** 22 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–304).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–305).
 
 ---
 
@@ -61,6 +61,8 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 
 ## Frontend team — Student app (`apps/student`)
 
+The coach screens' five web-only actions (skipping ranks, bulk promote, moving columns, rank dates, first rank) stay on the web portal for now (Decision 305).
+
 | Task | Needs backend |
 |---|---|
 | Ask for a belt correction | B8 |
@@ -68,7 +70,6 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Grading progress breakdown per requirement | B11 |
 | Belt progress after check-in | B9 |
 | Levels badge, Kids/Adult program names | B4, B1 |
-| Coach screens: decide which web-only actions come to the phone (skipping ranks, bulk promote, moving columns, rank dates, first rank) | — |
 | Translate the app (deferred by Decision 273) | — |
 
 ## QA

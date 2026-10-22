@@ -4400,3 +4400,24 @@ Open mat is free training with no set lesson.
 ### Recorded by
 
 User, 22 Oct 2026, answering one by one.
+
+---
+
+## Decision 305 — Coach screens in the student app: five actions stay on the web portal for now
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Closes:** the open "coach screens" item in `docs/TRACK-B-ROADMAP.md` and the grading task list
+
+The student app's coach screens cover quick grading (the board, promote, skills, log a class). Five actions are only in the School Portal:
+- skipping ranks;
+- bulk promote;
+- moving a student to another board column;
+- editing rank dates;
+- giving a first rank.
+
+### Decision
+
+These five stay **web-only for now**. Coaches use the phone for quick grading and the portal for admin. It can be revisited in a later version. The product owner: *"keep web only for now"*.
+
+### Recorded by
+
+User, 22 Oct 2026.
