@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Bulk promote can finish after a failure** (Decision 284) — if a large
+  batch stops part-way, the group that failed is sent again once by itself,
+  then the window offers "Try the remaining N again" or "Stop here and see the
+  report". Each student carries the rank the check found them on, so nobody is
+  ever promoted twice. Removing a student from the batch no longer re-checks
+  the whole batch.
+- **Grading Board: no bulk promote limit** (Decision 282) — a coach can
+  promote any number of ticked students at once. The portal sends them 200 at a
+  time, as Spec 55 always intended; before, more than 200 failed outright.
+- **Only active students are graded up** (Decision 283) — promote and stripe
+  award (single and bulk) now need the student to be active: their board Active
+  switch, or a live membership. Inactive students can't be ticked on the board,
+  and bulk promote lists them as "can't be promoted". Moving down still works.
+- **Grading Board at scale** — 25 cards per column with "Show all N", a
+  "N of them hidden by your search" note (with "Show them") when ticked students
+  are filtered out, and a count of students already on the top rank.
 - **Shorter default waitlist claim window** (Decision 279) — new Schools now
   give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
   more people on the list get a chance before class. Existing Schools keep

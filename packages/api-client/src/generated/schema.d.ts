@@ -5681,6 +5681,8 @@ export interface components {
             items: components["schemas"]["GradingBoardItemDto"][];
             /** @description Students left out by activeOnly. */
             hiddenInactive: number;
+            /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
+            atTopRank: number;
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -5703,6 +5705,11 @@ export interface components {
             /** @description true or false: set by hand. null: follow whether the student has an active membership. */
             active: boolean | null;
         };
+        BulkExpectedRungDto: {
+            studentId: string;
+            /** @description The student's rung in the dry run (its fromRungId). */
+            rungId: string;
+        };
         BulkPromoteDto: {
             disciplineId: string;
             /** @description Up to 200 students (Spec 55). */
@@ -5718,6 +5725,8 @@ export interface components {
             acknowledgedStudentIds?: string[];
             /** @description Check only: return what would happen, change nothing. */
             dryRun?: boolean;
+            /** @description Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure. */
+            expected?: components["schemas"]["BulkExpectedRungDto"][];
         };
         BulkPromoteStudentDto: {
             studentId: string;

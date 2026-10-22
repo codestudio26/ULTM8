@@ -1097,6 +1097,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inactief verborgen",
         other: "{count} inactief verborgen",
       },
+      atTopRank: {
+        one: "· {count} op de hoogste rang, niet getoond",
+        other: "· {count} op de hoogste rang, niet getoond",
+      },
+      hiddenBySearch: {
+        one: "{count} daarvan verborgen door je zoekopdracht",
+        other: "{count} daarvan verborgen door je zoekopdracht",
+      },
+      showThem: "Toon ze",
+      showAll: "Toon alle {count}",
       columns: {
         justStarting: "Net begonnen",
         gettingThere: "Op weg",
@@ -1112,6 +1122,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Technieken vereist",
         skillsNotSignedOff: "Technieken niet afgetekend",
         inactive: "Inactief",
+        inactiveAria: "{name} kan niet worden geselecteerd: inactief",
+        inactiveTitle: "Alleen actieve leerlingen kunnen worden gegradeerd. Zet hun Actief-schakelaar aan of geef ze een geldig lidmaatschap.",
         notVerified: "Niet geverifieerd",
         moveAria: "{name} naar een andere kolom verplaatsen",
         move: "Verplaatsen",
@@ -1146,6 +1158,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Deze leerlingen konden niet worden gecontroleerd. Probeer het opnieuw.",
+      stoppedPartWay: "{done} van {total} gepromoveerd, daarna ging er iets mis. De rest is niet gepromoveerd — probeer het opnieuw met hen.",
+      tryRemaining: {
+        one: "Probeer de overgebleven leerling opnieuw",
+        other: "Probeer de overgebleven {count} leerlingen opnieuw",
+      },
+      stopHere: "Hier stoppen en het rapport bekijken",
+      notReached: "niet gepromoveerd: de reeks stopte ervoor",
       doneTitle: "Leerlingen gepromoveerd",
       notPromoted: "Niet gepromoveerd: {list}.",
       openReport: "Afdrukbaar rapport openen",

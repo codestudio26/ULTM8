@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -89,6 +90,7 @@ describeIfDb('History notes: edit, hide, change log (Decision 192)', () => {
     await person('coach', [{ role: 'INSTRUCTOR' }]);
     await person('voider', [{ role: 'INSTRUCTOR' }]); // may only void history
     await person('student', [{ role: 'STUDENT' }]);
+    await giveLiveMembership(superuser, school.id, id.student);
     await person('guardian', []);
     await superuser.gradingPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: id.coach, disciplineId: bjj.id } });
     await superuser.gradingPermission.create({
@@ -113,6 +115,8 @@ describeIfDb('History notes: edit, hide, change log (Decision 192)', () => {
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.rank.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.discipline.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.membership.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     for (let attempt = 0; ; attempt++) {
       await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });

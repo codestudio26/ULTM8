@@ -17831,11 +17831,16 @@
           "hiddenInactive": {
             "type": "number",
             "description": "Students left out by activeOnly."
+          },
+          "atTopRank": {
+            "type": "number",
+            "description": "Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items."
           }
         },
         "required": [
           "items",
-          "hiddenInactive"
+          "hiddenInactive",
+          "atTopRank"
         ]
       },
       "BoardThresholdsDto": {
@@ -17899,6 +17904,22 @@
           "active"
         ]
       },
+      "BulkExpectedRungDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "rungId": {
+            "type": "string",
+            "description": "The student's rung in the dry run (its fromRungId)."
+          }
+        },
+        "required": [
+          "studentId",
+          "rungId"
+        ]
+      },
       "BulkPromoteDto": {
         "type": "object",
         "properties": {
@@ -17932,6 +17953,13 @@
           "dryRun": {
             "type": "boolean",
             "description": "Check only: return what would happen, change nothing."
+          },
+          "expected": {
+            "description": "Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkExpectedRungDto"
+            }
           }
         },
         "required": [
