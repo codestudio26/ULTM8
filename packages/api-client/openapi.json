@@ -5522,6 +5522,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Decision 309 — include archived styles too (left out by default).",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5747,6 +5756,79 @@
           },
           "409": {
             "description": "The style is in use: someone holds a rank in it, or classes, slots or lessons use it."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/archive": {
+      "post": {
+        "operationId": "RanksController_archiveDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An upcoming class or a timetable slot still uses the style."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/unarchive": {
+      "post": {
+        "operationId": "RanksController_unarchiveDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -6165,6 +6247,51 @@
         "responses": {
           "200": {
             "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/skills/order": {
+      "put": {
+        "operationId": "RanksController_reorderSkills",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSkillsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style's skills in their new order (Decision 309).",
             "content": {
               "application/json": {
                 "schema": {
@@ -16098,6 +16225,15 @@
             "type": "number",
             "description": "Grading Board: \"Ready to Grade\" from this % (Decisions 75, 136). Default 66."
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Archived (retired) at (Decision 309); null while in use."
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "Students with a rank in this style (Decision 309)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -16113,6 +16249,7 @@
           "skillsRequiredToGrade",
           "boardGettingThere",
           "boardReadyToGrade",
+          "studentCount",
           "createdAt",
           "updatedAt"
         ]
@@ -16193,6 +16330,23 @@
           "templateId"
         ]
       },
+      "ClassTypeRenameDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The class type as it is now."
+          },
+          "to": {
+            "type": "string",
+            "description": "Its new name. Must also be in classTypesOffered."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
       "UpdateDisciplineDto": {
         "type": "object",
         "properties": {
@@ -16209,6 +16363,13 @@
           "skillsRequiredToGrade": {
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
+          },
+          "renameClassTypes": {
+            "description": "Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassTypeRenameDto"
+            }
           }
         }
       },
@@ -16705,6 +16866,14 @@
             "type": "string",
             "nullable": true
           },
+          "order": {
+            "type": "number",
+            "description": "Position in the style's skill list, 0 first (Decision 309)."
+          },
+          "lessonCount": {
+            "type": "number",
+            "description": "Lessons that teach this skill (Decision 309)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -16717,6 +16886,8 @@
           "disciplineId",
           "schoolId",
           "name",
+          "order",
+          "lessonCount",
           "createdAt",
           "updatedAt"
         ]
@@ -16733,6 +16904,21 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "ReorderSkillsDto": {
+        "type": "object",
+        "properties": {
+          "skillIds": {
+            "description": "Every skill id of this style, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "skillIds"
         ]
       },
       "UpdateSkillDto": {

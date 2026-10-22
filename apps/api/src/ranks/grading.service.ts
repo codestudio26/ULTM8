@@ -176,7 +176,7 @@ export class GradingService {
       if (ranks.length === 0) continue;
       const catalog = await this.prismaApp.withTenantContext(studentId, async (tx) => ({
         styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true } }),
-        belts: await tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        belts: await tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       }));
       for (const row of ranks as Array<{
@@ -257,8 +257,8 @@ export class GradingService {
         return { items: [] };
       }
       const [styles, belts, held] = await Promise.all([
-        tx.discipline.findMany({ where: { schoolId }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } }),
-        tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        tx.discipline.findMany({ where: { schoolId, archivedAt: null }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } }),
+        tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         tx.studentRank.findMany({ where: { studentId, schoolId }, select: { disciplineId: true } }),
       ]);
       const heldIds = new Set(held.map((h) => h.disciplineId));
@@ -508,9 +508,18 @@ export class GradingService {
    * - Decision 110: a closed (archived) School accepts no new or updated
    *   records — the same check RanksService/CurriculumService writes apply.
    * Reads are deliberately not gated (grading history stays readable). */
-  private async assertSchoolAcceptsGradingWrites(callerId: string, schoolId: string): Promise<void> {
+  private async assertSchoolAcceptsGradingWrites(
+    callerId: string,
+    schoolId: string,
+    discipline?: { name: string; archivedAt: Date | null },
+  ): Promise<void> {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.ranksService.assertRanksEnabled(callerId, schoolId);
+    // Decision 309: an archived style is read-only — its history stays, but
+    // nobody is graded, verified or declared in it until it is unarchived.
+    if (discipline?.archivedAt) {
+      throw new ConflictException(`"${discipline.name}" is archived, so nobody can be graded in it. Unarchive it on the Disciplines page first.`);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -590,7 +599,7 @@ export class GradingService {
       await batch.authorize(studentId);
     } else {
       await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
-      await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+      await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
     }
 
     if (type === 'DOWNGRADE' && (dto.effectiveDate !== undefined || dto.startingClasses !== undefined || dto.startingClassesByType !== undefined)) {
@@ -867,7 +876,7 @@ export class GradingService {
       throw new NotFoundException('Discipline not found');
     }
     if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId, discipline);
 
     type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string };
     const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
@@ -1176,7 +1185,7 @@ export class GradingService {
       throw new NotFoundException('Discipline not found');
     }
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const studentRank = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
@@ -1234,7 +1243,7 @@ export class GradingService {
         throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
       }
     }
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
     if (dto.gettingThere >= dto.readyToGrade) {
       throw new BadRequestException('"Getting There" must start below "Ready to Grade".');
     }
@@ -1340,7 +1349,10 @@ export class GradingService {
       throw new NotFoundException('Skill not found');
     }
     await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId, 'canSignOffSkills');
-    await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId);
+    const skillDiscipline = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.findUniqueOrThrow({ where: { id: skill.disciplineId }, select: { name: true, archivedAt: true } }),
+    );
+    await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId, skillDiscipline);
 
     return this.thenCheckReady(studentId, skill.disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const studentRank = await tx.studentRank.findUnique({
@@ -1571,7 +1583,7 @@ export class GradingService {
       throw new NotFoundException('Discipline not found');
     }
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
 
     if (dayNumber(dto.date) === null) {
       throw new BadRequestException('date must be a real calendar date, as YYYY-MM-DD.');
@@ -1673,7 +1685,7 @@ export class GradingService {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
     }
     const discipline = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.discipline.findUnique({ where: { id: disciplineId }, select: { id: true, schoolId: true } }),
+      tx.discipline.findUnique({ where: { id: disciplineId }, select: { id: true, schoolId: true, name: true, archivedAt: true } }),
     );
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
@@ -1687,11 +1699,11 @@ export class GradingService {
     if (!enrolled) {
       throw new ForbiddenException('Only a Student of this School can declare a rank here.');
     }
-    await this.assertSchoolAcceptsGradingWrites(studentId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(studentId, discipline.schoolId, discipline);
 
     return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const tier = await tx.rankStripeTier.findFirst({
-        where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
+        where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId, archivedAt: null } },
         select: { id: true, rankId: true },
       });
       if (!tier) {
@@ -1702,7 +1714,7 @@ export class GradingService {
       }
 
       // The style's first rung: its lowest belt's lowest rung.
-      const firstRank = await tx.rank.findFirst({ where: { disciplineId }, orderBy: { order: 'asc' }, select: { id: true } });
+      const firstRank = await tx.rank.findFirst({ where: { disciplineId, archivedAt: null }, orderBy: { order: 'asc' }, select: { id: true } });
       const firstTier = firstRank
         ? await tx.rankStripeTier.findFirst({ where: { rankId: firstRank.id }, orderBy: { order: 'asc' }, select: { id: true } })
         : null;
@@ -1762,7 +1774,7 @@ export class GradingService {
       throw new NotFoundException('Discipline not found');
     }
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canVerifyRanks');
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
 
     return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
@@ -1776,7 +1788,7 @@ export class GradingService {
       let target = { rankId: existing.currentRankId, stripeTierId: existing.currentStripeId };
       if (dto.rankId && dto.stripeTierId) {
         const tier = await tx.rankStripeTier.findFirst({
-          where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
+          where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId, archivedAt: null } },
           select: { id: true, rankId: true },
         });
         if (!tier) {

@@ -4,10 +4,30 @@ import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from './disciplineQueries';
 import { useT } from '../i18n/I18nProvider';
 
-/** Fields match CreateDisciplineDto/UpdateDisciplineDto exactly —
- * apps/api/src/ranks/dto/create-discipline.dto.ts. `classTypesOffered` is a
- * comma-separated free-text list here, same convention SchoolPage.tsx
- * already established for School.activities/facilities. */
+export interface DisciplineFormValues {
+  name: string;
+  classTypesOffered: string[];
+  skillsRequiredToGrade: boolean;
+  /** Class types renamed in this edit (Decision 309); always empty when adding. */
+  renameClassTypes: Array<{ from: string; to: string }>;
+}
+
+/** One row of the class type list. `original` is the stored name the row
+ * started as, so editing its text is a rename the API carries onto classes,
+ * slots and rungs, not a remove-and-add. */
+interface TypeRow {
+  key: number;
+  original: string | null;
+  value: string;
+}
+
+let nextKey = 0;
+const row = (original: string | null, value = original ?? ''): TypeRow => ({ key: nextKey++, original, value });
+
+/** Fields match CreateDisciplineDto/UpdateDisciplineDto —
+ * apps/api/src/ranks/dto/create-discipline.dto.ts and update-discipline.dto.ts.
+ * Class types are a list, one per row, that can be renamed and reordered
+ * (Decision 309). */
 export function DisciplineFormModal({
   title,
   initial,
@@ -18,28 +38,56 @@ export function DisciplineFormModal({
   title: string;
   initial?: Partial<DisciplineResponse>;
   submitting: boolean;
-  onSubmit: (values: { name: string; classTypesOffered?: string[]; skillsRequiredToGrade?: boolean }) => Promise<void>;
+  onSubmit: (values: DisciplineFormValues) => Promise<void>;
   onClose: () => void;
 }) {
   const t = useT();
-  const [form, setForm] = useState({
-    name: initial?.name ?? '',
-    classTypesOffered: (initial?.classTypesOffered ?? []).join(', '),
-    skillsRequiredToGrade: initial?.skillsRequiredToGrade ?? false,
-  });
+  const [name, setName] = useState(initial?.name ?? '');
+  const [skillsRequiredToGrade, setSkillsRequired] = useState(initial?.skillsRequiredToGrade ?? false);
+  const [types, setTypes] = useState<TypeRow[]>(() => (initial?.classTypesOffered ?? []).map((c) => row(c)));
   const [error, setError] = useState<string | null>(null);
+
+  const update = (key: number, value: string) => setTypes((rows) => rows.map((r) => (r.key === key ? { ...r, value } : r)));
+  const move = (i: number, delta: number) =>
+    setTypes((rows) => {
+      const j = i + delta;
+      if (j < 0 || j >= rows.length) return rows;
+      const next = [...rows];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+
+  /** The problem with the form as it stands, or null (Decision 308: no blank
+   * name, no class type twice). */
+  function problem(): string | null {
+    if (!name.trim()) return t('disciplines.form.nameRequired');
+    const seen = new Set<string>();
+    for (const r of types) {
+      const v = r.value.trim();
+      if (!v) continue;
+      if (seen.has(v.toLowerCase())) return t('disciplines.form.classTypeTwice', { name: v });
+      seen.add(v.toLowerCase());
+    }
+    return null;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const issue = problem();
+    if (issue) {
+      setError(issue);
+      return;
+    }
+    const kept = types.filter((r) => r.value.trim());
     try {
       await onSubmit({
-        name: form.name,
-        classTypesOffered: form.classTypesOffered
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        skillsRequiredToGrade: form.skillsRequiredToGrade,
+        name: name.trim(),
+        classTypesOffered: kept.map((r) => r.value.trim()),
+        skillsRequiredToGrade,
+        renameClassTypes: kept
+          .filter((r) => r.original !== null && r.original !== r.value.trim())
+          .map((r) => ({ from: r.original as string, to: r.value.trim() })),
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -51,23 +99,37 @@ export function DisciplineFormModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('disciplines.form.nameLabel')} htmlFor="discipline-name">
-          <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <TextField id="discipline-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field
-          label={t('disciplines.form.classTypesLabel')}
-          htmlFor="discipline-classTypes"
-          hint={t('disciplines.form.classTypesHint')}
-        >
-          <TextField
-            value={form.classTypesOffered}
-            onChange={(e) => setForm((f) => ({ ...f, classTypesOffered: e.target.value }))}
-          />
-        </Field>
-        <Checkbox
-          label={t('disciplines.form.skillsRequired')}
-          checked={form.skillsRequiredToGrade}
-          onChange={(e) => setForm((f) => ({ ...f, skillsRequiredToGrade: e.target.checked }))}
-        />
+        <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+          <legend className="ultm8-field__label">{t('disciplines.form.classTypesLabel')}</legend>
+          <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+            {t('disciplines.form.classTypesHint')}
+          </p>
+          {types.map((r, i) => (
+            <div key={r.key} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+              <TextField
+                aria-label={t('disciplines.form.classTypeAria', { number: i + 1 })}
+                maxLength={100}
+                value={r.value}
+                onChange={(e) => update(r.key, e.target.value)}
+              />
+              <Button type="button" variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('disciplines.form.moveUpAria', { number: i + 1 })}>
+                ↑
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => move(i, 1)} disabled={i === types.length - 1} aria-label={t('disciplines.form.moveDownAria', { number: i + 1 })}>
+                ↓
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setTypes((rows) => rows.filter((x) => x.key !== r.key))} aria-label={t('disciplines.form.removeAria', { number: i + 1 })}>
+                {t('disciplines.form.remove')}
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="secondary" onClick={() => setTypes((rows) => [...rows, row(null)])}>
+            {t('disciplines.form.addClassType')}
+          </Button>
+        </fieldset>
+        <Checkbox label={t('disciplines.form.skillsRequired')} checked={skillsRequiredToGrade} onChange={(e) => setSkillsRequired(e.target.checked)} />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}

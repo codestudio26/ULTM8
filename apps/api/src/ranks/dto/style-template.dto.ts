@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { TemplateId, TEMPLATES } from '../templates/ibjjf';
 
@@ -10,6 +11,7 @@ export class CreateStyleFromTemplateDto {
 
   @ApiPropertyOptional({ description: "The style's name. Default: the template's name." })
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)

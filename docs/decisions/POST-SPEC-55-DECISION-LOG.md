@@ -4490,3 +4490,61 @@ User, 22 Oct 2026, reviewing the New Portal design.
 ### Recorded by
 
 User, 22 Oct 2026, answering the design questions one by one.
+
+---
+
+## Decision 308 — Disciplines: eight bug fixes (archived belts, renames, class types, names)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 90, 198, 226
+
+The Disciplines review of 22 Oct 2026 found eight bugs (D1–D8). The product owner: *"Deep dive, find best uptodate solutions and what's going on in market. then get confident on the solutions then start fixing them"*.
+
+### Decision
+
+1. **An archived belt is out of the ladder (D1).** Grading never lands a student on an archived belt: the ladder, "declare your rank" at signup, coach verification and a new student's first rung all skip archived belts and their rungs.
+2. **Renaming a style renames it everywhere (D2).** The name copies on classes and timetable slots (`activities`) and on instructors (`specializations`, Decision 90's bridge) follow the new name.
+3. **Class types are edited one by one, and a rename carries over (D3).** Renaming a class type updates the classes, timetable slots and rungs that use it. Removing one that is still in use (an upcoming class, a live timetable slot or a rung) is refused with the counts, so nothing is orphaned silently.
+4. **Adding a belt closes gaps first (D4).** When the 90-day purge has removed an archived belt from the middle of the ladder, the next belt change renumbers the ladder instead of failing. The purge job itself is unchanged.
+5. **Names are trimmed and can't be blank (D5).** This applies to style, skill and template names.
+6. **No duplicate names (D6).** Style names are unique within a School and skill names within a style, ignoring case. A repeated class type in the same style is merged. This is checked by the API, not a database index, so existing duplicate data never blocks a migration.
+7. **Copies and templates get a free name (D7).** "Duplicate" and "Start from template" number the name ("BJJ (Copy 2)", "IBJJF (2)") when it is taken, cut to fit 100 characters.
+8. **Clearing a required field is refused (D8).** Sending an empty value for a style's name, class types or "skills required" switch returns a clear 400, not a server error.
+
+### What this does NOT resolve
+
+- Existing duplicate style names in live data are left as they are; the owner renames them.
+- The API's new error messages are English only; other languages show the generic message until they are added to the portal's server-message translations.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 309 — Disciplines: archive a style, students per style, skill order, and a read-only view for coaches
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 198, 226, 308
+
+The same review found five gaps. Other class-booking and martial-arts apps deactivate rather than delete a programme that has history, and keep the history. The product owner asked for all five to be built.
+
+### Decision
+
+1. **A style can be archived (G1).** Only the School owner archives or unarchives it.
+   - It is blocked while an upcoming class or a live timetable slot uses the style; the owner moves or archives those first.
+   - An archived style is hidden from every picker, read-only, and nobody can be graded in it. Students keep their rank and history, and voiding or noting past history still works.
+   - It is never purged (unlike Decision 226's 90-day purge for belts). Unarchive brings it back, if its name is still free.
+   - Past classes and membership plans that name it keep it.
+   - Delete (Decision 198) stays for styles nobody uses.
+2. **Class types are a list (G2)**, with add, remove, reorder and rename (Decision 308 item 3).
+3. **Students per style (G3).** The Disciplines list shows how many students hold a rank in each style, and the owner sees who they are, with their rank, on the style's page.
+4. **Skills have context and order (G4).** Each skill shows which rungs require it and how many lessons teach it, and the owner can put skills in order.
+5. **Coaches and Branch Staff can see the Disciplines page, read-only (G5)**, including the belts and skills. They don't see the students list.
+
+### What this does NOT resolve
+
+- Whether an archived style should eventually be purged, or a retention period apply.
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
