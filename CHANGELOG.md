@@ -20,6 +20,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (a race on the belt-delete error, and a never-loading test photo). The
   "can't delete a belt" message now reads "1 student holds" / "2 students
   hold" instead of "1 student(s) hold".
+- **Branch archive fixes** (Decision 293) — archiving a Branch now asks
+  first and, if something still belongs to it, says what inside the dialog.
+  Weekly timetable slots now block archiving (before, sessions kept being
+  created for the archived Branch). Archived Branches no longer appear in
+  Branch pickers across the portal, except on a record that already uses
+  one. The 90-day purge now rechecks before deleting, so students, staff or
+  classes added to an archived Branch are never silently removed with it.
 - **Bulk promote can finish after a failure** (Decision 284) — if a large
   batch stops part-way, the group that failed is sent again once by itself,
   then the window offers "Try the remaining N again" or "Stop here and see the

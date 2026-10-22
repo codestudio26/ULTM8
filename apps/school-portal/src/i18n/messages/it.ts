@@ -294,6 +294,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Ripristina",
     archiveFailed: "Impossibile archiviare questa sede.",
     unarchiveFailed: "Impossibile ripristinare questa sede.",
+    archiveConfirmTitle: "Archiviare {name}?",
+    archiveConfirmDescription: "Verrà nascosta dagli elenchi e dai selettori di sede ed eliminata definitivamente dopo 90 giorni, a meno che non la ripristini. Se ha ancora lezioni, orari settimanali, istruttori, allievi o personale, vedrai cosa spostare prima.",
     columnName: "Nome",
     columnAddress: "Indirizzo",
     columnContactPhone: "Telefono di contatto",
