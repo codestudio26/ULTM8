@@ -1072,6 +1072,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       inactiveHidden: {
         other: "非アクティブ{count}人を非表示",
       },
+      atTopRank: {
+        other: "· 最上位の段位に{count}人（表示なし）",
+      },
+      hiddenBySearch: {
+        other: "うち{count}人は検索で非表示",
+      },
+      showThem: "表示する",
+      showAll: "{count}人すべて表示",
       columns: {
         justStarting: "始めたばかり",
         gettingThere: "順調",
@@ -1087,6 +1095,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "技が必須",
         skillsNotSignedOff: "技が未認定",
         inactive: "非アクティブ",
+        inactiveAria: "{name}は選択できません：非アクティブ",
+        inactiveTitle: "昇級できるのはアクティブな生徒だけです。アクティブのスイッチをオンにするか、有効な会員資格を付与してください。",
         notVerified: "未確認",
         moveAria: "{name}を別の列に移動",
         move: "移動",
@@ -1120,6 +1130,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "これらの生徒を確認できませんでした。もう一度お試しください。",
+      stoppedPartWay: "{total}人中{done}人を昇級した後、問題が発生しました。残りは昇級していません。もう一度お試しください。",
       doneTitle: "生徒を昇級しました",
       notPromoted: "昇級されなかった生徒：{list}。",
       openReport: "印刷用レポートを開く",

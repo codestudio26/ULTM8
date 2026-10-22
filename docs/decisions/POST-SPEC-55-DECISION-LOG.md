@@ -3993,3 +3993,101 @@ Existing Schools keep the window they already have (the migration changes the co
 ### Recorded by
 
 User, approving the recommendation of 60 minutes ("go for it .. and then merge it"), 21 Oct 2026.
+
+---
+
+## Decision 280 — Brazilian Jiu-Jitsu: Kids and Adult on one linked ladder, split by an editable age (default under 16)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Resolves:** how kids move up to the adult belts, and how the Grading Board separates them (raised while reviewing the New Portal grading screens)
+
+### Decision
+
+1. **One linked ladder.** Kids and Adult are not separate styles. A Brazilian Jiu-Jitsu style keeps the one ladder the IBJJF templates already build (Decision 131): White Belt, the kids belts (Grey/White to Green/Black), then the adult belts.
+2. **Kids are split by age.** A student under the style's **"Kids until age"** is Kids; from that age they are Adult. The default is **under 16** (the IBJJF adult age). It is a setting in Grading → Settings (and Settings → Grading), and coaches can change it as well as the owner. The product owner's words: *"THE UNDER 16 RULES, however coaches will be able to edit the age too"*.
+3. **The Grading Board shows a Kids · Adult switch** inside the style.
+4. **Kid → Adult is a normal promotion, with a nudge.** Nothing moves on its own. When a student on a kids belt reaches the age, they show under Adult with a **"Ready for Adult belts"** tag. The coach promotes them as usual and picks the adult belt in "Promote to" (e.g. Green Belt → Blue Belt). It is recorded on the history like any grade.
+5. **Adults skip the kids belts.** For an Adult student, the next rank after White Belt · 4 Stripes is **Blue Belt**, not Grey/White Belt, and it is not recorded as a skip.
+
+### Effect
+
+Needs a schema and engine change: the age on the style, a "kids belt" flag on a belt, and the next-rank rule in item 5. See `docs/v1.3-backend-backlog.md` §3.20.
+
+### Still open
+
+- **Which coaches can change the age.** Is it any coach with grading access, or a new permission on the Permissions page?
+- **Which rank's requirements apply when a grade skips ranks.** The built API hard-blocks a skip when the next rank's required skills aren't signed off. It doesn't say whether the target rank's own requirements apply.
+
+### Recorded by
+
+User, answering the Kids/Adult questions on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 281 — Kids and Adult stay separate programs; a Kids student can be graded into the Adult program (corrects Decision 280)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 280 items 1, 2 and 5
+
+Decision 280 combined Kids and Adult into one linked ladder. That was a misreading. The product owner's words: *"before we have the kids and the adult program separate, this is correct. What I did ask was to be able to grade from kids to adult, not to combine them."*
+
+### Decision
+
+1. **Two separate programs.** Each has its own ladder:
+   - **Adult:** White, Blue, Purple, Brown, Black.
+   - **Kids:** White, then the kids belts.
+   
+   Both programs sit under one discipline, Brazilian Jiu-Jitsu. Screens show them as a **Kids · Adult** switch next to the discipline.
+2. **Grading Kids → Adult.** For a Kids student, "Promote to" lists their next kids ranks, then an **"Adult program"** group with the adult ranks. Picking an adult rank moves the student to the Adult program at that rank. Their history records **"Moved to Adult program"**. This works from the board (single and bulk) and from the Ranks tab.
+3. **The age setting is only a reminder** (Decision 280 items 2 and 4, reworded). From **"Ready for Adult from age"** (default 16, editable by the owner and coaches), a Kids student gets the **"Ready for Adult program"** tag. Nothing moves on its own.
+4. **Decision 280 item 5 is withdrawn.** It existed only because of the combined ladder.
+
+### Still open
+
+- **The default adult rank** for a kid at the top of the kids ladder. The sample uses the first adult rank above White Belt (Blue Belt). This is a placeholder, not a confirmed rule.
+- **Whether a coach may grade a kid into Adult before the age.** The design allows it, because the age is only a reminder. Confirm.
+- **What carries over on the move.** This covers classes, skills and history. The design treats it like any grade: counting restarts, sign-offs are wiped (Decision 128 item 16) and history is kept.
+- Decision 280's open item on which coaches can change the age.
+
+### Recorded by
+
+User, correcting the combined ladder on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 282 — Bulk promote has no limit a coach can see; the portal sends 200 at a time
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Builds:** Spec 55 Section 7 (bulk-grading batch cap), Decision 130
+
+The stress test (20 academies, 300–500 students, 50–90% graded at once) found the School Portal sent every ticked student in one request. Over 200 students, the API refused the whole batch. The product owner asked: *"Since when we have limit, who has agreed with that, we should not have a limit."*
+
+Where the 200 came from: Spec 55's logic review of 27 Aug 2026 put a fixed cap on each bulk-grading **request** (e.g. 200 students), *"with the School Portal client batching sequential calls beyond it"*. Decision 130 repeated the cap. The cap was always meant to be per request, never a limit for the coach. The portal never did the batching.
+
+### Decision
+
+1. **No limit for the coach.** A coach can tick and promote any number of students in one go.
+2. **The portal sends them 200 at a time**, one request after another, and joins the answers. The check before promoting (the dry run) works the same way. The API keeps its 200-per-request guard.
+3. **If a later batch fails**, the students the earlier batches promoted stay promoted. The window says *"Promoted N of M, then something went wrong"* and the report lists the ones done.
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 283 — Only active students are graded up; unverified students can still be graded
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision
+
+The stress test showed inactive students could be ticked and promoted. Asked whether they should be, the product owner said: *"No, only active students"*. Asked the same about students whose rank is self-declared and not yet verified: *"Yes, because grading is a human decision done by the coach"*.
+
+### Decision
+
+1. **Active means** what the Grading Board already shows (Decision 152): the student's **Active switch** on the board if a coach has set it, otherwise **a live membership** at the School.
+2. **Promote and stripe award need an active student.** This covers a single grade and bulk promote. Bulk promote lists an inactive student under "can't be promoted" (*"inactive (only active students can be graded)"*) and skips them. A single grade is refused with *"Only active students can be graded. Make the student active on the Grading Board, or give them a live membership."*
+3. **The board does not let an inactive student be ticked.** Their tick box is off, with the reason.
+4. **Moving a student down is still allowed** when inactive. It is a correction, not a grade up.
+5. **Unverified (self-declared) students can be graded.** No change: grading never checked verification.
+6. **A first rank can be given to an inactive student.** For a student with no rank in the style yet, "Give first rank" records the belt they start at; it is not a grade up. The product owner confirmed: *"yes"* (21 Oct 2026).
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.

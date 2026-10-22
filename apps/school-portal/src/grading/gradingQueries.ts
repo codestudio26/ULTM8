@@ -207,14 +207,59 @@ export function useSetBoardActive(disciplineId: string) {
   );
 }
 
+/** The API takes at most this many students per request (Decision 130). */
+const BULK_BATCH = 200;
+
+/**
+ * A batch that stopped part-way: `done` holds what the earlier batches already
+ * promoted, so the window can still report them (Decision 282).
+ */
+export class BulkPromotePartialError extends Error {
+  constructor(
+    readonly done: BulkPromoteResult,
+    readonly reason: unknown,
+  ) {
+    super(reason instanceof Error ? reason.message : 'Bulk promote stopped part-way');
+  }
+}
+
+/**
+ * Promote any number of students (Decision 282): the window sends them to the
+ * API 200 at a time and joins the answers, so a coach never meets a limit.
+ */
+async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): Promise<BulkPromoteResult> {
+  const merged: BulkPromoteResult = { ready: [], needsAcknowledgement: [], cannotPromote: [] };
+  for (let i = 0; i < body.studentIds.length; i += BULK_BATCH) {
+    const studentIds = body.studentIds.slice(i, i + BULK_BATCH);
+    const inBatch = new Set(studentIds);
+    const acknowledged = body.acknowledgedStudentIds?.filter((id) => inBatch.has(id));
+    let part: BulkPromoteResult;
+    try {
+      part = (await unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', {
+          params: { path: { schoolId } },
+          body: { ...body, studentIds, acknowledgedStudentIds: acknowledged?.length ? acknowledged : undefined },
+        }),
+      )) as BulkPromoteResult;
+    } catch (err) {
+      if (i === 0 || body.dryRun) throw err;
+      throw new BulkPromotePartialError(merged, err);
+    }
+    merged.ready.push(...part.ready);
+    merged.needsAcknowledgement.push(...part.needsAcknowledgement);
+    merged.cannotPromote.push(...part.cannotPromote);
+  }
+  return merged;
+}
+
 /** Bulk promote (Decision 130). With dryRun it only checks, for the confirm window. */
 export function useBulkPromote(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: BulkPromoteInput) =>
-      unwrap(apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', { params: { path: { schoolId } }, body })) as Promise<BulkPromoteResult>,
-    onSuccess: async (_result, body) => {
+    mutationFn: (body: BulkPromoteInput) => bulkPromoteInBatches(schoolId, body),
+    onSettled: async (_result, error, body) => {
       if (body.dryRun) return; // a check changes nothing
+      if (error && !(error instanceof BulkPromotePartialError)) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
         queryClient.invalidateQueries({ queryKey: ['student-grading'] }),

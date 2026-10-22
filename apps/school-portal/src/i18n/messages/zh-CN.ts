@@ -1072,6 +1072,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       inactiveHidden: {
         other: "已隐藏 {count} 名非活跃学员",
       },
+      atTopRank: {
+        other: "· {count} 人已在最高级别，未显示",
+      },
+      hiddenBySearch: {
+        other: "其中 {count} 人被搜索隐藏",
+      },
+      showThem: "显示他们",
+      showAll: "显示全部 {count} 人",
       columns: {
         justStarting: "刚起步",
         gettingThere: "进行中",
@@ -1087,6 +1095,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "需要技术",
         skillsNotSignedOff: "技术未认证",
         inactive: "非活跃",
+        inactiveAria: "无法选择 {name}：未活跃",
+        inactiveTitle: "只有活跃学员才能晋级。请打开其“活跃”开关，或为其办理有效会员。",
         notVerified: "未核实",
         moveAria: "将 {name} 移到其他列",
         move: "移动",
@@ -1120,6 +1130,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "无法检查这些学员，请重试。",
+      stoppedPartWay: "已晋级 {total} 人中的 {done} 人，之后出现问题。其余学员未晋级，请重试。",
       doneTitle: "学员已晋级",
       notPromoted: "未晋级：{list}。",
       openReport: "打开可打印报告",

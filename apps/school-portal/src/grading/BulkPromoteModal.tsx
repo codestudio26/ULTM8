@@ -4,7 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
-import { type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
+import { BulkPromotePartialError, type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
@@ -126,13 +126,22 @@ export function BulkPromoteModal({
     setError(null);
     try {
       const effective = date && date !== todayLocal() ? date : undefined;
-      const result = await bulk.mutateAsync({
-        disciplineId: style.id,
-        studentIds: toPromote,
-        ...(effective ? { effectiveDate: effective } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
-        ...(needsLook.length > 0 ? { acknowledgedStudentIds: needsLook.map((n) => n.studentId) } : {}),
-      });
+      let result: BulkPromoteResult;
+      try {
+        result = await bulk.mutateAsync({
+          disciplineId: style.id,
+          studentIds: toPromote,
+          ...(effective ? { effectiveDate: effective } : {}),
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...(needsLook.length > 0 ? { acknowledgedStudentIds: needsLook.map((n) => n.studentId) } : {}),
+        });
+      } catch (err) {
+        // Sent 200 at a time (Decision 282): if a later batch fails, still
+        // report the students the earlier batches promoted.
+        if (!(err instanceof BulkPromotePartialError)) throw err;
+        result = err.done;
+        setError(t('grading.bulk.stoppedPartWay', { done: err.done.ready.length, total: toPromote.length }));
+      }
       // The report follows the calling order.
       const rows = toPromote
         .map((id) => result.ready.find((r) => r.studentId === id))
@@ -167,6 +176,7 @@ export function BulkPromoteModal({
   if (report) {
     return (
       <Modal title={t('grading.bulk.doneTitle')} onClose={onClose}>
+        {error ? <ErrorBanner message={error} /> : null}
         <p>{t('grading.bulk.youPromoted', { count: report.rows.length })}</p>
         <ol style={{ paddingLeft: 20 }}>
           {report.rows.map((r, i) => (

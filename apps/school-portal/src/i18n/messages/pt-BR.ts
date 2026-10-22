@@ -1110,6 +1110,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inativo oculto",
         other: "{count} inativos ocultos",
       },
+      atTopRank: {
+        one: "· {count} na graduação mais alta, não mostrado",
+        other: "· {count} na graduação mais alta, não mostrados",
+      },
+      hiddenBySearch: {
+        one: "{count} deles oculto pela sua busca",
+        other: "{count} deles ocultos pela sua busca",
+      },
+      showThem: "Mostrar",
+      showAll: "Mostrar todos os {count}",
       columns: {
         justStarting: "Começando",
         gettingThere: "Progredindo",
@@ -1125,6 +1135,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Habilidades obrigatórias",
         skillsNotSignedOff: "Habilidades não aprovadas",
         inactive: "Inativo",
+        inactiveAria: "{name} não pode ser selecionado: inativo",
+        inactiveTitle: "Só alunos ativos podem ser graduados. Ative o interruptor Ativo ou dê a eles uma matrícula válida.",
         notVerified: "Não verificado",
         moveAria: "Mover {name} para outra coluna",
         move: "Mover",
@@ -1159,6 +1171,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Não foi possível verificar estes alunos. Tente novamente.",
+      stoppedPartWay: "{done} de {total} promovidos, depois algo deu errado. Os demais não foram promovidos — tente novamente com eles.",
       doneTitle: "Alunos promovidos",
       notPromoted: "Não promovidos: {list}.",
       openReport: "Abrir relatório para impressão",

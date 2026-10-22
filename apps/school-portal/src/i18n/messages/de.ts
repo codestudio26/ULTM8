@@ -1097,6 +1097,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         one: "{count} inaktiv ausgeblendet",
         other: "{count} inaktiv ausgeblendet",
       },
+      atTopRank: {
+        one: "· {count} auf dem höchsten Rang, nicht angezeigt",
+        other: "· {count} auf dem höchsten Rang, nicht angezeigt",
+      },
+      hiddenBySearch: {
+        one: "{count} davon durch deine Suche ausgeblendet",
+        other: "{count} davon durch deine Suche ausgeblendet",
+      },
+      showThem: "Anzeigen",
+      showAll: "Alle {count} anzeigen",
       columns: {
         justStarting: "Am Anfang",
         gettingThere: "Auf dem Weg",
@@ -1112,6 +1122,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         skillsRequired: "Techniken erforderlich",
         skillsNotSignedOff: "Techniken nicht abgenommen",
         inactive: "Inaktiv",
+        inactiveAria: "{name} kann nicht ausgewählt werden: inaktiv",
+        inactiveTitle: "Nur aktive Schüler können graduiert werden. Schalte ihren Aktiv-Schalter ein oder gib ihnen eine gültige Mitgliedschaft.",
         notVerified: "Nicht bestätigt",
         moveAria: "{name} in eine andere Spalte verschieben",
         move: "Verschieben",
@@ -1146,6 +1158,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     bulk: {
       checkFailed: "Diese Schüler konnten nicht geprüft werden. Bitte versuche es erneut.",
+      stoppedPartWay: "{done} von {total} befördert, dann ist ein Fehler aufgetreten. Die übrigen wurden nicht befördert — bitte versuche es mit ihnen erneut.",
       doneTitle: "Schüler befördert",
       notPromoted: "Nicht befördert: {list}.",
       openReport: "Druckbaren Bericht öffnen",
