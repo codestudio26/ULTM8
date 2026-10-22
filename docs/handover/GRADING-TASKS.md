@@ -2,20 +2,20 @@
 
 **Date:** 22 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 295–300).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–304).
 
 ---
 
 ## Product owner — answered
 
-All five questions were answered on 22 Oct 2026 (Decisions 295–299):
-- **Grading settings right:** "Change board %" becomes "Change grading settings" (per style); the promotion fee switches are owner-only (295).
-- **Kids → Adult sign-offs:** carried over when the Adult ladder has a skill with the same name (296).
-- **Belt corrections:** reviewed by the owner and coaches with "Verify ranks"; any rank, with a note (297).
-- **Promotion fee:** a price per belt or stripe (none = free); the student accepts before paying; an owner switch decides whether grading waits for payment (298).
-- **Hours:** from the class length; each grade requires classes, hours or both; open mat has its own switch (299).
+All five questions were answered on 22 Oct 2026 (Decisions 297–301):
+- **Grading settings right:** "Change board %" becomes "Change grading settings" (per style); the promotion fee switches are owner-only (297).
+- **Kids → Adult sign-offs:** carried over when the Adult ladder has a skill with the same name (298).
+- **Belt corrections:** reviewed by the owner and coaches with "Verify ranks"; any rank, with a note (299).
+- **Promotion fee:** a price per belt or stripe (none = free); the student accepts before paying; an owner switch decides whether grading waits for payment (300).
+- **Hours:** from the class length; each grade requires classes, hours or both; open mat has its own switch (301).
 
-Still waiting on other decisions: paying an accepted fee needs student charges and balances (v1.3 §3.6); open mat itself (v1.3 §5.9).
+The two related topics are answered too: **student charges and balances** (Decision 303: credit allowed; owner, Branch Staff and anyone with "Can create charges"; pay in the app) and **open mat** (Decision 304: scheduled and unplanned; always booked; credit on by default; only the owner and permitted staff start one; in-app alerts, push opt-in).
 
 ## Backend team (`apps/api`)
 
@@ -31,7 +31,9 @@ Still waiting on other decisions: paying an accepted fee needs student charges a
 | B8 | Students can ask for a belt correction (any rank, note required); owner or "Verify ranks" coaches approve or reject | ✅ ready |
 | B9 | Belt progress on the check-in screen (with the check-in rules, v1.3 §3.5) | ✅ ready |
 | B11 | Attendance hours: classes, hours or both per grade; progress breakdown | ✅ ready |
-| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ ready · payment step ⏳ v1.3 §3.6 |
+| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ ready (payment step after C1) |
+| C1 | Staff-created charges and member balances, paid in the app (Decision 303) | ✅ ready |
+| C2 | Open mat sessions: scheduled and unplanned, walk-in bookings, credits, alerts (Decision 304) | ✅ ready |
 
 ## Frontend team — School Portal (`apps/school-portal`)
 
@@ -73,7 +75,7 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 
 | Task | Notes |
 |---|---|
-| Watch the nightly Firefox and Safari (WebKit) run, and fix what it finds | Set up by Decision 300 (`.github/workflows/browsers-nightly.yml`); "Run workflow" runs it on demand. The first runs may show real problems: grading was never tested in these browsers. |
+| Watch the nightly Firefox and Safari (WebKit) run, and fix what it finds | Set up by Decision 302 (`.github/workflows/browsers-nightly.yml`); "Run workflow" runs it on demand. The first runs may show real problems: grading was never tested in these browsers. |
 | Native-speaker review of the portal's grading translations | First drafts (Decision 273). |
 | Re-run the grading stress test on the redesigned portal | 20 academies, 300–500 students, 50–90% graded at once. |
 

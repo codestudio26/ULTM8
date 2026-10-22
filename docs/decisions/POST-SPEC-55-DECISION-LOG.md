@@ -4232,14 +4232,14 @@ User, 21 Oct 2026; logged 22 Oct 2026.
 
 ---
 
-## Decision 295 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
+## Decision 297 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (the grading settings right)
 
 ### Decision
 
 1. **The coach right "Change board %" (`canChangeBoardThresholds`) becomes "Change grading settings".** It still works per coach and per style. It now covers everything on Grading → Settings for that style: the board %, "Ranks shown as" (Belts or Levels), the Ready for Adult age and the other per-style grading settings. Coaches who have "Change board %" today keep it under the new name.
-2. **The School-wide promotion fee switches are owner-only** (see Decision 298): no coach right covers them.
+2. **The School-wide promotion fee switches are owner-only** (see Decision 300): no coach right covers them.
 
 The product owner chose option A: *"A, and yes fee switch owner only"*.
 
@@ -4249,7 +4249,7 @@ User, 22 Oct 2026.
 
 ---
 
-## Decision 296 — Kids → Adult: skill sign-offs carry over by matching name
+## Decision 298 — Kids → Adult: skill sign-offs carry over by matching name
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (which sign-offs carry over)
 
@@ -4268,7 +4268,7 @@ User, 22 Oct 2026.
 
 ---
 
-## Decision 297 — Belt correction requests: who reviews, and what can be asked
+## Decision 299 — Belt correction requests: who reviews, and what can be asked
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 286 "Still open"
 
@@ -4285,7 +4285,7 @@ User, 22 Oct 2026.
 
 ---
 
-## Decision 298 — Promotion fee: prices per grade, the student accepts before paying, and an owner switch for grading before payment
+## Decision 300 — Promotion fee: prices per grade, the student accepts before paying, and an owner switch for grading before payment
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 287 "Still open"
 
@@ -4301,11 +4301,9 @@ User, 22 Oct 2026.
 4. **The grading date** on the history is the date the coach chose when grading, not the date the fee was paid.
 5. **Children:** the Guardian accepts and pays, as for the child's other payments.
 6. **Bulk promote:** each promoted student gets a request for their own grade's fee.
-7. **Owner-only:** the promotion fee switch, the "Allow grading before the fee is paid" switch and the prices (Decision 295 item 2).
+7. **Owner-only:** the promotion fee switch, the "Allow grading before the fee is paid" switch and the prices (Decision 297 item 2).
 
-### Still open
-
-- **How an accepted fee is paid** depends on student charges and balances, v1.3 backlog §3.6, which is itself still open ("NEEDS A DECISION ENTRY"). The fee request and acceptance can be built first; payment follows §3.6.
+- **How an accepted fee is paid:** as a charge on the member's balance, payable in the app or at the desk (Decision 303).
 
 ### Recorded by
 
@@ -4313,7 +4311,7 @@ User, answering one by one, 22 Oct 2026. On a declined or unanswered fee: *"agre
 
 ---
 
-## Decision 299 — Attendance hours in grading
+## Decision 301 — Attendance hours in grading
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 288 "Still open"
 
@@ -4324,7 +4322,7 @@ User, answering one by one, 22 Oct 2026. On a declined or unanswered fee: *"agre
 3. **Board progress** for a grade needing both follows **whichever is further behind**. For example, 80% of the classes but 50% of the hours shows 50%, so a student is "Ready to Grade" only when both are met.
 4. **The student's page shows a breakdown** of their grading progress, with each requirement on its own (classes, hours, days at the rank, skills), next to the overall %.
 5. **"Log a class" by hand** adds the length of the class picked. With no class, the coach enters the time, 60 minutes by default.
-6. **Open mat:** a switch in Grading → Settings, **"Open mat counts toward hours"**, changeable by the owner and coaches with "Change grading settings" (Decision 295). It takes effect once open mat itself exists. What open mat is remains open (v1.3 backlog §5.9).
+6. **Open mat:** a switch in Grading → Settings, **"Open mat counts toward hours"**, changeable by the owner and coaches with "Change grading settings" (Decision 297). Open mat itself is defined in Decision 304.
 
 ### Recorded by
 
@@ -4332,7 +4330,7 @@ User, 22 Oct 2026: *"Agree with everything go ahead"*, with the two notes in ite
 
 ---
 
-## Decision 300 — Portal browser tests in Firefox and Safari: nightly and on demand
+## Decision 302 — Portal browser tests in Firefox and Safari: nightly and on demand
 
 **Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Closes:** the Firefox/WebKit gap from Decision 179 item 3
 
@@ -4347,3 +4345,58 @@ The product owner chose option A.
 ### Recorded by
 
 User, 22 Oct 2026.
+
+---
+
+## Decision 303 — Staff-created charges and member balances
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.6 (it was flagged "NEEDS A DECISION ENTRY") and answers its "Still to decide" · **Unblocks:** paying an accepted promotion fee (Decision 300)
+
+Spec 55 moves money only through Membership Plans. This decision adds charges outside them.
+
+### Decision
+
+1. **Staff can create charges outside a Membership Plan** (product owner, 20 Oct 2026, recorded in backlog §3.6):
+   - one-off charges, e.g. a rash guard;
+   - recurring payments outside a Membership Plan;
+   - **tax fixed per country**, never typed per charge;
+   - discounts as a % or a fixed amount;
+   - the receipt appears in the member's account in the app, with no email needed.
+2. **Members have a balance, and it can be in credit** (prepaid, an overpayment, or a refund given as credit). Credit is used automatically against the member's next charges, including promotion fees. The product owner chose option A.
+3. **Who can create a charge:**
+   - the owner, always;
+   - Branch Staff, for students of their own branches;
+   - any other staff member the owner turns on with a per-person **"Can create charges"** switch (on by default for Branch Staff, off for Instructors).
+   - **Refunds and credit are owner-only.**
+   The product owner: *"A plus a toggle on setting to allow other like it was propose on C"*.
+4. **Members (or Guardians) can pay in the app**, the whole balance or a single charge, through Stripe hosted Checkout as for memberships (Decisions 238/243). The receipt then shows in their account. The product owner chose option A.
+5. **An accepted promotion fee (Decision 300) is one of these charges**, paid the same way.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 304 — Open mat sessions
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.9 (K4, AT7, Q20, Q53) · **Unblocks:** open mat counting toward hours (Decision 301 item 6)
+
+Open mat is free training with no set lesson.
+
+### Decision
+
+1. **Two kinds:**
+   - **Scheduled:** a normal class in the timetable with the class type **"Open mat"**.
+   - **Unplanned:** started from the front desk with **"+ Open mat session"**: style, start time and length (default 60 minutes). It is a one-off class, so check-in, attendance and hours work as for any class.
+2. **Every session has a booking.** Students book ahead as for any class. If a student turns up and checks in without a booking, the booking is created at that moment, so a check-in always has one. The product owner: *"they will always book first regardless"*.
+3. **Class credits:** a School setting, **"Open mat uses a class credit"**, **on by default**, so open mat uses a Class Pack or Friend Pass credit like any class. The owner can turn it off. It lives in **Settings → Check-in rules**. The grading switch "Open mat counts toward hours" stays in Grading settings (Decision 301).
+4. **Who can start an unplanned session:** the School owner, and **only** the staff the owner has given permission, through a per-person **"Can start open mat sessions"** switch, off for everyone by default. The product owner: *"the staff that the owner has granted permission to this session. only those are allowed plus the school owner"*.
+5. **Students hear about an unplanned session in the app:**
+   - always, in their **Notifications**, and as a **banner on the home screen** while it is on ("Open mat now at Centre · BJJ · until 12:00 · Book");
+   - as a **push alert** only if they turn on **"Open mat alerts"** in their notification settings (off by default). Push needs the Firebase/APNs credentials (v1.3, Decision 267).
+   - It goes to students with a live membership or pass whose home branch is that branch and who train that style.
+
+### Recorded by
+
+User, 22 Oct 2026, answering one by one.

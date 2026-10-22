@@ -12,7 +12,7 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **Sources, highest first** (from `CLAUDE.md`):
 1. Spec 55, then `skills/ultm8-domain-rules/SKILL.md`.
-2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290 and 295–300**.
+2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290 and 297–304**.
 3. The New Portal design: `DESIGN.md` → "Grading screens" (on the design branch `claude/relaxed-bohr-j3ilir` until it merges), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
 
 **Rules that always apply:**
@@ -49,7 +49,7 @@ Read this before starting. Each task says what it must do, where the code is tod
   - The age comes from `User.dateOfBirth`. Students without a date of birth: refuse with a clear message.
 - **Board:** return `readyForAdult: boolean` on Kids cards (age reached), and the program on each discipline.
 - **Changing the age:** the owner, or a coach with the grading settings right (see B2).
-- **Which sign-offs carry over (Decision 296):** a Kids skill that was signed off counts on the Adult ladder when the Adult ladder has a skill with exactly the same name. Unmatched sign-offs stay in the history only.
+- **Which sign-offs carry over (Decision 298):** a Kids skill that was signed off counts on the Adult ladder when the Adult ladder has a skill with exactly the same name. Unmatched sign-offs stay in the history only.
 
 **Done when:** a kid at or over the age can be graded onto Blue Belt (or any adult rank) from the Grade dialog, the board and bulk promote; under the age it's refused; afterwards they show under Adult, with "Moved to Adult program" in their history, their sign-offs and history kept and 0 classes; the tag shows from the age; a School never sees another School's programs.
 
@@ -59,11 +59,11 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **What it must do:**
 - The designed **Grading → Settings** page has these sections: How ranks are shown, Grading rules, Grading Board columns, Whole school.
-- **Who may change grading settings (Decision 295):** the School owner, and coaches with **"Change grading settings"** for that style. This is today's "Change board %" right, renamed and widened to the whole page. **The promotion fee switches are owner-only.**
+- **Who may change grading settings (Decision 297):** the School owner, and coaches with **"Change grading settings"** for that style. This is today's "Change board %" right, renamed and widened to the whole page. **The promotion fee switches are owner-only.**
 - Settings to store:
   - per style: board %, **Ready for Adult from age** (Kids ladder, B1), **Ranks shown as: Belts / Levels** (B4);
-  - School-wide, **owner only**: **Promotion fee on/off** (Decision 287, off by default) and **"Allow grading before the fee is paid"** (Decision 298, B10);
-  - School-wide, owner or "Change grading settings": **"Open mat counts toward hours"** (Decision 299 item 6, B11).
+  - School-wide, **owner only**: **Promotion fee on/off** (Decision 287, off by default) and **"Allow grading before the fee is paid"** (Decision 300, B10);
+  - School-wide, owner or "Change grading settings": **"Open mat counts toward hours"** (Decision 301 item 6, B11).
 
 **Today:** the right closest to this is `GradingPermission.canChangeBoardThresholds` ("Change board %"). Board % is saved with `PUT disciplines/:id/board-thresholds`. Other style settings are on `PATCH disciplines/:id`.
 
@@ -154,8 +154,8 @@ Read this before starting. Each task says what it must do, where the code is tod
 - `RankCorrectionRequest { id, schoolId, studentId, disciplineId, currentRungId, requestedRungId, note, status (PENDING | APPROVED | REJECTED), reviewedById, reviewedAt, reviewNote }` with RLS like `StudentRank`.
 - Student: create and list their own; one pending request per style.
 - Staff: list pending for the School (like `GET schools/:schoolId/rank-verifications`), approve (applies through `changeRung` with a system note "Corrected at the student's request") or reject with a reason. Notify the student either way.
-- **Reviewers (Decision 297):** the owner, and coaches with **"Verify ranks"** (`canVerifyRanks`) for that style covering the student's branch, the same people as for declared belts.
-- **What can be asked (Decision 297):** any rank on that style's ladder. **A note is required** (400 without one).
+- **Reviewers (Decision 299):** the owner, and coaches with **"Verify ranks"** (`canVerifyRanks`) for that style covering the student's branch, the same people as for declared belts.
+- **What can be asked (Decision 299):** any rank on that style's ladder. **A note is required** (400 without one).
 
 **Done when:** a student can request, a reviewer can approve or reject, an approval changes the rank with history, a School never sees another's requests.
 
@@ -171,7 +171,7 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-### B10. Promotion fee — Decisions 287, 295, 298
+### B10. Promotion fee — Decisions 287, 297, 300
 
 **What it must do:**
 - **Prices per grade.** With the fee switch on, the owner can set a price on any belt and any stripe grade. **No price = free.** Stripes are free unless priced.
@@ -191,20 +191,20 @@ Read this before starting. Each task says what it must do, where the code is tod
 - In `changeRung` / bulk: if the target grade has a price and the fee switch is on, create the request. With "grade before paying" off, store the planned grade on the request instead of applying it; apply it (through `changeRung`, with the stored grading date) when the request is paid or waived. Keep the `expected` rung guard so a waiting grade can't apply twice.
 - Board: return `feeStatus` (waiting / declined) on cards.
 - Notify the payer when a request is created.
-- **Payment step:** depends on student charges and balances (v1.3 backlog §3.6, still open). Build prices, requests, accept/decline, waiting promotions, waive and cancel first; plug the charge in when §3.6 is decided.
+- **Payment step:** an accepted fee becomes a charge on the member's balance (C1, Decision 303), paid in the app or at the desk. Build prices, requests, accept/decline, waiting promotions, waive and cancel first if C1 isn't ready yet.
 
 **Done when:** a priced grade creates a request; accepting (then paying) applies a waiting promotion; declining shows "Fee declined"; waiving applies it; bulk creates one request each; an unpriced grade is free; another School never sees the requests.
 
 ---
 
-### B11. Attendance hours — Decision 299
+### B11. Attendance hours — Decision 301
 
 **What it must do:**
 - Each check-in adds the **scheduled length** of the class (90 min = 1.5 h).
 - Each grade requires **classes**, **hours** or **both** (School's choice per grade; classes is the default).
 - **Progress** for a grade needing both = the **lower** of the two percentages. "Ready to Grade" only when both are met.
 - **"Log a class"** adds the picked class's length, or a time the coach enters (default 60 min).
-- **Open mat** counts toward hours only if the School's switch "Open mat counts toward hours" is on, and only once open mat exists (backlog §5.9).
+- **Open mat** sessions (C2, Decision 304) count toward hours only if the School's switch "Open mat counts toward hours" is on.
 - The **student's page** gets a progress breakdown per requirement (classes, hours, days at the rank, skills).
 
 **Suggested build:**
@@ -217,12 +217,38 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-## 3. Waiting on something else
+## 3. Related work that grading needs
 
-| Item | Waits on |
-|---|---|
-| Paying an accepted promotion fee (B10) | Student charges and balances, v1.3 backlog §3.6 (not decided yet) |
-| Open mat counting toward hours (B11) | What open mat is, v1.3 backlog §5.9 (not decided yet) |
+Not grading features themselves, but B10 and B11 depend on them. Both are decided.
+
+### C1. Staff-created charges and member balances — Decision 303 (v1.3 backlog §3.6)
+
+**What it must do:**
+- Staff create **one-off** charges (e.g. a rash guard) and **recurring** charges outside a Membership Plan, with an optional discount (% or fixed). **Tax comes from the country**, never typed.
+- Each member has a **balance**, which **can be in credit**; credit is used automatically against the next charges.
+- **Who can create charges:** the owner; Branch Staff for their own branches; anyone else the owner turns on with **"Can create charges"** (per person; on by default for Branch Staff, off for Instructors). **Refunds and credit: owner only.**
+- Members (or Guardians) **pay in the app**, the whole balance or one charge, through Stripe hosted Checkout as for memberships (Decisions 238/243), or at the desk. The receipt shows in their account.
+- An accepted promotion fee (B10) is one of these charges.
+
+**Suggested build (from backlog §3.6):** `Charge { schoolId, studentId, description, amount, discountType?, discountValue?, taxRate (from country), total, dueAt, status, paymentMethod, createdById }`; `RecurringCharge { …, interval, dayOfMonth, firstChargeAt, nextChargeAt }`; a ledger for the balance (charges, payments, credits, refunds) rather than a stored number; a per-country tax table set by Platform Admin; card payments through Stripe Connect on the School's account, cash and transfer recorded by staff; a scheduler for recurring charges; a `canCreateCharges` flag on the staff role grant.
+
+**Done when:** staff can create one-off and recurring charges with discounts and country tax; the balance (including credit) shows on the profile and panel; members pay in the app and see the receipt; only permitted staff can create charges and only the owner can refund or credit.
+
+---
+
+### C2. Open mat sessions — Decision 304 (v1.3 backlog §5.9)
+
+**What it must do:**
+- **Scheduled open mat:** a timetable class with the class type "Open mat".
+- **Unplanned open mat:** "+ Open mat session" at the front desk: style, start time, length (default 60 min). It creates a one-off class, so check-in, attendance and hours work unchanged.
+- **Every check-in has a booking:** checking in without one creates it at that moment.
+- **"Open mat uses a class credit"**, a School setting in Check-in rules, **on by default**.
+- **Who can start an unplanned session:** the owner and staff with **"Can start open mat sessions"** (per person, **off for everyone by default**).
+- **Students are told in the app:** a notification plus a home-screen banner while it's on, with "Book"; a push alert only for students who turn on "Open mat alerts" (off by default). Audience: live membership or pass, home branch = that branch, trains that style.
+
+**Suggested build:** a one-off `Class` (or `ClassOccurrence`) flagged as unplanned open mat; reuse booking, waitlist and check-in code; `canStartOpenMat` on the staff role grant; a check-in-rules setting `openMatUsesCredit` (default true); a notification type `OPEN_MAT_STARTED` with a student preference for push.
+
+**Done when:** a permitted staff member starts an unplanned session; eligible students see it in the app and can book; walk-in check-ins create bookings; credits follow the setting; hours count when the grading switch is on.
 
 ## 4. Deferred on purpose (not for now)
 
@@ -256,4 +282,4 @@ The New Portal grading redesign (DESIGN.md → "Grading screens") is designed bu
 
 Frontend-only (no backend): Grid/Rows views, sort by belt or name, the student panel and selection panel, click a progress bar to promote, the printable report with belts, the one-grade-at-a-time belt editor, duplicate a rank, drag and drop with touch, the two-tone belt picture, the 5-tab menu. In the student app, the coach screens still leave some actions to the web portal (skipping ranks, bulk promote, moving columns, editing rank dates, first rank); see `docs/TRACK-B-ROADMAP.md`.
 
-**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9 → B11 → B10. B1 and B3 touch the same promote code; do them together or B1 first.
+**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9 → B11 → B10. C1 before B10's payment step; C2 before open mat counts toward hours. B1 and B3 touch the same promote code; do them together or B1 first.

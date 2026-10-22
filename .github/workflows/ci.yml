@@ -187,7 +187,7 @@ jobs:
   # The School Portal's browser tests (Playwright, apps/school-portal/e2e):
   # real API, Postgres and Redis, in Chromium at desktop and tablet widths
   # (grading roadmap Phase 4 exit criteria; Decision 179). Firefox and WebKit
-  # run nightly and on demand instead, in browsers-nightly.yml (Decision 300).
+  # run nightly and on demand instead, in browsers-nightly.yml (Decision 302).
   portal-browser-tests:
     name: Portal browser tests (Chromium)
     runs-on: ubuntu-latest

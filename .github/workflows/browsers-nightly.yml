@@ -1,7 +1,7 @@
 # The School Portal's browser tests in Firefox and WebKit (Safari's engine):
 # every night, and on demand with "Run workflow" in the Actions tab (e.g. before
 # a release). Pull requests still run Chromium only (ci.yml), so they stay fast.
-# Product owner, 22 Oct 2026 (Decision 300).
+# Product owner, 22 Oct 2026 (Decision 302).
 name: Browser tests (Firefox, WebKit)
 
 on:
