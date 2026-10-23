@@ -49,12 +49,12 @@ export class InstructorsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
-      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+      await this.assertBranchUsable(callerId, dto.branchId, schoolId);
     }
     // Validates dto.userId holds an active INSTRUCTOR RoleGrant matching this profile's
     // own scope — this table is never itself the source of truth for role-holding, see
     // schema.prisma's Instructor model comment.
-    await this.tenantAuth.assertValidInstructor(callerId, dto.userId, schoolId, dto.branchId ?? null);
+    await this.assertRoleCoversProfile(callerId, dto.userId, schoolId, dto.branchId ?? null);
 
     // Pre-check the schoolId+userId uniqueness explicitly (same convention
     // RoleGrantsService.create() uses) rather than relying on the generic P2002
@@ -120,7 +120,7 @@ export class InstructorsService {
     const baseUrl = this.portalBaseUrl();
 
     if (dto.branchId) {
-      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+      await this.assertBranchUsable(callerId, dto.branchId, schoolId);
     }
     // Decision 169: an instructor always belongs to something — same rule
     // RoleGrantsService.create() already applies for an INSTRUCTOR grant.
@@ -340,22 +340,36 @@ export class InstructorsService {
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
-   * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
-   * would accept for a create() call here. School Owner/Manager only, same gate as
+   * active INSTRUCTOR RoleGrant at this School and no profile here yet, with the
+   * branches their role covers so the form can pick the right one (Decision 311).
+   * School Owner/Manager only, same gate as
    * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and
    * hardcoded to INSTRUCTOR — no generic role param, since this is the only consumer. */
   async findEligibleInstructorUsers(callerId: string, schoolId: string) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findMany({
-        where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
-        distinct: ['userId'],
-        select: { user: { select: { id: true, firstName: true, surname: true, email: true } } },
-      }),
+    const [grants, profiles] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.roleGrant.findMany({
+          where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
+          select: { branchId: true, user: { select: { id: true, firstName: true, surname: true, email: true } } },
+        }),
+        tx.instructor.findMany({ where: { schoolId }, select: { userId: true } }),
+      ]),
     );
-    return { items: grants.map((g) => g.user) };
+    // Decision 311 (I9): someone who already has a profile here (archived
+    // included) can't get a second one, so they aren't offered.
+    const profiled = new Set(profiles.map((p) => p.userId));
+    const byUser = new Map<string, { id: string; firstName: string; surname: string; email: string; schoolWide: boolean; branchIds: string[] }>();
+    for (const g of grants) {
+      if (profiled.has(g.user.id)) continue;
+      const entry = byUser.get(g.user.id) ?? { ...g.user, schoolWide: false, branchIds: [] };
+      if (g.branchId === null) entry.schoolWide = true;
+      else if (!entry.branchIds.includes(g.branchId)) entry.branchIds.push(g.branchId);
+      byUser.set(g.user.id, entry);
+    }
+    return { items: [...byUser.values()] };
   }
 
   async findOne(callerId: string, instructorId: string) {
@@ -407,7 +421,7 @@ export class InstructorsService {
 
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
-        (args) => tx.class.findMany({ ...args, where: { schoolId: instructor.schoolId, instructorId: instructor.userId } }),
+        (args) => tx.class.findMany({ ...args, where: { schoolId: instructor.schoolId, instructorId: instructor.userId, archivedAt: null } }),
         cursor,
         limit,
       ),
@@ -461,19 +475,15 @@ export class InstructorsService {
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
-    const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
-
-    if (dto.branchId) {
-      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, existing.schoolId);
+    // Only a real branch change is checked (Decision 311, I8): the profile of
+    // someone whose role was revoked stays editable, and keeping an archived
+    // branch the profile already has is fine; moving to one is not.
+    if (dto.branchId !== undefined && dto.branchId !== existing.branchId) {
+      if (dto.branchId) {
+        await this.assertBranchUsable(callerId, dto.branchId, existing.schoolId);
+      }
+      await this.assertRoleCoversProfile(callerId, existing.userId, existing.schoolId, dto.branchId);
     }
-    // Revalidated whenever the profile will still resolve to some branch scope after
-    // this patch, not only when branchId itself is part of the PATCH body — same
-    // "re-check against the next value, not just the changed field" fix
-    // ClassesService.update() needed after Phase 4's code review (TimetableService
-    // applied it proactively from the start; this module follows that example, not
-    // Phase 4's). The profiled userId itself never changes (UpdateInstructorDto omits
-    // it), so only the branch side of the check can ever go stale here.
-    await this.tenantAuth.assertValidInstructor(callerId, existing.userId, existing.schoolId, nextBranchId);
 
     // `specializations` is NOT NULL on the Instructor model (String[] @default([])) —
     // but `@IsOptional()` on UpdateInstructorDto only skips validation for `undefined`,
@@ -529,12 +539,14 @@ export class InstructorsService {
    * never its own `id`. "Assigned to any upcoming Class/TimetableSlot" reads
    * as: a Class that hasn't ended yet, or an ON (active) TimetableSlot that
    * will keep generating future occurrences for them. */
-  private async assertNoActiveDependents(callerId: string, instructorUserId: string): Promise<void> {
+  private async assertNoActiveDependents(callerId: string, schoolId: string, instructorUserId: string): Promise<void> {
     const now = new Date();
     const [upcomingClasses, activeSlots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
       Promise.all([
-        tx.class.count({ where: { instructorId: instructorUserId, endDate: { gte: now } } }),
-        tx.timetableSlot.count({ where: { instructorId: instructorUserId, status: 'ON' } }),
+        // This School only, and not archived rows the owner can't see
+        // (Decision 311, I6).
+        tx.class.count({ where: { schoolId, instructorId: instructorUserId, endDate: { gte: now }, archivedAt: null } }),
+        tx.timetableSlot.count({ where: { schoolId, instructorId: instructorUserId, status: 'ON', archivedAt: null } }),
       ]),
     );
     const reasons: string[] = [];
@@ -554,7 +566,7 @@ export class InstructorsService {
     if (existing.archivedAt) {
       return existing;
     }
-    await this.assertNoActiveDependents(callerId, existing.userId);
+    await this.assertNoActiveDependents(callerId, existing.schoolId, existing.userId);
 
     const now = new Date();
     const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
@@ -590,6 +602,36 @@ export class InstructorsService {
     return this.findOne(callerId, instructorId);
   }
 
+  /** A branch of this School that isn't archived (Decision 311, I4) — the
+   * same rule Decision 296 applies to staff and coach grants. */
+  private async assertBranchUsable(callerId: string, branchId: string, schoolId: string): Promise<void> {
+    await this.tenantAuth.assertBranchBelongsToSchool(callerId, branchId, schoolId);
+    const branch = await this.prismaApp.withTenantContext(callerId, (tx) => tx.branch.findUnique({ where: { id: branchId }, select: { archivedAt: true } }));
+    if (branch?.archivedAt) {
+      throw new BadRequestException('This branch has been archived. Choose another branch.');
+    }
+  }
+
+  /** The profile's scope must be one the person's Instructor role covers
+   * (Decision 311, I13): a whole-School profile needs a whole-School role; a
+   * branch profile needs a whole-School role or one at that branch. Plain
+   * messages instead of assertValidInstructor's technical one. */
+  private async assertRoleCoversProfile(callerId: string, userId: string, schoolId: string, branchId: string | null): Promise<void> {
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({ where: { userId, schoolId, role: 'INSTRUCTOR', revokedAt: null }, select: { branchId: true } }),
+    );
+    if (grants.length === 0) {
+      throw new BadRequestException('This person is no longer an instructor at this School.');
+    }
+    if (grants.some((g) => g.branchId === null)) return;
+    if (branchId === null) {
+      throw new BadRequestException("Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.");
+    }
+    if (!grants.some((g) => g.branchId === branchId)) {
+      throw new BadRequestException("Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.");
+    }
+  }
+
   // No delete endpoint (beyond the archive/unarchive pair above) — same
   // "general tenant offboarding is [UNRESOLVED]" reasoning every other
   // module used BEFORE Decision 226 (ultm8-app-publishing §4); no hard-delete
@@ -599,8 +641,7 @@ export class InstructorsService {
   // What happens to this profile when the underlying RoleGrant is later revoked is NOT
   // addressed anywhere in Spec 55 — left untouched on revocation here, same
   // conservative default Phase 5 used for TimetableSlot edits vs. already-materialized
-  // Classes (see the Phase 6 kickoff prompt). A revoked-but-still-profiled Instructor
-  // can end up unable to pass assertValidInstructor on their own next PATCH, at which
-  // point update() above throws — that's a deliberate side effect of leaving the row
-  // in place, not a bug to route around silently.
+  // Classes (see the Phase 6 kickoff prompt). Since Decision 311 the owner can
+  // still edit a revoked instructor's profile; only moving it to another branch
+  // checks the role again.
 }

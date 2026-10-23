@@ -378,4 +378,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} is not Cash/Bank Transfer-eligible.": "{v1} ไม่สามารถชำระด้วยเงินสดหรือโอนเงินผ่านธนาคารได้",
   "{v1} student{v2} a rank in this style, so it can't be deleted.": "นักเรียนที่มีระดับในสไตล์นี้: {v1}{v2} จึงลบสไตล์นี้ไม่ได้",
   "{v1} student{v2} this belt, so it can't be {v3}.": "นักเรียนที่ได้สายคาดนี้: {v1}{v2} จึงไม่สามารถ{v3}ได้",
+  "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "ครูฝึกคนนี้ถูกเก็บถาวรแล้ว ยกเลิกการเก็บถาวรในหน้าครูฝึก หรือเลือกครูฝึกคนอื่น",
+  "This person is no longer an instructor at this School.": "บุคคลนี้ไม่ได้เป็นครูฝึกของโรงเรียนนี้แล้ว",
+  "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "บทบาทครูฝึกใช้ได้เฉพาะบางสาขา จึงตั้งโปรไฟล์เป็นทั้งโรงเรียนไม่ได้ เลือกสาขาของเขา",
+  "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "บทบาทครูฝึกไม่ครอบคลุมสาขานี้ ให้บทบาทที่สาขานั้นในหน้าพนักงานก่อน หรือเลือกสาขาของเขา",
 };

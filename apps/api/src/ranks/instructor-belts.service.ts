@@ -67,12 +67,15 @@ export class InstructorBeltsService {
     this.assertUuids(schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const rows = await tx.instructorBelt.findMany({ where: { schoolId }, include: BELT_INCLUDE });
       const grants = await tx.roleGrant.findMany({
         where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
         distinct: ['userId'],
         select: { userId: true, user: { select: { firstName: true, surname: true } } },
       });
+      // Only people who are still instructors here (Decision 311, I1): a
+      // revoked instructor's belt row stays, but their User row is hidden
+      // from the owner by RLS, so joining it would fail the whole list.
+      const rows = await tx.instructorBelt.findMany({ where: { schoolId, userId: { in: grants.map((g) => g.userId) } }, include: BELT_INCLUDE });
       const instructors = grants
         .map((g) => ({ userId: g.userId, firstName: g.user.firstName, surname: g.user.surname }))
         .sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`));
@@ -91,6 +94,10 @@ export class InstructorBeltsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.ranksService.assertRanksEnabled(callerId, schoolId);
     const row = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const stillInstructor = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'INSTRUCTOR', revokedAt: null }, select: { id: true } });
+      if (!stillInstructor) {
+        throw new NotFoundException('This person is no longer an instructor at this School.');
+      }
       const existing = await tx.instructorBelt.findUnique({ where: { userId_disciplineId: { userId, disciplineId } } });
       if (!existing || existing.schoolId !== schoolId) {
         throw new NotFoundException('This instructor hasn\'t chosen a belt in this style yet.');
