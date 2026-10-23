@@ -97,6 +97,14 @@ export class PromotionFeeService {
   async listForSchool(callerId: string, schoolId: string, query: PromotionFeeRequestQueryDto, cursor?: string, limit?: number) {
     this.assertUuid(schoolId, 'schoolId');
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    // Amounts are prices (Decision 314 item 1): the owner sees every style;
+    // anyone else only the styles they have grading permission for.
+    const styles = await this.gradingStylesOf(callerId, schoolId);
+    if (styles && styles.length === 0) {
+      throw new ForbiddenException('You do not have grading permission at this School. The School owner grants it.');
+    }
+    if (styles && query.disciplineId && !styles.includes(query.disciplineId)) return { items: [], nextCursor: null };
+    const disciplineFilter = query.disciplineId ? { disciplineId: query.disciplineId } : styles ? { disciplineId: { in: styles } } : {};
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) =>
@@ -106,7 +114,7 @@ export class PromotionFeeService {
               schoolId,
               ...(query.status ? { status: query.status } : {}),
               ...(query.studentId ? { studentId: query.studentId } : {}),
-              ...(query.disciplineId ? { disciplineId: query.disciplineId } : {}),
+              ...disciplineFilter,
             },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           }),
@@ -115,6 +123,21 @@ export class PromotionFeeService {
       ),
     );
     return { items: page.items.map((r) => this.shape(r)), nextCursor: page.nextCursor };
+  }
+
+  /** null for the School owner (every style); otherwise the styles the caller
+   * has grading permission for at this School. */
+  private async gradingStylesOf(callerId: string, schoolId: string): Promise<string[] | null> {
+    try {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+      return null;
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+    }
+    const permissions = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.gradingPermission.findMany({ where: { userId: callerId, schoolId }, select: { disciplineId: true } }),
+    );
+    return permissions.map((p) => p.disciplineId);
   }
 
   /** The student app (Decision 300 item 2): a student's own requests at every
@@ -232,15 +255,15 @@ export class PromotionFeeService {
   // "To decide": a coach decides not to promote (Decisions 307, 313)
   // ---------------------------------------------------------------------------
 
-  /** The owner, or a coach who may promote this student in this style
-   * (assertCanGrade with "Promote", the same people as "ready to grade").
-   * Promoting is the normal Promote, fee-free (GradingService). */
+  /** The owner, or anyone with grading permission for this style who covers
+   * the student (Decision 314 item 2). Promoting is the normal Promote,
+   * fee-free (GradingService). */
   async dismiss(callerId: string, requestId: string) {
     const request = await this.find(callerId, requestId);
     if (!isOpenToDecide(request)) {
       throw new ConflictException('This promotion is not waiting for a decision.');
     }
-    await this.gradingService.assertCanGrade(callerId, request.schoolId, request.disciplineId, request.studentId, 'canPromote');
+    await this.gradingService.assertHasGradingAccess(callerId, request.schoolId, request.disciplineId, request.studentId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, request.schoolId);
     const updated = await this.prismaApp.withTenantContext(request.studentId, (tx) =>
       tx.promotionFeeRequest.updateMany({

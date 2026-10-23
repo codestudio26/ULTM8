@@ -263,6 +263,8 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       expect((await http().patch(`/v1/ranks/${rung['white-0'].rankId}`).set(as('owner')).send(zero)).status).toBe(400);
       expect((await http().patch(`/v1/ranks/${rung['white-0'].rankId}`).set(as('carla')).send(body)).status).toBe(403);
       expect((await tiersOf('carla')).map((t) => t.promotionFeeMinor)).toEqual([null, null, 1500, 3000]);
+      // Decision 314 item 1: only the owner and people with grading permission see prices.
+      expect((await tiersOf('wes')).some((t) => 'promotionFeeMinor' in t)).toBe(false);
     });
   });
 
@@ -409,7 +411,10 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
 
       expect((await feeAction('wes', id, 'dismiss')).status).toBe(403); // no grading permission
       expect((await feeAction('dan', id, 'dismiss')).status).toBe(403); // the student
-      const dismissed = await feeAction('carla', id, 'dismiss');
+      // Decision 314 item 2: any grading permission for the style will do, even without "Promote".
+      const wesPermission = await superuser.gradingPermission.create({ data: { id: randomUUID(), userId: user.wes.id, disciplineId: bjj.id, schoolId: school.id, canPromote: false } });
+      const dismissed = await feeAction('wes', id, 'dismiss');
+      await superuser.gradingPermission.delete({ where: { id: wesPermission.id } });
       expect(dismissed.status).toBe(201);
       expect(dismissed.body).toMatchObject({ toDecide: false, toDecideResolution: 'DISMISSED' });
       expect((await rankOf('dan')).currentStripeId).toBe(rung['white-1'].id);
@@ -436,6 +441,12 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       expect(list.status).toBe(200);
       expect(list.body.items).toHaveLength(1);
       expect(list.body.items[0]).toMatchObject({ status: 'DECLINED', promotionApplied: true });
+      // Decision 314 item 1: amounts are prices, so the list needs grading permission for the style.
+      expect((await http().get(`/v1/schools/${school.id}/promotion-fee-requests?studentId=${user.gina.id}`).set(as('wes'))).status).toBe(403);
+      const carlaList = await http().get(`/v1/schools/${school.id}/promotion-fee-requests?studentId=${user.gina.id}`).set(as('carla'));
+      expect(carlaList.status).toBe(200);
+      expect(carlaList.body.items.length).toBeGreaterThan(0);
+      expect((await http().get(`/v1/schools/${school.id}/promotion-fee-requests?disciplineId=${randomUUID()}`).set(as('carla'))).body.items).toEqual([]);
 
       // Waiving it closes it; the promotion stays and nothing is "to decide".
       const waived = await feeAction('owner', res.body.feeRequest.id, 'waive');

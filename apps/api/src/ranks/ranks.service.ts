@@ -607,7 +607,7 @@ export class RanksService {
         include: RANK_INCLUDE,
       }),
     );
-    const showPrices = await this.promotionFeeOn(callerId, discipline.schoolId);
+    const showPrices = await this.pricesVisible(callerId, discipline.schoolId, discipline.id);
     return ranks.map((r) => this.shapeRankResponse(r, showPrices));
   }
 
@@ -1105,6 +1105,23 @@ export class RanksService {
   }
 
   /** Whether the School's promotion fee is on (Decisions 287, 307). */
+  /** Who sees prices on the ladder (Decision 314 item 1): while the fee is on,
+   * the School owner and anyone with grading permission for this style. Other
+   * staff, students and guardians get the ladder without prices. */
+  private async pricesVisible(callerId: string, schoolId: string, disciplineId: string): Promise<boolean> {
+    if (!(await this.promotionFeeOn(callerId, schoolId))) return false;
+    try {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+      return true;
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+    }
+    const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } }, select: { schoolId: true } }),
+    );
+    return permission?.schoolId === schoolId;
+  }
+
   private async promotionFeeOn(callerId: string, schoolId: string): Promise<boolean> {
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true } }),

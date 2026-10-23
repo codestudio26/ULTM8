@@ -432,6 +432,14 @@ export class GradingService {
    * date, Active switch), verify, void. Replaces the plain
    * assertStaffAtSchool() check, which admitted all staff to every grading
    * action and was flagged [UNRESOLVED] in this file. */
+  /** Anyone with grading permission for this style who covers the student
+   * (any toggle), or the owner: who may decide not to promote a student left
+   * "to decide" (Decision 314 item 2). */
+  async assertHasGradingAccess(callerId: string, schoolId: string, disciplineId: string, studentId: string): Promise<void> {
+    const authorize = await this.gradeAuthorizer(callerId, schoolId, disciplineId, null);
+    await authorize(studentId);
+  }
+
   async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggle: PermissionToggle): Promise<void> {
     const authorize = await this.gradeAuthorizer(callerId, schoolId, disciplineId, toggle);
     await authorize(studentId);
@@ -445,7 +453,7 @@ export class GradingService {
     callerId: string,
     schoolId: string,
     disciplineId: string,
-    toggle: PermissionToggle,
+    toggle: PermissionToggle | null,
   ): Promise<(studentId: string) => Promise<void>> {
     if (await this.isSchoolOwner(callerId, schoolId)) {
       return (studentId) => this.assertEnrolledStudent(studentId, schoolId);
@@ -458,7 +466,7 @@ export class GradingService {
       throw new ForbiddenException('You do not have grading permission for this style. The School owner grants it.');
     }
     // Decision 181: each action needs its own toggle.
-    if (!permission[toggle]) {
+    if (toggle && !permission[toggle]) {
       throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS[toggle]}. The School owner can turn it on.`);
     }
     const coverage = await this.branchCoverage(callerId, schoolId);
