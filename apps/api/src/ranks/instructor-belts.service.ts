@@ -123,9 +123,11 @@ export class InstructorBeltsService {
   }
 
   private async assertBeltOfStyle(tx: Prisma.TransactionClient, schoolId: string, disciplineId: string, rankId: string, stripeTierId: string) {
-    const discipline = await tx.discipline.findUnique({ where: { id: disciplineId }, select: { schoolId: true } });
+    const discipline = await tx.discipline.findUnique({ where: { id: disciplineId }, select: { schoolId: true, archivedAt: true } });
     if (!discipline || discipline.schoolId !== schoolId) throw new NotFoundException('Style not found');
-    const tier = await tx.rankStripeTier.findFirst({ where: { id: stripeTierId, rankId, rank: { disciplineId } }, select: { id: true } });
+    // Archived styles and belts can't be chosen (Decisions 308, 309).
+    if (discipline.archivedAt) throw new BadRequestException('This style is archived, so a belt in it can\'t be chosen.');
+    const tier = await tx.rankStripeTier.findFirst({ where: { id: stripeTierId, rankId, rank: { disciplineId, archivedAt: null } }, select: { id: true } });
     if (!tier) throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
   }
 

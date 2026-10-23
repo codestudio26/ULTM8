@@ -2004,6 +2004,38 @@ export interface paths {
         patch: operations["RanksController_updateDiscipline"];
         trace?: never;
     };
+    "/v1/disciplines/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_archiveDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_unarchiveDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/styles/{disciplineId}/ranks": {
         parameters: {
             query?: never;
@@ -2110,6 +2142,22 @@ export interface paths {
         get: operations["RanksController_findAllSkills"];
         put?: never;
         post: operations["RanksController_createSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/styles/{disciplineId}/skills/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RanksController_reorderSkills"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5146,6 +5194,10 @@ export interface components {
             boardGettingThere: number;
             /** @description Grading Board: "Ready to Grade" from this % (Decisions 75, 136). Default 66. */
             boardReadyToGrade: number;
+            /** @description Archived (retired) at (Decision 309); null while in use. */
+            archivedAt?: string | null;
+            /** @description Students with a rank in this style (Decision 309). */
+            studentCount: number;
             createdAt: string;
             updatedAt: string;
         };
@@ -5169,12 +5221,20 @@ export interface components {
             /** @description The style's name. Default: the template's name. */
             name?: string;
         };
+        ClassTypeRenameDto: {
+            /** @description The class type as it is now. */
+            from: string;
+            /** @description Its new name. Must also be in classTypesOffered. */
+            to: string;
+        };
         UpdateDisciplineDto: {
             name?: string;
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
+            renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
         };
         StripeSegmentInputDto: {
             count: number;
@@ -5323,11 +5383,19 @@ export interface components {
             schoolId: string;
             name: string;
             description?: string | null;
+            /** @description Position in the style's skill list, 0 first (Decision 309). */
+            order: number;
+            /** @description Lessons that teach this skill (Decision 309). */
+            lessonCount: number;
             createdAt: string;
             updatedAt: string;
         };
         SkillListResponseDto: {
             items: components["schemas"]["SkillResponseDto"][];
+        };
+        ReorderSkillsDto: {
+            /** @description Every skill id of this style, in the new order. */
+            skillIds: string[];
         };
         UpdateSkillDto: {
             name?: string;
@@ -9613,7 +9681,10 @@ export interface operations {
     };
     RanksController_findAllDisciplines: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Decision 309 — include archived styles too (left out by default). */
+                includeArchived?: boolean;
+            };
             header?: never;
             path: {
                 schoolId: string;
@@ -9786,6 +9857,55 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateDisciplineDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_archiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+            /** @description An upcoming class or a timetable slot still uses the style. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RanksController_unarchiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -10057,6 +10177,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SkillResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_reorderSkills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderSkillsDto"];
+            };
+        };
+        responses: {
+            /** @description The style's skills in their new order (Decision 309). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillListResponseDto"];
                 };
             };
         };

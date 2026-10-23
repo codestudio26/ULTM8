@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Disciplines fixes and new tools** (Decisions 308, 309) — archived belts
+  no longer appear in grading; renaming a style or a class type now updates
+  the classes, timetable, instructors and rungs that use it, and a class type
+  still in use can't be removed. Names can't be blank or repeated, and copies
+  get a free name. New: archive and unarchive a style the School no longer
+  teaches (students keep their rank and history), a Students count and list
+  per style, skills showing which rungs need them and how many lessons teach
+  them, skills you can put in order, class types edited as a list, and a
+  read-only Disciplines page for coaches and Branch Staff.
 - **Safari test fixes and belt wording** — the first nightly Firefox/Safari
   run (Decision 302) passed in Firefox; two Safari failures were test-only
   (a race on the belt-delete error, and a never-loading test photo). The
