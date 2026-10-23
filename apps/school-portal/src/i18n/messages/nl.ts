@@ -983,6 +983,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Ingetrokken",
       active: "Actief",
       revoke: "Intrekken",
+      revokeTitle: "De rol {role} van {name} verwijderen?",
+      revokeDescription: "Deze rol ({branch}) stopt meteen (binnen 15 minuten als die persoon is ingelogd). Was het hun laatste coach- of staffrol hier, dan worden ook hun graderingsrechten en ‘Mag coaches uitnodigen’ gewist, dus bij opnieuw toekennen beginnen ze opnieuw.",
       addedEmailed: "{name} is toegevoegd — er is een tijdelijke toegangscode gemaild naar {email}.",
       addedNoEmail: "{name} is toegevoegd, maar de e-mail kon niet worden verzonden. De tijdelijke toegangscode moet op een andere manier worden doorgegeven.",
     },

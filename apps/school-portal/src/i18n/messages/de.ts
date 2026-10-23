@@ -983,6 +983,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Entzogen",
       active: "Aktiv",
       revoke: "Entziehen",
+      revokeTitle: "Die Rolle {role} von {name} entfernen?",
+      revokeDescription: "Die Rolle ({branch}) endet sofort (innerhalb von 15 Minuten, falls angemeldet). War es die letzte Trainer- oder Mitarbeiterrolle hier, werden auch Graduierungsrechte und „Darf Trainer einladen“ gelöscht – bei erneuter Vergabe beginnt alles von vorn.",
       addedEmailed: "{name} wurde hinzugefügt — ein temporärer Code wurde an {email} gesendet.",
       addedNoEmail: "{name} wurde hinzugefügt, aber die E-Mail konnte nicht gesendet werden. Der temporäre Code muss auf anderem Weg übermittelt werden.",
     },

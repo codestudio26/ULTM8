@@ -960,6 +960,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "회수됨",
       active: "활성",
       revoke: "회수",
+      revokeTitle: "{name}에게서 {role} 역할을 제거할까요?",
+      revokeDescription: "이 역할({branch})은 즉시 종료됩니다(로그인 중이면 15분 이내). 이곳에서의 마지막 코치 또는 스태프 역할이었다면 승급 권한과 \"코치 초대 가능\"도 삭제되므로, 역할을 다시 부여하면 처음부터 시작합니다.",
       addedEmailed: "{name}님을 추가했습니다. 임시 비밀번호를 {email}(으)로 보냈습니다.",
       addedNoEmail: "{name}님을 추가했지만 이메일을 보낼 수 없었습니다. 임시 비밀번호를 다른 방법으로 전달해야 합니다.",
     },

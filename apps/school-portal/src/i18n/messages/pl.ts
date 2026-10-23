@@ -1029,6 +1029,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Odebrane",
       active: "Aktywne",
       revoke: "Odbierz",
+      revokeTitle: "Odebrać rolę {role} użytkownikowi {name}?",
+      revokeDescription: "Ta rola ({branch}) wygasa od razu (w ciągu 15 minut, jeśli osoba jest zalogowana). Jeśli była to jej ostatnia rola trenera lub personelu tutaj, zostaną też usunięte uprawnienia do awansów i „Może zapraszać trenerów”, więc po ponownym nadaniu roli zaczyna od nowa.",
       addedEmailed: "Dodano: {name} — tymczasowy kod wysłano na {email}.",
       addedNoEmail: "Dodano: {name}, ale nie udało się wysłać e-maila. Tymczasowy kod trzeba przekazać w inny sposób.",
     },

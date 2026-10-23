@@ -960,6 +960,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "已撤销",
       active: "有效",
       revoke: "撤销",
+      revokeTitle: "要移除 {name} 的{role}角色吗？",
+      revokeDescription: "此角色（{branch}）立即失效（如已登录，15 分钟内失效）。如果这是其在此处最后一个教练或员工角色，其晋级权限和“可邀请教练”也会被清除，因此重新授予角色后将从头开始。",
       addedEmailed: "已添加 {name}——临时密码已发送至 {email}。",
       addedNoEmail: "已添加 {name},但邮件发送失败。需要通过其他方式告知临时密码。",
     },

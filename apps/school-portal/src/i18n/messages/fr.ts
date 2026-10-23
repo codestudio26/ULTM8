@@ -996,6 +996,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Révoquée",
       active: "Active",
       revoke: "Révoquer",
+      revokeTitle: "Retirer le rôle {role} à {name} ?",
+      revokeDescription: "Ce rôle ({branch}) prend fin immédiatement (sous 15 minutes s'il est connecté). Si c'était son dernier rôle de coach ou d'équipe ici, ses droits de passage de grade et « Peut inviter des coachs » sont aussi effacés : s'il récupère le rôle, il repart de zéro.",
       addedEmailed: "{name} a été ajouté(e) — un code temporaire a été envoyé à {email}.",
       addedNoEmail: "{name} a été ajouté(e), mais l'e-mail n'a pas pu être envoyé. Il faudra lui transmettre le code temporaire autrement.",
     },
