@@ -298,6 +298,9 @@ On a phone the Dashboard shows the number cards and lists first and **Needs atte
 - **The School's name** is on the School switcher only; the line under "Dashboard" says just the branch scope ("All branches").
 - **Ready to grade** is one list, not a number card as well. Its header carries the count as **See all 5 →**, which opens the Grading Board. The number cards are Bookings this week, Check-ins today and Active students.
 
+### Check-in: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
+On a phone Check-in shows Today's classes and the keypad first and **Recent check-ins** below them. The panel shares nothing with the page. A check-in updates both sides together: the student goes to the top of Recent check-ins and their class's "checked in" count goes up by one. The line under the keypad ("Lucas Martins checked in to Advanced (Gi)") stays: it is the desk's instant confirmation and clears on the next key press.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
