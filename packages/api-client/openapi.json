@@ -7776,6 +7776,380 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/promotion-fee-settings": {
+      "get": {
+        "operationId": "PromotionFeeController_getSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PromotionFeeController_updateSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromotionFeeSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/promotion-fee-requests": {
+      "get": {
+        "operationId": "PromotionFeeController_listForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "ACCEPTED",
+                "PAID",
+                "DECLINED",
+                "WAIVED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/promotion-fee-requests": {
+      "get": {
+        "operationId": "PromotionFeeController_listForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/accept": {
+      "post": {
+        "operationId": "PromotionFeeController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/decline": {
+      "post": {
+        "operationId": "PromotionFeeController_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/waive": {
+      "post": {
+        "operationId": "PromotionFeeController_waive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/cancel": {
+      "post": {
+        "operationId": "PromotionFeeController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/dismiss": {
+      "post": {
+        "operationId": "PromotionFeeController_dismiss",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers": {
       "post": {
         "operationId": "WaiversController_createWaiver",
@@ -16477,6 +16851,12 @@
               "type": "string"
             }
           },
+          "promotionFeeMinor": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "description": "Promotion fee for being graded into this rung, in the School's currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School's promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung."
+          },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
             "type": "array",
@@ -16626,6 +17006,11 @@
             "items": {
               "type": "string"
             }
+          },
+          "promotionFeeMinor": {
+            "type": "number",
+            "nullable": true,
+            "description": "Promotion fee for this grade, minor units of the School's currency; null = free (Decision 300). Present only while the School's promotion fee is on (Decision 307)."
           }
         },
         "required": [
@@ -17934,6 +18319,59 @@
           "items"
         ]
       },
+      "BoardFeeRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The fee request (use it to waive or cancel, or to dismiss a \"to decide\")."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "PAID",
+              "DECLINED",
+              "WAIVED",
+              "CANCELLED"
+            ]
+          },
+          "toRungId": {
+            "type": "string",
+            "description": "The rung the grade moves the student to. For \"to decide\", the planned grade the Promote window starts on."
+          },
+          "toRungName": {
+            "type": "string"
+          },
+          "amountMinor": {
+            "type": "number",
+            "description": "Minor units of `currency`."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency when the request was made."
+          },
+          "promotionApplied": {
+            "type": "boolean",
+            "description": "The promotion has already applied (\"Allow grading before the fee is paid\" was on)."
+          },
+          "feeFree": {
+            "type": "boolean",
+            "description": "\"To decide\" only: promoting to toRungId makes no new fee request (Decision 307)."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "toRungId",
+          "toRungName",
+          "amountMinor",
+          "promotionApplied",
+          "feeFree"
+        ]
+      },
       "GradingBoardItemDto": {
         "type": "object",
         "properties": {
@@ -17987,6 +18425,25 @@
           "noHomeBranch": {
             "type": "boolean",
             "description": "Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under \"No branch\" until the owner assigns one (Decision 148.2). Always false for other staff."
+          },
+          "feeStatus": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "declined",
+              "toDecide"
+            ],
+            "nullable": true,
+            "description": "Promotion fee (Decisions 300, 307): \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
+          },
+          "feeRequest": {
+            "nullable": true,
+            "description": "The request behind feeStatus.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BoardFeeRequestDto"
+              }
+            ]
           }
         },
         "required": [
@@ -18176,6 +18633,10 @@
           "promotionEventId": {
             "type": "string",
             "description": "Set on a promoted student: their history entry."
+          },
+          "feeRequestId": {
+            "type": "string",
+            "description": "Set when the grade made a promotion fee request (Decision 300 item 6: one per student)."
           }
         },
         "required": [
@@ -18201,7 +18662,14 @@
             }
           },
           "cannotPromote": {
-            "description": "Skipped: no next rank, blocked by the style's \"skills required\" switch, not yours to grade, or changed at the same time.",
+            "description": "Skipped: no next rank, blocked by the style's \"skills required\" switch, not yours to grade, changed at the same time, or a promotion already waiting for its fee.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkPromoteStudentDto"
+            }
+          },
+          "waitingForFee": {
+            "description": "Not promoted yet: their grade is priced and \"Allow grading before the fee is paid\" is off, so each waits for their fee request (feeRequestId) to be paid or waived (Decision 300). Always sent; empty on a dry run.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BulkPromoteStudentDto"
@@ -18549,6 +19017,185 @@
             "type": "string"
           }
         }
+      },
+      "PromotionFeeSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "promotionFeeEnabled": {
+            "type": "boolean"
+          },
+          "gradeBeforeFeePaid": {
+            "type": "boolean",
+            "description": "\"Allow grading before the fee is paid\"."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency (School.defaultCurrency): prices are minor units of it."
+          }
+        },
+        "required": [
+          "promotionFeeEnabled",
+          "gradeBeforeFeePaid"
+        ]
+      },
+      "UpdatePromotionFeeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "promotionFeeEnabled": {
+            "type": "boolean",
+            "description": "Promotion fee on or off (off by default). Off: grades have no price, prices are not returned, and no fee is asked."
+          },
+          "gradeBeforeFeePaid": {
+            "type": "boolean",
+            "description": "\"Allow grading before the fee is paid\" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits (\"Waiting for fee\") until the fee is paid or waived."
+          }
+        }
+      },
+      "PromotionFeeRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string",
+            "description": "Student app list only: the School's name."
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string",
+            "description": "Student app list only: the style's name."
+          },
+          "toRungId": {
+            "type": "string",
+            "description": "The rung the grade moves the student to."
+          },
+          "toRungName": {
+            "type": "string"
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The rung the student was on when graded."
+          },
+          "amountMinor": {
+            "type": "number",
+            "description": "Minor units of `currency`."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "PAID",
+              "DECLINED",
+              "WAIVED",
+              "CANCELLED"
+            ]
+          },
+          "promotionWaits": {
+            "type": "boolean",
+            "description": "The promotion waits for this fee (it applies once paid or waived). False when it applied at grading."
+          },
+          "promotionApplied": {
+            "type": "boolean",
+            "description": "The promotion has applied (at grading, or once paid or waived)."
+          },
+          "promotionEventId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The history entry of the promotion, once applied."
+          },
+          "gradingDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "The grading date the coach chose (YYYY-MM-DD), for a promotion that waits or is \"to decide\"."
+          },
+          "toDecide": {
+            "type": "boolean",
+            "description": "Open \"to decide\": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request."
+          },
+          "toDecideAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "toDecideResolution": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PROMOTED",
+              "DISMISSED"
+            ]
+          },
+          "acceptedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "declinedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "paidAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "waivedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "disciplineId",
+          "toRungId",
+          "toRungName",
+          "amountMinor",
+          "status",
+          "promotionWaits",
+          "promotionApplied",
+          "toDecide",
+          "createdAt"
+        ]
+      },
+      "PromotionFeeRequestListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "CreateWaiverDto": {
         "type": "object",

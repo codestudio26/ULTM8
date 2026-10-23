@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Promotion fee, API** (Decisions 287, 297, 300, 307, 313) — the School
+  owner can turn on a promotion fee and "Allow grading before the fee is
+  paid" (both off by default) and price any belt or stripe; with the fee off,
+  no prices are shown or accepted. Grading to a priced rank sends the student
+  (or a child's Guardian) a fee request to accept or decline; by default the
+  promotion waits ("Waiting for fee") until the fee is paid, keeping the
+  coach's grading date. Bulk promote makes one request per student. The owner
+  can waive or cancel a fee at any time: waiving a waiting promotion applies
+  it; cancelling it, or waiving a declined fee, leaves it "to decide" for a
+  coach, with one reminder after 3 days when the student is fully ready. The
+  Grading Board shows each card's fee state. Paying a fee waits for
+  staff-created charges (Decision 303); the portal and app screens come next.
 - **One email, one account** (Decision 295) — emails are no longer
   case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
   ignore capitals and stray spaces, so an owner can no longer create a second
