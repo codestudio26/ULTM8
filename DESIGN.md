@@ -557,7 +557,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
 - **Open:** the list opens under the field and pushes the content down, so a dialog or a card never clips it. It is a white card, 12px corners, at most 264px tall and scrolling.
 - **Options:** 40px rows (48px and 16px text on phones). Hover is light grey. The chosen option is pale green (#def2e2) with a ✓ in #3a7556. Picking closes the list.
 - **Font:** Figtree everywhere, and the options always use the same size as their field. That's 14px, or 15px inside a soft form (`.ultm8-soft-field`, where the field is 52px to match the inputs), and 16px on phones.
-- The **Promote to** picker uses the same drop-down, with a belt picture before each rank.
+- **Every drop-down of ranks shows the belt picture** before each rank, in the closed field and in every option (product owner, 23 Oct 2026): Promote to on the Grading Board, New rank in Grade and Move down, Rank in Verify, the Correct belt dialog on Team → Coaches Info and the coach's My belts. In the vision pages it comes from `belt_dd()`; options carry a `chip`.
 - Built as `role="listbox"` / `role="option"`. In the vision pages it comes from `dd()` / `ddMake()`.
 
 ### Greens: mint, not dark green (product owner, 21 Oct 2026)
