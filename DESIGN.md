@@ -307,6 +307,12 @@ On a phone Settings shows the category menu and the settings first, and the stud
 - **Show belt progress on the check-in screen** has no "e.g. 12 of 40 classes to Blue" hint: the preview shows exactly that line.
 - The page's intro says "Click any setting to see what it does in About this setting", naming the section as it is labelled.
 
+### Add student: nothing shown twice, form first on a phone (product owner, 23 Oct 2026)
+On a phone Add student shows the form first and the preview card, **Ready to save** and the Add student button below it.
+- Chapter progress shows once, on the form: the chapter number turns green and gets a **Done** tag. The panel no longer has the row of chapter circles (01–06) or "2 of 6 chapters".
+- **Ready to save** keeps form pattern F's checklist of what is done and still missing, right above the button.
+- The preview card mirrors what is typed (name, type, check-in code). That is its job, so it is not counted as a repeat.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
