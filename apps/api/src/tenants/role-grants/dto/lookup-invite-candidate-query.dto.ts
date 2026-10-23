@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsPhoneNumber } from 'class-validator';
+import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 
 /** Exact match only, email or phone — never a name search (Decision 116). At least one
  * of the two is required; enforced in RoleGrantsService.lookupInviteCandidate (same
@@ -8,6 +9,7 @@ import { IsEmail, IsOptional, IsPhoneNumber } from 'class-validator';
 export class LookupInviteCandidateQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @NormalizeEmail()
   @IsEmail()
   email?: string;
 

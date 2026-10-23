@@ -24,6 +24,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   editor no longer fails once a ranked student leaves the School; they show
   as "Former student". The last 17 untranslated Disciplines messages are
   translated.
+- **One email, one account** (Decision 295) — emails are no longer
+  case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
+  ignore capitals and stray spaces, so an owner can no longer create a second
+  account for someone already registered with different capitals. Existing
+  emails are lower-cased, and the database refuses case-only duplicates.
+- **Staff page fixes** (Decision 296) — no new staff, coaches or coach
+  invites at an archived branch (and an invite to a branch archived later
+  stops working); no role grants at a closed School; "Who can invite coaches"
+  updates without a reload; Revoke asks "Are you sure?" first; the look-up
+  table shows branch names instead of ids; Branch Staff who open the Staff
+  page go to their own dashboard instead of a blank page.
 - **Disciplines fixes and new tools** (Decisions 308, 309) — archived belts
   no longer appear in grading; renaming a style or a class type now updates
   the classes, timetable, instructors and rungs that use it, and a class type

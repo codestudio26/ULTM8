@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsOptional, IsUUID, MaxLength } from 'class-validator';
+import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 
 /** Invite one person, by email, to coach (Decision 183). */
 export class CreateCoachInviteDto {
   @ApiProperty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @NormalizeEmail()
   @IsEmail()
   @MaxLength(254)
   email!: string;
