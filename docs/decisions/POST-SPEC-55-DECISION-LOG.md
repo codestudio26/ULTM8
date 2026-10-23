@@ -4589,3 +4589,25 @@ The same review found five gaps. Other class-booking and martial-arts apps deact
 ### Recorded by
 
 User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
+
+### Decision
+
+1. **A promotion left "to decide" reminds the coaches; it never times out.** It stays "to decide" until a coach promotes the student or decides not to. The product owner: *"remind the coach"*.
+2. **One reminder, 3 days after** the promotion became "to decide" (after a fee was cancelled, or a declined fee was waived). It is not repeated.
+3. **It goes to the coaches who may promote** that student in that style and branch, and the owner: the same people as "ready to grade" (Decisions 145, 139). Delivery uses the same channels as "ready to grade".
+4. **Only for a fully ready student:** 100% of the classes required, enough days at the rank and every required skill signed off, the same test "ready to grade" already uses. A student who is not fully ready gets no reminder. The product owner: *"reminders just only go out for 100% + and all skills or curriculum done, otherwise we will overload the coaches with reminders, that are wrong."*
+5. Nothing else changes: the Grading Board's "Ready to Grade" column still starts at 66% (Decision 136). That column is a view of progress, not a reason to send anything.
+
+### What this does NOT resolve
+
+- Nothing new. A promotion that stays "to decide" after the one reminder simply stays visible on the board.
+
+### Recorded by
+
+User, 23 Oct 2026, answering the follow-up questions on the reminder.
