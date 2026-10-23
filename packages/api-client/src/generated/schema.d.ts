@@ -2468,6 +2468,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-settings/open-mat-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_getOpenMatHoursSetting"];
+        put: operations["GradingController_setOpenMatHoursSetting"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
         parameters: {
             query?: never;
@@ -5605,6 +5621,44 @@ export interface components {
              */
             boardColumn?: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
         };
+        ClassesProgressResponseDto: {
+            /** @description Classes counted toward the next rank (eligibility.countedClasses). */
+            counted: number;
+            required: number;
+            /** @description 0–100. The same number as eligibility.progressPercent: the overall % is classes only. */
+            percent: number;
+            /** @description "Each ticked type required" rungs only; otherwise empty. */
+            byType: components["schemas"]["TypeProgressResponseDto"][];
+        };
+        DaysProgressResponseDto: {
+            /** @description Days at the current rank. */
+            elapsed: number;
+            /** @description Minimum days at the rank. */
+            required: number;
+            /** @description 0–100, capped. 100 when no minimum is set. */
+            percent: number;
+        };
+        SkillsProgressResponseDto: {
+            /** @description Required skills signed off. */
+            signedOff: number;
+            /** @description Required skills for the next rank. */
+            required: number;
+            /** @description 0–100. 100 when none are required. */
+            percent: number;
+        };
+        ProgressBreakdownResponseDto: {
+            /** @description null on a time-only rank (days only). */
+            classes?: components["schemas"]["ClassesProgressResponseDto"] | null;
+            days: components["schemas"]["DaysProgressResponseDto"];
+            /** @description null on a time-only rank (days only). */
+            skills?: components["schemas"]["SkillsProgressResponseDto"] | null;
+        };
+        HoursTrainedResponseDto: {
+            /** @description Every minute logged in this style at this School (check-ins and "Log a class"). */
+            totalMinutes: number;
+            /** @description Minutes trained on or after the current rank date. */
+            sinceCurrentRankMinutes: number;
+        };
         StudentEligibilityResponseDto: {
             id: string;
             studentId: string;
@@ -5634,6 +5688,9 @@ export interface components {
             createdAt: string;
             updatedAt: string;
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description null when there is no next rank. */
+            progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
+            hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
         };
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
@@ -5670,6 +5727,9 @@ export interface components {
             verificationStatus: "VERIFIED" | "UNVERIFIED";
             ladder: components["schemas"]["GradingLadderRungDto"][];
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description null when there is no next rank. */
+            progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
+            hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
             /** @description The skills for the next grade. */
             skills: components["schemas"]["GradingSkillDto"][];
         };
@@ -5917,6 +5977,10 @@ export interface components {
              */
             readyToGrade: number;
         };
+        OpenMatHoursSettingDto: {
+            /** @description When off (the default), open mat time is recorded but not added to students' hours trained. Hours never change the grading %. */
+            openMatCountsTowardHours: boolean;
+        };
         BoardMoveDto: {
             /** @enum {string} */
             column: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
@@ -5924,6 +5988,10 @@ export interface components {
         LogClassDto: {
             /** @description The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts). */
             classType?: string | null;
+            /** @description The class the student trained in, for hours trained: its scheduled length is logged. A class at this School that lists this style. Leave out to send `minutes` instead. */
+            classId?: string | null;
+            /** @description Minutes trained, for hours trained, when no class is picked. Default 60. Hours never change the grading %. */
+            minutes?: number | null;
         };
         BoardActiveDto: {
             /** @description true or false: set by hand. null: follow whether the student has an active membership. */
@@ -10915,6 +10983,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_getOpenMatHoursSetting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatHoursSettingDto"];
+                };
+            };
+        };
+    };
+    GradingController_setOpenMatHoursSetting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenMatHoursSettingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatHoursSettingDto"];
                 };
             };
         };

@@ -24,6 +24,37 @@ export class LogClassDto {
   @IsString()
   @MaxLength(100)
   classType?: string | null;
+
+  /** Hours trained (Decisions 301 item 5, 306): a record only, never part of
+   * the grading %. Send `classId` OR `minutes`, not both. */
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'The class the student trained in, for hours trained: its scheduled length is logged. A class at this School that lists this style. Leave out to send `minutes` instead.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsUUID()
+  classId?: string | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 1,
+    maximum: 600,
+    description: 'Minutes trained, for hours trained, when no class is picked. Default 60. Hours never change the grading %.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(1)
+  @Max(600)
+  minutes?: number | null;
+}
+
+/** "Open mat counts toward hours" (Grading → Settings; Decisions 301 item 6, 306). */
+export class OpenMatHoursSettingDto {
+  @ApiProperty({ description: 'When off (the default), open mat time is recorded but not added to students\' hours trained. Hours never change the grading %.' })
+  @IsBoolean()
+  openMatCountsTowardHours!: boolean;
 }
 
 /** The manual Active/Inactive switch for this style (Decisions 152, 176). */

@@ -7272,6 +7272,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-settings/open-mat-hours": {
+      "get": {
+        "operationId": "GradingController_getOpenMatHoursSetting",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "GradingController_setOpenMatHoursSetting",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
       "post": {
         "operationId": "GradingController_moveOnBoard",
@@ -17543,6 +17621,125 @@
           "hasNext"
         ]
       },
+      "ClassesProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "counted": {
+            "type": "number",
+            "description": "Classes counted toward the next rank (eligibility.countedClasses)."
+          },
+          "required": {
+            "type": "number"
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100. The same number as eligibility.progressPercent: the overall % is classes only."
+          },
+          "byType": {
+            "description": "\"Each ticked type required\" rungs only; otherwise empty.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeProgressResponseDto"
+            }
+          }
+        },
+        "required": [
+          "counted",
+          "required",
+          "percent",
+          "byType"
+        ]
+      },
+      "DaysProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "elapsed": {
+            "type": "number",
+            "description": "Days at the current rank."
+          },
+          "required": {
+            "type": "number",
+            "description": "Minimum days at the rank."
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100, capped. 100 when no minimum is set."
+          }
+        },
+        "required": [
+          "elapsed",
+          "required",
+          "percent"
+        ]
+      },
+      "SkillsProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "signedOff": {
+            "type": "number",
+            "description": "Required skills signed off."
+          },
+          "required": {
+            "type": "number",
+            "description": "Required skills for the next rank."
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100. 100 when none are required."
+          }
+        },
+        "required": [
+          "signedOff",
+          "required",
+          "percent"
+        ]
+      },
+      "ProgressBreakdownResponseDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "nullable": true,
+            "description": "null on a time-only rank (days only).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClassesProgressResponseDto"
+              }
+            ]
+          },
+          "days": {
+            "$ref": "#/components/schemas/DaysProgressResponseDto"
+          },
+          "skills": {
+            "nullable": true,
+            "description": "null on a time-only rank (days only).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SkillsProgressResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "HoursTrainedResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalMinutes": {
+            "type": "number",
+            "description": "Every minute logged in this style at this School (check-ins and \"Log a class\")."
+          },
+          "sinceCurrentRankMinutes": {
+            "type": "number",
+            "description": "Minutes trained on or after the current rank date."
+          }
+        },
+        "required": [
+          "totalMinutes",
+          "sinceCurrentRankMinutes"
+        ]
+      },
       "StudentEligibilityResponseDto": {
         "type": "object",
         "properties": {
@@ -17618,6 +17815,18 @@
           },
           "eligibility": {
             "$ref": "#/components/schemas/EligibilityResponseDto"
+          },
+          "progressBreakdown": {
+            "nullable": true,
+            "description": "null when there is no next rank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBreakdownResponseDto"
+              }
+            ]
+          },
+          "hoursTrained": {
+            "$ref": "#/components/schemas/HoursTrainedResponseDto"
           }
         },
         "required": [
@@ -17634,7 +17843,8 @@
           "skillStatuses",
           "createdAt",
           "updatedAt",
-          "eligibility"
+          "eligibility",
+          "hoursTrained"
         ]
       },
       "StudentEligibilityListResponseDto": {
@@ -17760,6 +17970,18 @@
           "eligibility": {
             "$ref": "#/components/schemas/EligibilityResponseDto"
           },
+          "progressBreakdown": {
+            "nullable": true,
+            "description": "null when there is no next rank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBreakdownResponseDto"
+              }
+            ]
+          },
+          "hoursTrained": {
+            "$ref": "#/components/schemas/HoursTrainedResponseDto"
+          },
           "skills": {
             "description": "The skills for the next grade.",
             "type": "array",
@@ -17777,6 +17999,7 @@
           "verificationStatus",
           "ladder",
           "eligibility",
+          "hoursTrained",
           "skills"
         ]
       },
@@ -18508,6 +18731,18 @@
           "readyToGrade"
         ]
       },
+      "OpenMatHoursSettingDto": {
+        "type": "object",
+        "properties": {
+          "openMatCountsTowardHours": {
+            "type": "boolean",
+            "description": "When off (the default), open mat time is recorded but not added to students' hours trained. Hours never change the grading %."
+          }
+        },
+        "required": [
+          "openMatCountsTowardHours"
+        ]
+      },
       "BoardMoveDto": {
         "type": "object",
         "properties": {
@@ -18531,6 +18766,18 @@
             "type": "string",
             "nullable": true,
             "description": "The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts)."
+          },
+          "classId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The class the student trained in, for hours trained: its scheduled length is logged. A class at this School that lists this style. Leave out to send `minutes` instead."
+          },
+          "minutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 600,
+            "description": "Minutes trained, for hours trained, when no class is picked. Default 60. Hours never change the grading %."
           }
         }
       },

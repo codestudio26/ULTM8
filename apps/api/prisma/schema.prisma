@@ -428,6 +428,7 @@ model User {
   coachInvitesAccepted              CoachInvite[]               @relation("CoachInviteAcceptedBy")
   coachInvitesCancelled             CoachInvite[]               @relation("CoachInviteCancelledBy")
   instructorBelts                   InstructorBelt[]            @relation("InstructorBeltUser")
+  trainingLogs                      TrainingLog[]               @relation("TrainingLogStudent")
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
   waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
@@ -841,6 +842,12 @@ model School {
   facilities        String[] @default([])
   ranksToggle       Boolean  @default(false)
 
+  /// "Open mat counts toward hours" (Grading → Settings; Decisions 301 item 6,
+  /// 306): off by default. When off, check-ins and logged classes whose class
+  /// type is open mat are recorded but not added to a student's hours trained.
+  /// Hours are a record only and never affect grading (Decision 306).
+  openMatCountsTowardHours Boolean @default(false)
+
   defaultLanguage String?
   defaultCurrency String?
   /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
@@ -965,6 +972,7 @@ model School {
   lessonCategories      LessonCategory[]
   instructorBelts       InstructorBelt[]
   promotionFeeRequests  PromotionFeeRequest[]
+  trainingLogs          TrainingLog[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1140,6 +1148,7 @@ model Class {
   // Phase 11 — a Class now has real Bookings/WaitlistEntry rows.
   bookings        Booking[]
   waitlistEntries WaitlistEntry[]
+  trainingLogs    TrainingLog[]
 
   // The DB-level guarantee behind "the job never double-materializes the same
   // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
@@ -2292,6 +2301,7 @@ model Discipline {
   gradingPermissions GradingPermission[]
   instructorBelts    InstructorBelt[]
   feeRequests        PromotionFeeRequest[]
+  trainingLogs       TrainingLog[]
 
   @@index([schoolId])
 }
@@ -2956,7 +2966,8 @@ model PromotionEvent {
 
   createdAt DateTime @default(now())
 
-  noteLog PromotionEventNoteLog[]
+  noteLog      PromotionEventNoteLog[]
+  trainingLogs TrainingLog[]
 
   @@index([schoolId])
   @@index([studentId])
@@ -2994,6 +3005,65 @@ model PromotionEventNoteLog {
 
   @@index([schoolId])
   @@index([promotionEventId])
+}
+
+/// Hours trained (Decisions 301 items 1, 5, 6 and 306): a record only, never
+/// read by grading. One row per style per check-in (the class's scheduled
+/// length) and one per "Log a class" (the picked class's length, or the
+/// coach's minutes, 60 by default). Whole minutes, never fractions.
+/// Same narrow RLS shape as the other grading records: the School
+/// Owner/Manager or the student reads; written under the student's own
+/// context (check-in and log-a-class both run there). Append-only from the
+/// app (no UPDATE or DELETE grant).
+model TrainingLog {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("TrainingLogStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  minutes Int
+  source  TrainingLogSource
+
+  /// The class type was open mat (Decision 304). Kept even when the School's
+  /// switch kept the minutes out of the hours.
+  openMat           Boolean @default(false)
+  /// Whether these minutes are in the student's hours: false only for open
+  /// mat while "Open mat counts toward hours" was off when it was logged.
+  countsTowardHours Boolean @default(true)
+
+  // What the minutes came from. SET NULL / CASCADE so purges and test
+  // clean-ups of classes, bookings and history keep working; the minutes
+  // themselves are copied here.
+  classId          String?
+  class            Class?          @relation(fields: [classId], references: [id], onDelete: SetNull)
+  bookingId        String?
+  booking          Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  promotionEventId String?
+  promotionEvent   PromotionEvent? @relation(fields: [promotionEventId], references: [id], onDelete: Cascade)
+
+  /// When the training happened: the class's start for a check-in or a
+  /// picked class, otherwise when it was logged. "Since the current rank"
+  /// compares this with StudentRank.dateOfCurrentRank.
+  trainedAt DateTime
+  createdAt DateTime @default(now())
+
+  /// A booking is checked in once; one row per style for it.
+  @@unique([bookingId, disciplineId])
+  @@index([schoolId])
+  @@index([studentId, disciplineId])
+  @@index([classId])
+  @@index([promotionEventId])
+}
+
+enum TrainingLogSource {
+  CHECK_IN
+  LOGGED
 }
 
 /// Every skill sign-off change, with who, when, the old status and the new
@@ -3383,6 +3453,7 @@ model Booking {
 
   attendees        BookingAttendee[]
   claimedFromEntry WaitlistEntry?    @relation("WaitlistEntryClaimedBooking")
+  trainingLogs     TrainingLog[]
 
   // Composite indexes leading with the tenant column (Decision 30). The "one
   // active Booking per Student per Class" guard (status = 'UPCOMING') is a

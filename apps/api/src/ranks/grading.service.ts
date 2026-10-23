@@ -14,7 +14,7 @@ import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { GradingFeeRequestedJobData, GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
 import { feeStatusFor, isOpenToDecide, isWaitingForFee, PendingGrade, UNSETTLED_STATUSES } from './promotion-fee';
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
-import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
 import { PermissionToggle } from './dto/grading-permission.dto';
 
@@ -30,7 +30,8 @@ const TOGGLE_LABELS: Record<PermissionToggle, string> = {
 };
 import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
-import { boardMove, dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
+import { boardMove, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex } from './engine';
+import { classMinutes, DEFAULT_LOGGED_MINUTES, hoursTrained, recordLoggedMinutes } from './hours-trained';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -153,9 +154,18 @@ export class GradingService {
       // Each style's own board columns (Decisions 75, 136, 181).
       const styles = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, boardGettingThere: true, boardReadyToGrade: true } });
       const items: Array<Record<string, unknown>> = [];
-      for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string }>) {
+      for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string; studentId: string; schoolId: string }>) {
         const style = styles.find((d) => d.id === row.disciplineId);
-        items.push({ ...row, eligibility: await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined) });
+        const eligibility = await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined);
+        items.push({
+          ...row,
+          eligibility,
+          // The student page's breakdown and hours trained (Decisions 301
+          // item 4, 306): information only, read off the same eligibility,
+          // never fed back into it.
+          progressBreakdown: progressBreakdown(eligibility),
+          hoursTrained: await hoursTrained(tx, row),
+        });
       }
       return { items };
     });
@@ -202,6 +212,8 @@ export class GradingService {
         verificationStatus: 'VERIFIED' | 'UNVERIFIED';
         skillStatuses: Array<{ skillId: string; status: string }>;
         eligibility: { requiredSkillIds?: string[]; optionalSkillIds?: string[] };
+        progressBreakdown: unknown;
+        hoursTrained: unknown;
       }>) {
         const ladder = catalog.belts
           .filter((b) => b.disciplineId === row.disciplineId)
@@ -234,6 +246,8 @@ export class GradingService {
           verificationStatus: row.verificationStatus,
           ladder,
           eligibility: row.eligibility,
+          progressBreakdown: row.progressBreakdown,
+          hoursTrained: row.hoursTrained,
           skills: [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
         });
       }
@@ -1581,6 +1595,7 @@ export class GradingService {
       if (ticked.length === 0 && classType !== null && !discipline.classTypesOffered.includes(classType)) {
         throw new BadRequestException(`"${classType}" is not one of this style's class types.`);
       }
+      const hours = await this.loggedClassHours(tx, discipline, dto);
       const byType = { ...(sr.classesAttendedByType as Record<string, number>) };
       if (classType !== null) byType[classType] = (byType[classType] ?? 0) + 1;
       const updated = await tx.studentRank.updateMany({
@@ -1596,8 +1611,87 @@ export class GradingService {
         sr,
         `Class logged by hand: ${classType ?? 'no class type'} (classes ${sr.classesAttendedTowardCheckpoint} → ${sr.classesAttendedTowardCheckpoint + 1}).`,
       );
-      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
+      // Hours trained (Decisions 301 item 5, 306): a record only, written
+      // with the history entry; never part of the class count or the %.
+      const minutesLogged = await recordLoggedMinutes(tx, {
+        schoolId: sr.schoolId,
+        studentId,
+        disciplineId,
+        minutes: hours.minutes,
+        // Open mat follows the picked class's own type for this style, else
+        // the type the coach chose.
+        classType: hours.classType ?? classType,
+        classId: hours.classId,
+        trainedAt: hours.trainedAt,
+        promotionEventId: promotionEvent.id,
+      });
+      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent, minutesLogged };
     }));
+  }
+
+  /** "Log a class" hours (Decision 301 item 5): the picked class's scheduled
+   * length, or the coach's minutes, 60 by default. A picked class must be at
+   * this School and list this style (read under the student's context, so a
+   * class elsewhere is simply not found). */
+  private async loggedClassHours(
+    tx: TenantTx,
+    discipline: { id: string; schoolId: string },
+    dto: LogClassDto,
+  ): Promise<{ minutes: number; classId: string | null; classType: string | null; trainedAt: Date }> {
+    const classId = dto.classId ?? null;
+    const minutes = dto.minutes ?? null;
+    if (classId !== null && minutes !== null) {
+      throw new BadRequestException('Send either the class or the minutes, not both.');
+    }
+    if (classId === null) {
+      return { minutes: minutes ?? DEFAULT_LOGGED_MINUTES, classId: null, classType: null, trainedAt: new Date() };
+    }
+    const cls = await tx.class.findFirst({ where: { id: classId, schoolId: discipline.schoolId }, select: { id: true, startDate: true, endDate: true, styles: true } });
+    if (!cls) throw new NotFoundException('Class not found');
+    // NEEDS PRODUCT-OWNER CONFIRMATION: the picked class must be of this
+    // style, so its minutes land on the right style's hours.
+    const style = (cls.styles as unknown as Array<{ disciplineId: string; classType: string | null }>).find((s) => s.disciplineId === discipline.id);
+    if (!style) throw new BadRequestException('That class is not a class of this style.');
+    return { minutes: classMinutes(cls), classId: cls.id, classType: style.classType, trainedAt: cls.startDate };
+  }
+
+  // ---------------------------------------------------------------------------
+  // "Open mat counts toward hours" (Decisions 301 item 6, 306; handover B2)
+  // ---------------------------------------------------------------------------
+
+  /** The School's "Open mat counts toward hours" switch: the owner and the
+   * School's staff may read it (the Grading settings page). */
+  async getOpenMatHoursSetting(callerId: string, schoolId: string) {
+    if (!(await this.isSchoolOwner(callerId, schoolId))) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    }
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { openMatCountsTowardHours: true } }),
+    );
+    if (!school) throw new NotFoundException('School not found');
+    return { openMatCountsTowardHours: school.openMatCountsTowardHours };
+  }
+
+  /** Change "Open mat counts toward hours": the School owner, or a coach with
+   * the grading-settings right for any style at the School (handover B2;
+   * today GradingPermission.canChangeBoardThresholds, "Change board %",
+   * which B2 renames to "Change grading settings"). Applies to check-ins and
+   * logged classes from now on; minutes already logged keep their state. */
+  async setOpenMatHoursSetting(callerId: string, schoolId: string, dto: OpenMatHoursSettingDto) {
+    if (!(await this.isSchoolOwner(callerId, schoolId))) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findFirst({ where: { userId: callerId, schoolId, canChangeBoardThresholds: true }, select: { id: true } }),
+      );
+      if (!permission) {
+        throw new ForbiddenException(`Your grading permission doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
+      }
+    }
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.update({ where: { id: schoolId }, data: { openMatCountsTowardHours: dto.openMatCountsTowardHours }, select: { openMatCountsTowardHours: true } }),
+    );
+    return { openMatCountsTowardHours: school.openMatCountsTowardHours };
   }
 
   /** The manual Active/Inactive switch for this style (Decisions 152, 176);
