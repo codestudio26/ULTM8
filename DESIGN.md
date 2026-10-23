@@ -313,6 +313,12 @@ On a phone Add student shows the form first and the preview card, **Ready to sav
 - **Ready to save** keeps form pattern F's checklist of what is done and still missing, right above the button.
 - The preview card mirrors what is typed (name, type, check-in code). That is its job, so it is not counted as a repeat.
 
+### Grading Board: the student panel never repeats the card (product owner, 23 Oct 2026)
+On a phone the board's cards come first. Tapping a student opens their panel as a sheet over the board (a board can be long, so the panel isn't put below every card). The panel shows only what the card doesn't:
+- **Left out** because the card shows them: the current belt box (picture, rank, "since", "not verified"), the progress bar and the "— 56%" after **Toward …**, and **Move to another column** (the card has Move).
+- **Kept:** name and branch, **Toward {next rank}** with the classes, time at this rank and skills ticks, the promotion fee box and price, skills for the next rank, grading history, and Promote · Open grading page › · Open full student view ›.
+- "See full history ›" is gone: it opened the same page as **Open grading page ›**.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
