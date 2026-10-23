@@ -13,6 +13,18 @@ export class ReorderRanksDto {
   rankIds!: string[];
 }
 
+/** Reorder a style's skills (Decision 309): every skill of the style, once,
+ * in the new order. */
+export class ReorderSkillsDto {
+  @ApiProperty({ type: [String], description: 'Every skill id of this style, in the new order.' })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(500)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  skillIds!: string[];
+}
+
 export class RungHolderDto {
   @ApiProperty()
   studentId!: string;

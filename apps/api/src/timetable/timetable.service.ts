@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { resolveClassStyles } from '../classes/class-styles';
+import { resolveClassStyles, styleIdsOf } from '../classes/class-styles';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -182,7 +182,7 @@ export class TimetableService {
 
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       // Styles are replaced when sent and kept when omitted (Decision 170).
-      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities) : null;
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
       return tx.timetableSlot.update({
         where: { id: slotId },
         data: {
