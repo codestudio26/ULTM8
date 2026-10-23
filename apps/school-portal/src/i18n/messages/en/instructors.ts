@@ -26,6 +26,11 @@ export const instructors = {
   archive: 'Archive',
   unarchive: 'Unarchive',
   archiveFailed: 'Could not archive this Instructor profile.',
+  archiveTitle: 'Archive {name}?',
+  archiveDescription:
+    "Their profile is hidden and they can't be given new classes. Their login and Instructor role stay. You can unarchive them within 90 days; after that the profile is deleted for good.",
+  pickerArchived: 'archived',
+  pickerRevoked: 'no longer an instructor',
   unarchiveFailed: 'Could not unarchive this Instructor profile.',
   addedEmailSent: '{name} was added — a temporary passcode was emailed to {email}.',
   addedEmailFailed: "{name} was added, but the email couldn't be sent. They'll need the temporary passcode another way.",
@@ -43,6 +48,12 @@ export const instructors = {
     yearsOfExperience: 'Years of experience:',
     specializations: 'Specializations:',
     classesHeading: 'Classes',
+    upcomingHeading: 'Upcoming classes',
+    pastHeading: 'Past classes',
+    upcomingEmptyTitle: 'No upcoming classes',
+    upcomingEmptyDescription: 'Classes they teach from today on show here.',
+    showAllPast: 'Show all {count}',
+    showFewerPast: 'Show fewer',
     classesLoadFailed: 'Could not load Classes.',
     classesEmptyTitle: 'No Classes yet',
     classesEmptyDescription: "This Instructor isn't assigned to any Class yet.",
@@ -52,6 +63,10 @@ export const instructors = {
     revokeDescription:
       "They lose their Instructor role at this School immediately. This can't be undone from here — they would need to be re-invited.",
     revokeConfirm: 'Revoke',
+    revokeUpcomingWarning: {
+      one: 'They still teach {count} upcoming class. It keeps them as its instructor until you change it on the Classes page.',
+      other: 'They still teach {count} upcoming classes. They keep them as their instructor until you change it on the Classes page.',
+    },
     revokeFailed: 'Could not revoke this enrollment. Please try again.',
   },
   belts: {

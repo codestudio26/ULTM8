@@ -4589,3 +4589,39 @@ The same review found five gaps. Other class-booking and martial-arts apps deact
 ### Recorded by
 
 User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 115, 169, 226, 230, 296
+
+The Instructors review of 23 Oct 2026 found fourteen bugs (I1–I14). The product owner: *"Find the best solution until you get confident that that's the best solution have many passes and then build it"*.
+
+### Decision
+
+1. **The belts box lists current instructors only (I1).** "Instructors' belts" no longer fails for the whole School once someone who chose a belt is revoked: their belt is left out, and verifying it says they are no longer an instructor here.
+2. **An archived instructor gets no new work (I2).** A new Class, timetable slot or lesson, or a change of instructor on one, refuses an archived instructor. The pickers on Classes, Timetable and Curriculum offer only active, unarchived instructors; a record that already has an archived or revoked instructor keeps them, marked, until it is changed. Someone with the Instructor role but no profile yet can still be picked, as before.
+3. **The roster shows every instructor, A to Z (I3).** The portal reads every page of the list instead of only the first 20. Every instructor picker and name lookup uses the same list.
+4. **No instructor joins an archived branch (I4).** Add manually, Add instructor and Edit refuse an archived branch, as Decision 296 already does for staff and coaches. A profile already on a branch that was archived later stays editable.
+5. **Revoking keeps its current rule, with a warning (I5).** Revoking an instructor is still allowed while they have upcoming classes; the confirmation now says how many and that those classes keep them until the owner changes it. A Class, timetable slot or lesson checks its instructor again only when the instructor or the branch actually changes, so the owner can still rename or reassign one whose instructor has left.
+6. **Archive is blocked only by what the owner can see (I6).** Only this School's live (unarchived) upcoming classes and active timetable slots block archiving.
+7. **The Status column shows Active or Revoked (I7).** The always-empty Login column is removed.
+8. **A revoked instructor's profile can still be edited (I8).** Only moving it to another branch checks the role again, with a plain message. This replaces the earlier deliberate "update() throws" side effect noted in InstructorsService.
+9. **"Add instructor" offers only people with no profile here yet (I9).** It also returns the branches each person's role covers, and the form starts on that branch.
+10. **Names are trimmed and can't be blank (I10)** in Add manually.
+11. **Coaches and Branch Staff who open the Instructors page go to their start page (I11)** instead of a blank page, as Decision 296 did for the Staff page.
+12. **Archive asks "Are you sure?" first (I12).** Unarchive does not need to.
+13. **A profile's branch must be one the role covers (I13).** A whole-School profile needs a whole-School Instructor role; a branch profile needs a whole-School role or one at that branch.
+14. **The detail page lists every class, split into upcoming and past (I14).** Archived classes are left out; past classes show the latest ten with "Show all"; the booked count shows only on upcoming classes, since it counts upcoming bookings.
+
+### What this does NOT resolve
+
+- **Revoking with upcoming classes (question 2 of the review).** Whether revoking should be blocked until classes are reassigned, or clear their instructor, is still the product owner's call. Until then it stays allowed, with the warning above. Timetable slots of a revoked instructor keep generating classes with them.
+- **Colleagues' profiles (question 1).** Any instructor or Branch Staff member can still read colleagues' full profiles (address, certification key) through the API.
+- **Archive and the role (question 3).** Archiving still leaves the person's login and Instructor role in place.
+- Existing profiles whose branch doesn't match their role (made before item 13) are left as they are.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.

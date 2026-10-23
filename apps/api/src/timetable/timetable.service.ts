@@ -77,7 +77,7 @@ export class TimetableService {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
     }
     if (dto.instructorId) {
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
     }
 
     const slotId = randomUUID();
@@ -172,7 +172,10 @@ export class TimetableService {
     // only when instructorId is itself in the body" fix Phase 4's code review caught
     // for ClassesService.update() — applied here from the start rather than being
     // rediscovered a second time.
-    if (nextInstructorId) {
+    // Decision 311 (I5): only when the instructor or the branch actually changes.
+    if (nextInstructorId && nextInstructorId !== existing.instructorId) {
+      await this.tenantAuth.assertInstructorAssignable(callerId, nextInstructorId, existing.schoolId, nextBranchId);
+    } else if (nextInstructorId && nextBranchId !== existing.branchId) {
       await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 

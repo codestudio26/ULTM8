@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { ClassResponse } from './classQueries';
@@ -198,7 +198,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('classes.form.unassigned') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>

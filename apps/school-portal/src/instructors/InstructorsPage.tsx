@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
@@ -8,6 +8,7 @@ import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { Avatar } from '../lib/Avatar';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
 import {
   useArchiveInstructor,
@@ -74,8 +75,12 @@ export function InstructorsPage() {
   // archived) is always fetched (useInstructors passes includeArchived:
   // true) so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
+  // Archive asks first (Decision 311, I12); Unarchive needs no confirmation.
+  const [confirmingArchive, setConfirmingArchive] = useState<InstructorResponse | null>(null);
 
-  if (!schoolId) return null;
+  // Only the School's owner manages instructors; anyone else who opens this
+  // page goes to their own start page instead of a blank one (Decision 311, I11).
+  if (!schoolId) return <Navigate to="/" replace />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('instructors.loadFailed')} />;
 
@@ -137,17 +142,17 @@ export function InstructorsPage() {
                 header: t('instructors.columnScope'),
                 render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : t('instructors.allBranches')),
               },
-              // No backend concept of an Instructor "login" state exists yet
-              // (see the Instructor model's own comment: a profile requires an
-              // already-active RoleGrant, granted immediately — there's no
-              // pending-invite state to show). Shown as "—" rather than a
-              // fabricated status.
-              { key: 'login', header: t('instructors.columnLogin'), render: () => '—' },
               { key: 'phone', header: t('instructors.columnPhone'), render: (i) => i.phone ?? '—' },
-              // RoleGrant.revokedAt (Active/Revoked) isn't resolved onto
-              // InstructorResponseDto yet — same "—" placeholder as Login,
-              // rather than hardcoding "Active" for every row.
-              { key: 'status', header: t('instructors.columnStatus'), render: () => '—' },
+              // Whether they still hold the Instructor role here (Decision 311, I7).
+              {
+                key: 'status',
+                header: t('instructors.columnStatus'),
+                render: (i) => (
+                  <Badge variant={i.status === 'ACTIVE' ? 'success' : undefined}>
+                    {i.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
+                  </Badge>
+                ),
+              },
               {
                 key: 'actions',
                 header: '',
@@ -168,7 +173,7 @@ export function InstructorsPage() {
                       actions={[
                         i.archivedAt
                           ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
-                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); archiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.archiveFailed')) }); } },
+                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); setConfirmingArchive(i); } },
                       ]}
                     />
                   </div>
@@ -180,6 +185,17 @@ export function InstructorsPage() {
       </Card>
 
       <InstructorBeltsSection schoolId={schoolId} />
+
+      {confirmingArchive ? (
+        <ConfirmDeleteModal
+          title={t('instructors.archiveTitle', { name: `${confirmingArchive.firstName} ${confirmingArchive.surname}`.trim() })}
+          description={t('instructors.archiveDescription')}
+          confirmLabel={t('instructors.archive')}
+          genericErrorMessage={t('instructors.archiveFailed')}
+          onConfirm={() => archiveInstructor.mutateAsync(confirmingArchive.id)}
+          onClose={() => setConfirmingArchive(null)}
+        />
+      ) : null}
 
       {creating ? (
         <InstructorFormModal

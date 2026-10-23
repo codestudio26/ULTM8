@@ -225,6 +225,27 @@ export class TenantAuthorizationService {
   }
 
   /**
+   * assertValidInstructor plus: an archived Instructor profile can't be given
+   * new work (Decision 311, I2). For a NEW assignment only (create, or a
+   * changed instructorId): a row that already has this instructor keeps them.
+   * A User with the role but no profile yet is still assignable, as before.
+   */
+  async assertInstructorAssignable(
+    callerId: string,
+    instructorId: string,
+    schoolId: string,
+    targetBranchId: string | null,
+  ): Promise<void> {
+    await this.assertValidInstructor(callerId, instructorId, schoolId, targetBranchId);
+    const profile = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.instructor.findUnique({ where: { schoolId_userId: { schoolId, userId: instructorId } }, select: { archivedAt: true } }),
+    );
+    if (profile?.archivedAt) {
+      throw new BadRequestException('This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.');
+    }
+  }
+
+  /**
    * Throws ForbiddenException if `schoolId` is currently soft-archived
    * (Decision 110, Phase 56 — TenantLifecycleService's close-account action).
    * Called immediately after this file's own assertSchoolOwner/assertStaffAtSchool
