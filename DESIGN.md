@@ -344,9 +344,8 @@ The desktop design is made phone-friendly. The student app (`apps/student`) borr
   - A **"Show all students (N)"** button brings the full list back.
   - On a computer the list never shrinks, because the details sit in the right-hand panel.
 - **Detail pages** (the Student profile and the team member page) **show the name, the tabs and the cards first, then the photo/details box** that is the right-hand panel on a computer, below them (product owner, 23 Oct 2026; before this the Student profile opened with the box).
-  - On a phone the box moves to the top, under the menu bar, with "‹ Students" and the name added at its top.
-  - The tabs and cards follow below it.
-  - The desktop page header, which duplicates the name, is hidden on phones.
+  - On a phone the page header ("‹ Students" or "‹ Team" and the name) stays at the top, then the tabs and cards.
+  - The box follows below the cards, full width, without repeating the name.
 - **Form fields** use 16px text, so iOS doesn't zoom in when a field is tapped.
 - **Page side padding** is 16px.
 
