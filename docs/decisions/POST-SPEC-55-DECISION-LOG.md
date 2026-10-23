@@ -4611,3 +4611,20 @@ User, 22 Oct 2026, after the Disciplines section review.
 ### Recorded by
 
 User, 23 Oct 2026, answering the follow-up questions on the reminder.
+
+---
+
+## Decision 314 — Promotion fee: who sees prices, who can decide not to promote, and one waiting promotion at a time
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 300, 307, 313 · **Answers:** the open points of the B10 build (PR #293)
+
+### Decision
+
+1. **Prices are seen by everyone with access to grading:** the School owner and anyone with grading permission for that style. Other staff, students and guardians don't see the ladder's prices. (A student or Guardian still sees the amount of their own fee request.) The product owner: *"Any with access to the grading."* The same applies to the School's list of fee requests, whose amounts are prices: each person sees only the styles they have grading permission for.
+2. **Anyone with grading permission for the style can decide not to promote** a student whose promotion is "to decide" (Decisions 307, 313), as well as the owner. No particular action right is needed. The product owner: *"any one with the grading permission"*.
+3. **One waiting promotion at a time.** While a promotion is waiting for its fee, the student can't be promoted again in that style until the fee is paid, waived or cancelled. The product owner chose: *"No, wait for the fee first."*
+
+### Recorded by
+
+User, 23 Oct 2026, answering the B10 follow-up questions.
+

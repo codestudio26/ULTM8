@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Promotion fee: who sees what** (Decision 314) — prices on the ladder,
+  and the amounts in the School's list of fee requests, are now shown only to
+  the owner and to people with grading permission for that style. Anyone with
+  grading permission for the style can now decide not to promote a student
+  whose promotion is "to decide".
 - **Promotion fee, API** (Decisions 287, 297, 300, 307, 313) — the School
   owner can turn on a promotion fee and "Allow grading before the fee is
   paid" (both off by default) and price any belt or stripe; with the fee off,
