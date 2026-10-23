@@ -301,6 +301,12 @@ On a phone the Dashboard shows the number cards and lists first and **Needs atte
 ### Check-in: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
 On a phone Check-in shows Today's classes and the keypad first and **Recent check-ins** below them. The panel shares nothing with the page. A check-in updates both sides together: the student goes to the top of Recent check-ins and their class's "checked in" count goes up by one. The line under the keypad ("Lucas Martins checked in to Advanced (Gi)") stays: it is the desk's instant confirmation and clears on the next key press.
 
+### Settings: nothing shown twice, settings first on a phone (product owner, 23 Oct 2026)
+On a phone Settings shows the category menu and the settings first, and the student preview and **About this setting** below them.
+- **About this setting** names the setting and explains it. It has no "On/Off" or "Set to: …" chip: the switch or drop-down on the page already shows the value.
+- **Show belt progress on the check-in screen** has no "e.g. 12 of 40 classes to Blue" hint: the preview shows exactly that line.
+- The page's intro says "Click any setting to see what it does in About this setting", naming the section as it is labelled.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
