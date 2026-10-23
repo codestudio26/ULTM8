@@ -65,6 +65,33 @@ export class BoardActiveDto {
   active!: boolean | null;
 }
 
+/** The promotion fee shown on a board card (Decisions 300, 307). */
+export class BoardFeeRequestDto {
+  @ApiProperty({ description: 'The fee request (use it to waive or cancel, or to dismiss a "to decide").' })
+  id!: string;
+
+  @ApiProperty({ enum: ['PENDING', 'ACCEPTED', 'PAID', 'DECLINED', 'WAIVED', 'CANCELLED'] })
+  status!: 'PENDING' | 'ACCEPTED' | 'PAID' | 'DECLINED' | 'WAIVED' | 'CANCELLED';
+
+  @ApiProperty({ description: 'The rung the grade moves the student to. For "to decide", the planned grade the Promote window starts on.' })
+  toRungId!: string;
+
+  @ApiProperty()
+  toRungName!: string;
+
+  @ApiProperty({ description: 'Minor units of `currency`.' })
+  amountMinor!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The School\'s currency when the request was made.' })
+  currency!: string | null;
+
+  @ApiProperty({ description: 'The promotion has already applied ("Allow grading before the fee is paid" was on).' })
+  promotionApplied!: boolean;
+
+  @ApiProperty({ description: '"To decide" only: promoting to toRungId makes no new fee request (Decision 307).' })
+  feeFree!: boolean;
+}
+
 export class GradingBoardItemDto {
   @ApiProperty()
   studentId!: string;
@@ -107,6 +134,17 @@ export class GradingBoardItemDto {
       'Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff.',
   })
   noHomeBranch!: boolean;
+
+  @ApiPropertyOptional({
+    enum: ['waiting', 'declined', 'toDecide'],
+    nullable: true,
+    description:
+      'Promotion fee (Decisions 300, 307): "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.',
+  })
+  feeStatus!: 'waiting' | 'declined' | 'toDecide' | null;
+
+  @ApiPropertyOptional({ type: BoardFeeRequestDto, nullable: true, description: 'The request behind feeStatus.' })
+  feeRequest!: BoardFeeRequestDto | null;
 }
 
 export class GradingBoardResponseDto {
@@ -200,6 +238,9 @@ export class BulkPromoteStudentDto {
 
   @ApiPropertyOptional({ description: 'Set on a promoted student: their history entry.' })
   promotionEventId?: string;
+
+  @ApiPropertyOptional({ description: 'Set when the grade made a promotion fee request (Decision 300 item 6: one per student).' })
+  feeRequestId?: string;
 }
 
 export class BulkPromoteResponseDto {
@@ -209,8 +250,15 @@ export class BulkPromoteResponseDto {
   @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`).' })
   needsAcknowledgement!: BulkPromoteStudentDto[];
 
-  @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Skipped: no next rank, blocked by the style\'s "skills required" switch, not yours to grade, or changed at the same time.' })
+  @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Skipped: no next rank, blocked by the style\'s "skills required" switch, not yours to grade, changed at the same time, or a promotion already waiting for its fee.' })
   cannotPromote!: BulkPromoteStudentDto[];
+
+  // Optional in the schema so existing portal callers keep compiling; the API always sends it.
+  @ApiPropertyOptional({
+    type: [BulkPromoteStudentDto],
+    description: 'Not promoted yet: their grade is priced and "Allow grading before the fee is paid" is off, so each waits for their fee request (feeRequestId) to be paid or waived (Decision 300). Always sent; empty on a dry run.',
+  })
+  waitingForFee?: BulkPromoteStudentDto[];
 }
 
 /** A style's Grading Board columns (Decisions 75, 136, 181): Getting There

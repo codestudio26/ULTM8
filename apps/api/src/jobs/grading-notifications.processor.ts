@@ -6,7 +6,8 @@ import { loadLadder } from '../ranks/grading-attendance';
 import { eligibilityOnLadder, studentTimeZone } from '../ranks/grading-eligibility';
 import { GRADING_NOTIFICATIONS_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
-import { GradingPromotedJobData, GradingReadyCheckJobData } from './grading-notifications.types';
+import { GradingFeeRequestedJobData, GradingPromotedJobData, GradingReadyCheckJobData } from './grading-notifications.types';
+import { formatFee } from '../ranks/promotion-fee';
 
 /** Days are served at each student's local midnight, so a daily pass catches
  * everyone who became ready by time alone. Not set by the spec; a Developer
@@ -16,6 +17,9 @@ const REPEATABLE_JOB_ID = 'grading-notifications-ready-sweep';
 const SWEEP_BATCH = 500;
 
 const FANOUT_OPTIONS = { attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } };
+
+/** "To decide" reminder (Decision 313): one reminder, 3 days after a promotion became "to decide". */
+const TO_DECIDE_REMINDER_AFTER_MS = 3 * 86_400_000;
 
 /** Registers the daily ready-to-grade sweep, the same way (fixed job id,
  * not awaited, bounded retries) as ClassOccurrenceGenerationScheduler. */
@@ -71,6 +75,22 @@ export class GradingNotificationsScheduler implements OnModuleInit {
  * promote, downgrade or stripe award): to the student, or, when the student
  * is a Guardian-linked minor, to each linked guardian instead (Decision 145,
  * item 2) — a linked minor has no login of their own (Decision 175).
+ *
+ * "Promotion fee" ('fee-requested', Decision 300): the payer is told a fee
+ * request was made, routed exactly as "promoted" (the student, or a minor's
+ * guardians).
+ *
+ * "Promotion to decide" (Decision 313, in the daily 'sweep'): a promotion
+ * left "to decide" after the owner cancelled its fee or waived a declined
+ * one reminds the "ready to grade" recipients once, 3 days after it became
+ * "to decide", and only while the student is fully ready (the engine's
+ * `eligible`, the same test as "ready to grade") and still on the rung it was
+ * planned from. Once only: PromotionFeeRequest.toDecideRemindedAt, claimed as
+ * readyNotifiedAt is. Never repeated, never times out. A student not fully
+ * ready on day 3 is checked again by each daily sweep and reminded the first
+ * day they are (Decision 313 doesn't say whether a student who becomes ready
+ * after day 3 is reminded; this build does, once). Needs product-owner
+ * confirmation.
  */
 @Processor(GRADING_NOTIFICATIONS_QUEUE)
 export class GradingNotificationsProcessor extends WorkerHost {
@@ -86,7 +106,12 @@ export class GradingNotificationsProcessor extends WorkerHost {
   async process(job: Job): Promise<void> {
     if (job.name === 'ready-check') return this.readyCheck(job.data as GradingReadyCheckJobData);
     if (job.name === 'promoted') return this.promoted(job.data as GradingPromotedJobData);
-    if (job.name === 'sweep') return this.sweep();
+    if (job.name === 'fee-requested') return this.feeRequested(job.data as GradingFeeRequestedJobData);
+    if (job.name === 'sweep') {
+      await this.sweep();
+      await this.toDecideSweep();
+      return;
+    }
     this.logger.warn(`grading-notifications: unknown job "${job.name}" ignored.`);
   }
 
@@ -181,6 +206,91 @@ export class GradingNotificationsProcessor extends WorkerHost {
     }
   }
 
+  /** "To decide" reminders (Decision 313): see the class comment. */
+  private async toDecideSweep(): Promise<void> {
+    const cutoff = new Date(Date.now() - TO_DECIDE_REMINDER_AFTER_MS);
+    let cursor: string | undefined;
+    let checked = 0;
+    for (;;) {
+      const batch = await this.prismaJobs.promotionFeeRequest.findMany({
+        where: { toDecideAt: { not: null, lte: cutoff }, toDecideRemindedAt: null, toDecideResolvedAt: null },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+        take: SWEEP_BATCH,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      });
+      for (const r of batch) {
+        try {
+          await this.remindToDecide(r.id, cutoff);
+        } catch (err) {
+          this.logger.error(`grading-notifications: to-decide reminder failed for PromotionFeeRequest ${r.id}`, err as Error);
+        }
+      }
+      checked += batch.length;
+      if (batch.length < SWEEP_BATCH) break;
+      cursor = batch[batch.length - 1].id;
+    }
+    this.logger.log(`grading-notifications: to-decide sweep checked ${checked} request(s).`);
+  }
+
+  private async remindToDecide(requestId: string, cutoff: Date): Promise<void> {
+    const db = this.prismaJobs;
+    const request = await db.promotionFeeRequest.findUnique({ where: { id: requestId } });
+    if (!request || !request.toDecideAt || request.toDecideAt > cutoff || request.toDecideRemindedAt || request.toDecideResolvedAt) return;
+
+    const school = await db.school.findUnique({ where: { id: request.schoolId }, select: { archivedAt: true, ranksToggle: true } });
+    if (!school || school.archivedAt || !school.ranksToggle) return;
+    const enrolled = await db.roleGrant.findFirst({
+      where: { userId: request.studentId, schoolId: request.schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) return;
+    const sr = await db.studentRank.findUnique({
+      where: { studentId_disciplineId: { studentId: request.studentId, disciplineId: request.disciplineId } },
+      include: { skillStatuses: { select: { skillId: true, status: true } } },
+    });
+    // Still on the rung the promotion was planned from: otherwise it no longer applies.
+    if (!sr || sr.currentStripeId !== request.expectedCurrentRungId) return;
+
+    // Fully ready only (Decision 313 item 4): classes, days and every required skill.
+    const ladder = await loadLadder(db, sr.disciplineId);
+    const eligibility = eligibilityOnLadder(ladder, sr, await studentTimeZone(db, sr.studentId, sr.schoolId));
+    if (!eligibility.hasNext || !eligibility.eligible) return;
+
+    const claimedAt = new Date();
+    const claim = await db.promotionFeeRequest.updateMany({
+      where: { id: request.id, toDecideRemindedAt: null, toDecideResolvedAt: null },
+      data: { toDecideRemindedAt: claimedAt },
+    });
+    if (claim.count === 0) return;
+
+    try {
+      const [recipients, student, discipline] = await Promise.all([
+        this.readyRecipients(request.schoolId, request.disciplineId, request.studentId),
+        db.user.findUnique({ where: { id: request.studentId }, select: { firstName: true, surname: true } }),
+        db.discipline.findUnique({ where: { id: request.disciplineId }, select: { name: true } }),
+      ]);
+      const name = student ? `${student.firstName} ${student.surname}` : 'A student';
+      for (const userId of recipients) {
+        const id = `grading-to-decide-${request.id}-${userId}`;
+        await this.fanoutQueue.add(
+          'notify',
+          {
+            notificationId: id,
+            userId,
+            title: 'Promotion to decide',
+            body: `${name}'s promotion to ${request.toRungName} (${discipline?.name ?? 'grading'}) is waiting for your decision. Promote them, or decide not to.`,
+            type: 'GRADING_TO_DECIDE',
+          } satisfies NotificationFanoutJobData,
+          { jobId: id, ...FANOUT_OPTIONS },
+        );
+      }
+    } catch (err) {
+      await db.promotionFeeRequest.updateMany({ where: { id: request.id, toDecideRemindedAt: claimedAt }, data: { toDecideRemindedAt: null } });
+      throw err;
+    }
+  }
+
   /** The owner(s), plus the staff who may grade this student (see the class comment). */
   private async readyRecipients(schoolId: string, disciplineId: string, studentId: string): Promise<string[]> {
     const db = this.prismaJobs;
@@ -211,6 +321,36 @@ export class GradingNotificationsProcessor extends WorkerHost {
       }
     }
     return [...new Set([...owners.map((o) => o.userId), ...staff])].filter((id) => id !== studentId);
+  }
+
+  /** A promotion fee request was made (Decision 300): to the student, or to
+   * each linked guardian of a minor, as "promoted". */
+  private async feeRequested(data: GradingFeeRequestedJobData): Promise<void> {
+    const guardians = await this.prismaJobs.guardianLink.findMany({
+      where: { studentId: data.studentId, revokedAt: null },
+      select: { guardianId: true },
+    });
+    const amount = formatFee(data.amountMinor, data.currency);
+    const base = { title: 'Promotion fee', type: 'GRADING_PROMOTION_FEE' };
+    if (guardians.length === 0) {
+      const id = `grading-fee-${data.feeRequestId}`;
+      await this.fanoutQueue.add(
+        'notify',
+        { ...base, notificationId: id, userId: data.studentId, body: `Your promotion to ${data.toRungName} (${data.disciplineName}) has a fee of ${amount}. Open the app to accept or decline it.` } satisfies NotificationFanoutJobData,
+        { jobId: id, ...FANOUT_OPTIONS },
+      );
+      return;
+    }
+    const student = await this.prismaJobs.user.findUnique({ where: { id: data.studentId }, select: { firstName: true } });
+    const who = student?.firstName ?? 'Your child';
+    for (const { guardianId } of guardians) {
+      const id = `grading-fee-${data.feeRequestId}-${guardianId}`;
+      await this.fanoutQueue.add(
+        'notify',
+        { ...base, notificationId: id, userId: guardianId, body: `${who}'s promotion to ${data.toRungName} (${data.disciplineName}) has a fee of ${amount}. Open the app to accept or decline it.` } satisfies NotificationFanoutJobData,
+        { jobId: id, ...FANOUT_OPTIONS },
+      );
+    }
   }
 
   private async promoted(data: GradingPromotedJobData): Promise<void> {

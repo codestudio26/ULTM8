@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { Discipline, Prisma, PrismaClient } from '@prisma/client';
+import { Discipline, Prisma, PrismaClient, PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
@@ -11,7 +11,8 @@ import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
-import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
+import { GradingFeeRequestedJobData, GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
+import { feeStatusFor, isOpenToDecide, isWaitingForFee, PendingGrade, UNSETTLED_STATUSES } from './promotion-fee';
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
@@ -64,6 +65,21 @@ function studentRankFromJson(json: Record<string, unknown>) {
   for (const field of STUDENT_RANK_DATE_FIELDS) if (field in row) row[field] = dbDate(row[field]);
   return row as unknown as Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
 }
+
+/** Applying a promotion that waited for its fee (Decisions 300, 307): the fee
+ * was paid, or the owner waived it. The request moves from one of `from` to
+ * `to` in the same transaction as the grade, so it applies exactly once. */
+type ApplyingFee = {
+  requestId: string;
+  toRungId: string;
+  gradedById: string | null;
+  from: PromotionFeeStatus[];
+  to: 'PAID' | 'WAIVED';
+  closedById?: string;
+};
+
+const WAITING_MESSAGE = (rung: string) =>
+  `This student's promotion to ${rung} is waiting for its fee. It applies once the fee is paid, or the owner can waive or cancel the fee.`;
 
 /** Only active students are graded up (Decision 283): the coach's "Grading Board" setting when there is one, otherwise a live membership at the School (the board's own rule). */
 const INACTIVE_MESSAGE = 'Only active students can be graded (Decision 283). Make the student active on the Grading Board, or give them a live membership.';
@@ -603,13 +619,18 @@ export class GradingService {
     // Bulk promote checks the style, the School and the caller once for the
     // batch and loads the ladder once; each student is still authorized.
     batch?: { discipline: Discipline; ladder: Rung[]; authorize: (studentId: string) => Promise<void> },
+    // Applying a promotion that waited for its fee (applyWaitingPromotion):
+    // the caller already authorized it (the owner waiving, or the payment).
+    applying?: ApplyingFee,
   ) {
     const discipline =
       batch?.discipline ?? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } })));
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    if (batch) {
+    if (applying) {
+      await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
+    } else if (batch) {
       await batch.authorize(studentId);
     } else {
       await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
@@ -649,7 +670,8 @@ export class GradingService {
       }
       const from = existing ? ladder[fromIndex] : null;
       // Only active students are graded up (Decision 283). A first rank is not a grading, so it isn't checked.
-      if (existing && type !== 'DOWNGRADE' && !(await isActiveForGrading(tx, existing, studentId, discipline.schoolId))) {
+      // A promotion that waited for its fee was checked when the coach made it.
+      if (existing && type !== 'DOWNGRADE' && !applying && !(await isActiveForGrading(tx, existing, studentId, discipline.schoolId))) {
         throw new BadRequestException(INACTIVE_MESSAGE);
       }
       if (dto.expectedCurrentRungId !== undefined && (from?.id ?? null) !== dto.expectedCurrentRungId) {
@@ -682,6 +704,9 @@ export class GradingService {
         }
       }
       const to = ladder[toIndex];
+      if (applying && to.id !== applying.toRungId) {
+        throw new ConflictException('The ladder has changed since this promotion was made, so it can\'t be applied as it was. Cancel the fee and grade the student again.');
+      }
 
       // --- Skills for the student's next rung (Decision 127).
       let missingSkillIds: string[] = [];
@@ -723,6 +748,29 @@ export class GradingService {
       // --- Starting classes toward the new next rung.
       const { total: startingTotal, byType: startingByType } = this.startingClasses(ladder, to, dto);
 
+      // --- Promotion fee (Decisions 287, 300, 307). Grading up a student who
+      // already holds a rank; a first rank and a downgrade have no fee.
+      const fee = existing && type !== 'DOWNGRADE' && !applying ? await this.feeForGrade(tx, callerId, discipline.schoolId, studentId, disciplineId, from!.id, to) : null;
+      if (fee?.waitsForFee) {
+        // "Allow grading before the fee is paid" off (the default): nothing
+        // changes yet; the grade is kept and applied once the fee is paid or
+        // waived, with this grading date (Decision 300 item 4).
+        const pendingGrade: PendingGrade = {
+          type: type === 'STRIPE_AWARD' ? 'STRIPE_AWARD' : 'PROMOTION',
+          targetRungId: to.id,
+          expectedCurrentRungId: from!.id,
+          effectiveDate: dto.effectiveDate ?? today,
+          note: dto.note ?? null,
+          acknowledgeWithoutSkillSignoff: missingSkillIds.length > 0,
+          ...(dto.startingClasses !== undefined ? { startingClasses: dto.startingClasses } : {}),
+          ...(dto.startingClassesByType !== undefined ? { startingClassesByType: dto.startingClassesByType } : {}),
+          ...(bulk ? { bulk } : {}),
+        };
+        const feeRequest = await this.createFeeRequest(tx, { ...fee, schoolId: discipline.schoolId, studentId, disciplineId, from: from!.id, to, gradedById: callerId, pendingGrade });
+        const { skillStatuses: _skills, ...studentRank } = existing!;
+        return { studentRank, promotionEvent: null, toRungName: to.name, feeRequest };
+      }
+
       // --- Write.
       const now = new Date();
       const counters = {
@@ -763,7 +811,8 @@ export class GradingService {
           schoolId: discipline.schoolId,
           studentId,
           type: bulk?.eventType ?? type,
-          performedById: callerId,
+          // A promotion that waited for its fee is the coach's grade.
+          performedById: applying ? applying.gradedById : callerId,
           fromRankId: from?.rankId ?? null,
           toRankId: to.rankId,
           fromStripeTierId: from?.id ?? null,
@@ -780,8 +829,45 @@ export class GradingService {
         },
       });
 
-      return { studentRank, promotionEvent, toRungName: to.name };
+      let feeRequest: PromotionFeeRequest | null = null;
+      if (applying) {
+        // The request settles in the same transaction as the grade: applied
+        // once, never twice (the expected-rung guard above, and this).
+        const settledAt = new Date();
+        const settled = await tx.promotionFeeRequest.updateMany({
+          where: { id: applying.requestId, status: { in: applying.from }, promotionEventId: null, toDecideAt: null },
+          data: {
+            status: applying.to,
+            promotionEventId: promotionEvent.id,
+            ...(applying.to === 'PAID' ? { paidAt: settledAt } : { waivedAt: settledAt, closedById: applying.closedById ?? null }),
+          },
+        });
+        if (settled.count === 0) {
+          throw new ConflictException('This fee request was changed at the same time — reload and try again.');
+        }
+      } else if (fee) {
+        // "Allow grading before the fee is paid" on: promoted now, the
+        // request waits (Decision 300 item 3).
+        feeRequest = await this.createFeeRequest(tx, {
+          ...fee, schoolId: discipline.schoolId, studentId, disciplineId, from: from!.id, to, gradedById: callerId, promotionEventId: promotionEvent.id,
+        });
+      }
+
+      return { studentRank, promotionEvent: promotionEvent as typeof promotionEvent | null, toRungName: to.name, feeRequest };
     });
+
+    if (result.feeRequest) {
+      await this.notifyFeeRequested({
+        feeRequestId: result.feeRequest.id,
+        studentId,
+        disciplineName: discipline.name,
+        toRungName: result.toRungName,
+        amountMinor: result.feeRequest.amountMinor,
+        currency: result.feeRequest.currency,
+      });
+    }
+    // Waiting for its fee: nothing changed yet.
+    if (!result.promotionEvent) return result;
 
     // Only "promoted" and "new stripe" reach the student (Decision 145); a
     // downgrade shows in their history, with no notification (Decision 185).
@@ -851,6 +937,132 @@ export class GradingService {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Promotion fee (Decisions 287, 300, 307)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The fee for grading a student up to `to`, inside the grading transaction
+   * (under the student's context). Null when the grade is free:
+   * - the School's promotion fee is off, or the rung has no price (Decision
+   *   300 item 1: no price = free; stripes are free unless priced);
+   * - the grade confirms a promotion left "to decide" (same rung from, same
+   *   rung to): it was waived or cancelled, so no new request is made
+   *   (Decision 307 item 3). That "to decide" is settled here, in the same
+   *   transaction.
+   * While a promotion waits for its fee in this style, no other grade up is
+   * made: it would move the student under the waiting one, which could then
+   * never apply (its expected-rung guard). Refused with 409. This is the
+   * narrowest reading; the decisions don't say what a second grade does
+   * while one waits. Needs product-owner confirmation.
+   */
+  private async feeForGrade(tx: TenantTx, callerId: string, schoolId: string, studentId: string, disciplineId: string, fromRungId: string, to: Rung) {
+    const open = await tx.promotionFeeRequest.findMany({
+      where: {
+        studentId,
+        disciplineId,
+        OR: [
+          { promotionWaits: true, promotionEventId: null, toDecideAt: null, status: { in: UNSETTLED_STATUSES } },
+          { toDecideAt: { not: null }, toDecideResolvedAt: null },
+        ],
+      },
+    });
+    const waiting = open.find(isWaitingForFee);
+    if (waiting) throw new ConflictException(WAITING_MESSAGE(waiting.toRungName));
+    const toDecide = open.find((r) => isOpenToDecide(r) && r.expectedCurrentRungId === fromRungId && r.toRungId === to.id);
+    if (toDecide) {
+      const resolved = await tx.promotionFeeRequest.updateMany({
+        where: { id: toDecide.id, toDecideResolvedAt: null },
+        data: { toDecideResolvedAt: new Date(), toDecideResolution: 'PROMOTED', toDecideResolvedById: callerId },
+      });
+      if (resolved.count === 0) throw new ConflictException('This promotion was decided at the same time — reload and try again.');
+      return null;
+    }
+    const school = await tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, defaultCurrency: true } });
+    if (!school?.promotionFeeEnabled) return null;
+    const tier = await tx.rankStripeTier.findUnique({ where: { id: to.id }, select: { promotionFeeMinor: true } });
+    if (!tier?.promotionFeeMinor) return null;
+    return { amountMinor: tier.promotionFeeMinor, currency: school.defaultCurrency, waitsForFee: !school.promotionFeeGradeBeforePaid };
+  }
+
+  private createFeeRequest(
+    tx: TenantTx,
+    r: {
+      amountMinor: number;
+      currency: string | null;
+      waitsForFee: boolean;
+      schoolId: string;
+      studentId: string;
+      disciplineId: string;
+      from: string;
+      to: Rung;
+      gradedById: string;
+      pendingGrade?: PendingGrade;
+      promotionEventId?: string;
+    },
+  ) {
+    return tx.promotionFeeRequest.create({
+      data: {
+        id: randomUUID(),
+        schoolId: r.schoolId,
+        studentId: r.studentId,
+        disciplineId: r.disciplineId,
+        toRungId: r.to.id,
+        toRungName: r.to.name,
+        expectedCurrentRungId: r.from,
+        amountMinor: r.amountMinor,
+        currency: r.currency,
+        promotionWaits: r.waitsForFee,
+        pendingGrade: r.pendingGrade ? (r.pendingGrade as unknown as Prisma.InputJsonValue) : undefined,
+        promotionEventId: r.promotionEventId ?? null,
+        gradedById: r.gradedById,
+      },
+    });
+  }
+
+  /** Tell the payer a fee request was made (Decision 300): the student, or a
+   * minor's guardians, routed by the grading-notifications job as for
+   * "promoted" (GuardianLink is readable only there). */
+  private async notifyFeeRequested(data: GradingFeeRequestedJobData): Promise<void> {
+    await this.gradingNotificationsQueue.add('fee-requested', data, {
+      jobId: `grading-fee-requested-${data.feeRequestId}`,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+  }
+
+  /**
+   * Apply a promotion that waited for its fee (Decisions 300, 307): when the
+   * fee is paid, or the owner waives it. Goes through changeRung like any
+   * grade, with the coach's grading date and the coach as the grader, and
+   * keeps the expected-rung guard, so it can't apply twice or after the
+   * student has moved. The request settles in the same transaction.
+   * `contextUserId`: whose context reads the style and School (the owner
+   * waiving, or the student when paid). The caller authorizes.
+   */
+  async applyWaitingPromotion(contextUserId: string, request: PromotionFeeRequest, to: 'PAID' | 'WAIVED', closedById?: string) {
+    const pg = request.pendingGrade as unknown as PendingGrade | null;
+    if (!pg) throw new ConflictException('This fee request has no waiting promotion to apply.');
+    const dto: GradingActionDto = {
+      expectedCurrentRungId: pg.expectedCurrentRungId,
+      effectiveDate: pg.effectiveDate,
+      acknowledgeWithoutSkillSignoff: pg.acknowledgeWithoutSkillSignoff,
+      ...(pg.note !== null ? { note: pg.note } : {}),
+      // A stripe award always moves to the next stripe; the rung is checked against the request.
+      ...(pg.type === 'PROMOTION' ? { targetRungId: pg.targetRungId } : {}),
+      ...(pg.startingClasses !== undefined ? { startingClasses: pg.startingClasses } : {}),
+      ...(pg.startingClassesByType !== undefined ? { startingClassesByType: pg.startingClassesByType } : {}),
+    };
+    return this.changeRung(contextUserId, request.studentId, request.disciplineId, dto, pg.type, pg.bulk, undefined, {
+      requestId: request.id,
+      toRungId: request.toRungId,
+      gradedById: request.gradedById,
+      from: to === 'PAID' ? ['ACCEPTED'] : UNSETTLED_STATUSES,
+      to,
+      closedById,
+    });
+  }
+
   /** After a grading action commits, check whether the student is now ready
    * for their next rung (Decisions 145, 178). */
   private async thenCheckReady<T>(studentId: string, disciplineId: string, action: Promise<T>): Promise<T> {
@@ -892,7 +1104,7 @@ export class GradingService {
     if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.assertSchoolAcceptsGradingWrites(callerId, schoolId, discipline);
 
-    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string };
+    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string; feeRequestId?: string };
     const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
     const needsAcknowledgement: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
     const cannotPromote: Row[] = [];
@@ -934,6 +1146,12 @@ export class GradingService {
           return { cannot: wasIndex >= 0 && ladder[wasIndex + 1]?.id === sr.currentStripeId ? 'already promoted since the check' : 'rank changed since the check' };
         }
         if (!(await isActiveForGrading(tx, sr, studentId, schoolId))) return { cannot: 'inactive (only active students can be graded)' };
+        // A promotion waiting for its fee (Decision 300): not graded again until it settles.
+        const waiting = await tx.promotionFeeRequest.findFirst({
+          where: { studentId, disciplineId: dto.disciplineId, promotionWaits: true, promotionEventId: null, toDecideAt: null, status: { in: UNSETTLED_STATUSES } },
+          select: { id: true },
+        });
+        if (waiting) return { cannot: 'a promotion is waiting for its fee' };
         const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
         const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
         if (!next) return { cannot: 'no next rank' };
@@ -969,9 +1187,10 @@ export class GradingService {
       toRungId: r.toRungId,
       reasons: r.reasons,
       ...(r.promotionEventId ? { promotionEventId: r.promotionEventId } : {}),
+      ...(r.feeRequestId ? { feeRequestId: r.feeRequestId } : {}),
     });
     if (dto.dryRun) {
-      return { ready: ready.map(strip), needsAcknowledgement: needsAcknowledgement.map(strip), cannotPromote };
+      return { ready: ready.map(strip), needsAcknowledgement: needsAcknowledgement.map(strip), cannotPromote, waitingForFee: [] };
     }
     const acknowledged = new Set(dto.acknowledgedStudentIds ?? []);
     const unacknowledged = needsAcknowledgement.filter((r) => !acknowledged.has(r.studentId));
@@ -984,6 +1203,9 @@ export class GradingService {
     }
 
     const promoted: Row[] = [];
+    // A priced grade with "Allow grading before the fee is paid" off: not
+    // promoted yet, waiting for its fee, one request each (Decision 300 item 6).
+    const waitingForFee: Row[] = [];
     for (const row of [...ready, ...needsAcknowledgement]) {
       const systemNote =
         row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')} (Decision 130).` : 'Promoted in a batch.';
@@ -1004,7 +1226,11 @@ export class GradingService {
           { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
           batch,
         );
-        promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id });
+        if (result.promotionEvent) {
+          promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id, ...(result.feeRequest ? { feeRequestId: result.feeRequest.id } : {}) });
+        } else {
+          waitingForFee.push({ ...strip(row), ...(result.feeRequest ? { feeRequestId: result.feeRequest.id } : {}) });
+        }
       } catch (err) {
         if (err instanceof ConflictException || err instanceof BadRequestException) {
           cannotPromote.push({ studentId: row.studentId, reasons: [err.message] });
@@ -1013,7 +1239,7 @@ export class GradingService {
         throw err;
       }
     }
-    return { ready: promoted, needsAcknowledgement: [], cannotPromote };
+    return { ready: promoted, needsAcknowledgement: [], cannotPromote, waitingForFee };
   }
 
   // ---------------------------------------------------------------------------
@@ -1117,6 +1343,19 @@ export class GradingService {
       }
     }
 
+    // Promotion fee on the cards (Decisions 300, 307): "Waiting for fee",
+    // "Fee declined" and "to decide". Read under the caller's own context:
+    // the owner sees every request of the School; other staff those of the
+    // students they cover (promotion_fee_request_staff_read, the board's rule).
+    const feeRequests = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.promotionFeeRequest.findMany({
+        where: { schoolId, disciplineId, OR: [{ status: { in: ['PENDING', 'ACCEPTED', 'DECLINED'] } }, { toDecideAt: { not: null }, toDecideResolvedAt: null }] },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      }),
+    );
+    const feeRequestsOf = new Map<string, PromotionFeeRequest[]>();
+    for (const r of feeRequests) feeRequestsOf.set(r.studentId, [...(feeRequestsOf.get(r.studentId) ?? []), r]);
+
     const needle = opts.search?.trim().toLowerCase();
     const now = new Date();
     let hiddenInactive = 0;
@@ -1136,6 +1375,17 @@ export class GradingService {
       noHomeBranch: boolean;
       hardBlocked: boolean;
       eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
+      feeStatus: 'waiting' | 'declined' | 'toDecide' | null;
+      feeRequest: {
+        id: string;
+        status: PromotionFeeStatus;
+        toRungId: string;
+        toRungName: string;
+        amountMinor: number;
+        currency: string | null;
+        promotionApplied: boolean;
+        feeFree: boolean;
+      } | null;
     }> = [];
     for (const row of rows) {
       const { student, studentRank: sr } = row;
@@ -1167,6 +1417,7 @@ export class GradingService {
         noHomeBranch: row.noHomeBranch,
         hardBlocked: discipline.skillsRequiredToGrade && !eligibility.timeOnly && eligibility.missingSkillIds.length > 0,
         eligibility,
+        ...this.boardFee(feeRequestsOf.get(student.id) ?? [], sr.currentStripeId),
       });
     }
     items.sort(
@@ -1176,6 +1427,28 @@ export class GradingService {
         a.firstName.localeCompare(b.firstName),
     );
     return { items, hiddenInactive, atTopRank };
+  }
+
+  /** A card's promotion fee (Decisions 300, 307). For "to decide", the
+   * planned grade (toRungId) is what the Promote window starts on, and it is
+   * fee-free: confirming it makes no new request. */
+  private boardFee(requests: PromotionFeeRequest[], currentStripeId: string | null) {
+    const found = feeStatusFor(requests, currentStripeId);
+    if (!found) return { feeStatus: null, feeRequest: null };
+    const r = found.request;
+    return {
+      feeStatus: found.status,
+      feeRequest: {
+        id: r.id,
+        status: r.status,
+        toRungId: r.toRungId,
+        toRungName: r.toRungName,
+        amountMinor: r.amountMinor,
+        currency: r.currency,
+        promotionApplied: r.promotionEventId !== null,
+        feeFree: found.status === 'toDecide',
+      },
+    };
   }
 
   /** Shared start of the board writes: the same staff check and School gates as
