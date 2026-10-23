@@ -293,6 +293,11 @@ On a phone the coach's pages show the cards first and the side panel below them,
 - **My belts:** the belt drop-down shows the belt picture, so there is no second picture beside Save.
 - **Invite coaches:** the card has only the form; **How invites work** in the panel explains the steps, including "If they already train here, they keep their student account too."
 
+### Dashboard: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
+On a phone the Dashboard shows the number cards and lists first and **Needs attention** (Notifications) below them; the panel shares nothing with the page. Inside the page each fact appears once:
+- **The School's name** is on the School switcher only; the line under "Dashboard" says just the branch scope ("All branches").
+- **Ready to grade** is one list, not a number card as well. Its header carries the count as **See all 5 →**, which opens the Grading Board. The number cards are Bookings this week, Check-ins today and Active students.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
