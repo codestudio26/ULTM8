@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, SuccessBanner, TextArea, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, Spinner, SuccessBanner, TextArea, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
-import { useCompleteMyInstructorProfile, useRequestCertificationUploadUrl } from './instructorQueries';
+import { useCompleteMyInstructorProfile, useMyInstructorProfiles, useRequestCertificationUploadUrl, type InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
 
 const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg'] as const;
@@ -14,16 +14,25 @@ const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg
  * Instructor can use the rest of the app without ever visiting this page.
  * Applies to every Instructor row the caller holds (flagged limitation,
  * same as the backend: can't set different values per School here).
+ * Starts from what's already saved (Decision 312), read from the first profile.
  */
 export function CompleteInstructorProfilePage() {
+  const t = useT();
+  const mine = useMyInstructorProfiles();
+  if (mine.isLoading) return <Spinner />;
+  if (mine.error) return <ErrorBanner message={mine.error instanceof ApiError ? mine.error.message : t('common.tryAgain')} />;
+  return <CompleteInstructorProfileForm saved={mine.data?.items[0] ?? null} />;
+}
+
+function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorResponse | null }) {
   const t = useT();
   const complete = useCompleteMyInstructorProfile();
   const requestUploadUrl = useRequestCertificationUploadUrl();
 
-  const [initialAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [initialAddress] = useState(() => postalAddressFromRecord(current, guessDefaultCountry()));
   const [address, setAddress] = useState(initialAddress);
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
-  const [activities, setActivities] = useState('');
+  const [activities, setActivities] = useState(() => (current?.activities ?? []).join(', '));
   const [certificationFile, setCertificationFile] = useState<File | null>(null);
   const [certificationConsent, setCertificationConsent] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -60,7 +69,8 @@ export function CompleteInstructorProfilePage() {
       const certificationKey = await uploadCertificationIfAny();
       await complete.mutateAsync({
         ...(prepared.postalAddress ? { postalAddress: prepared.postalAddress } : {}),
-        ...(activities.trim() ? { activities: activities.split(',').map((a) => a.trim()).filter(Boolean) } : {}),
+        // Emptying a saved list clears it; an untouched empty box sends nothing.
+        ...(activities.trim() || (current?.activities.length ?? 0) > 0 ? { activities: activities.split(',').map((a) => a.trim()).filter(Boolean) } : {}),
         ...(certificationKey ? { certificationKey } : {}),
         ...(certificationConsent ? { certificationConsent: true } : {}),
       });
@@ -82,6 +92,9 @@ export function CompleteInstructorProfilePage() {
         <Field label={t('instructors.completeProfile.activities')} htmlFor="complete-profile-activities" hint={t('instructors.completeProfile.activitiesHint')}>
           <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />
         </Field>
+        {current?.certificationKey ? (
+          <p style={{ margin: '0 0 8px' }}>{t('instructors.completeProfile.certificationOnFile')}</p>
+        ) : null}
         <Field label={t('instructors.completeProfile.certification')} htmlFor="complete-profile-certification" hint={t('instructors.completeProfile.certificationHint')}>
           <input
             id="complete-profile-certification"

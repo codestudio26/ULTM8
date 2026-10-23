@@ -527,30 +527,50 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   // ---------------------------------------------------------------------------
   // GET .../instructors/eligible-users (Decision 115) — the candidate pool for
   // InstructorFormModal's picker: Users holding an active INSTRUCTOR RoleGrant at
-  // this School, i.e. exactly who assertValidInstructor would accept for create().
+  // this School who have no profile here yet (Decision 311), with the branches
+  // their role covers.
   // ---------------------------------------------------------------------------
 
-  it('School Owner sees every active INSTRUCTOR RoleGrant holder at their School, and no one else', async () => {
+  let freshSchoolWide: { id: string; email: string };
+
+  it('School Owner sees active INSTRUCTOR RoleGrant holders without a profile, with their role\'s branches', async () => {
+    const mkFresh = (label: string) =>
+      superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `instructors-http-${label}-${randomUUID()}@example.test`,
+          firstName: label,
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+        },
+      });
+    freshSchoolWide = await mkFresh('fresh-school-wide');
+    const freshBranch = await mkFresh('fresh-branch');
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: freshSchoolWide.id, schoolId: schoolA.id } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: freshBranch.id, schoolId: schoolA.id, branchId: branchA1.id } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: freshBranch.id, schoolId: schoolA.id, branchId: branchA2.id } });
+
     const res = await request(app.getHttpServer())
       .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
       .set('Authorization', `Bearer ${tokenOwnerA}`);
     expect(res.status).toBe(200);
     const ids = res.body.items.map((u: { id: string }) => u.id);
-    // Every School-scoped or Branch-scoped INSTRUCTOR grant holder fixtured in
-    // beforeAll — regardless of whether a profile was ever created for them.
-    expect(ids).toContain(grantedSchoolWide.id);
-    expect(ids).toContain(grantedSchoolWide2.id);
-    expect(ids).toContain(grantedSchoolWide3.id);
-    expect(ids).toContain(grantedBranchA2.id);
+    expect(ids).toContain(freshSchoolWide.id);
+    expect(ids).toContain(freshBranch.id);
+    // Every beforeAll grant holder has a profile by now, so none is offered again.
+    expect(ids).not.toContain(grantedSchoolWide.id);
+    expect(ids).not.toContain(grantedBranchA2.id);
     // `ungranted` has no RoleGrant at all; the caller (a SCHOOL_OWNER_MANAGER, not an
     // INSTRUCTOR) shouldn't show up as their own candidate either.
     expect(ids).not.toContain(ungranted.id);
     expect(ids).not.toContain(ownerA.id);
 
-    const match = res.body.items.find((u: { id: string }) => u.id === grantedSchoolWide.id);
-    expect(match.firstName).toBe('granted-school-wide');
-    expect(match.surname).toBe('Tenant');
-    expect(match.email).toBe(grantedSchoolWide.email);
+    const wide = res.body.items.find((u: { id: string }) => u.id === freshSchoolWide.id);
+    expect(wide).toMatchObject({ firstName: 'fresh-school-wide', surname: 'Tenant', email: freshSchoolWide.email, schoolWide: true, branchIds: [] });
+    const branchOnly = res.body.items.find((u: { id: string }) => u.id === freshBranch.id);
+    expect(branchOnly.schoolWide).toBe(false);
+    expect([...branchOnly.branchIds].sort()).toEqual([branchA1.id, branchA2.id].sort());
   });
 
   it('excludes a User whose INSTRUCTOR RoleGrant has been revoked', async () => {
@@ -581,9 +601,9 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(200);
     const ids = res.body.items.map((u: { id: string }) => u.id);
     expect(ids).not.toContain(revokedUser.id);
-    // The still-active grants from the previous test remain visible — proves this is
+    // The still-active grant from the previous test remains visible — proves this is
     // a real revokedAt filter, not an empty/broken query.
-    expect(ids).toContain(grantedSchoolWide.id);
+    expect(ids).toContain(freshSchoolWide.id);
   });
 
   it('Branch Staff cannot list eligible Instructor candidates (School Owner only, narrower than the roster read)', async () => {

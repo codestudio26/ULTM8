@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import { useI18n } from '../i18n/I18nProvider';
 import type { TimetableSlotResponse } from './timetableQueries';
 import { weekdayName } from './timetableOccurrences';
@@ -238,7 +238,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('timetable.form.unassigned') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>

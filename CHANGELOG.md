@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors: search, hand over classes, give the role back** (Decision
+  312) — the roster has a search and Branch, Style and Status filters, and
+  shows who hasn't signed in yet; "Invite existing user" goes straight on to
+  "Add instructor" with them picked; the detail page shows their branch,
+  activities, address, certification (with a download link for the owner)
+  and weekly timetable, can hand all their upcoming classes and weekly slots
+  to another instructor in one step, and can give a revoked instructor their
+  role back; "Complete your profile" starts from what the instructor already
+  saved.
+- **Instructors page fixes** (Decision 311) — every instructor is listed,
+  A to Z, with an Active or Revoked status; archived and revoked instructors
+  can't be given new classes, timetable slots or lessons, and the pickers
+  leave them out; the "Instructors' belts" box no longer breaks after someone
+  is revoked; no instructor joins an archived branch; a profile's branch must
+  match the branch their role is for; Archive asks first; Revoke warns about
+  upcoming classes, which stay editable afterwards; the detail page lists
+  every class, upcoming and past; "Add instructor" only offers people with
+  no profile yet; coaches who open the page go to their own start page.
 - **One email, one account** (Decision 295) — emails are no longer
   case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
   ignore capitals and stray spaces, so an owner can no longer create a second

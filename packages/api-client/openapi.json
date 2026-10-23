@@ -4473,6 +4473,66 @@
         ]
       }
     },
+    "/v1/instructors/me/profile": {
+      "get": {
+        "operationId": "InstructorsController_findMyProfiles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "InstructorsController_completeMyProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteInstructorProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/instructors/{id}": {
       "get": {
         "operationId": "InstructorsController_findOne",
@@ -4621,6 +4681,86 @@
         ]
       }
     },
+    "/v1/instructors/{id}/certification-url": {
+      "get": {
+        "operationId": "InstructorsController_getCertificationUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificationUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/reassign": {
+      "post": {
+        "operationId": "InstructorsController_reassign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignInstructorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReassignInstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/instructors/{id}/classes": {
       "get": {
         "operationId": "InstructorsController_findClasses",
@@ -4706,42 +4846,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateInstructorManuallyResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "instructors"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/instructors/me/profile": {
-      "patch": {
-        "operationId": "InstructorsController_completeMyProfile",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompleteInstructorProfileDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstructorListResponseDto"
                 }
               }
             }
@@ -14995,6 +15099,9 @@
               "REVOKED"
             ]
           },
+          "awaitingFirstLogin": {
+            "type": "boolean"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -15079,6 +15186,7 @@
           "surname",
           "email",
           "status",
+          "awaitingFirstLogin",
           "schoolId",
           "specializations",
           "specializationStyleIds",
@@ -15120,13 +15228,24 @@
           },
           "email": {
             "type": "string"
+          },
+          "schoolWide": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "id",
           "firstName",
           "surname",
-          "email"
+          "email",
+          "schoolWide",
+          "branchIds"
         ]
       },
       "EligibleInstructorListResponseDto": {
@@ -15183,6 +15302,47 @@
             "nullable": true
           }
         }
+      },
+      "CertificationUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Presigned GET URL for the uploaded certification file, valid for 15 minutes."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ReassignInstructorDto": {
+        "type": "object",
+        "properties": {
+          "toUserId": {
+            "type": "string",
+            "description": "User id of the instructor taking over (Class.instructorId is a User id)."
+          }
+        },
+        "required": [
+          "toUserId"
+        ]
+      },
+      "ReassignInstructorResponseDto": {
+        "type": "object",
+        "properties": {
+          "classesMoved": {
+            "type": "number",
+            "description": "Upcoming Classes moved to the new instructor."
+          },
+          "slotsMoved": {
+            "type": "number",
+            "description": "Active Timetable slots moved to the new instructor."
+          }
+        },
+        "required": [
+          "classesMoved",
+          "slotsMoved"
+        ]
       },
       "InstructorClassResponseDto": {
         "type": "object",
@@ -15328,6 +15488,9 @@
               "REVOKED"
             ]
           },
+          "awaitingFirstLogin": {
+            "type": "boolean"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -15416,6 +15579,7 @@
           "surname",
           "email",
           "status",
+          "awaitingFirstLogin",
           "schoolId",
           "specializations",
           "specializationStyleIds",
