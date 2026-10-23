@@ -15,8 +15,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "ULTM8 Okul Portalı",
     logOut: "Çıkış yap",
-    searchPlaceholder: "Ara (yakında)",
-    searchAria: "Arama henüz kullanılamıyor",
+    search: {
+      label: "Ara",
+      placeholder: "Ada göre ara…",
+      resultsLabel: "Arama sonuçları",
+      loading: "Aranıyor…",
+      noResults: "“{query}” için sonuç bulunamadı",
+      loadFailed: "Bazı sonuçlar yüklenemedi.",
+      allFailed: "Arama sonuçları yüklenemedi.",
+      resultCount: {
+        one: "{count} sonuç",
+        other: "{count} sonuç",
+      },
+    },
     notificationsAria: "Bildirimler",
     languageAria: "Dil",
     accountMenu: {

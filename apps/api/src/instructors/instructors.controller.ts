@@ -52,7 +52,7 @@ export class InstructorsController {
     @Param('schoolId') schoolId: string,
     @Query() query: InstructorsQueryDto,
   ) {
-    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
+    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived, query.search);
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115). */

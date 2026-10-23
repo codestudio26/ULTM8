@@ -540,6 +540,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -922,6 +931,15 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Branch.name.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1410,6 +1428,25 @@
             "description": "Exact match against one element of Franchise.activities.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Franchise.name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Leave archived Franchises out (they are listed by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
             }
           }
         ],
@@ -4413,6 +4450,15 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
             }
           }
         ],

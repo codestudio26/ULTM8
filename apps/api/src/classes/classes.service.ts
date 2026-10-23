@@ -6,6 +6,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 
@@ -101,7 +102,8 @@ export class ClassesService {
             where: {
               schoolId,
               ...(activities ? { activities: { has: activities } } : {}),
-              ...(search ? { title: { contains: search, mode: 'insensitive' } } : {}),
+              // Decision 278 — `%`/`_` match themselves, not any text (escapeLike).
+              ...(search ? { title: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
               ...(includeArchived ? {} : { archivedAt: null }),
             },
           }),

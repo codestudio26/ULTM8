@@ -6847,6 +6847,8 @@ export interface operations {
             query?: {
                 /** @description Defaults to ACTIVE (the pre-existing behavior) when omitted. */
                 status?: "ACTIVE" | "INACTIVE" | "ALL";
+                /** @description Case-insensitive substring match against first name, surname, or full name ("first surname"). */
+                search?: string;
             };
             header?: never;
             path: {
@@ -7020,6 +7022,8 @@ export interface operations {
                 city?: string;
                 /** @description Include archived Branches too (excluded by default). */
                 includeArchived?: boolean;
+                /** @description Case-insensitive substring match against Branch.name. */
+                search?: string;
             };
             header?: never;
             path: {
@@ -7283,6 +7287,10 @@ export interface operations {
                 feeModel?: "FLAT" | "PER_HEADCOUNT";
                 /** @description Exact match against one element of Franchise.activities. */
                 activity?: string;
+                /** @description Case-insensitive substring match against Franchise.name. */
+                search?: string;
+                /** @description Leave archived Franchises out (they are listed by default). */
+                excludeArchived?: boolean;
             };
             header?: never;
             path?: never;
@@ -9046,6 +9054,8 @@ export interface operations {
                 limit?: number;
                 /** @description Include archived Instructor profiles too (excluded by default). */
                 includeArchived?: boolean;
+                /** @description Case-insensitive substring match against first name, surname, or full name ("first surname"). */
+                search?: string;
             };
             header?: never;
             path: {
