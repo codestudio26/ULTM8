@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "عدد الطلاب الذين يحملون هذا الحزام: {v1}{v2}، لذا لا يمكن تنفيذ «{v3}» عليه.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "هذا المدرّب مؤرشف. ألغِ أرشفته في صفحة المدرّبين أو اختر مدرّبًا آخر.",
   "This person is no longer an instructor at this School.": "هذا الشخص لم يعد مدرّبًا في هذه المدرسة.",
+  "This instructor hasn't uploaded a certification.": "لم يرفع هذا المدرّب شهادة.",
+  "Choose a different instructor to take over.": "اختر مدرّبًا آخر ليتولّى المهمة.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "دوره كمدرّب لفروع معيّنة فقط، لذا لا يمكن أن يكون ملفه للمدرسة كلها. اختر فرعه.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "دوره كمدرّب لا يشمل هذا الفرع. امنحه الدور هناك أولًا في صفحة الموظفين، أو اختر فرعه.",
 };

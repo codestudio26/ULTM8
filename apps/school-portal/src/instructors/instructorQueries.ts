@@ -11,6 +11,7 @@ export type CreateInstructorManuallyInput = components['schemas']['CreateInstruc
 export type CompleteInstructorProfileInput = components['schemas']['CompleteInstructorProfileDto'];
 export type CertificationContentType = components['schemas']['RequestCertificationUploadUrlDto']['contentType'];
 export type InstructorClassResponse = components['schemas']['InstructorClassResponseDto'];
+export type TimetableSlotResponse = components['schemas']['TimetableSlotResponseDto'];
 
 /** Decision 226 — always fetches `includeArchived: true`, same "fetch
  * everything, filter/toggle client-side" convention useBranches already
@@ -160,14 +161,66 @@ export function useUnarchiveInstructor(schoolId: string) {
   });
 }
 
-/** GET-equivalent self-read isn't a separate endpoint — PATCH /instructors/me/profile
- * (Decision 1/217) both completes and returns every Instructor row the
- * caller holds, which is also all `CompleteInstructorProfilePage` needs to
- * show. No separate query hook for reading it; the mutation's own result is
- * enough for this one-shot completion screen. */
+/** GET /instructors/me/profile (Decision 312) — every Instructor row the
+ * caller holds, so CompleteInstructorProfilePage starts from what's saved. */
+export function useMyInstructorProfiles() {
+  return useQuery({
+    queryKey: ['instructors', 'me'],
+    queryFn: () => unwrap(apiClient.GET('/v1/instructors/me/profile')),
+  });
+}
+
+/** PATCH /instructors/me/profile (Decision 1/217) completes and returns
+ * every Instructor row the caller holds; that result replaces the cached read. */
 export function useCompleteMyInstructorProfile() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CompleteInstructorProfileInput) => unwrap(apiClient.PATCH('/v1/instructors/me/profile', { body })),
+    onSuccess: (data) => queryClient.setQueryData(['instructors', 'me'], data),
+  });
+}
+
+/** GET /instructors/{id}/certification-url (Decision 312) — a fresh
+ * 15-minute link each time, so fetched on click rather than cached. */
+export function fetchInstructorCertificationUrl(instructorId: string) {
+  return unwrap(apiClient.GET('/v1/instructors/{id}/certification-url', { params: { path: { id: instructorId } } }));
+}
+
+/** POST /instructors/{id}/reassign (Decision 312) — their upcoming Classes and
+ * active Timetable slots go to another instructor, all or nothing. */
+export function useReassignInstructor(schoolId: string, instructorId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (toUserId: string) =>
+      unwrap(apiClient.POST('/v1/instructors/{id}/reassign', { params: { path: { id: instructorId } }, body: { toUserId } })),
+    onSuccess: () =>
+      Promise.all([
+        invalidateInstructors(queryClient, schoolId),
+        queryClient.invalidateQueries({ queryKey: ['classes', schoolId] }),
+        queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+      ]),
+  });
+}
+
+/** Every Timetable slot of the School, all pages, for the detail page's
+ * "Weekly timetable" box. Under the ['timetable', schoolId] key, so a slot
+ * edit anywhere refreshes it. */
+export function useAllTimetableSlots(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['timetable', schoolId, 'all'],
+    queryFn: async () => {
+      const items: TimetableSlotResponse[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { limit: 100, cursor } } }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return items;
+    },
+    enabled: !!schoolId,
   });
 }
 
