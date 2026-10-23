@@ -94,7 +94,7 @@ export class CoachInvitesService {
     const { school, caller, branches } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       school: await tx.school.findUnique({ where: { id: schoolId }, select: { id: true, name: true } }),
       caller: await tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true, firstName: true, surname: true } }),
-      branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true, archivedAt: true } }),
     }));
     if (!school) throw new NotFoundException('School not found');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
@@ -109,6 +109,8 @@ export class CoachInvitesService {
     if (branches.length === 0 && branchId) throw new BadRequestException('This School has no branches; leave branchId out.');
     const branch = branchId ? branches.find((b) => b.id === branchId) : null;
     if (branchId && !branch) throw new BadRequestException('branchId must be a branch of this School.');
+    // Decision 296: nobody new joins a Branch that is waiting to be purged.
+    if (branch?.archivedAt) throw new BadRequestException('This branch has been archived. Choose another branch.');
     // Decision 81: whoever hands out a role must have a verified phone.
     if (!caller?.phoneVerifiedAt) {
       throw new ForbiddenException('Your account must complete phone verification (POST /auth/otp/verify) before you can invite coaches.');
@@ -210,7 +212,7 @@ export class CoachInvitesService {
 
   private async findByToken(token: string) {
     const rows = await this.prismaApp.$queryRaw<
-      Array<InviteRow & { schoolName: string; schoolArchived: boolean; branchName: string | null; inviterMayInvite: boolean }>
+      Array<InviteRow & { schoolName: string; schoolArchived: boolean; branchName: string | null; branchArchived: boolean; inviterMayInvite: boolean }>
     >`SELECT * FROM coach_invite_by_token(${hashToken(token)})`;
     return rows[0] ?? null;
   }
@@ -332,8 +334,8 @@ export class CoachInvitesService {
     return (await this.listStaffPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
   }
 
-  private stillValid(invite: { schoolArchived: boolean; inviterMayInvite: boolean }): boolean {
-    return !invite.schoolArchived && invite.inviterMayInvite;
+  private stillValid(invite: { schoolArchived: boolean; branchArchived: boolean; inviterMayInvite: boolean }): boolean {
+    return !invite.schoolArchived && !invite.branchArchived && invite.inviterMayInvite;
   }
 
   /** Cancel the open invites a staff member sent once they may no longer

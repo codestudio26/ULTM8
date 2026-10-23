@@ -4230,6 +4230,47 @@ The product owner set this on 21 Oct 2026 for the New Portal grading screens. It
 
 User, 21 Oct 2026; logged 22 Oct 2026.
 
+## Decision 295 — One email, one account, whatever the capitals
+
+**Date:** 22 Oct 2026 · **Status:** Bug fix the product owner asked for · **Builds on:** Decisions 116 and 251
+
+The Staff page review (bug B1/B2) found that emails were matched letter for letter, capitals included. An owner could "Add staff manually" with `jane@gym.com` for someone already registered as `Jane@Gym.com` and get a second account for the same person, the exact thing Decision 116's existing-email check exists to stop. "Find" on the Staff page also missed people when the capitals differed. The product owner asked for B1–B8 to be fixed: *"deep dive and find best solution for bugs from B1 TO B8 and start fixing them"*.
+
+### Decision
+
+1. **Every email that creates or finds a User is trimmed and lower-cased** before anything else looks at it (`NormalizeEmail`, on the register, login, Staff Add Manually, Instructor Add Manually, invite-candidate and coach-invite inputs). Signing in works whatever capitals are typed. The passcode reset is by phone, so it is unaffected.
+2. **Existing accounts are brought into line** by migration `20261123000000_user_email_case_insensitive`: each email whose lower-case form no other account holds is lower-cased.
+3. **The database refuses a second account that differs only by case** (unique index `User_email_lower_key` on `lower(email)`). If a database already holds two real accounts that differ only by case, the migration leaves both alone and skips the index, with a warning naming how many there are; a person merges them and a later migration adds the index. The API's lower-casing stops new ones either way.
+
+Platform Admin accounts (`AdminUser`, a separate realm) are not changed by this decision.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B1 and B2 at the product owner's request, 22 Oct 2026.
+
+## Decision 296 — Staff page fixes: archived branches, closed Schools, and the page itself
+
+**Date:** 22 Oct 2026 · **Status:** Bug fixes the product owner asked for · **Builds on:** Decisions 110, 183, 193, 226 and 251
+
+The rest of the Staff page review's bugs (B3–B8), fixed together at the product owner's request.
+
+### Decision
+
+1. **No new staff or coaches at an archived Branch (B3).** Granting Instructor or Branch Staff, Add Manually and sending a coach invite all refuse a Branch that is archived ("This branch has been archived. Choose another branch."). A coach invite sent before its Branch was archived stops working: its page shows it as cancelled and accepting it is refused (`coach_invite_by_token()` now also returns `branchArchived`). Before, all of these went through, and a new role grant at an archived Branch would have blocked its 90-day purge. Hiding archived Branches in the pickers is Decision 293's (PR #275); this is the server-side half.
+2. **"Who can invite coaches" stays current (B4).** Granting, adding or removing Branch Staff on the Staff page refreshes that list straight away. Before, it needed a page reload.
+3. **Revoke asks first (B5).** "Remove the {role} role from {name}?", saying that the role ends now and that removing their last coach or staff role clears their grading permissions and "Can invite coaches" (Decision 193).
+4. **Branch names, not ids (B6),** in the "Look up a user's grants" table.
+5. **No role grants at a closed School (B7).** Inviting an existing account to a role now refuses a closed School, as Add Manually already did (Decision 110).
+6. **No blank page (B8).** Anyone but the School owner who opens `/staff` is sent to their own home screen (the coach dashboard for Branch Staff and coaches).
+
+### Not decided here
+
+The review's other notes (the "Send invite" wording, the 15-minute delay before a removed role takes effect, co-owners who can't be removed, blank names on Add Manually) and the missing Staff features (a staff list, edit, deactivate) are product questions, put to the product owner separately.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B3–B8 at the product owner's request, 22 Oct 2026.
+
 ---
 
 ## Decision 297 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
@@ -4444,3 +4485,107 @@ User, 22 Oct 2026.
 ### Recorded by
 
 User ("open a PR for bug fixes 1 to 4"), 21 Oct 2026.
+
+---
+
+## Decision 306 — Hours are logged, not graded (corrects Decisions 288 and 301)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 288 item 2 and Decision 301 items 2 and 3 · **Amends:** Decision 301 item 4
+
+Decisions 288 and 301 made hours a grading requirement. That was a misreading. The product owner: *"Leave grading as it is, I think you have misunderstood me. We will log the hours they have trained, not do the grading based on hours. Do not change the grading logic."*
+
+### Decision
+
+1. **Grading doesn't change.** A grade still requires classes (or time at the rank for a time-only rank), days at the rank and skills, as today. There is no "classes, hours or both" choice per grade and no hours requirement. Progress and "Ready to Grade" work exactly as they do now.
+2. **ULTM8 logs the hours each student has trained**, as a record. Decision 301 items 1, 5 and 6 still apply:
+   - each check-in adds the scheduled length of the class (90 minutes = 1.5 hours);
+   - "Log a class" by hand adds the length of the class picked, or the time the coach enters (60 minutes by default);
+   - "Open mat counts toward hours" (Grading → Settings) decides whether open mat time is logged in the hours.
+3. **Where hours show:** the student's hours trained are shown on their grading page and in the student app, next to the progress breakdown, as information. They never change the %.
+4. **The progress breakdown stays** (Decision 301 item 4), with the requirements grading already uses: classes, days at the rank and skills.
+
+### Recorded by
+
+User, 22 Oct 2026, reviewing the New Portal design.
+
+---
+
+## Decision 307 — Promotion fee: defaults, prices hidden when off, and the coach decides after a waive or cancel
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decision 300 · **Answers:** the four design questions of 22 Oct 2026 on the promotion fee
+
+### Decision
+
+1. **Both fee switches are off by default.** The promotion fee switch stays off by default (Decision 287). **"Allow grading before the fee is paid" is off by default**, so a priced promotion waits until the fee is paid.
+2. **With the promotion fee off, prices don't show anywhere:** the belt editor (Add rank and Edit) has no price field and the ladder shows no prices. They appear only once the owner turns the fee on.
+3. **Waiving or cancelling a fee never promotes on its own.** Whether the student is promoted stays a coach's decision:
+   - **Cancelling a fee while the promotion waits** leaves the student on their current rank, with the planned promotion waiting for a coach to decide. The product owner: *"should be a decision for the coach"*.
+   - **Waiving a fee the student declined** asks the coach to confirm the promotion; nothing is applied until they agree. The product owner: *"promotion should come from the coach, so we should prompt a question and they should agree to promote, meaning it should not be auto promote"*.
+   - A coach who may promote that student (or the owner) confirms it with the normal Promote dialog, and the history keeps the date they choose. No new fee request is created for a fee that was waived or cancelled.
+4. **Waiving a fee while the promotion waits** applies the promotion the coach already made (Decision 300 item 3, unchanged).
+
+### Still open
+
+- Whether a promotion left "to decide" after a cancel or waive should time out or remind the coach.
+
+### Recorded by
+
+User, 22 Oct 2026, answering the design questions one by one.
+
+---
+
+## Decision 308 — Disciplines: eight bug fixes (archived belts, renames, class types, names)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 90, 198, 226
+
+The Disciplines review of 22 Oct 2026 found eight bugs (D1–D8). The product owner: *"Deep dive, find best uptodate solutions and what's going on in market. then get confident on the solutions then start fixing them"*.
+
+### Decision
+
+1. **An archived belt is out of the ladder (D1).** Grading never lands a student on an archived belt: the ladder, "declare your rank" at signup, coach verification and a new student's first rung all skip archived belts and their rungs.
+2. **Renaming a style renames it everywhere (D2).** The name copies on classes and timetable slots (`activities`) and on instructors (`specializations`, Decision 90's bridge) follow the new name.
+3. **Class types are edited one by one, and a rename carries over (D3).** Renaming a class type updates the classes, timetable slots and rungs that use it. Removing one that is still in use (an upcoming class, a live timetable slot or a rung) is refused with the counts, so nothing is orphaned silently.
+4. **Adding a belt closes gaps first (D4).** When the 90-day purge has removed an archived belt from the middle of the ladder, the next belt change renumbers the ladder instead of failing. The purge job itself is unchanged.
+5. **Names are trimmed and can't be blank (D5).** This applies to style, skill and template names.
+6. **No duplicate names (D6).** Style names are unique within a School and skill names within a style, ignoring case. A repeated class type in the same style is merged. This is checked by the API, not a database index, so existing duplicate data never blocks a migration.
+7. **Copies and templates get a free name (D7).** "Duplicate" and "Start from template" number the name ("BJJ (Copy 2)", "IBJJF (2)") when it is taken, cut to fit 100 characters.
+8. **Clearing a required field is refused (D8).** Sending an empty value for a style's name, class types or "skills required" switch returns a clear 400, not a server error.
+
+### What this does NOT resolve
+
+- Existing duplicate style names in live data are left as they are; the owner renames them.
+- The API's new error messages are English only; other languages show the generic message until they are added to the portal's server-message translations.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 309 — Disciplines: archive a style, students per style, skill order, and a read-only view for coaches
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 198, 226, 308
+
+The same review found five gaps. Other class-booking and martial-arts apps deactivate rather than delete a programme that has history, and keep the history. The product owner asked for all five to be built.
+
+### Decision
+
+1. **A style can be archived (G1).** Only the School owner archives or unarchives it.
+   - It is blocked while an upcoming class or a live timetable slot uses the style; the owner moves or archives those first.
+   - An archived style is hidden from every picker, read-only, and nobody can be graded in it. Students keep their rank and history, and voiding or noting past history still works.
+   - It is never purged (unlike Decision 226's 90-day purge for belts). Unarchive brings it back, if its name is still free.
+   - Past classes and membership plans that name it keep it.
+   - Delete (Decision 198) stays for styles nobody uses.
+2. **Class types are a list (G2)**, with add, remove, reorder and rename (Decision 308 item 3).
+3. **Students per style (G3).** The Disciplines list shows how many students hold a rank in each style, and the owner sees who they are, with their rank, on the style's page.
+4. **Skills have context and order (G4).** Each skill shows which rungs require it and how many lessons teach it, and the owner can put skills in order.
+5. **Coaches and Branch Staff can see the Disciplines page, read-only (G5)**, including the belts and skills. They don't see the students list.
+
+### What this does NOT resolve
+
+- Whether an archived style should eventually be purged, or a retention period apply.
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
