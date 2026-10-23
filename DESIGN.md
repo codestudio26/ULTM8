@@ -290,14 +290,15 @@ In every right-hand panel (Students, Team, the coach view, the Grading Board), t
 ### Team member full page (product owner, 23 Oct 2026)
 Instructors and Branch Staff get a full page like a student's (`StaffProfile.dc.html`, board 7). It opens from **Open full page ›** in the Team page's side panel, and "‹ Team" goes back.
 - **Layout:** the same as the student page. Header "‹ Team" and the name (30px light), tabs underneath, white cards on the left (up to 980px), and the **Team member** summary panel on the right.
-- **Summary panel:** 64px avatar, name, role and status tags; Email · Call · Edit as mint tiles (like the student's quick actions); then Contact (email, phone), Work (branches, upcoming classes, the styles they grade) and Front desk and money (each right On/Off); then "Grading permissions ›" under them.
-- **Tabs:** Instructor: Profile · Classes · Belts & grading · Access. Branch Staff: Profile · Grading · Access.
-  - **Profile:** About (status, email, phone; for an Instructor, years of experience and specializations as tags), Roles (each role with its branch and status), and for an Instructor the next two classes with "All classes ›".
+- **Summary panel:** 64px avatar, name, role and status tags; Email · Call · Edit as mint tiles (like the student's quick actions); then Contact (email, phone), Work (branches, upcoming classes, the styles they grade), **Belts** (an Instructor's belt in each style with its status, as on the Team page) and Front desk and money (each right On/Off); then "Grading permissions ›" under them.
+- **Everything in the Team page's side panel is on the Profile tab too** (product owner, 23 Oct 2026): branches, belts and the Front desk and money switches.
+- **Tabs:** Instructor: Profile · Classes · Grading. Branch Staff: Profile · Grading.
+  - **Profile:** About (status, email, phone, branches; for an Instructor, years of experience and specializations as tags), **Belts** (Instructor: the belt in each style, Verified / Not verified with **Verify** / Not chosen), **Front desk and money** (Can create charges, Can start open mat sessions, and for Branch Staff Can invite coaches; "Refunds and credit stay with you, the owner."), Roles (each role with its branch and status), for an Instructor the next two classes with "All classes ›", and last a red-outlined **Remove from the team** card with **Revoke enrollment** (Instructor) or **Revoke role** (Branch Staff), as the built pages do.
   - **Classes:** upcoming classes with date, branch and "12 of 20 booked" (the built Instructor detail page's list); an empty state when there are none.
-  - **Belts & grading:** the instructor's own belt in each style (Verified / Not verified with Verify / Not chosen), then a read-only table of their Grading permissions per style (✓ or –, "Doesn't grade this style"), with "Change in Grading permissions ›". Branch Staff see only the permissions table.
-  - **Access:** Front desk and money switches (Can create charges, Can start open mat sessions, and for Branch Staff Can invite coaches), "Refunds and credit stay with you, the owner.", then a red-outlined **Remove from the team** card with **Revoke enrollment** (Instructor) or **Revoke role** (Branch Staff), as the built pages do.
+  - **Grading:** a read-only table of their Grading permissions per style (✓ or –, "Doesn't grade this style"), with "Change in Grading permissions ›".
+- **Phone is a mirror of the desktop** (product owner, 23 Oct 2026): the Team page's side panel, with **Open full page ›**, sits under the staff list, and the full page has the same tabs, cards and summary panel (below the cards).
 - Everything on it comes from what ULTM8 already has: the Instructor detail page, the Staff page, Instructors' belts, Grading permissions and the per-person rights (Decisions 183, 303, 304). Nothing new is invented.
-- **Phone:** the tabs wrap, the cards run full width, the summary panel moves below, and the permissions table turns its headings sideways so the seven columns fit.
+- **Phone layout:** the tabs wrap, the cards run full width, the summary panel moves below, and the permissions table turns its headings sideways so the seven columns fit.
 
 ### Side menu stays in view (product owner, 21 Oct 2026)
 
