@@ -277,9 +277,12 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
   3. **A picture of the setting, where one helps.** For example, the check-in window is shown as a timeline (opens 17:30 → class 18:00 → closes 18:15) that moves as the times change.
 - **Wording:** explanations only describe what a setting does, as decided. Features that aren't built yet say "coming soon" and point to `docs/v1.3-backend-backlog.md`.
 
-### Side menu text (product owner, 21 Oct 2026)
+### Side menu text (product owner, 21 Oct 2026; icon tiles 23 Oct 2026)
 - Menu links (Dashboard … Notifications, Settings, Help) are **14px, regular weight, no extra letter-spacing**, the same as the right panel's text. Before this they were 15px with 0.04em spacing and looked big and heavy next to the tabs.
-- The School name at the top stays 15px, also with no extra letter-spacing.
+- **Icon tiles** (product owner, 23 Oct 2026: idea 2 of five, the "Side menu — five ideas" boards). The type and spacing follow the right panel: **40px rows, 20px sides**; the School name and search line up at 20px too, and the School name is 14px. Each icon (18px, the same outline icons) sits in a **34px soft tile, 10px corners, #edf0f2**, with the icon in #3e4b56. The page you are on has a **mint tile (#9fd3b2)** with a #20262c icon, on a pale-green row (#def2e2); no bold and no edge bar. The menu stays the full 248px wide.
+- On phones the menu's row of rounded buttons keeps the tiles at 28px.
+- The coach's menu (Dashboard, Grading Board, My belts, Invite coaches, Notifications) uses the same tiles.
+- In the vision pages the tiles are applied by `apply_nav2.py` after the generators run.
 
 ### Side menu stays in view (product owner, 21 Oct 2026)
 
