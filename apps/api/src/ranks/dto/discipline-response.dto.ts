@@ -22,6 +22,12 @@ export class DisciplineResponseDto {
   @ApiProperty({ description: 'Grading Board: "Ready to Grade" from this % (Decisions 75, 136). Default 66.' })
   boardReadyToGrade!: number;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Archived (retired) at (Decision 309); null while in use.' })
+  archivedAt!: string | null;
+
+  @ApiProperty({ description: 'Students with a rank in this style (Decision 309).' })
+  studentCount!: number;
+
   @ApiProperty()
   createdAt!: string;
 
