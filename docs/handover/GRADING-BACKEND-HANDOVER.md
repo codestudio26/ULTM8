@@ -4,6 +4,8 @@
 
 Read this before starting. Each task says what it must do, where the code is today, a suggested build, and when it's done. The frontend tasks that depend on yours are listed at the end, so you can agree the API shape with the frontend team first.
 
+> **Note to the backend team (23 Oct 2026).** If anything here is unclear, or you need information to start a task, ask the product owner. Questions get answered quickly, and a gap that needs a business decision is recorded in the decision log before anyone builds it. To speed things up, the product owner can also have tasks built for you: **B11 (hours trained, logged only) and B10 (promotion fee) are being built now**, each on its own branch and pull request. Check the open pull requests before you start either of them, and review them like any other change. If you'd rather take a task yourselves, say so and it's yours.
+
 ---
 
 ## 1. Read first
@@ -12,8 +14,8 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **Sources, highest first** (from `CLAUDE.md`):
 1. Spec 55, then `skills/ultm8-domain-rules/SKILL.md`.
-2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290 and 297–304**.
-3. The New Portal design: `DESIGN.md` → "Grading screens" (on the design branch `claude/relaxed-bohr-j3ilir` until it merges), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
+2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290, 297–304, 306, 307 and 313**.
+3. The New Portal design: `DESIGN.md` → "Grading screens" (merged into `master`), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
 
 **Rules that always apply:**
 - **Tenancy and RLS.** Every query stays inside the School (Franchise → School → Branch). Use `prismaApp.withTenantContext(...)` as `grading.service.ts` does. Add RLS policies and grants in the migration for any new table. Never read across Schools.
