@@ -287,6 +287,11 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
 ### Side panel buttons sit under the content (product owner, 23 Oct 2026)
 In every right-hand panel (Students, Team, the coach view, the Grading Board), the panel's buttons ("Open full page ›", "Grading permissions ›", "Open the Grading Board ›") sit **straight under the last section, 16–18px below it**, never pinned to the bottom of the panel. A short panel no longer leaves the button far down the screen.
 
+### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
+- **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
+- **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
+- **Left out of the panel** because the row shows them: the status tag, Contact (phone, email), Guardian, the belt and the panel's own "Open full page ›".
+
 ### Student page: nothing shown twice (product owner, 23 Oct 2026)
 The student page follows the same rule as the team member page: the right panel never repeats what the page shows.
 - **Right panel:** status and "Student since", Edit, the check-in code, Send access · Call · Message · QR card, Contact, Personal (birthday and age, gender), Training (home branch only), Account (balance, Manage family account) and Tags.
