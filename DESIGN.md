@@ -287,6 +287,12 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
 ### Side panel buttons sit under the content (product owner, 23 Oct 2026)
 In every right-hand panel (Students, Team, the coach view, the Grading Board), the panel's buttons ("Open full page ›", "Grading permissions ›", "Open the Grading Board ›") sit **straight under the last section, 16–18px below it**, never pinned to the bottom of the panel. A short panel no longer leaves the button far down the screen.
 
+### Coach view: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
+On a phone the coach's pages show the cards first and the side panel below them, like the other pages. The panel never repeats the page:
+- **Dashboard:** "Open the Grading Board" is only on the Grading card (not again under the panel). The panel's **Ready to grade** list is the one place for ready students; the Notifications card leaves out "… is ready to grade" alerts and says so ("Ready to grade" alerts are in the Ready to grade list). **Coming up** in My classes starts after today's class, which is the panel's "Next class".
+- **My belts:** the belt drop-down shows the belt picture, so there is no second picture beside Save.
+- **Invite coaches:** the card has only the form; **How invites work** in the panel explains the steps, including "If they already train here, they keep their student account too."
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
