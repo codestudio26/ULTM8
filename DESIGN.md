@@ -299,7 +299,7 @@ On a phone the Dashboard shows the number cards and lists first and **Needs atte
 - **Ready to grade** is one list, not a number card as well. Its header carries the count as **See all 5 →**, which opens the Grading Board. The number cards are Bookings this week, Check-ins today and Active students.
 
 ### Check-in: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
-On a phone Check-in shows Today's classes and the keypad first and **Recent check-ins** below them. The panel shares nothing with the page. A check-in updates both sides together: the student goes to the top of Recent check-ins and their class's "checked in" count goes up by one. The line under the keypad ("Lucas Martins checked in to Advanced (Gi)") stays: it is the desk's instant confirmation and clears on the next key press.
+On a phone Check-in shows Today's classes and the keypad first and **Recent check-ins** below them. The panel shares nothing with the page. A check-in updates both sides together: the student goes to the top of Recent check-ins and their class's "checked in" count goes up by one. The line under the keypad says only **Checked in ✓** (product owner, 23 Oct 2026): who checked in, and to which class, is in Recent check-ins. It clears on the next key press.
 
 ### Settings: nothing shown twice, settings first on a phone (product owner, 23 Oct 2026)
 On a phone Settings shows the category menu and the settings first, and the student preview and **About this setting** below them.
@@ -310,11 +310,11 @@ On a phone Settings shows the category menu and the settings first, and the stud
 ### Add student: nothing shown twice, form first on a phone (product owner, 23 Oct 2026)
 On a phone Add student shows the form first and the preview card, **Ready to save** and the Add student button below it.
 - Chapter progress shows once, on the form: the chapter number turns green and gets a **Done** tag. The panel no longer has the row of chapter circles (01–06) or "2 of 6 chapters".
-- **Ready to save** keeps form pattern F's checklist of what is done and still missing, right above the button.
+- **Ready to save** lists only what saving needs: name, date of birth, contact, and the Guardian for a child. Address, photo, waivers and app access are shown once, by their section's **Done** tag (product owner, 23 Oct 2026). The button sits right under it.
 - The preview card mirrors what is typed (name, type, check-in code). That is its job, so it is not counted as a repeat.
 
 ### Grading Board: the student panel never repeats the card (product owner, 23 Oct 2026)
-On a phone the board's cards come first. Tapping a student opens their panel as a sheet over the board (a board can be long, so the panel isn't put below every card). The panel shows only what the card doesn't:
+On a phone the board's cards come first and the student panel sits below the board, like every other page (product owner, 23 Oct 2026). Tapping a student scrolls down to their panel. The panel shows only what the card doesn't:
 - **Left out** because the card shows them: the current belt box (picture, rank, "since", "not verified"), the progress bar and the "— 56%" after **Toward …**, and **Move to another column** (the card has Move).
 - **Kept:** name and branch, **Toward {next rank}** with the classes, time at this rank and skills ticks, the promotion fee box and price, skills for the next rank, grading history, and Promote · Open grading page › · Open full student view ›.
 - "See full history ›" is gone: it opened the same page as **Open grading page ›**.
@@ -327,6 +327,16 @@ On a phone every one of these pages shows its content first and the side panel b
 - **Permissions:** "Ticking May grade…" is said once, in the panel's **How permissions work**. "You (the owner) can always do everything" is said once, in the panel's **The owner**.
 - **Grading settings and Settings → Check-in rules:** About this setting doesn't repeat the short line under the setting (for example "For a child, the Guardian signs" or "Belts: a belt picture with stripes"). The intro says "…in About this setting".
 - Pages with no side panel (the student's Ranks tab, the student app) needed no change.
+
+### Styles & Belts: archive a style, students per style, skill order, class types list, coach view (Decisions 308, 309)
+- **Archive (owner only).** Edit · Duplicate · **Archive** · Delete sit with the style switch. Archive asks first ("Use this when your School stops teaching a style…") and is refused while upcoming classes or timetable slots use the style, with the counts. An archived style is hidden from the switch until **Show archived** is ticked; its button reads "… · Archived", the page says "This style is archived: you can look, but not change it or grade in it", every edit control is gone, and **Unarchive** brings it back.
+- **Class types are a list** in Edit discipline: one row each, with ↑ ↓ and ✕, and **+ Add class type**. Renaming one renames it on every grade that uses it. Removing one that an upcoming class, a timetable slot or a grade still uses is refused with the counts. A name listed twice is refused.
+- **Students (owner only):** a card under Skills lists everyone with a rank in the style, lowest belt first, with their belt, each linking to the student. The panel keeps the Students count; the card has no count, so the number isn't shown twice.
+- **Skills** show **Required for** (the grades that need them, in ladder order) and how many **lessons** teach them, and the owner puts them in order with ↑ ↓. The Skills tab rows show the lesson count and have the same ↑ ↓.
+- **Coach / Branch Staff view (G3c):** the same page, read-only: no Edit, Archive, Add, drag or order buttons, no per-belt student counts and no Students card, and the note "Only the School owner can change this style."
+
+### Grading settings: "Promotion to decide" reminder (Decision 313)
+A new always-on row under the whole-School notifications: one reminder to the coaches who may promote, 3 days after a fee was cancelled or a declined fee was waived, only when the student is fully ready (every class required, enough days, every skill signed off). It is not repeated and the promotion never times out. "Ready to grade" now says plainly that it is sent only when a student is fully ready, even though the board's Ready to Grade column starts at 66%.
 
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
