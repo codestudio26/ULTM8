@@ -319,6 +319,15 @@ On a phone the board's cards come first. Tapping a student opens their panel as 
 - **Kept:** name and branch, **Toward {next rank}** with the classes, time at this rank and skills ticks, the promotion fee box and price, skills for the next rank, grading history, and Promote · Open grading page › · Open full student view ›.
 - "See full history ›" is gone: it opened the same page as **Open grading page ›**.
 
+### Styles & Belts, Skills, Permissions and Grading settings: nothing shown twice (product owner, 23 Oct 2026)
+On a phone every one of these pages shows its content first and the side panel below. The panel names what it is about (a belt, a skill, a setting), then shows only what the page doesn't:
+- **Styles & Belts, a belt picked:** the panel has no Edit this belt / Duplicate buttons (the row has them) and no stripe count (the row shows it). It keeps the belt, how many students hold it, and what each grade takes.
+- **Belt editor:** the preview card no longer repeats the style name (it's in the back link), and **Ready to save** has no "4 of 4" count. On a phone the sticky Save bar is the only Save / Cancel: the panel's own pair is hidden there.
+- **Skills, a skill picked:** no Edit / Delete in the panel; the row has them.
+- **Permissions:** "Ticking May grade…" is said once, in the panel's **How permissions work**. "You (the owner) can always do everything" is said once, in the panel's **The owner**.
+- **Grading settings and Settings → Check-in rules:** About this setting doesn't repeat the short line under the setting (for example "For a child, the Guardian signs" or "Belts: a belt picture with stripes"). The intro says "…in About this setting".
+- Pages with no side panel (the student's Ranks tab, the student app) needed no change.
+
 ### Students list: open full page from each row, panel never repeats the row (product owner, 23 Oct 2026)
 - **Every row** has **Open full page ›** under the name and status (phone and desktop). It opens that student's full page.
 - **The side panel** shows only what the row doesn't: name, "Student since", the check-in code, Access · Call · Message · Edit, Training (home branch), Account (membership, balance, family) and tags.
