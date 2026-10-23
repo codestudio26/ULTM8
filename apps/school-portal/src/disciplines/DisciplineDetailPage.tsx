@@ -193,7 +193,8 @@ export function DisciplineDetailPage() {
 }
 
 /** Who trains this style, by belt (Decision 309). Owner only: it reads the
- * same rung-holders list the ladder editor's confirmations use. */
+ * same rung-holders list the ladder editor's confirmations use, keeping only
+ * students still enrolled at the School (Decision 310). */
 function StudentsSection({ disciplineId, ranks }: { disciplineId: string; ranks: Array<{ id: string; name: string; order: number; stripeTiers: Array<{ id: string; name: string; order: number }> }> }) {
   const t = useT();
   const { data, isLoading } = useRungHolders(disciplineId);
@@ -202,7 +203,7 @@ function StudentsSection({ disciplineId, ranks }: { disciplineId: string; ranks:
   const rows = [...ranks]
     .sort((a, b) => a.order - b.order)
     .flatMap((rank) =>
-      [...rank.stripeTiers].sort((a, b) => a.order - b.order).flatMap((tier) => (byRung.get(tier.id) ?? []).map((s) => ({ ...s, id: s.studentId, rung: tier.name }))),
+      [...rank.stripeTiers].sort((a, b) => a.order - b.order).flatMap((tier) => (byRung.get(tier.id) ?? []).filter((s) => s.enrolled).map((s) => ({ ...s, id: s.studentId, rung: tier.name }))),
     );
   return (
     <div style={{ marginTop: 24 }}>

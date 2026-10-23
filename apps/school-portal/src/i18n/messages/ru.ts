@@ -585,6 +585,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Навыки обязательны для аттестации: аттестация блокируется, пока не зачтены все навыки следующего ранга (иначе тренер может аттестовать с письменным обоснованием)",
     },
     stylePicker: {
+      archivedName: "{name} (в архиве)",
       style: "Стиль",
       styleNumbered: "Стиль {number}",
       selectStyle: "Выберите стиль…",
@@ -825,6 +826,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Изменить",
     back: "Назад",
     reorderAffected: "Эти ученики остаются на своей полоске, но её место в лестнице меняется, поэтому их следующий ранг может измениться ({count}):",
+    formerStudent: "Бывший ученик",
     ladder: {
       title: "Лестница",
       description: "Пояса по порядку, начиная с младшего, каждый со своими полосками и требованиями для перехода на него.",
@@ -1402,6 +1404,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Этот стиль в архиве: ученик сохраняет этот ранг и историю, но аттестовать в нём нельзя. Верните его из архива на странице «Дисциплины», чтобы снова аттестовать.",
       loadFailed: "Не удалось загрузить аттестации этого ученика.",
       formerInstructor: "Бывший инструктор",
       you: "Вы",

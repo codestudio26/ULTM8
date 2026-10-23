@@ -583,6 +583,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Técnicas obligatorias para ascender: bloquea el ascenso hasta que se aprueben todas las técnicas del siguiente grado (si no, el entrenador puede ascender con una justificación por escrito)",
     },
     stylePicker: {
+      archivedName: "{name} (archivado)",
       style: "Estilo",
       styleNumbered: "Estilo {number}",
       selectStyle: "Selecciona un estilo…",
@@ -806,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Editar",
     back: "Atrás",
     reorderAffected: "Estos alumnos se quedan en su franja, pero su posición en la escalera cambia, así que su siguiente rango puede cambiar ({count}):",
+    formerStudent: "Antiguo alumno",
     ladder: {
       title: "Escalera",
       description: "Los cinturones en orden, del más bajo al más alto, cada uno con sus franjas y lo necesario para ascender a ellos.",
@@ -1341,6 +1343,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Este estilo está archivado: el alumno conserva este rango y su historial, pero nadie puede ser graduado en él. Desarchívalo en la página Disciplinas para volver a graduar.",
       loadFailed: "No se pudieron cargar los grados de este alumno.",
       formerInstructor: "Antiguo instructor",
       you: "Tú",

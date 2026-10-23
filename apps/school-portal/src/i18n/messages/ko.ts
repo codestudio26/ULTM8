@@ -582,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "승급 시 기술 필수: 다음 급의 모든 기술이 통과될 때까지 승급을 막습니다(아니면 코치가 서면 확인과 함께 승급할 수 있습니다)",
     },
     stylePicker: {
+      archivedName: "{name} (보관됨)",
       style: "스타일",
       styleNumbered: "스타일 {number}",
       selectStyle: "스타일 선택…",
@@ -777,6 +778,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "편집",
     back: "뒤로",
     reorderAffected: "이 수련생들은 그랄을 그대로 유지하지만 사다리에서의 위치가 바뀌므로 다음 등급이 달라질 수 있습니다({count}):",
+    formerStudent: "이전 수련생",
     ladder: {
       title: "사다리",
       description: "낮은 띠부터 순서대로, 각 띠의 그랄과 승급 조건을 보여 줍니다.",
@@ -1291,6 +1293,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "보관된 스타일입니다. 학생의 랭크와 기록은 유지되지만 이 스타일에서는 아무도 승급할 수 없습니다. 다시 승급하려면 종목 페이지에서 보관을 해제하세요.",
       loadFailed: "이 수련생의 승급 정보를 불러오지 못했습니다.",
       formerInstructor: "전 사범",
       you: "나",

@@ -583,6 +583,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Compétences requises pour passer de grade : bloque le passage tant que toutes les compétences du grade suivant ne sont pas validées (sinon, le coach peut faire passer le grade avec une justification écrite)",
     },
     stylePicker: {
+      archivedName: "{name} (archivé)",
       style: "Style",
       styleNumbered: "Style {number}",
       selectStyle: "Sélectionnez un style…",
@@ -806,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Modifier",
     back: "Retour",
     reorderAffected: "Ces élèves gardent leur barrette, mais sa place dans la progression change, donc leur prochain grade peut changer ({count}) :",
+    formerStudent: "Ancien élève",
     ladder: {
       title: "Progression",
       description: "Les ceintures dans l’ordre, de la plus basse à la plus haute, chacune avec ses barrettes et ce qu’il faut pour y être promu.",
@@ -1341,6 +1343,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Ce style est archivé : l'élève garde ce grade et son historique, mais personne ne peut y être gradé. Désarchivez-le depuis la page Disciplines pour grader à nouveau.",
       loadFailed: "Impossible de charger les grades de cet élève.",
       formerInstructor: "Ancien instructeur",
       you: "Vous",

@@ -62,7 +62,8 @@ export function MembershipPlanFormPage() {
   const schoolId = useOwnedSchoolId();
   const { data: school } = useSchool(schoolId);
   const { data: classData } = useClasses(schoolId);
-  const { data: disciplineData } = useDisciplines(schoolId);
+  // Archived styles too: the forms show one a record already has (Decision 310).
+  const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
   const { data: existingPlan, isLoading: planLoading, error: planError } = useMembershipPlan(id ?? null);
   // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
   // prompt. Fetched eagerly (not just on submit attempt) so the prompt can
@@ -588,10 +589,12 @@ function MembershipPlanForm({
           {disciplines.length > 0 ? (
             <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
               <legend className="ultm8-field__label">{t('membershipPlans.form.stylesLegend')}</legend>
-              {disciplines.map((d) => (
+              {disciplines
+                .filter((d) => !d.archivedAt || (initial?.disciplineIds ?? []).includes(d.id))
+                .map((d) => (
                 <Checkbox
                   key={d.id}
-                  label={d.name}
+                  label={d.archivedAt ? t('disciplines.stylePicker.archivedName', { name: d.name }) : d.name}
                   checked={form.disciplineIds.includes(d.id)}
                   onChange={(e) =>
                     setForm((f) => ({

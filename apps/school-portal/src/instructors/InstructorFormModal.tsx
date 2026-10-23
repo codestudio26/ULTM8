@@ -149,10 +149,12 @@ export function InstructorFormModal({
         {usesStyles ? (
           <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsStylesHint')}>
             <div id="instructor-specializations">
-              {disciplines.map((d) => (
+              {disciplines
+                .filter((d) => !d.archivedAt || (initial?.specializationStyleIds ?? []).includes(d.id))
+                .map((d) => (
                 <Checkbox
                   key={d.id}
-                  label={d.name}
+                  label={d.archivedAt ? t('disciplines.stylePicker.archivedName', { name: d.name }) : d.name}
                   checked={styleIds.includes(d.id)}
                   onChange={(e) => setStyleIds((ids) => (e.target.checked ? [...ids, d.id] : ids.filter((id) => id !== d.id)))}
                 />

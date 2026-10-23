@@ -230,7 +230,7 @@ export function LadderSection({
           <p>{t('ranks.reorderAffected', { count: confirming.length })}</p>
           <ul>
             {confirming.map((h) => (
-              <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim()}</li>
+              <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim() || t('ranks.formerStudent')}</li>
             ))}
           </ul>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

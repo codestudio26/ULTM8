@@ -180,7 +180,7 @@ export class MembershipsService {
     // now actually surfaced now that scopedClassId's type includes `| null`
     // (see this DTO's own header comment on why). Hoisted to a local const,
     // which DOES stay narrowed.
-    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds);
+    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds, existing.disciplineIds);
 
     const scopedClassIdToValidate = dto.scopedClassId;
     if (scopedClassIdToValidate) {
@@ -361,16 +361,21 @@ export class MembershipsService {
     );
   }
 
-  /** A plan's styles must be this School's (Decision 195). */
-  private async assertStylesOfSchool(callerId: string, schoolId: string, disciplineIds: string[]) {
+  /** A plan's styles must be this School's (Decision 195). An archived style
+   * can't be added, but one the plan already has stays (Decisions 309, 310). */
+  private async assertStylesOfSchool(callerId: string, schoolId: string, disciplineIds: string[], keepIds: string[] = []) {
     if (new Set(disciplineIds).size !== disciplineIds.length) {
       throw new BadRequestException('Each style can appear only once.');
     }
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.discipline.count({ where: { id: { in: disciplineIds }, schoolId } }),
+      tx.discipline.findMany({ where: { id: { in: disciplineIds }, schoolId }, select: { id: true, name: true, archivedAt: true } }),
     );
-    if (found !== disciplineIds.length) {
+    if (found.length !== disciplineIds.length) {
       throw new BadRequestException('disciplineIds must all be styles of this School.');
+    }
+    const archived = found.find((d) => d.archivedAt && !keepIds.includes(d.id));
+    if (archived) {
+      throw new BadRequestException(`"${archived.name}" is archived, so it can't be picked. Unarchive it on the Disciplines page first.`);
     }
   }
 
