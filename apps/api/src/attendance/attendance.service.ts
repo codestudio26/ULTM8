@@ -7,6 +7,7 @@ import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
+import { recordCheckInMinutes } from '../ranks/hours-trained';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
@@ -253,6 +254,11 @@ export class AttendanceService {
       // check-in happens regardless of ranking: a style the student has no rank
       // in is skipped.
       await creditAttendance(tx, studentId, booking);
+
+      // Hours trained (Decisions 301 item 1, 306): the class's scheduled
+      // length, per style, as a record only. Separate from the class count
+      // above and never read by grading.
+      await recordCheckInMinutes(tx, studentId, booking);
 
       return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
     });
