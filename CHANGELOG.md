@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Hours trained** (Decisions 301, 306; API only so far) — each check-in
+  now records the class's scheduled length (a 90-minute class is 1.5 hours)
+  for each style on the class, and "Log a class" records the picked class's
+  length or the minutes the coach enters (60 by default). A student's grading
+  data now returns their hours trained per style (in total and since their
+  current rank) and a progress breakdown: classes, days at the rank and
+  skills, each on its own. Hours are a record only: grading progress,
+  "Ready to Grade" and the Grading Board are unchanged. New School setting
+  **"Open mat counts toward hours"**, off by default, changed by the owner or
+  a coach with "Change board %": while off, open mat classes don't add to
+  hours. Hours start from this release; earlier check-ins are not counted.
 - **One email, one account** (Decision 295) — emails are no longer
   case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
   ignore capitals and stray spaces, so an owner can no longer create a second
