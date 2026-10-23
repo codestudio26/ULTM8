@@ -93,7 +93,11 @@ function StyleCard({ item, onHistory }: { item: GradingStyle; onHistory: () => v
       {item.verificationStatus === 'UNVERIFIED' ? <Muted>Waiting for the School to verify this belt.</Muted> : null}
 
       <View style={{ marginTop: spacing[3] }}>
-        {!e.hasNext ? (
+        {item.archived ? (
+          // The School no longer teaches this style (Decisions 309, 310): the
+          // belt and history stay, with nothing left to work toward.
+          <Muted>No longer taught at this School. Your belt and history stay.</Muted>
+        ) : !e.hasNext ? (
           <Muted>Top of the ladder.</Muted>
         ) : (
           <>

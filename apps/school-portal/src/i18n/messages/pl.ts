@@ -585,6 +585,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Techniki wymagane do promocji: blokuje promocję, dopóki każda technika na następny stopień nie zostanie zaliczona (w przeciwnym razie trener może promować z pisemnym uzasadnieniem)",
     },
     stylePicker: {
+      archivedName: "{name} (zarchiwizowany)",
       style: "Styl",
       styleNumbered: "Styl {number}",
       selectStyle: "Wybierz styl…",
@@ -825,6 +826,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Edytuj",
     back: "Wstecz",
     reorderAffected: "Ci uczniowie zostają na swojej belce, ale jej miejsce w drabince się zmienia, więc ich następny stopień może się zmienić ({count}):",
+    formerStudent: "Były uczeń",
     ladder: {
       title: "Drabinka",
       description: "Pasy po kolei, od najniższego, każdy z belkami i wymaganiami awansu.",
@@ -1404,6 +1406,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Ten styl jest zarchiwizowany: uczeń zachowuje ten stopień i historię, ale nikt nie może w nim uzyskać stopnia. Przywróć go na stronie Dyscypliny, aby znów nadawać stopnie.",
       loadFailed: "Nie udało się wczytać stopni tego ucznia.",
       formerInstructor: "Były instruktor",
       you: "Ty",

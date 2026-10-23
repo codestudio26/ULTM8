@@ -583,6 +583,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Technieken vereist voor gradering: blokkeert gradering tot elke techniek voor de volgende graad is afgetekend (anders kan de coach graderen met een schriftelijke verklaring)",
     },
     stylePicker: {
+      archivedName: "{name} (gearchiveerd)",
       style: "Stijl",
       styleNumbered: "Stijl {number}",
       selectStyle: "Selecteer een stijl…",
@@ -793,6 +794,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Bewerken",
     back: "Terug",
     reorderAffected: "Deze leerlingen blijven op hun streep, maar de plek ervan in de ladder verandert, dus hun volgende graad kan veranderen ({count}):",
+    formerStudent: "Oud-leerling",
     ladder: {
       title: "Ladder",
       description: "De banden op volgorde, laagste eerst, elk met hun strepen en wat er nodig is om ernaar te promoveren.",
@@ -1330,6 +1332,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Deze stijl is gearchiveerd: de leerling houdt deze rang en geschiedenis, maar niemand kan erin gegradeerd worden. Zet hem terug op de pagina Disciplines om weer te graderen.",
       loadFailed: "De graderingen van deze leerling konden niet worden geladen.",
       formerInstructor: "Voormalig instructeur",
       you: "Jij",

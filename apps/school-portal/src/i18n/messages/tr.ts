@@ -583,6 +583,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Terfi için beceriler zorunlu: bir sonraki derecenin tüm becerileri onaylanana kadar terfiyi engeller (aksi halde antrenör yazılı bir beyanla terfi ettirebilir)",
     },
     stylePicker: {
+      archivedName: "{name} (arşivlendi)",
       style: "Stil",
       styleNumbered: "Stil {number}",
       selectStyle: "Bir stil seçin…",
@@ -793,6 +794,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Düzenle",
     back: "Geri",
     reorderAffected: "Bu öğrenciler şeritlerinde kalır, ancak şeridin merdivendeki yeri değişir; bu yüzden bir sonraki dereceleri değişebilir ({count}):",
+    formerStudent: "Eski öğrenci",
     ladder: {
       title: "Merdiven",
       description: "Kuşaklar en düşükten başlayarak sırayla; her biri şeritleri ve terfi için gerekenlerle.",
@@ -1330,6 +1332,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Bu stil arşivlendi: öğrenci bu rütbeyi ve geçmişini korur, ancak bu stilde kimse terfi alamaz. Yeniden terfi vermek için Branşlar sayfasından arşivden çıkarın.",
       loadFailed: "Bu öğrencinin kuşak bilgileri yüklenemedi.",
       formerInstructor: "Eski eğitmen",
       you: "Siz",

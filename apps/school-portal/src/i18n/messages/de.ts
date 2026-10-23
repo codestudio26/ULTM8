@@ -583,6 +583,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Techniken für Graduierung erforderlich: blockiert die Graduierung, bis jede Technik für den nächsten Grad abgezeichnet ist (andernfalls kann der Trainer mit einer schriftlichen Bestätigung graduieren)",
     },
     stylePicker: {
+      archivedName: "{name} (archiviert)",
       style: "Stil",
       styleNumbered: "Stil {number}",
       selectStyle: "Stil auswählen…",
@@ -793,6 +794,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Bearbeiten",
     back: "Zurück",
     reorderAffected: "Diese Schüler bleiben auf ihrem Streifen, aber seine Position in der Graduierungsfolge ändert sich, daher kann sich ihr nächster Rang ändern ({count}):",
+    formerStudent: "Ehemaliger Schüler",
     ladder: {
       title: "Graduierungsfolge",
       description: "Die Gürtel in Reihenfolge, der niedrigste zuerst, jeweils mit ihren Streifen und den Voraussetzungen für die Beförderung.",
@@ -1330,6 +1332,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Dieser Stil ist archiviert: Der Schüler behält diesen Rang und seine Historie, aber niemand kann darin graduiert werden. Stelle ihn auf der Seite Disziplinen wieder her, um wieder zu graduieren.",
       loadFailed: "Die Graduierungen dieses Schülers konnten nicht geladen werden.",
       formerInstructor: "Ehemaliger Ausbilder",
       you: "Du",

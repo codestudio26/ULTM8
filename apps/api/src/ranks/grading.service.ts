@@ -175,7 +175,7 @@ export class GradingService {
       const { items: ranks } = await this.findEligibilityForStudent(studentId, studentId, schoolId);
       if (ranks.length === 0) continue;
       const catalog = await this.prismaApp.withTenantContext(studentId, async (tx) => ({
-        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, archivedAt: true } }),
         belts: await tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       }));
@@ -208,17 +208,24 @@ export class GradingService {
           status: status.get(id) ?? 'NOT_STARTED',
           required,
         });
+        const style = catalog.styles.find((d) => d.id === row.disciplineId);
+        // A style the School no longer teaches (Decision 309): the belt and
+        // history stay, but there's no next grade to work toward (Decision 310).
+        const archived = !!style?.archivedAt;
         items.push({
           schoolId,
           schoolName: grant.school?.name ?? '',
           disciplineId: row.disciplineId,
-          disciplineName: catalog.styles.find((d) => d.id === row.disciplineId)?.name ?? '',
+          disciplineName: style?.name ?? '',
+          archived,
           currentStripeId: row.currentStripeId,
           dateOfCurrentRank: row.dateOfCurrentRank,
           verificationStatus: row.verificationStatus,
           ladder,
           eligibility: row.eligibility,
-          skills: [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
+          skills: archived
+            ? []
+            : [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
         });
       }
     }

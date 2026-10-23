@@ -341,7 +341,12 @@ export const SERVER_MESSAGES: string[] = [
  "studentId must be a valid UUID",
  "styles cannot be null; omit it to leave the styles unchanged.",
  "surname cannot be null.",
- "targetRungId is not a belt or stripe of this style."
+ "targetRungId is not a belt or stripe of this style.",
+ "Send classTypesOffered (the list after the renames) with renameClassTypes.",
+ "Send every skill of this style exactly once, in the new order.",
+ "This style is archived, so a belt in it can't be chosen.",
+ "name cannot be null; omit it to leave it unchanged.",
+ "name, classTypesOffered and skillsRequiredToGrade cannot be null; omit them to leave them unchanged."
 ];
 
 export const SERVER_PATTERNS: string[] = [
@@ -386,5 +391,18 @@ export const SERVER_PATTERNS: string[] = [
  "stripeTiers order values must be contiguous starting at 0 — got [{v1}]",
  "{v1} is not Cash/Bank Transfer-eligible.",
  "{v1} student{v2} a rank in this style, so it can't be deleted.",
- "{v1} student{v2} this belt, so it can't be {v3}."
+ "{v1} student{v2} this belt, so it can't be {v3}.",
+ "\"{v1}\" is archived, so it can't be picked. Unarchive it on the Disciplines page first.",
+ "\"{v1}\" is archived, so it can't be given to a class. Unarchive it on the Disciplines page first.",
+ "\"{v1}\" is archived, so nobody can be graded in it. Unarchive it on the Disciplines page first.",
+ "\"{v1}\" is archived. Unarchive it on the Disciplines page to change it.",
+ "\"{v1}\" is not one of this style's class types, so it can't be renamed.",
+ "\"{v1}\" is renamed twice.",
+ "\"{v1}\" is already a class type of this style. Rename to a new name.",
+ "This style is still in use (upcoming classes: {v1}, timetable slots: {v2}). Archive or change them first.",
+ "\"{v1}\" is still in use (upcoming classes: {v2}, timetable slots: {v3}, rungs on the ladder: {v4}). Rename the class type instead of removing it, or change those first.",
+ "A discipline called \"{v1}\" already exists.",
+ "A discipline called \"{v1}\" already exists (archived — unarchive it instead).",
+ "The new name \"{v1}\" must be in classTypesOffered.",
+ "This style already has a skill called \"{v1}\"."
 ];
