@@ -287,8 +287,13 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
 ### Side panel buttons sit under the content (product owner, 23 Oct 2026)
 In every right-hand panel (Students, Team, the coach view, the Grading Board), the panel's buttons ("Open full page ›", "Grading permissions ›", "Open the Grading Board ›") sit **straight under the last section, 16–18px below it**, never pinned to the bottom of the panel. A short panel no longer leaves the button far down the screen.
 
+### Student page: nothing shown twice (product owner, 23 Oct 2026)
+The student page follows the same rule as the team member page: the right panel never repeats what the page shows.
+- **Right panel:** status and "Student since", Edit, the check-in code, Send access · Call · Message · QR card, Contact, Personal (birthday and age, gender), Training (home branch only), Account (balance, Manage family account) and Tags.
+- **Removed from the panel:** each style's rank and the Programme (the Ranks tab shows them, with progress and history) and the Membership (the Memberships card on Profile shows it, with price and next payment).
+
 ### Team member full page (product owner, 23 Oct 2026)
-Instructors and Branch Staff get a full page like a student's (`StaffProfile.dc.html`, board 7). It opens from **Open full page ›** in the Team page's side panel, or from the **Open full page ›** link under each name on the Instructors' belts tab; "‹ Team" goes back. On the Instructors' belts tab the side panel leaves out the belts, because the table already shows them.
+Instructors and Branch Staff get a full page like a student's (`StaffProfile.dc.html`, board 7). It opens from **Open full page ›** in the Team page's side panel, or from the **Open full page ›** link under each name on the **Coaches Info** tab (renamed from "Instructors' belts", product owner 23 Oct 2026; its card is headed "Belts"); "‹ Team" goes back. On the Coaches Info tab the side panel leaves out the belts, because the table already shows them.
 - **Layout:** the same as the student page. Header "‹ Team" and the name (30px light), tabs underneath, white cards on the left (up to 980px), and the **Team member** summary panel on the right.
 - **Nothing is shown twice** (product owner, 23 Oct 2026). The right panel holds who the person is and how to reach them: 64px avatar, name, Email · Call · Edit as mint tiles, and Contact (email, phone). Everything else is on the page only: their roles, branches and status are in **Roles**, and belts, rights and classes are in their own cards. The page has no second Edit button.
 - **Everything from the Team page's side panel is on the Profile tab** (product owner, 23 Oct 2026): branches (in Roles), belts and the Front desk and money switches.
