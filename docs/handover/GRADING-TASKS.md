@@ -1,10 +1,10 @@
 # Grading — what's left, by team
 
-**Date:** 22 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
+**Date:** 22 Oct 2026, updated 23 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307, 313).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307, 313, 314).
 
-**Need information?** Ask the product owner. To speed things up, **B10 and B11 are being built for the backend team now** (one branch and pull request each); check the open pull requests before starting them.
+**Handed to the backend team (23 Oct 2026).** B10 and B11 are built and on `master`; everything else below is yours, **C1 first** (it lets a promotion fee be paid). **Need information?** Ask the product owner.
 
 ---
 
@@ -32,9 +32,9 @@ The two related topics are answered too: **student charges and balances** (Decis
 | B5 | Saved belt colours per School | ✅ ready |
 | B8 | Students can ask for a belt correction (any rank, note required); owner or "Verify ranks" coaches approve or reject | ✅ ready |
 | B9 | Belt progress on the check-in screen (with the check-in rules, v1.3 §3.5) | ✅ ready |
-| B11 | Hours trained, logged only (grading unchanged); progress breakdown | ✅ ready |
-| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ ready (payment step after C1) |
-| C1 | Staff-created charges and member balances, paid in the app (Decision 303) | ✅ ready |
+| B11 | Hours trained, logged only (grading unchanged); progress breakdown | ✅ **built** (#292) |
+| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ **built** (#293, #294); payment step comes with C1 |
+| C1 | Staff-created charges and member balances, paid in the app (Decision 303) — **do first** | ✅ ready |
 | C2 | Open mat sessions: scheduled and unplanned, walk-in bookings, credits, alerts (Decision 304) | ✅ ready |
 
 ## Frontend team — School Portal (`apps/school-portal`)
