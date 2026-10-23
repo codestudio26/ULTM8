@@ -43,6 +43,25 @@
   --text-primary: var(--color-neutral-900);
   --text-secondary: var(--color-neutral-600);
   --text-muted: var(--color-neutral-400);
+  /* Redesign main text (headings, names, table text) — a softer charcoal than
+     --text-primary, product owner 20 Oct 2026 (Gymdesk-style). 10.9:1 on white. */
+  --text-strong: var(--color-neutral-700);
+  /* Redesign description / secondary text (row descriptions, meta lines, table
+     sub-text) — Gymdesk-style light grey, product owner 20 Oct 2026. ~2.6:1 on
+     white, below WCAG 4.5:1 for text; accepted by the product owner. */
+  --text-description: var(--color-neutral-400);
+  /* Settings-row label (toggle/select rows on Settings pages) — redesign vision,
+     product owner 20 Oct 2026. Gymdesk-style soft grey; 4.6:1 on white. */
+  --text-setting-label: var(--color-neutral-500);
+  /* Value text inside a Settings-row <select>/<input> — same size AND colour as
+     the label (product owner, 20 Oct 2026) */
+  --text-setting-value: var(--text-setting-label);
+  /* Form fields (inputs/selects) — redesign vision, product owner 20 Oct 2026.
+     Typed value = the settings-label grey; hint text one step lighter. NOTE:
+     --text-placeholder (#969ea6) is ~2.6:1 on white, below WCAG's 4.5:1 for
+     text; the product owner accepted it on 20 Oct 2026. */
+  --text-field-value: var(--text-setting-label);
+  --text-placeholder: var(--color-neutral-400);
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
@@ -75,6 +94,60 @@
   --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
   --on-success: var(--color-neutral-900);
 
+  /* Primary action buttons (Save, Add) and "on" switches — redesign vision,
+     product owner 20 Oct 2026: pale green fill, soft grey text (#50575e on
+     #def2e2 = 6.3:1), no outline. Mode-stable like --fill-success above (no dark
+     override), so --on-action is a literal ramp ref, not --text-secondary. */
+  --fill-action: var(--fill-success);
+  --fill-action-hover: var(--fill-success-hover);
+  --on-action: var(--color-neutral-600);
+
+  /* Redesign navigation: design D, product owner 20 Oct 2026. A 248px labelled
+     side menu plus a 340px white right-side inspector on every page. Light mode
+     uses a white menu (option F1); the selected item gets a pale-green fill and
+     a 4px success-green bar on its left edge. Dark mode uses Pine (option B1),
+     overridden in the two dark blocks below. */
+  --nav-bg: #ffffff;
+  --nav-border: var(--color-neutral-200);
+  --nav-text: var(--color-neutral-700);
+  --nav-text-muted: var(--color-neutral-500);
+  --nav-active-bg: var(--fill-action);
+  --nav-active-text: var(--color-accent-900);
+  --nav-active-marker: var(--color-success);
+  --nav-active-marker-width: 4px;
+  --nav-width: 248px;
+  --inspector-width: 340px;
+  /* Switch knob: white with an outline, so it stays visible on the pale-green
+     "on" track (--fill-action) */
+  --switch-knob: #ffffff;
+  --switch-knob-ring: 0 0 0 1px rgba(21, 23, 25, 0.18), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Redesign form pattern "F" — numbered chapters + live preview (product owner,
+     20 Oct 2026). The feel and style for every form across the site; component
+     classes are in components.css (.ultm8-chapter, .ultm8-soft-field, …). */
+  --form-field-bg: var(--color-neutral-100);
+  --form-field-bg-focus: #ffffff;
+  --form-field-focus-ring: var(--color-accent-500);
+  --form-field-height: 52px;
+  --form-field-radius: 14px;
+  --form-label-size: var(--font-size-footnote);
+  --form-label-color: var(--color-neutral-600);
+  --form-chapter-label-width: 200px;
+  --form-chapter-padding: 40px;
+  --form-chapter-number-size: 52px;
+  --form-chapter-number-color: var(--color-neutral-300);
+  --form-chapter-number-done: var(--color-success);
+  --form-pill-track: var(--color-neutral-100);
+  --form-pill-on-bg: var(--color-accent-800);
+  --form-pill-on-text: #ffffff;
+  --form-option-border: var(--color-neutral-200);
+  --form-option-selected-border: var(--color-success);
+  --form-option-selected-bg: #f4faf6;
+  --form-preview-bg: var(--color-accent-500);
+  --form-preview-text: #ffffff;
+  --form-preview-muted: var(--color-accent-200);
+  --form-preview-inset: var(--color-accent-600);
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
@@ -87,12 +160,25 @@
   --font-size-footnote: 14px;
   --font-size-body: 16px;
   --font-size-input: 16px; /* below 16px triggers iOS auto-zoom on focus — never go smaller */
+  /* Redesign form fields: 15px on desktop, 16px on phones (iOS auto-zoom rule
+     above), product owner 20 Oct 2026. The media query below flips it. */
+  --font-size-field: 15px;
   --font-size-heading-sm: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
   --font-size-heading-md: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
   --font-size-heading-lg: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  /* Settings-row label (see --text-setting-label) — redesign vision, 20 Oct 2026 */
+  --font-size-setting-label: 15px;
+  --font-weight-setting-label: var(--font-weight-regular);
+  /* Redesign titles and row titles (card titles, settings rows, list-row names):
+     slight extra letter spacing, Gymdesk-style — product owner 20 Oct 2026. */
+  --letter-spacing-title: 0.06em;
+  /* Redesign: NO bold text. The heaviest weight anywhere (titles, names, buttons,
+     numbers) is medium 500; everything else regular 400 — product owner 20 Oct 2026.
+     Use this instead of --font-weight-semibold in redesigned screens. */
+  --font-weight-strong: var(--font-weight-medium);
 
   /* ---- Spacing (DESIGN.md "Layout & spacing") ---- */
   --space-1: 0.25rem; /* 4px */
@@ -123,6 +209,13 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Phones: form-field text back to 16px so iOS doesn't auto-zoom on focus. */
+@media (max-width: 767px) {
+  :root {
+    --font-size-field: var(--font-size-input);
+  }
+}
+
 /* Dark mode — derived from the same ramps above, ships at launch (DESIGN.md
    "Color"). System preference by default; an explicit [data-theme] always wins. */
 @media (prefers-color-scheme: dark) {
@@ -133,6 +226,10 @@
     --text-primary: var(--color-neutral-100);
     --text-secondary: var(--color-neutral-400);
     --text-muted: var(--color-neutral-500);
+    --text-setting-label: var(--color-neutral-400);
+    --text-strong: var(--color-neutral-200);
+    --text-description: var(--color-neutral-500);
+    --text-placeholder: var(--color-neutral-500);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
 
@@ -140,6 +237,30 @@
     --fill-accent-hover: var(--color-accent-300);
     --on-accent: var(--color-neutral-900);
     --text-accent: var(--color-accent-300);
+
+    /* Redesign navigation, dark mode: Pine (option B1) */
+    --nav-bg: #1f3d33;
+    --nav-border: #2c5446;
+    --nav-text: #cfe3d6;
+    --nav-text-muted: #9fbfac;
+    --nav-active-bg: #2c5446;
+    --nav-active-text: #ffffff;
+    --nav-active-marker: var(--fill-action);
+
+    /* Redesign form pattern "F", dark mode */
+    --form-field-bg: var(--color-neutral-700);
+    /* not --surface-1, so a focused field never matches the card behind it */
+    --form-field-bg-focus: var(--surface-2);
+    --form-field-focus-ring: var(--color-accent-300);
+    --form-label-color: var(--color-neutral-400);
+    --form-chapter-number-color: var(--color-neutral-600);
+    /* the light-mode green is too dark on a dark page */
+    --form-chapter-number-done: color-mix(in srgb, var(--color-success) 60%, white);
+    --form-pill-track: var(--color-neutral-700);
+    --form-pill-on-bg: var(--color-accent-300);
+    --form-pill-on-text: var(--color-neutral-900);
+    --form-option-border: var(--color-neutral-700);
+    --form-option-selected-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-neutral-800));
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
@@ -153,6 +274,10 @@
   --text-primary: var(--color-neutral-100);
   --text-secondary: var(--color-neutral-400);
   --text-muted: var(--color-neutral-500);
+  --text-setting-label: var(--color-neutral-400);
+  --text-strong: var(--color-neutral-200);
+  --text-description: var(--color-neutral-500);
+  --text-placeholder: var(--color-neutral-500);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
 
@@ -160,6 +285,30 @@
   --fill-accent-hover: var(--color-accent-300);
   --on-accent: var(--color-neutral-900);
   --text-accent: var(--color-accent-300);
+
+  /* Redesign navigation, dark mode: Pine (option B1) */
+  --nav-bg: #1f3d33;
+  --nav-border: #2c5446;
+  --nav-text: #cfe3d6;
+  --nav-text-muted: #9fbfac;
+  --nav-active-bg: #2c5446;
+  --nav-active-text: #ffffff;
+  --nav-active-marker: var(--fill-action);
+
+  /* Redesign form pattern "F", dark mode */
+  --form-field-bg: var(--color-neutral-700);
+  /* not --surface-1, so a focused field never matches the card behind it */
+  --form-field-bg-focus: var(--surface-2);
+  --form-field-focus-ring: var(--color-accent-300);
+  --form-label-color: var(--color-neutral-400);
+  --form-chapter-number-color: var(--color-neutral-600);
+  /* the light-mode green is too dark on a dark page */
+  --form-chapter-number-done: color-mix(in srgb, var(--color-success) 60%, white);
+  --form-pill-track: var(--color-neutral-700);
+  --form-pill-on-bg: var(--color-accent-300);
+  --form-pill-on-text: var(--color-neutral-900);
+  --form-option-border: var(--color-neutral-700);
+  --form-option-selected-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-neutral-800));
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
