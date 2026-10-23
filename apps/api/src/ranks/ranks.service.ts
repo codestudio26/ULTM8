@@ -556,7 +556,7 @@ export class RanksService {
       await closeBeltGaps(tx, disciplineId);
       const existingOrders = await tx.rank.findMany({ where: { disciplineId }, select: { order: true }, orderBy: { order: 'asc' } });
       this.assertContiguousOrder(existingOrders.map((r) => r.order), dto.order);
-      const rank = await tx.rank.create({
+      await tx.rank.create({
         data: {
           id: rankId,
           disciplineId,
@@ -656,7 +656,7 @@ export class RanksService {
     // fix applies here.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await lockLadder(tx, existing.disciplineId);
-      const rank = await tx.rank.update({
+      await tx.rank.update({
         where: { id: rankId },
         data: {
           order: dto.order,

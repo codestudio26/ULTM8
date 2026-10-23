@@ -65,7 +65,6 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   let studentB: { id: string; email: string };
   let studentRevoked: { id: string; email: string };
   let studentOtherSchool: { id: string; email: string };
-  let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
 
@@ -127,7 +126,6 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       ],
     });
 
-    tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
   });
