@@ -284,6 +284,21 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
 - The coach's menu (Dashboard, Grading Board, My belts, Invite coaches, Notifications) uses the same tiles.
 - In the vision pages the tiles are applied by `apply_nav2.py` after the generators run.
 
+### Side panel buttons sit under the content (product owner, 23 Oct 2026)
+In every right-hand panel (Students, Team, the coach view, the Grading Board), the panel's buttons ("Open full page ›", "Grading permissions ›", "Open the Grading Board ›") sit **straight under the last section, 16–18px below it**, never pinned to the bottom of the panel. A short panel no longer leaves the button far down the screen.
+
+### Team member full page (product owner, 23 Oct 2026)
+Instructors and Branch Staff get a full page like a student's (`StaffProfile.dc.html`, board 7). It opens from **Open full page ›** in the Team page's side panel, and "‹ Team" goes back.
+- **Layout:** the same as the student page. Header "‹ Team" and the name (30px light), tabs underneath, white cards on the left (up to 980px), and the **Team member** summary panel on the right.
+- **Summary panel:** 64px avatar, name, role and status tags; Email · Call · Edit as mint tiles (like the student's quick actions); then Contact (email, phone), Work (branches, upcoming classes, the styles they grade) and Front desk and money (each right On/Off); then "Grading permissions ›" under them.
+- **Tabs:** Instructor: Profile · Classes · Belts & grading · Access. Branch Staff: Profile · Grading · Access.
+  - **Profile:** About (status, email, phone; for an Instructor, years of experience and specializations as tags), Roles (each role with its branch and status), and for an Instructor the next two classes with "All classes ›".
+  - **Classes:** upcoming classes with date, branch and "12 of 20 booked" (the built Instructor detail page's list); an empty state when there are none.
+  - **Belts & grading:** the instructor's own belt in each style (Verified / Not verified with Verify / Not chosen), then a read-only table of their Grading permissions per style (✓ or –, "Doesn't grade this style"), with "Change in Grading permissions ›". Branch Staff see only the permissions table.
+  - **Access:** Front desk and money switches (Can create charges, Can start open mat sessions, and for Branch Staff Can invite coaches), "Refunds and credit stay with you, the owner.", then a red-outlined **Remove from the team** card with **Revoke enrollment** (Instructor) or **Revoke role** (Branch Staff), as the built pages do.
+- Everything on it comes from what ULTM8 already has: the Instructor detail page, the Staff page, Instructors' belts, Grading permissions and the per-person rights (Decisions 183, 303, 304). Nothing new is invented.
+- **Phone:** the tabs wrap, the cards run full width, the summary panel moves below, and the permissions table turns its headings sideways so the seven columns fit.
+
 ### Side menu stays in view (product owner, 21 Oct 2026)
 
 On a computer the side menu is pinned to the screen (`position: sticky; top: 0; height: 100vh`). Its foot (Settings, Help and the signed-in account) is always visible, however long the page, and the menu scrolls on its own if the screen is very short. On phones the menu is the pinned top bar, with Settings in its row.
