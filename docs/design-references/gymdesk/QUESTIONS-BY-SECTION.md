@@ -200,7 +200,8 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] Member Portal sub-pages: **Manage member portal messaging, Dashboard Quick Actions, Member Content Settings**
 
 ## B3. Gym
-- [ ] **Bookings:** list, and creating a booking
+- [x] **Bookings:** the Session Bookings page and the Booking Settings menu (received 25 Oct 2026)
+- [ ] **Bookings:** the **Filter** menu and **Book Session** form opened, and each Booking Settings page opened (Booking Settings, Booking Notifications, Booking Widget, Bookings Forms)
 - [ ] **Managers & Staff:** list, the **Add staff** form, and the **permissions** screen (important: compare with ULTM8's roles)
 - [ ] **Payroll:** setting a coach's pay rate (per class / per hour), and a payroll report
 - [ ] **Programs:** list and the **Add program** form (compare with ULTM8 Disciplines)

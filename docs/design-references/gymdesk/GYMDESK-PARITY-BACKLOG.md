@@ -155,6 +155,17 @@ including a filled-in example where possible. Empty screens hide most fields.
 | S11 | **Grid view**: hourly grid, 12:00am onward, one column per day (like Google Calendar) | 🟡 | Timetable has Daily/Weekly/Monthly; an hourly grid to check against the design |
 | S12 | **Assign** menu (adding a class, a roster, …) | ❓ | Need the ASSIGN menu opened and the add-class form (screenshots of 25 Oct 2026 show it closed) |
 
+### Gym → Bookings (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BK1 | **Session Bookings** page: tabs **Upcoming**, **Previous**, **Book Session**, **Settings**; search by first or last name; **Filter** | 🟡 | ULTM8 has each class's bookings, each student's bookings, staff booking from the Timetable and the Dashboard "Bookings this week" drill-down, but **no single School-wide bookings list** with upcoming/previous, name search and filters |
+| BK2 | **Book Session** (staff book a member into a session) | ✅/🟡 | Timetable click-to-book exists; compare with Gymdesk's form once captured |
+| BK3 | Settings → Bookings → **Booking Settings** ("control booking access and general settings") | ❓ | Need the page opened |
+| BK4 | Settings → Bookings → **Booking Notifications** ("booking related email and text notifications") | ❓ | Need the page opened. Text (SMS) is later (Decision 318) |
+| BK5 | Settings → Bookings → **Booking Widget** ("in the member portal and for external websites") | ❓ | Need the page opened. Website embed is wanted (Decision 319) |
+| BK6 | Settings → Bookings → **Booking Forms** ("manage and customise booking forms") | ❓ | Need the page opened |
+
 ## 6. Settings → Billing
 
 | # | Gymdesk element | ULTM8 | Notes |
