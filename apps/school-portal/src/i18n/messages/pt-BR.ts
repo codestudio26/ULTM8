@@ -15,8 +15,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "Portal da Escola ULTM8",
     logOut: "Sair",
-    searchPlaceholder: "Pesquisar (em breve)",
-    searchAria: "Pesquisa — ainda não disponível",
+    search: {
+      label: "Pesquisar",
+      placeholder: "Pesquisar por nome…",
+      resultsLabel: "Resultados da pesquisa",
+      loading: "Pesquisando…",
+      noResults: "Nenhum resultado para “{query}”",
+      loadFailed: "Não foi possível carregar alguns resultados.",
+      allFailed: "Não foi possível carregar os resultados da pesquisa.",
+      resultCount: {
+        one: "{count} resultado",
+        other: "{count} resultados",
+      },
+    },
     notificationsAria: "Notificações",
     languageAria: "Idioma",
     accountMenu: {

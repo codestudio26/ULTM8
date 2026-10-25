@@ -4,6 +4,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { SchoolsService } from '../schools/schools.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { escapeLike } from '../../common/search/name-search';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 import { addressWriteData } from '../../common/address/postal-address.dto';
@@ -59,7 +60,9 @@ export class BranchesService {
    * it behaves exactly as before this filter existed. */
   /** Decision 226 — `includeArchived` (default false) excludes archived Branches
    * from the default view, same "excluded by default, visible via a filter"
-   * convention applied to every one of the 7 entities this build covers. */
+   * convention applied to every one of the 7 entities this build covers.
+   * Decision 278 — `search` (header Global Search): case-insensitive substring on
+   * `name`, one more condition on the same RLS-scoped query; never widens it. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
@@ -67,6 +70,7 @@ export class BranchesService {
     limit?: number,
     city?: string,
     includeArchived?: boolean,
+    search?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -77,6 +81,8 @@ export class BranchesService {
             where: {
               schoolId,
               ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}),
+              // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
+              ...(search ? { name: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
               ...(includeArchived ? {} : { archivedAt: null }),
             },
           }),

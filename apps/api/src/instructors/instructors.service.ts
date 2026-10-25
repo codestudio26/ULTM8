@@ -15,6 +15,7 @@ import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { CreateInstructorManuallyDto } from './dto/create-instructor-manually.dto';
 import { CompleteInstructorProfileDto } from './dto/complete-instructor-profile.dto';
 import { RequestCertificationUploadUrlDto } from './dto/request-certification-upload-url.dto';
+import { matchesPersonName } from '../common/search/name-search';
 import { addressWriteData } from '../common/address/postal-address.dto';
 
 const BCRYPT_ROUNDS = 12;
@@ -302,11 +303,39 @@ export class InstructorsService {
    * display name, and none of them had one to show before this. */
   /** Decision 226 — `includeArchived` (default false) excludes archived
    * profiles from the default view. */
-  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number, includeArchived?: boolean) {
+  /** Decision 278 — `search` (header Global Search): first name, surname or full
+   * name. Names live on User (Decision 117, above), so the match is resolved in two
+   * steps that never look past what the caller can already list: the same RLS-scoped
+   * query (without the page) gives the profiles' user ids, resolveUserNames reads the
+   * names for exactly those ids, and the matching ids become one more `where`
+   * condition on the unchanged paginated query. Never a User-table name search. */
+  async findAllForSchool(
+    callerId: string,
+    schoolId: string,
+    cursor?: string,
+    limit?: number,
+    includeArchived?: boolean,
+    search?: string,
+  ) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const baseWhere = { schoolId, ...(includeArchived ? {} : { archivedAt: null }) };
+    let matchingUserIds: string[] | undefined;
+    if (search) {
+      const visible = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.instructor.findMany({ where: baseWhere, select: { userId: true } }),
+      );
+      const visibleNames = await resolveUserNames(this.prismaAuth, visible.map((i) => i.userId));
+      matchingUserIds = [...visibleNames.entries()]
+        .filter(([, n]) => matchesPersonName(n.firstName, n.surname, search))
+        .map(([userId]) => userId);
+    }
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
-        (args) => tx.instructor.findMany({ ...args, where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) } }),
+        (args) =>
+          tx.instructor.findMany({
+            ...args,
+            where: { ...baseWhere, ...(matchingUserIds ? { userId: { in: matchingUserIds } } : {}) },
+          }),
         cursor,
         limit,
       ),

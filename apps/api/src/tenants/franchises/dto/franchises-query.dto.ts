@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { trimSearch } from '../../../common/search/name-search';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { FeeModelDto } from './create-franchise.dto';
 
@@ -29,4 +31,23 @@ export class FranchisesQueryDto extends PaginationQueryDto {
   @IsString()
   @MaxLength(100)
   activity?: string;
+
+  /** Decision 278 — the header Global Search: case-insensitive substring match against
+   * `Franchise.name`. Trimmed; blank means no filter. Same length limit as ClassesQueryDto.search. */
+  @ApiPropertyOptional({ description: 'Case-insensitive substring match against Franchise.name.' })
+  @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+
+  /** Decision 278 — leave archived (closed) Franchises out. Defaults to false, so a
+   * request without it lists archived Franchises exactly as before. Parsed
+   * explicitly rather than with `@Type(() => Boolean)`, which reads the string
+   * "false" as true; anything other than true/false is rejected by @IsBoolean. */
+  @ApiPropertyOptional({ default: false, description: 'Leave archived Franchises out (they are listed by default).' })
+  @IsOptional()
+  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : value))
+  @IsBoolean()
+  excludeArchived?: boolean;
 }

@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { trimSearch } from '../../common/search/name-search';
 
 /**
  * GET /schools/:schoolId/classes query — cursor-based pagination (Decision 22/70,
@@ -28,8 +29,10 @@ export class ClassesQueryDto extends PaginationQueryDto {
   @MaxLength(100)
   activities?: string;
 
+  /** Trimmed; blank means no filter (Decision 278, same as the other list endpoints' `search`). */
   @ApiPropertyOptional({ description: 'Case-insensitive substring match against Class.title.' })
   @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
   @IsString()
   @MaxLength(200)
   search?: string;

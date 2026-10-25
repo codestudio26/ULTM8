@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
-import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
@@ -52,7 +52,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { logout, claims } = useAuth();
   const t = useT();
   const coachSchoolId = useCoachSchoolId();
-  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const isCoachOnly = useIsCoachOnly();
   const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   return (

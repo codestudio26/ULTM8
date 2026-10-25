@@ -15,8 +15,23 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "بوابة مدرسة ULTM8",
     logOut: "تسجيل الخروج",
-    searchPlaceholder: "بحث (قريبًا)",
-    searchAria: "البحث غير متاح بعد",
+    search: {
+      label: "بحث",
+      placeholder: "البحث بالاسم…",
+      resultsLabel: "نتائج البحث",
+      loading: "جارٍ البحث…",
+      noResults: "لا توجد نتائج لـ «{query}»",
+      loadFailed: "تعذّر تحميل بعض النتائج.",
+      allFailed: "تعذّر تحميل نتائج البحث.",
+      resultCount: {
+        zero: "لا توجد نتائج",
+        one: "نتيجة واحدة",
+        two: "نتيجتان",
+        few: "{count} نتائج",
+        many: "{count} نتيجة",
+        other: "{count} نتيجة",
+      },
+    },
     notificationsAria: "الإشعارات",
     languageAria: "اللغة",
     accountMenu: {

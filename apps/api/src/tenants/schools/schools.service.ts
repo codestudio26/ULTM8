@@ -18,6 +18,7 @@ import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
+import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 
 @Injectable()
@@ -595,7 +596,15 @@ export class SchoolsService {
    * "Students page" gap: the roster previously hard-coded `revokedAt: null`,
    * silently excluding revoked enrollments with no way to ever see them.
    */
-  async findAllStudentsForSchool(callerId: string, schoolId: string, status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE) {
+  /** Decision 278 — `search` (header Global Search) narrows whichever roster the
+   * caller is already allowed to read, in memory (matchesPersonName's own header
+   * comment says why not a relation filter). Omitted or blank, nothing changes. */
+  async findAllStudentsForSchool(
+    callerId: string,
+    schoolId: string,
+    status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE,
+    search?: string,
+  ) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
@@ -615,7 +624,9 @@ export class SchoolsService {
         }),
       );
       return {
-        items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
+        items: grants
+          .filter((g) => !search || matchesPersonName(g.user.firstName, g.user.surname, search))
+          .map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
       };
     }
 
@@ -671,6 +682,9 @@ export class SchoolsService {
 
     if (status === StudentRosterStatusDto.INACTIVE) {
       rows = rows.filter((r) => r.status === StudentStatusDto.INACTIVE);
+    }
+    if (search) {
+      rows = rows.filter((r) => matchesPersonName(r.firstName, r.surname, search));
     }
     rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
 

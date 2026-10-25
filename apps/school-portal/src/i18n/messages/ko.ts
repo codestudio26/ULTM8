@@ -15,8 +15,18 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "ULTM8 스쿨 포털",
     logOut: "로그아웃",
-    searchPlaceholder: "검색 (준비 중)",
-    searchAria: "검색은 아직 사용할 수 없습니다",
+    search: {
+      label: "검색",
+      placeholder: "이름으로 검색…",
+      resultsLabel: "검색 결과",
+      loading: "검색 중…",
+      noResults: "‘{query}’에 대한 결과가 없습니다",
+      loadFailed: "일부 결과를 불러오지 못했습니다.",
+      allFailed: "검색 결과를 불러올 수 없습니다.",
+      resultCount: {
+        other: "결과 {count}개",
+      },
+    },
     notificationsAria: "알림",
     languageAria: "언어",
     accountMenu: {
