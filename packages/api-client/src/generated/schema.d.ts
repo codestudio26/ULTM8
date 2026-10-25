@@ -5007,6 +5007,8 @@ export interface components {
             firstName: string;
             surname: string;
             email: string;
+            schoolWide: boolean;
+            branchIds: string[];
         };
         EligibleInstructorListResponseDto: {
             items: components["schemas"]["EligibleInstructorUserDto"][];

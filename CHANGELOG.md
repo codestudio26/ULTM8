@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors page fixes** (Decision 311) — every instructor is listed,
+  A to Z, with an Active or Revoked status; archived and revoked instructors
+  can't be given new classes, timetable slots or lessons, and the pickers
+  leave them out; the "Instructors' belts" box no longer breaks after someone
+  is revoked; no instructor joins an archived branch; a profile's branch must
+  match the branch their role is for; Archive asks first; Revoke warns about
+  upcoming classes, which stay editable afterwards; the detail page lists
+  every class, upcoming and past; "Add instructor" only offers people with
+  no profile yet; coaches who open the page go to their own start page.
 - **Promotion fee: who sees what** (Decision 314) — prices on the ladder,
   and the amounts in the School's list of fee requests, are now shown only to
   the owner and to people with grading permission for that style. Anyone with

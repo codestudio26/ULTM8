@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
-import { useInstructor, useInstructorClasses } from './instructorQueries';
+import { useInstructor, useInstructorClasses, type InstructorClassResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+
+const PAST_SHOWN = 10;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
@@ -29,11 +32,13 @@ export function InstructorDetailPage() {
   const instructorId = id ?? null;
   const schoolId = useOwnedSchoolId();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: instructor, isLoading, error } = useInstructor(instructorId);
   const { data: classesData, isLoading: classesLoading, error: classesError } = useInstructorClasses(instructorId);
   const roleGrants = useUserRoleGrants(instructor?.userId ?? null);
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
 
   if (!instructorId) return null;
   if (isLoading) return <Spinner />;
@@ -42,7 +47,11 @@ export function InstructorDetailPage() {
   }
   if (!instructor) return null;
 
-  const classes = classesData?.items ?? [];
+  // Upcoming soonest first, past most recent first (Decision 311, I14).
+  const now = Date.now();
+  const allClasses = classesData?.items ?? [];
+  const upcoming = allClasses.filter((c) => new Date(c.endDate).getTime() >= now).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const past = allClasses.filter((c) => new Date(c.endDate).getTime() < now).sort((a, b) => b.startDate.localeCompare(a.startDate));
   const activeGrant = (roleGrants.data?.items ?? []).find(
     (g) => g.schoolId === schoolId && g.role === 'INSTRUCTOR' && !g.revokedAt,
   );
@@ -103,59 +112,97 @@ export function InstructorDetailPage() {
 
       <div>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-          {t('instructors.detail.classesHeading')}
+          {t('instructors.detail.upcomingHeading')}
         </h2>
         <Card>
           {classesLoading ? (
             <Spinner />
           ) : classesError ? (
             <ErrorBanner message={classesError instanceof ApiError ? classesError.message : t('instructors.detail.classesLoadFailed')} />
-          ) : classes.length === 0 ? (
+          ) : upcoming.length === 0 && past.length === 0 ? (
             <EmptyState title={t('instructors.detail.classesEmptyTitle')} description={t('instructors.detail.classesEmptyDescription')} />
+          ) : upcoming.length === 0 ? (
+            <EmptyState title={t('instructors.detail.upcomingEmptyTitle')} description={t('instructors.detail.upcomingEmptyDescription')} />
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-              {classes.map((c) => (
-                <li
-                  key={c.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--surface-1)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{c.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(c.startDate)}</div>
-                  </div>
-                  <Badge variant="accent">
-                    {c.capacity != null
-                      ? t('instructors.detail.booked', { enrolled: c.enrolledCount, capacity: c.capacity })
-                      : t('instructors.detail.bookedNoCapacity', { enrolled: c.enrolledCount })}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
+            <ClassList classes={upcoming} showBooked />
           )}
         </Card>
       </div>
 
+      {past.length > 0 ? (
+        <div style={{ marginTop: 24 }}>
+          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
+            {t('instructors.detail.pastHeading')}
+          </h2>
+          <Card>
+            <ClassList classes={showAllPast ? past : past.slice(0, PAST_SHOWN)} showBooked={false} />
+            {past.length > PAST_SHOWN ? (
+              <div style={{ marginTop: 12 }}>
+                <Button variant="secondary" onClick={() => setShowAllPast((v) => !v)}>
+                  {showAllPast ? t('instructors.detail.showFewerPast') : t('instructors.detail.showAllPast', { count: past.length })}
+                </Button>
+              </div>
+            ) : null}
+          </Card>
+        </div>
+      ) : null}
+
       {confirmingRevoke && activeGrant ? (
         <ConfirmDeleteModal
           title={t('instructors.detail.revokeTitle', { name: `${instructor.firstName} ${instructor.surname}` })}
-          description={t('instructors.detail.revokeDescription')}
+          description={
+            // Revoking doesn't move their classes (Decision 311, I5): say so first.
+            upcoming.length > 0
+              ? `${t('instructors.detail.revokeDescription')} ${t('instructors.detail.revokeUpcomingWarning', { count: upcoming.length })}`
+              : t('instructors.detail.revokeDescription')
+          }
           confirmLabel={t('instructors.detail.revokeConfirm')}
           genericErrorMessage={t('instructors.detail.revokeFailed')}
           onConfirm={async () => {
             await revokeGrant.mutateAsync({ targetUserId: activeGrant.userId, roleGrantId: activeGrant.id });
+            // The roster's Status column and belts box change with it.
+            await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+            await queryClient.invalidateQueries({ queryKey: ['instructor-belts'] });
             navigate('/instructors');
           }}
           onClose={() => setConfirmingRevoke(false)}
         />
       ) : null}
     </>
+  );
+}
+
+function ClassList({ classes, showBooked }: { classes: InstructorClassResponse[]; showBooked: boolean }) {
+  const t = useT();
+  return (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+      {classes.map((c) => (
+        <li
+          key={c.id}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--surface-1)',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600 }}>{c.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(c.startDate)}</div>
+          </div>
+          {/* The count is of upcoming bookings, so it means nothing once a class is over. */}
+          {showBooked ? (
+            <Badge variant="accent">
+              {c.capacity != null
+                ? t('instructors.detail.booked', { enrolled: c.enrolledCount, capacity: c.capacity })
+                : t('instructors.detail.bookedNoCapacity', { enrolled: c.enrolledCount })}
+            </Badge>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }

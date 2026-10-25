@@ -93,7 +93,7 @@ export class CurriculumService {
     if (dto.instructorId) {
       // Lesson has no Branch of its own — null targetBranchId means "any of this
       // Instructor's grants at the School count," same as a School-wide Class.
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, null);
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, schoolId, null);
     }
     await this.assertSkillsBelongToSchool(callerId, dto.skillIds, schoolId);
     // Only the owner makes a lesson free (Decision 190).
@@ -324,8 +324,9 @@ export class CurriculumService {
     await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
-    if (dto.instructorId) {
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, existing.schoolId, null);
+    // Decision 311: checked only when the instructor changes.
+    if (dto.instructorId && dto.instructorId !== existing.instructorId) {
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, existing.schoolId, null);
     }
     if (dto.skillIds) {
       await this.assertSkillsBelongToSchool(callerId, dto.skillIds, existing.schoolId);

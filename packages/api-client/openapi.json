@@ -15572,13 +15572,24 @@
           },
           "email": {
             "type": "string"
+          },
+          "schoolWide": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "id",
           "firstName",
           "surname",
-          "email"
+          "email",
+          "schoolWide",
+          "branchIds"
         ]
       },
       "EligibleInstructorListResponseDto": {

@@ -378,4 +378,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} is not Cash/Bank Transfer-eligible.": "{v1}은(는) 현금/계좌이체 대상이 아닙니다.",
   "{v1} student{v2} a rank in this style, so it can't be deleted.": "수련생 {v1}명{v2}이 이 종목의 급을 보유하고 있어 삭제할 수 없습니다.",
   "{v1} student{v2} this belt, so it can't be {v3}.": "수련생 {v1}명{v2}이 이 띠를 보유하고 있어 {v3} 처리할 수 없습니다.",
+  "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "이 강사는 보관되었습니다. 강사 페이지에서 보관을 해제하거나 다른 강사를 선택하세요.",
+  "This person is no longer an instructor at this School.": "이 사람은 더 이상 이 도장의 강사가 아닙니다.",
+  "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "강사 역할이 일부 지점에만 해당되어 프로필을 도장 전체로 설정할 수 없습니다. 지점을 선택하세요.",
+  "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "강사 역할이 이 지점을 포함하지 않습니다. 먼저 직원 페이지에서 이 지점의 역할을 부여하거나 올바른 지점을 선택하세요.",
 };
