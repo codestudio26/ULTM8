@@ -204,7 +204,8 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] **Managers & Staff:** list, the **Add staff** form, and the **permissions** screen (important: compare with ULTM8's roles)
 - [ ] **Payroll:** setting a coach's pay rate (per class / per hour), and a payroll report
 - [ ] **Programs:** list and the **Add program** form (compare with ULTM8 Disciplines)
-- [ ] **Schedule:** **adding a class** to the schedule (we only saw an empty week)
+- [x] **Schedule:** schedules, roster assign, settings and grid view (received 25 Oct 2026; Decision 319)
+- [ ] **Schedule:** the **ASSIGN** menu opened and **adding a class**
 
 ## B4. Billing (left-nav item)
 - [ ] Every tab

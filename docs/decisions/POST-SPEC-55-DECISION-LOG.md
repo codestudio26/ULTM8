@@ -4822,3 +4822,20 @@ User, 25 Oct 2026.
 
 User, 25 Oct 2026.
 
+---
+
+## Decision 319 — Gymdesk parity, schedule: one timetable per Branch, closure dates, and four calendar settings
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Gymdesk Schedule screenshots of 25 Oct 2026 (`GYMDESK-PARITY-BACKLOG.md` §5, S3–S10)
+
+### Decision
+
+1. **One timetable per Branch**, filtered by style and class type, as today. No separately named schedules with their own visibility.
+2. **Rosters stay lists only** (Decision 317): a roster can't be assigned to classes to book its members.
+3. **Closure dates:** the owner sets closure dates for the School or a Branch (e.g. Christmas). Classes in that time are cancelled under the School's normal cancellation rule (credit or refund), members are told, and the owner can choose to **freeze every membership** for those dates (Decision 316's freeze).
+4. **Schedule settings** the School can choose: the **week start day** (Sunday or Monday), the **default layout** (list or grid), **Google Calendar** connection (staff see their classes in their Google Calendar), and a **schedule embed** for the School's own website.
+
+### Recorded by
+
+User, 25 Oct 2026, reviewing Gymdesk's Schedule.
+

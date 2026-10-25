@@ -43,7 +43,7 @@ into the decision log under the next free numbers.**
 | Left nav | ✅ 04 | `DESIGN-BRIEF.md` |
 | Members → Members, Add Member | ✅ 06–09, recording | §3 |
 | Members → Memberships, Add Membership Option | ✅ 06, recording | §4 |
-| Gym → Schedule | ✅ recording (empty week view only) | §5 |
+| Gym → Schedule | ✅ recording, plus screenshots 25 Oct 2026 (schedules, roster assign, settings, grid) | §5 |
 | Settings → Billing settings, Payment processor | ✅ recording | §6 |
 | Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
 | Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
@@ -144,7 +144,16 @@ including a filled-in example where possible. Empty screens hide most fields.
 |---|---|---|---|
 | S1 | Week view with date-range picker, List/Grid toggle | ✅ | Timetable Daily/Weekly/Monthly |
 | S2 | Programme filter | 🟡 | Filters exist; naming differs (Discipline) |
-| S3 | Schedule settings | ❓ | Need screenshots |
+| S3 | Schedule settings: **week start** day (Sunday/Monday) | ❌ | Wanted (Decision 319) |
+| S4 | Schedule settings: **time zone** | ✅ | Branch, then School, time zone (Decision 172) |
+| S5 | Schedule settings: **default layout** (list or grid) | ❌ | Wanted (Decision 319) |
+| S6 | **Google Calendar** connect | ❌ | Wanted: staff see their classes in Google Calendar (Decision 319) |
+| S7 | **Schedule embed** for the School's own website | ❌ | Wanted (Decision 319) |
+| S8 | **Close gym**: hide the schedule for a period, optionally freeze every membership | ❌ | Wanted as closure dates (Decision 319) |
+| S9 | **Several named schedules** ("Create Schedule": title, visibility *Visible to all* or narrower, *Receive booking notifications*); "All Schedules" filter | ❌ | Not wanted: one timetable per Branch, filtered by style and class type (Decision 319) |
+| S10 | **Assign → Assign Roster**: "Use rosters to assign members to a group of sessions on the schedule"; roster list with "+ Create new roster" | ❌ | Not wanted: rosters stay lists only (Decisions 317, 319) |
+| S11 | **Grid view**: hourly grid, 12:00am onward, one column per day (like Google Calendar) | 🟡 | Timetable has Daily/Weekly/Monthly; an hourly grid to check against the design |
+| S12 | **Assign** menu (adding a class, a roster, …) | ❓ | Need the ASSIGN menu opened and the add-class form (screenshots of 25 Oct 2026 show it closed) |
 
 ## 6. Settings → Billing
 
