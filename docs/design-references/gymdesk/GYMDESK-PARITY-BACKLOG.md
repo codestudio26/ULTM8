@@ -199,9 +199,9 @@ ULTM8's grading (Styles & Belts, Skills, Board) already goes further than Gymdes
 | PG3 | **Auto assign initial rank** switch | ❌ | Wanted: first rung on the first check-in to the style (Decision 321) |
 | PG4 | **Promotion setting**: Manual / Automatically award stripes / Automatically award all ranks | ❌ | Wanted, per style, owner sets it; waits for a fee; coach can undo (Decision 321) |
 | PG5 | **Add promotion fee** per program | ✅ | ULTM8 has a price per rung (Decisions 300, 307) |
-| PG6 | **Use template** (Fitness, Gymnastics, Martial Arts: Boxing, BJJ, BJJ Kids, Judo, Kyokushin, Shotokan, Taekwondo …) | ❓ | Check what ULTM8's style set-up offers before asking |
+| PG6 | **Use template** (Fitness, Gymnastics, Martial Arts: Boxing, BJJ, BJJ Kids, Judo, Kyokushin, Shotokan, Taekwondo …) | ⏭ | Next version. For now only Brazilian Jiu-Jitsu (product owner, 25 Oct 2026) |
 | PG7 | Rank rows: name, stripes, colour, per-rank requirements, + skills | ✅ | Belt editor |
-| PG8 | Skills: Library (title, measure, program, category, visible on schedule, description), Categories, **Star ratings** (1–5 stars, a name per star e.g. Introduction / Learning / Mastered) | 🟡 | Skills exist; categories and star ratings not asked yet |
+| PG8 | Skills: Library (title, measure, program, category, visible on schedule, description), Categories, **Star ratings** (1–5 stars, a name per star e.g. Introduction / Learning / Mastered) | 🟡 | Skills exist. Categories and star ratings: later (product owner, 25 Oct 2026) |
 
 ## 6. Settings → Billing
 
