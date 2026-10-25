@@ -52,7 +52,7 @@ into the decision log under the next free numbers.**
 | Members → Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff | 🟡 screenshots 25 Oct 2026 (Bookings settings pages still needed) | §5 |
 | Gym → Payroll | ✅ screenshots 25 Oct 2026 | §5 |
-| Gym → Programs | ❌ not yet | — |
+| Gym → Programs | ✅ recording 25 Oct 2026 | §5 |
 | Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
@@ -187,6 +187,21 @@ including a filled-in example where possible. Empty screens hide most fields.
 | PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ❌ | Wanted, report only (Decision 320) |
 | PY2 | **Download** the report | ❌ | Wanted (Decision 320) |
 | PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. The substitute is paid, not the assigned coach (needs a way to mark a substitute on a single class, not built yet). With more than one coach, each is paid in full (Decision 320) |
+
+### Gym → Programs (recording 25 Oct 2026)
+
+ULTM8's grading (Styles & Belts, Skills, Board) already goes further than Gymdesk Programs; the user kept ULTM8's and took the details below (Decision 321).
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| PG1 | Program list by type (Martial Arts …), Edit, "Show ranks", member count per rank | ✅ | Styles & Belts |
+| PG2 | **Promotion requirements** tick boxes per program: Sessions, Hours, Days in rank, Days attended, Skill requirements, Minimum age; the rank rows show only the ticked fields | ❌ | Wanted (Decision 321). Hours, Days attended and Minimum age are new requirements |
+| PG3 | **Auto assign initial rank** switch | ❌ | Wanted: first rung on the first check-in to the style (Decision 321) |
+| PG4 | **Promotion setting**: Manual / Automatically award stripes / Automatically award all ranks | ❌ | Wanted, per style, owner sets it; waits for a fee; coach can undo (Decision 321) |
+| PG5 | **Add promotion fee** per program | ✅ | ULTM8 has a price per rung (Decisions 300, 307) |
+| PG6 | **Use template** (Fitness, Gymnastics, Martial Arts: Boxing, BJJ, BJJ Kids, Judo, Kyokushin, Shotokan, Taekwondo …) | ❓ | Check what ULTM8's style set-up offers before asking |
+| PG7 | Rank rows: name, stripes, colour, per-rank requirements, + skills | ✅ | Belt editor |
+| PG8 | Skills: Library (title, measure, program, category, visible on schedule, description), Categories, **Star ratings** (1–5 stars, a name per star e.g. Introduction / Learning / Mastered) | 🟡 | Skills exist; categories and star ratings not asked yet |
 
 ## 6. Settings → Billing
 

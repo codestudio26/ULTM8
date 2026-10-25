@@ -232,6 +232,26 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
+### B12. Requirement tick boxes, automatic promotion, first belt on first class — Decision 321
+
+From the Gymdesk Programs study (25 Oct 2026).
+
+- **Requirement tick boxes, on each style (owner):** Classes, Days in rank, Skills, Hours, Days attended, Minimum age.
+  - An unticked requirement is never checked, even if a rung still holds a number for it.
+  - `progressBreakdown` (B11) lists only the ticked requirements, and "ready" (100%) is computed from them.
+- **Hours:** hours trained (B11) count toward a rung only in a style that ticks Hours. This amends Decision 306 for that style. Open mat counts only while its switch is on.
+- **Days attended:** distinct calendar days (School time zone) with a check-in to a class of the style, since the last promotion. Counted per rung.
+- **Minimum age, per rung:** age on the promotion day, from the date of birth. Eligibility stays false until then.
+- **Promotion setting, per style (owner):** `MANUAL` (default), `AUTO_STRIPES`, `AUTO_ALL`.
+  - **When:** an automatic promotion runs when the next rung is 100%: after a check-in, and in the grading sweep for time- and age-based requirements.
+  - **Fee:** if the next rung has a fee, the fee request is created and the promotion runs when it is paid or waived (B10's `markPaid()` hook). A cancelled fee doesn't promote.
+  - **History:** `PromotionEvent` records it as automatic, with no performer.
+  - **Notices:** the student (the Guardian for a child) gets the usual promotion notice. The coaches of the style are told.
+  - **Undo:** a coach with promote permission can undo an automatic promotion. The undo is recorded in the history.
+  - **Reminders:** no "Promotion to decide" reminder for rungs that are awarded automatically.
+- **Auto-assign first belt, per style (owner switch):** a student with no `StudentRank` in the style gets the first rung on their first check-in to a class of that style. It is created as VERIFIED (Decision 147). Self-declaring a higher belt stays possible (Decision 137).
+- **Questions?** Ask the product owner. Nothing here is guessed: every rule above was answered on 25 Oct 2026.
+
 ## 3. Related work that grading needs
 
 Not grading features themselves, but B10 and B11 depend on them. Both are decided.
