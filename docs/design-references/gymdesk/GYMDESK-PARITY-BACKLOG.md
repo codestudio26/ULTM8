@@ -50,7 +50,8 @@ into the decision log under the next free numbers.**
 | Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
 | Settings → Members (all rows + sign-up form builder) | ✅ chat screenshots | §9 |
 | Members → Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
-| Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
+| Gym → Bookings, Managers & Staff | 🟡 screenshots 25 Oct 2026 (Bookings settings pages still needed) | §5 |
+| Gym → Payroll, Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
@@ -165,6 +166,18 @@ including a filled-in example where possible. Empty screens hide most fields.
 | BK4 | Settings → Bookings → **Booking Notifications** ("booking related email and text notifications") | ❓ | Need the page opened. Text (SMS) is later (Decision 318) |
 | BK5 | Settings → Bookings → **Booking Widget** ("in the member portal and for external websites") | ❓ | Need the page opened. Website embed is wanted (Decision 319) |
 | BK6 | Settings → Bookings → **Booking Forms** ("manage and customise booking forms") | ❓ | Need the page opened |
+
+### Gym → Managers & Staff (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| ST1 | **Gym Staff** list: name, email, role, permissions summary ("All permissions"), date added, edit | ✅/🟡 | Staff and Instructors pages exist; no permissions summary column yet (comes with ST3) |
+| ST2 | **Add Staff Member**: type **Manager / Instructor / Front-Desk**, name, email, phone, *Send invitation* | ✅ | Invite flows exist. Front-Desk = Branch Staff (Decision 320) |
+| ST3 | **Account Access** tick boxes per staff member with **Toggle All**, grouped: Members (view, invoices, edit, check-in, settings, tags), Billing (payment list, modify, collect, mark paid, settings, processor), Point-of-sale, Website, Marketing, Account (staff management, tasks, payroll), Functionality (front-desk mode, dashboard notifications), Gym (schedule, settings) | ❌ | Wanted: one Access page per staff member, holding every "staff the owner grants access" right and the existing toggles (Decision 320). Each box is checked against Spec 55 §8 before it is built |
+| ST4 | Owner row: **Owner profile**, all permissions, can't be removed | ✅ | The owner always has every right |
+| ST5 | Personal staff **Check-in Code** (4 digits) | ❌ | Wanted: personal code per staff member, unlocks the kiosk, logged (Decision 320) |
+| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ❓ | Waiting for the Payroll tab screenshots (Decision 320) |
+| ST7 | Billing/Point-of-sale/Website/Marketing boxes | — | Only the boxes for features ULTM8 has or decides to build |
 
 ## 6. Settings → Billing
 
