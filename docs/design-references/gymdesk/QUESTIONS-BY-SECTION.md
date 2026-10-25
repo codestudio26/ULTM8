@@ -14,6 +14,8 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 
 # Part A: questions on sections already seen
 
+> **All Part A questions are answered (25 Oct 2026).** The answers are recorded in the decision log: **Decisions 315** (members), **316** (memberships and billing), **317** (check-in and attendance) and **318** (the School and the member app). Some were answered by earlier decisions: open mat (Q20, Q53) by 304; promotion fee (Q33) by 287, 300, 307 and 314; hours (Q51) by 306; staff charges and balances (Q28) by 303; belt corrections (Q38) by 286 and 299; minor age (Q39) is fixed at 18 by Decision 77. **Only Q13 (family accounts) stays deferred**, until Gymdesk's "Manage family account" screen has been reviewed. The inline answers below are kept as the history of each question.
+
 ## A1. Dashboard
 1. 🟠 **D3 Birthdays:** may staff see members' birthdays on the dashboard, including **children's**? Which roles (Owner / Branch Staff / Coach)? Show the age?
    - Answer:

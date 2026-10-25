@@ -4720,3 +4720,105 @@ User, 23 Oct 2026, answering the follow-up questions on the reminder.
 ### Recorded by
 
 User, 23 Oct 2026, answering the B10 follow-up questions.
+
+---
+
+## Decision 315 — Gymdesk parity, members: visitors, check-in code, member details, data tools
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** `docs/design-references/gymdesk/QUESTIONS-BY-SECTION.md` Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q26, Q27, Q29, Q32, Q44, Q46, Q47, Q54, and the open points of `docs/v1.3-backend-backlog.md` §3.1–3.3, 3.9, 3.10, 3.15 and §5.1–5.4, 5.11, 5.13 · **Records:** the 20 Oct 2026 answers that were waiting for a decision entry
+
+### Decision
+
+1. **Visitors are their own status, separate from Trial Membership**, with no platform limit (20 Oct 2026). The School sets the visitor period (any length). A Visitor follows the same process as a member (waiver, booking, check-in). A child visitor needs a Guardian, as for any minor. The owner and staff the owner allows set the visitor period. A Visitor can have more than one visit pass in a row. Trial Membership's 30-day caps (Decisions 54, 64) are unchanged.
+2. **Personal check-in code** (a fallback for the QR): ULTM8 generates it; the School chooses 4 or 6 digits (4 by default); unique within the School; a Guardian can check a child in with the child's code; staff can issue a new one; the student can't change it.
+3. **Temporary passcode set by staff** (20 Oct 2026: ULTM8 generates it, changed at first login). For a child it goes on the **Guardian's** account; a child only has a login of their own through the Guardian's limited-login set-up (age 13+, Decision 77).
+4. **Join date:** defaults to the day the member is added; staff can set an earlier date (never in the future).
+5. **Contacts:** one secondary phone and one secondary email, plus a separate **emergency contact** (name, phone, relationship) who is not a Guardian and has no account.
+6. **"How did you hear about us?"** is each School's own list, starting with Friend, Instagram, Google, Walked past; the School can add, rename and remove options.
+7. **Tags:** a list each School manages (staff can add a new tag while tagging); members never see their tags.
+8. **Staff notes:** staff-only notes are seen by any staff at the School who can see the member; kept while the account exists and erased with it. The "show to member" tick box (20 Oct 2026) still applies.
+9. **Files on a member:** PDF, JPG and PNG, up to 10 MB each; seen by the owner and staff the owner grants access; never shown to the member; erased with the account.
+10. **Medical information** at sign-up: optional per School; explicit consent from the member (Guardian for a child); seen only by the owner and staff the owner grants access; erased with the account.
+11. **Export** the member list (CSV, all members including children, 20 Oct 2026): the owner and staff the owner grants the right.
+12. **Import members** from a spreadsheet: name, email, phone, date of birth, gender, join date, belt per style. A row whose email already exists is skipped and listed for review. Children are imported with their Guardian's email; the Guardian gets an invite and gives consent when accepting.
+13. **Data tools:** import memberships, merge duplicate members, export all signed documents (ZIP), and import past attendance (CSV).
+14. **Custom member fields and statuses:** each School can add its own fields (text, number, date, drop-down, yes/no) and its own member statuses (up to 50 characters), shown on the profile and as list filters.
+15. **Gender** accepts Female, Male or empty only. Existing other values are sample data and are cleared.
+
+### Recorded by
+
+User, 25 Oct 2026, answering the open Gymdesk questions in batches.
+
+---
+
+## Decision 316 — Gymdesk parity, memberships and billing: freeze, fees, plan dates, capacity, contracts, tax
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q14, Q15, Q16, Q17, Q18, Q25, Q35, Q36, Q42, and `docs/v1.3-backend-backlog.md` §3.4, 3.7 · **Changes:** Decision 6 (Membership status gains Frozen)
+
+### Decision
+
+1. **Freezing a membership** (20 Oct 2026: allowed; the School sets the maximum length, may charge a freeze fee; billing stops; the Guardian requests for a child). The member or Guardian requests it; the **owner or permitted staff approve**; no booking or check-in while frozen; the end date moves out by the freeze length; a freeze can be ended early. This adds a **Frozen** state to Membership, alongside Active and Expired (amends Decision 6).
+2. **Late fees** (fixed or %, every payment method, 20 Oct 2026): never charged to the card automatically. The fee goes on the member's balance (Decision 303) and is paid in the app or at the desk. Each School sets the grace period, 7 days by default.
+3. **Joining (sign-up) fee:** a one-off amount on a plan, charged with the first payment. It's switched on or off in the School's membership settings, and **the owner decides whether it's refundable**.
+4. **Plan dates:** each plan can start on the member's **first check-in** or run on **fixed dates** (e.g. a 6-week camp), and can **switch to another plan when it ends**. Prorating to a shared renewal day is already built (Decision 259).
+5. **Plan capacity:** a plan can have a maximum number of members, set by each School in its settings; when full, new buyers join a waitlist and are told when a place frees up.
+6. **Contracts** are between the School and its member (ULTM8 is the School's tool and charges no one). The School writes its contract text and terms on the plan (minimum term, early-exit fee, renews or ends). The member signs it at purchase like a waiver. If they cancel early, the School's exit fee goes onto their balance.
+7. **Recharge at check-in:** when a Class Pack has no credits left, the member is offered the same pack in the app and the check-in completes once paid.
+8. **Tax / VAT:** Platform Admin keeps a tax rate per country; ULTM8 adds it and shows it on receipts. No tax vendor.
+9. **Failed card payments:** Stripe's own retries for everyone; no School setting.
+10. **Income categories:** each plan and charge can carry an income category the School names, shown in exports. No accounting integration yet.
+11. **Card-fee surcharge** (20 Oct 2026): a School may pass the card processing fee on to the member **only in countries where that's legal**. ULTM8 keeps a country allow-list, legally reviewed before launch (it's illegal for consumer card payments in the UK and the EU).
+
+### Recorded by
+
+User, 25 Oct 2026.
+
+---
+
+## Decision 317 — Gymdesk parity, check-in and attendance: rules, kiosk, statistics, past attendance, rosters, reminders
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q19, Q21, Q22, Q31, Q41, Q52, and `docs/v1.3-backend-backlog.md` §3.5, §5.6, 5.7, 5.10
+
+### Decision
+
+1. **Check-in rules** are set per School (20 Oct 2026). They're changed by the **owner and staff the owner grants access**.
+2. **Kiosk mode:** Check-in can run as a locked kiosk on a front-desk tablet (QR, code and name search only); leaving it needs a staff passcode.
+3. **Attendance statistics:** the owner sees the whole School; staff the owner grants access see their own Branches. Trial, Visitor and Friend Pass check-ins count, with a filter to leave them out.
+4. **Logging past attendance:** staff can log attendance up to 30 days back. It counts like a normal check-in (uses a Class Pack credit, counts toward grading) and records who logged it.
+5. **Active students** (Dashboard): anyone with a current membership (Subscription, Class Pack with credits, Weekly Pass, Trial). Visitors and frozen members are shown as separate numbers.
+6. **Rosters** are named lists of members for staff (to message, take attendance or filter). Being on a roster doesn't change who can book.
+7. **Reminders:** an expiry reminder to the member 7 days before a membership ends (Guardian for a child); an absence alert to staff when a member hasn't checked in for N weeks (the School sets N); a weekly report to staff of memberships ending soon.
+
+### Recorded by
+
+User, 25 Oct 2026.
+
+---
+
+## Decision 318 — Gymdesk parity, the School and the member app: checklist, birthdays, messaging, ULTM8 trial, sign-up forms, app switches
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q1, Q2, Q3, Q4 follow-up, Q5, Q24, Q30, Q37, Q40, Q43, Q45, and `docs/v1.3-backend-backlog.md` §3.12, 3.14
+
+### Decision
+
+1. **Setup checklist:** one per School, for the owner (add a Branch, a style and belts, a class, a membership plan, a waiver, connect Stripe, invite staff); the owner can hide it.
+2. **Birthdays** on the Dashboard: all staff at the School see this week's birthdays, children included, with the date but not the age.
+3. **"What's new":** written by ULTM8 HQ in Platform Admin, shown to owners and staff in their language (English if a translation is missing).
+4. **Support chat:** later; a Help link to email support for now.
+5. **Free trial of ULTM8** (20 Oct 2026: Platform Admin only, configurable length, no card): when it ends without a subscription, the School drops into the existing read-only ("degraded") portal state until it subscribes. Nothing is deleted.
+6. **Messaging:** in-app and email now; SMS later, once a vendor and who pays for it are decided. Messages to children still go through the Guardian (20 Oct 2026).
+7. **Member app switches** each School can turn on or off: edit own profile, cancel own membership, add family members, see payment history, and a **grading countdown**: the School's next grading day ("Grading in 23 days") and the student's own countdown to being ready for their next rank (classes and days still needed).
+   - The next grading day is a date the School sets. It is not the grading-events module, which stays in Version 2 (Decision 158).
+8. **Child's signature:** off by default (the Guardian signs); a School can also require the child's signature from an age it sets.
+9. **Sign-up forms:** several forms per School (front desk, website, invite); each section shown, hidden or required; staff approve website sign-ups before they become members.
+10. **Ad tracking:** ready-made connections only (the School enters its Meta Pixel or Google Analytics ID); no custom code on ULTM8 pages.
+11. **Members-only news feed:** not now; Broadcast notifications and Curriculum cover it.
+
+### Still open
+
+- **Family accounts and family discounts** stay deferred until the product owner has reviewed Gymdesk's "Manage family account" screen (Q13).
+
+### Recorded by
+
+User, 25 Oct 2026.
+
