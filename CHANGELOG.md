@@ -24,6 +24,34 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   upcoming classes, which stay editable afterwards; the detail page lists
   every class, upcoming and past; "Add instructor" only offers people with
   no profile yet; coaches who open the page go to their own start page.
+- **Promotion fee: who sees what** (Decision 314) — prices on the ladder,
+  and the amounts in the School's list of fee requests, are now shown only to
+  the owner and to people with grading permission for that style. Anyone with
+  grading permission for the style can now decide not to promote a student
+  whose promotion is "to decide".
+- **Promotion fee, API** (Decisions 287, 297, 300, 307, 313) — the School
+  owner can turn on a promotion fee and "Allow grading before the fee is
+  paid" (both off by default) and price any belt or stripe; with the fee off,
+  no prices are shown or accepted. Grading to a priced rank sends the student
+  (or a child's Guardian) a fee request to accept or decline; by default the
+  promotion waits ("Waiting for fee") until the fee is paid, keeping the
+  coach's grading date. Bulk promote makes one request per student. The owner
+  can waive or cancel a fee at any time: waiving a waiting promotion applies
+  it; cancelling it, or waiving a declined fee, leaves it "to decide" for a
+  coach, with one reminder after 3 days when the student is fully ready. The
+  Grading Board shows each card's fee state. Paying a fee waits for
+  staff-created charges (Decision 303); the portal and app screens come next.
+- **Hours trained** (Decisions 301, 306; API only so far) — each check-in
+  now records the class's scheduled length (a 90-minute class is 1.5 hours)
+  for each style on the class, and "Log a class" records the picked class's
+  length or the minutes the coach enters (60 by default). A student's grading
+  data now returns their hours trained per style (in total and since their
+  current rank) and a progress breakdown: classes, days at the rank and
+  skills, each on its own. Hours are a record only: grading progress,
+  "Ready to Grade" and the Grading Board are unchanged. New School setting
+  **"Open mat counts toward hours"**, off by default, changed by the owner or
+  a coach with "Change board %": while off, open mat classes don't add to
+  hours. Hours start from this release; earlier check-ins are not counted.
 - **One email, one account** (Decision 295) — emails are no longer
   case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
   ignore capitals and stray spaces, so an owner can no longer create a second

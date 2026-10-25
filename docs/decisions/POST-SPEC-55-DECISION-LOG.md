@@ -4625,3 +4625,42 @@ The Instructors review of 23 Oct 2026 found fourteen bugs (I1–I14). The produc
 ### Recorded by
 
 User, 23 Oct 2026, after the Instructors section review.
+
+---
+
+## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
+
+### Decision
+
+1. **A promotion left "to decide" reminds the coaches; it never times out.** It stays "to decide" until a coach promotes the student or decides not to. The product owner: *"remind the coach"*.
+2. **One reminder, 3 days after** the promotion became "to decide" (after a fee was cancelled, or a declined fee was waived). It is not repeated.
+3. **It goes to the coaches who may promote** that student in that style and branch, and the owner: the same people as "ready to grade" (Decisions 145, 139). Delivery uses the same channels as "ready to grade".
+4. **Only for a fully ready student:** 100% of the classes required, enough days at the rank and every required skill signed off, the same test "ready to grade" already uses. A student who is not fully ready gets no reminder. The product owner: *"reminders just only go out for 100% + and all skills or curriculum done, otherwise we will overload the coaches with reminders, that are wrong."*
+5. Nothing else changes: the Grading Board's "Ready to Grade" column still starts at 66% (Decision 136). That column is a view of progress, not a reason to send anything.
+
+### What this does NOT resolve
+
+- Nothing new. A promotion that stays "to decide" after the one reminder simply stays visible on the board.
+
+### Recorded by
+
+User, 23 Oct 2026, answering the follow-up questions on the reminder.
+
+---
+
+## Decision 314 — Promotion fee: who sees prices, who can decide not to promote, and one waiting promotion at a time
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 300, 307, 313 · **Answers:** the open points of the B10 build (PR #293)
+
+### Decision
+
+1. **Prices are seen by everyone with access to grading:** the School owner and anyone with grading permission for that style. Other staff, students and guardians don't see the ladder's prices. (A student or Guardian still sees the amount of their own fee request.) The product owner: *"Any with access to the grading."* The same applies to the School's list of fee requests, whose amounts are prices: each person sees only the styles they have grading permission for.
+2. **Anyone with grading permission for the style can decide not to promote** a student whose promotion is "to decide" (Decisions 307, 313), as well as the owner. No particular action right is needed. The product owner: *"any one with the grading permission"*.
+3. **One waiting promotion at a time.** While a promotion is waiting for its fee, the student can't be promoted again in that style until the fee is paid, waived or cancelled. The product owner chose: *"No, wait for the fee first."*
+
+### Recorded by
+
+User, 23 Oct 2026, answering the B10 follow-up questions.
+
