@@ -520,7 +520,7 @@ export class InstructorsService {
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // Replaced when sent, kept when omitted (Decision 152).
-      const specs = await resolveInstructorSpecializations(tx, existing.schoolId, dto.specializationStyleIds, dto.specializations);
+      const specs = await resolveInstructorSpecializations(tx, existing.schoolId, dto.specializationStyleIds, dto.specializations, existing.specializationStyleIds);
       const updated = await tx.instructor.update({
         where: { id: instructorId },
         data: {

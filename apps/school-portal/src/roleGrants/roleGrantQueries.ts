@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -54,6 +54,13 @@ export function useUserRoleGrants(userId: string | null) {
   });
 }
 
+/** Granting or removing Branch Staff changes the Staff page's "Who can invite
+ * coaches" list too, which lists every active Branch Staff member (Decision
+ * 296: it used to keep showing the old list until a reload). */
+function invalidateStaffLists(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: ['staff-permissions'] });
+}
+
 export function useInviteStaff() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,6 +68,7 @@ export function useInviteStaff() {
       unwrap(apiClient.POST('/v1/users/{userId}/role-grants', { params: { path: { userId: targetUserId } }, body })),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', variables.targetUserId] });
+      invalidateStaffLists(queryClient);
     },
   });
 }
@@ -76,6 +84,7 @@ export function useRevokeRoleGrant() {
       ),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', variables.targetUserId] });
+      invalidateStaffLists(queryClient);
     },
   });
 }
@@ -85,14 +94,14 @@ export function useRevokeRoleGrant() {
  * Manually": creates a real User + RoleGrant (role: BRANCH_STAFF) immediately from
  * just name+email+branchId; the response's `emailSent` flag is non-blocking, same
  * shape useCreateInstructorManually()'s own InstructorsPage.tsx banner already
- * treats as a warning, not an error. No query key to invalidate here the way
- * useCreateInstructorManually() invalidates `['instructors', schoolId]` — there is
- * no "list my School's staff" query this result would need to refresh (see this
- * file's own header comment on fetchUserRoleGrants' one-user-at-a-time scope).
+ * treats as a warning, not an error. The new person joins "Who can invite
+ * coaches", so that list is refreshed (Decision 296).
  */
 export function useCreateStaffManually(schoolId: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateStaffManuallyInput) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/role-grants/add-manually', { params: { path: { schoolId } }, body })),
+    onSuccess: () => invalidateStaffLists(queryClient),
   });
 }

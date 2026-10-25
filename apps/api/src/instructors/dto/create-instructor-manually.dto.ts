@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 
 /**
  * Decision 1/230 — Instructor "Add Manually": a real User + RoleGrant +
@@ -29,6 +30,7 @@ export class CreateInstructorManuallyDto {
   surname!: string;
 
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

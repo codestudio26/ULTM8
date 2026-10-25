@@ -15,6 +15,82 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Promotion fee: who sees what** (Decision 314) — prices on the ladder,
+  and the amounts in the School's list of fee requests, are now shown only to
+  the owner and to people with grading permission for that style. Anyone with
+  grading permission for the style can now decide not to promote a student
+  whose promotion is "to decide".
+- **Promotion fee, API** (Decisions 287, 297, 300, 307, 313) — the School
+  owner can turn on a promotion fee and "Allow grading before the fee is
+  paid" (both off by default) and price any belt or stripe; with the fee off,
+  no prices are shown or accepted. Grading to a priced rank sends the student
+  (or a child's Guardian) a fee request to accept or decline; by default the
+  promotion waits ("Waiting for fee") until the fee is paid, keeping the
+  coach's grading date. Bulk promote makes one request per student. The owner
+  can waive or cancel a fee at any time: waiving a waiting promotion applies
+  it; cancelling it, or waiving a declined fee, leaves it "to decide" for a
+  coach, with one reminder after 3 days when the student is fully ready. The
+  Grading Board shows each card's fee state. Paying a fee waits for
+  staff-created charges (Decision 303); the portal and app screens come next.
+- **Hours trained** (Decisions 301, 306; API only so far) — each check-in
+  now records the class's scheduled length (a 90-minute class is 1.5 hours)
+  for each style on the class, and "Log a class" records the picked class's
+  length or the minutes the coach enters (60 by default). A student's grading
+  data now returns their hours trained per style (in total and since their
+  current rank) and a progress breakdown: classes, days at the rank and
+  skills, each on its own. Hours are a record only: grading progress,
+  "Ready to Grade" and the Grading Board are unchanged. New School setting
+  **"Open mat counts toward hours"**, off by default, changed by the owner or
+  a coach with "Change board %": while off, open mat classes don't add to
+  hours. Hours start from this release; earlier check-ins are not counted.
+- **One email, one account** (Decision 295) — emails are no longer
+  case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
+  ignore capitals and stray spaces, so an owner can no longer create a second
+  account for someone already registered with different capitals. Existing
+  emails are lower-cased, and the database refuses case-only duplicates.
+- **Staff page fixes** (Decision 296) — no new staff, coaches or coach
+  invites at an archived branch (and an invite to a branch archived later
+  stops working); no role grants at a closed School; "Who can invite coaches"
+  updates without a reload; Revoke asks "Are you sure?" first; the look-up
+  table shows branch names instead of ids; Branch Staff who open the Staff
+  page go to their own dashboard instead of a blank page.
+- **Disciplines fixes and new tools** (Decisions 308, 309) — archived belts
+  no longer appear in grading; renaming a style or a class type now updates
+  the classes, timetable, instructors and rungs that use it, and a class type
+  still in use can't be removed. Names can't be blank or repeated, and copies
+  get a free name. New: archive and unarchive a style the School no longer
+  teaches (students keep their rank and history), a Students count and list
+  per style, skills showing which rungs need them and how many lessons teach
+  them, skills you can put in order, class types edited as a list, and a
+  read-only Disciplines page for coaches and Branch Staff.
+- **Safari test fixes and belt wording** — the first nightly Firefox/Safari
+  run (Decision 302) passed in Firefox; two Safari failures were test-only
+  (a race on the belt-delete error, and a never-loading test photo). The
+  "can't delete a belt" message now reads "1 student holds" / "2 students
+  hold" instead of "1 student(s) hold".
+- **Branch archive fixes** (Decision 293) — archiving a Branch now asks
+  first and, if something still belongs to it, says what inside the dialog.
+  Weekly timetable slots now block archiving (before, sessions kept being
+  created for the archived Branch). Archived Branches no longer appear in
+  Branch pickers across the portal, except on a record that already uses
+  one. The 90-day purge now rechecks before deleting, so students, staff or
+  classes added to an archived Branch are never silently removed with it.
+- **Bulk promote can finish after a failure** (Decision 284) — if a large
+  batch stops part-way, the group that failed is sent again once by itself,
+  then the window offers "Try the remaining N again" or "Stop here and see the
+  report". Each student carries the rank the check found them on, so nobody is
+  ever promoted twice. Removing a student from the batch no longer re-checks
+  the whole batch.
+- **Grading Board: no bulk promote limit** (Decision 282) — a coach can
+  promote any number of ticked students at once. The portal sends them 200 at a
+  time, as Spec 55 always intended; before, more than 200 failed outright.
+- **Only active students are graded up** (Decision 283) — promote and stripe
+  award (single and bulk) now need the student to be active: their board Active
+  switch, or a live membership. Inactive students can't be ticked on the board,
+  and bulk promote lists them as "can't be promoted". Moving down still works.
+- **Grading Board at scale** — 25 cards per column with "Show all N", a
+  "N of them hidden by your search" note (with "Show them") when ticked students
+  are filtered out, and a count of students already on the top rank.
 - **Shorter default waitlist claim window** (Decision 279) — new Schools now
   give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
   more people on the list get a chance before class. Existing Schools keep

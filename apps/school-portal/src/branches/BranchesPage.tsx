@@ -6,6 +6,7 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -41,6 +42,9 @@ export function BranchesPage() {
   // archived) is always fetched (useBranches passes includeArchived: true)
   // so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
+  // Decision 293 — archiving asks first; a refusal (what still belongs to
+  // the Branch) shows inside the dialog rather than as a page banner.
+  const [archiving, setArchiving] = useState<BranchResponse | null>(null);
 
   if (!schoolId) return null;
 
@@ -110,7 +114,7 @@ export function BranchesPage() {
                       actions={[
                         b.archivedAt
                           ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
-                          : { label: t('branches.archive'), onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.archiveFailed')) }); } },
+                          : { label: t('branches.archive'), onClick: () => { setActionError(null); setArchiving(b); } },
                       ]}
                     />
                   </div>
@@ -140,7 +144,7 @@ export function BranchesPage() {
                         actions={[
                           b.archivedAt
                             ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
-                            : { label: t('branches.archive'), onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.archiveFailed')) }); } },
+                            : { label: t('branches.archive'), onClick: () => { setActionError(null); setArchiving(b); } },
                         ]}
                       />
                     </div>
@@ -151,6 +155,17 @@ export function BranchesPage() {
           )}
         </Card>
       )}
+
+      {archiving ? (
+        <ConfirmDeleteModal
+          title={t('branches.archiveConfirmTitle', { name: archiving.name })}
+          description={t('branches.archiveConfirmDescription')}
+          confirmLabel={t('branches.archive')}
+          genericErrorMessage={t('branches.archiveFailed')}
+          onConfirm={() => archiveBranch.mutateAsync(archiving.id)}
+          onClose={() => setArchiving(null)}
+        />
+      ) : null}
 
       {creating ? (
         <BranchFormModal

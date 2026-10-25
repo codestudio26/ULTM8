@@ -410,6 +410,11 @@ model User {
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
   promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
   promotionEventNotesEdited         PromotionEvent[]            @relation("PromotionEventNoteEditedBy")
+  promotionFeeRequests              PromotionFeeRequest[]       @relation("PromotionFeeRequestStudent")
+  promotionFeeRequestsGraded        PromotionFeeRequest[]       @relation("PromotionFeeRequestGradedBy")
+  promotionFeeRequestsResponded     PromotionFeeRequest[]       @relation("PromotionFeeRequestRespondedBy")
+  promotionFeeRequestsClosed        PromotionFeeRequest[]       @relation("PromotionFeeRequestClosedBy")
+  promotionFeeRequestsDecided       PromotionFeeRequest[]       @relation("PromotionFeeRequestToDecideResolvedBy")
   promotionEventNoteChanges         PromotionEventNoteLog[]     @relation("PromotionEventNoteLogChangedBy")
   skillSignOffChanges               SkillSignOffLog[]           @relation("SkillSignOffLogChangedBy")
   homeBranches                      StudentHomeBranch[]         @relation("StudentHomeBranchStudent")
@@ -423,6 +428,7 @@ model User {
   coachInvitesAccepted              CoachInvite[]               @relation("CoachInviteAcceptedBy")
   coachInvitesCancelled             CoachInvite[]               @relation("CoachInviteCancelledBy")
   instructorBelts                   InstructorBelt[]            @relation("InstructorBeltUser")
+  trainingLogs                      TrainingLog[]               @relation("TrainingLogStudent")
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
   waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
@@ -836,6 +842,12 @@ model School {
   facilities        String[] @default([])
   ranksToggle       Boolean  @default(false)
 
+  /// "Open mat counts toward hours" (Grading → Settings; Decisions 301 item 6,
+  /// 306): off by default. When off, check-ins and logged classes whose class
+  /// type is open mat are recorded but not added to a student's hours trained.
+  /// Hours are a record only and never affect grading (Decision 306).
+  openMatCountsTowardHours Boolean @default(false)
+
   defaultLanguage String?
   defaultCurrency String?
   /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
@@ -887,6 +899,14 @@ model School {
   footerTiktokUrl    String?
   footerYoutubeUrl   String?
   footerTwitterUrl   String?
+
+  /// Promotion fee (Decisions 287, 300, 307): School-wide switches, owner
+  /// only (Decision 297). Both off by default. With the fee off, rung prices
+  /// are kept but never returned or charged. "Grade before paid" on: a priced
+  /// promotion applies at once and the fee request waits; off: the promotion
+  /// waits until the fee is paid or waived.
+  promotionFeeEnabled         Boolean @default(false)
+  promotionFeeGradeBeforePaid Boolean @default(false)
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
   waitlistClaimWindowMinutes     Int                             @default(60)
@@ -951,6 +971,8 @@ model School {
   coachInvites          CoachInvite[]
   lessonCategories      LessonCategory[]
   instructorBelts       InstructorBelt[]
+  promotionFeeRequests  PromotionFeeRequest[]
+  trainingLogs          TrainingLog[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1126,6 +1148,7 @@ model Class {
   // Phase 11 — a Class now has real Bookings/WaitlistEntry rows.
   bookings        Booking[]
   waitlistEntries WaitlistEntry[]
+  trainingLogs    TrainingLog[]
 
   // The DB-level guarantee behind "the job never double-materializes the same
   // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
@@ -2265,6 +2288,9 @@ model Discipline {
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
   boardGettingThere     Int      @default(33)
   boardReadyToGrade     Int      @default(66)
+  /// Decision 309: archived (retired) — hidden from pickers, no new classes,
+  /// slots or grading; rank history stays readable. Never purged.
+  archivedAt            DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2274,6 +2300,8 @@ model Discipline {
   studentRanks       StudentRank[]
   gradingPermissions GradingPermission[]
   instructorBelts    InstructorBelt[]
+  feeRequests        PromotionFeeRequest[]
+  trainingLogs       TrainingLog[]
 
   @@index([schoolId])
 }
@@ -2397,6 +2425,11 @@ model RankStripeTier {
   /// unlocks is open to everyone. Separate from eligibleClassTypes, which
   /// says which classes count toward reaching this rung.
   bookingUnlocksClassTypes String[]       @default([])
+  /// Promotion fee for being graded INTO this rung (Decisions 300, 307), in the
+  /// School's currency (School.defaultCurrency), minor units. Null = free.
+  /// Set by the owner only while the School's promotion fee is on, and never
+  /// returned while it is off.
+  promotionFeeMinor        Int?
 
   requiredSkills RankStripeTierRequiredSkill[]
 
@@ -2431,6 +2464,8 @@ model Skill {
 
   name        String
   description String?
+  /// Decision 309: the owner's order for this discipline's skills (0 first).
+  order       Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2931,7 +2966,8 @@ model PromotionEvent {
 
   createdAt DateTime @default(now())
 
-  noteLog PromotionEventNoteLog[]
+  noteLog      PromotionEventNoteLog[]
+  trainingLogs TrainingLog[]
 
   @@index([schoolId])
   @@index([studentId])
@@ -2969,6 +3005,65 @@ model PromotionEventNoteLog {
 
   @@index([schoolId])
   @@index([promotionEventId])
+}
+
+/// Hours trained (Decisions 301 items 1, 5, 6 and 306): a record only, never
+/// read by grading. One row per style per check-in (the class's scheduled
+/// length) and one per "Log a class" (the picked class's length, or the
+/// coach's minutes, 60 by default). Whole minutes, never fractions.
+/// Same narrow RLS shape as the other grading records: the School
+/// Owner/Manager or the student reads; written under the student's own
+/// context (check-in and log-a-class both run there). Append-only from the
+/// app (no UPDATE or DELETE grant).
+model TrainingLog {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("TrainingLogStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  minutes Int
+  source  TrainingLogSource
+
+  /// The class type was open mat (Decision 304). Kept even when the School's
+  /// switch kept the minutes out of the hours.
+  openMat           Boolean @default(false)
+  /// Whether these minutes are in the student's hours: false only for open
+  /// mat while "Open mat counts toward hours" was off when it was logged.
+  countsTowardHours Boolean @default(true)
+
+  // What the minutes came from. SET NULL / CASCADE so purges and test
+  // clean-ups of classes, bookings and history keep working; the minutes
+  // themselves are copied here.
+  classId          String?
+  class            Class?          @relation(fields: [classId], references: [id], onDelete: SetNull)
+  bookingId        String?
+  booking          Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  promotionEventId String?
+  promotionEvent   PromotionEvent? @relation(fields: [promotionEventId], references: [id], onDelete: Cascade)
+
+  /// When the training happened: the class's start for a check-in or a
+  /// picked class, otherwise when it was logged. "Since the current rank"
+  /// compares this with StudentRank.dateOfCurrentRank.
+  trainedAt DateTime
+  createdAt DateTime @default(now())
+
+  /// A booking is checked in once; one row per style for it.
+  @@unique([bookingId, disciplineId])
+  @@index([schoolId])
+  @@index([studentId, disciplineId])
+  @@index([classId])
+  @@index([promotionEventId])
+}
+
+enum TrainingLogSource {
+  CHECK_IN
+  LOGGED
 }
 
 /// Every skill sign-off change, with who, when, the old status and the new
@@ -3358,6 +3453,7 @@ model Booking {
 
   attendees        BookingAttendee[]
   claimedFromEntry WaitlistEntry?    @relation("WaitlistEntryClaimedBooking")
+  trainingLogs     TrainingLog[]
 
   // Composite indexes leading with the tenant column (Decision 30). The "one
   // active Booking per Student per Class" guard (status = 'UPCOMING') is a
@@ -3926,4 +4022,114 @@ model InstructorBelt {
   @@unique([userId, disciplineId])
   @@index([schoolId])
   @@index([disciplineId])
+}
+
+/// Promotion fee request status (Decisions 300, 307). PENDING: waiting for the
+/// student (or Guardian) to answer. ACCEPTED: they accepted; paying it is the
+/// charges work (Decision 303, not built yet). PAID, WAIVED, CANCELLED and
+/// DECLINED are answers; the owner may still waive or cancel a DECLINED one.
+enum PromotionFeeStatus {
+  PENDING
+  ACCEPTED
+  PAID
+  DECLINED
+  WAIVED
+  CANCELLED
+}
+
+/// How a promotion left "to decide" (Decision 307) was settled.
+enum PromotionToDecideResolution {
+  /// A coach (or the owner) promoted the student to the planned rank, fee-free.
+  PROMOTED
+  /// A coach (or the owner) decided not to promote.
+  DISMISSED
+}
+
+/// A promotion fee asked of a student, or of the Guardian for a linked minor
+/// (Decisions 287, 300, 307, 313). Created when a grade targets a priced rung
+/// while the School's promotion fee is on. Never charged directly: the payer
+/// accepts it first, and paying belongs to staff-created charges (Decision
+/// 303, not built). One row per promoted student, bulk included.
+///
+/// Two shapes, fixed when the request is created:
+/// - Applied (`promotionWaits` false, "Allow grading before the fee is paid"
+///   on): the promotion happened at grading; `promotionEventId` is its history
+///   entry.
+/// - Waiting (`promotionWaits` true, the default): the grade the coach made is
+///   kept in `pendingGrade` and applied through the normal grading path, with
+///   the coach's grading date, once the fee is paid or the owner waives it.
+///   `promotionEventId` is set when it applies.
+///
+/// "To decide" (Decision 307): the owner cancelled a waiting promotion, or
+/// waived a declined one. Nothing is applied; `toDecideAt` marks it, the
+/// planned grade stays in `pendingGrade`, and a coach promotes (fee-free) or
+/// dismisses it. One reminder 3 days later (Decision 313):
+/// `toDecideRemindedAt`.
+///
+/// RLS: the School owner; the student; an active Guardian of the student
+/// (read); staff who cover the student's branch (read, as the Grading Board).
+model PromotionFeeRequest {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("PromotionFeeRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  /// The rung the grade moves the student to, and the rung they were on when
+  /// graded. Plain ids (no foreign key): the request keeps its record if the
+  /// ladder is edited later; `toRungName` is kept for display.
+  toRungId              String
+  toRungName            String
+  expectedCurrentRungId String?
+
+  amountMinor Int
+  /// School.defaultCurrency when the request was made (null if the School has none set).
+  currency    String?
+  status      PromotionFeeStatus @default(PENDING)
+
+  /// True when the promotion waits for the fee (see the model comment).
+  promotionWaits   Boolean
+  /// The grade the coach made, kept while it waits or is "to decide":
+  /// { type, targetRungId, expectedCurrentRungId, effectiveDate (YYYY-MM-DD,
+  /// the coach's grading date), note, acknowledgeWithoutSkillSignoff,
+  /// startingClasses, startingClassesByType, bulk }.
+  pendingGrade     Json?
+  /// The history entry of the promotion, once it has applied.
+  promotionEventId String?
+
+  /// The coach who made the grade: the applied history entry is theirs.
+  gradedById String?
+  gradedBy   User?   @relation("PromotionFeeRequestGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
+
+  /// Who accepted or declined (the student or a Guardian), and when.
+  respondedById String?
+  respondedBy   User?     @relation("PromotionFeeRequestRespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  paidAt        DateTime?
+  /// The owner who waived or cancelled it, and when.
+  closedById    String?
+  closedBy      User?     @relation("PromotionFeeRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  waivedAt      DateTime?
+  cancelledAt   DateTime?
+
+  toDecideAt           DateTime?
+  toDecideRemindedAt   DateTime?
+  toDecideResolvedAt   DateTime?
+  toDecideResolution   PromotionToDecideResolution?
+  toDecideResolvedById String?
+  toDecideResolvedBy   User?                        @relation("PromotionFeeRequestToDecideResolvedBy", fields: [toDecideResolvedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, status])
+  @@index([studentId])
+  @@index([disciplineId])
+  @@index([toDecideAt])
 }

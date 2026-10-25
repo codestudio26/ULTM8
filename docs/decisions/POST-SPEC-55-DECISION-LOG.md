@@ -4020,3 +4020,638 @@ Existing Schools keep the window they already have (the migration changes the co
 ### Recorded by
 
 User, approving the recommendation of 60 minutes ("go for it .. and then merge it"), 21 Oct 2026.
+
+---
+
+## Decision 280 — Brazilian Jiu-Jitsu: Kids and Adult on one linked ladder, split by an editable age (default under 16)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Resolves:** how kids move up to the adult belts, and how the Grading Board separates them (raised while reviewing the New Portal grading screens)
+
+### Decision
+
+1. **One linked ladder.** Kids and Adult are not separate styles. A Brazilian Jiu-Jitsu style keeps the one ladder the IBJJF templates already build (Decision 131): White Belt, the kids belts (Grey/White to Green/Black), then the adult belts.
+2. **Kids are split by age.** A student under the style's **"Kids until age"** is Kids; from that age they are Adult. The default is **under 16** (the IBJJF adult age). It is a setting in Grading → Settings (and Settings → Grading), and coaches can change it as well as the owner. The product owner's words: *"THE UNDER 16 RULES, however coaches will be able to edit the age too"*.
+3. **The Grading Board shows a Kids · Adult switch** inside the style.
+4. **Kid → Adult is a normal promotion, with a nudge.** Nothing moves on its own. When a student on a kids belt reaches the age, they show under Adult with a **"Ready for Adult belts"** tag. The coach promotes them as usual and picks the adult belt in "Promote to" (e.g. Green Belt → Blue Belt). It is recorded on the history like any grade.
+5. **Adults skip the kids belts.** For an Adult student, the next rank after White Belt · 4 Stripes is **Blue Belt**, not Grey/White Belt, and it is not recorded as a skip.
+
+### Effect
+
+Needs a schema and engine change: the age on the style, a "kids belt" flag on a belt, and the next-rank rule in item 5. See `docs/v1.3-backend-backlog.md` §3.20.
+
+### Still open
+
+- **Which coaches can change the age.** Is it any coach with grading access, or a new permission on the Permissions page?
+- **Which rank's requirements apply when a grade skips ranks.** The built API hard-blocks a skip when the next rank's required skills aren't signed off. It doesn't say whether the target rank's own requirements apply.
+
+### Recorded by
+
+User, answering the Kids/Adult questions on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 281 — Kids and Adult stay separate programs; a Kids student can be graded into the Adult program (corrects Decision 280)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 280 items 1, 2 and 5
+
+Decision 280 combined Kids and Adult into one linked ladder. That was a misreading. The product owner's words: *"before we have the kids and the adult program separate, this is correct. What I did ask was to be able to grade from kids to adult, not to combine them."*
+
+### Decision
+
+1. **Two separate programs.** Each has its own ladder:
+   - **Adult:** White, Blue, Purple, Brown, Black.
+   - **Kids:** White, then the kids belts.
+   
+   Both programs sit under one discipline, Brazilian Jiu-Jitsu. Screens show them as a **Kids · Adult** switch next to the discipline.
+2. **Grading Kids → Adult.** For a Kids student, "Promote to" lists their next kids ranks, then an **"Adult program"** group with the adult ranks. Picking an adult rank moves the student to the Adult program at that rank. Their history records **"Moved to Adult program"**. This works from the board (single and bulk) and from the Ranks tab.
+3. **The age setting is only a reminder** (Decision 280 items 2 and 4, reworded). From **"Ready for Adult from age"** (default 16, editable by the owner and coaches), a Kids student gets the **"Ready for Adult program"** tag. Nothing moves on its own.
+4. **Decision 280 item 5 is withdrawn.** It existed only because of the combined ladder.
+
+### Still open
+
+- **The default adult rank** for a kid at the top of the kids ladder. The sample uses the first adult rank above White Belt (Blue Belt). This is a placeholder, not a confirmed rule.
+- **Whether a coach may grade a kid into Adult before the age.** The design allows it, because the age is only a reminder. Confirm.
+- **What carries over on the move.** This covers classes, skills and history. The design treats it like any grade: counting restarts, sign-offs are wiped (Decision 128 item 16) and history is kept.
+- Decision 280's open item on which coaches can change the age.
+
+### Recorded by
+
+User, correcting the combined ladder on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 282 — Bulk promote has no limit a coach can see; the portal sends 200 at a time
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Builds:** Spec 55 Section 7 (bulk-grading batch cap), Decision 130
+
+The stress test (20 academies, 300–500 students, 50–90% graded at once) found the School Portal sent every ticked student in one request. Over 200 students, the API refused the whole batch. The product owner asked: *"Since when we have limit, who has agreed with that, we should not have a limit."*
+
+Where the 200 came from: Spec 55's logic review of 27 Aug 2026 put a fixed cap on each bulk-grading **request** (e.g. 200 students), *"with the School Portal client batching sequential calls beyond it"*. Decision 130 repeated the cap. The cap was always meant to be per request, never a limit for the coach. The portal never did the batching.
+
+### Decision
+
+1. **No limit for the coach.** A coach can tick and promote any number of students in one go.
+2. **The portal sends them 200 at a time**, one request after another, and joins the answers. The check before promoting (the dry run) works the same way. The API keeps its 200-per-request guard.
+3. **If a later batch fails**, the students the earlier batches promoted stay promoted. The window says *"Promoted N of M, then something went wrong"* and the report lists the ones done.
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 283 — Only active students are graded up; unverified students can still be graded
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision
+
+The stress test showed inactive students could be ticked and promoted. Asked whether they should be, the product owner said: *"No, only active students"*. Asked the same about students whose rank is self-declared and not yet verified: *"Yes, because grading is a human decision done by the coach"*.
+
+### Decision
+
+1. **Active means** what the Grading Board already shows (Decision 152): the student's **Active switch** on the board if a coach has set it, otherwise **a live membership** at the School.
+2. **Promote and stripe award need an active student.** This covers a single grade and bulk promote. Bulk promote lists an inactive student under "can't be promoted" (*"inactive (only active students can be graded)"*) and skips them. A single grade is refused with *"Only active students can be graded. Make the student active on the Grading Board, or give them a live membership."*
+3. **The board does not let an inactive student be ticked.** Their tick box is off, with the reason.
+4. **Moving a student down is still allowed** when inactive. It is a correction, not a grade up.
+5. **Unverified (self-declared) students can be graded.** No change: grading never checked verification.
+6. **A first rank can be given to an inactive student.** For a student with no rank in the style yet, "Give first rank" records the belt they start at; it is not a grade up. The product owner confirmed: *"yes"* (21 Oct 2026).
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 284 — A bulk promote that stops part-way can be finished safely
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 130, 185 and 282
+
+Since Decision 282 the portal sends a large batch 200 students at a time. If something breaks part-way (the connection drops, the server restarts), the groups already sent stay promoted and the rest are not. Three fixes were offered: a "try the rest" button, all-or-nothing (which needs Spec 55's per-request cap changed), or undoing the part that went through. The product owner chose the first: *"go with A, build it"*.
+
+### Decision
+
+1. **One automatic retry.** A group that gets no answer (no reply, or a server error) is sent once more on its own after a short pause. A refusal (4xx, e.g. too many requests) is not retried automatically.
+2. **"Try the remaining N again".** If the retry also fails, the window says *"Promoted 200 of 450, then something went wrong. The rest were not promoted yet."* It offers **Try the remaining N again**, which sends only the students not yet promoted, and **Stop here and see the report**, which lists them as *"not promoted: the batch stopped before them"*.
+3. **Never promoted twice.** With each student, the portal sends the rung the check found them on (`expected`). A student who has moved since is skipped, not promoted again: *"already promoted since the check"* (one rung up, e.g. a batch whose reply was lost) or *"rank changed since the check"* (anything else). This is the same guard a single grade already has (Decision 185). It makes every retry safe.
+4. **Fewer checks.** Removing a student from the batch no longer re-checks the whole batch, because each student's check stands on its own. Only a date change, or a failed check, runs it again. This keeps a large batch inside the bulk endpoint's limit of 30 requests a minute, which is unchanged.
+
+### Recorded by
+
+User, choosing option A for a batch that stops part-way, 22 Oct 2026.
+
+---
+
+## Decision 285 — Kids → Adult: the four open questions answered (completes Decision 281)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 281 "Still open" (all four) · **Changes:** Decision 281 item 3
+
+### Decision
+
+1. **The first adult rank is Blue Belt.** A Kids student at the top of the Kids ladder goes to Blue Belt on the Adult ladder. The product owner: *"Yes from Blue"*.
+2. **The age is a rule, not only a reminder.** A coach can grade a kid into Adult from the School's "Ready for Adult from age" (default 16, the IBJJF age). To do it earlier, the School changes that age in its grading settings first. The product owner: *"Yes but they will need to change the settings, however 99.99% of the academies around the world will follow the IBJJF rules, but still they can change it"*. This replaces Decision 281 item 3 ("the age setting is only a reminder").
+3. **Everything carries over, except the class count.** History, notes and skill sign-offs move with the student to the Adult ladder. Only the class count toward the next rank starts again from zero. The product owner: *"Everything, however it sets the class count from zero"*. This is an exception to an ordinary grade, which clears sign-offs (Decision 128 item 16).
+4. **Who may change the age:** the School owner and anyone granted the grading settings right. The product owner: *"who has been granted grading settings rights"*. Today the closest right is "Change board %" (`canChangeBoardThresholds`). There is no "grading settings" right yet.
+
+### Still open
+
+- **Name and scope of the grading settings right.** Either rename and widen "Change board %" into "Change grading settings" (board %, Ready for Adult age, promotion fee switch), or add a new right next to it. Confirm.
+- **Which skill sign-offs carry over** when the Adult ladder's skills differ from the Kids ladder's. A sign-off is on a skill; if the same skill is on the Adult rank, it counts. Confirm.
+
+### Recorded by
+
+User, answering Decision 281's open questions, 22 Oct 2026.
+
+---
+
+## Decision 286 — Students can ask the School to correct their belt
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.13 (MS6a, Q38)
+
+### Decision
+
+1. **A student can request a correction** when their recorded belt is wrong. The product owner: *"yes if there is mistake"*.
+2. **Students still can't change their own rank.** Only coaches promote (Decision 124 onward). The request goes to the School.
+3. **A coach approves or rejects it.** An approval goes through the normal grading path, so the history shows the correction and who made it.
+
+### Still open
+
+- **Who reviews a request:** the owner and coaches with "Verify ranks" (`canVerifyRanks`), as for self-declared belts (Decision 137)? Confirm.
+- **What a student can request:** any rank on the ladder, or only a fix of the current one.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 287 — Promotion fee: a switch in the grading settings
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.12 (PR16, Q33), in part
+
+### Decision
+
+1. **Each School chooses whether a promotion has a fee.** It is a switch in the grading settings, off by default. The product owner: *"We will be on the grading setting a toggle for fee on or off"*.
+2. With the switch off, nothing changes. Decisions 162/163 (the grading-day pass) are not affected.
+
+### Still open `[UNRESOLVED]`
+
+- **The amount:** one fee, or a fee per rank or per belt?
+- **When it is charged, and how:** at promotion, automatically through the student's saved card? Or added to their balance? (Staff-created charges are themselves still open, v1.3 §3.6.)
+- **Whether an unpaid fee blocks the promotion,** and who pays for a child (the Guardian).
+- **Does a stripe count,** or only a new belt? And does a bulk promote charge each student?
+
+Don't build the charge until these are answered. The switch itself can be built.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 288 — Attendance hours can count toward grading
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.5 (A8, Q51), in part
+
+### Decision
+
+1. **ULTM8 tracks attendance hours as well as classes.** The product owner: *"We can count that too, it is a great idea"*.
+2. **Hours can be a grading requirement,** alongside classes and days at the rank.
+
+### Still open `[UNRESOLVED]`
+
+- **Where hours come from:** the class's scheduled length, or the real check-in and check-out time?
+- **How a rank uses them:** hours instead of classes, or as well as classes, chosen per rank?
+- **Whether open mat counts** (v1.3 §5.9 is still open).
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 289 — Skipping ranks keeps the next rank's checks
+
+**Date:** 22 Oct 2026 · **Status:** Records the product owner's 21 Oct 2026 rule · **Answers:** Decision 280's open question
+
+When a coach grades a student past more than one rank (e.g. White Belt · 2 Stripes straight to Blue Belt), the checks of the **next** rank still apply. "Skills required" still blocks, and missing skills or days short still need the "Needs a look" acknowledgement. Skipping can't be used to get round them. This is how the API already works (`changeRung`). The product owner set it after the grading stress test, 21 Oct 2026 (*"fix it"*). It is in DESIGN.md (Grading screens), and this entry puts it in the log.
+
+### Recorded by
+
+User, 21 Oct 2026; logged 22 Oct 2026.
+
+---
+
+## Decision 290 — Ranks without a belt: Levels (No-Gi)
+
+**Date:** 21 Oct 2026, logged 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.19 (it was flagged "NEEDS A DECISION ENTRY")
+
+The product owner set this on 21 Oct 2026 for the New Portal grading screens. It was written into the v1.3 backlog and DESIGN.md, but never logged.
+
+### Decision
+
+1. **Each style shows its ranks either as Belts or as Levels (no belt),** never a mix. The setting is "Ranks shown as" in Grading → Settings.
+2. **A level is a coloured badge.** The School picks the colour.
+3. **A level has numbered steps** (Beginner 1, 2, 3), each with its own requirements, like stripe grades.
+4. **Grading itself doesn't change.** Steps are rungs. Requirements, progress, the board, promote, bulk promote and history work as they do for stripes. Only how a rank is stored and shown changes.
+
+### Recorded by
+
+User, 21 Oct 2026; logged 22 Oct 2026.
+
+## Decision 295 — One email, one account, whatever the capitals
+
+**Date:** 22 Oct 2026 · **Status:** Bug fix the product owner asked for · **Builds on:** Decisions 116 and 251
+
+The Staff page review (bug B1/B2) found that emails were matched letter for letter, capitals included. An owner could "Add staff manually" with `jane@gym.com` for someone already registered as `Jane@Gym.com` and get a second account for the same person, the exact thing Decision 116's existing-email check exists to stop. "Find" on the Staff page also missed people when the capitals differed. The product owner asked for B1–B8 to be fixed: *"deep dive and find best solution for bugs from B1 TO B8 and start fixing them"*.
+
+### Decision
+
+1. **Every email that creates or finds a User is trimmed and lower-cased** before anything else looks at it (`NormalizeEmail`, on the register, login, Staff Add Manually, Instructor Add Manually, invite-candidate and coach-invite inputs). Signing in works whatever capitals are typed. The passcode reset is by phone, so it is unaffected.
+2. **Existing accounts are brought into line** by migration `20261123000000_user_email_case_insensitive`: each email whose lower-case form no other account holds is lower-cased.
+3. **The database refuses a second account that differs only by case** (unique index `User_email_lower_key` on `lower(email)`). If a database already holds two real accounts that differ only by case, the migration leaves both alone and skips the index, with a warning naming how many there are; a person merges them and a later migration adds the index. The API's lower-casing stops new ones either way.
+
+Platform Admin accounts (`AdminUser`, a separate realm) are not changed by this decision.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B1 and B2 at the product owner's request, 22 Oct 2026.
+
+## Decision 296 — Staff page fixes: archived branches, closed Schools, and the page itself
+
+**Date:** 22 Oct 2026 · **Status:** Bug fixes the product owner asked for · **Builds on:** Decisions 110, 183, 193, 226 and 251
+
+The rest of the Staff page review's bugs (B3–B8), fixed together at the product owner's request.
+
+### Decision
+
+1. **No new staff or coaches at an archived Branch (B3).** Granting Instructor or Branch Staff, Add Manually and sending a coach invite all refuse a Branch that is archived ("This branch has been archived. Choose another branch."). A coach invite sent before its Branch was archived stops working: its page shows it as cancelled and accepting it is refused (`coach_invite_by_token()` now also returns `branchArchived`). Before, all of these went through, and a new role grant at an archived Branch would have blocked its 90-day purge. Hiding archived Branches in the pickers is Decision 293's (PR #275); this is the server-side half.
+2. **"Who can invite coaches" stays current (B4).** Granting, adding or removing Branch Staff on the Staff page refreshes that list straight away. Before, it needed a page reload.
+3. **Revoke asks first (B5).** "Remove the {role} role from {name}?", saying that the role ends now and that removing their last coach or staff role clears their grading permissions and "Can invite coaches" (Decision 193).
+4. **Branch names, not ids (B6),** in the "Look up a user's grants" table.
+5. **No role grants at a closed School (B7).** Inviting an existing account to a role now refuses a closed School, as Add Manually already did (Decision 110).
+6. **No blank page (B8).** Anyone but the School owner who opens `/staff` is sent to their own home screen (the coach dashboard for Branch Staff and coaches).
+
+### Not decided here
+
+The review's other notes (the "Send invite" wording, the 15-minute delay before a removed role takes effect, co-owners who can't be removed, blank names on Add Manually) and the missing Staff features (a staff list, edit, deactivate) are product questions, put to the product owner separately.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B3–B8 at the product owner's request, 22 Oct 2026.
+
+---
+
+## Decision 297 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (the grading settings right)
+
+### Decision
+
+1. **The coach right "Change board %" (`canChangeBoardThresholds`) becomes "Change grading settings".** It still works per coach and per style. It now covers everything on Grading → Settings for that style: the board %, "Ranks shown as" (Belts or Levels), the Ready for Adult age and the other per-style grading settings. Coaches who have "Change board %" today keep it under the new name.
+2. **The School-wide promotion fee switches are owner-only** (see Decision 300): no coach right covers them.
+
+The product owner chose option A: *"A, and yes fee switch owner only"*.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 298 — Kids → Adult: skill sign-offs carry over by matching name
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 285 "Still open" (which sign-offs carry over)
+
+Kids and Adult are separate ladders, so each has its own skills; a Kids "Armbar" and an Adult "Armbar" are two different skills.
+
+### Decision
+
+1. When a kid is graded into the Adult program, **each Kids skill they had signed off counts as signed off on the Adult ladder if the Adult ladder has a skill with exactly the same name.**
+2. Kids sign-offs with no matching Adult skill stay in the student's history, still visible, but don't count toward Adult ranks.
+
+The product owner chose option A (match by name).
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 299 — Belt correction requests: who reviews, and what can be asked
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 286 "Still open"
+
+### Decision
+
+1. **Reviewers:** the School owner, and coaches who have **"Verify ranks"** for that style and cover the student's branch. These are the same people who verify the belts students declare when they join (Decisions 137, 147, 189).
+2. **What a student can ask for:** any rank on that style's ladder, e.g. "my belt shows Blue, but I'm Purple · 2 Stripes". **A short note explaining why is required.**
+
+The product owner chose A and A.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 300 — Promotion fee: prices per grade, the student accepts before paying, and an owner switch for grading before payment
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 287 "Still open"
+
+### Decision
+
+1. **The fee is per grade.** With the promotion fee switch on (Decision 287), the owner can set a price on any belt and on any stripe grade. **A grade with no price is free.** Stripes are free unless the owner prices them.
+2. **Nothing is charged directly.** At grading, a fee request appears in the student's account (the Guardian's, for a child). The student or Guardian **accepts** it, and only then is it charged, by saved card or as the school takes payment.
+3. **A new owner switch in grading settings: "Allow grading before the fee is paid".**
+   - **On:** the promotion happens straight away and the fee request waits. If the student declines, the owner sees **"Fee declined"** on the student and sorts it out with them. The promotion stays.
+   - **Off:** the promotion waits, shown as **"Waiting for fee"** on the board, and goes through only once the fee is accepted and paid. If the student declines, nothing changes and the owner sees "Fee declined".
+   - With no answer, the request stays open.
+   - **The owner can waive or cancel a fee at any time.** Waiving a waiting promotion applies it straight away.
+4. **The grading date** on the history is the date the coach chose when grading, not the date the fee was paid.
+5. **Children:** the Guardian accepts and pays, as for the child's other payments.
+6. **Bulk promote:** each promoted student gets a request for their own grade's fee.
+7. **Owner-only:** the promotion fee switch, the "Allow grading before the fee is paid" switch and the prices (Decision 297 item 2).
+
+- **How an accepted fee is paid:** as a charge on the member's balance, payable in the app or at the desk (Decision 303).
+
+### Recorded by
+
+User, answering one by one, 22 Oct 2026. On a declined or unanswered fee: *"agree with your recommendation"*.
+
+---
+
+## Decision 301 — Attendance hours in grading
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** Decision 288 "Still open"
+
+### Decision
+
+1. **Where hours come from:** the scheduled length of the class the student checked in to (a 90-minute class adds 1.5 hours). ULTM8 records check-in only, so students don't check out.
+2. **What a grade requires:** for each grade, the School picks **classes**, **hours** or **both**. Classes stay the default, so nothing changes for existing ladders.
+3. **Board progress** for a grade needing both follows **whichever is further behind**. For example, 80% of the classes but 50% of the hours shows 50%, so a student is "Ready to Grade" only when both are met.
+4. **The student's page shows a breakdown** of their grading progress, with each requirement on its own (classes, hours, days at the rank, skills), next to the overall %.
+5. **"Log a class" by hand** adds the length of the class picked. With no class, the coach enters the time, 60 minutes by default.
+6. **Open mat:** a switch in Grading → Settings, **"Open mat counts toward hours"**, changeable by the owner and coaches with "Change grading settings" (Decision 297). Open mat itself is defined in Decision 304.
+
+### Recorded by
+
+User, 22 Oct 2026: *"Agree with everything go ahead"*, with the two notes in items 4 and 6.
+
+---
+
+## Decision 302 — Portal browser tests in Firefox and Safari: nightly and on demand
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Closes:** the Firefox/WebKit gap from Decision 179 item 3
+
+### Decision
+
+1. Every night, all the School Portal's browser tests run in **Firefox and WebKit** (Safari's engine), at desktop and tablet widths: `.github/workflows/browsers-nightly.yml`.
+2. The same run can be started by hand ("Run workflow" in GitHub Actions), e.g. before a release.
+3. Pull requests keep running Chromium only, so they stay fast.
+
+The product owner chose option A.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 303 — Staff-created charges and member balances
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Confirms:** v1.3 backlog §3.6 (it was flagged "NEEDS A DECISION ENTRY") and answers its "Still to decide" · **Unblocks:** paying an accepted promotion fee (Decision 300)
+
+Spec 55 moves money only through Membership Plans. This decision adds charges outside them.
+
+### Decision
+
+1. **Staff can create charges outside a Membership Plan** (product owner, 20 Oct 2026, recorded in backlog §3.6):
+   - one-off charges, e.g. a rash guard;
+   - recurring payments outside a Membership Plan;
+   - **tax fixed per country**, never typed per charge;
+   - discounts as a % or a fixed amount;
+   - the receipt appears in the member's account in the app, with no email needed.
+2. **Members have a balance, and it can be in credit** (prepaid, an overpayment, or a refund given as credit). Credit is used automatically against the member's next charges, including promotion fees. The product owner chose option A.
+3. **Who can create a charge:**
+   - the owner, always;
+   - Branch Staff, for students of their own branches;
+   - any other staff member the owner turns on with a per-person **"Can create charges"** switch (on by default for Branch Staff, off for Instructors).
+   - **Refunds and credit are owner-only.**
+   The product owner: *"A plus a toggle on setting to allow other like it was propose on C"*.
+4. **Members (or Guardians) can pay in the app**, the whole balance or a single charge, through Stripe hosted Checkout as for memberships (Decisions 238/243). The receipt then shows in their account. The product owner chose option A.
+5. **An accepted promotion fee (Decision 300) is one of these charges**, paid the same way.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 304 — Open mat sessions
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Answers:** v1.3 backlog §5.9 (K4, AT7, Q20, Q53) · **Unblocks:** open mat counting toward hours (Decision 301 item 6)
+
+Open mat is free training with no set lesson.
+
+### Decision
+
+1. **Two kinds:**
+   - **Scheduled:** a normal class in the timetable with the class type **"Open mat"**.
+   - **Unplanned:** started from the front desk with **"+ Open mat session"**: style, start time and length (default 60 minutes). It is a one-off class, so check-in, attendance and hours work as for any class.
+2. **Every session has a booking.** Students book ahead as for any class. If a student turns up and checks in without a booking, the booking is created at that moment, so a check-in always has one. The product owner: *"they will always book first regardless"*.
+3. **Class credits:** a School setting, **"Open mat uses a class credit"**, **on by default**, so open mat uses a Class Pack or Friend Pass credit like any class. The owner can turn it off. It lives in **Settings → Check-in rules**. The grading switch "Open mat counts toward hours" stays in Grading settings (Decision 301).
+4. **Who can start an unplanned session:** the School owner, and **only** the staff the owner has given permission, through a per-person **"Can start open mat sessions"** switch, off for everyone by default. The product owner: *"the staff that the owner has granted permission to this session. only those are allowed plus the school owner"*.
+5. **Students hear about an unplanned session in the app:**
+   - always, in their **Notifications**, and as a **banner on the home screen** while it is on ("Open mat now at Centre · BJJ · until 12:00 · Book");
+   - as a **push alert** only if they turn on **"Open mat alerts"** in their notification settings (off by default). Push needs the Firebase/APNs credentials (v1.3, Decision 267).
+   - It goes to students with a live membership or pass whose home branch is that branch and who train that style.
+
+### Recorded by
+
+User, 22 Oct 2026, answering one by one.
+
+---
+
+## Decision 305 — Coach screens in the student app: five actions stay on the web portal for now
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Closes:** the open "coach screens" item in `docs/TRACK-B-ROADMAP.md` and the grading task list
+
+The student app's coach screens cover quick grading (the board, promote, skills, log a class). Five actions are only in the School Portal:
+- skipping ranks;
+- bulk promote;
+- moving a student to another board column;
+- editing rank dates;
+- giving a first rank.
+
+### Decision
+
+These five stay **web-only for now**. Coaches use the phone for quick grading and the portal for admin. It can be revisited in a later version. The product owner: *"keep web only for now"*.
+
+### Recorded by
+
+User, 22 Oct 2026.
+
+---
+
+## Decision 293 — Branch archive fixes: timetable slots block it, the purge rechecks, pickers hide archived Branches, and archiving asks first
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Fixes:** four gaps in Decision 252's Branch archive, found in a review of the Branches page. Decision 252's rules are unchanged; these make the build follow them.
+
+### Decision
+
+1. **Weekly timetable slots block archiving.** `TimetableSlot` was missing from the Branch dependents check. The class-occurrence-generation job copies a slot's `branchId` onto every Class it creates, so a slot left on an archived Branch kept adding Classes to it. Counted the same way as Class (every slot, archived or not), to keep Decision 252's "any Class" rule; whether only live slots should count is part of the separate fix 5 question below.
+2. **The purge job rechecks the dependents rule before deleting a Branch**, as it already does for Rank. Every FK pointing at Branch is `CASCADE` or `SET NULL`, never `RESTRICT`, so the old plain delete always succeeded: a home-branch Student, staff role or coach invite added after archiving was deleted with the Branch, and Classes or slots were moved to "whole School". A Branch that fails the recheck stays archived and is retried daily. The counting lives in one place (`branch-dependents.ts`) shared by `BranchesService.archive()` and the purge job.
+3. **Archived Branches are left out of every School Portal Branch picker** (Staff invite and add manually, coach invites, Invite Student, Grading Board home branch, broadcast, Instructor invite/add/edit, Class and Timetable forms). An edit form keeps the Branch the record already points at, labelled "(Archived)", so it doesn't look lost. `useBranches` still returns every Branch, so existing rows keep showing their Branch name.
+4. **Archive asks first.** The Branches row menu opens a confirmation naming the Branch and explaining the 90-day removal. If the API refuses, the reason (what still belongs to the Branch) shows inside the dialog instead of a page banner.
+
+### What this does NOT resolve
+
+- The API still accepts a new assignment to an archived Branch if one is sent directly (Decision 252's own "nothing stops a new dependent" note). The picker change and the purge recheck cover the School Portal and the data-loss risk; an API-side block is a separate change.
+- Fixes 5 to 7 from the same review (only live dependents block archiving, a "Close branch" move flow, never purging a Branch with history) change Decision 252 itself and are being decided separately.
+
+### Recorded by
+
+User ("open a PR for bug fixes 1 to 4"), 21 Oct 2026.
+
+---
+
+## Decision 306 — Hours are logged, not graded (corrects Decisions 288 and 301)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 288 item 2 and Decision 301 items 2 and 3 · **Amends:** Decision 301 item 4
+
+Decisions 288 and 301 made hours a grading requirement. That was a misreading. The product owner: *"Leave grading as it is, I think you have misunderstood me. We will log the hours they have trained, not do the grading based on hours. Do not change the grading logic."*
+
+### Decision
+
+1. **Grading doesn't change.** A grade still requires classes (or time at the rank for a time-only rank), days at the rank and skills, as today. There is no "classes, hours or both" choice per grade and no hours requirement. Progress and "Ready to Grade" work exactly as they do now.
+2. **ULTM8 logs the hours each student has trained**, as a record. Decision 301 items 1, 5 and 6 still apply:
+   - each check-in adds the scheduled length of the class (90 minutes = 1.5 hours);
+   - "Log a class" by hand adds the length of the class picked, or the time the coach enters (60 minutes by default);
+   - "Open mat counts toward hours" (Grading → Settings) decides whether open mat time is logged in the hours.
+3. **Where hours show:** the student's hours trained are shown on their grading page and in the student app, next to the progress breakdown, as information. They never change the %.
+4. **The progress breakdown stays** (Decision 301 item 4), with the requirements grading already uses: classes, days at the rank and skills.
+
+### Recorded by
+
+User, 22 Oct 2026, reviewing the New Portal design.
+
+---
+
+## Decision 307 — Promotion fee: defaults, prices hidden when off, and the coach decides after a waive or cancel
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decision 300 · **Answers:** the four design questions of 22 Oct 2026 on the promotion fee
+
+### Decision
+
+1. **Both fee switches are off by default.** The promotion fee switch stays off by default (Decision 287). **"Allow grading before the fee is paid" is off by default**, so a priced promotion waits until the fee is paid.
+2. **With the promotion fee off, prices don't show anywhere:** the belt editor (Add rank and Edit) has no price field and the ladder shows no prices. They appear only once the owner turns the fee on.
+3. **Waiving or cancelling a fee never promotes on its own.** Whether the student is promoted stays a coach's decision:
+   - **Cancelling a fee while the promotion waits** leaves the student on their current rank, with the planned promotion waiting for a coach to decide. The product owner: *"should be a decision for the coach"*.
+   - **Waiving a fee the student declined** asks the coach to confirm the promotion; nothing is applied until they agree. The product owner: *"promotion should come from the coach, so we should prompt a question and they should agree to promote, meaning it should not be auto promote"*.
+   - A coach who may promote that student (or the owner) confirms it with the normal Promote dialog, and the history keeps the date they choose. No new fee request is created for a fee that was waived or cancelled.
+4. **Waiving a fee while the promotion waits** applies the promotion the coach already made (Decision 300 item 3, unchanged).
+
+### Still open
+
+- Whether a promotion left "to decide" after a cancel or waive should time out or remind the coach.
+
+### Recorded by
+
+User, 22 Oct 2026, answering the design questions one by one.
+
+---
+
+## Decision 308 — Disciplines: eight bug fixes (archived belts, renames, class types, names)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 90, 198, 226
+
+The Disciplines review of 22 Oct 2026 found eight bugs (D1–D8). The product owner: *"Deep dive, find best uptodate solutions and what's going on in market. then get confident on the solutions then start fixing them"*.
+
+### Decision
+
+1. **An archived belt is out of the ladder (D1).** Grading never lands a student on an archived belt: the ladder, "declare your rank" at signup, coach verification and a new student's first rung all skip archived belts and their rungs.
+2. **Renaming a style renames it everywhere (D2).** The name copies on classes and timetable slots (`activities`) and on instructors (`specializations`, Decision 90's bridge) follow the new name.
+3. **Class types are edited one by one, and a rename carries over (D3).** Renaming a class type updates the classes, timetable slots and rungs that use it. Removing one that is still in use (an upcoming class, a live timetable slot or a rung) is refused with the counts, so nothing is orphaned silently.
+4. **Adding a belt closes gaps first (D4).** When the 90-day purge has removed an archived belt from the middle of the ladder, the next belt change renumbers the ladder instead of failing. The purge job itself is unchanged.
+5. **Names are trimmed and can't be blank (D5).** This applies to style, skill and template names.
+6. **No duplicate names (D6).** Style names are unique within a School and skill names within a style, ignoring case. A repeated class type in the same style is merged. This is checked by the API, not a database index, so existing duplicate data never blocks a migration.
+7. **Copies and templates get a free name (D7).** "Duplicate" and "Start from template" number the name ("BJJ (Copy 2)", "IBJJF (2)") when it is taken, cut to fit 100 characters.
+8. **Clearing a required field is refused (D8).** Sending an empty value for a style's name, class types or "skills required" switch returns a clear 400, not a server error.
+
+### What this does NOT resolve
+
+- Existing duplicate style names in live data are left as they are; the owner renames them.
+- The API's new error messages are English only; other languages show the generic message until they are added to the portal's server-message translations.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 309 — Disciplines: archive a style, students per style, skill order, and a read-only view for coaches
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 198, 226, 308
+
+The same review found five gaps. Other class-booking and martial-arts apps deactivate rather than delete a programme that has history, and keep the history. The product owner asked for all five to be built.
+
+### Decision
+
+1. **A style can be archived (G1).** Only the School owner archives or unarchives it.
+   - It is blocked while an upcoming class or a live timetable slot uses the style; the owner moves or archives those first.
+   - An archived style is hidden from every picker, read-only, and nobody can be graded in it. Students keep their rank and history, and voiding or noting past history still works.
+   - It is never purged (unlike Decision 226's 90-day purge for belts). Unarchive brings it back, if its name is still free.
+   - Past classes and membership plans that name it keep it.
+   - Delete (Decision 198) stays for styles nobody uses.
+2. **Class types are a list (G2)**, with add, remove, reorder and rename (Decision 308 item 3).
+3. **Students per style (G3).** The Disciplines list shows how many students hold a rank in each style, and the owner sees who they are, with their rank, on the style's page.
+4. **Skills have context and order (G4).** Each skill shows which rungs require it and how many lessons teach it, and the owner can put skills in order.
+5. **Coaches and Branch Staff can see the Disciplines page, read-only (G5)**, including the belts and skills. They don't see the students list.
+
+### What this does NOT resolve
+
+- Whether an archived style should eventually be purged, or a retention period apply.
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
+
+### Decision
+
+1. **A promotion left "to decide" reminds the coaches; it never times out.** It stays "to decide" until a coach promotes the student or decides not to. The product owner: *"remind the coach"*.
+2. **One reminder, 3 days after** the promotion became "to decide" (after a fee was cancelled, or a declined fee was waived). It is not repeated.
+3. **It goes to the coaches who may promote** that student in that style and branch, and the owner: the same people as "ready to grade" (Decisions 145, 139). Delivery uses the same channels as "ready to grade".
+4. **Only for a fully ready student:** 100% of the classes required, enough days at the rank and every required skill signed off, the same test "ready to grade" already uses. A student who is not fully ready gets no reminder. The product owner: *"reminders just only go out for 100% + and all skills or curriculum done, otherwise we will overload the coaches with reminders, that are wrong."*
+5. Nothing else changes: the Grading Board's "Ready to Grade" column still starts at 66% (Decision 136). That column is a view of progress, not a reason to send anything.
+
+### What this does NOT resolve
+
+- Nothing new. A promotion that stays "to decide" after the one reminder simply stays visible on the board.
+
+### Recorded by
+
+User, 23 Oct 2026, answering the follow-up questions on the reminder.
+
+---
+
+## Decision 314 — Promotion fee: who sees prices, who can decide not to promote, and one waiting promotion at a time
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 300, 307, 313 · **Answers:** the open points of the B10 build (PR #293)
+
+### Decision
+
+1. **Prices are seen by everyone with access to grading:** the School owner and anyone with grading permission for that style. Other staff, students and guardians don't see the ladder's prices. (A student or Guardian still sees the amount of their own fee request.) The product owner: *"Any with access to the grading."* The same applies to the School's list of fee requests, whose amounts are prices: each person sees only the styles they have grading permission for.
+2. **Anyone with grading permission for the style can decide not to promote** a student whose promotion is "to decide" (Decisions 307, 313), as well as the owner. No particular action right is needed. The product owner: *"any one with the grading permission"*.
+3. **One waiting promotion at a time.** While a promotion is waiting for its fee, the student can't be promoted again in that style until the fee is paid, waived or cancelled. The product owner chose: *"No, wait for the fee first."*
+
+### Recorded by
+
+User, 23 Oct 2026, answering the B10 follow-up questions.
+

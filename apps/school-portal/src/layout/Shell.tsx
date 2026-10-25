@@ -17,6 +17,9 @@ const COACH_NAV: NavItem[] = [
   { label: 'layout.nav.gradingBoard', to: '/grading' },
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
+/** Read-only for coaches and Branch Staff, so they can check what each belt
+ * needs (Decision 309). */
+const DISCIPLINES_NAV: NavItem = { label: 'layout.nav.disciplines', to: '/disciplines' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
@@ -57,7 +60,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

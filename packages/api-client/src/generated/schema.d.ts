@@ -2004,6 +2004,38 @@ export interface paths {
         patch: operations["RanksController_updateDiscipline"];
         trace?: never;
     };
+    "/v1/disciplines/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_archiveDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_unarchiveDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/styles/{disciplineId}/ranks": {
         parameters: {
             query?: never;
@@ -2110,6 +2142,22 @@ export interface paths {
         get: operations["RanksController_findAllSkills"];
         put?: never;
         post: operations["RanksController_createSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/styles/{disciplineId}/skills/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RanksController_reorderSkills"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2420,6 +2468,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-settings/open-mat-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_getOpenMatHoursSetting"];
+        put: operations["GradingController_setOpenMatHoursSetting"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
         parameters: {
             query?: never;
@@ -2590,6 +2654,134 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["InstructorBeltsController_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/promotion-fee-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PromotionFeeController_getSettings"];
+        put: operations["PromotionFeeController_updateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/promotion-fee-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PromotionFeeController_listForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/promotion-fee-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PromotionFeeController_listForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/promotion-fee-requests/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PromotionFeeController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/promotion-fee-requests/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PromotionFeeController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/promotion-fee-requests/{id}/waive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PromotionFeeController_waive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/promotion-fee-requests/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PromotionFeeController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/promotion-fee-requests/{id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PromotionFeeController_dismiss"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5146,6 +5338,10 @@ export interface components {
             boardGettingThere: number;
             /** @description Grading Board: "Ready to Grade" from this % (Decisions 75, 136). Default 66. */
             boardReadyToGrade: number;
+            /** @description Archived (retired) at (Decision 309); null while in use. */
+            archivedAt?: string | null;
+            /** @description Students with a rank in this style (Decision 309). */
+            studentCount: number;
             createdAt: string;
             updatedAt: string;
         };
@@ -5169,12 +5365,20 @@ export interface components {
             /** @description The style's name. Default: the template's name. */
             name?: string;
         };
+        ClassTypeRenameDto: {
+            /** @description The class type as it is now. */
+            from: string;
+            /** @description Its new name. Must also be in classTypesOffered. */
+            to: string;
+        };
         UpdateDisciplineDto: {
             name?: string;
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
+            renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
         };
         StripeSegmentInputDto: {
             count: number;
@@ -5214,6 +5418,8 @@ export interface components {
             classTypeRequirements?: components["schemas"]["ClassTypeRequirementInputDto"][];
             /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung. */
             bookingUnlocksClassTypes?: string[];
+            /** @description Promotion fee for being graded into this rung, in the School's currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School's promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung. */
+            promotionFeeMinor?: number | null;
             /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
             requiredSkillIds?: string[];
         };
@@ -5260,6 +5466,8 @@ export interface components {
             timeOnly: boolean;
             /** @description Skills required to be promoted INTO this rung. */
             requiredSkillIds: string[];
+            /** @description Promotion fee for this grade, minor units of the School's currency; null = free (Decision 300). Present only while the School's promotion fee is on (Decision 307). */
+            promotionFeeMinor?: number | null;
         };
         RankResponseDto: {
             id: string;
@@ -5323,11 +5531,19 @@ export interface components {
             schoolId: string;
             name: string;
             description?: string | null;
+            /** @description Position in the style's skill list, 0 first (Decision 309). */
+            order: number;
+            /** @description Lessons that teach this skill (Decision 309). */
+            lessonCount: number;
             createdAt: string;
             updatedAt: string;
         };
         SkillListResponseDto: {
             items: components["schemas"]["SkillResponseDto"][];
+        };
+        ReorderSkillsDto: {
+            /** @description Every skill id of this style, in the new order. */
+            skillIds: string[];
         };
         UpdateSkillDto: {
             name?: string;
@@ -5405,6 +5621,44 @@ export interface components {
              */
             boardColumn?: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
         };
+        ClassesProgressResponseDto: {
+            /** @description Classes counted toward the next rank (eligibility.countedClasses). */
+            counted: number;
+            required: number;
+            /** @description 0–100. The same number as eligibility.progressPercent: the overall % is classes only. */
+            percent: number;
+            /** @description "Each ticked type required" rungs only; otherwise empty. */
+            byType: components["schemas"]["TypeProgressResponseDto"][];
+        };
+        DaysProgressResponseDto: {
+            /** @description Days at the current rank. */
+            elapsed: number;
+            /** @description Minimum days at the rank. */
+            required: number;
+            /** @description 0–100, capped. 100 when no minimum is set. */
+            percent: number;
+        };
+        SkillsProgressResponseDto: {
+            /** @description Required skills signed off. */
+            signedOff: number;
+            /** @description Required skills for the next rank. */
+            required: number;
+            /** @description 0–100. 100 when none are required. */
+            percent: number;
+        };
+        ProgressBreakdownResponseDto: {
+            /** @description null on a time-only rank (days only). */
+            classes?: components["schemas"]["ClassesProgressResponseDto"] | null;
+            days: components["schemas"]["DaysProgressResponseDto"];
+            /** @description null on a time-only rank (days only). */
+            skills?: components["schemas"]["SkillsProgressResponseDto"] | null;
+        };
+        HoursTrainedResponseDto: {
+            /** @description Every minute logged in this style at this School (check-ins and "Log a class"). */
+            totalMinutes: number;
+            /** @description Minutes trained on or after the current rank date. */
+            sinceCurrentRankMinutes: number;
+        };
         StudentEligibilityResponseDto: {
             id: string;
             studentId: string;
@@ -5434,6 +5688,9 @@ export interface components {
             createdAt: string;
             updatedAt: string;
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description null when there is no next rank. */
+            progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
+            hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
         };
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
@@ -5470,6 +5727,9 @@ export interface components {
             verificationStatus: "VERIFIED" | "UNVERIFIED";
             ladder: components["schemas"]["GradingLadderRungDto"][];
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description null when there is no next rank. */
+            progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
+            hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
             /** @description The skills for the next grade. */
             skills: components["schemas"]["GradingSkillDto"][];
         };
@@ -5656,6 +5916,23 @@ export interface components {
         PendingVerificationListResponseDto: {
             items: components["schemas"]["PendingVerificationDto"][];
         };
+        BoardFeeRequestDto: {
+            /** @description The fee request (use it to waive or cancel, or to dismiss a "to decide"). */
+            id: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "PAID" | "DECLINED" | "WAIVED" | "CANCELLED";
+            /** @description The rung the grade moves the student to. For "to decide", the planned grade the Promote window starts on. */
+            toRungId: string;
+            toRungName: string;
+            /** @description Minor units of `currency`. */
+            amountMinor: number;
+            /** @description The School's currency when the request was made. */
+            currency?: string | null;
+            /** @description The promotion has already applied ("Allow grading before the fee is paid" was on). */
+            promotionApplied: boolean;
+            /** @description "To decide" only: promoting to toRungId makes no new fee request (Decision 307). */
+            feeFree: boolean;
+        };
         GradingBoardItemDto: {
             studentId: string;
             firstName: string;
@@ -5675,12 +5952,21 @@ export interface components {
             eligibility: components["schemas"]["EligibilityResponseDto"];
             /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
             noHomeBranch: boolean;
+            /**
+             * @description Promotion fee (Decisions 300, 307): "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
+             * @enum {string|null}
+             */
+            feeStatus?: "waiting" | "declined" | "toDecide" | null;
+            /** @description The request behind feeStatus. */
+            feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
             items: components["schemas"]["GradingBoardItemDto"][];
             /** @description Students left out by activeOnly. */
             hiddenInactive: number;
+            /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
+            atTopRank: number;
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -5691,6 +5977,10 @@ export interface components {
              */
             readyToGrade: number;
         };
+        OpenMatHoursSettingDto: {
+            /** @description When off (the default), open mat time is recorded but not added to students' hours trained. Hours never change the grading %. */
+            openMatCountsTowardHours: boolean;
+        };
         BoardMoveDto: {
             /** @enum {string} */
             column: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
@@ -5698,10 +5988,19 @@ export interface components {
         LogClassDto: {
             /** @description The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts). */
             classType?: string | null;
+            /** @description The class the student trained in, for hours trained: its scheduled length is logged. A class at this School that lists this style. Leave out to send `minutes` instead. */
+            classId?: string | null;
+            /** @description Minutes trained, for hours trained, when no class is picked. Default 60. Hours never change the grading %. */
+            minutes?: number | null;
         };
         BoardActiveDto: {
             /** @description true or false: set by hand. null: follow whether the student has an active membership. */
             active: boolean | null;
+        };
+        BulkExpectedRungDto: {
+            studentId: string;
+            /** @description The student's rung in the dry run (its fromRungId). */
+            rungId: string;
         };
         BulkPromoteDto: {
             disciplineId: string;
@@ -5718,6 +6017,8 @@ export interface components {
             acknowledgedStudentIds?: string[];
             /** @description Check only: return what would happen, change nothing. */
             dryRun?: boolean;
+            /** @description Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure. */
+            expected?: components["schemas"]["BulkExpectedRungDto"][];
         };
         BulkPromoteStudentDto: {
             studentId: string;
@@ -5727,14 +6028,18 @@ export interface components {
             reasons: string[];
             /** @description Set on a promoted student: their history entry. */
             promotionEventId?: string;
+            /** @description Set when the grade made a promotion fee request (Decision 300 item 6: one per student). */
+            feeRequestId?: string;
         };
         BulkPromoteResponseDto: {
             /** @description Nothing missing (dry run), or promoted. */
             ready: components["schemas"]["BulkPromoteStudentDto"][];
             /** @description Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`). */
             needsAcknowledgement: components["schemas"]["BulkPromoteStudentDto"][];
-            /** @description Skipped: no next rank, blocked by the style's "skills required" switch, not yours to grade, or changed at the same time. */
+            /** @description Skipped: no next rank, blocked by the style's "skills required" switch, not yours to grade, changed at the same time, or a promotion already waiting for its fee. */
             cannotPromote: components["schemas"]["BulkPromoteStudentDto"][];
+            /** @description Not promoted yet: their grade is priced and "Allow grading before the fee is paid" is off, so each waits for their fee request (feeRequestId) to be paid or waived (Decision 300). Always sent; empty on a dry run. */
+            waitingForFee?: components["schemas"]["BulkPromoteStudentDto"][];
         };
         GradingPermissionResponseDto: {
             id: string;
@@ -5828,6 +6133,62 @@ export interface components {
         VerifyInstructorBeltDto: {
             rankId?: string;
             stripeTierId?: string;
+        };
+        PromotionFeeSettingsResponseDto: {
+            promotionFeeEnabled: boolean;
+            /** @description "Allow grading before the fee is paid". */
+            gradeBeforeFeePaid: boolean;
+            /** @description The School's currency (School.defaultCurrency): prices are minor units of it. */
+            currency?: string | null;
+        };
+        UpdatePromotionFeeSettingsDto: {
+            /** @description Promotion fee on or off (off by default). Off: grades have no price, prices are not returned, and no fee is asked. */
+            promotionFeeEnabled?: boolean;
+            /** @description "Allow grading before the fee is paid" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits ("Waiting for fee") until the fee is paid or waived. */
+            gradeBeforeFeePaid?: boolean;
+        };
+        PromotionFeeRequestResponseDto: {
+            id: string;
+            schoolId: string;
+            /** @description Student app list only: the School's name. */
+            schoolName?: string;
+            studentId: string;
+            disciplineId: string;
+            /** @description Student app list only: the style's name. */
+            disciplineName?: string;
+            /** @description The rung the grade moves the student to. */
+            toRungId: string;
+            toRungName: string;
+            /** @description The rung the student was on when graded. */
+            expectedCurrentRungId?: string | null;
+            /** @description Minor units of `currency`. */
+            amountMinor: number;
+            currency?: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "PAID" | "DECLINED" | "WAIVED" | "CANCELLED";
+            /** @description The promotion waits for this fee (it applies once paid or waived). False when it applied at grading. */
+            promotionWaits: boolean;
+            /** @description The promotion has applied (at grading, or once paid or waived). */
+            promotionApplied: boolean;
+            /** @description The history entry of the promotion, once applied. */
+            promotionEventId?: string | null;
+            /** @description The grading date the coach chose (YYYY-MM-DD), for a promotion that waits or is "to decide". */
+            gradingDate?: string | null;
+            /** @description Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
+            toDecide: boolean;
+            toDecideAt?: string | null;
+            /** @enum {string|null} */
+            toDecideResolution?: "PROMOTED" | "DISMISSED" | null;
+            acceptedAt?: string | null;
+            declinedAt?: string | null;
+            paidAt?: string | null;
+            waivedAt?: string | null;
+            cancelledAt?: string | null;
+            createdAt: string;
+        };
+        PromotionFeeRequestListResponseDto: {
+            items: components["schemas"]["PromotionFeeRequestResponseDto"][];
+            nextCursor?: string | null;
         };
         CreateWaiverDto: {
             title: string;
@@ -9614,7 +9975,10 @@ export interface operations {
     };
     RanksController_findAllDisciplines: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Decision 309 — include archived styles too (left out by default). */
+                includeArchived?: boolean;
+            };
             header?: never;
             path: {
                 schoolId: string;
@@ -9787,6 +10151,55 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateDisciplineDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_archiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+            /** @description An upcoming class or a timetable slot still uses the style. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RanksController_unarchiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -10058,6 +10471,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SkillResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_reorderSkills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderSkillsDto"];
+            };
+        };
+        responses: {
+            /** @description The style's skills in their new order (Decision 309). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillListResponseDto"];
                 };
             };
         };
@@ -10558,6 +10997,52 @@ export interface operations {
             };
         };
     };
+    GradingController_getOpenMatHoursSetting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatHoursSettingDto"];
+                };
+            };
+        };
+    };
+    GradingController_setOpenMatHoursSetting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenMatHoursSettingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatHoursSettingDto"];
+                };
+            };
+        };
+    };
     GradingController_moveOnBoard: {
         parameters: {
             query?: never;
@@ -10818,6 +11303,206 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstructorBeltResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeSettingsResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_updateSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePromotionFeeSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeSettingsResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_listForSchool: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "ACCEPTED" | "PAID" | "DECLINED" | "WAIVED" | "CANCELLED";
+                studentId?: string;
+                disciplineId?: string;
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestListResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_listForStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestListResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_waive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    PromotionFeeController_dismiss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
                 };
             };
         };

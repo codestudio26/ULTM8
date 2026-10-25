@@ -106,6 +106,59 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     expect(await superuser.branch.findUnique({ where: { id: branch.id } })).toBeNull();
   });
 
+  // Decision 293 — every FK pointing at Branch is CASCADE or SET NULL, so
+  // nothing in the database stops the purge; the job rechecks the archive
+  // dependents rule itself.
+  it('an archived Branch that gained a home-branch Student after archiving is left archived, and the Student keeps their home branch', async () => {
+    const branch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Purge — Branch with a Student', archivedAt: PAST, purgeAt: PAST } });
+    branchIds.push(branch.id);
+    const student = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `purge-home-branch-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Purge',
+        surname: 'HomeBranch',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+      },
+    });
+    userIds.push(student.id);
+    const home = await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: student.id, branchId: branch.id } });
+
+    try {
+      await processor.process(fakeJob());
+
+      expect(await superuser.branch.findUnique({ where: { id: branch.id } })).not.toBeNull();
+      expect(await superuser.studentHomeBranch.findUnique({ where: { id: home.id } })).not.toBeNull();
+    } finally {
+      await superuser.studentHomeBranch.deleteMany({ where: { id: home.id } });
+    }
+  });
+
+  it('an archived Branch with a weekly timetable slot still on it is left archived, and the slot keeps its Branch', async () => {
+    const branch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Purge — Branch with a slot', archivedAt: PAST, purgeAt: PAST } });
+    branchIds.push(branch.id);
+    const slot = await superuser.timetableSlot.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branch.id,
+        weekday: 'THURSDAY',
+        startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
+        endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+        title: 'Purge — slot on an archived Branch',
+        activities: ['Yoga'],
+      },
+    });
+    timetableSlotIds.push(slot.id);
+
+    await processor.process(fakeJob());
+
+    expect(await superuser.branch.findUnique({ where: { id: branch.id } })).not.toBeNull();
+    expect((await superuser.timetableSlot.findUnique({ where: { id: slot.id } }))?.branchId).toBe(branch.id);
+  });
+
   it('a Class past purgeAt with no Booking/WaitlistEntry is hard-deleted', async () => {
     const cls = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Purge — plain Class', startDate: FUTURE, endDate: FUTURE, archivedAt: PAST, purgeAt: PAST },

@@ -18,10 +18,12 @@ type ClassStyle = { disciplineId: string; classType: string | null };
 
 const DAY_MS = 86_400_000;
 
-/** Every rung of a style, in ladder order, in the engine's shape. */
+/** Every rung of a style, in ladder order, in the engine's shape. Archived
+ * belts are not part of the ladder: nobody can be graded into them (Decision
+ * 308). Archiving needs a belt nobody holds or held, so no student is on one. */
 export async function loadLadder(tx: TenantTx, disciplineId: string): Promise<Rung[]> {
   const ranks = await tx.rank.findMany({
-    where: { disciplineId },
+    where: { disciplineId, archivedAt: null },
     include: { stripeTiers: { include: { requiredSkills: { select: { skillId: true } } } } },
   });
   return flattenLadder(

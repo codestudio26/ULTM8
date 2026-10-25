@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { resolveClassStyles } from './class-styles';
+import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -162,7 +162,7 @@ export class ClassesService {
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // Styles are replaced when sent and kept when omitted (Decision 170).
-      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities) : null;
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
       return tx.class.update({
         where: { id: classId },
         data: {

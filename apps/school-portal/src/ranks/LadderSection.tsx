@@ -20,9 +20,25 @@ type Holder = { studentId: string; firstName: string; surname: string };
  * confirmation that lists the students on the belts that move; their rung
  * stays the same, only its place in the ladder changes. Add and edit open the
  * belt editor. Owner only, like every ladder edit.
+ *
+ * `readOnly` (Decision 309): coaches, Branch Staff and an archived style see
+ * the ladder without any edit controls. `showHolders`: the student counts,
+ * which only the owner may read.
  */
-export function LadderSection({ discipline, skills, ranks }: { discipline: DisciplineResponse; skills: SkillResponse[]; ranks: RankResponse[] }) {
-  const holdersQuery = useRungHolders(discipline.id);
+export function LadderSection({
+  discipline,
+  skills,
+  ranks,
+  readOnly = false,
+  showHolders = true,
+}: {
+  discipline: DisciplineResponse;
+  skills: SkillResponse[];
+  ranks: RankResponse[];
+  readOnly?: boolean;
+  showHolders?: boolean;
+}) {
+  const holdersQuery = useRungHolders(showHolders ? discipline.id : null);
   const reorder = useReorderRanks(discipline.id);
   const createRank = useCreateRank(discipline.id);
   const saved = useMemo(() => [...ranks].sort((a, b) => a.order - b.order), [ranks]);
@@ -96,7 +112,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
           </h2>
           <p style={{ margin: 0 }}>{t('ranks.ladder.description')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }} hidden={readOnly}>
           {changed ? (
             <>
               <Button onClick={askToSave} loading={reorder.isPending}>
@@ -123,11 +139,11 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
               <li
                 key={rank.id}
                 aria-label={`${i + 1}. ${rank.name}`}
-                {...drag.targetProps(i)}
+                {...(readOnly ? {} : drag.targetProps(i))}
                 style={{ border: `1px solid ${drag.over === i ? 'var(--fill-accent)' : 'var(--border)'}`, borderRadius: 8, padding: 10 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span {...drag.handleProps(i, rank.name)}>⠿</span>
+                  {readOnly ? null : <span {...drag.handleProps(i, rank.name)}>⠿</span>}
                   <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
@@ -136,6 +152,8 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                     {stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}
                   </span>
                   {onBelt > 0 ? <Badge>{t('ranks.ladder.students', { count: onBelt })}</Badge> : null}
+                  {readOnly ? null : (
+                    <>
                   <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={t('ranks.editAria', { name: rank.name })}>
                     {t('ranks.edit')}
                   </Button>
@@ -169,6 +187,8 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={t('ranks.ladder.deleteAria', { name: rank.name })}>
                     {t('ranks.ladder.delete')}
                   </Button>
+                    </>
+                  )}
                 </div>
                 <ul style={{ listStyle: 'none', padding: '6px 0 0 30px', margin: 0, display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
                   {tiers.map((tier) => (
