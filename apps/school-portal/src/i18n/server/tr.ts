@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "Bu kuşağa sahip öğrenciler var ({v1} student{v2}), bu nedenle kuşak silinemez veya arşivlenemez ({v3}).",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Bu eğitmen arşivlendi. Eğitmenler sayfasında arşivden çıkarın veya başka bir eğitmen seçin.",
   "This person is no longer an instructor at this School.": "Bu kişi artık bu okulda eğitmen değil.",
+  "This instructor hasn't uploaded a certification.": "Bu eğitmen sertifika yüklemedi.",
+  "Choose a different instructor to take over.": "Devralması için başka bir eğitmen seçin.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Eğitmen rolü yalnızca belirli şubeler için, bu yüzden profili tüm okul için olamaz. Şubesini seçin.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Eğitmen rolü bu şubeyi kapsamıyor. Önce Personel sayfasında orada rol verin veya şubesini seçin.",
 };

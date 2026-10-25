@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "Uczniowie mają ten pas ({v1} student{v2}), więc nie można go usunąć ani zarchiwizować ({v3}).",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Ten instruktor jest zarchiwizowany. Przywróć go na stronie Instruktorzy lub wybierz innego instruktora.",
   "This person is no longer an instructor at this School.": "Ta osoba nie jest już instruktorem w tej szkole.",
+  "This instructor hasn't uploaded a certification.": "Ten instruktor nie przesłał certyfikatu.",
+  "Choose a different instructor to take over.": "Wybierz innego instruktora, który przejmie zajęcia.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Rola instruktora obejmuje tylko wybrane oddziały, więc profil nie może dotyczyć całej szkoły. Wybierz oddział.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Rola instruktora nie obejmuje tego oddziału. Najpierw nadaj tam rolę na stronie Personel albo wybierz właściwy oddział.",
 };

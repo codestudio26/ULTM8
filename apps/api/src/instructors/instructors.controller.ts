@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
@@ -18,6 +18,8 @@ import { CreateInstructorManuallyResponseDto } from './dto/create-instructor-man
 import { CertificationUploadUrlResponseDto } from './dto/certification-upload-url-response.dto';
 import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-response.dto';
 import { InstructorClassListResponseDto } from './dto/instructor-class-response.dto';
+import { CertificationUrlResponseDto } from './dto/certification-url-response.dto';
+import { ReassignInstructorDto, ReassignInstructorResponseDto } from './dto/reassign-instructor.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * CoachInvitesController's own invite-send throttle. */
@@ -62,6 +64,13 @@ export class InstructorsController {
     return this.instructorsService.findEligibleInstructorUsers(user.sub, schoolId);
   }
 
+  /** Decision 312 — declared before `instructors/:id` so `me` is never read as an id. */
+  @ApiOkResponse({ type: InstructorListResponseDto })
+  @Get('instructors/me/profile')
+  findMyProfiles(@CurrentUser() user: JwtPayload) {
+    return this.instructorsService.findMyProfiles(user.sub);
+  }
+
   @ApiOkResponse({ type: InstructorResponseDto })
   @Get('instructors/:id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -86,6 +95,22 @@ export class InstructorsController {
   @Post('instructors/:id/unarchive')
   unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.instructorsService.unarchive(user.sub, id);
+  }
+
+  /** Decision 312 — School Owner/Manager only; a 15-minute download link. */
+  @ApiOkResponse({ type: CertificationUrlResponseDto })
+  @Get('instructors/:id/certification-url')
+  getCertificationUrl(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.getCertificationUrl(user.sub, id);
+  }
+
+  /** Decision 312 — moves upcoming Classes and active Timetable slots to
+   * another instructor, all or nothing. School Owner/Manager only. */
+  @ApiOkResponse({ type: ReassignInstructorResponseDto })
+  @HttpCode(200)
+  @Post('instructors/:id/reassign')
+  reassign(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: ReassignInstructorDto) {
+    return this.instructorsService.reassign(user.sub, id, dto.toUserId);
   }
 
   /** v1.2 backend backlog — "Instructor Class" grid, the real replacement for

@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "{v1} aluno{v2} esta faixa, por isso ela não pode ser {v3}.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Este instrutor está arquivado. Desarquive-o na página Instrutores ou escolha outro instrutor.",
   "This person is no longer an instructor at this School.": "Esta pessoa não é mais instrutor nesta escola.",
+  "This instructor hasn't uploaded a certification.": "Este instrutor não enviou nenhuma certificação.",
+  "Choose a different instructor to take over.": "Escolha outro instrutor para assumir.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "O papel de instrutor vale só para algumas unidades, então o perfil não pode ser da escola inteira. Escolha a unidade.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "O papel de instrutor não cobre esta unidade. Dê o papel lá primeiro na página Equipe ou escolha a unidade certa.",
 };

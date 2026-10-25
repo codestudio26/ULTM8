@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
-import { useInstructor, useInstructorClasses, type InstructorClassResponse } from './instructorQueries';
+import { useBranches } from '../branches/branchQueries';
+import { WEEKDAY_ORDER, weekdayName } from '../timetable/timetableOccurrences';
+import {
+  fetchInstructorCertificationUrl,
+  useAllTimetableSlots,
+  useInstructor,
+  useInstructorClasses,
+  type InstructorClassResponse,
+} from './instructorQueries';
+import { GiveRoleBackModal, HandOverClassesModal } from './InstructorDetailActions';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -25,6 +34,11 @@ function formatDate(iso: string): string {
  * own header comment), and a Revoke Enrollment action for the underlying
  * INSTRUCTOR RoleGrant, using this app's existing ConfirmDeleteModal
  * confirmation pattern (not a browser confirm()).
+ *
+ * Decision 312 adds what the instructor filled in themselves (address,
+ * activities, certification), their branch and weekly timetable slots, and
+ * the two follow-ups to a revoke: handing their classes to someone else, and
+ * giving the role back.
  */
 export function InstructorDetailPage() {
   const t = useT();
@@ -37,8 +51,14 @@ export function InstructorDetailPage() {
   const { data: classesData, isLoading: classesLoading, error: classesError } = useInstructorClasses(instructorId);
   const roleGrants = useUserRoleGrants(instructor?.userId ?? null);
   const revokeGrant = useRevokeRoleGrant();
+  const { data: branchData } = useBranches(schoolId);
+  const { data: slots } = useAllTimetableSlots(schoolId);
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
+  const [handingOver, setHandingOver] = useState(false);
+  const [givingRoleBack, setGivingRoleBack] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [certError, setCertError] = useState<string | null>(null);
 
   if (!instructorId) return null;
   if (isLoading) return <Spinner />;
@@ -55,6 +75,28 @@ export function InstructorDetailPage() {
   const activeGrant = (roleGrants.data?.items ?? []).find(
     (g) => g.schoolId === schoolId && g.role === 'INSTRUCTOR' && !g.revokedAt,
   );
+  // The ones that keep making classes for them, Monday first.
+  const mySlots = (slots ?? [])
+    .filter((s) => s.instructorId === instructor.userId && s.status === 'ON' && !s.archivedAt)
+    .sort((a, b) => WEEKDAY_ORDER.indexOf(a.weekday) - WEEKDAY_ORDER.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime));
+  const branchName = instructor.branchId
+    ? branchData?.items.find((b) => b.id === instructor.branchId)?.name ?? instructor.branchId
+    : t('instructors.allBranches');
+  const name = `${instructor.firstName} ${instructor.surname}`.trim();
+
+  async function openCertification() {
+    setCertError(null);
+    // Opened before the request so the browser doesn't treat it as a pop-up.
+    const tab = window.open('', '_blank');
+    try {
+      const { url } = await fetchInstructorCertificationUrl(instructor!.id);
+      if (tab) tab.location.href = url;
+      else window.location.assign(url);
+    } catch (err) {
+      tab?.close();
+      setCertError(err instanceof ApiError ? err.message : t('instructors.detail.certificationFailed'));
+    }
+  }
 
   return (
     <>
@@ -62,16 +104,29 @@ export function InstructorDetailPage() {
         <Link to="/instructors">{t('instructors.detail.back')}</Link>
       </p>
       <PageHeader
-        title={`${instructor.firstName} ${instructor.surname}`.trim()}
+        title={name}
         subtitle={instructor.bio ?? undefined}
         actions={
-          activeGrant ? (
-            <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
-              {t('instructors.detail.revokeEnrollment')}
-            </Button>
-          ) : undefined
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {schoolId && (upcoming.length > 0 || mySlots.length > 0) ? (
+              <Button variant="secondary" onClick={() => setHandingOver(true)}>
+                {t('instructors.detail.handOver')}
+              </Button>
+            ) : null}
+            {activeGrant ? (
+              <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
+                {t('instructors.detail.revokeEnrollment')}
+              </Button>
+            ) : schoolId && instructor.status === 'REVOKED' ? (
+              <Button variant="secondary" onClick={() => setGivingRoleBack(true)}>
+                {t('instructors.detail.giveRoleBack')}
+              </Button>
+            ) : null}
+          </div>
         }
       />
+      {notice ? <SuccessBanner message={notice} /> : null}
+      {certError ? <ErrorBanner message={certError} /> : null}
 
       <div style={{ marginBottom: 24 }}>
         <Card>
@@ -85,7 +140,12 @@ export function InstructorDetailPage() {
                 <strong>{t('instructors.detail.status')}</strong>{' '}
                 <Badge variant={instructor.status === 'ACTIVE' ? 'success' : undefined}>
                   {instructor.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
-                </Badge>
+                </Badge>{' '}
+                {instructor.awaitingFirstLogin ? <Badge>{t('instructors.awaitingFirstLogin')}</Badge> : null}{' '}
+                {instructor.archivedAt ? <Badge>{t('instructors.archived')}</Badge> : null}
+              </span>
+              <span>
+                <strong>{t('instructors.detail.branch')}</strong> {branchName}
               </span>
               {instructor.phone ? (
                 <span>
@@ -103,6 +163,31 @@ export function InstructorDetailPage() {
                   {instructor.specializations.map((s, i) => (
                     <Badge key={`${s}-${i}`}>{s}</Badge>
                   ))}
+                </span>
+              ) : null}
+              {/* Filled in by the instructor on their Complete Profile page. */}
+              {instructor.activities.length > 0 ? (
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <strong>{t('instructors.detail.activities')}</strong>
+                  {instructor.activities.map((a, i) => (
+                    <Badge key={`${a}-${i}`}>{a}</Badge>
+                  ))}
+                </span>
+              ) : null}
+              {instructor.address ? (
+                <span>
+                  <strong>{t('instructors.detail.address')}</strong> {instructor.address}
+                </span>
+              ) : null}
+              {instructor.certificationKey ? (
+                <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <strong>{t('instructors.detail.certification')}</strong>
+                  {instructor.certificationConsentedAt
+                    ? t('instructors.detail.certificationConsented', { date: formatDate(instructor.certificationConsentedAt) })
+                    : t('instructors.detail.certificationOnFile')}
+                  <Button variant="secondary" onClick={openCertification}>
+                    {t('instructors.detail.viewCertification')}
+                  </Button>
                 </span>
               ) : null}
             </div>
@@ -128,6 +213,26 @@ export function InstructorDetailPage() {
           )}
         </Card>
       </div>
+
+      {mySlots.length > 0 ? (
+        <div style={{ marginTop: 24 }}>
+          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
+            {t('instructors.detail.timetableHeading')}
+          </h2>
+          <Card>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+              {mySlots.map((s) => (
+                <li key={s.id} style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)' }}>
+                  <div style={{ fontWeight: 600 }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    {weekdayName(s.weekday, formatLocale() ?? 'en', 'long')} {s.startTime}–{s.endTime}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      ) : null}
 
       {past.length > 0 ? (
         <div style={{ marginTop: 24 }}>
@@ -166,6 +271,32 @@ export function InstructorDetailPage() {
             navigate('/instructors');
           }}
           onClose={() => setConfirmingRevoke(false)}
+        />
+      ) : null}
+
+      {handingOver && schoolId ? (
+        <HandOverClassesModal
+          schoolId={schoolId}
+          instructor={instructor}
+          onDone={(message) => {
+            setHandingOver(false);
+            setNotice(message);
+          }}
+          onClose={() => setHandingOver(false)}
+        />
+      ) : null}
+
+      {givingRoleBack && schoolId ? (
+        <GiveRoleBackModal
+          schoolId={schoolId}
+          instructor={instructor}
+          onDone={async () => {
+            setGivingRoleBack(false);
+            await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+            await queryClient.invalidateQueries({ queryKey: ['instructor-belts'] });
+            setNotice(t('instructors.detail.giveRoleBackDone', { name }));
+          }}
+          onClose={() => setGivingRoleBack(false)}
         />
       ) : null}
     </>

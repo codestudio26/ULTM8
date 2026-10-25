@@ -244,6 +244,8 @@ export const SERVER_MESSAGES: string[] = [
  "This note was changed at the same time — please look again.",
  "This person already has a pending invite here. Cancel it to send a new one.",
  "This person is no longer an instructor at this School.",
+ "This instructor hasn't uploaded a certification.",
+ "Choose a different instructor to take over.",
  "This person is not a Student at this School.",
  "This person isn't a student at this School.",
  "This rank is already verified.",

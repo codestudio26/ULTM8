@@ -4628,6 +4628,36 @@ User, 23 Oct 2026, after the Instructors section review.
 
 ---
 
+## Decision 312 — Instructors: search and filters, hand over classes, give the role back, and what instructors filled in
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 115, 217, 226, 230, 311
+
+After the Decision 311 fixes, the product owner asked for the gaps the 23 Oct 2026 Instructors review listed: *"after fixing the bugs find best way of building the missing things prepare everything and check it to be error less and then start building it"*.
+
+### Decision
+
+1. **Roster search and filters.** The Instructors page has a search (name or email) and Branch, Style and Status filters, worked out in the browser from the full list (Decision 311, I3). Status includes "Hasn't signed in yet".
+2. **"Hasn't signed in yet".** Instructor responses carry `awaitingFirstLogin`: true while the person still has "Add manually"'s temporary passcode (`User.mustChangePasscode`). Shown on the roster and the detail page.
+3. **Invite, then add.** After "Invite existing user" grants the Instructor role, "Add instructor" opens straight away with that person and their branch picked, instead of a notice telling the owner to do it.
+4. **The detail page shows what the instructor filled in** on their Complete Profile page: activities, address and certification (with the consent date). Specializations (the School's styles, set by the owner) and activities (the instructor's own words) are shown as two separate, labelled lists; whether to merge them is not decided here. It also shows their branch, the Archived badge, and their active weekly timetable slots.
+5. **Certification download.** New `GET /instructors/:id/certification-url` returns a 15-minute link to the uploaded file, for the School Owner/Manager only (the same people who manage instructors), using the existing presigned-download helper waiver signatures use.
+6. **Hand over classes.** New `POST /instructors/:id/reassign { toUserId }` moves every upcoming, unarchived Class and every active (ON), unarchived timetable slot of this instructor at this School to another instructor, in one transaction, all or nothing. It uses the same "upcoming"/"active" test archiving does, so archiving works straight after. The new instructor must be assignable at each row's branch (the check a Class edit already makes: active Instructor role covering the branch, profile not archived). Like a Class or slot edit, it sends no notifications; past classes keep their instructor. School Owner/Manager only.
+7. **Give the role back.** A revoked instructor's detail page has "Give Instructor role back", which makes the same Instructor role grant the Staff page and "Invite existing user" make (`POST /users/:id/role-grants`), at the profile's branch by default.
+8. **Complete Profile starts from what's saved.** New `GET /instructors/me/profile` returns the caller's own Instructor profiles (an empty list if none); the page fills in the saved address and activities and says when a certification is already on file. Emptying a saved activities list now clears it.
+
+### What this does NOT resolve
+
+- **Resending the temporary passcode** to someone who hasn't signed in yet. It means making a new passcode for another person's account, so it waits for the product owner.
+- **Instructors editing their own bio, photo or phone.** Only the owner can change those today; whether instructors may is the product owner's call.
+- **Merging specializations and activities** (item 4).
+- Decision 311's open questions still stand: revoking with upcoming classes (now with "Hand over classes" as the way to clear them), colleagues reading each other's full profiles, and whether archiving should remove the role.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.
+
+---
+
 ## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
 
 **Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
@@ -4663,4 +4693,3 @@ User, 23 Oct 2026, answering the follow-up questions on the reminder.
 ### Recorded by
 
 User, 23 Oct 2026, answering the B10 follow-up questions.
-

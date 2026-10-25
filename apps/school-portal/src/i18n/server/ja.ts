@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "{v1} 人の生徒{v2}がこの帯を保持しているため、{v3}できません。",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "このインストラクターはアーカイブされています。インストラクターページでアーカイブを解除するか、別のインストラクターを選んでください。",
   "This person is no longer an instructor at this School.": "この人はこのスクールのインストラクターではなくなりました。",
+  "This instructor hasn't uploaded a certification.": "このインストラクターは資格証明をアップロードしていません。",
+  "Choose a different instructor to take over.": "引き継ぐ別のインストラクターを選んでください。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "インストラクターの役割は一部の支店のみのため、プロフィールをスクール全体にはできません。支店を選んでください。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "インストラクターの役割はこの支店を含みません。先にスタッフページでこの支店の役割を付与するか、正しい支店を選んでください。",
 };

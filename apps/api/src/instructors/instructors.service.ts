@@ -202,6 +202,7 @@ export class InstructorsService {
       surname: dto.surname,
       email,
       status: 'ACTIVE' as const,
+      awaitingFirstLogin: true,
       emailSent,
     };
   }
@@ -243,20 +244,29 @@ export class InstructorsService {
       }),
     );
 
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) => tx.instructor.findMany({ where: { userId: callerId } }));
+    return this.findMyProfiles(callerId);
+  }
+
+  /** GET /instructors/me/profile (Decision 312) — every Instructor row the
+   * caller holds, so the Complete Profile page can show what's already saved.
+   * An empty list, not a 404, for someone with no profile. */
+  async findMyProfiles(callerId: string) {
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) => tx.instructor.findMany({ where: { userId: callerId } }));
     const names = await resolveUserNames(this.prismaAuth, [callerId]);
     const name = names.get(callerId);
+    const awaiting = await this.resolveAwaitingFirstLogin([callerId]);
     const statusByRow = await Promise.all(
-      updated.map((row) => this.resolveInstructorStatuses(callerId, row.schoolId, [callerId])),
+      rows.map((row) => this.resolveInstructorStatuses(callerId, row.schoolId, [callerId])),
     );
 
     return {
-      items: updated.map((row, i) => ({
+      items: rows.map((row, i) => ({
         ...row,
         firstName: name?.firstName ?? '',
         surname: name?.surname ?? '',
         email: name?.email ?? '',
         status: statusByRow[i].get(callerId) ?? ('REVOKED' as const),
+        awaitingFirstLogin: awaiting.has(callerId),
       })),
       nextCursor: null,
     };
@@ -304,6 +314,7 @@ export class InstructorsService {
     const userIds = page.items.map((i) => i.userId);
     const names = await resolveUserNames(this.prismaAuth, userIds);
     const statuses = await this.resolveInstructorStatuses(callerId, schoolId, userIds);
+    const awaiting = await this.resolveAwaitingFirstLogin(userIds);
     return {
       ...page,
       items: page.items.map((i) => ({
@@ -312,6 +323,7 @@ export class InstructorsService {
         surname: names.get(i.userId)?.surname ?? '',
         email: names.get(i.userId)?.email ?? '',
         status: statuses.get(i.userId) ?? 'REVOKED',
+        awaitingFirstLogin: awaiting.has(i.userId),
       })),
     };
   }
@@ -337,6 +349,20 @@ export class InstructorsService {
     );
     const activeIds = new Set(activeGrants.map((g) => g.userId));
     return new Map(uniqueIds.map((id) => [id, activeIds.has(id) ? 'ACTIVE' : 'REVOKED']));
+  }
+
+  /** Decision 312 — which of these Users still have "Add Manually"'s temporary
+   * passcode, i.e. haven't signed in yet. Same PrismaAuthService lookup as
+   * resolveUserNames (a revoked instructor's User row is hidden by RLS), for
+   * ids the caller already reached through an RLS-scoped Instructor read. */
+  private async resolveAwaitingFirstLogin(userIds: string[]): Promise<Set<string>> {
+    const uniqueIds = [...new Set(userIds)];
+    if (uniqueIds.length === 0) return new Set();
+    const users = await this.prismaAuth.user.findMany({
+      where: { id: { in: uniqueIds }, mustChangePasscode: true },
+      select: { id: true },
+    });
+    return new Set(users.map((u) => u.id));
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
@@ -388,13 +414,27 @@ export class InstructorsService {
     // InstructorsPage's list fetch for names until now.
     const names = await resolveUserNames(this.prismaAuth, [found.userId]);
     const statuses = await this.resolveInstructorStatuses(callerId, found.schoolId, [found.userId]);
+    const awaiting = await this.resolveAwaitingFirstLogin([found.userId]);
     return {
       ...found,
       firstName: names.get(found.userId)?.firstName ?? '',
       surname: names.get(found.userId)?.surname ?? '',
       email: names.get(found.userId)?.email ?? '',
       status: statuses.get(found.userId) ?? 'REVOKED',
+      awaitingFirstLogin: awaiting.has(found.userId),
     };
+  }
+
+  /** GET /instructors/:id/certification-url (Decision 312) — a 15-minute
+   * download link for the certification the instructor uploaded, for the
+   * School Owner/Manager only (the same people who manage instructors). */
+  async getCertificationUrl(callerId: string, instructorId: string) {
+    const existing = await this.findOne(callerId, instructorId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    if (!existing.certificationKey) {
+      throw new NotFoundException("This instructor hasn't uploaded a certification.");
+    }
+    return { url: await this.r2Client.getPresignedDownloadUrl(existing.certificationKey) };
   }
 
   /**
@@ -519,7 +559,7 @@ export class InstructorsService {
       // not Instructor columns) — carried over from the already-resolved `existing`
       // rather than re-querying resolveUserNames/resolveInstructorStatuses for values
       // that can't have changed.
-      return { ...updated, firstName: existing.firstName, surname: existing.surname, email: existing.email, status: existing.status };
+      return { ...updated, firstName: existing.firstName, surname: existing.surname, email: existing.email, status: existing.status, awaitingFirstLogin: existing.awaitingFirstLogin };
     });
   }
 
@@ -600,6 +640,54 @@ export class InstructorsService {
       return current;
     }
     return this.findOne(callerId, instructorId);
+  }
+
+  /**
+   * POST /instructors/:id/reassign (Decision 312) — hands every upcoming Class
+   * and active Timetable slot of this instructor at this School to another
+   * one: exactly what archive()'s 409 asks the owner to do first, in one step
+   * instead of editing each row. Uses the same "upcoming"/"active" test as
+   * assertNoActiveDependents, so archiving works right after. Each row's
+   * branch is checked the way a Class/slot edit checks a new instructor
+   * (assertInstructorAssignable), and nothing moves unless every row can.
+   * Like a Class/slot edit, it sends no notifications, and Classes already
+   * made from a moved slot are moved only if they're upcoming themselves.
+   */
+  async reassign(callerId: string, instructorId: string, toUserId: string) {
+    const existing = await this.findOne(callerId, instructorId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (toUserId === existing.userId) {
+      throw new BadRequestException('Choose a different instructor to take over.');
+    }
+
+    const schoolId = existing.schoolId;
+    const now = new Date();
+    const [classes, slots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.class.findMany({ where: { schoolId, instructorId: existing.userId, endDate: { gte: now }, archivedAt: null }, select: { id: true, branchId: true } }),
+        tx.timetableSlot.findMany({ where: { schoolId, instructorId: existing.userId, status: 'ON', archivedAt: null }, select: { id: true, branchId: true } }),
+      ]),
+    );
+    if (classes.length === 0 && slots.length === 0) {
+      return { classesMoved: 0, slotsMoved: 0 };
+    }
+    const branchIds = [...new Set([...classes, ...slots].map((r) => r.branchId))];
+    for (const branchId of branchIds) {
+      await this.tenantAuth.assertInstructorAssignable(callerId, toUserId, schoolId, branchId);
+    }
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const movedClasses = await tx.class.updateMany({
+        where: { id: { in: classes.map((c) => c.id) }, instructorId: existing.userId },
+        data: { instructorId: toUserId },
+      });
+      const movedSlots = await tx.timetableSlot.updateMany({
+        where: { id: { in: slots.map((t) => t.id) }, instructorId: existing.userId },
+        data: { instructorId: toUserId },
+      });
+      return { classesMoved: movedClasses.count, slotsMoved: movedSlots.count };
+    });
   }
 
   /** A branch of this School that isn't archived (Decision 311, I4) — the

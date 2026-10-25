@@ -380,6 +380,8 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "有 {v1} 名学员{v2}持有此腰带，因此无法{v3}。",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "该教练已归档。请在教练页面取消归档，或选择其他教练。",
   "This person is no longer an instructor at this School.": "此人已不再是本学校的教练。",
+  "This instructor hasn't uploaded a certification.": "该教练尚未上传资质证书。",
+  "Choose a different instructor to take over.": "请选择另一位教练接手。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "其教练角色仅适用于部分分校，因此资料不能设为整个学校。请选择其分校。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "其教练角色不包括此分校。请先在员工页面为其授予该分校的角色，或选择其分校。",
 };

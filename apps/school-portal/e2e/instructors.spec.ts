@@ -56,7 +56,7 @@ test('a School with branches requires one before Add Manually will submit', asyn
   // stays open with nothing created, rather than any particular message text.
   await expect(page.getByRole('dialog', { name: 'Add instructor manually' })).toBeVisible();
 
-  await page.getByLabel('Branch').selectOption({ label: 'North' });
+  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
   await page.getByRole('button', { name: 'Add instructor' }).last().click();
   await expect(page.getByText(/was added/)).toBeVisible();
 });
@@ -93,11 +93,12 @@ test('the owner invites an existing eligible user (already a Student) to the Ins
   const roles = (await db.roleGrant.findMany({ where: { userId: existing.id, revokedAt: null } })).map((g) => g.role).sort();
   expect(roles).toEqual(['INSTRUCTOR', 'STUDENT']);
 
-  // They're now an eligible candidate for "Add instructor" — the role grant
-  // and the Instructor profile are deliberately separate steps (see
-  // InstructorsService.create()'s own header comment).
-  await page.getByRole('button', { name: 'Add instructor' }).click();
-  await expect(page.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
+  // The role grant and the Instructor profile are deliberately separate steps
+  // (see InstructorsService.create()'s own header comment); "Add instructor"
+  // opens next with them already picked (Decision 312).
+  const add = page.getByRole('dialog', { name: /Add instructor/i });
+  await expect(add.getByLabel('User')).toHaveValue(existing.id);
+  await expect(add.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
 });
 
 test('no existing account is found by email/phone — a clear message, no grant created', async ({ page }) => {
@@ -128,7 +129,7 @@ test('a School with branches requires one before granting the Instructor role wi
     db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } }),
   ).resolves.toBeNull();
 
-  await page.getByLabel('Branch').selectOption({ label: 'North' });
+  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
   await page.getByRole('button', { name: 'Grant Instructor role' }).click();
   await expect(page.getByText(/Instructor role granted/)).toBeVisible();
   const grant = await db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
