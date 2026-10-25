@@ -186,7 +186,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 |---|---|---|---|
 | PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ❌ | Wanted, report only (Decision 320) |
 | PY2 | **Download** the report | ❌ | Wanted (Decision 320) |
-| PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. Open: substitutes and classes with more than one coach (Decision 320) |
+| PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. The substitute is paid, not the assigned coach (needs a way to mark a substitute on a single class, not built yet). With more than one coach, each is paid in full (Decision 320) |
 
 ## 6. Settings → Billing
 
