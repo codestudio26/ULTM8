@@ -51,7 +51,8 @@ into the decision log under the next free numbers.**
 | Settings → Members (all rows + sign-up form builder) | ✅ chat screenshots | §9 |
 | Members → Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff | 🟡 screenshots 25 Oct 2026 (Bookings settings pages still needed) | §5 |
-| Gym → Payroll, Programs | ❌ not yet | — |
+| Gym → Payroll | ✅ screenshots 25 Oct 2026 | §5 |
+| Gym → Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
@@ -176,8 +177,16 @@ including a filled-in example where possible. Empty screens hide most fields.
 | ST3 | **Account Access** tick boxes per staff member with **Toggle All**, grouped: Members (view, invoices, edit, check-in, settings, tags), Billing (payment list, modify, collect, mark paid, settings, processor), Point-of-sale, Website, Marketing, Account (staff management, tasks, payroll), Functionality (front-desk mode, dashboard notifications), Gym (schedule, settings) | ❌ | Wanted: one Access page per staff member, holding every "staff the owner grants access" right and the existing toggles (Decision 320). Each box is checked against Spec 55 §8 before it is built |
 | ST4 | Owner row: **Owner profile**, all permissions, can't be removed | ✅ | The owner always has every right |
 | ST5 | Personal staff **Check-in Code** (4 digits) | ❌ | Wanted: personal code per staff member, unlocks the kiosk, logged (Decision 320) |
-| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ❓ | Waiting for the Payroll tab screenshots (Decision 320) |
+| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ❌ | Wanted: hourly and per-class rates (Decision 320) |
 | ST7 | Billing/Point-of-sale/Website/Marketing boxes | — | Only the boxes for features ULTM8 has or decides to build |
+
+### Gym → Payroll (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ❌ | Wanted, report only (Decision 320) |
+| PY2 | **Download** the report | ❌ | Wanted (Decision 320) |
+| PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. Open: substitutes and classes with more than one coach (Decision 320) |
 
 ## 6. Settings → Billing
 
