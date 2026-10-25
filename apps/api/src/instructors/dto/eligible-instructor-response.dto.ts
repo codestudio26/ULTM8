@@ -16,6 +16,14 @@ export class EligibleInstructorUserDto {
   /** Included to disambiguate same-name candidates in the picker UI. */
   @ApiProperty()
   email!: string;
+
+  /** Their Instructor role covers the whole School (Decision 311). */
+  @ApiProperty()
+  schoolWide!: boolean;
+
+  /** The branches their Instructor role is for, when not the whole School. */
+  @ApiProperty({ type: [String] })
+  branchIds!: string[];
 }
 
 export class EligibleInstructorListResponseDto {

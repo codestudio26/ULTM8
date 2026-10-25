@@ -4619,6 +4619,72 @@ User, 22 Oct 2026, after the Disciplines section review.
 
 ---
 
+## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 115, 169, 226, 230, 296
+
+The Instructors review of 23 Oct 2026 found fourteen bugs (I1–I14). The product owner: *"Find the best solution until you get confident that that's the best solution have many passes and then build it"*.
+
+### Decision
+
+1. **The belts box lists current instructors only (I1).** "Instructors' belts" no longer fails for the whole School once someone who chose a belt is revoked: their belt is left out, and verifying it says they are no longer an instructor here.
+2. **An archived instructor gets no new work (I2).** A new Class, timetable slot or lesson, or a change of instructor on one, refuses an archived instructor. The pickers on Classes, Timetable and Curriculum offer only active, unarchived instructors; a record that already has an archived or revoked instructor keeps them, marked, until it is changed. Someone with the Instructor role but no profile yet can still be picked, as before.
+3. **The roster shows every instructor, A to Z (I3).** The portal reads every page of the list instead of only the first 20. Every instructor picker and name lookup uses the same list.
+4. **No instructor joins an archived branch (I4).** Add manually, Add instructor and Edit refuse an archived branch, as Decision 296 already does for staff and coaches. A profile already on a branch that was archived later stays editable.
+5. **Revoking keeps its current rule, with a warning (I5).** Revoking an instructor is still allowed while they have upcoming classes; the confirmation now says how many and that those classes keep them until the owner changes it. A Class, timetable slot or lesson checks its instructor again only when the instructor or the branch actually changes, so the owner can still rename or reassign one whose instructor has left.
+6. **Archive is blocked only by what the owner can see (I6).** Only this School's live (unarchived) upcoming classes and active timetable slots block archiving.
+7. **The Status column shows Active or Revoked (I7).** The always-empty Login column is removed.
+8. **A revoked instructor's profile can still be edited (I8).** Only moving it to another branch checks the role again, with a plain message. This replaces the earlier deliberate "update() throws" side effect noted in InstructorsService.
+9. **"Add instructor" offers only people with no profile here yet (I9).** It also returns the branches each person's role covers, and the form starts on that branch.
+10. **Names are trimmed and can't be blank (I10)** in Add manually.
+11. **Coaches and Branch Staff who open the Instructors page go to their start page (I11)** instead of a blank page, as Decision 296 did for the Staff page.
+12. **Archive asks "Are you sure?" first (I12).** Unarchive does not need to.
+13. **A profile's branch must be one the role covers (I13).** A whole-School profile needs a whole-School Instructor role; a branch profile needs a whole-School role or one at that branch.
+14. **The detail page lists every class, split into upcoming and past (I14).** Archived classes are left out; past classes show the latest ten with "Show all"; the booked count shows only on upcoming classes, since it counts upcoming bookings.
+
+### What this does NOT resolve
+
+- **Revoking with upcoming classes (question 2 of the review).** Whether revoking should be blocked until classes are reassigned, or clear their instructor, is still the product owner's call. Until then it stays allowed, with the warning above. Timetable slots of a revoked instructor keep generating classes with them.
+- **Colleagues' profiles (question 1).** Any instructor or Branch Staff member can still read colleagues' full profiles (address, certification key) through the API.
+- **Archive and the role (question 3).** Archiving still leaves the person's login and Instructor role in place.
+- Existing profiles whose branch doesn't match their role (made before item 13) are left as they are.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.
+
+---
+
+## Decision 312 — Instructors: search and filters, hand over classes, give the role back, and what instructors filled in
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 115, 217, 226, 230, 311
+
+After the Decision 311 fixes, the product owner asked for the gaps the 23 Oct 2026 Instructors review listed: *"after fixing the bugs find best way of building the missing things prepare everything and check it to be error less and then start building it"*.
+
+### Decision
+
+1. **Roster search and filters.** The Instructors page has a search (name or email) and Branch, Style and Status filters, worked out in the browser from the full list (Decision 311, I3). Status includes "Hasn't signed in yet".
+2. **"Hasn't signed in yet".** Instructor responses carry `awaitingFirstLogin`: true while the person still has "Add manually"'s temporary passcode (`User.mustChangePasscode`). Shown on the roster and the detail page.
+3. **Invite, then add.** After "Invite existing user" grants the Instructor role, "Add instructor" opens straight away with that person and their branch picked, instead of a notice telling the owner to do it.
+4. **The detail page shows what the instructor filled in** on their Complete Profile page: activities, address and certification (with the consent date). Specializations (the School's styles, set by the owner) and activities (the instructor's own words) are shown as two separate, labelled lists; whether to merge them is not decided here. It also shows their branch, the Archived badge, and their active weekly timetable slots.
+5. **Certification download.** New `GET /instructors/:id/certification-url` returns a 15-minute link to the uploaded file, for the School Owner/Manager only (the same people who manage instructors), using the existing presigned-download helper waiver signatures use.
+6. **Hand over classes.** New `POST /instructors/:id/reassign { toUserId }` moves every upcoming, unarchived Class and every active (ON), unarchived timetable slot of this instructor at this School to another instructor, in one transaction, all or nothing. It uses the same "upcoming"/"active" test archiving does, so archiving works straight after. The new instructor must be assignable at each row's branch (the check a Class edit already makes: active Instructor role covering the branch, profile not archived). Like a Class or slot edit, it sends no notifications; past classes keep their instructor. School Owner/Manager only.
+7. **Give the role back.** A revoked instructor's detail page has "Give Instructor role back", which makes the same Instructor role grant the Staff page and "Invite existing user" make (`POST /users/:id/role-grants`), at the profile's branch by default.
+8. **Complete Profile starts from what's saved.** New `GET /instructors/me/profile` returns the caller's own Instructor profiles (an empty list if none); the page fills in the saved address and activities and says when a certification is already on file. Emptying a saved activities list now clears it.
+
+### What this does NOT resolve
+
+- **Resending the temporary passcode** to someone who hasn't signed in yet. It means making a new passcode for another person's account, so it waits for the product owner.
+- **Instructors editing their own bio, photo or phone.** Only the owner can change those today; whether instructors may is the product owner's call.
+- **Merging specializations and activities** (item 4).
+- Decision 311's open questions still stand: revoking with upcoming classes (now with "Hand over classes" as the way to clear them), colleagues reading each other's full profiles, and whether archiving should remove the role.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.
+
+---
+
 ## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
 
 **Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
@@ -4654,4 +4720,3 @@ User, 23 Oct 2026, answering the follow-up questions on the reminder.
 ### Recorded by
 
 User, 23 Oct 2026, answering the B10 follow-up questions.
-

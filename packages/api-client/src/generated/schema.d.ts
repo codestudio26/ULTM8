@@ -1572,6 +1572,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/instructors/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorsController_findMyProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["InstructorsController_completeMyProfile"];
+        trace?: never;
+    };
     "/v1/instructors/{id}": {
         parameters: {
             query?: never;
@@ -1620,6 +1636,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/instructors/{id}/certification-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorsController_getCertificationUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/instructors/{id}/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/instructors/{id}/classes": {
         parameters: {
             query?: never;
@@ -1650,22 +1698,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/instructors/me/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["InstructorsController_completeMyProfile"];
         trace?: never;
     };
     "/v1/instructors/me/certification-upload-url": {
@@ -4974,6 +5006,7 @@ export interface components {
             email: string;
             /** @enum {string} */
             status: "ACTIVE" | "REVOKED";
+            awaitingFirstLogin: boolean;
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
@@ -5007,6 +5040,8 @@ export interface components {
             firstName: string;
             surname: string;
             email: string;
+            schoolWide: boolean;
+            branchIds: string[];
         };
         EligibleInstructorListResponseDto: {
             items: components["schemas"]["EligibleInstructorUserDto"][];
@@ -5022,6 +5057,20 @@ export interface components {
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
+        };
+        CertificationUrlResponseDto: {
+            /** @description Presigned GET URL for the uploaded certification file, valid for 15 minutes. */
+            url: string;
+        };
+        ReassignInstructorDto: {
+            /** @description User id of the instructor taking over (Class.instructorId is a User id). */
+            toUserId: string;
+        };
+        ReassignInstructorResponseDto: {
+            /** @description Upcoming Classes moved to the new instructor. */
+            classesMoved: number;
+            /** @description Active Timetable slots moved to the new instructor. */
+            slotsMoved: number;
         };
         InstructorClassResponseDto: {
             id: string;
@@ -5064,6 +5113,7 @@ export interface components {
             email: string;
             /** @enum {string} */
             status: "ACTIVE" | "REVOKED";
+            awaitingFirstLogin: boolean;
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
@@ -9405,6 +9455,48 @@ export interface operations {
             };
         };
     };
+    InstructorsController_findMyProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_completeMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteInstructorProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorListResponseDto"];
+                };
+            };
+        };
+    };
     InstructorsController_findOne: {
         parameters: {
             query?: never;
@@ -9493,6 +9585,52 @@ export interface operations {
             };
         };
     };
+    InstructorsController_getCertificationUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificationUrlResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_reassign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReassignInstructorDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReassignInstructorResponseDto"];
+                };
+            };
+        };
+    };
     InstructorsController_findClasses: {
         parameters: {
             query?: {
@@ -9539,29 +9677,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateInstructorManuallyResponseDto"];
-                };
-            };
-        };
-    };
-    InstructorsController_completeMyProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompleteInstructorProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InstructorListResponseDto"];
                 };
             };
         };

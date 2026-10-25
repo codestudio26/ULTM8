@@ -378,4 +378,10 @@ export const serverMessages: Record<string, string> = {
   "{v1} is not Cash/Bank Transfer-eligible.": "{v1} komt niet in aanmerking voor contante betaling of bankoverschrijving.",
   "{v1} student{v2} a rank in this style, so it can't be deleted.": "Er zijn leerlingen met een graad in deze stijl ({v1} student{v2}), dus deze kan niet worden verwijderd.",
   "{v1} student{v2} this belt, so it can't be {v3}.": "Er zijn leerlingen met deze band ({v1} student{v2}), dus deze kan niet worden verwijderd of gearchiveerd ({v3}).",
+  "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Deze instructeur is gearchiveerd. Zet hem terug op de pagina Instructeurs of kies een andere instructeur.",
+  "This person is no longer an instructor at this School.": "Deze persoon is geen instructeur meer bij deze school.",
+  "This instructor hasn't uploaded a certification.": "Deze instructeur heeft geen certificaat geüpload.",
+  "Choose a different instructor to take over.": "Kies een andere instructeur om het over te nemen.",
+  "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "De instructeursrol geldt alleen voor bepaalde vestigingen, dus het profiel kan niet voor de hele school gelden. Kies de vestiging.",
+  "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "De instructeursrol geldt niet voor deze vestiging. Geef eerst daar de rol op de pagina Personeel, of kies de juiste vestiging.",
 };

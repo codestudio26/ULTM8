@@ -39,7 +39,7 @@ export class ClassesService {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
     }
     if (dto.instructorId) {
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
     }
 
     const startDate = new Date(dto.startDate);
@@ -146,7 +146,12 @@ export class ClassesService {
     // (instructorId omitted, so the existing one carries forward) can move the Class to
     // a Branch its existing instructor isn't authorized to teach at; without this, that
     // went unchecked (caught by /code-review's high-effort pass — see PR history).
-    if (nextInstructorId) {
+    // Decision 311 (I5): only when the instructor or the branch actually
+    // changes. A Class whose instructor has since left stays editable (to
+    // reassign it, or fix its title) instead of failing on every save.
+    if (nextInstructorId && nextInstructorId !== existing.instructorId) {
+      await this.tenantAuth.assertInstructorAssignable(callerId, nextInstructorId, existing.schoolId, nextBranchId);
+    } else if (nextInstructorId && nextBranchId !== existing.branchId) {
       await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 
