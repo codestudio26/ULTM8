@@ -1575,7 +1575,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "geen instructeur meer",
     awaitingFirstLogin: "Nog niet ingelogd",
     filters: {
-      search: "Zoeken",
+      search: "Instructeurs zoeken",
       searchPlaceholder: "Naam of e-mail",
       branch: "Vestiging",
       style: "Stijl",

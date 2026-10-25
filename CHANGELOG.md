@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors search box is labelled "Search instructors"** — it was
+  just "Search", the same name as the header search, so screen readers
+  announced two identical boxes on the page. It now matches "Search classes"
+  and "Search students", in all 15 languages.
 - **Instructors: search, hand over classes, give the role back** (Decision
   312) — the roster has a search and Branch, Style and Status filters, and
   shows who hasn't signed in yet; "Invite existing user" goes straight on to

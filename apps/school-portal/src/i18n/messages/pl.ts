@@ -1655,7 +1655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "nie jest już instruktorem",
     awaitingFirstLogin: "Jeszcze się nie zalogował(a)",
     filters: {
-      search: "Szukaj",
+      search: "Szukaj instruktorów",
       searchPlaceholder: "Imię i nazwisko lub e-mail",
       branch: "Oddział",
       style: "Styl",

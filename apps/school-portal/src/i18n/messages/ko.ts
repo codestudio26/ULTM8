@@ -1535,7 +1535,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "더 이상 강사 아님",
     awaitingFirstLogin: "아직 로그인하지 않음",
     filters: {
-      search: "검색",
+      search: "사범 검색",
       searchPlaceholder: "이름 또는 이메일",
       branch: "지점",
       style: "스타일",

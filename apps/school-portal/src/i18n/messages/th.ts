@@ -1535,7 +1535,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "ไม่ใช่ครูฝึกแล้ว",
     awaitingFirstLogin: "ยังไม่ได้เข้าสู่ระบบ",
     filters: {
-      search: "ค้นหา",
+      search: "ค้นหาผู้ฝึกสอน",
       searchPlaceholder: "ชื่อหรืออีเมล",
       branch: "สาขา",
       style: "สไตล์",
