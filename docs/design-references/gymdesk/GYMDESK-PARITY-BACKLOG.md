@@ -43,14 +43,16 @@ into the decision log under the next free numbers.**
 | Left nav | ✅ 04 | `DESIGN-BRIEF.md` |
 | Members → Members, Add Member | ✅ 06–09, recording | §3 |
 | Members → Memberships, Add Membership Option | ✅ 06, recording | §4 |
-| Gym → Schedule | ✅ recording (empty week view only) | §5 |
+| Gym → Schedule | ✅ recording, plus screenshots 25 Oct 2026 (schedules, roster assign, settings, grid) | §5 |
 | Settings → Billing settings, Payment processor | ✅ recording | §6 |
 | Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
 | Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
 | Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
 | Settings → Members (all rows + sign-up form builder) | ✅ chat screenshots | §9 |
 | Members → Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
-| Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
+| Gym → Bookings, Managers & Staff | 🟡 screenshots 25 Oct 2026 (Bookings settings pages still needed) | §5 |
+| Gym → Payroll | ✅ screenshots 25 Oct 2026 | §5 |
+| Gym → Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
@@ -144,7 +146,47 @@ including a filled-in example where possible. Empty screens hide most fields.
 |---|---|---|---|
 | S1 | Week view with date-range picker, List/Grid toggle | ✅ | Timetable Daily/Weekly/Monthly |
 | S2 | Programme filter | 🟡 | Filters exist; naming differs (Discipline) |
-| S3 | Schedule settings | ❓ | Need screenshots |
+| S3 | Schedule settings: **week start** day (Sunday/Monday) | ❌ | Wanted (Decision 319) |
+| S4 | Schedule settings: **time zone** | ✅ | Branch, then School, time zone (Decision 172) |
+| S5 | Schedule settings: **default layout** (list or grid) | ❌ | Wanted (Decision 319) |
+| S6 | **Google Calendar** connect | ❌ | Wanted: staff see their classes in Google Calendar (Decision 319) |
+| S7 | **Schedule embed** for the School's own website | ❌ | Wanted (Decision 319) |
+| S8 | **Close gym**: hide the schedule for a period, optionally freeze every membership | ❌ | Wanted as closure dates (Decision 319) |
+| S9 | **Several named schedules** ("Create Schedule": title, visibility *Visible to all* or narrower, *Receive booking notifications*); "All Schedules" filter | ❌ | Not wanted: one timetable per Branch, filtered by style and class type (Decision 319) |
+| S10 | **Assign → Assign Roster**: "Use rosters to assign members to a group of sessions on the schedule"; roster list with "+ Create new roster" | ❌ | Not wanted: rosters stay lists only (Decisions 317, 319) |
+| S11 | **Grid view**: hourly grid, 12:00am onward, one column per day (like Google Calendar) | 🟡 | Timetable has Daily/Weekly/Monthly; an hourly grid to check against the design |
+| S12 | **Assign** menu (adding a class, a roster, …) | ❓ | Need the ASSIGN menu opened and the add-class form (screenshots of 25 Oct 2026 show it closed) |
+
+### Gym → Bookings (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BK1 | **Session Bookings** page: tabs **Upcoming**, **Previous**, **Book Session**, **Settings**; search by first or last name; **Filter** | 🟡 | ULTM8 has each class's bookings, each student's bookings, staff booking from the Timetable and the Dashboard "Bookings this week" drill-down, but **no single School-wide bookings list** with upcoming/previous, name search and filters |
+| BK2 | **Book Session** (staff book a member into a session) | ✅/🟡 | Timetable click-to-book exists; compare with Gymdesk's form once captured |
+| BK3 | Settings → Bookings → **Booking Settings** ("control booking access and general settings") | ❓ | Need the page opened |
+| BK4 | Settings → Bookings → **Booking Notifications** ("booking related email and text notifications") | ❓ | Need the page opened. Text (SMS) is later (Decision 318) |
+| BK5 | Settings → Bookings → **Booking Widget** ("in the member portal and for external websites") | ❓ | Need the page opened. Website embed is wanted (Decision 319) |
+| BK6 | Settings → Bookings → **Booking Forms** ("manage and customise booking forms") | ❓ | Need the page opened |
+
+### Gym → Managers & Staff (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| ST1 | **Gym Staff** list: name, email, role, permissions summary ("All permissions"), date added, edit | ✅/🟡 | Staff and Instructors pages exist; no permissions summary column yet (comes with ST3) |
+| ST2 | **Add Staff Member**: type **Manager / Instructor / Front-Desk**, name, email, phone, *Send invitation* | ✅ | Invite flows exist. Front-Desk = Branch Staff (Decision 320) |
+| ST3 | **Account Access** tick boxes per staff member with **Toggle All**, grouped: Members (view, invoices, edit, check-in, settings, tags), Billing (payment list, modify, collect, mark paid, settings, processor), Point-of-sale, Website, Marketing, Account (staff management, tasks, payroll), Functionality (front-desk mode, dashboard notifications), Gym (schedule, settings) | ❌ | Wanted: one Access page per staff member, holding every "staff the owner grants access" right and the existing toggles (Decision 320). Each box is checked against Spec 55 §8 before it is built |
+| ST4 | Owner row: **Owner profile**, all permissions, can't be removed | ✅ | The owner always has every right |
+| ST5 | Personal staff **Check-in Code** (4 digits) | ❌ | Wanted: personal code per staff member, unlocks the kiosk, logged (Decision 320) |
+| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ❌ | Wanted: hourly and per-class rates (Decision 320) |
+| ST7 | Billing/Point-of-sale/Website/Marketing boxes | — | Only the boxes for features ULTM8 has or decides to build |
+
+### Gym → Payroll (screenshots 25 Oct 2026)
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ❌ | Wanted, report only (Decision 320) |
+| PY2 | **Download** the report | ❌ | Wanted (Decision 320) |
+| PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. The substitute is paid, not the assigned coach (needs a way to mark a substitute on a single class, not built yet). With more than one coach, each is paid in full (Decision 320) |
 
 ## 6. Settings → Billing
 
