@@ -335,6 +335,27 @@ On a phone every one of these pages shows its content first and the side panel b
 - **Skills** show **Required for** (the grades that need them, in ladder order) and how many **lessons** teach them, and the owner puts them in order with ↑ ↓. The Skills tab rows show the lesson count and have the same ↑ ↓.
 - **Coach / Branch Staff view (G3c):** the same page, read-only: no Edit, Archive, Add, drag or order buttons, no per-belt student counts and no Students card, and the note "Only the School owner can change this style."
 
+### Styles & Belts: Promotion rules card (Decision 321, 25 Oct 2026)
+A **Promotion rules** card sits between the style switch and the Ladder. It is the same on desktop and phone (on a phone the tick boxes and the three options stack). The owner changes it; a coach sees it read-only, with "Only the School owner changes these."
+- **Requirements**, as tick boxes, each with a one-line meaning:
+  - **Classes**, **Days in rank** and **Skills** are ticked by default;
+  - **Hours**, **Days attended** and **Minimum age** are not.
+
+  "Only ticked requirements show in the belt editor and are checked when grading." If nothing is ticked, an amber box asks for at least one.
+- **Promotion setting**, as three option cards: **Manual** (the default), **Auto-award stripes**, **Auto-award all ranks**. When it is automatic, a grey box explains it:
+  - promotions happen as soon as every ticked requirement is met;
+  - a promotion fee is waited for;
+  - the student (or Guardian) and the style's coaches are told;
+  - a coach who may promote can undo it.
+- **Auto-assign first belt** switch (on by default): "A student with no belt in this style gets its first belt at their first class. They can still declare a higher belt for staff to check."
+- **Belt editor, "What it takes":** only the ticked requirements show.
+  - Classes brings Which classes count, Class types, Classes required and Weekly cap.
+  - Days in rank, Hours required, Days attended and Minimum age each bring one field.
+  - Skills brings Required skills.
+  - Unlocks booking for always shows.
+  - "Done" and the empty-grade check count only ticked requirements.
+- **The ladder rows and the belt panel** list only the ticked requirements (e.g. "· 12 h", "· age 16+").
+
 ### Grading settings: "Promotion to decide" reminder (Decision 313)
 A new always-on row under the whole-School notifications: one reminder to the coaches who may promote, 3 days after a fee was cancelled or a declined fee was waived, only when the student is fully ready (every class required, enough days, every skill signed off). It is not repeated and the promotion never times out. "Ready to grade" now says plainly that it is sent only when a student is fully ready, even though the board's Ready to Grade column starts at 66%.
 

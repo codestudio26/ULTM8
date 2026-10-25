@@ -4876,7 +4876,7 @@ User, 25 Oct 2026, reviewing Gymdesk's Managers & Staff and Payroll.
    The belt editor shows only the ticked requirements' fields. An unticked requirement is not checked, even if a belt still holds a number for it.
 2. **Hours, per style (amends Decision 306).** A style that ticks Hours counts hours trained toward its belts. The hours are the ones already logged (Decision 301/306, B11); open mat counts only while its switch is on. A style that doesn't tick Hours works as Decision 306 says: hours are logged and shown, never counted.
 3. **Days attended:** the number of different days the student checked in to a class of the style since their last promotion. Two classes on one day count once. It is counted per rung, like Classes.
-4. **Minimum age, per belt:** the student must be at least this age on the day they're promoted. A student who meets everything else waits until their birthday.
+4. **Minimum age, per belt:** the student must be at least this age on the day they're promoted. It is set in the belt editor like the other requirements: usually on the belt's plain grade, and a stripe grade can have one too. Empty means any age. A student who meets everything else waits until their birthday.
 5. **Automatic promotion, per style, set by the owner.** The choices are:
    - **Manual** (the default; the coach decides, as today);
    - **Auto-award stripes** (stripes are given automatically; belts stay manual);
