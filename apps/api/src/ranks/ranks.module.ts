@@ -11,6 +11,8 @@ import { GradingPermissionsService } from './grading-permissions.service';
 import { InstructorBeltsController } from './instructor-belts.controller';
 import { InstructorBeltsService } from './instructor-belts.service';
 import { GradingErasureService } from './grading-erasure.service';
+import { PromotionFeeController } from './promotion-fee.controller';
+import { PromotionFeeService } from './promotion-fee.service';
 
 /**
  * Phase 10b scope only: Discipline/Rank/Skill catalog CRUD + single-Student
@@ -31,11 +33,13 @@ import { GradingErasureService } from './grading-erasure.service';
   // GuardiansModule: GuardiansService.assertGuardianOfStudent() for Guardian
   // read access to a linked minor's grading (Decision 132).
   imports: [TenantsModule, GuardiansModule, QueueModule],
-  controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController],
+  controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController, PromotionFeeController],
   // GradingErasureService: not called by anything yet (Decision 134 groundwork
   // only, no account-deletion endpoint exists) — exported so a future
   // account-deletion job can inject it once it's built.
-  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService],
-  exports: [GradingErasureService],
+  // PromotionFeeService: exported so staff-created charges (Decision 303)
+  // can call markPaid() once they are built.
+  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService, PromotionFeeService],
+  exports: [GradingErasureService, PromotionFeeService],
 })
 export class RanksModule {}

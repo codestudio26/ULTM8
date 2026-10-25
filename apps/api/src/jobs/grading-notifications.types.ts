@@ -2,8 +2,9 @@ import { Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 
 /**
- * Payloads for the `grading-notifications` queue (Decisions 145, 178). Job
- * names: 'ready-check', 'promoted', and the daily 'sweep' (no payload).
+ * Payloads for the `grading-notifications` queue (Decisions 145, 178, 300,
+ * 313). Job names: 'ready-check', 'promoted', 'fee-requested', and the daily
+ * 'sweep' (no payload; it also sends the "to decide" reminders).
  */
 
 /** Check whether a student is now ready for their next rung: in one style, or
@@ -21,6 +22,17 @@ export interface GradingPromotedJobData {
   disciplineName: string;
   toRungName: string;
   kind: 'PROMOTED' | 'STRIPE' | 'ADJUSTED';
+}
+
+/** A promotion fee request was made (Decision 300): the job tells the payer,
+ * the student or, for a Guardian-linked minor, each linked guardian. */
+export interface GradingFeeRequestedJobData {
+  feeRequestId: string;
+  studentId: string;
+  disciplineName: string;
+  toRungName: string;
+  amountMinor: number;
+  currency: string | null;
 }
 
 const logger = new Logger('GradingNotifications');
