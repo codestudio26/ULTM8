@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, SuccessBanner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { Avatar } from '../lib/Avatar';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
 import {
   useArchiveInstructor,
@@ -42,6 +43,11 @@ function SpecializationBadges({ specializations }: { specializations: string[] }
   );
 }
 
+/** The Branch filter's "whole School" choice (profiles with no branch). */
+const WHOLE_SCHOOL = '__whole-school__';
+/** Status filter value for "Hasn't signed in yet" (Decision 312). */
+const AWAITING = '__awaiting__';
+
 export function InstructorsPage() {
   const t = useT();
   const navigate = useNavigate();
@@ -57,6 +63,9 @@ export function InstructorsPage() {
   const unarchiveInstructor = useUnarchiveInstructor(schoolId ?? '');
   const inviteToInstructorRole = useInviteStaff();
   const [creating, setCreating] = useState(false);
+  // Who "Add instructor" starts on, right after "Invite existing user"
+  // granted them the role (Decision 312, F9): one flow instead of two.
+  const [createPreset, setCreatePreset] = useState<{ userId: string; branchId: string | null } | null>(null);
   const [addingManually, setAddingManually] = useState(false);
   const [invitingExisting, setInvitingExisting] = useState(false);
   const [editing, setEditing] = useState<InstructorResponse | null>(null);
@@ -74,16 +83,34 @@ export function InstructorsPage() {
   // archived) is always fetched (useInstructors passes includeArchived:
   // true) so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
+  // Archive asks first (Decision 311, I12); Unarchive needs no confirmation.
+  const [confirmingArchive, setConfirmingArchive] = useState<InstructorResponse | null>(null);
+  // Roster search and filters, all on the already-loaded list (Decision 312, F1).
+  const [search, setSearch] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
+  const [styleFilter, setStyleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  if (!schoolId) return null;
+  // Only the School's owner manages instructors; anyone else who opens this
+  // page goes to their own start page instead of a blank one (Decision 311, I11).
+  if (!schoolId) return <Navigate to="/" replace />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('instructors.loadFailed')} />;
 
   const allInstructors = data?.items ?? [];
   const archivedCount = allInstructors.filter((i) => i.archivedAt).length;
-  const instructors = showArchived ? allInstructors : allInstructors.filter((i) => !i.archivedAt);
   const branches = branchData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
+  const query = search.trim().toLowerCase();
+  const instructors = allInstructors.filter(
+    (i) =>
+      (showArchived || !i.archivedAt) &&
+      (!query || `${i.firstName} ${i.surname} ${i.email}`.toLowerCase().includes(query)) &&
+      (!branchFilter || (branchFilter === WHOLE_SCHOOL ? !i.branchId : i.branchId === branchFilter)) &&
+      (!styleFilter || i.specializationStyleIds.includes(styleFilter)) &&
+      (!statusFilter || (statusFilter === AWAITING ? i.awaitingFirstLogin : i.status === statusFilter)),
+  );
+  const filtering = !!(query || branchFilter || styleFilter || statusFilter);
 
   return (
     <>
@@ -102,17 +129,65 @@ export function InstructorsPage() {
             <Button variant="secondary" onClick={() => setAddingManually(true)}>
               {t('instructors.addManually')}
             </Button>
-            <Button onClick={() => setCreating(true)}>{t('instructors.addInstructor')}</Button>
+            <Button onClick={() => { setCreatePreset(null); setCreating(true); }}>{t('instructors.addInstructor')}</Button>
           </>
         }
       />
       {actionError ? <ErrorBanner message={actionError} /> : null}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 200 }}>
+              <Field label={t('instructors.filters.search')} htmlFor="instructors-search">
+                <TextField id="instructors-search" type="search" placeholder={t('instructors.filters.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+              </Field>
+            </div>
+            {branches.length > 0 ? (
+              <div style={{ minWidth: 160 }}>
+                <Field label={t('instructors.filters.branch')} htmlFor="instructors-branch-filter">
+                  <SelectField
+                    id="instructors-branch-filter"
+                    value={branchFilter}
+                    onChange={(e) => setBranchFilter(e.target.value)}
+                    options={[{ value: '', label: t('instructors.filters.any') }, { value: WHOLE_SCHOOL, label: t('instructors.allBranches') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                  />
+                </Field>
+              </div>
+            ) : null}
+            {disciplines.length > 0 ? (
+              <div style={{ minWidth: 160 }}>
+                <Field label={t('instructors.filters.style')} htmlFor="instructors-style-filter">
+                  <SelectField
+                    id="instructors-style-filter"
+                    value={styleFilter}
+                    onChange={(e) => setStyleFilter(e.target.value)}
+                    options={[{ value: '', label: t('instructors.filters.any') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
+                  />
+                </Field>
+              </div>
+            ) : null}
+            <div style={{ minWidth: 140 }}>
+              <Field label={t('instructors.filters.status')} htmlFor="instructors-status-filter">
+                <SelectField
+                  id="instructors-status-filter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  options={[
+                    { value: '', label: t('instructors.filters.any') },
+                    { value: 'ACTIVE', label: t('lib.instructorStatus.active') },
+                    { value: 'REVOKED', label: t('lib.instructorStatus.revoked') },
+                    { value: AWAITING, label: t('instructors.awaitingFirstLogin') },
+                  ]}
+                />
+              </Field>
+            </div>
+          </div>
           {/* Decision 226 — archived Instructor profiles are hidden by default. */}
           <Checkbox label={archivedCount ? t('instructors.showArchivedCount', { count: archivedCount }) : t('instructors.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
         </div>
-        {instructors.length === 0 ? (
+        {instructors.length === 0 && filtering ? (
+          <EmptyState title={t('instructors.filters.noMatchTitle')} description={t('instructors.filters.noMatchDescription')} />
+        ) : instructors.length === 0 ? (
           <EmptyState
             title={t('instructors.emptyTitle')}
             description={t('instructors.emptyDescription')}
@@ -137,17 +212,21 @@ export function InstructorsPage() {
                 header: t('instructors.columnScope'),
                 render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : t('instructors.allBranches')),
               },
-              // No backend concept of an Instructor "login" state exists yet
-              // (see the Instructor model's own comment: a profile requires an
-              // already-active RoleGrant, granted immediately — there's no
-              // pending-invite state to show). Shown as "—" rather than a
-              // fabricated status.
-              { key: 'login', header: t('instructors.columnLogin'), render: () => '—' },
               { key: 'phone', header: t('instructors.columnPhone'), render: (i) => i.phone ?? '—' },
-              // RoleGrant.revokedAt (Active/Revoked) isn't resolved onto
-              // InstructorResponseDto yet — same "—" placeholder as Login,
-              // rather than hardcoding "Active" for every row.
-              { key: 'status', header: t('instructors.columnStatus'), render: () => '—' },
+              // Whether they still hold the Instructor role here (Decision 311, I7).
+              {
+                key: 'status',
+                header: t('instructors.columnStatus'),
+                render: (i) => (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <Badge variant={i.status === 'ACTIVE' ? 'success' : undefined}>
+                      {i.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
+                    </Badge>
+                    {/* Added manually and still on the temporary passcode (Decision 312). */}
+                    {i.awaitingFirstLogin ? <Badge>{t('instructors.awaitingFirstLogin')}</Badge> : null}
+                  </div>
+                ),
+              },
               {
                 key: 'actions',
                 header: '',
@@ -168,7 +247,7 @@ export function InstructorsPage() {
                       actions={[
                         i.archivedAt
                           ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
-                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); archiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.archiveFailed')) }); } },
+                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); setConfirmingArchive(i); } },
                       ]}
                     />
                   </div>
@@ -181,10 +260,22 @@ export function InstructorsPage() {
 
       <InstructorBeltsSection schoolId={schoolId} />
 
+      {confirmingArchive ? (
+        <ConfirmDeleteModal
+          title={t('instructors.archiveTitle', { name: `${confirmingArchive.firstName} ${confirmingArchive.surname}`.trim() })}
+          description={t('instructors.archiveDescription')}
+          confirmLabel={t('instructors.archive')}
+          genericErrorMessage={t('instructors.archiveFailed')}
+          onConfirm={() => archiveInstructor.mutateAsync(confirmingArchive.id)}
+          onClose={() => setConfirmingArchive(null)}
+        />
+      ) : null}
+
       {creating ? (
         <InstructorFormModal
           title={t('instructors.addInstructor')}
           schoolId={schoolId}
+          initial={createPreset ?? undefined}
           branches={branches}
           disciplines={disciplines}
           eligibleUsers={eligibleUsersData?.items ?? []}
@@ -235,13 +326,15 @@ export function InstructorsPage() {
             // deliberately separate concern — see InstructorsService.create()'s
             // own header comment) — point the owner at "Add instructor" next,
             // where this user now shows up as an eligible candidate.
-            queryClient.invalidateQueries({ queryKey: ['instructors', 'eligible-users', schoolId] });
+            await queryClient.invalidateQueries({ queryKey: ['instructors', 'eligible-users', schoolId] });
             setInviteRoleNotice(
               granted.emailSent
                 ? { kind: 'ok', text: t('instructors.roleGrantedEmailSent') }
                 : { kind: 'warn', text: t('instructors.roleGrantedEmailFailed') },
             );
             setInvitingExisting(false);
+            setCreatePreset({ userId: targetUserId, branchId: branchId ?? null });
+            setCreating(true);
           }}
           onClose={() => setInvitingExisting(false)}
         />

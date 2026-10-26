@@ -1,8 +1,19 @@
 export const layout = {
   brand: 'ULTM8 School Portal',
   logOut: 'Log out',
-  searchPlaceholder: 'Search (coming soon)',
-  searchAria: 'Search — not available yet',
+  search: {
+    label: 'Search',
+    placeholder: 'Search by name…',
+    resultsLabel: 'Search results',
+    loading: 'Searching…',
+    noResults: 'No results for “{query}”',
+    loadFailed: "Some results couldn't be loaded.",
+    allFailed: "Search results couldn't be loaded.",
+    resultCount: {
+      one: '{count} result',
+      other: '{count} results',
+    },
+  },
   notificationsAria: 'Notifications',
   languageAria: 'Language',
   accountMenu: {
@@ -25,6 +36,7 @@ export const layout = {
     instructors: 'Instructors',
     students: 'Students',
     gradingBoard: 'Grading Board',
+    grading: 'Grading',
     gradingPermissions: 'Grading Permissions',
     classes: 'Classes',
     curriculum: 'Curriculum',

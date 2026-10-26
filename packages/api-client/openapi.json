@@ -540,6 +540,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -909,7 +918,25 @@
             "name": "city",
             "required": false,
             "in": "query",
-            "description": "Case-insensitive substring match against Branch.address (no dedicated city column exists).",
+            "description": "Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — ISO 3166-1 alpha-2 country code of the structured address.",
             "schema": {
               "type": "string"
             }
@@ -922,6 +949,15 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Branch.name.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1410,6 +1446,25 @@
             "description": "Exact match against one element of Franchise.activities.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Franchise.name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Leave archived Franchises out (they are listed by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
             }
           }
         ],
@@ -2686,6 +2741,56 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes that list this style (Class.styles).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsFrom",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time: only Classes starting at or after it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsTo",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time: only Classes starting at or before it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "Date view, sorted by start time. Omit for the unsorted list.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this User.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -4216,6 +4321,41 @@
         ]
       }
     },
+    "/v1/timetable/{id}/upcoming-impact": {
+      "get": {
+        "operationId": "TimetableController_getUpcomingImpact",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpcomingImpactResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/timetable/{id}/archive": {
       "post": {
         "operationId": "TimetableController_archive",
@@ -4330,6 +4470,644 @@
         ]
       }
     },
+    "/v1/classes/{id}/book": {
+      "post": {
+        "operationId": "BookingsController_bookClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/cancel": {
+      "patch": {
+        "operationId": "BookingsController_cancelBooking",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/override": {
+      "patch": {
+        "operationId": "BookingsController_updateOverrideReason",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingOverrideDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/me": {
+      "get": {
+        "operationId": "BookingsController_findMyBookings",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAllForClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAllForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/bookings/summary": {
+      "get": {
+        "operationId": "BookingsController_getWeeklySummary",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingsSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/cancel": {
+      "post": {
+        "operationId": "BookingsController_cancelClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/cancellations": {
+      "get": {
+        "operationId": "BookingsController_listOpenCancellations",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpenCancellationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/resolution": {
+      "patch": {
+        "operationId": "BookingsController_resolveCancellation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCancellationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/waitlist": {
+      "post": {
+        "operationId": "WaitlistController_joinWaitlist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "WaitlistController_findAllForClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waitlist/{id}": {
+      "delete": {
+        "operationId": "WaitlistController_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waitlist/{id}/claim": {
+      "post": {
+        "operationId": "WaitlistController_claim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimWaitlistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/instructors": {
       "post": {
         "operationId": "InstructorsController_create",
@@ -4414,6 +5192,15 @@
               "default": false,
               "type": "boolean"
             }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4458,6 +5245,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EligibleInstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/me/profile": {
+      "get": {
+        "operationId": "InstructorsController_findMyProfiles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "InstructorsController_completeMyProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteInstructorProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
                 }
               }
             }
@@ -4621,6 +5468,86 @@
         ]
       }
     },
+    "/v1/instructors/{id}/certification-url": {
+      "get": {
+        "operationId": "InstructorsController_getCertificationUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificationUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/reassign": {
+      "post": {
+        "operationId": "InstructorsController_reassign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReassignInstructorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReassignInstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/instructors/{id}/classes": {
       "get": {
         "operationId": "InstructorsController_findClasses",
@@ -4706,42 +5633,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateInstructorManuallyResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "instructors"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/instructors/me/profile": {
-      "patch": {
-        "operationId": "InstructorsController_completeMyProfile",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CompleteInstructorProfileDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstructorListResponseDto"
                 }
               }
             }
@@ -5522,6 +6413,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Decision 309 — include archived styles too (left out by default).",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5747,6 +6647,79 @@
           },
           "409": {
             "description": "The style is in use: someone holds a rank in it, or classes, slots or lessons use it."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/archive": {
+      "post": {
+        "operationId": "RanksController_archiveDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An upcoming class or a timetable slot still uses the style."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/unarchive": {
+      "post": {
+        "operationId": "RanksController_unarchiveDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -6165,6 +7138,51 @@
         "responses": {
           "200": {
             "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/skills/order": {
+      "put": {
+        "operationId": "RanksController_reorderSkills",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSkillsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style's skills in their new order (Decision 309).",
             "content": {
               "application/json": {
                 "schema": {
@@ -7145,6 +8163,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-settings/open-mat-hours": {
+      "get": {
+        "operationId": "GradingController_getOpenMatHoursSetting",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "GradingController_setOpenMatHoursSetting",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatHoursSettingDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
       "post": {
         "operationId": "GradingController_moveOnBoard",
@@ -7649,6 +8745,380 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/promotion-fee-settings": {
+      "get": {
+        "operationId": "PromotionFeeController_getSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PromotionFeeController_updateSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromotionFeeSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/promotion-fee-requests": {
+      "get": {
+        "operationId": "PromotionFeeController_listForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "ACCEPTED",
+                "PAID",
+                "DECLINED",
+                "WAIVED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/promotion-fee-requests": {
+      "get": {
+        "operationId": "PromotionFeeController_listForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/accept": {
+      "post": {
+        "operationId": "PromotionFeeController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/decline": {
+      "post": {
+        "operationId": "PromotionFeeController_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/waive": {
+      "post": {
+        "operationId": "PromotionFeeController_waive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/cancel": {
+      "post": {
+        "operationId": "PromotionFeeController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/promotion-fee-requests/{id}/dismiss": {
+      "post": {
+        "operationId": "PromotionFeeController_dismiss",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers": {
       "post": {
         "operationId": "WaiversController_createWaiver",
@@ -8097,644 +9567,6 @@
         },
         "tags": [
           "waivers"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/classes/{id}/book": {
-      "post": {
-        "operationId": "BookingsController_bookClass",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BookClassDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/bookings/{id}/cancel": {
-      "patch": {
-        "operationId": "BookingsController_cancelBooking",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelBookingDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/bookings/{id}/override": {
-      "patch": {
-        "operationId": "BookingsController_updateOverrideReason",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBookingOverrideDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/bookings/me": {
-      "get": {
-        "operationId": "BookingsController_findMyBookings",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Opaque cursor from a previous page's nextCursor.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/classes/{id}/bookings": {
-      "get": {
-        "operationId": "BookingsController_findAllForClass",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Opaque cursor from a previous page's nextCursor.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/students/{id}/bookings": {
-      "get": {
-        "operationId": "BookingsController_findAllForStudent",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "nextCursor from the previous page.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StudentBookingListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/schools/{schoolId}/bookings/summary": {
-      "get": {
-        "operationId": "BookingsController_getWeeklySummary",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "from",
-            "required": false,
-            "in": "query",
-            "description": "Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "required": false,
-            "in": "query",
-            "description": "Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingsSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/classes/{id}/cancel": {
-      "post": {
-        "operationId": "BookingsController_cancelClass",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelClassDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClassResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/schools/{schoolId}/cancellations": {
-      "get": {
-        "operationId": "BookingsController_listOpenCancellations",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OpenCancellationResponseDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/bookings/{id}/resolution": {
-      "patch": {
-        "operationId": "BookingsController_resolveCancellation",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResolveCancellationDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "bookings"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/classes/{id}/waitlist": {
-      "post": {
-        "operationId": "WaitlistController_joinWaitlist",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JoinWaitlistDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WaitlistEntryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "waitlist"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "WaitlistController_findAllForClass",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WaitlistEntryListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "waitlist"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/waitlist/{id}": {
-      "delete": {
-        "operationId": "WaitlistController_withdraw",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "studentId",
-            "required": false,
-            "in": "query",
-            "description": "Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "waitlist"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/waitlist/{id}/claim": {
-      "post": {
-        "operationId": "WaitlistController_claim",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClaimWaitlistDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "waitlist"
         ],
         "security": [
           {
@@ -9792,6 +10624,32 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/schools/{schoolId}/curriculum/categories/order": {
@@ -10621,6 +11479,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url": {
       "post": {
         "operationId": "CurriculumController_requestVideoUploadUrl",
@@ -11278,6 +12171,19 @@
             "type": "number",
             "nullable": true,
             "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
+          },
+          "checkInOpensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
+          },
+          "lateCancelRefundPolicy": {
+            "type": "string",
+            "enum": [
+              "NO_REFUND_ONCE_STARTED",
+              "REFUND_UNTIL_END",
+              "ALWAYS_REFUND"
+            ],
+            "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
           }
         },
         "required": [
@@ -11458,6 +12364,18 @@
             "nullable": true,
             "description": "Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to."
           },
+          "checkInOpensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens."
+          },
+          "lateCancelRefundPolicy": {
+            "type": "string",
+            "enum": [
+              "NO_REFUND_ONCE_STARTED",
+              "REFUND_UNTIL_END",
+              "ALWAYS_REFUND"
+            ]
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -11501,6 +12419,8 @@
           "classCancellationPolicyWindow",
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
+          "checkInOpensMinutesBeforeStart",
+          "lateCancelRefundPolicy",
           "createdAt",
           "updatedAt"
         ]
@@ -11616,6 +12536,19 @@
             "type": "number",
             "nullable": true,
             "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
+          },
+          "checkInOpensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
+          },
+          "lateCancelRefundPolicy": {
+            "type": "string",
+            "enum": [
+              "NO_REFUND_ONCE_STARTED",
+              "REFUND_UNTIL_END",
+              "ALWAYS_REFUND"
+            ],
+            "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
           },
           "mobileNumber": {
             "type": "string",
@@ -12302,13 +13235,185 @@
           "updatedAt"
         ]
       },
+      "BranchListItemDto": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "Decision 292 — true when this Branch uses its own cancellation settings below instead of its School's."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Branch has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "Students whose home branch this is."
+          },
+          "upcomingClassCount": {
+            "type": "number",
+            "description": "Classes at this Branch that have not started yet (archived ones left out)."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "activities",
+          "facilities",
+          "cancellationSettingsOverride",
+          "classCancellationPolicy",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
+          "createdAt",
+          "updatedAt",
+          "studentCount",
+          "upcomingClassCount"
+        ]
+      },
       "BranchListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BranchResponseDto"
+              "$ref": "#/components/schemas/BranchListItemDto"
             }
           },
           "nextCursor": {
@@ -14056,6 +15161,11 @@
             "type": "string",
             "nullable": true
           },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -14139,18 +15249,6 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "bookingEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — booking cutoff."
-          },
-          "qrAttendanceEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — end of the QR check-in window."
-          },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
@@ -14187,6 +15285,21 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — booking cutoff. Pass null to clear."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies)."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear."
           }
         }
       },
@@ -14978,6 +16091,33 @@
           "items"
         ]
       },
+      "UpcomingImpactResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Upcoming, unarchived Classes generated from this slot."
+          },
+          "bookedClasses": {
+            "type": "number",
+            "description": "Of those, how many have bookings or a waitlist."
+          },
+          "bookedStudents": {
+            "type": "number",
+            "description": "Students (and guests) booked across those Classes."
+          },
+          "mostTaken": {
+            "type": "number",
+            "description": "The most seats taken in any one of those Classes. A capacity below this needs CANCEL or KEEP."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "bookedClasses",
+          "bookedStudents",
+          "mostTaken"
+        ]
+      },
       "UpdateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -15002,14 +16142,6 @@
             "type": "string",
             "description": "24-hour clock, HH:mm.",
             "example": "19:00"
-          },
-          "breakStart": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
-          },
-          "breakEnd": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
           },
           "status": {
             "type": "string",
@@ -15044,6 +16176,15 @@
             "type": "boolean",
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
+          "bookedClasses": {
+            "type": "string",
+            "enum": [
+              "MOVE",
+              "CANCEL",
+              "KEEP"
+            ],
+            "description": "Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change."
+          },
           "branchId": {
             "type": "string",
             "description": "Branch to scope this slot to. Pass null to clear (make it School-wide).",
@@ -15053,6 +16194,16 @@
             "type": "string",
             "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
             "nullable": true
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break."
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break."
           },
           "capacity": {
             "type": "number",
@@ -15089,6 +16240,583 @@
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
+      },
+      "BookClassDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
+          },
+          "attendeeMembershipIds": {
+            "description": "One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overrideReason": {
+            "type": "string",
+            "description": "Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded."
+          }
+        }
+      },
+      "BookingAttendeeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string"
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "membershipId"
+        ]
+      },
+      "BookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceMembershipId": {
+            "type": "string"
+          },
+          "overriddenById": {
+            "type": "string",
+            "nullable": true
+          },
+          "overrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkInMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkedInById": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationChargeOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationChargeAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "stripeCancellationPaymentIntentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "noShowFeeOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "noShowFeeAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentFirstName",
+          "studentSurname",
+          "classId",
+          "schoolId",
+          "status",
+          "sourceMembershipId",
+          "attendees",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CancelBookingDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context."
+          }
+        }
+      },
+      "UpdateBookingOverrideDto": {
+        "type": "object",
+        "properties": {
+          "overrideReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "overrideReason"
+        ]
+      },
+      "BookingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentBookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartDate": {
+            "type": "string"
+          },
+          "classEndDate": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceMembershipId": {
+            "type": "string"
+          },
+          "overriddenById": {
+            "type": "string",
+            "nullable": true
+          },
+          "overrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkInMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "classId",
+          "classTitle",
+          "classStartDate",
+          "classEndDate",
+          "schoolId",
+          "status",
+          "sourceMembershipId",
+          "attendees",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "StudentBookingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentBookingResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "BookingsSummaryActivityDto": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "type": "string",
+            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "activity",
+          "totalBookings",
+          "upcomingBookings"
+        ]
+      },
+      "BookingsSummaryDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD, the School's own local calendar day."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryActivityDto"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "totalBookings",
+          "upcomingBookings",
+          "activities"
+        ]
+      },
+      "BookingsSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Inclusive range start actually used, YYYY-MM-DD."
+          },
+          "to": {
+            "type": "string",
+            "description": "Inclusive range end actually used, YYYY-MM-DD."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryDayDto"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "totalBookings",
+          "upcomingBookings",
+          "days"
+        ]
+      },
+      "CancelClassDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Shown to every booked or waitlisted student, e.g. \"Coach is ill\"."
+          }
+        }
+      },
+      "OpenCancellationResponseDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "attendeeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "classStartDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "classCancelledBySchool": {
+            "type": "boolean"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REFUND_OWED"
+            ]
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "planTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "planType": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "bookingId",
+          "studentId",
+          "classId",
+          "classCancelledBySchool",
+          "resolution",
+          "cancelledAt"
+        ]
+      },
+      "ResolveCancellationDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "REFUND",
+              "CREDIT",
+              "KEEP",
+              "MARK_PAID"
+            ],
+            "description": "REFUND and MARK_PAID are School Owner/Manager only."
+          },
+          "attendeeId": {
+            "type": "string",
+            "description": "A guest seat on this booking; omit for the Student's own seat."
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "JoinWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
+          }
+        }
+      },
+      "WaitlistEntryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "notifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimByDeadline": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimedBookingId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentFirstName",
+          "studentSurname",
+          "classId",
+          "schoolId",
+          "position",
+          "status",
+          "joinedAt"
+        ]
+      },
+      "ClaimWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
+          }
+        }
+      },
+      "WaitlistEntryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaitlistEntryResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "CreateInstructorDto": {
         "type": "object",
@@ -15184,6 +16912,9 @@
               "REVOKED"
             ]
           },
+          "awaitingFirstLogin": {
+            "type": "boolean"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -15268,6 +16999,7 @@
           "surname",
           "email",
           "status",
+          "awaitingFirstLogin",
           "schoolId",
           "specializations",
           "specializationStyleIds",
@@ -15309,13 +17041,24 @@
           },
           "email": {
             "type": "string"
+          },
+          "schoolWide": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "id",
           "firstName",
           "surname",
-          "email"
+          "email",
+          "schoolWide",
+          "branchIds"
         ]
       },
       "EligibleInstructorListResponseDto": {
@@ -15372,6 +17115,47 @@
             "nullable": true
           }
         }
+      },
+      "CertificationUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Presigned GET URL for the uploaded certification file, valid for 15 minutes."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ReassignInstructorDto": {
+        "type": "object",
+        "properties": {
+          "toUserId": {
+            "type": "string",
+            "description": "User id of the instructor taking over (Class.instructorId is a User id)."
+          }
+        },
+        "required": [
+          "toUserId"
+        ]
+      },
+      "ReassignInstructorResponseDto": {
+        "type": "object",
+        "properties": {
+          "classesMoved": {
+            "type": "number",
+            "description": "Upcoming Classes moved to the new instructor."
+          },
+          "slotsMoved": {
+            "type": "number",
+            "description": "Active Timetable slots moved to the new instructor."
+          }
+        },
+        "required": [
+          "classesMoved",
+          "slotsMoved"
+        ]
       },
       "InstructorClassResponseDto": {
         "type": "object",
@@ -15517,6 +17301,9 @@
               "REVOKED"
             ]
           },
+          "awaitingFirstLogin": {
+            "type": "boolean"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -15605,6 +17392,7 @@
           "surname",
           "email",
           "status",
+          "awaitingFirstLogin",
           "schoolId",
           "specializations",
           "specializationStyleIds",
@@ -16414,6 +18202,15 @@
             "type": "number",
             "description": "Grading Board: \"Ready to Grade\" from this % (Decisions 75, 136). Default 66."
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Archived (retired) at (Decision 309); null while in use."
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "Students with a rank in this style (Decision 309)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -16429,6 +18226,7 @@
           "skillsRequiredToGrade",
           "boardGettingThere",
           "boardReadyToGrade",
+          "studentCount",
           "createdAt",
           "updatedAt"
         ]
@@ -16509,6 +18307,23 @@
           "templateId"
         ]
       },
+      "ClassTypeRenameDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The class type as it is now."
+          },
+          "to": {
+            "type": "string",
+            "description": "Its new name. Must also be in classTypesOffered."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
       "UpdateDisciplineDto": {
         "type": "object",
         "properties": {
@@ -16525,6 +18340,13 @@
           "skillsRequiredToGrade": {
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
+          },
+          "renameClassTypes": {
+            "description": "Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassTypeRenameDto"
+            }
           }
         }
       },
@@ -16631,6 +18453,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "promotionFeeMinor": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "description": "Promotion fee for being graded into this rung, in the School's currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School's promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung."
           },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
@@ -16781,6 +18609,11 @@
             "items": {
               "type": "string"
             }
+          },
+          "promotionFeeMinor": {
+            "type": "number",
+            "nullable": true,
+            "description": "Promotion fee for this grade, minor units of the School's currency; null = free (Decision 300). Present only while the School's promotion fee is on (Decision 307)."
           }
         },
         "required": [
@@ -17021,6 +18854,14 @@
             "type": "string",
             "nullable": true
           },
+          "order": {
+            "type": "number",
+            "description": "Position in the style's skill list, 0 first (Decision 309)."
+          },
+          "lessonCount": {
+            "type": "number",
+            "description": "Lessons that teach this skill (Decision 309)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -17033,6 +18874,8 @@
           "disciplineId",
           "schoolId",
           "name",
+          "order",
+          "lessonCount",
           "createdAt",
           "updatedAt"
         ]
@@ -17049,6 +18892,21 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "ReorderSkillsDto": {
+        "type": "object",
+        "properties": {
+          "skillIds": {
+            "description": "Every skill id of this style, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "skillIds"
         ]
       },
       "UpdateSkillDto": {
@@ -17288,6 +19146,125 @@
           "hasNext"
         ]
       },
+      "ClassesProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "counted": {
+            "type": "number",
+            "description": "Classes counted toward the next rank (eligibility.countedClasses)."
+          },
+          "required": {
+            "type": "number"
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100. The same number as eligibility.progressPercent: the overall % is classes only."
+          },
+          "byType": {
+            "description": "\"Each ticked type required\" rungs only; otherwise empty.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeProgressResponseDto"
+            }
+          }
+        },
+        "required": [
+          "counted",
+          "required",
+          "percent",
+          "byType"
+        ]
+      },
+      "DaysProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "elapsed": {
+            "type": "number",
+            "description": "Days at the current rank."
+          },
+          "required": {
+            "type": "number",
+            "description": "Minimum days at the rank."
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100, capped. 100 when no minimum is set."
+          }
+        },
+        "required": [
+          "elapsed",
+          "required",
+          "percent"
+        ]
+      },
+      "SkillsProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "signedOff": {
+            "type": "number",
+            "description": "Required skills signed off."
+          },
+          "required": {
+            "type": "number",
+            "description": "Required skills for the next rank."
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100. 100 when none are required."
+          }
+        },
+        "required": [
+          "signedOff",
+          "required",
+          "percent"
+        ]
+      },
+      "ProgressBreakdownResponseDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "nullable": true,
+            "description": "null on a time-only rank (days only).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClassesProgressResponseDto"
+              }
+            ]
+          },
+          "days": {
+            "$ref": "#/components/schemas/DaysProgressResponseDto"
+          },
+          "skills": {
+            "nullable": true,
+            "description": "null on a time-only rank (days only).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SkillsProgressResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "HoursTrainedResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalMinutes": {
+            "type": "number",
+            "description": "Every minute logged in this style at this School (check-ins and \"Log a class\")."
+          },
+          "sinceCurrentRankMinutes": {
+            "type": "number",
+            "description": "Minutes trained on or after the current rank date."
+          }
+        },
+        "required": [
+          "totalMinutes",
+          "sinceCurrentRankMinutes"
+        ]
+      },
       "StudentEligibilityResponseDto": {
         "type": "object",
         "properties": {
@@ -17363,6 +19340,18 @@
           },
           "eligibility": {
             "$ref": "#/components/schemas/EligibilityResponseDto"
+          },
+          "progressBreakdown": {
+            "nullable": true,
+            "description": "null when there is no next rank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBreakdownResponseDto"
+              }
+            ]
+          },
+          "hoursTrained": {
+            "$ref": "#/components/schemas/HoursTrainedResponseDto"
           }
         },
         "required": [
@@ -17379,7 +19368,8 @@
           "skillStatuses",
           "createdAt",
           "updatedAt",
-          "eligibility"
+          "eligibility",
+          "hoursTrained"
         ]
       },
       "StudentEligibilityListResponseDto": {
@@ -17505,6 +19495,18 @@
           "eligibility": {
             "$ref": "#/components/schemas/EligibilityResponseDto"
           },
+          "progressBreakdown": {
+            "nullable": true,
+            "description": "null when there is no next rank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBreakdownResponseDto"
+              }
+            ]
+          },
+          "hoursTrained": {
+            "$ref": "#/components/schemas/HoursTrainedResponseDto"
+          },
           "skills": {
             "description": "The skills for the next grade.",
             "type": "array",
@@ -17522,6 +19524,7 @@
           "verificationStatus",
           "ladder",
           "eligibility",
+          "hoursTrained",
           "skills"
         ]
       },
@@ -18064,6 +20067,59 @@
           "items"
         ]
       },
+      "BoardFeeRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The fee request (use it to waive or cancel, or to dismiss a \"to decide\")."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "PAID",
+              "DECLINED",
+              "WAIVED",
+              "CANCELLED"
+            ]
+          },
+          "toRungId": {
+            "type": "string",
+            "description": "The rung the grade moves the student to. For \"to decide\", the planned grade the Promote window starts on."
+          },
+          "toRungName": {
+            "type": "string"
+          },
+          "amountMinor": {
+            "type": "number",
+            "description": "Minor units of `currency`."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency when the request was made."
+          },
+          "promotionApplied": {
+            "type": "boolean",
+            "description": "The promotion has already applied (\"Allow grading before the fee is paid\" was on)."
+          },
+          "feeFree": {
+            "type": "boolean",
+            "description": "\"To decide\" only: promoting to toRungId makes no new fee request (Decision 307)."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "toRungId",
+          "toRungName",
+          "amountMinor",
+          "promotionApplied",
+          "feeFree"
+        ]
+      },
       "GradingBoardItemDto": {
         "type": "object",
         "properties": {
@@ -18117,6 +20173,25 @@
           "noHomeBranch": {
             "type": "boolean",
             "description": "Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under \"No branch\" until the owner assigns one (Decision 148.2). Always false for other staff."
+          },
+          "feeStatus": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "declined",
+              "toDecide"
+            ],
+            "nullable": true,
+            "description": "Promotion fee (Decisions 300, 307): \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
+          },
+          "feeRequest": {
+            "nullable": true,
+            "description": "The request behind feeStatus.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BoardFeeRequestDto"
+              }
+            ]
           }
         },
         "required": [
@@ -18181,6 +20256,18 @@
           "readyToGrade"
         ]
       },
+      "OpenMatHoursSettingDto": {
+        "type": "object",
+        "properties": {
+          "openMatCountsTowardHours": {
+            "type": "boolean",
+            "description": "When off (the default), open mat time is recorded but not added to students' hours trained. Hours never change the grading %."
+          }
+        },
+        "required": [
+          "openMatCountsTowardHours"
+        ]
+      },
       "BoardMoveDto": {
         "type": "object",
         "properties": {
@@ -18204,6 +20291,18 @@
             "type": "string",
             "nullable": true,
             "description": "The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts)."
+          },
+          "classId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The class the student trained in, for hours trained: its scheduled length is logged. A class at this School that lists this style. Leave out to send `minutes` instead."
+          },
+          "minutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 600,
+            "description": "Minutes trained, for hours trained, when no class is picked. Default 60. Hours never change the grading %."
           }
         }
       },
@@ -18306,6 +20405,10 @@
           "promotionEventId": {
             "type": "string",
             "description": "Set on a promoted student: their history entry."
+          },
+          "feeRequestId": {
+            "type": "string",
+            "description": "Set when the grade made a promotion fee request (Decision 300 item 6: one per student)."
           }
         },
         "required": [
@@ -18331,7 +20434,14 @@
             }
           },
           "cannotPromote": {
-            "description": "Skipped: no next rank, blocked by the style's \"skills required\" switch, not yours to grade, or changed at the same time.",
+            "description": "Skipped: no next rank, blocked by the style's \"skills required\" switch, not yours to grade, changed at the same time, or a promotion already waiting for its fee.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkPromoteStudentDto"
+            }
+          },
+          "waitingForFee": {
+            "description": "Not promoted yet: their grade is priced and \"Allow grading before the fee is paid\" is off, so each waits for their fee request (feeRequestId) to be paid or waived (Decision 300). Always sent; empty on a dry run.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BulkPromoteStudentDto"
@@ -18680,6 +20790,185 @@
           }
         }
       },
+      "PromotionFeeSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "promotionFeeEnabled": {
+            "type": "boolean"
+          },
+          "gradeBeforeFeePaid": {
+            "type": "boolean",
+            "description": "\"Allow grading before the fee is paid\"."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency (School.defaultCurrency): prices are minor units of it."
+          }
+        },
+        "required": [
+          "promotionFeeEnabled",
+          "gradeBeforeFeePaid"
+        ]
+      },
+      "UpdatePromotionFeeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "promotionFeeEnabled": {
+            "type": "boolean",
+            "description": "Promotion fee on or off (off by default). Off: grades have no price, prices are not returned, and no fee is asked."
+          },
+          "gradeBeforeFeePaid": {
+            "type": "boolean",
+            "description": "\"Allow grading before the fee is paid\" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits (\"Waiting for fee\") until the fee is paid or waived."
+          }
+        }
+      },
+      "PromotionFeeRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string",
+            "description": "Student app list only: the School's name."
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string",
+            "description": "Student app list only: the style's name."
+          },
+          "toRungId": {
+            "type": "string",
+            "description": "The rung the grade moves the student to."
+          },
+          "toRungName": {
+            "type": "string"
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The rung the student was on when graded."
+          },
+          "amountMinor": {
+            "type": "number",
+            "description": "Minor units of `currency`."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "PAID",
+              "DECLINED",
+              "WAIVED",
+              "CANCELLED"
+            ]
+          },
+          "promotionWaits": {
+            "type": "boolean",
+            "description": "The promotion waits for this fee (it applies once paid or waived). False when it applied at grading."
+          },
+          "promotionApplied": {
+            "type": "boolean",
+            "description": "The promotion has applied (at grading, or once paid or waived)."
+          },
+          "promotionEventId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The history entry of the promotion, once applied."
+          },
+          "gradingDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "The grading date the coach chose (YYYY-MM-DD), for a promotion that waits or is \"to decide\"."
+          },
+          "toDecide": {
+            "type": "boolean",
+            "description": "Open \"to decide\": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request."
+          },
+          "toDecideAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "toDecideResolution": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PROMOTED",
+              "DISMISSED"
+            ]
+          },
+          "acceptedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "declinedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "paidAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "waivedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "disciplineId",
+          "toRungId",
+          "toRungName",
+          "amountMinor",
+          "status",
+          "promotionWaits",
+          "promotionApplied",
+          "toDecide",
+          "createdAt"
+        ]
+      },
+      "PromotionFeeRequestListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromotionFeeRequestResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "CreateWaiverDto": {
         "type": "object",
         "properties": {
@@ -18934,583 +21223,6 @@
         "required": [
           "uploadUrl",
           "objectKey"
-        ]
-      },
-      "BookClassDto": {
-        "type": "object",
-        "properties": {
-          "studentId": {
-            "type": "string",
-            "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
-          },
-          "attendeeMembershipIds": {
-            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "overrideReason": {
-            "type": "string",
-            "description": "Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded."
-          }
-        }
-      },
-      "BookingAttendeeResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "membershipId": {
-            "type": "string"
-          },
-          "refundResolution": {
-            "type": "string",
-            "nullable": true
-          },
-          "resolvedById": {
-            "type": "string",
-            "nullable": true
-          },
-          "refundAmount": {
-            "type": "number",
-            "nullable": true
-          },
-          "resolvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "membershipId"
-        ]
-      },
-      "BookingResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "studentFirstName": {
-            "type": "string"
-          },
-          "studentSurname": {
-            "type": "string"
-          },
-          "classId": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string"
-          },
-          "branchId": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string"
-          },
-          "sourceMembershipId": {
-            "type": "string"
-          },
-          "overriddenById": {
-            "type": "string",
-            "nullable": true
-          },
-          "overrideReason": {
-            "type": "string",
-            "nullable": true
-          },
-          "checkInMethod": {
-            "type": "string",
-            "nullable": true
-          },
-          "checkedInById": {
-            "type": "string",
-            "nullable": true
-          },
-          "refundResolution": {
-            "type": "string",
-            "nullable": true
-          },
-          "resolvedById": {
-            "type": "string",
-            "nullable": true
-          },
-          "cancellationChargeOutcome": {
-            "type": "string",
-            "nullable": true
-          },
-          "cancellationChargeAmount": {
-            "type": "number",
-            "nullable": true
-          },
-          "stripeCancellationPaymentIntentId": {
-            "type": "string",
-            "nullable": true
-          },
-          "refundAmount": {
-            "type": "number",
-            "nullable": true
-          },
-          "resolvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "noShowFeeOutcome": {
-            "type": "string",
-            "nullable": true
-          },
-          "noShowFeeAmount": {
-            "type": "number",
-            "nullable": true
-          },
-          "attendees": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "studentId",
-          "studentFirstName",
-          "studentSurname",
-          "classId",
-          "schoolId",
-          "status",
-          "sourceMembershipId",
-          "attendees",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "CancelBookingDto": {
-        "type": "object",
-        "properties": {
-          "studentId": {
-            "type": "string",
-            "description": "Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context."
-          }
-        }
-      },
-      "UpdateBookingOverrideDto": {
-        "type": "object",
-        "properties": {
-          "overrideReason": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "overrideReason"
-        ]
-      },
-      "BookingListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BookingResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "StudentBookingResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "classId": {
-            "type": "string"
-          },
-          "classTitle": {
-            "type": "string"
-          },
-          "classStartDate": {
-            "type": "string"
-          },
-          "classEndDate": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string"
-          },
-          "branchId": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string"
-          },
-          "sourceMembershipId": {
-            "type": "string"
-          },
-          "overriddenById": {
-            "type": "string",
-            "nullable": true
-          },
-          "overrideReason": {
-            "type": "string",
-            "nullable": true
-          },
-          "checkInMethod": {
-            "type": "string",
-            "nullable": true
-          },
-          "refundResolution": {
-            "type": "string",
-            "nullable": true
-          },
-          "attendees": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
-            }
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "studentId",
-          "classId",
-          "classTitle",
-          "classStartDate",
-          "classEndDate",
-          "schoolId",
-          "status",
-          "sourceMembershipId",
-          "attendees",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "StudentBookingListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StudentBookingResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "BookingsSummaryActivityDto": {
-        "type": "object",
-        "properties": {
-          "activity": {
-            "type": "string",
-            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
-          },
-          "totalBookings": {
-            "type": "number"
-          },
-          "upcomingBookings": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "activity",
-          "totalBookings",
-          "upcomingBookings"
-        ]
-      },
-      "BookingsSummaryDayDto": {
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "description": "YYYY-MM-DD, the School's own local calendar day."
-          },
-          "totalBookings": {
-            "type": "number"
-          },
-          "upcomingBookings": {
-            "type": "number"
-          },
-          "activities": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BookingsSummaryActivityDto"
-            }
-          }
-        },
-        "required": [
-          "date",
-          "totalBookings",
-          "upcomingBookings",
-          "activities"
-        ]
-      },
-      "BookingsSummaryResponseDto": {
-        "type": "object",
-        "properties": {
-          "from": {
-            "type": "string",
-            "description": "Inclusive range start actually used, YYYY-MM-DD."
-          },
-          "to": {
-            "type": "string",
-            "description": "Inclusive range end actually used, YYYY-MM-DD."
-          },
-          "totalBookings": {
-            "type": "number"
-          },
-          "upcomingBookings": {
-            "type": "number"
-          },
-          "days": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BookingsSummaryDayDto"
-            }
-          }
-        },
-        "required": [
-          "from",
-          "to",
-          "totalBookings",
-          "upcomingBookings",
-          "days"
-        ]
-      },
-      "CancelClassDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "description": "Shown to every booked or waitlisted student, e.g. \"Coach is ill\"."
-          }
-        }
-      },
-      "OpenCancellationResponseDto": {
-        "type": "object",
-        "properties": {
-          "bookingId": {
-            "type": "string"
-          },
-          "attendeeId": {
-            "type": "string",
-            "nullable": true
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "studentName": {
-            "type": "string",
-            "nullable": true
-          },
-          "classId": {
-            "type": "string"
-          },
-          "classTitle": {
-            "type": "string",
-            "nullable": true
-          },
-          "classStartDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "classCancelledBySchool": {
-            "type": "boolean"
-          },
-          "resolution": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "REFUND_OWED"
-            ]
-          },
-          "refundAmount": {
-            "type": "number",
-            "nullable": true,
-            "description": "Minor units."
-          },
-          "currency": {
-            "type": "string",
-            "nullable": true
-          },
-          "planTitle": {
-            "type": "string",
-            "nullable": true
-          },
-          "planType": {
-            "type": "string",
-            "nullable": true
-          },
-          "paymentMethod": {
-            "type": "string",
-            "nullable": true,
-            "enum": [
-              "STRIPE",
-              "CASH",
-              "BANK_TRANSFER"
-            ]
-          },
-          "cancelledAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "bookingId",
-          "studentId",
-          "classId",
-          "classCancelledBySchool",
-          "resolution",
-          "cancelledAt"
-        ]
-      },
-      "ResolveCancellationDto": {
-        "type": "object",
-        "properties": {
-          "action": {
-            "type": "string",
-            "enum": [
-              "REFUND",
-              "CREDIT",
-              "KEEP",
-              "MARK_PAID"
-            ],
-            "description": "REFUND and MARK_PAID are School Owner/Manager only."
-          },
-          "attendeeId": {
-            "type": "string",
-            "description": "A guest seat on this booking; omit for the Student's own seat."
-          }
-        },
-        "required": [
-          "action"
-        ]
-      },
-      "JoinWaitlistDto": {
-        "type": "object",
-        "properties": {
-          "studentId": {
-            "type": "string",
-            "description": "Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
-          }
-        }
-      },
-      "WaitlistEntryResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "studentFirstName": {
-            "type": "string"
-          },
-          "studentSurname": {
-            "type": "string"
-          },
-          "classId": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string"
-          },
-          "branchId": {
-            "type": "string",
-            "nullable": true
-          },
-          "position": {
-            "type": "number"
-          },
-          "status": {
-            "type": "string"
-          },
-          "joinedAt": {
-            "type": "string"
-          },
-          "notifiedAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "claimByDeadline": {
-            "type": "string",
-            "nullable": true
-          },
-          "claimedBookingId": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "studentId",
-          "studentFirstName",
-          "studentSurname",
-          "classId",
-          "schoolId",
-          "position",
-          "status",
-          "joinedAt"
-        ]
-      },
-      "ClaimWaitlistDto": {
-        "type": "object",
-        "properties": {
-          "studentId": {
-            "type": "string",
-            "description": "Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
-          }
-        }
-      },
-      "WaitlistEntryListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WaitlistEntryResponseDto"
-            }
-          }
-        },
-        "required": [
-          "items"
         ]
       },
       "ScanAttendanceDto": {
@@ -20230,6 +21942,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -20267,6 +21983,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"
@@ -20298,10 +22015,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -20311,7 +22032,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -20608,6 +22331,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -20622,6 +22349,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -20728,6 +22456,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {

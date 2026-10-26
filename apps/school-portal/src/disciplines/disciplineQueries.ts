@@ -12,11 +12,18 @@ export type UpdateDisciplineInput = components['schemas']['UpdateDisciplineDto']
  * frontend paginates a list screen yet, so this doesn't invent that pattern
  * here first). findAllDisciplines is also unpaginated server-side (returns
  * `{ items }` only, see RanksController). */
-export function useDisciplines(schoolId: string | null) {
+export function useDisciplines(schoolId: string | null, options: { includeArchived?: boolean } = {}) {
+  const includeArchived = options.includeArchived ?? false;
+  // Archived styles are left out unless asked for (Decision 309), so every
+  // picker that calls this hides them; the Disciplines page asks for them.
   return useQuery({
-    queryKey: ['disciplines', schoolId],
+    queryKey: ['disciplines', schoolId, ...(includeArchived ? ['withArchived'] : [])],
     queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/disciplines', { params: { path: { schoolId: schoolId! } } })),
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/disciplines', {
+          params: { path: { schoolId: schoolId! }, query: includeArchived ? { includeArchived: true } : undefined },
+        }),
+      ),
     enabled: !!schoolId,
   });
 }
@@ -46,7 +53,31 @@ export function useUpdateDiscipline(schoolId: string, disciplineId: string) {
   return useMutation({
     mutationFn: (body: UpdateDisciplineInput) =>
       unwrap(apiClient.PATCH('/v1/disciplines/{id}', { params: { path: { id: disciplineId } }, body })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disciplines', schoolId] }),
+    // A rename or class type change also reaches classes, slots, instructors
+    // and rungs (Decisions 308, 309).
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['disciplines', schoolId] }),
+        queryClient.invalidateQueries({ queryKey: ['discipline', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['classes'] }),
+        queryClient.invalidateQueries({ queryKey: ['timetable'] }),
+        queryClient.invalidateQueries({ queryKey: ['instructors'] }),
+      ]),
+  });
+}
+
+/** Archive (retire) a style, or bring it back (Decision 309). */
+export function useSetDisciplineArchived(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      unwrap(apiClient.POST(archived ? '/v1/disciplines/{id}/archive' : '/v1/disciplines/{id}/unarchive', { params: { path: { id } } })),
+    onSuccess: (_data, { id }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['disciplines', schoolId] }),
+        queryClient.invalidateQueries({ queryKey: ['discipline', id] }),
+      ]),
   });
 }
 

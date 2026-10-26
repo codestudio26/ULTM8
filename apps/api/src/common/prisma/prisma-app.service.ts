@@ -66,7 +66,7 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
   async withTenantContext<T>(
     userId: string,
     fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
-    options?: { timeoutMs?: number },
+    options?: { timeoutMs?: number; maxWaitMs?: number },
   ): Promise<T> {
     return this.$transaction(
       async (tx) => {
@@ -81,7 +81,9 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
         await this.setImpersonationScopeIfPresent(tx);
         return fn(tx);
       },
-      options?.timeoutMs ? { timeout: options.timeoutMs } : undefined,
+      options?.timeoutMs || options?.maxWaitMs
+        ? { ...(options.timeoutMs ? { timeout: options.timeoutMs } : {}), ...(options.maxWaitMs ? { maxWait: options.maxWaitMs } : {}) }
+        : undefined,
     );
   }
 

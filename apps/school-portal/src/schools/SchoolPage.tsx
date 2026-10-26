@@ -35,6 +35,8 @@ export function SchoolPage() {
     timezone: string;
     description: string;
     waitlistClaimWindowMinutes: number;
+    checkInOpensMinutesBeforeStart: number;
+    lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
   } | null>(null);
   const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
@@ -59,6 +61,8 @@ export function SchoolPage() {
       timezone: school.timezone ?? '',
       description: school.description ?? '',
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
+      checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
+      lateCancelRefundPolicy: school.lateCancelRefundPolicy,
     });
   }, [school]);
 
@@ -97,6 +101,8 @@ export function SchoolPage() {
         timezone: form.timezone || null,
         description: form.description || null,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
+        checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
+        lateCancelRefundPolicy: form.lateCancelRefundPolicy,
       });
       setSaved(true);
     } catch (err) {
@@ -165,6 +171,27 @@ export function SchoolPage() {
               min={1}
               value={form.waitlistClaimWindowMinutes}
               onChange={(e) => set('waitlistClaimWindowMinutes', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('schools.form.checkInOpens')} htmlFor="edit-checkin-opens" hint={t('schools.form.checkInOpensHint')}>
+            <TextField
+              type="number"
+              min={0}
+              max={1440}
+              required
+              value={form.checkInOpensMinutesBeforeStart}
+              onChange={(e) => set('checkInOpensMinutesBeforeStart', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('schools.form.lateCancel')} htmlFor="edit-late-cancel" hint={t('schools.form.lateCancelHint')}>
+            <SelectField
+              value={form.lateCancelRefundPolicy}
+              onChange={(e) => set('lateCancelRefundPolicy', e.target.value as typeof form.lateCancelRefundPolicy)}
+              options={[
+                { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
+                { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
+                { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
+              ]}
             />
           </Field>
           <Checkbox

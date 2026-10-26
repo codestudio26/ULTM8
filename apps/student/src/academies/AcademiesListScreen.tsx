@@ -4,12 +4,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { type components } from '@ultm8/api-client';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { useAcademies } from './academyQueries';
+import { useT } from '../i18n/I18nProvider';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Academies'>;
 type AcademySummary = components['schemas']['AcademySummaryDto'];
 
 export function AcademiesListScreen({ navigation }: Props) {
+  const t = useT();
   const query = useAcademies();
 
   return (
@@ -27,8 +29,8 @@ export function AcademiesListScreen({ navigation }: Props) {
           ) : null}
         </Pressable>
       )}
-      emptyMessage="No academies found."
-      errorFallbackMessage="Failed to load academies — please try again."
+      emptyMessage={t('academies.list.empty')}
+      errorFallbackMessage={t('academies.list.loadFailed')}
     />
   );
 }

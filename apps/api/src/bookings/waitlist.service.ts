@@ -12,6 +12,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
+import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -76,8 +77,11 @@ export class WaitlistService {
     } else if (isOnBehalfOf) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
+    assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
+    // Decision 110: a closed School takes no new waitlist places (Classes review C16).
+    await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // FOUND ON REVIEW: reading the current max position then computing +1 is a
       // TOCTOU race — two Students joining the same Class's waitlist concurrently
       // can both read the same highest position and collide, breaking the FCFS
@@ -87,7 +91,25 @@ export class WaitlistService {
       // BookingsService.bookClass — see that method's own comment for why this
       // codebase's usual updateMany+count-guard pattern doesn't apply to an
       // aggregate read like this one.
-      await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+      await lockClassSeats(tx, classId);
+      // Only a full Class, or one others are already queued for, takes a waitlist
+      // entry, and never from a Student already booked into it (stress test, 26 Oct
+      // 2026: both were accepted).
+      const alreadyBooked = await tx.booking.findFirst({ where: { classId, studentId, status: 'UPCOMING' }, select: { id: true } });
+      if (alreadyBooked) {
+        throw new ConflictException('This Student is already booked into this Class.');
+      }
+      if (resolvedClass.capacity === null) {
+        throw new ConflictException('This Class has no seat limit. Book it instead.');
+      }
+      const [booked, guests, queued] = await Promise.all([
+        this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
+        this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+        this.prismaJobs.waitlistEntry.count({ where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } } }),
+      ]);
+      if (queued === 0 && booked + guests < resolvedClass.capacity) {
+        throw new ConflictException('This Class still has space. Book it instead.');
+      }
       // FOUND ON REVIEW, before this ever shipped: like BookingsService's own
       // occupancy count, this MUST run via PrismaJobsService, not `tx` — WaitlistEntry's
       // narrow-plus-broad-STAFF-ONLY-read RLS (Decision 89) means an ordinary Student
@@ -120,7 +142,7 @@ export class WaitlistService {
         }
         throw err;
       }
-    });
+    }, BOOKING_TX_OPTIONS));
   }
 
   /**
@@ -212,13 +234,18 @@ export class WaitlistService {
     // holds zero RoleGrant anywhere, Decision 92" reasoning
     // BookingsService.bookClass()'s own identical check already documents.
     await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
+    // Decision 110: a closed School takes no new Bookings (Classes review C16).
+    await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
 
-    return this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
+    return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       const studentId = resolvedEntry.studentId;
       if (cls.cancelledAt) {
         throw new ConflictException('This class has been cancelled by the school.');
       }
+      // A claim was offered by the waitlist, so the booking cut-off doesn't apply;
+      // an archived or ended Class still can't be claimed into.
+      assertClassBookable(cls, { byStaff: true });
 
       if (cls.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({
@@ -235,10 +262,14 @@ export class WaitlistService {
       if (cls.capacity !== null) {
         // Same explicit-row-lock fix as BookingsService.bookClass's own capacity
         // check — see that comment for the full reasoning.
-        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${cls.id} FOR UPDATE`;
+        await lockClassSeats(tx, cls.id);
         // Same PrismaJobsService fix as BookingsService.countOccupiedSeats — `tx`
         // (the claiming Student's own tenant context) can never see another
         // Student's Booking/BookingAttendee rows under Decision 89's RLS shape.
+        // Held seats keep direct bookers out (BookingsService.bookClass), not other
+        // notified Students: among those, the first to claim gets the seat. Counting
+        // other holds here could leave a seat nobody may claim when the cascade has
+        // offered it twice.
         const [bookingCount, attendeeCount] = await Promise.all([
           this.prismaJobs.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
           this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
@@ -248,7 +279,7 @@ export class WaitlistService {
         }
       }
 
-      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, cls.schoolId, cls.id);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls.id);
 
       const bookingId = randomUUID();
       try {
@@ -282,7 +313,7 @@ export class WaitlistService {
       }
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
-    });
+    }, BOOKING_TX_OPTIONS));
   }
 
   /**
@@ -327,32 +358,6 @@ export class WaitlistService {
   // Same booking rank gate as BookingsService (Decision 173).
   private async assertRankEligible(tx: TenantTx, studentId: string, cls: { styles: Prisma.JsonValue }): Promise<void> {
     await assertBookingUnlocked(tx, studentId, cls);
-  }
-
-  private async selectAndConsumeMembership(
-    tx: TenantTx,
-    studentId: string,
-    schoolId: string,
-    classId: string,
-  ): Promise<{ id: string }> {
-    const candidates = await tx.membership.findMany({
-      where: { studentId, schoolId, status: 'ACTIVE', OR: [{ scopedClassId: null }, { scopedClassId: classId }] },
-    });
-    const generalAccess = candidates.find((m) => m.classesRemaining === null);
-    if (generalAccess) return generalAccess;
-
-    const classPack = candidates.find((m) => m.classesRemaining !== null && m.classesRemaining > 0);
-    if (!classPack) {
-      throw new BadRequestException('This Student has no Active Membership eligible to fund this Booking.');
-    }
-    const result = await tx.membership.updateMany({
-      where: { id: classPack.id, classesRemaining: { gt: 0 } },
-      data: { classesRemaining: { decrement: 1 } },
-    });
-    if (result.count === 0) {
-      throw new ConflictException('This Membership\'s remaining credit changed concurrently — please retry.');
-    }
-    return classPack;
   }
 
   private isUniqueConstraintViolation(err: unknown): boolean {

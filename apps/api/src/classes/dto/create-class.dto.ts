@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsDateString,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -14,7 +15,7 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ClassStyleInputDto } from './class-style.dto';
 
 /**
@@ -58,8 +59,11 @@ export class CreateClassDto {
   @IsUUID()
   instructorId?: string;
 
+  /** Trimmed; blank or spaces-only is refused (Classes review C7). */
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty({ message: 'Give the class a title.' })
   @MaxLength(100)
   title!: string;
 

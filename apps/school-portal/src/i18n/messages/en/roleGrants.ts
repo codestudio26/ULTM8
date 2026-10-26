@@ -40,6 +40,9 @@ export const roleGrants = {
     revoked: 'Revoked',
     active: 'Active',
     revoke: 'Revoke',
+    revokeTitle: 'Remove the {role} role from {name}?',
+    revokeDescription:
+      'They lose this role ({branch}) right away (within 15 minutes if they are signed in). If it was their last coach or staff role here, their grading permissions and "Can invite coaches" are cleared too, so giving the role back starts them fresh.',
     addedEmailed: '{name} was added — a temporary passcode was emailed to {email}.',
     addedNoEmail: "{name} was added, but the email couldn't be sent. They'll need the temporary passcode another way.",
   },

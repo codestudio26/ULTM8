@@ -66,9 +66,11 @@ test('Active (default) hides a revoked enrollment; Inactive and All surface it',
   await expect(page.getByRole('cell', { name: 'Sam Lee' })).toHaveCount(0);
   await expect(page.getByRole('row', { name: /Riley Revoked/ }).getByText('Inactive', { exact: true })).toBeVisible();
 
-  // Riley DOES have a photo set — renders a real <img>, not initials.
+  // Riley DOES have a photo set — renders a real <img>, not initials. Attached,
+  // not visible: example.test never loads, and WebKit hides a broken image.
   const rileyRow = page.getByRole('row', { name: /Riley Revoked/ });
-  await expect(rileyRow.locator('img[src="https://example.test/riley-revoked-photo.jpg"]')).toBeVisible();
+  await expect(rileyRow.locator('img[src="https://example.test/riley-revoked-photo.jpg"]')).toBeAttached();
+  await expect(rileyRow.getByText('RR', { exact: true })).toHaveCount(0);
 
   await page.getByLabel('Status').selectOption('ALL');
   await expect(page.getByRole('cell', { name: 'Riley Revoked' })).toBeVisible();

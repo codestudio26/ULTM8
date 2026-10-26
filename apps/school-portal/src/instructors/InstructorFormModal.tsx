@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
@@ -114,7 +114,14 @@ export function InstructorFormModal({
             <SelectField
               required
               value={form.userId}
-              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              onChange={(e) => {
+                const userId = e.target.value;
+                // Start on the branch their Instructor role is for: a whole-School
+                // profile needs a whole-School role (Decision 311, I13).
+                const picked = (eligibleUsers ?? []).find((u) => u.id === userId);
+                const roleBranch = picked && !picked.schoolWide ? picked.branchIds.find((id) => branches.some((b) => b.id === id && !b.archivedAt)) : undefined;
+                setForm((f) => ({ ...f, userId, branchId: roleBranch ?? (picked?.schoolWide ? f.branchId : '') }));
+              }}
               options={[
                 { value: '', label: t('instructors.form.userPlaceholder') },
                 ...(eligibleUsers ?? []).map((u) => ({
@@ -129,7 +136,7 @@ export function InstructorFormModal({
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('instructors.form.wholeSchool') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('instructors.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
         </Field>
         <Field label={t('instructors.form.photo')} htmlFor="instructor-photo">

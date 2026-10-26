@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AddressFields, AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, AuthCard, AuthSuccessCard, Button, CurrencyField, ErrorBanner, Field, PasscodeField, PhoneField, SelectField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { languageName } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 
@@ -13,6 +15,8 @@ import { Trans } from '../i18n/Trans';
 export function RegisterPage() {
   const t = useT();
   const navigate = useNavigate();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
   // A coach invite link passes the invited email along (Decision 183).
   const invitedEmail = (useLocation() as { state?: { email?: string } }).state?.email ?? '';
 
@@ -157,10 +161,20 @@ export function RegisterPage() {
             <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
           </Field>
           <Field label={t('auth.register.language')} htmlFor="reg-language">
-            <TextField value={form.language} onChange={(e) => set('language', e.target.value)} />
+            <SelectField
+              value={form.language}
+              onChange={(e) => set('language', e.target.value)}
+              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
+            />
           </Field>
           <Field label={t('auth.register.currency')} htmlFor="reg-currency">
-            <TextField value={form.currency} onChange={(e) => set('currency', e.target.value)} />
+            <CurrencyField
+              id="reg-currency"
+              value={form.currency}
+              onChange={(code) => set('currency', code)}
+              options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+              placeholder={t('schools.form.notSet')}
+            />
           </Field>
           <AddressFields idPrefix="reg-address" value={address} onChange={setAddress} errors={addressErrors} />
         </details>

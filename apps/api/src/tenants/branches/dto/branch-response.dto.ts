@@ -85,9 +85,19 @@ export class BranchResponseDto extends PostalAddressColumnsResponseDto {
   updatedAt!: string;
 }
 
+/** A row of the Branches list: the Branch plus two counts for the list's
+ * overview columns (Decision 294). Not on the single-Branch response. */
+export class BranchListItemDto extends BranchResponseDto {
+  @ApiProperty({ description: 'Students whose home branch this is.' })
+  studentCount!: number;
+
+  @ApiProperty({ description: 'Classes at this Branch that have not started yet (archived ones left out).' })
+  upcomingClassCount!: number;
+}
+
 export class BranchListResponseDto {
-  @ApiProperty({ type: [BranchResponseDto] })
-  items!: BranchResponseDto[];
+  @ApiProperty({ type: [BranchListItemDto] })
+  items!: BranchListItemDto[];
 
   @ApiPropertyOptional({ type: String, nullable: true })
   nextCursor!: string | null;

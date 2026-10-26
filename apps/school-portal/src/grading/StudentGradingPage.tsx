@@ -14,24 +14,33 @@ import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQu
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
+import { HISTORY_TYPE_LABEL } from './historyLabels';
 import {
   type Eligibility,
   type GradingToggle,
   type PromotionEvent,
   type StudentEligibility,
+  type StudentFeeRequest,
+  feeStatusOf,
   useChangeHistoryNote,
   useCycleSkill,
+  useFeeRequestAction,
+  usePromotionFeeSettings,
   useRankHistory,
   useSetBoardActive,
   useMyGrading,
   useStudentEligibility,
+  useStudentFeeRequests,
 } from './gradingQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 import { formatLocale } from '../i18n/format';
+import { formatMoney } from '../lib/money';
+import { DecideDialog } from './BoardPanels';
+import { formatHours } from './hours';
 
-type Lesson = { id: string; title: string; skillIds: string[] };
+type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
 
 /** A date the API stores as the start of a local day, shown as that day.
  * Uses the browser's time zone, like every date on the portal today (see
@@ -73,6 +82,8 @@ export function StudentGradingPage() {
   const instructors = useInstructors(schoolId);
   const [showVoided, setShowVoided] = useState(false);
   const history = useRankHistory(studentId, schoolId, showVoided);
+  const feeRequests = useStudentFeeRequests(studentId, schoolId);
+  const feeSettings = usePromotionFeeSettings(schoolId);
   // v1.2 backend backlog — "Upcoming Booking" and "Revoke Enrollment", both
   // additions to this real page (the de facto Student Detail screen at
   // /students/:id — no separate mockup-matching page exists in this app; see
@@ -182,6 +193,10 @@ export function StudentGradingPage() {
             performerName={performerName}
             can={(toggle) => my.can(discipline.id, toggle)}
             isOwner={my.isOwner}
+            firstName={student?.firstName || studentName}
+            studentName={studentName}
+            feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
+            feeCurrency={feeSettings.data?.currency ?? null}
           />
         ))
       )}
@@ -233,6 +248,8 @@ type Dialog =
   | 'date'
   | 'verify'
   | 'log-class'
+  | 'decide'
+  | { promoteTo: string }
   | { voidEventId: string; summary: string }
   | { noteEventId: string; summary: string; note: string | null }
   | { logEventId: string; summary: string }
@@ -249,6 +266,10 @@ function DisciplineGradingCard({
   performerName,
   can,
   isOwner,
+  firstName,
+  studentName,
+  feeRequests,
+  feeCurrency,
 }: {
   studentId: string;
   schoolId: string;
@@ -261,6 +282,11 @@ function DisciplineGradingCard({
   /** What the caller may do in this style; actions they can't use are hidden. */
   can: (toggle: GradingToggle) => boolean;
   isOwner: boolean;
+  firstName: string;
+  studentName: string;
+  /** This style's promotion fee requests (Decisions 300, 307, 313). */
+  feeRequests: StudentFeeRequest[];
+  feeCurrency: string | null;
 }) {
   const ranks = useRanks(discipline.id);
   const skills = useSkills(discipline.id);
@@ -276,6 +302,9 @@ function DisciplineGradingCard({
   const eligibility = (studentRank?.eligibility ?? null) as Eligibility | null;
   const entries = studentRank ? history.filter((h) => h.studentRankId === studentRank.id) : [];
   const rungName = (rungId: string | null | undefined) => ladder.find((r) => r.id === rungId)?.name ?? t('grading.student.unknownRank');
+  const fee = studentRank ? feeStatusOf(feeRequests, studentRank.currentStripeId) : null;
+  // A promotion waiting for its fee is not graded again until it settles (Decision 300).
+  const waiting = fee?.status === 'waiting';
 
   return (
     <section aria-label={discipline.name} style={{ marginBottom: 24 }}>
@@ -296,8 +325,9 @@ function DisciplineGradingCard({
                 <BeltChip rung={current} />
                 <strong>{current.name}</strong>
                 <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
+                {fee ? <FeeBadge status={fee.status} /> : null}
                 {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
-                {eligibility?.hasNext && eligibility.eligible ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
+                {eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
               </div>
             )}
           </div>
@@ -306,7 +336,7 @@ function DisciplineGradingCard({
               {studentRank?.verificationStatus === 'UNVERIFIED' && current && can('canVerifyRanks') ? (
                 <Button onClick={() => setDialog('verify')}>{t('grading.student.verifyRank')}</Button>
               ) : null}
-              {can('canPromote') ? (
+              {can('canPromote') && !waiting ? (
                 <Button onClick={() => setDialog('grade')} disabled={!!studentRank && !current}>
                   {studentRank ? t('grading.student.grade') : t('grading.student.giveFirstRank')}
                 </Button>
@@ -334,8 +364,25 @@ function DisciplineGradingCard({
           </p>
         ) : null}
 
-        {current && eligibility ? (
-          <Progress eligibility={eligibility} nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null} />
+        {fee ? (
+          <FeeBox
+            fee={fee}
+            firstName={firstName}
+            currency={feeCurrency}
+            isOwner={isOwner}
+            canPromote={can('canPromote')}
+            onDecide={() => setDialog('decide')}
+            onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
+          />
+        ) : null}
+
+        {current && eligibility && studentRank ? (
+          <Progress
+            eligibility={eligibility}
+            breakdown={studentRank.progressBreakdown ?? null}
+            hours={studentRank.hoursTrained}
+            nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null}
+          />
         ) : null}
 
         {current && studentRank && can('canAdjustProgress') ? (
@@ -389,6 +436,29 @@ function DisciplineGradingCard({
       {dialog === 'grade' ? (
         <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} onClose={() => setDialog(null)} />
       ) : null}
+      {dialog && typeof dialog === 'object' && 'promoteTo' in dialog ? (
+        <GradeModal
+          studentId={studentId}
+          discipline={discipline}
+          ladder={ladder}
+          current={current}
+          eligibility={eligibility}
+          initialTargetId={dialog.promoteTo}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog === 'decide' && fee ? (
+        <DecideDialog
+          name={studentName}
+          firstName={firstName}
+          rank={fee.request.toRungName}
+          from={current}
+          to={ladder.find((r) => r.id === fee.request.toRungId) ?? null}
+          canPromote={can('canPromote')}
+          onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
       {dialog === 'downgrade' && current ? (
         <DowngradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
       ) : null}
@@ -396,7 +466,7 @@ function DisciplineGradingCard({
         <RankDateModal studentId={studentId} discipline={discipline} currentDay={dayOf(studentRank.dateOfCurrentRank)} onClose={() => setDialog(null)} />
       ) : null}
       {dialog === 'log-class' && current ? (
-        <LogClassModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
+        <LogClassModal studentId={studentId} schoolId={schoolId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
       ) : null}
       {dialog === 'verify' && current ? (
         <VerifyRankModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
@@ -466,18 +536,26 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
   );
 }
 
-/** Progress toward the next rank (Decisions 136, 149, 171): classes (or days
- * on a time-only rank), minimum days and skills, each with its own tick. */
-function Progress({ eligibility, nextName }: { eligibility: Eligibility; nextName: string | null }) {
+type Breakdown = NonNullable<StudentEligibility['progressBreakdown']>;
+type Hours = StudentEligibility['hoursTrained'];
+
+/** Progress toward the next rank (Decisions 136, 149, 171), then the
+ * Breakdown (Decision 301 item 4): one line per requirement grading uses,
+ * each with its own tick, count, % and bar, and whether it is in the %
+ * (classes; days on a time-only rank). Hours trained are a record only,
+ * never part of grading (Decision 306). */
+function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: Eligibility; breakdown: Breakdown | null; hours: Hours; nextName: string | null }) {
   const t = useT();
   if (!eligibility.hasNext) {
     return (
-      <p style={{ marginTop: 16 }}>
-        {eligibility.dataError ? t('grading.student.progress.dataError') : t('grading.student.progress.top')}
-      </p>
+      <>
+        <p style={{ marginTop: 16 }}>
+          {eligibility.dataError ? t('grading.student.progress.dataError') : t('grading.student.progress.top')}
+        </p>
+        <HoursTrained hours={hours} />
+      </>
     );
   }
-  const tick = (ok: boolean | undefined) => (ok ? '✓' : '○');
   const percent = eligibility.progressPercent ?? 0;
   return (
     <div style={{ marginTop: 16 }}>
@@ -485,37 +563,201 @@ function Progress({ eligibility, nextName }: { eligibility: Eligibility; nextNam
         {t('grading.student.progress.toward', { name: nextName ?? '', percent })}
       </h3>
       <ProgressBar percent={percent} label={t('grading.student.progress.towardAria', { name: nextName ?? '' })} />
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
-        {eligibility.timeOnly ? null : eligibility.byType && eligibility.byType.length > 0 ? (
-          eligibility.byType.map((row) => (
-            <li key={row.classType}>
-              {tick(row.counted >= row.required)}{' '}
-              {t('grading.student.progress.byType', { type: row.classType, counted: row.counted, required: row.required })}
-            </li>
-          ))
-        ) : (
-          <li>
-            {tick(eligibility.classesOk)}{' '}
-            {t('grading.student.progress.classes', { counted: eligibility.countedClasses ?? '', required: eligibility.requiredClasses ?? '' })}
-          </li>
-        )}
-        <li>
-          {tick(eligibility.daysOk)}{' '}
-          {eligibility.requiredDays
-            ? t('grading.student.progress.timeWithMinimum', { elapsed: eligibility.elapsedDays ?? 0, required: eligibility.requiredDays })
-            : t('grading.student.progress.timeNoMinimum', { elapsed: eligibility.elapsedDays ?? 0 })}
-        </li>
-        {eligibility.timeOnly ? null : (
-          <li>
-            {tick(eligibility.skillsOk)}{' '}
-            {t('grading.student.progress.skills', {
-              done: (eligibility.requiredSkillIds?.length ?? 0) - (eligibility.missingSkillIds?.length ?? 0),
-              required: eligibility.requiredSkillIds?.length ?? 0,
-            })}
-          </li>
-        )}
-      </ul>
+      {breakdown ? (
+        <section aria-label={t('grading.student.progress.breakdown')}>
+          <h4 style={{ fontSize: 14, margin: '0 0 6px' }}>{t('grading.student.progress.breakdown')}</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+            {breakdown.classes ? (
+              <BreakdownRow
+                ok={breakdown.classes.counted >= breakdown.classes.required}
+                label={t('grading.student.progress.classesLabel')}
+                value={t('grading.student.progress.xOfY', { done: breakdown.classes.counted, required: breakdown.classes.required })}
+                percent={breakdown.classes.percent}
+                inPercent
+              >
+                {breakdown.classes.byType.length > 0 ? (
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                    {breakdown.classes.byType.map((row) => (
+                      <li key={row.classType}>
+                        {row.counted >= row.required ? '✓' : '○'}{' '}
+                        {t('grading.student.progress.byType', { type: row.classType, counted: row.counted, required: row.required })}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </BreakdownRow>
+            ) : null}
+            <BreakdownRow
+              ok={breakdown.days.elapsed >= breakdown.days.required}
+              label={t('grading.student.progress.daysLabel')}
+              value={
+                breakdown.days.required > 0
+                  ? t('grading.student.progress.xOfY', { done: breakdown.days.elapsed, required: breakdown.days.required })
+                  : t('grading.student.progress.daysNoMinimum', { elapsed: breakdown.days.elapsed })
+              }
+              percent={breakdown.days.percent}
+              inPercent={!breakdown.classes}
+              noRequirement={breakdown.days.required === 0}
+            />
+            {breakdown.skills && breakdown.skills.required > 0 ? (
+              <BreakdownRow
+                ok={breakdown.skills.signedOff >= breakdown.skills.required}
+                label={t('grading.student.progress.skillsLabel')}
+                value={t('grading.student.progress.xOfY', { done: breakdown.skills.signedOff, required: breakdown.skills.required })}
+                percent={breakdown.skills.percent}
+                inPercent={false}
+              />
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
+      <HoursTrained hours={hours} />
+      <p className="ultm8-field__hint" style={{ margin: '8px 0 0' }}>
+        {eligibility.timeOnly ? t('grading.student.progress.howDays') : t('grading.student.progress.howClasses')}
+      </p>
     </div>
+  );
+}
+
+function BreakdownRow({
+  ok,
+  label,
+  value,
+  percent,
+  inPercent,
+  noRequirement,
+  children,
+}: {
+  ok: boolean;
+  label: string;
+  value: string;
+  percent: number;
+  inPercent: boolean;
+  /** Nothing is required (days with no minimum): no "Needed too" note. */
+  noRequirement?: boolean;
+  children?: React.ReactNode;
+}) {
+  const t = useT();
+  return (
+    <li aria-label={`${label}: ${value}`}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <span aria-hidden="true">{ok ? '✓' : '○'}</span>
+        <strong style={{ fontWeight: 600 }}>{label}</strong>
+        <span>{value}</span>
+        <span className="ultm8-field__hint" style={{ marginLeft: 'auto' }}>
+          {percent}%
+        </span>
+      </div>
+      <div style={{ height: 4, borderRadius: 2, background: 'var(--color-neutral-200)', overflow: 'hidden', margin: '4px 0 2px' }}>
+        <div style={{ width: `${percent}%`, height: '100%', background: ok ? 'var(--color-success)' : 'var(--fill-accent)' }} />
+      </div>
+      <span className="ultm8-field__hint">
+        {inPercent ? t('grading.student.progress.inPercent') : noRequirement ? t('grading.student.progress.noMinimum') : t('grading.student.progress.notInPercent')}
+      </span>
+      {children}
+    </li>
+  );
+}
+
+/** Hours trained (Decisions 301, 306): logged, not graded. */
+function HoursTrained({ hours }: { hours: Hours }) {
+  const t = useT();
+  return (
+    <section aria-label={t('grading.student.hours.title')} style={{ borderTop: '1px solid var(--color-neutral-200)', marginTop: 12, paddingTop: 10 }}>
+      <h4 style={{ fontSize: 14, margin: '0 0 2px' }}>{t('grading.student.hours.title')}</h4>
+      <p style={{ margin: 0 }}>{t('grading.student.hours.atThisRank', { hours: formatHours(hours.sinceCurrentRankMinutes) })}</p>
+      <p className="ultm8-field__hint" style={{ margin: 0 }}>
+        {t('grading.student.hours.total', { hours: formatHours(hours.totalMinutes) })} · {t('grading.student.hours.recordOnly')}
+      </p>
+    </section>
+  );
+}
+
+function FeeBadge({ status }: { status: 'waiting' | 'declined' | 'toDecide' }) {
+  const t = useT();
+  if (status === 'waiting') return <Badge variant="warning">{t('grading.board.fee.waiting')}</Badge>;
+  if (status === 'declined') return <Badge variant="danger">{t('grading.board.fee.declined')}</Badge>;
+  return <Badge variant="info">{t('grading.board.fee.toDecide')}</Badge>;
+}
+
+/** The promotion fee box (Decisions 300, 307, 313), as on the board's
+ * panel: the owner waives or cancels; after a cancel (or waiving a declined
+ * fee) a coach decides, and nothing promotes on its own. */
+function FeeBox({
+  fee,
+  firstName,
+  currency,
+  isOwner,
+  canPromote,
+  onDecide,
+  onPromote,
+}: {
+  fee: NonNullable<ReturnType<typeof feeStatusOf>>;
+  firstName: string;
+  currency: string | null;
+  isOwner: boolean;
+  canPromote: boolean;
+  onDecide: () => void;
+  onPromote: () => void;
+}) {
+  const t = useT();
+  const waive = useFeeRequestAction('waive');
+  const cancel = useFeeRequestAction('cancel');
+  const dismiss = useFeeRequestAction('dismiss');
+  const actionError = waive.error ?? cancel.error ?? dismiss.error;
+  const { status, request } = fee;
+  const amount = formatMoney(request.amountMinor, request.currency ?? currency);
+
+  async function closeFee(action: 'waive' | 'cancel') {
+    const mutation = action === 'waive' ? waive : cancel;
+    await mutation.mutateAsync(request.id);
+    // Waiving a waiting promotion applies it; anything else leaves it to a coach.
+    if (!(action === 'waive' && status === 'waiting')) onDecide();
+  }
+
+  return (
+    <section
+      aria-label={t('grading.student.fee.aria')}
+      style={{
+        marginTop: 16,
+        padding: 12,
+        borderRadius: 10,
+        background: status === 'declined' ? 'var(--bg-danger)' : status === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
+      }}
+    >
+      <FeeBadge status={status} />
+      <p style={{ margin: '8px 0 4px', fontWeight: 600 }}>
+        {status === 'toDecide' ? t('grading.board.fee.noFeeFor', { rank: request.toRungName }) : t('grading.board.fee.amountFor', { amount, rank: request.toRungName })}
+      </p>
+      <p className="ultm8-field__hint" style={{ margin: 0 }}>
+        {status === 'waiting'
+          ? t('grading.board.fee.waitingText', { name: firstName, rank: request.toRungName })
+          : status === 'declined'
+            ? t('grading.board.fee.declinedText', { name: firstName, rank: request.toRungName })
+            : t('grading.board.fee.toDecideText', { name: firstName })}
+      </p>
+      {actionError ? <ErrorBanner message={actionError instanceof ApiError ? actionError.message : t('common.tryAgain')} /> : null}
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+        {status !== 'toDecide' && isOwner ? (
+          <>
+            <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>
+              {t('grading.board.fee.waive')}
+            </Button>
+            <Button variant="secondary" onClick={() => closeFee('cancel')} loading={cancel.isPending}>
+              {t('grading.board.fee.cancel')}
+            </Button>
+          </>
+        ) : null}
+        {status === 'toDecide' && canPromote ? (
+          <>
+            <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank: request.toRungName })}</Button>
+            <Button variant="secondary" onClick={() => dismiss.mutate(request.id)} loading={dismiss.isPending}>
+              {t('grading.board.fee.dontPromote')}
+            </Button>
+          </>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -573,7 +815,8 @@ function SkillsForNext({
         {ids.map((skillId) => {
           const skill = skills.find((s) => s.id === skillId);
           const status = statuses.find((s) => s.skillId === skillId)?.status ?? 'NOT_STARTED';
-          const linked = lessons.filter((l) => l.skillIds.includes(skillId));
+          // Archived lessons are hidden from students, so not offered here (C9).
+          const linked = lessons.filter((l) => l.skillIds.includes(skillId) && !l.archivedAt);
           const name = skill?.name ?? t('grading.student.skills.fallbackName');
           return (
             <li key={skillId} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -609,17 +852,6 @@ function SkillsForNext({
     </div>
   );
 }
-
-const TYPE_LABEL: Record<string, TranslationKey> = {
-  PROMOTION: 'grading.student.history.types.promotion',
-  BULK_PROMOTION: 'grading.student.history.types.bulkPromotion',
-  STRIPE_AWARD: 'grading.student.history.types.stripeAward',
-  BULK_STRIPE_AWARD: 'grading.student.history.types.bulkStripeAward',
-  DOWNGRADE: 'grading.student.history.types.downgrade',
-  SELF_DECLARED: 'grading.student.history.types.selfDeclared',
-  RANK_CORRECTION: 'grading.student.history.types.rankCorrection',
-  ADJUSTMENT: 'grading.student.history.types.adjustment',
-};
 
 /** The rank history for this style (Decisions 129, 166): what changed, the
  * grading date, who did it, and the notes; voided entries only on request. */
@@ -659,7 +891,7 @@ function History({
       ) : (
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
           {entries.map((e) => {
-            const labelKey = TYPE_LABEL[e.type];
+            const labelKey = HISTORY_TYPE_LABEL[e.type];
             const label = labelKey ? t(labelKey) : e.type;
             const change =
               e.fromStripeTierId && e.fromStripeTierId !== e.toStripeTierId

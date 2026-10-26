@@ -1236,9 +1236,16 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // WAITING and still hold a live FK to this Class, same reasoning the
     // Phase 41 cancellation fixture's own comment already documents; cleanup
     // relies on the suite's own bulk afterAll.
+    // Full (one seat, taken), since only a full Class takes a waitlist entry
+    // (booking/schedule stress test, 26 Oct 2026).
     const classForGuardianWaitlist = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
     });
+    const seatHolder = await mkActiveMembership(studentB.id, subscriptionPlanId, null);
+    const seat = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: studentB.id, classId: classForGuardianWaitlist.id, schoolId: school.id, sourceMembershipId: seatHolder.id },
+    });
+    bookingIds.push(seat.id);
 
     const joinRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classForGuardianWaitlist.id}/waitlist`)
@@ -1274,6 +1281,13 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     const classForGuardianClaim = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Claim Fixture', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
     });
+    // Full first (only a full Class takes a waitlist entry); the seat is freed
+    // below, standing in for the cancellation that triggers the cascade.
+    const claimSeatHolder = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id, schoolId: school.id, status: 'ACTIVE' } });
+    const claimSeat = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: studentB.id, classId: classForGuardianClaim.id, schoolId: school.id, sourceMembershipId: claimSeatHolder.id },
+    });
+    bookingIds.push(claimSeat.id);
 
     const joinRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classForGuardianClaim.id}/waitlist`)
@@ -1282,6 +1296,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(joinRes.status).toBe(201);
     waitlistEntryIds.push(joinRes.body.id);
 
+    await superuser.booking.update({ where: { id: claimSeat.id }, data: { status: 'CANCELLED', refundResolution: 'REFUNDED' } });
     await superuser.waitlistEntry.update({
       where: { id: joinRes.body.id },
       data: { status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: new Date(Date.now() + 3_600_000) },
@@ -1307,8 +1322,13 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // flip, not a row delete, so it still holds a live FK to this Class; same
     // reasoning as every other throwaway-Class fixture in this section.
     const classForGuardianWithdraw = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
     });
+    const withdrawSeatHolder = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id, schoolId: school.id, status: 'ACTIVE' } });
+    const withdrawSeat = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: studentB.id, classId: classForGuardianWithdraw.id, schoolId: school.id, sourceMembershipId: withdrawSeatHolder.id },
+    });
+    bookingIds.push(withdrawSeat.id);
 
     const joinRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classForGuardianWithdraw.id}/waitlist`)

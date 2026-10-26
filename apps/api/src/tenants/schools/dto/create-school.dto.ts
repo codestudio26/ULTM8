@@ -10,6 +10,7 @@ import {
   IsString,
   IsUrl,
   Matches,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
@@ -266,4 +267,19 @@ export class CreateSchoolDto {
   @IsInt()
   @Min(1)
   noShowFee?: number | null;
+
+  @ApiPropertyOptional({ description: 'Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class\'s check-in end time, or its end.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  checkInOpensMinutesBeforeStart?: number;
+
+  @ApiPropertyOptional({
+    enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'],
+    description: 'What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.',
+  })
+  @IsOptional()
+  @IsEnum(['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'])
+  lateCancelRefundPolicy?: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
 }

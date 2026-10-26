@@ -68,6 +68,9 @@ export class ClassResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   cancellationReason!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class.' })
+  timetableSlotId!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Class has been archived. Null when active.' })
   archivedAt!: string | null;
 

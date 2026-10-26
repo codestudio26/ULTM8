@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
-import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
@@ -14,9 +14,16 @@ type NavItem = { label: TranslationKey; to: string };
  * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
 const COACH_NAV: NavItem[] = [
   { label: 'layout.nav.dashboard', to: '/coach' },
-  { label: 'layout.nav.gradingBoard', to: '/grading' },
+  { label: 'layout.nav.grading', to: '/grading' },
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
+/** Read-only for coaches and Branch Staff, so they can check what each belt
+ * needs (Decision 309). */
+const DISCIPLINES_NAV: NavItem = { label: 'layout.nav.disciplines', to: '/disciplines' };
+/** Read-only too: the lessons and their comments (Decision 326). */
+const CURRICULUM_NAV: NavItem = { label: 'layout.nav.curriculum', to: '/curriculum' };
+/** Read-only, to reach each Class's roll call and QR code (Classes review C4). */
+const CLASSES_NAV: NavItem = { label: 'layout.nav.classes', to: '/classes' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
 /** Decision 291 — Branch Staff may give credit back on cancelled bookings. */
 const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/cancellations' };
@@ -35,8 +42,8 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.disciplines', to: '/disciplines' },
   { label: 'layout.nav.instructors', to: '/instructors' },
   { label: 'layout.nav.students', to: '/students' },
-  { label: 'layout.nav.gradingBoard', to: '/grading' },
-  { label: 'layout.nav.gradingPermissions', to: '/grading-permissions' },
+  // Board, Styles & Belts and Permissions are tabs inside Grading.
+  { label: 'layout.nav.grading', to: '/grading' },
   { label: 'layout.nav.classes', to: '/classes' },
   { label: 'layout.nav.curriculum', to: '/curriculum' },
   { label: 'layout.nav.timetable', to: '/timetable' },
@@ -52,7 +59,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { logout, claims } = useAuth();
   const t = useT();
   const coachSchoolId = useCoachSchoolId();
-  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const isCoachOnly = useIsCoachOnly();
   const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
@@ -61,7 +68,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [CANCELLATIONS_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [CANCELLATIONS_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

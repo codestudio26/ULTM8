@@ -1,11 +1,30 @@
 import React, { useState } from 'react';
-import { Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import {
+  AddressFields,
+  Button,
+  Card,
+  CurrencyField,
+  ErrorBanner,
+  Field,
+  PageHeader,
+  PhotoUploadField,
+  SelectField,
+  Spinner,
+  SuccessBanner,
+  TextField,
+  hasLegacyAddressOnly,
+  postalAddressFromRecord,
+  preparePostalAddress,
+  type PostalAddress,
+  type PostalAddressErrors,
+} from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useI18n } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 
 /**
  * The signed-in user's own profile (`/profile`, reached from the header's
@@ -18,8 +37,10 @@ import { languageName } from '../i18n/format';
  * Email and phone are shown read-only — the DTO deliberately excludes both
  * (they're the login/OTP identifiers; see its own header comment).
  *
- * Blank username/language/currency/address are sent as `null` (clears them,
- * same convention as SchoolPage); date of birth and photo can't be cleared
+ * Blank username/language/currency are sent as `null` (clears them, same
+ * convention as SchoolPage). The address is the shared country-first
+ * `AddressFields` (Decision 276), sent as `postalAddress` only when it
+ * changed, and `null` when emptied; date of birth and photo can't be cleared
  * (the API rejects a null date of birth, and the DTO has no null for the
  * photo), so a blank one is simply left out. The photo uses the same
  * `POST /uploads/public-photo-url` path as every other photo field, with
@@ -44,14 +65,18 @@ export function MyProfilePage() {
     dateOfBirth: string;
     language: string;
     currency: string;
-    address: string;
+    address: PostalAddress;
   } | null>(null);
+  const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   // Filled once from the loaded profile — not re-synced on every refetch, so
   // a background refetch can't overwrite edits in progress.
   if (form === null && me) {
+    const address = postalAddressFromRecord(me, guessDefaultCountry());
+    setInitialAddress(address);
     setForm({
       profilePhotoUrl: me.profilePhotoUrl ?? '',
       firstName: me.firstName,
@@ -60,7 +85,7 @@ export function MyProfilePage() {
       dateOfBirth: me.dateOfBirth ? me.dateOfBirth.slice(0, 10) : '',
       language: me.language ?? '',
       currency: me.currency ?? '',
-      address: me.address ?? '',
+      address,
     });
   }
 
@@ -73,6 +98,12 @@ export function MyProfilePage() {
     if (!form) return;
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(form.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await updateMe.mutateAsync({
         profilePhotoUrl: form.profilePhotoUrl || undefined,
@@ -82,8 +113,9 @@ export function MyProfilePage() {
         dateOfBirth: form.dateOfBirth || undefined,
         language: form.language || null,
         currency: form.currency || null,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
       });
+      setInitialAddress(form.address);
       if (form.language) rememberLocale(form.language);
       setSaved(true);
     } catch (err) {
@@ -141,9 +173,13 @@ export function MyProfilePage() {
               placeholder={t('schools.form.notSet')}
             />
           </Field>
-          <Field label={t('students.update.address')} htmlFor="profile-address">
-            <TextField maxLength={500} value={form.address} onChange={(e) => set('address', e.target.value)} />
-          </Field>
+          <AddressFields
+            idPrefix="profile-address"
+            value={form.address}
+            onChange={(address) => set('address', address)}
+            errors={addressErrors}
+            legacy={hasLegacyAddressOnly(me) && !form.address.country}
+          />
           <Field label={t('auth.emailLabel')} htmlFor="profile-email">
             <TextField readOnly value={me.email} />
           </Field>

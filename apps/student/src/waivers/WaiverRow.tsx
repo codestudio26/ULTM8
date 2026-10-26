@@ -6,6 +6,7 @@ import { Button, Field, InlineError, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useSignWaiver } from './waiverQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type Waiver = components['schemas']['WaiverResponseDto'];
 type WaiverSignature = components['schemas']['WaiverSignatureResponseDto'];
@@ -34,6 +35,7 @@ const SIGNATURE_PAD_WEB_STYLE = `.m-signature-pad--footer { display: none; margi
  * native` is. Guardian-on-behalf-of signing (the real DTO's optional
  * `studentId`) stays out of scope here — Student self-signing only. */
 export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: WaiverSignature | undefined }) {
+  const t = useT();
   const [signing, setSigning] = useState(false);
   const [signerFullName, setSignerFullName] = useState('');
   const [signatureText, setSignatureText] = useState('');
@@ -76,17 +78,17 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
               sign() itself always stamps a real signedDate on, so the `?? ''`
               branch is unreachable in practice, not a silent "unknown date"
               UI state being accepted. */}
-          Signed {formatDate(effectiveSignature.signedDate ?? '')} ✓
+          {t('waivers.row.signed', { date: formatDate(effectiveSignature.signedDate ?? '') })}
         </Text>
       ) : signing ? (
         <View style={{ marginTop: 8 }}>
-          <Field label="Full name">
-            <TextField value={signerFullName} onChangeText={setSignerFullName} placeholder="Your full legal name" />
+          <Field label={t('waivers.row.fullName')}>
+            <TextField value={signerFullName} onChangeText={setSignerFullName} placeholder={t('waivers.row.fullNamePlaceholder')} />
           </Field>
-          <Field label="Signature" hint="Type your name again as your signature.">
-            <TextField value={signatureText} onChangeText={setSignatureText} placeholder="Type your signature" />
+          <Field label={t('waivers.row.signature')} hint={t('waivers.row.signatureHint')}>
+            <TextField value={signatureText} onChangeText={setSignatureText} placeholder={t('waivers.row.signaturePlaceholder')} />
           </Field>
-          <Field label="Drawn signature (optional)" hint="Sign with your finger or stylus — not required.">
+          <Field label={t('waivers.row.drawnSignature')} hint={t('waivers.row.drawnSignatureHint')}>
             <View style={{ height: 180, borderWidth: 1, borderColor: '#EEE', borderRadius: 8, overflow: 'hidden' }}>
               <SignatureScreen
                 ref={padRef}
@@ -98,20 +100,20 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
                 webStyle={SIGNATURE_PAD_WEB_STYLE}
               />
             </View>
-            {drawnSignature ? <Button variant="secondary" title="Clear signature" onPress={handleClearSignature} /> : null}
+            {drawnSignature ? <Button variant="secondary" title={t('waivers.row.clearSignature')} onPress={handleClearSignature} /> : null}
           </Field>
           {signWaiver.isError ? (
-            <InlineError message={getApiErrorMessage(signWaiver.error, 'Could not sign this waiver — please try again.')} />
+            <InlineError message={getApiErrorMessage(signWaiver.error, t('waivers.row.signError'))} />
           ) : null}
           <Button
-            title="Submit signature"
+            title={t('waivers.row.submit')}
             onPress={handleSubmit}
             loading={signWaiver.isPending}
             disabled={!signerFullName.trim() || !signatureText.trim()}
           />
         </View>
       ) : (
-        <Button title="Sign" variant="secondary" onPress={() => setSigning(true)} />
+        <Button title={t('waivers.row.sign')} variant="secondary" onPress={() => setSigning(true)} />
       )}
     </View>
   );
