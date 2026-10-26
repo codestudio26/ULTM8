@@ -76,7 +76,7 @@ export function StudentGradingPage() {
   // include.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
   const my = useMyGrading(schoolId);
-  // Former students too, so their page still shows their name (Decision 323).
+  // Former students too, so their page still shows their name (Decision 324).
   const students = useStudents(schoolId, 'ALL');
   const disciplines = useDisciplines(schoolId);
   const eligibility = useStudentEligibility(studentId, schoolId);
@@ -226,7 +226,7 @@ export function StudentGradingPage() {
 }
 
 /** The soonest upcoming booking whose class hasn't started, as the API picks
- * it across all of the student's bookings (Decision 323). */
+ * it across all of the student's bookings (Decision 324). */
 function UpcomingBooking({ next, moreUpcoming }: { next: StudentBookingResponse | null; moreUpcoming: number }) {
   const t = useT();
   if (!next) {

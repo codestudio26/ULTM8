@@ -1,4 +1,4 @@
--- Students page review fixes (Decision 323).
+-- Students page review fixes (Decision 324).
 --
 -- 1. S13 — a home branch belongs to an enrolment. Revoking a STUDENT grant now
 -- deletes the student's StudentHomeBranch row at that School

@@ -102,6 +102,7 @@ export const SERVER_MESSAGES: string[] = [
  "Only that Franchise's Owner may perform this action (Spec §8.2).",
  "Only that School's Owner/Manager may perform this action (Spec §8.2).",
  "Only the Comment's own author, or School staff, may delete it.",
+ "Only the School owner can change a birth date that makes someone an adult or a child.",
  "Only the School owner can enrol students.",
  "Only the School owner, or staff given \"Can invite coaches\", can invite coaches.",
  "Only the School owner, or staff given \"Can invite coaches\", can see coach invites.",

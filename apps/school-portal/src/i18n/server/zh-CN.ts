@@ -392,4 +392,5 @@ export const serverMessages: Record<string, string> = {
   "Choose a language from the list.": "请从列表中选择语言。",
   "Choose a currency from the list.": "请从列表中选择货币。",
   "This branch has been archived. Choose another branch.": "该分校已归档。请选择其他分校。",
+  "Only the School owner can change a birth date that makes someone an adult or a child.": "只有学校负责人可以修改会让某人变成成年人或未成年人的出生日期。",
 };

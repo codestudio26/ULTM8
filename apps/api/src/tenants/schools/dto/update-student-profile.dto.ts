@@ -18,7 +18,7 @@ import { CURRENCIES } from '../../../settings/constants/currencies';
  * `UpdateUserDto` allows a Student to change about themselves is safe for Staff to
  * change on their behalf too. See the PR description for the full scoping call.
  *
- * Decision 323 (S8): staff pick `language` and `currency` from the lists the app
+ * Decision 324 (S8): staff pick `language` and `currency` from the lists the app
  * serves (GET /settings/languages, /settings/currencies) instead of typing them.
  * class-validator adds these checks to the inherited ones. Self-service keeps
  * accepting the stored free text for now, since its forms send the saved value

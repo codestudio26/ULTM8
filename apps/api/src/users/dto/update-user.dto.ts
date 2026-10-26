@@ -5,7 +5,7 @@ import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 
 /** Names and username are trimmed before validation, so one made only of
- * spaces is refused as blank (Decision 323, S7). */
+ * spaces is refused as blank (Decision 324, S7). */
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 /**
@@ -71,7 +71,7 @@ export class UpdateUserDto {
   @MaxLength(50)
   username?: string | null;
 
-  /** Decision 323 (S5): a real calendar date, not in the future and not more
+  /** Decision 324 (S5): a real calendar date, not in the future and not more
    * than 120 years ago. */
   @ApiPropertyOptional({ description: 'ISO 8601 date, no time component. Not in the future, not more than 120 years ago.' })
   @IsOptional()

@@ -542,7 +542,7 @@ export class BookingsService {
 
   /**
    * GET /students/{id}/bookings/next — the student page's "Upcoming booking"
-   * (Decision 323, S14): the soonest UPCOMING booking whose class hasn't
+   * (Decision 324, S14): the soonest UPCOMING booking whose class hasn't
    * started yet, and how many more there are. The paged list above is in id
    * order, so the page used to pick the soonest from its first 20 only.
    * Staff who cover this student only (the owner, or by the Grading Board's

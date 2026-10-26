@@ -31,7 +31,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     "Promotion to decide" first among the tags; the owner waives or cancels; a
     coach promotes or doesn't. A student waiting for a fee has no Grade button
     and no "Ready" tag.
-- **Students section fixes** (Decision 323):
+- **Students section fixes** (Decision 324):
   - **Branch Staff and coaches see their own branch's students** on the
     Students list and can open and edit them; before, the list was empty and
     editing failed for anyone tied to a branch.
@@ -43,7 +43,8 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - **Edit profile opens with the student's saved details**, emptying a field
     clears it, and Language and Currency are lists. A date of birth in the
     future, over 120 years ago or that doesn't exist (30 February) is
-    refused, as is a name made of spaces.
+    refused, as is a name made of spaces. Only the owner can change a birth
+    date that turns a child into an adult or the reverse (Decision 325).
   - **Children enrolled by a Guardian show "Managed by a Guardian"** instead
     of an internal placeholder email.
   - **A former student's page shows their name and "Inactive"**, with no

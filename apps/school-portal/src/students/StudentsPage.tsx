@@ -34,11 +34,11 @@ export function StudentsPage() {
   const { data, isLoading, error } = useStudents(schoolId, statusFilter);
 
   // Only the owner has this page; anyone else typing /students goes to their
-  // own home screen (Decision 323). Coaches reach a student from the board.
+  // own home screen (Decision 324). Coaches reach a student from the board.
   if (!schoolId) return <Navigate to="/" replace />;
 
   const students = data?.items ?? [];
-  // A Guardian-managed child has no email of their own (Decision 323).
+  // A Guardian-managed child has no email of their own (Decision 324).
   const emailOf = (s: StudentSummary) => (s.guardianManaged ? t('students.managedByGuardian') : s.email);
 
   return (

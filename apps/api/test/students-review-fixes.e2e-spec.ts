@@ -1,5 +1,5 @@
 /**
- * Students page review fixes (Decision 323): who sees and edits which
+ * Students page review fixes (Decision 324): who sees and edits which
  * students, the join checks, profile validation, the next-booking read and
  * home branches on revoke. Real HTTP, real Postgres/RLS.
  */
@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { isBirthDate } from '../src/common/decorators/is-birth-date.decorator';
+import { isAdultOn, isBirthDate } from '../src/common/decorators/is-birth-date.decorator';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -43,7 +43,16 @@ describe('isBirthDate', () => {
   });
 });
 
-describeIfDb('Students page review fixes (Decision 323)', () => {
+describe('isAdultOn', () => {
+  const today = new Date('2026-10-26T12:00:00Z');
+  it('is 18 from the birthday itself', () => {
+    expect(isAdultOn(new Date('2008-10-26'), today)).toBe(true);
+    expect(isAdultOn(new Date('2008-10-27'), today)).toBe(false);
+    expect(isAdultOn(null, today)).toBe(false);
+  });
+});
+
+describeIfDb('Students page review fixes (Decision 324)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
@@ -209,6 +218,21 @@ describeIfDb('Students page review fixes (Decision 323)', () => {
       expect(res.status).toBe(400);
       const blank = await http().patch('/v1/users/me').set(as('sam')).send({ firstName: ' ' });
       expect(blank.status).toBe(400);
+    });
+  });
+
+  describe('S5 part 2: only the owner changes a birth date across 18 (Decision 325)', () => {
+    it('staff can correct a date that keeps the same side of 18, not one that crosses it', async () => {
+      expect((await patch('northStaff', 'nora', { dateOfBirth: '1999-03-04' })).status).toBe(200);
+      const crossing = await patch('northStaff', 'nora', { dateOfBirth: '2015-03-04' });
+      expect(crossing.status).toBe(403);
+      expect(crossing.body.error.message).toBe('Only the School owner can change a birth date that makes someone an adult or a child.');
+      expect((await superuser.user.findUniqueOrThrow({ where: { id: id.nora } })).dateOfBirth?.toISOString().slice(0, 10)).toBe('1999-03-04');
+    });
+
+    it('the owner can make that change', async () => {
+      expect((await patch('owner', 'nora', { dateOfBirth: '2015-03-04' })).status).toBe(200);
+      expect((await patch('owner', 'nora', { dateOfBirth: '2000-01-01' })).status).toBe(200);
     });
   });
 

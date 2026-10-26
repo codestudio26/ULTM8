@@ -85,7 +85,7 @@ export class BookingsController {
   }
 
   /** The student page's "Upcoming booking": the soonest one and how many more
-   * (Decision 323) — see BookingsService.findNextForStudent. Declared before
+   * (Decision 324) — see BookingsService.findNextForStudent. Declared before
    * the list route below only for reading order; the paths don't overlap. */
   @ApiOkResponse({ type: StudentNextBookingResponseDto })
   @Get('students/:id/bookings/next')

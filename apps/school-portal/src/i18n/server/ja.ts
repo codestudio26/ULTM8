@@ -392,4 +392,5 @@ export const serverMessages: Record<string, string> = {
   "Choose a language from the list.": "一覧から言語を選んでください。",
   "Choose a currency from the list.": "一覧から通貨を選んでください。",
   "This branch has been archived. Choose another branch.": "この支部はアーカイブされています。別の支部を選んでください。",
+  "Only the School owner can change a birth date that makes someone an adult or a child.": "成人か未成年かが変わる生年月日の変更は、スクールのオーナーだけが行えます。",
 };

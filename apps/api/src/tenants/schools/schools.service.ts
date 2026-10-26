@@ -20,6 +20,7 @@ import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
+import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
 
 @Injectable()
 export class SchoolsService {
@@ -269,7 +270,7 @@ export class SchoolsService {
         } catch (guardianErr) {
           // Staff here who aren't the owner (and aren't this child's
           // Guardian) get the reason that applies to them, not the Guardian
-          // one (Decision 323, S11).
+          // one (Decision 324, S11).
           if (guardianErr instanceof ForbiddenException && (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))) {
             throw new ForbiddenException('Only the School owner can enrol students.');
           }
@@ -310,7 +311,7 @@ export class SchoolsService {
       }
 
       // A closed School takes no new students, however they join: the
-      // student app, a Guardian or the owner's Invite (Decisions 110, 323).
+      // student app, a Guardian or the owner's Invite (Decisions 110, 324).
       // Read after the grant above, which is what lets this context see the
       // School; the refusal rolls the grant back.
       const school = await tx.school.findUnique({ where: { id: schoolId }, select: { archivedAt: true } });
@@ -323,7 +324,7 @@ export class SchoolsService {
       // to choose. Checked after the STUDENT grant above, in the same
       // transaction: that grant is what lets this context see the School's
       // branches (Branch RLS), and any refusal here rolls it back. Only open
-      // branches count and can be chosen (Decisions 226, 323): a School whose
+      // branches count and can be chosen (Decisions 226, 324): a School whose
       // branches are all archived has none to choose from.
       const branches = await tx.branch.findMany({ where: { schoolId }, select: { id: true, archivedAt: true } });
       const chosen = dto?.branchId ? branches.find((b) => b.id === dto.branchId) : undefined;
@@ -609,7 +610,7 @@ export class SchoolsService {
    * read any Staff member legitimately needs, unlike Instructors' eligible-users
    * endpoint (which gates an Owner-only write flow). The owner sees the whole
    * School; Branch Staff and Instructors see the current students they cover,
-   * by the Grading Board's rule (Decisions 168, 177, 323) — enforced by
+   * by the Grading Board's rule (Decisions 168, 177, 324) — enforced by
    * RoleGrant RLS (rolegrant_branchless_staff_student_read,
    * rolegrant_branch_staff_student_read), so the same queries below serve both.
    *
@@ -815,7 +816,7 @@ export class SchoolsService {
    * Authorization: any staff member at the School (Owner/Manager, Branch Staff or
    * Instructor), not only the owner, since editing a Student's contact details is
    * an ordinary Staff action. Staff other than the owner may edit only the students
-   * they cover by the Grading Board's branch rule (Decision 323) — see
+   * they cover by the Grading Board's branch rule (Decision 324) — see
    * assertStaffCanEditStudent.
    *
    * Field scope: UpdateStudentProfileDto reuses UpdateUserDto outright — see that
@@ -831,11 +832,20 @@ export class SchoolsService {
   async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // A birth date that turns a child into an adult, or an adult into a
+    // child, changes whether a Guardian must consent (Decision 67): only the
+    // School owner may make that change (Decision 325).
+    if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
+      const current = await this.usersService.getProfileFor(callerId, studentId);
+      if (isAdultOn(current.dateOfBirth) !== isAdultOn(new Date(dto.dateOfBirth))) {
+        throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
+      }
+    }
     return this.usersService.updateProfileFor(callerId, studentId, dto);
   }
 
   /** `GET /schools/{schoolId}/students/{studentId}/profile` — the profile the
-   * edit form opens with (Decision 323, S9). Same access as
+   * edit form opens with (Decision 324, S9). Same access as
    * updateStudentProfile. */
   async getStudentProfile(callerId: string, schoolId: string, studentId: string) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
@@ -844,7 +854,7 @@ export class SchoolsService {
 
   /** Staff at this School, `studentId` currently enrolled here, and — for
    * anyone but the owner — one of the students the caller covers, by the
-   * Grading Board's branch rule (Decision 323, S1; Decisions 168, 177).
+   * Grading Board's branch rule (Decision 324, S1; Decisions 168, 177).
    * Enrolment is read under the student's own context, as grading's
    * assertEnrolledStudent does, so a student outside the caller's branches
    * gets the branch message rather than "not a Student". */
@@ -866,7 +876,7 @@ export class SchoolsService {
 
 /** A roster row as the Students page shows it. A Guardian-managed child's
  * account has a placeholder email nobody reads (GuardiansService.createMinor):
- * it is blanked and flagged instead (Decision 323, S10). */
+ * it is blanked and flagged instead (Decision 324, S10). */
 function rosterRow<T extends { email: string }>(row: T): T & { guardianManaged: boolean } {
   const guardianManaged = row.email.toLowerCase().endsWith(`@${GUARDIAN_MANAGED_EMAIL_DOMAIN}`);
   return { ...row, email: guardianManaged ? '' : row.email, guardianManaged };

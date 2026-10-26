@@ -392,4 +392,5 @@ export const serverMessages: Record<string, string> = {
   "Choose a language from the list.": "Scegli una lingua dall’elenco.",
   "Choose a currency from the list.": "Scegli una valuta dall’elenco.",
   "This branch has been archived. Choose another branch.": "Questa sede è stata archiviata. Scegline un’altra.",
+  "Only the School owner can change a birth date that makes someone an adult or a child.": "Solo il titolare della scuola può modificare una data di nascita che rende qualcuno maggiorenne o minorenne.",
 };

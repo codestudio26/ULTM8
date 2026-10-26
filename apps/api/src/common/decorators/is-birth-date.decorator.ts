@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
 
-/** The oldest date of birth accepted, in years before today (Decision 323). */
+/** The oldest date of birth accepted, in years before today (Decision 324). */
 export const MAX_AGE_YEARS = 120;
 
 export const BIRTH_DATE_MESSAGE = 'Enter a real date of birth: not in the future and not more than 120 years ago.';
@@ -8,7 +8,7 @@ export const BIRTH_DATE_MESSAGE = 'Enter a real date of birth: not in the future
 /** True when `value` starts with a real calendar date (YYYY-MM-DD) that is
  * not after today and not more than MAX_AGE_YEARS before it, both in UTC.
  * `@IsDateString` alone accepts 2021-02-30, which Postgres then saves as
- * 2 March, and any future date (Decision 323, S5). */
+ * 2 March, and any future date (Decision 324, S5). */
 export function isBirthDate(value: unknown, today: Date = new Date()): boolean {
   if (typeof value !== 'string') return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
@@ -32,4 +32,20 @@ export function IsBirthDate(options?: ValidationOptions): PropertyDecorator {
       validator: { validate: (value: unknown) => isBirthDate(value) },
     });
   };
+}
+
+/** Age of majority (Decision 67: a Guardian consents for anyone younger). */
+export const AGE_OF_MAJORITY_YEARS = 18;
+
+/** True when someone born on `dateOfBirth` is 18 or over on `today` (UTC
+ * calendar dates; a birthday today counts). An unknown date of birth counts
+ * as under 18, as the waiver adult check does. */
+export function isAdultOn(dateOfBirth: Date | null | undefined, today: Date = new Date()): boolean {
+  if (!dateOfBirth) return false;
+  let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
+  const hadBirthday =
+    today.getUTCMonth() > dateOfBirth.getUTCMonth() ||
+    (today.getUTCMonth() === dateOfBirth.getUTCMonth() && today.getUTCDate() >= dateOfBirth.getUTCDate());
+  if (!hadBirthday) age -= 1;
+  return age >= AGE_OF_MAJORITY_YEARS;
 }

@@ -4934,7 +4934,7 @@ The stress test ran 30 Schools and 12,213 students through the real API: booking
 
 User, 26 Oct 2026, answering the stress-test questions: *"Staff can, students can't"*; check-in opening *"School sets it"*; *"Waitlist first"*; late cancellation *"We should give school owners the choice to choose what fits better for them, we should have the options for them, as default we can use No refund once started"*; timetable edits *"Update unbooked, ask for booked"*; capacity *"Refuse with the count"*.
 
-## Decision 323 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
+## Decision 324 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner approval of the Students fix plan (S1, S3, S4, S5 part 1, S6–S14) · **Plan:** the Students Fix Plan (25–26 Oct 2026), built from the Students section review
 
@@ -4962,3 +4962,19 @@ The Students section review reproduced 14 bugs against the real API and portal. 
 ### Recorded by
 
 User, 26 Oct 2026, after the fix plan and four review passes: *"Build it .. and ask me what's on me"*. S2 and S5 part 2 were put to the user as separate questions.
+
+## Decision 325 — Only the School owner may change a birth date across the 18th birthday
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (Students review, S5 part 2)
+
+### Background
+
+A student's age decides whether a Guardian must consent for them (Decision 67). Staff edit a student's profile on their behalf, including the date of birth, so a coach could turn a 10-year-old into an adult (or the reverse) and switch the consent rules on or off. Decision 324 already refuses future, impossible and over-120-year dates.
+
+### Decision
+
+When staff edit a student's profile, a new date of birth that changes the student from under 18 to 18 or over, or the reverse, is accepted only from the **School owner**. Branch Staff and Instructors can still correct a date that stays on the same side of 18; a crossing one is refused with "Only the School owner can change a birth date that makes someone an adult or a child." Age is counted on today's date, a birthday today counting; an unknown date of birth counts as under 18, as the waiver adult check does. Students editing their own profile are not affected by this decision.
+
+### Recorded by
+
+User, 26 Oct 2026, picking **"Allow, owner only"** on the question *"Can staff change a birth date across someone's 18th birthday?"* (the other options were blocking every crossing change, and allowing any staff member).

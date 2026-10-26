@@ -43,11 +43,11 @@ export function InviteStudentPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  // Owner only, like the Students page (Decision 323).
+  // Owner only, like the Students page (Decision 324).
   if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
   // Archived branches can't be chosen, so only open ones make a home branch
-  // required (Decision 323), matching the API.
+  // required (Decision 324), matching the API.
   const needsBranch = branches.some((b) => !b.archivedAt);
 
   async function handleFind(e: React.FormEvent) {

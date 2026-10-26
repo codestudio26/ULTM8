@@ -66,7 +66,7 @@ export class TenantAuthorizationService {
 
   /** Which students a staff member covers at a School (Decision 168, with
    * 139 and 148; the Grading Board's rule, used for grading and for the
-   * Students page alike, Decision 323):
+   * Students page alike, Decision 324):
    * - A School with no branches is one branch: every staff member covers
    *   every student.
    * - In a School with branches, staff cover the students whose home branch
