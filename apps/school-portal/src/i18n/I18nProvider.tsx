@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { setApiErrorMessageTranslator, unwrap } from '@ultm8/api-client';
-import { DEFAULT_UI_STRINGS, UiStringsProvider, type UiStrings } from '@ultm8/ui';
+import { ADDRESS_TEXT, AddressTextProvider, DEFAULT_UI_STRINGS, UiStringsProvider, type AddressText, type UiStrings } from '@ultm8/ui';
 import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser } from '../auth/currentUserQueries';
@@ -10,7 +10,8 @@ import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './l
 import { setFormatLocale } from './format';
 import { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 import { translateByCode } from './server/codes';
-import type { Message, MessageKey, MessageTree, MessageVars, PartialMessages } from './types';
+import { formatMessage as format, lookup } from '@ultm8/i18n';
+import type { MessageKey, MessageTree, MessageVars } from './types';
 
 /**
  * The portal's translation layer (product-owner decision, 20 Oct 2026: text
@@ -58,30 +59,6 @@ function readStoredLocale(): string | null {
   }
 }
 
-function lookup(tree: MessageTree | PartialMessages<EnglishMessages> | undefined, key: string): Message | undefined {
-  let node: unknown = tree;
-  for (const part of key.split('.')) {
-    if (!node || typeof node !== 'object') return undefined;
-    node = (node as Record<string, unknown>)[part];
-  }
-  if (typeof node === 'string') return node;
-  if (node && typeof node === 'object' && typeof (node as { other?: unknown }).other === 'string') return node as Message;
-  return undefined;
-}
-
-function format(message: Message, locale: string, vars?: MessageVars): string {
-  let text: string;
-  if (typeof message === 'string') {
-    text = message;
-  } else {
-    const count = typeof vars?.count === 'number' ? vars.count : 0;
-    const category = new Intl.PluralRules(locale).select(count);
-    text = message[category] ?? message.other;
-  }
-  if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
-}
-
 /** Every server Translation row for one locale, across all pages. */
 async function fetchOverrides(locale: string): Promise<Record<string, string>> {
   const overrides: Record<string, string> = {};
@@ -92,6 +69,16 @@ async function fetchOverrides(locale: string): Promise<Record<string, string>> {
     cursor = page.nextCursor ?? undefined;
   } while (cursor);
   return overrides;
+}
+
+/** A copy of `tree` with each string replaced by `t(prefix.path)`. */
+function translateTree(tree: Record<string, unknown>, prefix: string, t: TranslateFn): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(tree).map(([k, v]) => [
+      k,
+      typeof v === 'string' ? t(`${prefix}.${k}` as TranslationKey) : translateTree(v as Record<string, unknown>, `${prefix}.${k}`, t),
+    ]),
+  );
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -167,10 +154,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       Object.fromEntries(Object.keys(DEFAULT_UI_STRINGS).map((k) => [k, t(`ui.${k}` as TranslationKey)])) as UiStrings,
     [t],
   );
+  // Same for every `AddressFields`: its nested text tree maps onto `address.*`.
+  const addressText = useMemo(() => translateTree(ADDRESS_TEXT, 'address', t) as AddressText, [t]);
   return (
     <I18nContext.Provider value={value}>
       <UiStringsProvider strings={uiStrings} locale={locale === DEFAULT_LOCALE ? undefined : locale}>
-        {children}
+        <AddressTextProvider text={addressText}>{children}</AddressTextProvider>
       </UiStringsProvider>
     </I18nContext.Provider>
   );

@@ -2,7 +2,8 @@ import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 import { messages as ptBR } from '../src/i18n/messages/pt-BR';
-import { serverMessages as ptBRServer } from '../src/i18n/server/pt-BR';
+import { serverMessages as ptBRServer } from '../../../packages/i18n/src/server/pt-BR';
+import { server as ptBRServerKeys } from '../../../packages/i18n/src/serverKeys/pt-BR';
 import { messages as english } from '../src/i18n/messages/en-GB';
 import { LOCALE_LOADERS } from '../src/i18n/locales';
 
@@ -84,8 +85,8 @@ test("a job-written notification is shown in the picked language; a School's bro
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
 
-  const expectedTitle = ptBR.server!.notifications!.spotOpenedTitle!;
-  const expectedBody = ptBR.server!.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
+  const expectedTitle = ptBRServerKeys.notifications!.spotOpenedTitle!;
+  const expectedBody = ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
   await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: expectedBody, exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'A spot opened up', exact: true })).toBeVisible();
@@ -109,7 +110,7 @@ test("the API's error messages are shown in the picked language, and an untransl
 
   reply = { status: 400, message: 'A message nobody has translated yet.' };
   await save.click();
-  await expect(page.getByText(ptBR.server!.generic!.badRequest!)).toBeVisible();
+  await expect(page.getByText(ptBRServerKeys.generic!.badRequest!)).toBeVisible();
   await expect(page.getByText('A message nobody has translated yet.')).toHaveCount(0);
 });
 

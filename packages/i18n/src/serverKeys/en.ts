@@ -1,9 +1,9 @@
 /**
  * Text the API sends in English and the portal shows translated (Decision 273).
- * Most error messages are translated one-for-one in `../../server/<locale>.ts`;
+ * Most error messages are translated one-for-one in `../server/<locale>.ts`;
  * these are the ones the server builds from counts, lists or fixed English
  * words, and the notification titles/bodies its background jobs write — see
- * `../../server/translate.ts` for how each English shape maps onto a key here.
+ * `../server/translate.ts` for how each English shape maps onto a key here.
  */
 export const server = {
   /** Shown when an error message has no translation: one per kind of failure. */
@@ -22,7 +22,7 @@ export const server = {
     network: 'Could not reach the server. Check your connection and try again.',
   },
   /** Booking and schedule errors the API marks with a code (Decision 322), shown
-   * in every language, English included — see `../../server/codes.ts`. */
+   * in every language, English included — see the School Portal's `src/i18n/server/codes.ts`. */
   codes: {
     classFull: 'This class is full. You can add the student to the waitlist instead.',
     waitlistFirst: 'Students are already waiting for a place in this class. Join the waitlist to take your turn.',
@@ -126,3 +126,5 @@ export const server = {
     },
   },
 };
+
+export type ServerKeys = typeof server;

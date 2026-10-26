@@ -5,6 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { Button, ErrorBanner, Field, InlineError, SearchablePickerField, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
+import { useT } from '../i18n/I18nProvider';
 import {
   useCurrencies,
   useLanguages,
@@ -94,6 +95,7 @@ function formFrom(profile: UserProfile): Form {
  * language/currency state should even look like in the picker UI, which is a
  * product/UX call this task doesn't make on its own. */
 export function ProfileScreen() {
+  const t = useT();
   const profile = useMyProfile();
   const languages = useLanguages();
   const currencies = useCurrencies();
@@ -130,7 +132,10 @@ export function ProfileScreen() {
         dateOfBirth: form.dateOfBirth.trim(),
         gender: form.gender.trim() || null,
         nationality: form.nationality.trim() || null,
-        address: form.address.trim() || null,
+        // Left out when untouched: this screen still edits the one-line text,
+        // and sending it would clear a structured (Decision 276) address the
+        // School Portal saved, even though the Student never changed it.
+        address: form.address.trim() === (profile.data?.address ?? '') ? undefined : form.address.trim() || null,
         // Still `undefined`, not `null`, for these two — neither picker offers
         // a "none" selection, so an empty `form.language`/`form.currency`
         // genuinely can't happen via this screen's own UI today; see this
@@ -153,11 +158,11 @@ export function ProfileScreen() {
     setPhotoError(null);
     const contentType = (asset.mimeType ?? 'image/jpeg') as ProfilePhotoContentType;
     if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-      setPhotoError('Please choose a PNG, JPEG, or WebP image.');
+      setPhotoError(t('profile.screen.photoWrongType'));
       return;
     }
     if (asset.fileSize && asset.fileSize > MAX_PHOTO_BYTES) {
-      setPhotoError('This file is too large — the maximum is 5MB.');
+      setPhotoError(t('profile.screen.photoTooLarge'));
       return;
     }
     uploadPhoto.mutate({ uri: asset.uri, contentType });
@@ -167,7 +172,7 @@ export function ProfileScreen() {
     setPhotoError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setPhotoError('Photo library access is needed to choose a photo.');
+      setPhotoError(t('profile.screen.libraryPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
@@ -178,7 +183,7 @@ export function ProfileScreen() {
     setPhotoError(null);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      setPhotoError('Camera access is needed to take a photo.');
+      setPhotoError(t('profile.screen.cameraPermission'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
@@ -189,7 +194,7 @@ export function ProfileScreen() {
   if (profile.isError && !profile.data) {
     return (
       <View style={{ padding: spacing[4] }}>
-        <ErrorBanner message={getApiErrorMessage(profile.error, 'Could not load your profile — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(profile.error, t('profile.screen.loadFailed'))} />
       </View>
     );
   }
@@ -200,58 +205,61 @@ export function ProfileScreen() {
       <View style={{ alignItems: 'center', marginBottom: spacing[4] }}>
         <Avatar firstName={profile.data.firstName} surname={profile.data.surname} photoUrl={profile.data.profilePhotoUrl} size={96} />
         <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[3] }}>
-          <Button title="Take Photo" variant="secondary" loading={uploadPhoto.isPending} onPress={takePhoto} />
-          <Button title="Choose Photo" variant="secondary" loading={uploadPhoto.isPending} onPress={pickPhotoFromLibrary} />
+          <Button title={t('profile.screen.takePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={takePhoto} />
+          <Button title={t('profile.screen.choosePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={pickPhotoFromLibrary} />
         </View>
         {photoError ? <InlineError message={photoError} /> : null}
         {uploadPhoto.isError ? (
-          <InlineError message={getApiErrorMessage(uploadPhoto.error, 'Could not upload this photo — please try again.')} />
+          <InlineError message={getApiErrorMessage(uploadPhoto.error, t('profile.screen.uploadFailed'))} />
         ) : null}
       </View>
 
-      <Field label="Email">
+      <Field label={t('profile.screen.email')}>
         <Text style={{ fontSize: fontSize.input, color: theme.textPrimary }}>{profile.data.email}</Text>
       </Field>
-      <Field label="Phone" hint={profile.data.phoneVerifiedAt ? 'Verified' : 'Not yet verified'}>
+      <Field label={t('profile.screen.phone')} hint={profile.data.phoneVerifiedAt ? t('profile.screen.verified') : t('profile.screen.notVerified')}>
         <Text style={{ fontSize: fontSize.input, color: theme.textPrimary }}>{profile.data.phone}</Text>
       </Field>
-      <Muted>Email and phone can't be changed here — they're your login identifiers.</Muted>
+      <Muted>{t('profile.screen.identifiersNote')}</Muted>
 
       <View style={{ height: spacing[4] }} />
 
-      <Field label="First name">
+      <Field label={t('profile.screen.firstName')}>
         <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
       </Field>
-      <Field label="Surname">
+      <Field label={t('profile.screen.surname')}>
         <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
       </Field>
-      <Field label="Username" hint="Mobile only">
+      <Field label={t('profile.screen.username')} hint={t('profile.screen.usernameHint')}>
         <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
       </Field>
-      <Field label="Date of birth" hint="YYYY-MM-DD">
-        <TextField value={form.dateOfBirth} onChangeText={(v) => set('dateOfBirth', v)} placeholder="YYYY-MM-DD" />
+      <Field label={t('profile.screen.dateOfBirth')} hint={t('profile.screen.dateFormat')}>
+        <TextField value={form.dateOfBirth} onChangeText={(v) => set('dateOfBirth', v)} placeholder={t('profile.screen.dateFormat')} />
       </Field>
-      <Field label="Gender">
+      <Field label={t('profile.screen.gender')}>
         <TextField value={form.gender} onChangeText={(v) => set('gender', v)} />
       </Field>
-      <Field label="Nationality">
+      <Field label={t('profile.screen.nationality')}>
         <TextField value={form.nationality} onChangeText={(v) => set('nationality', v)} />
       </Field>
-      <Field label="Address">
+      <Field label={t('profile.screen.address')}>
         <TextField value={form.address} onChangeText={(v) => set('address', v)} multiline />
       </Field>
 
-      <Field label="Weight category" hint="Free text — no confirmed unit/scale (Decision 220/246)">
+      <Field label={t('profile.screen.weightCategory')} hint={t('profile.screen.weightCategoryHint')}>
         <TextField value={form.weightCategory} onChangeText={(v) => set('weightCategory', v)} />
       </Field>
-      <Field label="Kimono size" hint="Free text — no confirmed size chart (Decision 220/246)">
+      <Field label={t('profile.screen.kimonoSize')} hint={t('profile.screen.kimonoSizeHint')}>
         <TextField value={form.kimonoSize} onChangeText={(v) => set('kimonoSize', v)} />
       </Field>
-      <Field label="Belt size" hint="Free text — no confirmed size chart (Decision 220/246)">
+      <Field label={t('profile.screen.beltSize')} hint={t('profile.screen.beltSizeHint')}>
         <TextField value={form.beltSize} onChangeText={(v) => set('beltSize', v)} />
       </Field>
 
-      <Field label="Language">
+      <Field
+        label={t('profile.screen.language')}
+        hint={form.language.toLowerCase().startsWith('ar') ? t('profile.screen.rtlRestartHint') : undefined}
+      >
         <ChipPicker
           options={languages.data ?? []}
           value={form.language}
@@ -259,26 +267,26 @@ export function ProfileScreen() {
           loading={languages.isLoading}
         />
       </Field>
-      <Field label="Currency">
+      <Field label={t('profile.screen.currency')}>
         <SearchablePickerField
           options={currencies.data ?? []}
           value={form.currency}
           onSelect={(code) => set('currency', code)}
           loading={currencies.isLoading}
-          placeholder="Select a currency"
-          searchPlaceholder="Search currency…"
-          emptyLabel="Not available."
-          triggerAccessibilityLabel="Currency"
+          placeholder={t('profile.screen.currencyPlaceholder')}
+          searchPlaceholder={t('profile.screen.currencySearch')}
+          emptyLabel={t('profile.screen.notAvailable')}
+          triggerAccessibilityLabel={t('profile.screen.currency')}
         />
       </Field>
 
       {updateProfile.isError ? (
-        <ErrorBanner message={getApiErrorMessage(updateProfile.error, 'Could not save your profile — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(updateProfile.error, t('profile.screen.saveFailed'))} />
       ) : null}
-      {saved ? <SuccessBanner message="Saved." /> : null}
+      {saved ? <SuccessBanner message={t('profile.screen.saved')} /> : null}
 
       <Button
-        title="Save"
+        title={t('profile.screen.save')}
         onPress={handleSave}
         loading={updateProfile.isPending}
         disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim()}
@@ -298,8 +306,9 @@ function ChipPicker({
   onSelect: (code: string) => void;
   loading: boolean;
 }) {
-  if (loading) return <Muted>Loading…</Muted>;
-  if (options.length === 0) return <Muted>Not available.</Muted>;
+  const t = useT();
+  if (loading) return <Muted>{t('profile.screen.loading')}</Muted>;
+  if (options.length === 0) return <Muted>{t('profile.screen.notAvailable')}</Muted>;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
       {options.map((o) => {

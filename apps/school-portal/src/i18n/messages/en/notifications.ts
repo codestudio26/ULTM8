@@ -18,6 +18,18 @@ export const notifications = {
   markRead: 'Mark read',
   snooze: 'Snooze',
   markReadFailed: 'Could not mark this notification as read — please try again.',
+  delete: 'Delete',
+  clearAllRead: 'Clear all read',
+  deleteModal: {
+    title: 'Delete notification?',
+    description: '"{title}" will be removed from your notifications.',
+    failed: 'Could not delete this notification. Please try again.',
+  },
+  clearReadModal: {
+    title: 'Clear all read notifications?',
+    description: 'Every notification you have already read will be removed from this list. Unread notifications stay.',
+    failed: 'Could not clear your read notifications. Please try again.',
+  },
   snoozeModal: {
     title: 'Snooze notification',
     explanation:

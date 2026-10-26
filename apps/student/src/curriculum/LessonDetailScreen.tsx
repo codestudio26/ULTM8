@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateTime } from '../lib/formatDate';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import type { AppStackParamList } from '../navigation/types';
+import { useT } from '../i18n/I18nProvider';
 import { Chip, formatDuration } from './LessonRow';
 import { LessonVideoPlayer } from './LessonVideoPlayer';
 import {
@@ -33,6 +34,7 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
  * Hooks expect a per-id hook to be used; it's not the same hook instance being
  * re-invoked with a changing id. */
 function PlaylistOption({ playlist, lessonId }: { playlist: Playlist; lessonId: string }) {
+  const t = useT();
   const addItem = useAddPlaylistItem(playlist.id);
   const [added, setAdded] = useState(false);
   return (
@@ -41,7 +43,7 @@ function PlaylistOption({ playlist, lessonId }: { playlist: Playlist; lessonId: 
         <Text style={{ color: theme.textPrimary, fontSize: fontSize.footnote, flex: 1 }}>{playlist.name}</Text>
         <View style={{ width: 100 }}>
           <Button
-            title={added ? 'Added ✓' : 'Add'}
+            title={added ? t('curriculum.lessonDetail.playlistAdded') : t('curriculum.lessonDetail.playlistAdd')}
             variant="secondary"
             loading={addItem.isPending}
             disabled={added}
@@ -49,7 +51,7 @@ function PlaylistOption({ playlist, lessonId }: { playlist: Playlist; lessonId: 
           />
         </View>
       </View>
-      {addItem.isError ? <InlineError message={getApiErrorMessage(addItem.error, 'Could not add to this playlist.')} /> : null}
+      {addItem.isError ? <InlineError message={getApiErrorMessage(addItem.error, t('curriculum.lessonDetail.playlistAddError'))} /> : null}
     </View>
   );
 }
@@ -62,6 +64,7 @@ function PlaylistOption({ playlist, lessonId }: { playlist: Playlist; lessonId: 
  * thread — fine here since realistically only one delete is ever in flight at
  * once on this screen. */
 function CommentRow({ comment, deleteComment }: { comment: Comment; deleteComment: ReturnType<typeof useDeleteComment> }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   return (
     <View style={{ paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}>
@@ -72,11 +75,11 @@ function CommentRow({ comment, deleteComment }: { comment: Comment; deleteCommen
       {confirming ? (
         <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
           <View style={{ flex: 1 }}>
-            <Button title="Keep" variant="secondary" onPress={() => setConfirming(false)} />
+            <Button title={t('curriculum.lessonDetail.keepComment')} variant="secondary" onPress={() => setConfirming(false)} />
           </View>
           <View style={{ flex: 1 }}>
             <Button
-              title="Delete"
+              title={t('curriculum.lessonDetail.deleteComment')}
               variant="destructive"
               loading={deleteComment.isPending}
               onPress={() => {
@@ -88,7 +91,7 @@ function CommentRow({ comment, deleteComment }: { comment: Comment; deleteCommen
         </View>
       ) : (
         <View style={{ marginTop: spacing[1], width: 100 }}>
-          <Button title="Delete" variant="secondary" onPress={() => setConfirming(true)} />
+          <Button title={t('curriculum.lessonDetail.deleteComment')} variant="secondary" onPress={() => setConfirming(true)} />
         </View>
       )}
     </View>
@@ -121,6 +124,7 @@ function CommentRow({ comment, deleteComment }: { comment: Comment; deleteCommen
  * The video itself has no such gate (`playbackUrl` is already on the fetched
  * Lesson), so it keeps playing normally either way. */
 export function LessonDetailScreen({ route }: Props) {
+  const t = useT();
   const { lesson, studentId } = route.params;
   const isGuardianView = !!studentId;
 
@@ -202,13 +206,13 @@ export function LessonDetailScreen({ route }: Props) {
       <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, color: theme.textPrimary }}>{lesson.title}</Text>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[1], flexWrap: 'wrap' }}>
-        {lesson.free ? <Chip label="Free" tone="success" /> : null}
-        <Chip label={lesson.format === 'LIVE' ? 'Live' : 'Prerecorded'} tone="accent" />
+        {lesson.free ? <Chip label={t('curriculum.lesson.free')} tone="success" /> : null}
+        <Chip label={lesson.format === 'LIVE' ? t('curriculum.lesson.live') : t('curriculum.lesson.prerecorded')} tone="accent" />
         {duration ? <Chip label={duration} tone="muted" /> : null}
       </View>
 
       {lesson.locked ? (
-        <Muted>Locked — not included in your current membership.</Muted>
+        <Muted>{t('curriculum.lesson.locked')}</Muted>
       ) : (
         <>
           {lesson.description ? (
@@ -221,13 +225,13 @@ export function LessonDetailScreen({ route }: Props) {
       {!lesson.locked && !isGuardianView ? (
         <View style={{ marginTop: spacing[3] }}>
           <Button
-            title={favorited ? '★ Favorited' : '☆ Favorite'}
+            title={favorited ? t('curriculum.lessonDetail.favorited') : t('curriculum.lessonDetail.favorite')}
             variant={favorited ? 'secondary' : 'primary'}
             loading={favoriteLesson.isPending || unfavoriteLesson.isPending}
             onPress={toggleFavorite}
           />
           {favoriteLesson.isError || unfavoriteLesson.isError ? (
-            <InlineError message={getApiErrorMessage(favoriteLesson.error ?? unfavoriteLesson.error, 'Could not update favorite.')} />
+            <InlineError message={getApiErrorMessage(favoriteLesson.error ?? unfavoriteLesson.error, t('curriculum.lessonDetail.favoriteError'))} />
           ) : null}
         </View>
       ) : null}
@@ -235,7 +239,7 @@ export function LessonDetailScreen({ route }: Props) {
       {!isGuardianView ? (
         <View style={{ marginTop: spacing[3] }}>
           <Button
-            title={playlistPickerOpen ? 'Hide playlists' : 'Add to Playlist'}
+            title={playlistPickerOpen ? t('curriculum.lessonDetail.hidePlaylists') : t('curriculum.lessonDetail.addToPlaylist')}
             variant="secondary"
             onPress={() => setPlaylistPickerOpen((open) => !open)}
           />
@@ -243,15 +247,15 @@ export function LessonDetailScreen({ route }: Props) {
             <View style={{ marginTop: spacing[2] }}>
               {playlists.isLoading ? <ActivityIndicator /> : null}
               {playlists.isError && !playlists.data ? (
-                <ErrorBanner message={getApiErrorMessage(playlists.error, 'Could not load your playlists.')} />
+                <ErrorBanner message={getApiErrorMessage(playlists.error, t('curriculum.lessonDetail.playlistsLoadError'))} />
               ) : null}
               {(playlists.data?.items ?? []).map((p) => (
                 <PlaylistOption key={p.id} playlist={p} lessonId={lesson.id} />
               ))}
               <View style={{ marginTop: spacing[2] }}>
-                <TextField value={newPlaylistName} onChangeText={setNewPlaylistName} placeholder="New playlist name" />
-                <Button title="Create playlist" variant="secondary" loading={createPlaylist.isPending} disabled={!newPlaylistName.trim()} onPress={handleCreatePlaylist} />
-                {createPlaylist.isError ? <InlineError message={getApiErrorMessage(createPlaylist.error, 'Could not create this playlist.')} /> : null}
+                <TextField value={newPlaylistName} onChangeText={setNewPlaylistName} placeholder={t('curriculum.lessonDetail.newPlaylistPlaceholder')} />
+                <Button title={t('curriculum.lessonDetail.createPlaylist')} variant="secondary" loading={createPlaylist.isPending} disabled={!newPlaylistName.trim()} onPress={handleCreatePlaylist} />
+                {createPlaylist.isError ? <InlineError message={getApiErrorMessage(createPlaylist.error, t('curriculum.lessonDetail.createPlaylistError'))} /> : null}
               </View>
             </View>
           ) : null}
@@ -260,38 +264,38 @@ export function LessonDetailScreen({ route }: Props) {
 
       <View style={{ marginTop: spacing[6] }}>
         <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
-          Comments
+          {t('curriculum.lessonDetail.commentsHeading')}
         </Text>
 
         {isGuardianView ? (
-          <Muted>Favorites, Playlists, and Comments aren't available yet while viewing on behalf of a linked Student.</Muted>
+          <Muted>{t('curriculum.lessonDetail.guardianUnavailable')}</Muted>
         ) : (
           <>
             {comments.isLoading ? <ActivityIndicator /> : null}
             {comments.isError && !comments.data ? (
-              <ErrorBanner message={getApiErrorMessage(comments.error, 'Could not load comments.')} />
+              <ErrorBanner message={getApiErrorMessage(comments.error, t('curriculum.lessonDetail.commentsLoadError'))} />
             ) : null}
-            {!comments.isLoading && commentItems.length === 0 ? <Muted>No comments yet.</Muted> : null}
+            {!comments.isLoading && commentItems.length === 0 ? <Muted>{t('curriculum.lessonDetail.noComments')}</Muted> : null}
 
             {commentItems.map((c) => (
               <CommentRow key={c.id} comment={c} deleteComment={deleteComment} />
             ))}
-            {deleteComment.isError ? <InlineError message={getApiErrorMessage(deleteComment.error, 'Could not delete this comment.')} /> : null}
+            {deleteComment.isError ? <InlineError message={getApiErrorMessage(deleteComment.error, t('curriculum.lessonDetail.deleteCommentError'))} /> : null}
 
             {lesson.locked ? (
-              <Muted>Comments are unavailable for a locked Lesson.</Muted>
+              <Muted>{t('curriculum.lessonDetail.commentsLocked')}</Muted>
             ) : (
               <View style={{ marginTop: spacing[2] }}>
                 <TextField
                   value={commentBody}
                   onChangeText={setCommentBody}
-                  placeholder="Add a comment…"
+                  placeholder={t('curriculum.lessonDetail.commentPlaceholder')}
                   multiline
                   numberOfLines={3}
                   maxLength={2000}
                 />
-                <Button title="Post" loading={createComment.isPending} disabled={!commentBody.trim()} onPress={handlePostComment} />
-                {createComment.isError ? <InlineError message={getApiErrorMessage(createComment.error, 'Could not post this comment.')} /> : null}
+                <Button title={t('curriculum.lessonDetail.postComment')} loading={createComment.isPending} disabled={!commentBody.trim()} onPress={handlePostComment} />
+                {createComment.isError ? <InlineError message={getApiErrorMessage(createComment.error, t('curriculum.lessonDetail.postCommentError'))} /> : null}
               </View>
             )}
           </>
