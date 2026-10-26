@@ -643,6 +643,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancel: "Cancelar",
     },
   },
+  lib: {
+    apiError: {
+      classFull: "Esta clase está completa. Puedes entrar en la lista de espera.",
+      waitlistFirst: "Otras personas ya están esperando una plaza en esta clase. Entra en la lista de espera para esperar tu turno.",
+      bookingClosed: "Las reservas para esta clase se han cerrado. Alguien del personal todavía puede añadirte.",
+      classBusy: "Mucha gente está reservando esta clase ahora mismo. Inténtalo de nuevo en un momento.",
+      checkInNotOpen: "El check-in de esta clase aún no está abierto.",
+      checkInNotOpenAt: "El check-in de esta clase aún no está abierto. Se abre el {time}.",
+    },
+  },
   memberships: {
     myMemberships: {
       planFallback: "Plan {planId}",
