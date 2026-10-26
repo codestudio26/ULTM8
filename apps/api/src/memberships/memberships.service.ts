@@ -24,6 +24,8 @@ import {
   TrialAllowanceError,
 } from './membership-creation-guard';
 import { CURRENCIES } from '../settings/constants/currencies';
+import { StripeClientService } from '../payments/stripe-client.service';
+import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
@@ -46,6 +48,7 @@ export class MembershipsService {
     private readonly subscriptionGate: SubscriptionGateService,
     private readonly stepUpService: StepUpService,
     @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) private readonly priceMigrationQueue: Queue,
+    private readonly stripeClient: StripeClientService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -1262,7 +1265,8 @@ export class MembershipsService {
    * School's owner. The Membership stays live until Stripe ends the
    * Subscription; customer.subscription.deleted then expires it and cancels
    * the Bookings it funded, as it already does. Asking twice changes nothing.
-   * Students S2 (removing a Student) calls this too.
+   * The Stripe and database work is cancelSubscriptionAtPeriodEnd() in
+   * cancel-subscription.ts, which Students S2 (removing a Student) calls too.
    */
   async cancelSubscriptionAtPeriodEnd(callerId: string, membershipId: string, onBehalfOfStudentId?: string) {
     let contextUserId = callerId;
@@ -1280,25 +1284,8 @@ export class MembershipsService {
       // Seen through staff access: only the owner may cancel for a Student.
       await this.tenantAuth.assertSchoolOwner(callerId, membership.schoolId);
     }
-    if (!membership.stripeSubscriptionId) {
-      throw new BadRequestException('Only a Subscription can be cancelled. Other plans end on their own.');
-    }
-    if (membership.status !== 'ACTIVE') {
-      throw new BadRequestException('This Subscription has already ended.');
-    }
-    if (membership.cancelAt) {
-      return membership;
-    }
-    const connectedAccountId = await this.paymentsService.getStripeConnectedAccountId(contextUserId, membership.schoolId);
-    const endsAt = await this.paymentsService.cancelSubscriptionAtPeriodEnd(connectedAccountId, membership.stripeSubscriptionId);
-    return this.prismaApp.withTenantContext(contextUserId, (tx) =>
-      tx.membership.update({
-        where: { id: membership!.id },
-        // Stripe always returns cancel_at once cancel_at_period_end is set;
-        // "now" only guards a malformed reply so the row still reads cancelled.
-        data: { cancelAt: endsAt ?? new Date(), cancelledById: callerId },
-      }),
-    );
+    const found = membership;
+    return this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));
   }
 
   /** Every Membership a Student holds at the School, newest first, for the

@@ -6,7 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { PaymentsService } from '../src/payments/payments.service';
+import { StripeClientService } from '../src/payments/stripe-client.service';
 
 /**
  * Decision NNN — the Memberships follow-ups the owner approved on 26 Oct 2026:
@@ -40,8 +40,8 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
   let tokenStaff: string;
   const schoolIds: string[] = [];
   const userIds: string[] = [];
-  const periodEnd = new Date(Date.now() + 20 * DAY);
-  let stripeCancel: jest.SpyInstance;
+  const periodEnd = new Date(Math.floor((Date.now() + 20 * DAY) / 1000) * 1000);
+  let stripeCancel: jest.Mock;
 
   function sign(user: { id: string; email: string }, grants: Array<Record<string, unknown>>) {
     return jwt.sign({ sub: user.id, email: user.email, grants });
@@ -105,9 +105,8 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    const payments = app.get(PaymentsService);
-    jest.spyOn(payments, 'getStripeConnectedAccountId').mockResolvedValue('acct_fixture');
-    stripeCancel = jest.spyOn(payments, 'cancelSubscriptionAtPeriodEnd').mockResolvedValue(periodEnd);
+    stripeCancel = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
+    jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({ subscriptions: { update: stripeCancel } } as never);
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships Desk School' } });
     schoolIds.push(school.id);
@@ -246,7 +245,7 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(res.body.status).toBe('ACTIVE');
       expect(new Date(res.body.cancelAt).getTime()).toBe(periodEnd.getTime());
       expect(res.body.cancelledById).toBe(user.id);
-      expect(stripeCancel).toHaveBeenCalledWith('acct_fixture', sub.stripeSubscriptionId);
+      expect(stripeCancel).toHaveBeenCalledWith(sub.stripeSubscriptionId, { cancel_at_period_end: true });
 
       expect((await cancel(sub.id, token)).status).toBe(201);
       expect(stripeCancel).toHaveBeenCalledTimes(1);
