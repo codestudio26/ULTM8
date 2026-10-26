@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
 import { TimetableController } from './timetable.controller';
 import { TimetableService } from './timetable.service';
+import { BookingsModule } from '../bookings/bookings.module';
+import { QueueModule } from '../jobs/queue.module';
 
 /**
  * Phase 5 scope: TimetableSlot CRUD only (no delete) — see the Phase 5 kickoff prompt
@@ -23,7 +25,7 @@ import { TimetableService } from './timetable.service';
  * been removed rather than left to mislead the next reader.
  */
 @Module({
-  imports: [TenantsModule],
+  imports: [TenantsModule, BookingsModule, QueueModule],
   controllers: [TimetableController],
   providers: [TimetableService],
   exports: [TimetableService],

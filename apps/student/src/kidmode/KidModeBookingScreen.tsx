@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ApiError } from '@ultm8/api-client';
 import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useAcademies, useAcademy } from '../academies/academyQueries';
 import { useMyMinors } from '../guardians/guardianQueries';
@@ -89,7 +88,7 @@ export function KidModeBookingScreen({ navigation }: Props) {
       await bookClassAsKidMode(kidModeToken, classId, selectedStudentId);
       setBookedClassIds((ids) => [...ids, classId]);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
+      if (isWaitlistNext(err)) {
         setActionError('This class is full.');
       } else {
         setActionError(getApiErrorMessage(err, 'Could not book this class — please try again.'));

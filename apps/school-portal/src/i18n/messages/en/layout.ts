@@ -36,6 +36,7 @@ export const layout = {
     instructors: 'Instructors',
     students: 'Students',
     gradingBoard: 'Grading Board',
+    grading: 'Grading',
     gradingPermissions: 'Grading Permissions',
     classes: 'Classes',
     curriculum: 'Curriculum',

@@ -42,6 +42,16 @@ async function bootstrap() {
     : ['http://localhost:5173'];
   app.enableCors({ origin: corsAllowedOrigins });
 
+  // Behind a load balancer (production runs on ECS behind an ALB), req.ip is the
+  // balancer's address unless Express trusts its X-Forwarded-For. Every IP-keyed
+  // rate limit then counts the whole platform as one client. TRUST_PROXY is the
+  // number of proxy hops in front of the API (1 for the ALB); unset keeps the
+  // safe default of trusting nothing, for direct exposure and local runs.
+  const trustProxyHops = Number(process.env.TRUST_PROXY);
+  if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
+  }
+
   // /v1 URI prefix from the first deploy (Decision 22, ultm8-nestjs-module §2).
   app.setGlobalPrefix('v1');
 

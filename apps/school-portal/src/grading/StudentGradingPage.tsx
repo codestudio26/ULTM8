@@ -14,6 +14,7 @@ import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQu
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
+import { HISTORY_TYPE_LABEL } from './historyLabels';
 import {
   type Eligibility,
   type GradingToggle,
@@ -610,17 +611,6 @@ function SkillsForNext({
   );
 }
 
-const TYPE_LABEL: Record<string, TranslationKey> = {
-  PROMOTION: 'grading.student.history.types.promotion',
-  BULK_PROMOTION: 'grading.student.history.types.bulkPromotion',
-  STRIPE_AWARD: 'grading.student.history.types.stripeAward',
-  BULK_STRIPE_AWARD: 'grading.student.history.types.bulkStripeAward',
-  DOWNGRADE: 'grading.student.history.types.downgrade',
-  SELF_DECLARED: 'grading.student.history.types.selfDeclared',
-  RANK_CORRECTION: 'grading.student.history.types.rankCorrection',
-  ADJUSTMENT: 'grading.student.history.types.adjustment',
-};
-
 /** The rank history for this style (Decisions 129, 166): what changed, the
  * grading date, who did it, and the notes; voided entries only on request. */
 function History({
@@ -659,7 +649,7 @@ function History({
       ) : (
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
           {entries.map((e) => {
-            const labelKey = TYPE_LABEL[e.type];
+            const labelKey = HISTORY_TYPE_LABEL[e.type];
             const label = labelKey ? t(labelKey) : e.type;
             const change =
               e.fromStripeTierId && e.fromStripeTierId !== e.toStripeTierId

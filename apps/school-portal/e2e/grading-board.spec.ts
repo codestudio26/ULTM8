@@ -98,7 +98,7 @@ test('bulk promote: calling order, "Needs a look" acknowledgement, and the print
   await page.goto('/grading');
   await page.getByLabel(`Select ${s.student.name}`).check();
   await page.getByLabel(`Select ${ben.name}`).check();
-  await expect(page.getByText('2 selected')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Selection' }).getByText('2 selected')).toBeVisible();
   await page.getByRole('button', { name: 'Promote selected' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Promote these students' });
@@ -161,7 +161,7 @@ test('bulk promote has no limit: over 200 students go through, 200 at a time (De
   const starting = column(page, 'Just Starting');
   await expect(starting.getByRole('button', { name: 'Show all 206' })).toBeVisible(); // 25 cards until asked
   await starting.getByRole('checkbox', { name: 'Select all in Just Starting' }).check();
-  await expect(page.getByText('206 selected')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Selection' }).getByText('206 selected')).toBeVisible();
   await page.getByRole('button', { name: 'Promote selected' }).click();
   const dialog = page.getByRole('dialog', { name: 'Promote these students' });
   await dialog.getByRole('button', { name: 'Promote 206 students' }).click();
@@ -248,9 +248,10 @@ test('ticked students a search hides are counted, and "Show them" brings them ba
   await page.getByLabel(`Select ${ben.name}`).check();
   await page.getByLabel(`Select ${cat.name}`).check();
   await page.getByLabel('Search students').fill('cat');
-  await expect(page.getByText('2 selected')).toBeVisible();
-  await expect(page.getByText('1 of them hidden by your search')).toBeVisible();
-  await page.getByRole('button', { name: 'Show them' }).click();
+  await expect(page.getByRole('region', { name: 'Selection' }).getByText('2 selected')).toBeVisible();
+  const selection = page.getByRole('region', { name: 'Selection' });
+  await expect(selection.getByText('1 of them hidden by your search')).toBeVisible();
+  await selection.getByRole('button', { name: 'Show them' }).click();
   await expect(page.getByLabel('Search students')).toHaveValue('');
   await expect(page.getByRole('link', { name: ben.name })).toBeVisible();
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
@@ -20,7 +20,11 @@ interface ClassSummary {
  * failure leaving the waitlist threw away the entry's id — and since there's no
  * GET /waitlist/me (see waitlistMutations.ts), that id can never be recovered,
  * stranding the Student on the waitlist with no in-app way off it. */
-type RowState = { kind: 'idle' } | { kind: 'booked' } | { kind: 'full' } | { kind: 'waitlisted'; entryId: string; position: number };
+type RowState =
+  | { kind: 'idle' }
+  | { kind: 'booked' }
+  | { kind: 'full'; reason: 'full' | 'queue' }
+  | { kind: 'waitlisted'; entryId: string; position: number };
 
 /** Per-class booking action for AcademyDetailScreen's "Upcoming classes" list
  * (Slice 2). Three real, server-verified gates can reject a booking attempt
@@ -46,8 +50,11 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
       await bookClass.mutateAsync(classItem.id);
       setState({ kind: 'booked' });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setState({ kind: 'full' });
+      // Only "full" and "students already waiting" lead to the waitlist
+      // (Decision 322); any other refusal — a busy Class, no membership credit —
+      // is shown as it is, with Book still the next action.
+      if (isWaitlistNext(err)) {
+        setState({ kind: 'full', reason: err instanceof ApiError && err.code === 'WAITLIST_FIRST' ? 'queue' : 'full' });
       } else {
         setActionError(getApiErrorMessage(err, 'Could not book this class — please try again.'));
       }
@@ -97,7 +104,9 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
 
       {state.kind === 'full' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>This class is full.</Text>
+          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
+            {state.reason === 'queue' ? 'Others are already waiting for a place in this class.' : 'This class is full.'}
+          </Text>
           <Button title="Join waitlist" variant="secondary" onPress={handleJoinWaitlist} loading={joinWaitlist.isPending} />
         </>
       ) : null}

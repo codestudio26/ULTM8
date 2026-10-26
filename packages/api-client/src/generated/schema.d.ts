@@ -1492,6 +1492,22 @@ export interface paths {
         patch: operations["TimetableController_update"];
         trace?: never;
     };
+    "/v1/timetable/{id}/upcoming-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_getUpcomingImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/timetable/{id}/archive": {
         parameters: {
             query?: never;
@@ -1534,6 +1550,166 @@ export interface paths {
         get: operations["TimetableController_findOccurrence"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BookingsController_bookClass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["BookingsController_cancelBooking"];
+        trace?: never;
+    };
+    "/v1/bookings/{id}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["BookingsController_updateOverrideReason"];
+        trace?: never;
+    };
+    "/v1/bookings/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findMyBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForClass"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/bookings/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_getWeeklySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaitlistController_findAllForClass"];
+        put?: never;
+        post: operations["WaitlistController_joinWaitlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waitlist/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["WaitlistController_withdraw"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waitlist/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaitlistController_claim"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2948,166 +3124,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/classes/{id}/book": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["BookingsController_bookClass"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/bookings/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["BookingsController_cancelBooking"];
-        trace?: never;
-    };
-    "/v1/bookings/{id}/override": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["BookingsController_updateOverrideReason"];
-        trace?: never;
-    };
-    "/v1/bookings/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BookingsController_findMyBookings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/classes/{id}/bookings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BookingsController_findAllForClass"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/students/{id}/bookings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BookingsController_findAllForStudent"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/schools/{schoolId}/bookings/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BookingsController_getWeeklySummary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/classes/{id}/waitlist": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["WaitlistController_findAllForClass"];
-        put?: never;
-        post: operations["WaitlistController_joinWaitlist"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/waitlist/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["WaitlistController_withdraw"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/waitlist/{id}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["WaitlistController_claim"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/attendance/scan": {
         parameters: {
             query?: never;
@@ -3892,6 +3908,13 @@ export interface components {
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
+            /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
+            checkInOpensMinutesBeforeStart?: number;
+            /**
+             * @description What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.
+             * @enum {string}
+             */
+            lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -3933,6 +3956,10 @@ export interface components {
             /** @enum {string} */
             classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             waitlistClaimWindowMinutes: number;
+            /** @description Minutes before a Class starts that check-in opens. */
+            checkInOpensMinutesBeforeStart: number;
+            /** @enum {string} */
+            lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -3966,6 +3993,13 @@ export interface components {
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
+            /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
+            checkInOpensMinutesBeforeStart?: number;
+            /**
+             * @description What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.
+             * @enum {string}
+             */
+            lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -4928,6 +4962,16 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        UpcomingImpactResponseDto: {
+            /** @description Upcoming, unarchived Classes generated from this slot. */
+            upcomingClasses: number;
+            /** @description Of those, how many have bookings or a waitlist. */
+            bookedClasses: number;
+            /** @description Students (and guests) booked across those Classes. */
+            bookedStudents: number;
+            /** @description The most seats taken in any one of those Classes. A capacity below this needs CANCEL or KEEP. */
+            mostTaken: number;
+        };
         UpdateTimetableSlotDto: {
             /** @enum {string} */
             weekday?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
@@ -4959,6 +5003,11 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Decision 322. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change.
+             * @enum {string}
+             */
+            bookedClasses?: "MOVE" | "CANCEL" | "KEEP";
             /** @description Branch to scope this slot to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
@@ -4975,6 +5024,125 @@ export interface components {
             refundCutoffHoursBeforeStart?: number | null;
             /** @description Minor currency unit (e.g. cents). Pass null to clear. */
             cancellationCharge?: number | null;
+        };
+        BookClassDto: {
+            /** @description Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor. */
+            studentId?: string;
+            /** @description One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass. */
+            attendeeMembershipIds?: string[];
+            /** @description Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded. */
+            overrideReason?: string;
+        };
+        BookingAttendeeResponseDto: {
+            id: string;
+            membershipId: string;
+            refundResolution?: string | null;
+            resolvedById?: string | null;
+        };
+        BookingResponseDto: {
+            id: string;
+            studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
+            classId: string;
+            schoolId: string;
+            branchId?: string | null;
+            status: string;
+            sourceMembershipId: string;
+            overriddenById?: string | null;
+            overrideReason?: string | null;
+            checkInMethod?: string | null;
+            checkedInById?: string | null;
+            refundResolution?: string | null;
+            resolvedById?: string | null;
+            cancellationChargeOutcome?: string | null;
+            cancellationChargeAmount?: number | null;
+            stripeCancellationPaymentIntentId?: string | null;
+            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+        };
+        CancelBookingDto: {
+            /** @description Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context. */
+            studentId?: string;
+        };
+        UpdateBookingOverrideDto: {
+            overrideReason: string;
+        };
+        BookingListResponseDto: {
+            items: components["schemas"]["BookingResponseDto"][];
+            nextCursor?: string | null;
+        };
+        StudentBookingResponseDto: {
+            id: string;
+            studentId: string;
+            classId: string;
+            classTitle: string;
+            classStartDate: string;
+            classEndDate: string;
+            schoolId: string;
+            branchId?: string | null;
+            status: string;
+            sourceMembershipId: string;
+            overriddenById?: string | null;
+            overrideReason?: string | null;
+            checkInMethod?: string | null;
+            refundResolution?: string | null;
+            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+        };
+        StudentBookingListResponseDto: {
+            items: components["schemas"]["StudentBookingResponseDto"][];
+            nextCursor?: string | null;
+        };
+        BookingsSummaryActivityDto: {
+            /** @description The raw Class.activities tag this bucket is for, or "Unspecified" for a Class with no tags. */
+            activity: string;
+            totalBookings: number;
+            upcomingBookings: number;
+        };
+        BookingsSummaryDayDto: {
+            /** @description YYYY-MM-DD, the School's own local calendar day. */
+            date: string;
+            totalBookings: number;
+            upcomingBookings: number;
+            activities: components["schemas"]["BookingsSummaryActivityDto"][];
+        };
+        BookingsSummaryResponseDto: {
+            /** @description Inclusive range start actually used, YYYY-MM-DD. */
+            from: string;
+            /** @description Inclusive range end actually used, YYYY-MM-DD. */
+            to: string;
+            totalBookings: number;
+            upcomingBookings: number;
+            days: components["schemas"]["BookingsSummaryDayDto"][];
+        };
+        JoinWaitlistDto: {
+            /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
+            studentId?: string;
+        };
+        WaitlistEntryResponseDto: {
+            id: string;
+            studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
+            classId: string;
+            schoolId: string;
+            branchId?: string | null;
+            position: number;
+            status: string;
+            joinedAt: string;
+            notifiedAt?: string | null;
+            claimByDeadline?: string | null;
+            claimedBookingId?: string | null;
+        };
+        ClaimWaitlistDto: {
+            /** @description Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
+            studentId?: string;
+        };
+        WaitlistEntryListResponseDto: {
+            items: components["schemas"]["WaitlistEntryResponseDto"][];
         };
         CreateInstructorDto: {
             /** @description The User this profile belongs to. Must already hold an active INSTRUCTOR RoleGrant at this School (matching branchId, if set). */
@@ -6320,125 +6488,6 @@ export interface components {
             uploadUrl: string;
             /** @description Pass this back as signatureImageKey when calling POST /waivers/{id}/sign. */
             objectKey: string;
-        };
-        BookClassDto: {
-            /** @description Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor. */
-            studentId?: string;
-            /** @description One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass. */
-            attendeeMembershipIds?: string[];
-            /** @description Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded. */
-            overrideReason?: string;
-        };
-        BookingAttendeeResponseDto: {
-            id: string;
-            membershipId: string;
-            refundResolution?: string | null;
-            resolvedById?: string | null;
-        };
-        BookingResponseDto: {
-            id: string;
-            studentId: string;
-            studentFirstName: string;
-            studentSurname: string;
-            classId: string;
-            schoolId: string;
-            branchId?: string | null;
-            status: string;
-            sourceMembershipId: string;
-            overriddenById?: string | null;
-            overrideReason?: string | null;
-            checkInMethod?: string | null;
-            checkedInById?: string | null;
-            refundResolution?: string | null;
-            resolvedById?: string | null;
-            cancellationChargeOutcome?: string | null;
-            cancellationChargeAmount?: number | null;
-            stripeCancellationPaymentIntentId?: string | null;
-            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
-            createdAt: string;
-            updatedAt: string;
-        };
-        CancelBookingDto: {
-            /** @description Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context. */
-            studentId?: string;
-        };
-        UpdateBookingOverrideDto: {
-            overrideReason: string;
-        };
-        BookingListResponseDto: {
-            items: components["schemas"]["BookingResponseDto"][];
-            nextCursor?: string | null;
-        };
-        StudentBookingResponseDto: {
-            id: string;
-            studentId: string;
-            classId: string;
-            classTitle: string;
-            classStartDate: string;
-            classEndDate: string;
-            schoolId: string;
-            branchId?: string | null;
-            status: string;
-            sourceMembershipId: string;
-            overriddenById?: string | null;
-            overrideReason?: string | null;
-            checkInMethod?: string | null;
-            refundResolution?: string | null;
-            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
-            createdAt: string;
-            updatedAt: string;
-        };
-        StudentBookingListResponseDto: {
-            items: components["schemas"]["StudentBookingResponseDto"][];
-            nextCursor?: string | null;
-        };
-        BookingsSummaryActivityDto: {
-            /** @description The raw Class.activities tag this bucket is for, or "Unspecified" for a Class with no tags. */
-            activity: string;
-            totalBookings: number;
-            upcomingBookings: number;
-        };
-        BookingsSummaryDayDto: {
-            /** @description YYYY-MM-DD, the School's own local calendar day. */
-            date: string;
-            totalBookings: number;
-            upcomingBookings: number;
-            activities: components["schemas"]["BookingsSummaryActivityDto"][];
-        };
-        BookingsSummaryResponseDto: {
-            /** @description Inclusive range start actually used, YYYY-MM-DD. */
-            from: string;
-            /** @description Inclusive range end actually used, YYYY-MM-DD. */
-            to: string;
-            totalBookings: number;
-            upcomingBookings: number;
-            days: components["schemas"]["BookingsSummaryDayDto"][];
-        };
-        JoinWaitlistDto: {
-            /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
-            studentId?: string;
-        };
-        WaitlistEntryResponseDto: {
-            id: string;
-            studentId: string;
-            studentFirstName: string;
-            studentSurname: string;
-            classId: string;
-            schoolId: string;
-            branchId?: string | null;
-            position: number;
-            status: string;
-            joinedAt: string;
-            notifiedAt?: string | null;
-            claimByDeadline?: string | null;
-            claimedBookingId?: string | null;
-        };
-        ClaimWaitlistDto: {
-            /** @description Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
-            studentId?: string;
-        };
-        WaitlistEntryListResponseDto: {
-            items: components["schemas"]["WaitlistEntryResponseDto"][];
         };
         ScanAttendanceDto: {
             classId: string;
@@ -9314,6 +9363,27 @@ export interface operations {
             };
         };
     };
+    TimetableController_getUpcomingImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpcomingImpactResponseDto"];
+                };
+            };
+        };
+    };
     TimetableController_archive: {
         parameters: {
             query?: never;
@@ -9376,6 +9446,274 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_bookClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookClassDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_cancelBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_updateOverrideReason: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBookingOverrideDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findMyBookings: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForClass: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForStudent: {
+        parameters: {
+            query: {
+                schoolId: string;
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_getWeeklySummary: {
+        parameters: {
+            query?: {
+                /** @description Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted. */
+                from?: string;
+                /** @description Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingsSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    WaitlistController_findAllForClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntryListResponseDto"];
+                };
+            };
+        };
+    };
+    WaitlistController_joinWaitlist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinWaitlistDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntryResponseDto"];
+                };
+            };
+        };
+    };
+    WaitlistController_withdraw: {
+        parameters: {
+            query?: {
+                /** @description Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WaitlistController_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimWaitlistDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
                 };
             };
         };
@@ -11857,274 +12195,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignatureUploadUrlResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_bookClass: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BookClassDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_cancelBooking: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CancelBookingDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_updateOverrideReason: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateBookingOverrideDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_findMyBookings: {
-        parameters: {
-            query?: {
-                /** @description Opaque cursor from a previous page's nextCursor. */
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingListResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_findAllForClass: {
-        parameters: {
-            query?: {
-                /** @description Opaque cursor from a previous page's nextCursor. */
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingListResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_findAllForStudent: {
-        parameters: {
-            query: {
-                schoolId: string;
-                /** @description nextCursor from the previous page. */
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StudentBookingListResponseDto"];
-                };
-            };
-        };
-    };
-    BookingsController_getWeeklySummary: {
-        parameters: {
-            query?: {
-                /** @description Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted. */
-                from?: string;
-                /** @description Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted. */
-                to?: string;
-            };
-            header?: never;
-            path: {
-                schoolId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingsSummaryResponseDto"];
-                };
-            };
-        };
-    };
-    WaitlistController_findAllForClass: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WaitlistEntryListResponseDto"];
-                };
-            };
-        };
-    };
-    WaitlistController_joinWaitlist: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["JoinWaitlistDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WaitlistEntryResponseDto"];
-                };
-            };
-        };
-    };
-    WaitlistController_withdraw: {
-        parameters: {
-            query?: {
-                /** @description Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context. */
-                studentId?: string;
-            };
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    WaitlistController_claim: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClaimWaitlistDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BookingResponseDto"];
                 };
             };
         };

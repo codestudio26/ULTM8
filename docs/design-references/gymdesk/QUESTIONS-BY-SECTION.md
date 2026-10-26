@@ -14,6 +14,8 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 
 # Part A: questions on sections already seen
 
+> **All Part A questions are answered (25 Oct 2026).** The answers are recorded in the decision log: **Decisions 315** (members), **316** (memberships and billing), **317** (check-in and attendance) and **318** (the School and the member app). Some were answered by earlier decisions: open mat (Q20, Q53) by 304; promotion fee (Q33) by 287, 300, 307 and 314; hours (Q51) by 306; staff charges and balances (Q28) by 303; belt corrections (Q38) by 286 and 299; minor age (Q39) is fixed at 18 by Decision 77. **Only Q13 (family accounts) stays deferred**, until Gymdesk's "Manage family account" screen has been reviewed. The inline answers below are kept as the history of each question.
+
 ## A1. Dashboard
 1. 🟠 **D3 Birthdays:** may staff see members' birthdays on the dashboard, including **children's**? Which roles (Owner / Branch Staff / Coach)? Show the age?
    - Answer:
@@ -198,11 +200,13 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] Member Portal sub-pages: **Manage member portal messaging, Dashboard Quick Actions, Member Content Settings**
 
 ## B3. Gym
-- [ ] **Bookings:** list, and creating a booking
-- [ ] **Managers & Staff:** list, the **Add staff** form, and the **permissions** screen (important: compare with ULTM8's roles)
-- [ ] **Payroll:** setting a coach's pay rate (per class / per hour), and a payroll report
+- [x] **Bookings:** the Session Bookings page and the Booking Settings menu (received 25 Oct 2026)
+- [ ] **Bookings:** the **Filter** menu and **Book Session** form opened, and each Booking Settings page opened (Booking Settings, Booking Notifications, Booking Widget, Bookings Forms)
+- [x] **Managers & Staff:** list, Add staff form, Account Access and owner profile received 25 Oct 2026 (Decision 320)
+- [x] **Payroll:** report and rates received 25 Oct 2026 (Decision 320)
 - [ ] **Programs:** list and the **Add program** form (compare with ULTM8 Disciplines)
-- [ ] **Schedule:** **adding a class** to the schedule (we only saw an empty week)
+- [x] **Schedule:** schedules, roster assign, settings and grid view (received 25 Oct 2026; Decision 319)
+- [ ] **Schedule:** the **ASSIGN** menu opened and **adding a class**
 
 ## B4. Billing (left-nav item)
 - [ ] Every tab

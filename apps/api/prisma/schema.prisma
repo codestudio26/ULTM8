@@ -237,6 +237,14 @@ enum PaymentAccountMode {
 /// directory outside this repo, not this file — a lesson in verifying against the
 /// actual repo path, not a tool's loaded content, when both exist. No correction to
 /// the skill file is needed; it was already right.
+/// What cancelling after a Class has started gives back, when the Class has no
+/// refund cut-off of its own (product owner, 26 Oct 2026).
+enum LateCancelRefundPolicy {
+  NO_REFUND_ONCE_STARTED
+  REFUND_UNTIL_END
+  ALWAYS_REFUND
+}
+
 enum MembershipPlanType {
   SUBSCRIPTION
   CLASS_PACK
@@ -910,6 +918,10 @@ model School {
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
   waitlistClaimWindowMinutes     Int                             @default(60)
+  /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
+  checkInOpensMinutesBeforeStart Int                             @default(30)
+  /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
+  lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own

@@ -1543,7 +1543,7 @@ export function CardGrid({ children }: { children: ReactNode }) {
 
 /* ---------------------------------------------------------------------- Feedback */
 
-export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' }) {
+export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' | 'warning' | 'info' }) {
   const cls = variant === 'default' ? 'ultm8-badge' : `ultm8-badge ultm8-badge--${variant}`;
   return <span className={cls}>{children}</span>;
 }

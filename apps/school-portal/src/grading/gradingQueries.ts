@@ -46,6 +46,8 @@ function useGradingMutation<TVars>(studentId: string, fn: (vars: TVars) => Promi
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['pending-verifications'] }),
+        // The board shows the same student (its right panel promotes too).
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
       ]),
   });
 }
@@ -347,6 +349,39 @@ export function usePendingVerifications(schoolId: string | null) {
   return useQuery({
     queryKey: ['pending-verifications', schoolId],
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/rank-verifications', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+export type PromotionFeeRequest = components['schemas']['BoardFeeRequestDto'];
+
+/** The owner waives or cancels a promotion fee; a coach dismisses a promotion
+ * left "to decide" (Decisions 300, 307, 313). Waiving a waiting promotion
+ * applies it; nothing else promotes on its own. */
+export function useFeeRequestAction(action: 'waive' | 'cancel' | 'dismiss') {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) => {
+      const params = { params: { path: { id: requestId } } };
+      if (action === 'waive') return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/waive', params));
+      if (action === 'cancel') return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/cancel', params));
+      return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/dismiss', params));
+    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]),
+  });
+}
+
+export type PromotionFeeSettings = components['schemas']['PromotionFeeSettingsResponseDto'];
+
+/** Whether the School's promotion fee is on, and its currency (Decisions 287, 300). */
+export function usePromotionFeeSettings(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['promotion-fee-settings', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
   });
 }
