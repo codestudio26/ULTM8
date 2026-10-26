@@ -11284,6 +11284,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url": {
       "post": {
         "operationId": "CurriculumController_requestVideoUploadUrl",
@@ -21274,10 +21309,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -21287,7 +21326,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -21584,6 +21625,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -21598,6 +21643,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -21704,6 +21750,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {

@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
+  clear its description, duration and instructor; archived lessons are hidden
+  from students everywhere (direct links, favourites, playlists, skill lists);
+  Upload video is greyed out with a plain reason while video isn't set up, and
+  a stuck upload turns "Video failed" so it can be tried again ("Upload
+  again"); blank lesson titles, comments and playlist names are refused; a
+  playlist no longer breaks when the student has left one of its Schools;
+  adding a lesson to a playlist twice no longer errors; a closed School takes
+  no new comments; duration is capped at 24 hours; the grading page's lesson
+  links skip archived lessons; a skill from an archived style can be unticked;
+  and the delete warning says what students lose.
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

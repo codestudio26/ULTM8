@@ -114,6 +114,17 @@ export function useRequestVideoUploadUrl(schoolId: string) {
   });
 }
 
+/** Whether lesson videos can be uploaded on this server yet (C4): off until
+ * the video account is set up (v1.3, Decision 267). */
+export function useVideoUploadStatus(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['video-uploads', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/curriculum/video-uploads', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+    staleTime: 5 * 60_000,
+  });
+}
+
 export type LessonCategory = components['schemas']['LessonCategoryResponseDto'];
 
 /** The School's lesson categories, in order (Decisions 128.15, 191). */
@@ -165,6 +176,9 @@ export function useOrderCategoryLessons(schoolId: string) {
 export interface DisciplineSkillGroup {
   disciplineId: string;
   disciplineName: string;
+  /** An archived style: the lesson form shows only the skills a lesson
+   * already has from it, so they can be unticked (C10). */
+  archived: boolean;
   skills: SkillResponse[];
 }
 
@@ -176,7 +190,7 @@ export interface DisciplineSkillGroup {
  * Discipline via useQueries, grouped for the checkbox list in
  * LessonFormModal. Loading/error state is the union of all of them. */
 export function useSchoolSkillGroups(schoolId: string | null) {
-  const { data: disciplineData, isLoading: disciplinesLoading, error: disciplinesError } = useDisciplines(schoolId);
+  const { data: disciplineData, isLoading: disciplinesLoading, error: disciplinesError } = useDisciplines(schoolId, { includeArchived: true });
   const disciplines = disciplineData?.items ?? [];
 
   const skillQueries = useQueries({
@@ -193,6 +207,7 @@ export function useSchoolSkillGroups(schoolId: string | null) {
   const groups: DisciplineSkillGroup[] = disciplines.map((d, i) => ({
     disciplineId: d.id,
     disciplineName: d.name,
+    archived: !!d.archivedAt,
     skills: skillQueries[i]?.data?.items ?? [],
   }));
 

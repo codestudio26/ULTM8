@@ -14,3 +14,9 @@ export class VideoUploadUrlResponseDto {
   @ApiProperty()
   videoRef!: string;
 }
+
+/** Whether lesson videos can be uploaded on this server yet (C4). */
+export class VideoUploadStatusResponseDto {
+  @ApiProperty()
+  enabled!: boolean;
+}

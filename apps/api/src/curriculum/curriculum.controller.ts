@@ -27,7 +27,7 @@ import {
   ReorderPlaylistItemsDto,
 } from './dto/playlist.dto';
 import { CommentListResponseDto, CommentResponseDto, CreateCommentDto } from './dto/comment.dto';
-import { VideoUploadUrlResponseDto } from './dto/video-upload-response.dto';
+import { VideoUploadStatusResponseDto, VideoUploadUrlResponseDto } from './dto/video-upload-response.dto';
 
 /**
  * `/schools/:schoolId/curriculum/lessons` for create+list is a Developer-level
@@ -275,6 +275,14 @@ export class CurriculumController {
   @Delete('comments/:id')
   async deleteComment(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.curriculumService.deleteComment(user.sub, id);
+  }
+
+  /** Whether video uploads are set up on this server yet, so the portal can
+   * grey out Upload video instead of failing (C4). */
+  @ApiOkResponse({ type: VideoUploadStatusResponseDto })
+  @Get('schools/:schoolId/curriculum/video-uploads')
+  videoUploadStatus(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.curriculumService.videoUploadStatus(user.sub, schoolId);
   }
 
   /** Staff-gated — the service method does the actual check (requestVideoUploadUrl's

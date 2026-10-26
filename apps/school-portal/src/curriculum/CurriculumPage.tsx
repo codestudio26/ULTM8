@@ -17,6 +17,7 @@ import {
   useSchoolSkillGroups,
   useUnarchiveLesson,
   useUpdateLesson,
+  useVideoUploadStatus,
   type DisciplineSkillGroup,
   type LessonCategory,
   type LessonResponse,
@@ -83,6 +84,9 @@ export function CurriculumPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
   const [uploadingVideoFor, setUploadingVideoFor] = useState<LessonResponse | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  // Off until the video account is set up (C4); unknown counts as on, and the
+  // server still refuses with a plain message.
+  const videoUploadsOn = useVideoUploadStatus(schoolId).data?.enabled ?? true;
   const t = useT();
 
   if (!schoolId) return null;
@@ -182,12 +186,19 @@ export function CurriculumPage() {
             <Button variant="secondary" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
               {t('curriculum.edit')}
             </Button>
-            {/* Only offered while there's no video yet, or the last one failed —
-                re-uploading over an already-PROCESSING/READY video (a real
-                "replace the video" workflow) isn't built; out of scope here. */}
-            {l.captionStatus === 'PENDING' || l.captionStatus === 'FAILED' ? (
-              <Button variant="secondary" onClick={() => setUploadingVideoFor(l)} aria-label={t('curriculum.uploadVideoAria', { title: l.title })}>
-                {t('curriculum.uploadVideo')}
+            {/* Offered while there's no video yet or the last one failed, and
+                as "Upload again" while one is processing, in case its upload
+                never arrived (C5). Replacing a ready video isn't built. Greyed
+                out until video uploads are set up (C4). */}
+            {l.captionStatus !== 'READY' ? (
+              <Button
+                variant="secondary"
+                disabled={!videoUploadsOn}
+                title={videoUploadsOn ? undefined : t('curriculum.videoUploadsOff')}
+                onClick={() => setUploadingVideoFor(l)}
+                aria-label={t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgainAria' : 'curriculum.uploadVideoAria', { title: l.title })}
+              >
+                {t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo')}
               </Button>
             ) : null}
             {/* Decision 226 — reversible alternative to Delete below, same
@@ -228,6 +239,7 @@ export function CurriculumPage() {
       {moveError ? <ErrorBanner message={moveError} /> : null}
       {actionError ? <ErrorBanner message={actionError} /> : null}
       {uploadMessage ? <SuccessBanner message={uploadMessage} /> : null}
+      {!videoUploadsOn ? <p className="ultm8-field__hint">{t('curriculum.videoUploadsOff')}</p> : null}
       <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} />
 
       {lessons.length === 0 ? (
@@ -256,6 +268,7 @@ export function CurriculumPage() {
               <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
                 {t('curriculum.noCategory')}
               </h2>
+              <p className="ultm8-field__hint">{t('curriculum.uncategorisedHint')}</p>
               <Table<LessonResponse> rows={uncategorised} columns={lessonColumns(null, uncategorised)} />
             </Card>
           ) : null}

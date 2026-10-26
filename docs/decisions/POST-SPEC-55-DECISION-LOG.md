@@ -4955,3 +4955,29 @@ Platform Admin itself stays English (Decision 273). Who the native-speaker revie
 ### Recorded by
 
 User (Code), 26 Oct 2026: *"we will need for the students app too. Make sure it is done"*; *"delete anything that has been done, so we can start fresh from zero and make sure it is done properly"*; and choosing the recommended options for the languages (the same 15), how the app picks its language (phone's language, can change) and overrides (yes, same as the portal).
+
+## Decision 324 — Curriculum: fourteen bug fixes (archived lessons, playlists, video uploads, blank text)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Curriculum section review of 26 Oct 2026 (bugs C1–C19, two passes, on master `685cc0c`). This decision covers the fourteen fixes that needed no product choice; C2, C7, C8, C11 and replacing a ready video (C5) wait on the product owner's answers, and C19 belongs with the v1.3 video work (Decision 267).
+
+### Decision
+
+1. **Clearing a lesson's fields (C1).** `PATCH /lessons/:id` takes `null` for `durationSeconds`, `description` and `instructorId` to clear them; leaving a field out still keeps it. The edit form sends `null` for an emptied field, so emptying one no longer silently keeps the old value.
+2. **Archived lessons are for staff only, on every route (C3).** `GET /lessons/:id` answers 404, and `GET /skills/:id/lessons` and `GET /schools/:id/curriculum/lessons?includeArchived=true` leave them out, for anyone who isn't staff at the School. A student's favourite or playlist entry for an archived lesson is kept (Unarchive brings it back) but isn't listed (favourites) or shows as unavailable (playlists). Decision 226's rule that students never see an archived lesson now holds everywhere, not only on the student list.
+3. **Video uploads not set up (C4).** While the Cloudflare account isn't configured, `POST …/video-upload-url` answers 503 "Video uploads aren't set up yet" instead of a bare 500, and a new `GET /schools/:id/curriculum/video-uploads` says `{ enabled }`, so the portal greys out Upload video with that sentence.
+4. **A stuck upload fails instead of processing forever (C5).** The video poll job marks a lesson FAILED when Cloudflare Stream reports an error, or when the one-time upload link expired with no file sent (Stream's `status.state` and `uploadExpiry`), which brings the Upload video button back. The portal also offers "Upload again" on a lesson that is still processing. Like the rest of the video pipeline, unverified against a real account until v1.3.
+5. **Blank text is refused (C6, C15).** Lesson titles, comments and playlist names are trimmed, and empty ones are refused, the same rule category names already had.
+6. **Playlists survive a student leaving a School (C14).** A playlist's items are read without joining their lessons; a lesson the student can no longer read (they left its School, or it is archived) comes back `available: false` with an empty title, still removable and reorderable. Before, one such lesson made the whole playlist fail with a server error. `PlaylistItemResponseDto` gains `available`.
+7. **Adding a lesson to a playlist twice changes nothing (C16)**, like favouriting twice, instead of a generic conflict error.
+8. **A closed School takes no new comments (C17).** Others read comments, so they follow Decision 110's read-only rule; favourites and watch progress are the student's own and stay allowed.
+9. **Duration is capped at 24 hours (C18).**
+10. **Smaller page fixes:** the grading page's "Watch:" lesson links leave out archived lessons (C9); the lesson form still shows a skill the lesson already has from an archived style, marked "(archived style)", so it can be unticked (C10); "No category" says "Put lessons in a category to choose their order." (C12); and the delete warning says students' favourites, playlist entries, watch progress and comments on the lesson go too, pointing to Archive (C13). All new text in 15 languages.
+
+### What this does NOT resolve
+
+Coaches' and Branch Staff's access to the Curriculum page (C2), deleting categories (C7), duration in minutes (C8), a comments panel (C11), replacing a ready video (C5) and what a "Live" lesson means: asked of the product owner on 26 Oct 2026. Signed playback links for members-only videos (C19) need the real Cloudflare account (v1.3).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"find the best solutions for the bugs and have another pass"*, then *"build it and ask me"* on the fix plan in the Curriculum Section Guide.

@@ -30,6 +30,9 @@ export const curriculum = {
   editAria: 'Edit {name}',
   uploadVideo: 'Upload video',
   uploadVideoAria: 'Upload video for {title}',
+  uploadAgain: 'Upload again',
+  uploadAgainAria: 'Upload the video for {title} again',
+  videoUploadsOff: "Video uploads aren't set up yet. Lessons can be made and watched without a video until they are.",
   unarchive: 'Unarchive',
   unarchiveAria: 'Unarchive {title}',
   unarchiveFailed: 'Could not unarchive this Lesson.',
@@ -42,8 +45,10 @@ export const curriculum = {
   emptyDescription: 'Add your first Lesson to get started.',
   noLessonsInCategory: 'No lessons in this category yet.',
   noCategory: 'No category',
+  uncategorisedHint: 'Put lessons in a category to choose their order.',
   deleteTitle: 'Delete {title}?',
-  deleteDescription: "The lesson is removed for everyone. Students' grading isn't affected.",
+  deleteDescription:
+    "The lesson is removed for everyone. Students' grading isn't affected, but their favourites, playlist entries, watch progress and comments on this lesson are removed too. To hide it but keep these, use Archive.",
   uploadingMessage: "Uploading {title}'s video — this can take a few minutes before it's ready.",
   categories: {
     title: 'Categories',
@@ -60,6 +65,8 @@ export const curriculum = {
   },
   form: {
     skillRequired: 'Select at least one Skill this Lesson teaches.',
+    titleRequired: 'Give this lesson a title.',
+    archivedStyle: '(archived style)',
     titleLabel: 'Title',
     categoryLabel: 'Category',
     categoryHint: 'A new category puts the lesson at its end. Add categories on the Curriculum page.',
