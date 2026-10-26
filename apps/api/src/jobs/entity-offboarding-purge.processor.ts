@@ -3,6 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
 import { countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 
@@ -164,7 +165,10 @@ function addYears(date: Date, years: number): Date {
 export class EntityOffboardingPurgeProcessor extends WorkerHost {
   private readonly logger = new Logger(EntityOffboardingPurgeProcessor.name);
 
-  constructor(private readonly prismaJobs: PrismaJobsService) {
+  constructor(
+    private readonly prismaJobs: PrismaJobsService,
+    private readonly r2Client: R2ClientService,
+  ) {
     super();
   }
 
@@ -323,7 +327,7 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
   private async sweepWaiverSignatures(now: Date): Promise<{ deleted: number; skipped: number }> {
     const signatures = await this.prismaJobs.waiverSignature.findMany({
       where: { status: { in: ['SIGNED', 'EXPIRED'] }, signedById: { not: null } },
-      select: { id: true, studentId: true, signedById: true, schoolId: true },
+      select: { id: true, studentId: true, signedById: true, schoolId: true, signatureImageKey: true },
     });
 
     let deleted = 0;
@@ -373,6 +377,15 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
 
       try {
+        // The drawn image goes first: if that fails the row stays and the
+        // next sweep tries both again, so no image is left without a record.
+        if (sig.signatureImageKey) {
+          if (this.r2Client.isConfigured()) {
+            await this.r2Client.deleteObject(sig.signatureImageKey);
+          } else {
+            this.logger.warn(`entity-offboarding-purge: R2 is not configured, so the image of WaiverSignature ${sig.id} was not deleted.`);
+          }
+        }
         await this.prismaJobs.waiverSignature.delete({ where: { id: sig.id } });
         deleted += 1;
       } catch (err) {

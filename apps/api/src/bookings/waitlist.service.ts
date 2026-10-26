@@ -98,6 +98,17 @@ export class WaitlistService {
       if (resolvedClass.capacity === null) {
         throw new ConflictException('This Class has no seat limit. Book it instead.');
       }
+      // Waivers review W15: the claim step needs a signed Waiver, so a
+      // student without one would hold an offered seat they can never take.
+      if (resolvedClass.termsWaiverRequired) {
+        const signed = await tx.waiverSignature.findFirst({
+          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
+          select: { id: true },
+        });
+        if (!signed) {
+          throw new BadRequestException('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
+        }
+      }
       const [booked, guests, queued] = await Promise.all([
         this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
         this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),

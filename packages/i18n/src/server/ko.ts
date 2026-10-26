@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "맡을 다른 강사를 선택하세요.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "강사 역할이 일부 지점에만 해당되어 프로필을 도장 전체로 설정할 수 없습니다. 지점을 선택하세요.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "강사 역할이 이 지점을 포함하지 않습니다. 먼저 직원 페이지에서 이 지점의 역할을 부여하거나 올바른 지점을 선택하세요.",
+  "This waiver is no longer in use, so it can no longer be signed.": "이 면책 동의서는 더 이상 사용되지 않으므로 서명할 수 없습니다.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "읽는 동안 이 면책 동의서가 변경되었습니다. 서명하기 전에 다시 읽어 주세요.",
+  "Add your date of birth to your profile before signing a waiver.": "면책 동의서에 서명하기 전에 프로필에 생년월일을 추가하세요.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "18세 미만이므로 부모 또는 보호자가 보호자 계정에서 대신 이 면책 동의서에 서명해야 합니다.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "이 수업의 대기자 명단에 등록하려면 이 학생이 이 학교의 면책 동의서에 서명해야 합니다.",
 };

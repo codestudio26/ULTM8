@@ -127,6 +127,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Un allievo della tua scuola ora può pagare solo in contanti o con bonifico bancario, dopo diverse contestazioni su carta perse.",
     waiverRequestTitle: "Firma della liberatoria richiesta",
     waiverRequestBody: "Sei stato invitato a firmare la seguente liberatoria: {waiver}.",
+    waiverRequestFromSchoolBody: "{school} ti chiede di firmare: {waiver}. Aprila nell'app per leggerla e firmarla.",
     newStripeTitle: "Nuova striscia!",
     promotedTitle: "Promosso!",
     rankUpdatedTitle: "Grado aggiornato",

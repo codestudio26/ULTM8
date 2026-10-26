@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
+  breaks after a student leaves (their signature shows under "Former
+  students"); each signature keeps a copy of the exact text signed, viewable
+  by opening it, and signing an out-of-date version asks the student to read
+  it again; blank waivers and blank signatures are refused; archived waivers
+  are no longer assigned or signable, and Archive asks first; the request
+  notification names the School; every waiver and signature loads, with
+  All / Signed / Not signed tabs sorted A to Z; clearer signing errors;
+  waitlists need a signed waiver when the class does; "include archived =
+  false" now works on Waivers, Classes, Timetable, Branches and Instructors;
+  drawn signature images are deleted with their signature. Needs migration
+  `20261130000000_waiver_signed_copy`.
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

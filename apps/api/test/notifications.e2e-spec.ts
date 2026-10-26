@@ -660,7 +660,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(enqueuedUserIds).not.toContain(owner.id);
 
       const studentAJob = enqueued.find((job) => job.data.userId === studentA.id)!;
-      expect(studentAJob.data.body).toBe('Direct-Invocation Waiver has invited you to sign the following waiver.');
+      expect(studentAJob.data.body).toBe('Notifications HTTP School asks you to sign: Direct-Invocation Waiver. Open it in the app to read and sign.');
       expect(studentAJob.data.type).toBe('WAIVER_SIGNATURE_REQUEST');
       expect(studentAJob.data.notificationId).toBe(`waiver-${waiver.id}-${studentA.id}`);
 

@@ -114,6 +114,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Ein Schüler deiner Schule kann nach mehreren verlorenen Kartenanfechtungen nur noch bar oder per Banküberweisung zahlen.",
     waiverRequestTitle: "Unterschrift für Haftungsausschluss angefordert",
     waiverRequestBody: "Du wurdest gebeten, folgenden Haftungsausschluss zu unterschreiben: {waiver}.",
+    waiverRequestFromSchoolBody: "{school} bittet dich, Folgendes zu unterschreiben: {waiver}. Öffne es in der App, um es zu lesen und zu unterschreiben.",
     newStripeTitle: "Neuer Streifen!",
     promotedTitle: "Befördert!",
     rankUpdatedTitle: "Grad aktualisiert",

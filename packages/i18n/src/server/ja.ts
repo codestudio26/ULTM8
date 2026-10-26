@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "引き継ぐ別のインストラクターを選んでください。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "インストラクターの役割は一部の支店のみのため、プロフィールをスクール全体にはできません。支店を選んでください。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "インストラクターの役割はこの支店を含みません。先にスタッフページでこの支店の役割を付与するか、正しい支店を選んでください。",
+  "This waiver is no longer in use, so it can no longer be signed.": "この免責同意書は現在使用されていないため、署名できません。",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "この免責同意書は、お読みいただいている間に変更されました。署名する前にもう一度お読みください。",
+  "Add your date of birth to your profile before signing a waiver.": "免責同意書に署名する前に、プロフィールに生年月日を追加してください。",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "18歳未満のため、保護者が保護者アカウントからあなたの代わりにこの免責同意書に署名する必要があります。",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "このクラスのキャンセル待ちに登録するには、この生徒がこのスクールの免責同意書に署名済みである必要があります。",
 };

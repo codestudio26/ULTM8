@@ -238,7 +238,10 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^A Student at your School has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/,
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
+  // Notifications written before the School name was added, where the waiver's
+  // own title stood where the sender should be.
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
+  [/^(.+) asks you to sign: (.+)\. Open it in the app to read and sign\.$/s, (m, { t }) => n(t, 'waiverRequestFromSchoolBody', { school: m[1], waiver: m[2] })],
   [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
   [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
   [body(String.raw`^Your rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],

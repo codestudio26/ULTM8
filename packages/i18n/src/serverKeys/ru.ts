@@ -140,6 +140,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Ученик вашей школы теперь может платить только наличными или банковским переводом после нескольких проигранных споров по картам.",
     waiverRequestTitle: "Запрошена подпись отказа от ответственности",
     waiverRequestBody: "Вас приглашают подписать следующий отказ от ответственности: {waiver}.",
+    waiverRequestFromSchoolBody: "{school} просит вас подписать: {waiver}. Откройте документ в приложении, чтобы прочитать и подписать его.",
     newStripeTitle: "Новая полоска!",
     promotedTitle: "Повышение!",
     rankUpdatedTitle: "Ступень обновлена",

@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Выберите другого инструктора, который примет занятия.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Роль инструктора действует только в некоторых филиалах, поэтому профиль не может относиться ко всей школе. Выберите филиал.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Роль инструктора не распространяется на этот филиал. Сначала выдайте роль там на странице «Персонал» или выберите нужный филиал.",
+  "This waiver is no longer in use, so it can no longer be signed.": "Этот отказ от ответственности больше не используется, поэтому его нельзя подписать.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "Этот отказ от ответственности изменился, пока вы его читали. Прочитайте его ещё раз перед подписанием.",
+  "Add your date of birth to your profile before signing a waiver.": "Добавьте дату рождения в профиль, прежде чем подписывать отказ от ответственности.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "Вам меньше 18 лет, поэтому этот отказ от ответственности должен подписать за вас родитель или опекун из своего аккаунта опекуна.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "У этого ученика должен быть подписанный отказ от ответственности этой школы, прежде чем он встанет в лист ожидания на это занятие.",
 };

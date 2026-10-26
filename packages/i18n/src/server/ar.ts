@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "اختر مدرّبًا آخر ليتولّى المهمة.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "دوره كمدرّب لفروع معيّنة فقط، لذا لا يمكن أن يكون ملفه للمدرسة كلها. اختر فرعه.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "دوره كمدرّب لا يشمل هذا الفرع. امنحه الدور هناك أولًا في صفحة الموظفين، أو اختر فرعه.",
+  "This waiver is no longer in use, so it can no longer be signed.": "لم يعد إقرار إخلاء المسؤولية هذا مستخدمًا، لذا لا يمكن توقيعه بعد الآن.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "تم تغيير إقرار إخلاء المسؤولية هذا أثناء قراءتك له. يُرجى قراءته مرة أخرى قبل التوقيع.",
+  "Add your date of birth to your profile before signing a waiver.": "أضف تاريخ ميلادك إلى ملفك الشخصي قبل توقيع أي إقرار إخلاء مسؤولية.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "عمرك أقل من 18 عامًا، لذا يجب أن يوقّع أحد الوالدين أو الوصي إقرار إخلاء المسؤولية هذا نيابةً عنك من حساب الوصي الخاص به.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "يجب أن يكون لدى هذا الطالب إقرار إخلاء مسؤولية موقَّع لهذه المدرسة قبل الانضمام إلى قائمة الانتظار لهذا الصف.",
 };

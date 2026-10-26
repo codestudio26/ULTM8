@@ -127,6 +127,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Un élève de votre école ne peut plus payer qu’en espèces ou par virement bancaire, après plusieurs litiges de carte perdus.",
     waiverRequestTitle: "Signature de décharge demandée",
     waiverRequestBody: "Vous êtes invité à signer la décharge suivante : {waiver}.",
+    waiverRequestFromSchoolBody: "{school} vous demande de signer : {waiver}. Ouvrez-la dans l'application pour la lire et la signer.",
     newStripeTitle: "Nouvelle barrette !",
     promotedTitle: "Promu !",
     rankUpdatedTitle: "Grade mis à jour",

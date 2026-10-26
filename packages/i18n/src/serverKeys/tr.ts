@@ -114,6 +114,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Okulunuzdaki bir öğrenci, kaybedilen birkaç kart itirazının ardından artık yalnızca nakit veya banka havalesiyle ödeme yapabilir.",
     waiverRequestTitle: "Feragatname imzası istendi",
     waiverRequestBody: "Şu feragatnameyi imzalamaya davet edildiniz: {waiver}.",
+    waiverRequestFromSchoolBody: "{school} sizden şunu imzalamanızı istiyor: {waiver}. Okuyup imzalamak için uygulamada açın.",
     newStripeTitle: "Yeni şerit!",
     promotedTitle: "Terfi!",
     rankUpdatedTitle: "Derece güncellendi",

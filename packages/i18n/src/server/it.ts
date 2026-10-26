@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Scegli un altro istruttore che subentri.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Il suo ruolo di istruttore vale solo per alcune sedi, quindi il profilo non può valere per tutta la scuola. Scegli la sua sede.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Il suo ruolo di istruttore non copre questa sede. Assegnagli prima il ruolo lì nella pagina Staff, oppure scegli la sua sede.",
+  "This waiver is no longer in use, so it can no longer be signed.": "Questa liberatoria non è più in uso, quindi non può più essere firmata.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "Questa liberatoria è stata modificata mentre la leggevi. Rileggila prima di firmare.",
+  "Add your date of birth to your profile before signing a waiver.": "Aggiungi la tua data di nascita al profilo prima di firmare una liberatoria.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "Hai meno di 18 anni, quindi un genitore o tutore deve firmare questa liberatoria per te dal suo account Tutore.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "Questo Allievo deve avere una liberatoria firmata di questa Scuola prima di entrare nella lista d'attesa di questo Corso.",
 };

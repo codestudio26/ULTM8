@@ -3155,6 +3155,11 @@ model Waiver {
   purgeAt    DateTime?
   purgedAt   DateTime?
 
+  /// Waivers review W3: goes up by one each time the title or text changes,
+  /// so a signature records which wording it was given, and a signer reading
+  /// an old copy is told to read it again.
+  version Int @default(1)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -3264,6 +3269,14 @@ model WaiverSignature {
   signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
   signedDate        DateTime?
   status            WaiverSignatureStatus @default(SIGNED)
+
+  // Waivers review W3: a copy of exactly what was signed, so a later edit of
+  // the Waiver never changes it. Null on Unsigned rows and on rows signed
+  // before this was kept.
+  signedWaiverTitle   String?
+  signedWaiverBody    String?
+  signedWaiverSha256  String?
+  signedWaiverVersion Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -114,6 +114,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Een leerling van je school kan na meerdere verloren kaartbetwistingen alleen nog contant of per bankoverschrijving betalen.",
     waiverRequestTitle: "Handtekening voor vrijwaring gevraagd",
     waiverRequestBody: "Je bent uitgenodigd om de volgende vrijwaring te ondertekenen: {waiver}.",
+    waiverRequestFromSchoolBody: "{school} vraagt je te ondertekenen: {waiver}. Open hem in de app om hem te lezen en te ondertekenen.",
     newStripeTitle: "Nieuwe streep!",
     promotedTitle: "Gepromoveerd!",
     rankUpdatedTitle: "Graad bijgewerkt",

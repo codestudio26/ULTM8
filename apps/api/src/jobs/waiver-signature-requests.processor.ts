@@ -72,6 +72,7 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
       return;
     }
 
+    const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true } });
     const studentGrants = await this.prismaJobs.roleGrant.findMany({
       where: { schoolId, role: 'STUDENT', revokedAt: null },
       select: { userId: true },
@@ -87,7 +88,8 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
             userId: grant.userId,
             title: 'Waiver signature requested',
             // Spec 55 §9's own confirmed sample text, verbatim.
-            body: `${waiver.title} has invited you to sign the following waiver.`,
+            // Waivers review W7: the School asks; the waiver is what to sign.
+            body: `${school?.name ?? 'Your School'} asks you to sign: ${waiver.title}. Open it in the app to read and sign.`,
             type: 'WAIVER_SIGNATURE_REQUEST',
           } satisfies NotificationFanoutJobData,
           opts: {

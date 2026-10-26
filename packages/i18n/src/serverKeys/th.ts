@@ -101,6 +101,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "นักเรียนคนหนึ่งในโรงเรียนของคุณถูกจำกัดให้ชำระเงินด้วยเงินสดหรือโอนเงินผ่านธนาคารเท่านั้น หลังจากแพ้ข้อโต้แย้งการชำระด้วยบัตรหลายครั้ง",
     waiverRequestTitle: "มีคำขอให้ลงนามเอกสารสละสิทธิ์",
     waiverRequestBody: "คุณได้รับเชิญให้ลงนามเอกสารสละสิทธิ์ต่อไปนี้: {waiver}",
+    waiverRequestFromSchoolBody: "{school} ขอให้คุณลงนาม: {waiver} เปิดในแอปเพื่ออ่านและลงนาม",
     newStripeTitle: "แถบใหม่!",
     promotedTitle: "เลื่อนระดับแล้ว!",
     rankUpdatedTitle: "อัปเดตระดับแล้ว",

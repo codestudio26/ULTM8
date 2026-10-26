@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Wähle einen anderen Ausbilder zur Übernahme.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Die Ausbilderrolle gilt nur für bestimmte Filialen, daher kann das Profil nicht für die ganze Schule gelten. Wähle die Filiale.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Die Ausbilderrolle gilt nicht für diese Filiale. Vergib die Rolle dort zuerst auf der Mitarbeiterseite oder wähle die passende Filiale.",
+  "This waiver is no longer in use, so it can no longer be signed.": "Dieser Haftungsausschluss wird nicht mehr verwendet und kann daher nicht mehr unterschrieben werden.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "Dieser Haftungsausschluss wurde geändert, während du ihn gelesen hast. Bitte lies ihn noch einmal, bevor du unterschreibst.",
+  "Add your date of birth to your profile before signing a waiver.": "Füge deinem Profil dein Geburtsdatum hinzu, bevor du einen Haftungsausschluss unterschreibst.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "Du bist unter 18, daher muss ein Elternteil oder Erziehungsberechtigter diesen Haftungsausschluss über sein Erziehungsberechtigten-Konto für dich unterschreiben.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "Dieser Schüler muss einen unterschriebenen Haftungsausschluss dieser Schule haben, bevor er sich auf die Warteliste für diesen Kurs setzen kann.",
 };

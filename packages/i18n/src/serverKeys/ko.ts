@@ -101,6 +101,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "카드 결제 이의 제기에서 여러 번 패소하여, 도장의 한 수련생은 이제 현금 또는 계좌 이체로만 결제할 수 있습니다.",
     waiverRequestTitle: "면책 동의서 서명 요청",
     waiverRequestBody: "다음 면책 동의서에 서명해 달라는 요청을 받았습니다: {waiver}.",
+    waiverRequestFromSchoolBody: "{school}에서 서명을 요청했습니다: {waiver}. 앱에서 열어 읽고 서명하세요.",
     newStripeTitle: "새 그랄!",
     promotedTitle: "승급!",
     rankUpdatedTitle: "등급이 업데이트되었습니다",

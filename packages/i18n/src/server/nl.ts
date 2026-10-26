@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Kies een andere instructeur om het over te nemen.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "De instructeursrol geldt alleen voor bepaalde vestigingen, dus het profiel kan niet voor de hele school gelden. Kies de vestiging.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "De instructeursrol geldt niet voor deze vestiging. Geef eerst daar de rol op de pagina Personeel, of kies de juiste vestiging.",
+  "This waiver is no longer in use, so it can no longer be signed.": "Deze vrijwaring wordt niet meer gebruikt en kan daarom niet meer worden ondertekend.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "Deze vrijwaring is gewijzigd terwijl je hem las. Lees hem opnieuw voordat je ondertekent.",
+  "Add your date of birth to your profile before signing a waiver.": "Voeg je geboortedatum toe aan je profiel voordat je een vrijwaring ondertekent.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "Je bent jonger dan 18, dus een ouder of voogd moet deze vrijwaring voor je ondertekenen vanuit zijn of haar voogdaccount.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "Deze leerling moet een ondertekende vrijwaring van deze school hebben voordat hij op de wachtlijst voor deze les kan.",
 };

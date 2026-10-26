@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "เลือกครูฝึกคนอื่นให้รับช่วงต่อ",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "บทบาทครูฝึกใช้ได้เฉพาะบางสาขา จึงตั้งโปรไฟล์เป็นทั้งโรงเรียนไม่ได้ เลือกสาขาของเขา",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "บทบาทครูฝึกไม่ครอบคลุมสาขานี้ ให้บทบาทที่สาขานั้นในหน้าพนักงานก่อน หรือเลือกสาขาของเขา",
+  "This waiver is no longer in use, so it can no longer be signed.": "หนังสือสละสิทธิ์นี้ไม่ได้ใช้งานแล้ว จึงไม่สามารถลงนามได้อีก",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "หนังสือสละสิทธิ์นี้มีการเปลี่ยนแปลงระหว่างที่คุณกำลังอ่าน โปรดอ่านอีกครั้งก่อนลงนาม",
+  "Add your date of birth to your profile before signing a waiver.": "เพิ่มวันเกิดของคุณในโปรไฟล์ก่อนลงนามหนังสือสละสิทธิ์",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "คุณอายุต่ำกว่า 18 ปี ผู้ปกครองจึงต้องลงนามหนังสือสละสิทธิ์นี้แทนคุณจากบัญชีผู้ปกครองของตน",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "นักเรียนคนนี้ต้องมีหนังสือสละสิทธิ์ของโรงเรียนนี้ที่ลงนามแล้ว ก่อนเข้ารายชื่อรอของคลาสนี้",
 };

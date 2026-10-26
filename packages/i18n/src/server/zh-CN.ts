@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "请选择另一位教练接手。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "其教练角色仅适用于部分分校，因此资料不能设为整个学校。请选择其分校。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "其教练角色不包括此分校。请先在员工页面为其授予该分校的角色，或选择其分校。",
+  "This waiver is no longer in use, so it can no longer be signed.": "此免责声明已停用，因此无法再签署。",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "你阅读期间此免责声明已被修改。请在签署前重新阅读。",
+  "Add your date of birth to your profile before signing a waiver.": "签署免责声明前，请先在个人资料中添加出生日期。",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "你未满 18 岁，因此需要父母或监护人从其监护人账户为你签署此免责声明。",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "该学员必须先签署本学校的免责声明，才能加入此课程的候补名单。",
 };

@@ -384,4 +384,9 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Devralması için başka bir eğitmen seçin.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Eğitmen rolü yalnızca belirli şubeler için, bu yüzden profili tüm okul için olamaz. Şubesini seçin.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Eğitmen rolü bu şubeyi kapsamıyor. Önce Personel sayfasında orada rol verin veya şubesini seçin.",
+  "This waiver is no longer in use, so it can no longer be signed.": "Bu feragatname artık kullanılmıyor, bu yüzden artık imzalanamaz.",
+  "This waiver was changed while you were reading it. Please read it again before signing.": "Bu feragatname siz okurken değişti. İmzalamadan önce lütfen tekrar okuyun.",
+  "Add your date of birth to your profile before signing a waiver.": "Feragatname imzalamadan önce profilinize doğum tarihinizi ekleyin.",
+  "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.": "18 yaşından küçüksünüz, bu yüzden bu feragatnameyi sizin için bir ebeveyn veya vasinin kendi Veli hesabından imzalaması gerekiyor.",
+  "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.": "Bu Öğrencinin, bu Dersin bekleme listesine katılmadan önce bu Okul için imzalanmış bir feragatnamesi olmalıdır.",
 };
