@@ -800,6 +800,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Anderen wachten al op een plek in deze les. Zet je op de wachtlijst om je beurt af te wachten.",
       bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
       classBusy: "Er boeken nu veel mensen deze les. Probeer het zo meteen opnieuw.",
+      ticketRequired: "Voor deze losse les heb je een eigen ticket nodig. Een abonnement, weekpas of algemene strippenkaart dekt hem niet.",
       checkInNotOpen: "Inchecken voor deze les is nog niet geopend.",
       checkInNotOpenAt: "Inchecken voor deze les is nog niet geopend. Het opent: {time}.",
     },

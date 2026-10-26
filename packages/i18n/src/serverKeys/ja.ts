@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "返金締切をクラス終了後に設定することはできません。",
     guestNeedsFriendPass: "ゲストはフレンドパスでのみ予約できます。ご自身の会員資格はご本人のみが対象です。",
     guestPassRepeated: "ゲストごとに専用のフレンドパスが必要です。同じパスが複数回選ばれています。",
+    ticketRequired: "この単発クラスには専用のチケットが必要です。サブスクリプション、週間パス、一般の回数券では予約できません。",
+    classBranchBooked: "このクラスには予約中またはキャンセル待ちの生徒がいます。別の拠点に移す前に、予約をキャンセルしてください。",
+    classMovedToPast: "このクラスには予約中またはキャンセル待ちの生徒がいるため、まだ過ぎていない時間にしか移動できません。",
+    classAlreadyEnded: "このクラスはすでに終了しています。未来の終了時刻を選んでください。",
   },
   errors: {
     beltInHistoryDelete: "この帯は生徒の昇級履歴に含まれているため、削除できません。",

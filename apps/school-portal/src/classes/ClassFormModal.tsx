@@ -313,11 +313,21 @@ export function ClassFormModal({
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
-        <Checkbox
-          label={t('classes.form.membershipInclusion')}
-          checked={form.membershipInclusion}
-          onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
-        />
+        {/* Timetable Classes are always covered by memberships (Decision 345), so
+            the switch only shows on one-off Classes. */}
+        {initial?.timetableSlotId ? null : (
+          <>
+            <Checkbox
+              label={t('classes.form.membershipInclusion')}
+              checked={form.membershipInclusion}
+              aria-describedby="class-membership-inclusion-hint"
+              onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
+            />
+            <p id="class-membership-inclusion-hint" className="ultm8-field__hint">
+              {t('classes.form.membershipInclusionHint')}
+            </p>
+          </>
+        )}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}
