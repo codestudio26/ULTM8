@@ -5189,3 +5189,24 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
 ### Recorded by
 
 User, 26 Oct 2026, answering the Billing questions one by one and then *"Go ahead agree with all"*.
+
+---
+
+## Decision 344 — Live lessons: recording under-18s needs guardian consent; a "Live" lesson links to its online class (plan for v1.3, not built)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner as the plan; not built · **Resolves:** the first two [UNRESOLVED] items of Decision 336
+
+### Decision
+
+1. **Under-18s can be recorded only with guardian consent.** A coach can record an online class, or upload its recording as a prerecorded lesson, only when every under-18 booked into that class has a Guardian's recording consent on file (Decision 236's consent records). Otherwise recording and upload are refused for that class.
+2. **`Lesson.format = LIVE` stays, as a link to an online class.** A Live lesson points to an online Class (or TimetableSlot). On the Curriculum page it shows that class's next session, and students book it from there. It holds no video of its own.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether recording consent is a new consent tier or part of an existing one (Decision 236 has BASELINE and CAMERA), and its exact wording. This is a legal question.
+- **[UNRESOLVED]** What happens to a Live lesson that has no online class linked (including the existing ones).
+- Still open from Decision 336: exactly when the link appears (15 minutes is the proposal) and whether coaches can change it.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Only with guardian consent" and "Link it to an online class" on the Curriculum thread's decision cards.
