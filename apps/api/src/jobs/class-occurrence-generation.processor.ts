@@ -1,29 +1,17 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
-import { DateTime } from 'luxon';
-import { randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { CLASS_OCCURRENCE_GENERATION_QUEUE } from './queue.constants';
+import { buildSlotOccurrences } from '../timetable/slot-occurrences';
 
 /** How far ahead the job generates occurrences, and how often it runs — Spec 55 says
  * only "on a rolling schedule", no number. This default is a Developer-level choice,
  * flagged for Architect review and intended to be recorded as a Decision once
  * confirmed, same pattern as Decisions 82-84. */
-const WEEKS_AHEAD = 4;
 const CRON_DAILY_AT_2AM_UTC = '0 2 * * *';
 const REPEATABLE_JOB_ID = 'class-occurrence-generation-daily';
 
-const WEEKDAY_TO_LUXON: Record<string, number> = {
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
-  SUNDAY: 7,
-};
 
 /**
  * Registers the class-occurrence-generation repeatable job on module init, with a
@@ -137,83 +125,11 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
     let skippedExisting = 0;
 
     for (const slot of activeSlots) {
+      // The slot's own Branch timezone wins, then its School's, else UTC.
       const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
-      const targetWeekday = WEEKDAY_TO_LUXON[slot.weekday];
-      const now = DateTime.now().setZone(timezone);
-      let daysUntilTarget = (targetWeekday - now.weekday + 7) % 7;
-
-      // If today IS the target weekday but this slot's startTime has already passed
-      // in local time, the next real occurrence is next week, not "today" in the
-      // past — code review caught this: a fixed 02:00 UTC cron is already afternoon/
-      // evening local time for timezones far enough ahead of UTC.
-      if (daysUntilTarget === 0) {
-        const todayAtStart = now.set({
-          hour: slot.startTime.getUTCHours(),
-          minute: slot.startTime.getUTCMinutes(),
-          second: 0,
-          millisecond: 0,
-        });
-        if (todayAtStart <= now) {
-          daysUntilTarget = 7;
-        }
-      }
-
-      const occurrences: Prisma.ClassCreateManyInput[] = [];
-      for (let weekIndex = 0; weekIndex < WEEKS_AHEAD; weekIndex++) {
-        const occurrenceLocalDate = now.plus({ days: daysUntilTarget + 7 * weekIndex }).startOf('day');
-
-        const startDate = this.combineDateAndTime(occurrenceLocalDate, slot.startTime);
-        const endDate = this.combineDateAndTime(occurrenceLocalDate, slot.endTime);
-        // The DATE (not instant) this occurrence falls on, for the @db.Date
-        // occurrenceDate column — built directly from occurrenceLocalDate's own
-        // year/month/day at UTC, NOT via occurrenceLocalDate.toJSDate() (which
-        // preserves the local-midnight INSTANT, silently landing on the previous UTC
-        // calendar day for any timezone ahead of UTC — a real bug code review caught,
-        // confirmed reachable for e.g. Asia/Tokyo, Pacific/Auckland).
-        const occurrenceDate = DateTime.utc(
-          occurrenceLocalDate.year,
-          occurrenceLocalDate.month,
-          occurrenceLocalDate.day,
-        ).toJSDate();
-
-        occurrences.push({
-          id: randomUUID(),
-          schoolId: slot.schoolId,
-          branchId: slot.branchId,
-          instructorId: slot.instructorId,
-          timetableSlotId: slot.id,
-          occurrenceDate,
-          title: slot.title,
-          activities: slot.activities,
-          // Styles and class types copy onto every generated Class (Decision 170).
-          styles: slot.styles ?? [],
-          bannerUrl: slot.bannerUrl,
-          description: slot.description,
-          startDate,
-          endDate,
-          capacity: slot.capacity,
-          // `!= null`, not truthy — 0 is a valid, meaningful value for all three
-          // (e.g. bookingCutoffMinutesBeforeStart: 0 means "bookable right up to
-          // start", not "no cutoff at all"). A truthy check silently treated 0 the
-          // same as unset, producing the OPPOSITE of the intended restriction — a
-          // real bug code review caught.
-          bookingEndAt:
-            slot.bookingCutoffMinutesBeforeStart != null
-              ? new Date(startDate.getTime() - slot.bookingCutoffMinutesBeforeStart * 60_000)
-              : undefined,
-          qrAttendanceEndAt:
-            slot.qrAttendanceWindowMinutes != null
-              ? new Date(startDate.getTime() + slot.qrAttendanceWindowMinutes * 60_000)
-              : undefined,
-          refundFeeDate:
-            slot.refundCutoffHoursBeforeStart != null
-              ? new Date(startDate.getTime() - slot.refundCutoffHoursBeforeStart * 3_600_000)
-              : undefined,
-          cancellationCharge: slot.cancellationCharge,
-          termsWaiverRequired: slot.termsWaiverRequired,
-          membershipInclusion: slot.membershipInclusion,
-        });
-      }
+      // Shared with slot edits (Decision 322): timetable/slot-occurrences.ts.
+      const { branch: _branch, school: _school, ...slotRow } = slot;
+      const occurrences = buildSlotOccurrences(slotRow, timezone);
 
       try {
         const result = await this.prismaJobs.class.createMany({ data: occurrences, skipDuplicates: true });
@@ -232,16 +148,4 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
     this.logger.log(`class-occurrence-generation: ${created} created, ${skippedExisting} already existed.`);
   }
 
-  /** Combines a local calendar date with a `@db.Time(0)` value (itself stored against
-   * the epoch date, 1970-01-01 UTC — see TimetableService's own parseHHmm/formatHHmm)
-   * into the correct UTC instant for that specific occurrence. Takes the timezone from
-   * `localDate` itself (its own luxon zone) rather than a separate parameter — `.set()`
-   * on an already-zoned DateTime keeps that zone, so there's no separate value that
-   * could silently diverge from it. */
-  private combineDateAndTime(localDate: DateTime, time: Date): Date {
-    return localDate
-      .set({ hour: time.getUTCHours(), minute: time.getUTCMinutes(), second: 0, millisecond: 0 })
-      .toUTC()
-      .toJSDate();
-  }
 }

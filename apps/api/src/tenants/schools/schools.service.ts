@@ -136,6 +136,8 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
         },
       });
 
@@ -725,6 +727,8 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
         },
       }),
     );

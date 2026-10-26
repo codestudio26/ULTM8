@@ -15,6 +15,26 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Booking and schedule rules from the stress test** (Decision 322):
+  - **Booking:** a class that has ended or is archived can't be booked, and a
+    membership past its expiry date no longer pays for a class.
+  - **Booking cut-off:** it now stops students; staff can still book a walk-in
+    until the class ends.
+  - **Check-in:** it opens a set time before the class starts (30 minutes by
+    default, set per School).
+  - **Waitlist:** seats freed in a full class go to the waitlist first, and
+    raising its capacity offers the new seats to the waitlist.
+  - **Late cancellation:** each School chooses what a cancellation after the
+    start gives back (default: no refund).
+  - **Timetable edits:** editing or switching off a slot now updates its
+    upcoming classes. Classes that already have bookings are moved, cancelled
+    with credit back, or kept, as the owner chooses, and booked students are
+    told.
+  - **Capacity:** it can't be cut below the bookings already made.
+  - **Busy times:** when many students book the same class at once, every
+    seat now fills and nobody sees an error page.
+  - **Rate limits:** they count per user, and per real client address behind
+    the load balancer.
 - **Instructors: search, hand over classes, give the role back** (Decision
   312) — the roster has a search and Branch, Style and Status filters, and
   shows who hasn't signed in yet; "Invite existing user" goes straight on to

@@ -4896,3 +4896,40 @@ User, 25 Oct 2026, reviewing Gymdesk's Managers & Staff and Payroll.
 ### Recorded by
 
 User, 25 Oct 2026: *"for the grading, we have done that i want, but i like this detail"*. The answers were collected in the same conversation.
+
+## Decision 322 — Booking and schedule rules from the stress test: cut-offs, check-in opening, waitlist first, late cancellation, timetable edits
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (answers given during the booking/schedule stress test) · **Report:** `docs/handover/BOOKING-SCHEDULE-STRESS-TEST.md`
+
+### Background
+
+The stress test ran 30 Schools and 12,213 students through the real API: booking, check-in, grading, and attacks on the logic. It found rules the code did not enforce, and gaps no rule covered. The confirmed rules (Spec 55 / SKILL.md) were fixed as bugs: a Membership past its expiry date funded bookings (SKILL.md §8: expiry is checked at every booking). For the gaps, the product owner decided as follows.
+
+### Decision
+
+1. **Booking cut-off.** Nobody can book a Class that has ended or is archived. Students and Guardians are stopped at the Class's booking cut-off (`bookingEndAt`, from the timetable's booking cut-off). **Staff can still book a walk-in until the Class ends.**
+2. **Check-in opens before the start.** Check-in has always closed at the check-in end time (or the Class end). It now also **opens a set number of minutes before the Class starts**. Each School sets the number (`School.checkInOpensMinutesBeforeStart`, default 30). Before this, a Student could be checked into next week's Class and the attendance counted toward grading.
+3. **Waitlist first.**
+   - Only a full Class takes waitlist entries, or one others are already queued for. Never from a Student already booked into it.
+   - While anyone is waiting, Students and Guardians can't book directly: they join the waitlist, and freed seats go in waitlist order. A seat offered to a notified Student is held for them, even from Staff.
+   - Staff can still book a walk-in into a seat that is free and not held.
+   - Raising a full Class's capacity offers the new seats to the waitlist.
+4. **Late cancellation is a School setting** (`School.lateCancelRefundPolicy`). It covers cancelling a booking after the Class has started, when the Class has no refund cut-off of its own:
+   - **No refund once started** (default): the credit stays spent.
+   - **Refund until it ends.**
+   - **Always refund.**
+
+   Under the first two, a Class that has ended can no longer be cancelled; it becomes a No-Show. A Class's own refund cut-off still applies first. The late-cancellation fee stays tied to that cut-off only.
+5. **Timetable edits reach the Classes already generated** (4 weeks ahead).
+   - **Unbooked upcoming Classes always follow the change.** They are re-timed in the same week (a new weekday moves them, it doesn't add a second set). They leave the schedule when the slot is switched off or archived.
+   - **Classes with bookings follow the owner's choice.** A change that moves them (day, times, branch) or switches the slot off is refused until the owner chooses:
+     - **Move:** they follow, and booked students are told.
+     - **Cancel:** bookings are cancelled with credit back, the Classes archived, and students told.
+     - **Keep:** they stay as they are.
+   - The owner sees the counts first (`GET /timetable/:id/upcoming-impact`).
+   - When the School cancels a Class this way, the credit always comes back, whatever the refund cut-off, and no fee is charged.
+6. **Capacity can't be cut below the seats already booked.** The owner is shown the count ("8 students are booked. Cancel some bookings first, or set the capacity to 8 or more.").
+
+### Recorded by
+
+User, 26 Oct 2026, answering the stress-test questions: *"Staff can, students can't"*; check-in opening *"School sets it"*; *"Waitlist first"*; late cancellation *"We should give school owners the choice to choose what fits better for them, we should have the options for them, as default we can use No refund once started"*; timetable edits *"Update unbooked, ask for booked"*; capacity *"Refuse with the count"*.

@@ -170,6 +170,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message: 'This changed at the same time as another change. Please try again.',
           logLevel: 'warn' as const,
         };
+      case 'P2028': // transaction API error: no pooled connection in time, or the transaction expired
+        // Load, not a bug in the request: the stress test of 26 Oct 2026 saw these
+        // as bare 500s when a burst drained the connection pool.
+        return {
+          status: HttpStatus.SERVICE_UNAVAILABLE,
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'The server is busy. Please try again in a moment.',
+          logLevel: 'warn' as const,
+        };
       case 'P2003': // foreign key constraint violation
         return {
           status: HttpStatus.BAD_REQUEST,
