@@ -158,6 +158,17 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(tx.paymentMethod).toBe('BANK_TRANSFER');
     });
 
+    it('records Pix and a card on the School\'s own terminal', async () => {
+      for (const method of ['PIX', 'CARD_TERMINAL'] as const) {
+        const plan = await mkPlan({ type: 'CLASS_PACK', title: `Pack ${method}`, price: 4000, classesIncluded: 5, expiryDurationDays: 60 });
+        const { user } = await mkStudent(method.toLowerCase());
+        const res = await sell(user.id, { membershipPlanId: plan.id, paymentMethod: method });
+        expect(res.status).toBe(201);
+        const tx = await superuser.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
+        expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: method, recordedById: owner.id });
+      }
+    });
+
     it('a £0 plan creates no Transaction', async () => {
       const plan = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Desk trial', price: 0, expiryDurationDays: 7 });
       const { user } = await mkStudent('free');

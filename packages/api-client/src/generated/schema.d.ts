@@ -5689,7 +5689,7 @@ export interface components {
         SellMembershipDto: {
             membershipPlanId: string;
             /** @enum {string} */
-            paymentMethod: "CASH" | "BANK_TRANSFER";
+            paymentMethod: "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
         };
         DeskMembershipResponseDto: {
             membership: components["schemas"]["MembershipResponseDto"];

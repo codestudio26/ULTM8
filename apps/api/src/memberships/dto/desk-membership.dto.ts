@@ -1,18 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsUUID } from 'class-validator';
 
+/** How a desk sale was paid. Never STRIPE: a card payment through Stripe
+ * goes through checkout, not the desk. */
+export const DESK_PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const;
+export type DeskPaymentMethod = (typeof DESK_PAYMENT_METHODS)[number];
+
 /** POST /schools/{schoolId}/students/{studentId}/memberships/sell — the
- * owner records a plan sold at the desk, already paid in cash or by bank
- * transfer (Decision 348). Not for a Subscription (card only, Spec 55 §6.1)
+ * owner records a plan sold at the desk, already paid in cash, by bank
+ * transfer, by Pix or on the School's own card terminal (Decision 348). Not for a Subscription (card only, Spec 55 §6.1)
  * or a Friend Pass (given, not sold: see GiftFriendPassDto). */
 export class SellMembershipDto {
   @ApiProperty()
   @IsUUID()
   membershipPlanId!: string;
 
-  @ApiProperty({ enum: ['CASH', 'BANK_TRANSFER'] })
-  @IsIn(['CASH', 'BANK_TRANSFER'])
-  paymentMethod!: 'CASH' | 'BANK_TRANSFER';
+  @ApiProperty({ enum: DESK_PAYMENT_METHODS })
+  @IsIn(DESK_PAYMENT_METHODS)
+  paymentMethod!: DeskPaymentMethod;
 }
 
 /** POST /schools/{schoolId}/students/{studentId}/memberships/gift — the owner

@@ -35,7 +35,7 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-test('the owner sells a Class Pack at the desk, paid by bank transfer, and it shows straight away', async ({ page }) => {
+test('the owner sells a Class Pack at the desk (cash, bank transfer, Pix or card terminal), paid by bank transfer, and it shows straight away', async ({ page }) => {
   await mkPlan({ title: 'Ten classes', type: 'CLASS_PACK', price: 6000, classesIncluded: 10, expiryDurationDays: 90 });
   await mkPlan({ title: 'Monthly', type: 'SUBSCRIPTION', price: 5000 });
 
@@ -46,6 +46,7 @@ test('the owner sells a Class Pack at the desk, paid by bank transfer, and it sh
   await page.getByRole('button', { name: 'Sell a plan' }).click();
   // A Subscription is card only, so it isn't offered.
   await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
+  await expect(page.locator('#desk-paid-by option')).toHaveText(['Cash', 'Bank transfer', 'Pix', 'Card terminal']);
   await page.getByLabel('Paid by').selectOption('BANK_TRANSFER');
   await page.getByRole('button', { name: 'Record sale' }).click();
 

@@ -407,6 +407,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "Carte (Stripe)",
       cash: "Espèces",
       bankTransfer: "Virement bancaire",
+      pix: "Pix",
+      cardTerminal: "Terminal de paiement",
     },
     roles: {
       student: "Élève",
@@ -2087,8 +2089,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "Un pass gratuit qui permet à l'élève d'amener un ami à un cours.",
       planLabel: "Formule",
       paidByLabel: "Payé par",
-      cash: "Espèces",
-      bankTransfer: "Virement bancaire",
       sellConfirm: "Enregistrer la vente",
       giftConfirm: "Offrir le pass",
       deskFailed: "Impossible d'enregistrer. Veuillez réessayer.",

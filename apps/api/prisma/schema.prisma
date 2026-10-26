@@ -208,6 +208,10 @@ enum PaymentAccountProvider {
   STRIPE
   CASH
   BANK_TRANSFER
+  /// Desk payments only (Decision 348): a Pix transfer or a card on the
+  /// School's own terminal, recorded by the owner. Never a PaymentAccount provider.
+  PIX
+  CARD_TERMINAL
 }
 
 /// PaymentAccount.status — Phase 8. Confirmed field ("status (Active/De-active)"),

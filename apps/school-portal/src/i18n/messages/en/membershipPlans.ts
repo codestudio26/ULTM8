@@ -171,8 +171,6 @@ export const membershipPlans = {
     giftIntro: 'A free pass the Student can use to bring one friend to a class.',
     planLabel: 'Plan',
     paidByLabel: 'Paid by',
-    cash: 'Cash',
-    bankTransfer: 'Bank transfer',
     sellConfirm: 'Record sale',
     giftConfirm: 'Give pass',
     deskFailed: 'Could not save this. Please try again.',

@@ -17,7 +17,8 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 
 - **Memberships: sell at the desk, Friend Pass, cancel a subscription, member
   list (Decision 348)** — on a Student's page the owner now sees their
-  memberships, can record a plan sold at the desk (cash or bank transfer), give
+  memberships, can record a plan sold at the desk (cash, bank transfer, Pix or card
+  terminal), give
   a Friend Pass, and cancel a Subscription; each plan's menu has a Members list
   showing who is on it with their dates. A cancelled Subscription runs to the
   end of the paid month. Needs the migration `20261201000000_membership_cancel_at_period_end`.

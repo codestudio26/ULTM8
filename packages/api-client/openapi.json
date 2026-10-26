@@ -17929,7 +17929,9 @@
             "type": "string",
             "enum": [
               "CASH",
-              "BANK_TRANSFER"
+              "BANK_TRANSFER",
+              "PIX",
+              "CARD_TERMINAL"
             ]
           }
         },

@@ -156,6 +156,10 @@ export function useUnarchiveMembershipPlan(schoolId: string) {
 export type PlanMemberResponse = components['schemas']['PlanMemberResponseDto'];
 export type StudentMembershipResponse = components['schemas']['StudentMembershipResponseDto'];
 
+/** How a desk sale was paid (Decision 348), in the order the owner sees them. */
+export const DESK_PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const satisfies readonly components['schemas']['SellMembershipDto']['paymentMethod'][];
+export type DeskPaymentMethod = (typeof DESK_PAYMENT_METHODS)[number];
+
 /** Who holds a plan now, by name. Owner only. */
 export function usePlanMembers(planId: string | null) {
   return useQuery({
@@ -192,7 +196,7 @@ function invalidateMembershipViews(queryClient: ReturnType<typeof useQueryClient
 export function useSellMembership(schoolId: string, studentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { membershipPlanId: string; paymentMethod: 'CASH' | 'BANK_TRANSFER' }) =>
+    mutationFn: (body: { membershipPlanId: string; paymentMethod: DeskPaymentMethod }) =>
       unwrap(
         apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/memberships/sell', { params: { path: { schoolId, studentId } }, body }),
       ),

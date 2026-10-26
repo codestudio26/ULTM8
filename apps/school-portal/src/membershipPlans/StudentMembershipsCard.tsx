@@ -3,15 +3,18 @@ import { Link } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
+import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatMoney } from '../lib/money';
 import { formatLocale } from '../i18n/format';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import {
+  DESK_PAYMENT_METHODS,
   useCancelMembership,
   useGiftFriendPass,
   useMembershipPlans,
   useSellMembership,
   useStudentMemberships,
+  type DeskPaymentMethod,
   type MembershipPlanResponse,
   type StudentMembershipResponse,
 } from './membershipPlanQueries';
@@ -34,7 +37,8 @@ function formatDay(iso: string): string {
 
 /**
  * The owner's view of one Student's memberships (Decision 348): what they
- * hold, selling a plan at the desk (cash or bank transfer), giving a Friend
+ * hold, selling a plan at the desk (cash, bank transfer, Pix or card
+ * terminal), giving a Friend
  * Pass, and cancelling a Subscription at the end of its paid month.
  */
 export function StudentMembershipsCard({ schoolId, studentId, studentName }: { schoolId: string; studentId: string; studentName: string }) {
@@ -147,7 +151,7 @@ function DeskModal({
   const sell = useSellMembership(schoolId, studentId);
   const gift = useGiftFriendPass(schoolId, studentId);
   const [planId, setPlanId] = useState(plans[0]?.id ?? '');
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<DeskPaymentMethod>('CASH');
   const [error, setError] = useState<string | null>(null);
   const busy = sell.isPending || gift.isPending;
   const plan = plans.find((p) => p.id === planId);
@@ -193,11 +197,8 @@ function DeskModal({
               <SelectField
                 id="desk-paid-by"
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'BANK_TRANSFER')}
-                options={[
-                  { value: 'CASH', label: t('membershipPlans.studentCard.cash') },
-                  { value: 'BANK_TRANSFER', label: t('membershipPlans.studentCard.bankTransfer') },
-                ]}
+                onChange={(e) => setPaymentMethod(e.target.value as DeskPaymentMethod)}
+                options={DESK_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
               />
             </Field>
           ) : null}

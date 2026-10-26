@@ -405,6 +405,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "カード (Stripe)",
       cash: "現金",
       bankTransfer: "銀行振込",
+      pix: "Pix",
+      cardTerminal: "カード端末",
     },
     roles: {
       student: "生徒",
@@ -2052,8 +2054,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "生徒が友人を1人クラスに連れてこられる無料のパスです。",
       planLabel: "プラン",
       paidByLabel: "支払方法",
-      cash: "現金",
-      bankTransfer: "銀行振込",
       sellConfirm: "販売を記録",
       giftConfirm: "パスを贈る",
       deskFailed: "保存できませんでした。もう一度お試しください。",

@@ -415,6 +415,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "بطاقة (Stripe)",
       cash: "نقدًا",
       bankTransfer: "تحويل بنكي",
+      pix: "Pix",
+      cardTerminal: "جهاز البطاقات",
     },
     roles: {
       student: "طالب",
@@ -2223,8 +2225,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "تصريح مجاني يتيح للطالب إحضار صديق واحد إلى حصة.",
       planLabel: "الخطة",
       paidByLabel: "طريقة الدفع",
-      cash: "نقدًا",
-      bankTransfer: "تحويل بنكي",
       sellConfirm: "تسجيل البيع",
       giftConfirm: "إهداء التصريح",
       deskFailed: "تعذّر الحفظ. يُرجى المحاولة مرة أخرى.",

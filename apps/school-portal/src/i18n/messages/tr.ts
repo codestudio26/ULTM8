@@ -407,6 +407,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "Kart (Stripe)",
       cash: "Nakit",
       bankTransfer: "Banka havalesi",
+      pix: "Pix",
+      cardTerminal: "POS cihazı",
     },
     roles: {
       student: "Öğrenci",
@@ -2087,8 +2089,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "Öğrencinin bir arkadaşını derse getirebileceği ücretsiz bir kart.",
       planLabel: "Plan",
       paidByLabel: "Ödeme yöntemi",
-      cash: "Nakit",
-      bankTransfer: "Banka havalesi",
       sellConfirm: "Satışı kaydet",
       giftConfirm: "Kartı hediye et",
       deskFailed: "Kaydedilemedi. Lütfen tekrar dene.",

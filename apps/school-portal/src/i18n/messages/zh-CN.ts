@@ -405,6 +405,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "银行卡 (Stripe)",
       cash: "现金",
       bankTransfer: "银行转账",
+      pix: "Pix",
+      cardTerminal: "刷卡机",
     },
     roles: {
       student: "学员",
@@ -2052,8 +2054,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "学员可凭此免费通行证带一位朋友来上课。",
       planLabel: "方案",
       paidByLabel: "付款方式",
-      cash: "现金",
-      bankTransfer: "银行转账",
       sellConfirm: "记录销售",
       giftConfirm: "赠送通行证",
       deskFailed: "无法保存，请重试。",

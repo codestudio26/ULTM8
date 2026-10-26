@@ -405,6 +405,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       stripe: "카드 (Stripe)",
       cash: "현금",
       bankTransfer: "계좌 이체",
+      pix: "Pix",
+      cardTerminal: "카드 단말기",
     },
     roles: {
       student: "수련생",
@@ -2052,8 +2054,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       giftIntro: "학생이 친구 한 명을 수업에 데려올 수 있는 무료 패스입니다.",
       planLabel: "플랜",
       paidByLabel: "결제 수단",
-      cash: "현금",
-      bankTransfer: "계좌 이체",
       sellConfirm: "판매 기록",
       giftConfirm: "패스 선물",
       deskFailed: "저장할 수 없습니다. 다시 시도해 주세요.",
