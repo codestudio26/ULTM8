@@ -239,6 +239,10 @@ From the Gymdesk Programs study (25 Oct 2026).
 - **Requirement tick boxes, on each style (owner):** Classes, Days in rank, Skills, Hours, Days attended, Minimum age.
   - An unticked requirement is never checked, even if a rung still holds a number for it.
   - `progressBreakdown` (B11) lists only the ticked requirements, and "ready" (100%) is computed from them.
+  - **`progressPercent` becomes the average of the ticked requirements** for the next rung (classes, days in rank, skills, hours, days attended), each capped at 100%. It was the class % only.
+    - Requirements the rung doesn't ask for are left out. A time-only rung keeps the days %.
+    - Minimum age is not in the %: an otherwise-ready student who is too young gets a "Waiting for age N" state and can't be promoted until then.
+    - The board columns and the "Ready to grade" notifications use this % (Decision 321 item 7).
 - **Hours:** hours trained (B11) count toward a rung only in a style that ticks Hours. This amends Decision 306 for that style. Open mat counts only while its switch is on.
 - **Days attended:** distinct calendar days (School time zone) with a check-in to a class of the style, since the last promotion. Counted per rung.
 - **Minimum age, per rung:** age on the promotion day, from the date of birth. Eligibility stays false until then.

@@ -355,6 +355,7 @@ A **Promotion rules** card sits between the style switch and the Ladder. It is t
   - Unlocks booking for always shows.
   - "Done" and the empty-grade check count only ticked requirements.
 - **The ladder rows and the belt panel** list only the ticked requirements (e.g. "· 12 h", "· age 16+").
+- **The progress %** (board, student panels, coach dashboard, student app) is now the average of the ticked requirements, each capped at 100% (Decision 321 item 7). In the sample data the requirements are classes, days and skills. The progress breakdown marks each requirement "Counts toward the %". Minimum age isn't in the %. The "Board columns" help text says so in Styles & Belts, on the Grading Board and in Grading Settings. The open mat help in Grading Settings now says hours count only where a style ticks Hours.
 
 ### Grading settings: "Promotion to decide" reminder (Decision 313)
 A new always-on row under the whole-School notifications: one reminder to the coaches who may promote, 3 days after a fee was cancelled or a declined fee was waived, only when the student is fully ready (every class required, enough days, every skill signed off). It is not repeated and the promotion never times out. "Ready to grade" now says plainly that it is sent only when a student is fully ready, even though the board's Ready to Grade column starts at 66%.

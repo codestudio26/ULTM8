@@ -4888,6 +4888,10 @@ User, 25 Oct 2026, reviewing Gymdesk's Managers & Staff and Payroll.
    - **Undo:** a coach who may promote can undo an automatic promotion. The undo is recorded in the history.
    - **Reminders:** "Promotion to decide" reminders (Decision 313) aren't sent for rungs that are awarded automatically.
 6. **Auto-assign first belt, per style (owner switch).** When it is on, a student with no belt in the style gets the style's first rung on their **first check-in to a class of that style**. That rung is verified, as in Decision 147. They can still declare a higher belt for staff to verify (Decisions 137, 147).
+7. **The progress % counts the ticked requirements** (26 Oct 2026). It is the **average** of the style's ticked requirements for the next grade: classes, days in rank, skills, hours and days attended. Each requirement is capped at 100%. Example: classes 30/40 (75%), days 90/180 (50%) and skills 4/8 (50%) give 58%. This replaces "progress is classes attended out of classes required; skills and minimum days aren't part of it". The board columns (Decision 136) and "Ready to grade" (Decision 313) use this %, so 100% means every ticked requirement is met.
+   - A requirement the grade doesn't ask for (e.g. no skills) is left out.
+   - A time-only rank still counts time at the rank.
+   - **Minimum age isn't in the %:** a student at 100% who is too young shows "Waiting for age N" and can't be promoted until then.
 
 ### Recorded by
 
