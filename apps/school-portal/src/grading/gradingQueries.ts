@@ -296,11 +296,17 @@ export function useBulkPromote(schoolId: string) {
 
 /** A style's Grading Board columns (Decisions 75, 136, 181). */
 export function useSetBoardThresholds(disciplineId: string) {
+  const set = useSetAnyBoardThresholds();
+  return { ...set, mutateAsync: (body: { gettingThere: number; readyToGrade: number }) => set.mutateAsync({ disciplineId, ...body }) };
+}
+
+/** The same, for whichever style is passed (Grading → Settings saves several). */
+export function useSetAnyBoardThresholds() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { gettingThere: number; readyToGrade: number }) =>
+    mutationFn: ({ disciplineId, ...body }: { disciplineId: string; gettingThere: number; readyToGrade: number }) =>
       unwrap(apiClient.PUT('/v1/disciplines/{id}/board-thresholds', { params: { path: { id: disciplineId } }, body })),
-    onSuccess: async () => {
+    onSuccess: async (_data, { disciplineId }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
         queryClient.invalidateQueries({ queryKey: ['discipline', disciplineId] }),
@@ -383,5 +389,34 @@ export function usePromotionFeeSettings(schoolId: string | null) {
     queryKey: ['promotion-fee-settings', schoolId],
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
+  });
+}
+
+/** The owner turns the promotion fee and "Allow grading before the fee is
+ * paid" on or off (Decisions 297, 300, 307). */
+export function useUpdatePromotionFeeSettings(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { promotionFeeEnabled?: boolean; gradeBeforeFeePaid?: boolean }) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['promotion-fee-settings', schoolId] }),
+  });
+}
+
+/** "Open mat counts toward hours" (Decisions 301, 304, 306). */
+export function useOpenMatHours(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['open-mat-hours', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/grading-settings/open-mat-hours', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+export function useSetOpenMatHours(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (openMatCountsTowardHours: boolean) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/grading-settings/open-mat-hours', { params: { path: { schoolId } }, body: { openMatCountsTowardHours } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['open-mat-hours', schoolId] }),
   });
 }

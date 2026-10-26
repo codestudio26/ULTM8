@@ -1314,6 +1314,46 @@ export function Checkbox({ label, ...rest }: { label: string } & React.InputHTML
   );
 }
 
+/** An on/off setting (DESIGN.md → Settings pages): a button with
+ * `role="switch"`, labelled by `label`, with an optional line under it. */
+export function Switch({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  description?: ReactNode;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="ultm8-switch-row">
+      <div className="ultm8-switch-row__text">
+        <label htmlFor={id} className="ultm8-switch-row__label">
+          {label}
+        </label>
+        {description ? <div className="ultm8-field__hint">{description}</div> : null}
+      </div>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        className={`ultm8-switch${checked ? ' ultm8-switch--on' : ''}`}
+        onClick={() => onChange(!checked)}
+      >
+        <span className="ultm8-switch__knob" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------------- Layout */
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {

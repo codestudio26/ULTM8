@@ -1662,3 +1662,102 @@
   color: var(--text-primary);
   border-bottom-color: var(--color-success);
 }
+
+/* Switch: an on/off setting. */
+.ultm8-switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+.ultm8-switch-row__text {
+  min-width: 0;
+}
+.ultm8-switch-row__label {
+  font-weight: var(--font-weight-medium, 500);
+}
+.ultm8-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-neutral-300);
+  cursor: pointer;
+  padding: 0;
+}
+.ultm8-switch--on {
+  background: #9fd3b2;
+}
+.ultm8-switch[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+.ultm8-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  box-shadow: var(--switch-knob-ring);
+  transition: transform 0.15s;
+}
+.ultm8-switch--on .ultm8-switch__knob {
+  transform: translateX(18px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ultm8-switch__knob {
+    transition: none;
+  }
+}
+
+/* Settings pages: sections on the left, "About this setting" on the right,
+   and a Discard / Save changes bar while something has changed. */
+.ultm8-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--inspector-width);
+  gap: var(--space-4);
+  align-items: start;
+  padding-bottom: 96px;
+}
+@media (max-width: 900px) {
+  .ultm8-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ultm8-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.ultm8-settings-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-footnote);
+}
+.ultm8-settings-inline input {
+  width: 84px;
+}
+.ultm8-about-button {
+  min-width: 36px;
+  padding-inline: var(--space-2);
+}
+.ultm8-save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}

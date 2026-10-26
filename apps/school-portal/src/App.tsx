@@ -31,6 +31,8 @@ import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
 import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
+import { GradingSettingsPage } from './grading/GradingSettingsPage';
+import { GradingSkillsPage } from './grading/GradingSkillsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -286,6 +288,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <GradingPermissionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/settings"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSettingsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/skills"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSkillsPage />
             </Shell>
           </RequireAuth>
         }
