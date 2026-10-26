@@ -646,6 +646,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date} 到期",
       empty: "还没有会员。",
       loadError: "无法加载会员，请重试。",
+      cancelSubscription: "取消订阅",
+      keepSubscription: "保留",
+      cancelConfirm: "你可以使用订阅至已付费月份结束。之后订阅结束，不再扣款。",
+      cancelError: "无法取消你的订阅，请重试。",
+      cancelledEnds: "已取消，{date} 结束",
     },
     planRow: {
       classesIncluded: { other: "{count} 节课" },

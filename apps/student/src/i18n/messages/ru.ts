@@ -677,6 +677,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Действует до {date}",
       empty: "Абонементов пока нет.",
       loadError: "Не удалось загрузить абонементы — попробуйте ещё раз.",
+      cancelSubscription: "Отменить подписку",
+      keepSubscription: "Оставить",
+      cancelConfirm: "Подписка сохраняется до конца оплаченного месяца. Затем она заканчивается, и больше платежей не будет.",
+      cancelError: "Не удалось отменить подписку — попробуйте ещё раз.",
+      cancelledEnds: "Отменён, заканчивается {date}",
     },
     planRow: {
       classesIncluded: {

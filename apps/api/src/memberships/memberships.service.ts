@@ -15,6 +15,7 @@ import { MembershipPlanPriceMigrationJobData } from '../jobs/membership-plan-pri
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
+import { GiftFriendPassDto, SellMembershipDto } from './dto/desk-membership.dto';
 import {
   assertCanCreateMembership,
   GeneralAccessConflictError,
@@ -23,6 +24,8 @@ import {
   TrialAllowanceError,
 } from './membership-creation-guard';
 import { CURRENCIES } from '../settings/constants/currencies';
+import { StripeClientService } from '../payments/stripe-client.service';
+import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
@@ -45,6 +48,7 @@ export class MembershipsService {
     private readonly subscriptionGate: SubscriptionGateService,
     private readonly stepUpService: StepUpService,
     @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) private readonly priceMigrationQueue: Queue,
+    private readonly stripeClient: StripeClientService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -714,15 +718,12 @@ export class MembershipsService {
     // (Membership.giftedById), never a Student self-service purchase. Routing it
     // through this same generic Student-facing purchase() (as an earlier draft
     // did) would let a Student self-grant themselves a free guest pass, and
-    // nothing would ever set giftedById. Rather than build a guess at what a real
-    // staff-gifting endpoint/flow looks like (its own confirmed shape isn't given
-    // anywhere in Spec 55's §7 endpoint table — genuinely out of scope, not a
-    // detail to invent per CLAUDE.md's "never invent unspecified business logic"),
-    // block it here explicitly so the gap is loud, not silently wrong. Applies
-    // identically to a Guardian-driven attempt — a Guardian buying a Friend Pass
-    // FOR a minor is the same self-grant workaround under a different caller.
+    // nothing would ever set giftedById. The owner gives one with
+    // giftFriendPass() (Decision 348). Applies identically to a Guardian-driven
+    // attempt — a Guardian buying a Friend Pass FOR a minor is the same
+    // self-grant workaround under a different caller.
     if (plan.type === 'FRIEND_PASS') {
-      throw new BadRequestException('FRIEND_PASS Memberships are School-gifted, not self-purchased — no staff-gifting endpoint exists yet (out of scope this phase).');
+      throw new BadRequestException('A Friend Pass is given by the School, not bought. Ask the School for one.');
     }
     // Decision 334 (Memberships review M7): the plan's own "requires a waiver"
     // switch, checked the same way BookingsService.bookClass() checks a
@@ -1132,6 +1133,230 @@ export class MembershipsService {
     if (!grant) {
       throw new ForbiddenException('Only a current Student of this School can buy its membership plans.');
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Owner actions on a Student's Memberships (Decision 348): sell at the desk,
+  // give a Friend Pass, cancel a Subscription, and the two owner lists.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The owner records a plan sold at the desk and already paid in cash or by
+   * bank transfer. The Membership is created Active at once with a Successful
+   * Transaction: the owner confirming the money arrived is the same act
+   * PaymentsService.confirmTransaction() performs for a Student's own
+   * Cash/Bank order. A Subscription is card-only (Spec 55 §6.1) and a Friend
+   * Pass is given, not sold. A hidden plan can be sold here: hiding takes a
+   * plan off the Students' list (Decision 334), not off the owner's desk.
+   */
+  async sellAtDesk(callerId: string, schoolId: string, studentId: string, dto: SellMembershipDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    return this.recordDeskSale(schoolId, studentId, dto, { recordedById: callerId });
+  }
+
+  /**
+   * The desk sale itself, with every check on the plan and the Student, for
+   * a caller already allowed to record it: the owner (sellAtDesk above) or,
+   * from the Transactions follow-ups, Branch Staff when the School allows
+   * it. The one place a desk sale creates a Membership, so the creation
+   * guard (one live general access, trial allowance) always runs. Reads and
+   * writes run under the Student's own context, as purchase() does, so it
+   * doesn't depend on the recorder's access to Membership or Transaction.
+   */
+  async recordDeskSale(schoolId: string, studentId: string, dto: SellMembershipDto, { recordedById }: { recordedById: string }) {
+    const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
+    if (plan.type === 'FRIEND_PASS') {
+      throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
+    }
+    if (plan.type === 'SUBSCRIPTION') {
+      throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
+    }
+    if (plan.termsWaiverRequired) {
+      const signed = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.waiverSignature.findFirst({ where: { studentId, schoolId, status: 'SIGNED' }, select: { id: true } }),
+      );
+      if (!signed) {
+        throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
+      }
+    }
+    const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } }),
+    );
+    if (plan.price > 0 && !paymentAccount) {
+      throw new BadRequestException('Set up this School\'s payments before recording a sale.');
+    }
+    const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
+
+    try {
+      return await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        await assertCanCreateMembership(tx, studentId, schoolId, plan);
+        const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
+        if (plan.price === 0) {
+          // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
+          return { membership, transactionId: null };
+        }
+        const transaction = await tx.transaction.create({
+          data: {
+            id: randomUUID(),
+            schoolId,
+            studentId,
+            paymentAccountId: paymentAccount!.id,
+            membershipPlanId: plan.id,
+            membershipId: membership.id,
+            amount: plan.price,
+            currency,
+            status: 'SUCCESSFUL',
+            paymentMethod: dto.paymentMethod,
+            recordedById,
+          },
+          select: { id: true },
+        });
+        return { membership, transactionId: transaction.id };
+      });
+    } catch (err) {
+      throw this.toCreationConflict(err);
+    }
+  }
+
+  /** The owner gives a Student a Friend Pass for one guest (Spec 55 §6.1:
+   * School-gifted, always £0, staff-attributed through giftedById). The
+   * Student uses it when booking a guest (BookingsService.consumeGuestMembership). */
+  async giftFriendPass(callerId: string, schoolId: string, studentId: string, dto: GiftFriendPassDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
+    if (plan.type !== 'FRIEND_PASS') {
+      throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
+    }
+    try {
+      const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        await assertCanCreateMembership(tx, studentId, schoolId, plan);
+        return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });
+      });
+      return { membership, transactionId: null };
+    } catch (err) {
+      throw this.toCreationConflict(err);
+    }
+  }
+
+  /** Shared checks for the desk actions, after the caller is allowed: open
+   * School, a current Student, a plan of this School that isn't archived, and
+   * a scoped class that can still be sold. Under the Student's own context. */
+  private async loadDeskPlan(schoolId: string, studentId: string, planId: string) {
+    const grant = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!grant) {
+      throw new BadRequestException('Only a current Student of this School can be given a membership.');
+    }
+    await this.tenantAuth.assertSchoolNotArchived(studentId, schoolId);
+    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
+    const plan = await this.findOnePlan(studentId, planId);
+    if (plan.schoolId !== schoolId) {
+      throw new NotFoundException('MembershipPlan not found');
+    }
+    if (plan.archivedAt) {
+      throw new BadRequestException('This MembershipPlan has been archived and can no longer be sold.');
+    }
+    if (plan.scopedClassId) {
+      await this.assertScopedClassSellable(studentId, schoolId, plan.scopedClassId);
+    }
+    return plan;
+  }
+
+  private newMembershipData(
+    studentId: string,
+    plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null },
+  ) {
+    return {
+      id: randomUUID(),
+      studentId,
+      membershipPlanId: plan.id,
+      schoolId: plan.schoolId,
+      frequency: 'ONE_TIME' as const,
+      classesRemaining: plan.classesIncluded ?? undefined,
+      expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+      scopedClassId: plan.scopedClassId,
+    };
+  }
+
+  /**
+   * Cancel a Subscription at the end of its paid period (Spec 55 §10.2:
+   * cancel_at_period_end, no proration, no immediate cutoff). Allowed to the
+   * Student, a Guardian of a linked minor (`onBehalfOfStudentId`), or the
+   * School's owner. The Membership stays live until Stripe ends the
+   * Subscription; customer.subscription.deleted then expires it and cancels
+   * the Bookings it funded, as it already does. Asking twice changes nothing.
+   * The Stripe and database work is cancelSubscriptionAtPeriodEnd() in
+   * cancel-subscription.ts, which Students S2 (removing a Student) calls too.
+   */
+  async cancelSubscriptionAtPeriodEnd(callerId: string, membershipId: string, onBehalfOfStudentId?: string) {
+    let contextUserId = callerId;
+    let membership = await this.prismaApp.withTenantContext(callerId, (tx) => tx.membership.findUnique({ where: { id: membershipId } }));
+    if (!membership && onBehalfOfStudentId && onBehalfOfStudentId !== callerId) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, onBehalfOfStudentId);
+      contextUserId = onBehalfOfStudentId;
+      membership = await this.prismaApp.withTenantContext(contextUserId, (tx) => tx.membership.findUnique({ where: { id: membershipId } }));
+      if (membership && membership.studentId !== onBehalfOfStudentId) membership = null;
+    }
+    if (!membership) {
+      throw new NotFoundException('Membership not found');
+    }
+    if (membership.studentId !== contextUserId) {
+      // Seen through staff access: only the owner may cancel for a Student.
+      await this.tenantAuth.assertSchoolOwner(callerId, membership.schoolId);
+    }
+    const found = membership;
+    return this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));
+  }
+
+  /** Every Membership a Student holds at the School, newest first, for the
+   * owner's Student page. */
+  async findStudentMemberships(callerId: string, schoolId: string, studentId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membership.findMany({
+        where: { studentId, schoolId },
+        include: { membershipPlan: { select: { title: true, type: true } } },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      }),
+    );
+    const now = new Date();
+    return {
+      items: rows.map(({ membershipPlan, ...m }) => ({ ...m, planTitle: membershipPlan.title, planType: membershipPlan.type, live: isMembershipLive(m, now) })),
+    };
+  }
+
+  /** Who holds a plan now, for the owner: live Memberships of current
+   * Students (the same people getActiveMemberCount() counts), by name. */
+  async findPlanMembers(callerId: string, planId: string) {
+    const plan = await this.findOnePlan(callerId, planId);
+    await this.tenantAuth.assertSchoolOwner(callerId, plan.schoolId);
+    const now = new Date();
+    const { rows, students } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const all = await tx.membership.findMany({ where: { membershipPlanId: planId, status: 'ACTIVE' } });
+      const live = all.filter((m) => isMembershipLive(m, now));
+      const ids = [...new Set(live.map((m) => m.studentId))];
+      const grants = await tx.roleGrant.findMany({
+        where: { schoolId: plan.schoolId, role: 'STUDENT', revokedAt: null, userId: { in: ids } },
+        select: { userId: true },
+      });
+      const current = new Set(grants.map((g) => g.userId));
+      const users = await tx.user.findMany({ where: { id: { in: [...current] } }, select: { id: true, firstName: true, surname: true } });
+      return { rows: live.filter((m) => current.has(m.studentId)), students: new Map(users.map((u) => [u.id, u])) };
+    });
+    const items = rows.map((m) => ({
+      membershipId: m.id,
+      studentId: m.studentId,
+      firstName: students.get(m.studentId)?.firstName ?? '',
+      surname: students.get(m.studentId)?.surname ?? '',
+      startDate: m.startDate,
+      expiryDate: m.expiryDate,
+      classesRemaining: m.classesRemaining,
+      cancelAt: m.cancelAt,
+      gifted: m.giftedById !== null,
+    }));
+    items.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`) || a.membershipId.localeCompare(b.membershipId));
+    return { items };
   }
 
   // ---------------------------------------------------------------------------
