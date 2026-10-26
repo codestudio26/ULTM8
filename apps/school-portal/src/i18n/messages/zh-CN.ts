@@ -1427,6 +1427,23 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeDescription: "其在本校的学员身份将立即失效。此操作无法在此撤回——需要重新注册。",
       revokeConfirm: "撤销",
       revokeFailed: "无法撤销此注册，请重试。",
+      revokeLiveLoading: "正在检查预约和会员…",
+      revokeLiveFailed: "无法检查预约和会员。撤销仍会取消其即将到来的预约和候补名额。",
+      revokeNothingLive: "此处没有即将到来的预约、候补名额或会员。",
+      revokeWillCancel: "撤销还会：",
+      revokeBookings: {
+        other: "取消 {count} 个即将到来的预约",
+      },
+      revokeWaitlist: {
+        other: "将其从 {count} 个候补名单中移除",
+      },
+      revokeCreditNote: "课程次数会按你通常的取消规则退回。不收取迟取消费用。",
+      revokeMembershipsTitle: "仍然有效且不退款：",
+      revokeMembershipClasses: {
+        other: "{plan}：剩余 {count} 节课",
+      },
+      revokeMembershipUntil: "{plan}：至 {date}",
+      revokeSubscriptionRenews: "{plan}：订阅会继续续费。撤销目前不会停止它，请在 Stripe 后台取消。",
       noUpcomingBooking: "没有即将到来的预约。",
       moreBookings: "另有 {count} 个",
       noRankYet: "在此项目中还没有级别。",

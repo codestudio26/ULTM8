@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { useStudents } from '../students/studentQueries';
+import { useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
@@ -219,10 +219,58 @@ export function StudentGradingPage() {
             navigate('/students');
           }}
           onClose={() => setConfirmingRevoke(false)}
-        />
+        >
+          <RevokeLiveItems schoolId={schoolId} studentId={studentId} />
+        </ConfirmDeleteModal>
       ) : null}
     </>
   );
+}
+
+/** What Revoke will also end, and the memberships it leaves running, so the
+ * owner knows before confirming (Decision 343, S2). */
+function RevokeLiveItems({ schoolId, studentId }: { schoolId: string; studentId: string }) {
+  const t = useT();
+  const summary = useStudentLeavingSummary(schoolId, studentId, true);
+  if (summary.isLoading) return <p className="ultm8-field__hint">{t('grading.student.revokeLiveLoading')}</p>;
+  if (summary.error || !summary.data) return <p className="ultm8-field__hint">{t('grading.student.revokeLiveFailed')}</p>;
+  const { upcomingBookings, waitlistPlaces, memberships } = summary.data;
+  if (upcomingBookings === 0 && waitlistPlaces === 0 && memberships.length === 0) {
+    return <p>{t('grading.student.revokeNothingLive')}</p>;
+  }
+  return (
+    <div data-testid="revoke-live-items">
+      {upcomingBookings > 0 || waitlistPlaces > 0 ? (
+        <>
+          <p style={{ marginBottom: 4 }}>{t('grading.student.revokeWillCancel')}</p>
+          <ul style={{ marginTop: 0 }}>
+            {upcomingBookings > 0 ? <li>{t('grading.student.revokeBookings', { count: upcomingBookings })}</li> : null}
+            {waitlistPlaces > 0 ? <li>{t('grading.student.revokeWaitlist', { count: waitlistPlaces })}</li> : null}
+          </ul>
+          {upcomingBookings > 0 ? <p className="ultm8-field__hint">{t('grading.student.revokeCreditNote')}</p> : null}
+        </>
+      ) : null}
+      {memberships.length > 0 ? (
+        <>
+          <p style={{ marginBottom: 4 }}>{t('grading.student.revokeMembershipsTitle')}</p>
+          <ul style={{ marginTop: 0 }}>
+            {memberships.map((m) => (
+              <li key={m.id}>{membershipLine(t, m)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function membershipLine(t: ReturnType<typeof useT>, m: StudentLeavingSummary['memberships'][number]): string {
+  if (m.renews) return t('grading.student.revokeSubscriptionRenews', { plan: m.planTitle });
+  if (m.classesRemaining != null) return t('grading.student.revokeMembershipClasses', { plan: m.planTitle, count: m.classesRemaining });
+  if (m.expiryDate) {
+    return t('grading.student.revokeMembershipUntil', { plan: m.planTitle, date: formatDay(m.expiryDate) });
+  }
+  return m.planTitle;
 }
 
 /** The soonest upcoming booking whose class hasn't started, as the API picks

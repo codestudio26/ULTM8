@@ -131,3 +131,35 @@ test('Invite needs no home branch when every branch is archived', async ({ page 
   await page.getByRole('button', { name: 'Enroll' }).click();
   await expect(page.getByText('Enrolled.')).toBeVisible();
 });
+
+test('Revoke lists what is still live, then cancels their bookings and waitlist places (Decision 343)', async ({ page }) => {
+  const pack = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Ten pack', price: 9000, classesIncluded: 10 } });
+  const membership = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: pack.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 4 },
+  });
+  const at = (h: number) => new Date(Date.now() + h * 3_600_000);
+  const booked = await db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Leaving class', startDate: at(48), endDate: at(49) } });
+  const full = await db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Full class', startDate: at(72), endDate: at(73) } });
+  const booking = await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: booked.id, schoolId: s.schoolId, sourceMembershipId: membership.id } });
+  const entry = await db.waitlistEntry.create({ data: { id: randomUUID(), studentId: s.student.id, classId: full.id, schoolId: s.schoolId, position: 1 } });
+  try {
+    await page.goto(`/students/${s.student.id}`);
+    await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Cancels 1 upcoming booking')).toBeVisible();
+    await expect(dialog.getByText('Removes them from 1 waitlist')).toBeVisible();
+    await expect(dialog.getByText('Ten pack: 4 classes left')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Revoke' }).click();
+    await expect(page).toHaveURL(/\/students$/);
+
+    expect(await db.booking.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({ status: 'CANCELLED', refundResolution: 'REFUNDED' });
+    expect((await db.waitlistEntry.findUniqueOrThrow({ where: { id: entry.id } })).status).toBe('CANCELLED');
+    expect((await db.membership.findUniqueOrThrow({ where: { id: membership.id } })).classesRemaining).toBe(5);
+  } finally {
+    await db.waitlistEntry.deleteMany({ where: { studentId: s.student.id } });
+    await db.booking.deleteMany({ where: { studentId: s.student.id } });
+    await db.membership.delete({ where: { id: membership.id } });
+    await db.membershipPlan.delete({ where: { id: pack.id } });
+    await db.class.deleteMany({ where: { id: { in: [booked.id, full.id] } } });
+  }
+});

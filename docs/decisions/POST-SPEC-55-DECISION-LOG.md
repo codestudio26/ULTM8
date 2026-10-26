@@ -5129,3 +5129,30 @@ When staff edit a student's profile, a new date of birth that changes the studen
 ### Recorded by
 
 User, 26 Oct 2026, picking **"Allow, owner only"** on the question *"Can staff change a birth date across someone's 18th birthday?"* (the other options were blocking every crossing change, and allowing any staff member).
+
+## Decision 343 — Revoking a student ends their bookings and waitlist places; the Revoke dialog lists what is still live
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (Students review, S2) · **Related:** Memberships review M18; Decision 122 (bookings funded by an expired membership)
+
+### Background
+
+Revoking a student's enrolment (Students page, Revoke enrolment, owner only) only ended the STUDENT role grant. The student's upcoming bookings kept their seats, their waitlist places stayed, and a Subscription kept charging. The spec doesn't say what leaving a School does to these.
+
+### Decision
+
+When a student's last STUDENT grant at a School is revoked:
+
+1. **Upcoming bookings are cancelled.** That means every booking still Upcoming whose class hasn't ended. A booking whose class has already ended is left to attendance and the no-show sweep. Each booking is cancelled under the same credit rule as a cancellation by staff: the class credit comes back before the class's refund cut-off, and once the class has started, the School's late-cancel setting decides. The disputed-payment freeze applies (Decisions 55, 111). No late-cancellation fee is charged. Guest seats on the student's own bookings go with them under the same rule. The freed seats are offered to the waitlist.
+2. **Waitlist places are removed** (Waiting or Notified). A Notified place's held offer goes to the next person.
+3. **Memberships get no automatic refund.** Class packs and passes stay as they are. The owner refunds by hand if they choose to.
+4. **A Subscription stops at the end of the paid period.** This part is **not built yet**: nothing in the code can cancel a Subscription so far. The Memberships follow-up adds a shared "cancel at period end" method, and Revoke will call it once that merges. Until then the dialog says the subscription keeps renewing and tells the owner to cancel it in Stripe.
+5. **The Revoke dialog lists what is still live before the owner confirms:** the upcoming bookings and waitlist places Revoke will end, and each membership still in effect (credits left, end date, or "keeps renewing"). The list comes from `GET /schools/:id/students/:studentId/leaving-summary`, which is owner only, like Revoke.
+
+### What this does NOT resolve
+
+- A seat the student holds as a guest on someone else's booking is left alone (same open question as Decision 122).
+- A Guardian withdrawing consent also ends a child's enrolments (all Schools at once), but does not cancel their bookings. That flow wasn't part of this question.
+
+### Recorded by
+
+User (Code), 26 Oct 2026. The Students thread first put the options on a card (S2), and the user asked *"what do you suggest as an acadmy/school owner"*. The Memberships thread then listed S2 with the recommended option among its own questions, and the user answered *"all recommended"*. That option: the subscription stops at period end, upcoming bookings are cancelled, waitlist places are removed, packs and passes get no automatic refund, and the Revoke dialog lists what is live.

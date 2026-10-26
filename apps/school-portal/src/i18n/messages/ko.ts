@@ -1427,6 +1427,23 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeDescription: "이 도장에서 수련생 역할을 즉시 잃게 됩니다. 여기서는 되돌릴 수 없으며 다시 등록해야 합니다.",
       revokeConfirm: "취소",
       revokeFailed: "등록을 취소하지 못했습니다. 다시 시도해 주세요.",
+      revokeLiveLoading: "예약과 멤버십을 확인하는 중…",
+      revokeLiveFailed: "예약과 멤버십을 확인하지 못했습니다. 그래도 등록을 취소하면 예정된 예약과 대기자 자리는 취소됩니다.",
+      revokeNothingLive: "이곳에 예정된 예약, 대기자 자리, 멤버십이 없습니다.",
+      revokeWillCancel: "등록을 취소하면 다음도 함께 처리됩니다:",
+      revokeBookings: {
+        other: "예정된 예약 {count}건 취소",
+      },
+      revokeWaitlist: {
+        other: "대기자 명단 {count}곳에서 제외",
+      },
+      revokeCreditNote: "수업 크레딧은 평소 취소 규칙에 따라 돌아옵니다. 늦은 취소 수수료는 부과되지 않습니다.",
+      revokeMembershipsTitle: "계속 유지되며 환불되지 않음:",
+      revokeMembershipClasses: {
+        other: "{plan}: {count}회 남음",
+      },
+      revokeMembershipUntil: "{plan}: {date}까지",
+      revokeSubscriptionRenews: "{plan}: 구독은 계속 갱신됩니다. 등록 취소로는 아직 멈추지 않으니 Stripe 대시보드에서 해지하세요.",
       noUpcomingBooking: "다가오는 예약이 없습니다.",
       moreBookings: "외 {count}건",
       noRankYet: "이 종목에는 아직 등급이 없습니다.",

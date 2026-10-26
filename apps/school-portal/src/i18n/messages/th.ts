@@ -1427,6 +1427,23 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeDescription: "ผู้นี้จะเสียบทบาทนักเรียนในโรงเรียนนี้ทันที ไม่สามารถย้อนกลับจากที่นี่ได้ — ต้องลงทะเบียนใหม่",
       revokeConfirm: "เพิกถอน",
       revokeFailed: "เพิกถอนการลงทะเบียนนี้ไม่ได้ โปรดลองอีกครั้ง",
+      revokeLiveLoading: "กำลังตรวจสอบการจองและสมาชิกภาพ…",
+      revokeLiveFailed: "ตรวจสอบการจองและสมาชิกภาพไม่ได้ การเพิกถอนจะยังคงยกเลิกการจองที่กำลังจะมาถึงและที่ในรายการรอ",
+      revokeNothingLive: "ไม่มีการจองที่กำลังจะมาถึง ที่ในรายการรอ หรือสมาชิกภาพที่นี่",
+      revokeWillCancel: "การเพิกถอนจะ:",
+      revokeBookings: {
+        other: "ยกเลิกการจองที่กำลังจะมาถึง {count} รายการ",
+      },
+      revokeWaitlist: {
+        other: "นำออกจากรายการรอ {count} รายการ",
+      },
+      revokeCreditNote: "เครดิตคลาสจะคืนตามกฎการยกเลิกปกติของคุณ ไม่มีการเรียกเก็บค่ายกเลิกล่าช้า",
+      revokeMembershipsTitle: "ยังมีผลอยู่และไม่คืนเงิน:",
+      revokeMembershipClasses: {
+        other: "{plan}: เหลือ {count} คลาส",
+      },
+      revokeMembershipUntil: "{plan}: ถึง {date}",
+      revokeSubscriptionRenews: "{plan}: การสมัครสมาชิกยังต่ออายุต่อไป การเพิกถอนยังไม่หยุดการต่ออายุ จึงต้องยกเลิกในแดชบอร์ด Stripe",
       noUpcomingBooking: "ไม่มีการจองที่จะถึง",
       moreBookings: "+อีก {count}",
       noRankYet: "ยังไม่มีระดับในประเภทกีฬานี้",

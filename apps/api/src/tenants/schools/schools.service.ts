@@ -21,6 +21,8 @@ import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-q
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
+import { LIVE_WAITLIST_STATUSES, leavingStudentBookingsWhere } from '../../bookings/leaving-student-cancellation';
+import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 
 @Injectable()
 export class SchoolsService {
@@ -850,6 +852,48 @@ export class SchoolsService {
   async getStudentProfile(callerId: string, schoolId: string, studentId: string) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
     return this.usersService.getProfileFor(callerId, studentId);
+  }
+
+  /** What Revoke will end for this student, and the memberships it leaves
+   * running, for the owner's Revoke dialog (Decision 343, S2). Owner only,
+   * like Revoke itself. A membership counts while it is in effect: the same
+   * test as MembershipsService's isMembershipLive (not imported: that file
+   * imports this one). */
+  async getStudentLeavingSummary(callerId: string, schoolId: string, studentId: string): Promise<StudentLeavingSummaryResponseDto> {
+    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const now = new Date();
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [upcomingBookings, waitlistPlaces, memberships] = await Promise.all([
+        tx.booking.count({ where: leavingStudentBookingsWhere(schoolId, studentId, now) }),
+        tx.waitlistEntry.count({ where: { schoolId, studentId, status: { in: [...LIVE_WAITLIST_STATUSES] } } }),
+        tx.membership.findMany({
+          where: {
+            schoolId,
+            studentId,
+            status: 'ACTIVE',
+            AND: [
+              { OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
+              { OR: [{ classesRemaining: null }, { classesRemaining: { gt: 0 } }] },
+            ],
+          },
+          select: { id: true, classesRemaining: true, expiryDate: true, stripeSubscriptionId: true, membershipPlan: { select: { title: true, type: true } } },
+          orderBy: { startDate: 'asc' },
+        }),
+      ]);
+      return {
+        upcomingBookings,
+        waitlistPlaces,
+        memberships: memberships.map((m) => ({
+          id: m.id,
+          planTitle: m.membershipPlan.title,
+          type: m.membershipPlan.type,
+          classesRemaining: m.classesRemaining,
+          expiryDate: m.expiryDate,
+          renews: m.membershipPlan.type === 'SUBSCRIPTION' && m.stripeSubscriptionId !== null,
+        })),
+      };
+    });
   }
 
   /** Staff at this School, `studentId` currently enrolled here, and — for

@@ -8,6 +8,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import * as bcrypt from 'bcryptjs';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
@@ -17,6 +19,8 @@ import { SchoolsService } from '../schools/schools.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
+import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../../jobs/queue.constants';
+import { cancelPlacesOfLeavingStudent } from '../../bookings/leaving-student-cancellation';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
@@ -67,6 +71,7 @@ export class RoleGrantsService {
     private readonly coachInvites: CoachInvitesService,
     private readonly schoolsService: SchoolsService,
     private readonly delivery: NotificationDeliveryService,
+    @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
   /** Same convention as CoachInvitesService/InstructorsService's own
@@ -446,6 +451,7 @@ export class RoleGrantsService {
     }
 
     const schoolId = grant.schoolId;
+    let freedClassIds: string[] = [];
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
       // Given the role again later, they start with today's permissions, not
@@ -464,13 +470,27 @@ export class RoleGrantsService {
       // archiving the branch (Decision 252). Re-enrolling picks one again.
       if (grant.role === 'STUDENT') {
         const stillEnrolled = await tx.roleGrant.count({ where: { userId: targetUserId, schoolId, role: 'STUDENT', revokedAt: null } });
-        if (stillEnrolled === 0) await tx.studentHomeBranch.deleteMany({ where: { schoolId, studentId: targetUserId } });
+        if (stillEnrolled === 0) {
+          await tx.studentHomeBranch.deleteMany({ where: { schoolId, studentId: targetUserId } });
+          // Someone who has left gives up their seats and waitlist places
+          // (Decision 343, S2).
+          ({ freedClassIds } = await cancelPlacesOfLeavingStudent(tx, schoolId, targetUserId, callerId, this.logger));
+        }
       }
       return row;
     });
     // Branch Staff no longer at that branch can't have coach invites open
     // there (Decision 183; security review M1).
     if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
+    // Enqueued after commit and only logged on failure, like cancelBooking():
+    // a Redis hiccup must not undo the revoke.
+    for (const classId of freedClassIds) {
+      try {
+        await this.waitlistCascadeQueue.add('seat-freed', { classId });
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue waitlist-cascade-processing for Class ${classId} after revoking ${roleGrantId}: ${err}`);
+      }
+    }
     return revoked;
     // Same JWT-staleness caveat as create() above: an already-issued token keeps this
     // grant's claim until it expires (≤15 min) or is refreshed — there is no

@@ -720,6 +720,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}/leaving-summary": {
+      "get": {
+        "operationId": "SchoolsController_getStudentLeavingSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentLeavingSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -12709,6 +12752,67 @@
           "dateOfBirth",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "LeavingStudentMembershipDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "renews": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "planTitle",
+          "type",
+          "renews"
+        ]
+      },
+      "StudentLeavingSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "waitlistPlaces": {
+            "type": "number"
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeavingStudentMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "upcomingBookings",
+          "waitlistPlaces",
+          "memberships"
         ]
       },
       "UpdateStudentProfileDto": {

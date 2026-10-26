@@ -7,6 +7,7 @@ export type StudentSummary = components['schemas']['StudentSummaryResponseDto'];
 export type JoinSchoolInput = components['schemas']['JoinSchoolDto'];
 export type UpdateStudentProfileInput = components['schemas']['UpdateStudentProfileDto'];
 export type StudentProfileResponse = components['schemas']['UserResponseDto'];
+export type StudentLeavingSummary = components['schemas']['StudentLeavingSummaryResponseDto'];
 // GET /schools/:id/students' query params are inlined onto the operation by
 // NestJS Swagger (a query DTO's own properties, not a referenced schema component
 // — confirmed by grepping the generated schema.d.ts for a few other query DTOs,
@@ -66,6 +67,23 @@ export function useStudentProfile(schoolId: string | null, studentId: string | n
         }),
       ),
     enabled: !!schoolId && !!studentId,
+  });
+}
+
+/** What revoking this Student will cancel, and the memberships it leaves
+ * running (GET /schools/{id}/students/{studentId}/leaving-summary, Decision
+ * 343) — read when the owner opens the Revoke dialog. */
+export function useStudentLeavingSummary(schoolId: string | null, studentId: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['studentLeavingSummary', schoolId, studentId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{id}/students/{studentId}/leaving-summary', {
+          params: { path: { id: schoolId!, studentId: studentId! } },
+        }),
+      ),
+    enabled: enabled && !!schoolId && !!studentId,
+    staleTime: 0,
   });
 }
 

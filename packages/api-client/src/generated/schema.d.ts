@@ -260,6 +260,22 @@ export interface paths {
         patch: operations["SchoolsController_updateStudentProfile"];
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}/leaving-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_getStudentLeavingSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/join": {
         parameters: {
             query?: never;
@@ -4118,6 +4134,21 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        LeavingStudentMembershipDto: {
+            id: string;
+            planTitle: string;
+            /** @enum {string} */
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP";
+            classesRemaining?: number | null;
+            /** Format: date-time */
+            expiryDate?: string | null;
+            renews: boolean;
+        };
+        StudentLeavingSummaryResponseDto: {
+            upcomingBookings: number;
+            waitlistPlaces: number;
+            memberships: components["schemas"]["LeavingStudentMembershipDto"][];
+        };
         UpdateStudentProfileDto: {
             firstName?: string;
             surname?: string;
@@ -7407,6 +7438,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_getStudentLeavingSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentLeavingSummaryResponseDto"];
                 };
             };
         };

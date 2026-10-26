@@ -1427,6 +1427,23 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeDescription: "このスクールでの生徒の役割がすぐに失われます。ここでは元に戻せません。再度入会が必要になります。",
       revokeConfirm: "取り消す",
       revokeFailed: "在籍を取り消せませんでした。もう一度お試しください。",
+      revokeLiveLoading: "予約とメンバーシップを確認しています…",
+      revokeLiveFailed: "予約とメンバーシップを確認できませんでした。取り消すと、今後の予約とキャンセル待ちは取り消されます。",
+      revokeNothingLive: "ここには今後の予約、キャンセル待ち、メンバーシップはありません。",
+      revokeWillCancel: "取り消すと、次のことも行われます:",
+      revokeBookings: {
+        other: "今後の予約{count}件をキャンセル",
+      },
+      revokeWaitlist: {
+        other: "キャンセル待ち{count}件から削除",
+      },
+      revokeCreditNote: "クラスのクレジットは通常のキャンセルルールに従って戻ります。遅延キャンセル料はかかりません。",
+      revokeMembershipsTitle: "引き続き有効で、返金されないもの:",
+      revokeMembershipClasses: {
+        other: "{plan}: 残り{count}回",
+      },
+      revokeMembershipUntil: "{plan}: {date}まで",
+      revokeSubscriptionRenews: "{plan}: サブスクリプションは更新され続けます。取り消しではまだ停止されないため、Stripeダッシュボードで解約してください。",
       noUpcomingBooking: "今後の予約はありません。",
       moreBookings: "ほか{count}件",
       noRankYet: "この種目ではまだ級がありません。",

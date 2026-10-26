@@ -16,6 +16,7 @@ import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
+import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -91,6 +92,18 @@ export class SchoolsController {
     @Param('studentId', ParseUUIDPipe) studentId: string,
   ) {
     return this.schoolsService.getStudentProfile(user.sub, id, studentId);
+  }
+
+  /** What revoking this Student's enrolment will cancel, and the memberships
+   * it leaves running — for the owner's Revoke dialog (Decision 343). */
+  @ApiOkResponse({ type: StudentLeavingSummaryResponseDto })
+  @Get(':id/students/:studentId/leaving-summary')
+  getStudentLeavingSummary(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentLeavingSummary(user.sub, id, studentId);
   }
 
   /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's

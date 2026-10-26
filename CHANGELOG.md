@@ -103,6 +103,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     of an internal placeholder email.
   - **A former student's page shows their name and "Inactive"**, with no
     grading buttons.
+  - **Revoking a student now cancels their upcoming bookings and removes
+    their waitlist places** (Decision 343), so the seats go to someone else.
+    Class credits come back under the usual cancellation rules, with no
+    late-cancellation fee. The Revoke dialog first lists what they still
+    have: bookings, waitlist places and memberships. Memberships aren't
+    refunded, and a Subscription isn't stopped yet (cancel it in Stripe).
   - **"Upcoming Booking" shows the real next class**, however many bookings
     the student has.
   - **Coaches opening /students or /students/invite** go to their home screen

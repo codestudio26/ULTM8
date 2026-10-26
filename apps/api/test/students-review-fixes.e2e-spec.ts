@@ -130,6 +130,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
   });
 
   afterAll(async () => {
+    await superuser.waitlistEntry.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.booking.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.class.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schoolIds } } });
@@ -315,6 +316,71 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(blocked.status).toBe(403);
       const none = await http().get(`/v1/students/${id.sam}/bookings/next?schoolId=${schoolId}`).set(as('owner'));
       expect(none.body).toEqual({ next: null, moreUpcoming: 0 });
+    });
+  });
+  describe('S2: revoking ends upcoming bookings and waitlist places (Decision 343)', () => {
+    it('the Revoke dialog summary lists what is live; revoke cancels bookings under the credit rule and leaves memberships', async () => {
+      await person('quitter', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
+      await person('stayer', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
+      const at = (hours: number) => new Date(Date.now() + hours * 3_600_000);
+      const packPlan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId, type: 'CLASS_PACK', title: 'Ten pack', price: 9000, classesIncluded: 10 } });
+      const subPlan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId, type: 'SUBSCRIPTION', title: 'Monthly', price: 5000 } });
+      const pack = await superuser.membership.create({ data: { id: randomUUID(), studentId: id.quitter, membershipPlanId: packPlan.id, schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 5 } });
+      const sub = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: id.quitter, membershipPlanId: subPlan.id, schoolId, status: 'ACTIVE', frequency: 'RECURRING', stripeSubscriptionId: `sub_test_${randomUUID()}` },
+      });
+      // A used-up pack is not live, so it isn't listed.
+      await superuser.membership.create({ data: { id: randomUUID(), studentId: id.quitter, membershipPlanId: packPlan.id, schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 0 } });
+      const cls = async (title: string, start: number, extra: Record<string, unknown> = {}) =>
+        superuser.class.create({ data: { id: randomUUID(), schoolId, branchId: north, title, startDate: at(start), endDate: at(start + 1), ...extra } });
+      const early = await cls('S2 early', 48);
+      const late = await cls('S2 past cut-off', 24, { refundFeeDate: at(-1) });
+      const ended = await cls('S2 ended', -3);
+      const full = await cls('S2 full', 30);
+      const offered = await cls('S2 offered', 36);
+      const book = (studentId: string, classId: string, membershipId: string) =>
+        superuser.booking.create({ data: { id: randomUUID(), studentId, classId, schoolId, branchId: north, sourceMembershipId: membershipId } });
+      const bEarly = await book(id.quitter, early.id, pack.id);
+      const bLate = await book(id.quitter, late.id, pack.id);
+      const bEnded = await book(id.quitter, ended.id, pack.id);
+      const stayerPlan = await superuser.membership.create({ data: { id: randomUUID(), studentId: id.stayer, membershipPlanId: subPlan.id, schoolId, status: 'ACTIVE', frequency: 'RECURRING' } });
+      const bStayer = await book(id.stayer, early.id, stayerPlan.id);
+      const waiting = await superuser.waitlistEntry.create({ data: { id: randomUUID(), studentId: id.quitter, classId: full.id, schoolId, branchId: north, position: 1 } });
+      const notified = await superuser.waitlistEntry.create({
+        data: { id: randomUUID(), studentId: id.quitter, classId: offered.id, schoolId, branchId: north, position: 1, status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: at(2) },
+      });
+
+      const summary = await http().get(`/v1/schools/${schoolId}/students/${id.quitter}/leaving-summary`).set(as('owner'));
+      expect(summary.status).toBe(200);
+      expect(summary.body.upcomingBookings).toBe(2);
+      expect(summary.body.waitlistPlaces).toBe(2);
+      expect(summary.body.memberships).toHaveLength(2);
+      expect(summary.body.memberships).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: pack.id, planTitle: 'Ten pack', type: 'CLASS_PACK', classesRemaining: 5, renews: false }),
+          expect.objectContaining({ id: sub.id, planTitle: 'Monthly', type: 'SUBSCRIPTION', classesRemaining: null, renews: true }),
+        ]),
+      );
+      // Owner only, like Revoke.
+      expect((await http().get(`/v1/schools/${schoolId}/students/${id.quitter}/leaving-summary`).set(as('northStaff'))).status).toBe(403);
+
+      const grant = await superuser.roleGrant.findFirstOrThrow({ where: { userId: id.quitter, schoolId, role: 'STUDENT' } });
+      expect((await http().delete(`/v1/users/${id.quitter}/role-grants/${grant.id}`).set(as('owner'))).status).toBe(200);
+
+      const booking = (b: { id: string }) => superuser.booking.findUniqueOrThrow({ where: { id: b.id } });
+      expect(await booking(bEarly)).toMatchObject({ status: 'CANCELLED', refundResolution: 'REFUNDED', resolvedById: id.owner });
+      expect(await booking(bLate)).toMatchObject({ status: 'CANCELLED', refundResolution: 'WITHHELD' });
+      expect((await booking(bEnded)).status).toBe('UPCOMING');
+      expect((await booking(bStayer)).status).toBe('UPCOMING');
+      // One credit back (the early class), none for the one past its cut-off.
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(6);
+      expect((await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: waiting.id } })).status).toBe('CANCELLED');
+      expect((await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: notified.id } })).status).toBe('CANCELLED');
+      // Memberships are left alone: no refund, and the Subscription isn't stopped here.
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: sub.id } })).status).toBe('ACTIVE');
+
+      const after = await http().get(`/v1/schools/${schoolId}/students/${id.quitter}/leaving-summary`).set(as('owner'));
+      expect(after.body).toMatchObject({ upcomingBookings: 0, waitlistPlaces: 0 });
     });
   });
 });
