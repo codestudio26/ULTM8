@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Meldowanie na te zajęcia nie zostało jeszcze otwarte. Otwarcie: {time}.",
     capacityBelowBooked: "Już zarezerwowani uczniowie: {count}. Ustaw limit miejsc na {count} lub więcej albo najpierw anuluj część rezerwacji.",
     bookedClassesChoice: "Niektóre nadchodzące zajęcia z tego terminu mają rezerwacje. Wybierz, czy je przenieść, odwołać, czy pozostawić bez zmian.",
+    classArchived: "Te zajęcia są zarchiwizowane. Przywróć je z archiwum, aby je edytować.",
+    qrWindowBeforeStart: "Okno meldowania musi kończyć się po rozpoczęciu zajęć.",
+    bookingCutoffAfterEnd: "Termin zamknięcia rezerwacji nie może przypadać po zakończeniu zajęć.",
+    refundCutoffAfterEnd: "Termin zwrotu nie może przypadać po zakończeniu zajęć.",
+    guestNeedsFriendPass: "Gościa można zarezerwować tylko z karnetem dla znajomego. Twoje członkostwo obejmuje ciebie, a nie twoich gości.",
+    guestPassRepeated: "Każdy gość potrzebuje własnego karnetu dla znajomego. Ten sam karnet wybrano więcej niż raz.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",

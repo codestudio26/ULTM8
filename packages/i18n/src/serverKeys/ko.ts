@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "이 수업의 출석 체크가 아직 시작되지 않았습니다. 시작 시간: {time}",
     capacityBelowBooked: "이미 예약한 수련생: {count}명. 정원을 {count} 이상으로 설정하거나 먼저 일부 예약을 취소하세요.",
     bookedClassesChoice: "이 시간대의 예정 수업 중 일부에 예약이 있습니다. 이동, 취소, 유지 중 하나를 선택하세요.",
+    classArchived: "이 수업은 보관되었습니다. 수정하려면 보관을 해제하세요.",
+    qrWindowBeforeStart: "체크인 가능 시간은 수업 시작 후에 끝나야 합니다.",
+    bookingCutoffAfterEnd: "예약 마감은 수업 종료 후일 수 없습니다.",
+    refundCutoffAfterEnd: "환불 마감은 수업 종료 후일 수 없습니다.",
+    guestNeedsFriendPass: "게스트는 친구 패스로만 예약할 수 있습니다. 본인의 멤버십은 본인에게만 적용됩니다.",
+    guestPassRepeated: "게스트마다 각자의 친구 패스가 필요합니다. 같은 패스가 두 번 이상 선택되었습니다.",
   },
   errors: {
     beltInHistoryDelete: "이 띠는 수련생의 승급 기록에 있어 삭제할 수 없습니다.",

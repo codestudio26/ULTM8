@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Le pointage pour ce cours n’est pas encore ouvert. Ouverture : {time}.",
     capacityBelowBooked: "Élèves déjà inscrits : {count}. Fixez la capacité à {count} ou plus, ou annulez d’abord certaines réservations.",
     bookedClassesChoice: "Certains cours à venir de ce créneau ont des réservations. Choisissez de les déplacer, de les annuler ou de les conserver.",
+    classArchived: "Ce cours est archivé. Désarchivez-le pour le modifier.",
+    qrWindowBeforeStart: "La période d'enregistrement doit se terminer après le début du cours.",
+    bookingCutoffAfterEnd: "La clôture des réservations ne peut pas être après la fin du cours.",
+    refundCutoffAfterEnd: "La limite de remboursement ne peut pas être après la fin du cours.",
+    guestNeedsFriendPass: "Un invité ne peut être réservé qu'avec un Pass invité. Votre abonnement vous couvre vous, pas vos invités.",
+    guestPassRepeated: "Chaque invité a besoin de son propre Pass invité. Le même pass a été choisi plusieurs fois.",
   },
   errors: {
     beltInHistoryDelete: "Cette ceinture figure dans l’historique de grades des élèves, elle ne peut donc pas être supprimée.",

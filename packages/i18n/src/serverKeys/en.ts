@@ -32,6 +32,12 @@ export const server = {
     checkInOpensAt: "Check-in for this class hasn't opened yet. It opens {time}.",
     capacityBelowBooked: 'Students already booked: {count}. Set the capacity to {count} or more, or cancel some bookings first.',
     bookedClassesChoice: 'Some upcoming classes from this slot have bookings. Choose whether to move, cancel or keep them.',
+    classArchived: "This class is archived. Unarchive it to edit it.",
+    qrWindowBeforeStart: "The check-in window must end after the class starts.",
+    bookingCutoffAfterEnd: "The booking cutoff can't be after the class ends.",
+    refundCutoffAfterEnd: "The refund cutoff can't be after the class ends.",
+    guestNeedsFriendPass: "A guest can only be booked with a Friend Pass. Your own membership covers you, not your guests.",
+    guestPassRepeated: "Each guest needs their own Friend Pass. The same pass was picked more than once.",
   },
   errors: {
     slotHasBookings: {

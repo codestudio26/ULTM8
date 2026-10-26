@@ -61,11 +61,12 @@ describeIfDb('Lesson categories (Decision 191)', () => {
     get: (url: string) => http().get(url).set('Authorization', `Bearer ${token[label]}`),
     post: (url: string, body: object) => http().post(url).set('Authorization', `Bearer ${token[label]}`).send(body),
     put: (url: string, body: object) => http().put(url).set('Authorization', `Bearer ${token[label]}`).send(body),
+    delete: (url: string) => http().delete(url).set('Authorization', `Bearer ${token[label]}`),
     patch: (url: string, body: object) => http().patch(url).set('Authorization', `Bearer ${token[label]}`).send(body),
   });
-  const category = async (name: string) => (await as('coach').post(`/v1/schools/${school.id}/curriculum/categories`, { name })).body as { id: string; order: number };
+  const category = async (name: string) => (await as('owner').post(`/v1/schools/${school.id}/curriculum/categories`, { name })).body as { id: string; order: number };
   const lesson = async (title: string, categoryId?: string) =>
-    (await as('coach').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, format: 'PRERECORDED', skillIds: [skillId], ...(categoryId ? { categoryId } : {}) })).body as {
+    (await as('owner').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, format: 'PRERECORDED', skillIds: [skillId], ...(categoryId ? { categoryId } : {}) })).body as {
       id: string;
       order: number;
       category: string | null;
@@ -110,7 +111,7 @@ describeIfDb('Lesson categories (Decision 191)', () => {
     await app.close();
   });
 
-  it('staff add categories in order; lessons go to the end of theirs and are listed in order', async () => {
+  it('the owner adds categories in order; lessons go to the end of theirs and are listed in order', async () => {
     const subs = await category('Submissions');
     const guard = await category('Guard Work');
     expect([subs.order, guard.order]).toEqual([0, 1]);
@@ -131,12 +132,12 @@ describeIfDb('Lesson categories (Decision 191)', () => {
     const lessons = (await as('student').get(`/v1/schools/${school.id}/curriculum/lessons`)).body.items as Array<{ id: string; title: string }>;
     const byTitle = (t: string) => lessons.find((l) => l.title === t)!.id;
     // Armbar moves from Submissions to the top of Guard Work.
-    const moved = await as('coach').put(`/v1/curriculum/categories/${guard.id}/lessons/order`, { lessonIds: [byTitle('Armbar'), byTitle('Scissor Sweep')] });
+    const moved = await as('owner').put(`/v1/curriculum/categories/${guard.id}/lessons/order`, { lessonIds: [byTitle('Armbar'), byTitle('Scissor Sweep')] });
     expect(moved.status).toBe(200);
     expect(await titles()).toEqual(['Guard Work: Armbar', 'Guard Work: Scissor Sweep', 'Submissions: Rear Naked Choke', '—: Unsorted Drill']);
 
     // Leaving out a lesson already in the category is refused, so none is lost.
-    expect((await as('coach').put(`/v1/curriculum/categories/${guard.id}/lessons/order`, { lessonIds: [byTitle('Armbar')] })).status).toBe(409);
+    expect((await as('owner').put(`/v1/curriculum/categories/${guard.id}/lessons/order`, { lessonIds: [byTitle('Armbar')] })).status).toBe(409);
     expect((await as('owner').put(`/v1/schools/${school.id}/curriculum/categories/order`, { categoryIds: [guard.id] })).status).toBe(400);
   });
 
@@ -146,15 +147,15 @@ describeIfDb('Lesson categories (Decision 191)', () => {
     const drill = ((await as('student').get(`/v1/schools/${school.id}/curriculum/lessons`)).body.items as Array<{ id: string; title: string }>).find(
       (l) => l.title === 'Unsorted Drill',
     )!;
-    const res = await as('coach').patch(`/v1/lessons/${drill.id}`, { categoryId: subs.id });
+    const res = await as('owner').patch(`/v1/lessons/${drill.id}`, { categoryId: subs.id });
     expect(res.body).toMatchObject({ category: 'Submissions', categoryId: subs.id, order: 1 });
-    const out = await as('coach').patch(`/v1/lessons/${drill.id}`, { categoryId: null });
+    const out = await as('owner').patch(`/v1/lessons/${drill.id}`, { categoryId: null });
     expect(out.body).toMatchObject({ category: null, categoryId: null });
   });
 
   it('names are unique per School and can be changed', async () => {
-    expect((await as('coach').post(`/v1/schools/${school.id}/curriculum/categories`, { name: 'guard work' })).status).toBe(409);
-    expect((await as('coach').post(`/v1/schools/${school.id}/curriculum/categories`, { name: '  ' })).status).toBe(400);
+    expect((await as('owner').post(`/v1/schools/${school.id}/curriculum/categories`, { name: 'guard work' })).status).toBe(409);
+    expect((await as('owner').post(`/v1/schools/${school.id}/curriculum/categories`, { name: '  ' })).status).toBe(400);
     const cats = (await as('student').get(`/v1/schools/${school.id}/curriculum/categories`)).body.items as Array<{ id: string; name: string }>;
     const renamed = await as('owner').patch(`/v1/curriculum/categories/${cats[0].id}`, { name: 'Guard' });
     expect(renamed.body.name).toBe('Guard');
@@ -168,8 +169,37 @@ describeIfDb('Lesson categories (Decision 191)', () => {
     expect((await as('otherOwner').patch(`/v1/curriculum/categories/${cats[0].id}`, { name: 'Theirs' })).status).toBe(404);
     // Another School's lesson can't be put in this School's category, nor the other way round.
     const theirs = await as('otherOwner').post(`/v1/schools/${other.id}/curriculum/lessons`, { title: 'Theirs', format: 'PRERECORDED', skillIds: [otherSkillId] });
-    expect((await as('coach').put(`/v1/curriculum/categories/${cats[0].id}/lessons/order`, { lessonIds: [theirs.body.id] })).status).toBe(400);
+    expect((await as('owner').put(`/v1/curriculum/categories/${cats[0].id}/lessons/order`, { lessonIds: [theirs.body.id] })).status).toBe(400);
     expect((await as('otherOwner').post(`/v1/schools/${other.id}/curriculum/lessons`, { title: 'X', format: 'PRERECORDED', skillIds: [otherSkillId], categoryId: cats[0].id })).status).toBe(400);
+  });
+
+  it('coaches read the curriculum but change nothing (Decision 326)', async () => {
+    const cats = (await as('coach').get(`/v1/schools/${school.id}/curriculum/categories`)).body.items as Array<{ id: string }>;
+    const lessons = (await as('coach').get(`/v1/schools/${school.id}/curriculum/lessons`)).body.items as Array<{ id: string; categoryId: string | null }>;
+    expect(cats.length).toBeGreaterThan(0);
+    expect(lessons.length).toBeGreaterThan(0);
+    const inFirst = lessons.filter((l) => l.categoryId === cats[0].id).map((l) => l.id);
+    expect((await as('coach').post(`/v1/schools/${school.id}/curriculum/categories`, { name: 'Coach Cat' })).status).toBe(403);
+    expect((await as('coach').patch(`/v1/curriculum/categories/${cats[0].id}`, { name: 'Coach Cat' })).status).toBe(403);
+    expect((await as('coach').put(`/v1/schools/${school.id}/curriculum/categories/order`, { categoryIds: cats.map((c) => c.id) })).status).toBe(403);
+    expect((await as('coach').put(`/v1/curriculum/categories/${cats[0].id}/lessons/order`, { lessonIds: inFirst })).status).toBe(403);
+    expect((await as('coach').delete(`/v1/curriculum/categories/${cats[0].id}`)).status).toBe(403);
+    expect((await as('coach').post(`/v1/schools/${school.id}/curriculum/lessons`, { title: 'Coach', format: 'PRERECORDED', skillIds: [skillId] })).status).toBe(403);
+    expect((await as('coach').patch(`/v1/lessons/${lessons[0].id}`, { title: 'Coach' })).status).toBe(403);
+    expect((await as('coach').post(`/v1/schools/${school.id}/curriculum/lessons/${lessons[0].id}/video-upload-url`, {})).status).toBe(403);
+  });
+
+  it('the owner deletes a category; its lessons move to No category (Decision 326)', async () => {
+    const doomed = await category('Doomed');
+    const a = await lesson('Doomed A', doomed.id);
+    expect((await as('student').delete(`/v1/curriculum/categories/${doomed.id}`)).status).toBe(403);
+    expect((await as('otherOwner').delete(`/v1/curriculum/categories/${doomed.id}`)).status).toBe(404);
+    expect((await as('owner').delete(`/v1/curriculum/categories/${doomed.id}`)).status).toBe(204);
+    const cats = (await as('owner').get(`/v1/schools/${school.id}/curriculum/categories`)).body.items as Array<{ id: string }>;
+    expect(cats.some((c) => c.id === doomed.id)).toBe(false);
+    const after = (await as('owner').get(`/v1/lessons/${a.id}`)).body;
+    expect(after).toMatchObject({ categoryId: null, category: null });
+    expect((await as('owner').delete(`/v1/curriculum/categories/${doomed.id}`)).status).toBe(404);
   });
 
   it('the database refuses a student writing a category directly', async () => {
@@ -179,5 +209,14 @@ describeIfDb('Lesson categories (Decision 191)', () => {
         return tx.lessonCategory.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Sneaky' } });
       }),
     ).rejects.toThrow();
+  });
+
+  it('the database lets only the owner delete a category', async () => {
+    const kept = await category('Kept');
+    const deleted = await appRole.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${id.coach}'`);
+      return tx.lessonCategory.deleteMany({ where: { id: kept.id } });
+    });
+    expect(deleted.count).toBe(0);
   });
 });

@@ -27,6 +27,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cancelled, Promotion to decide and Promotion fee are translated; broadcasts
   refuse an archived branch or class and a blank title or message; a snooze
   is capped at 7 days; a bad page link is a 400, not a server error.
+- **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
+  clear its description, duration and instructor; archived lessons are hidden
+  from students everywhere (direct links, favourites, playlists, skill lists);
+  Upload video is greyed out with a plain reason while video isn't set up, and
+  a stuck upload turns "Video failed" so it can be tried again ("Upload
+  again"); blank lesson titles, comments and playlist names are refused; a
+  playlist no longer breaks when the student has left one of its Schools;
+  adding a lesson to a playlist twice no longer errors; a closed School takes
+  no new comments; duration is capped at 24 hours; the grading page's lesson
+  links skip archived lessons; a skill from an archived style can be unticked;
+  and the delete warning says what students lose.
+
+- **Curriculum: the owner's answers** (Decision 326) — coaches and Branch
+  Staff now have the Curriculum page, read-only (lessons, categories and
+  comments), and only the School owner can add, edit, reorder or upload; the
+  owner can delete a category, its lessons moving to "No category"; duration
+  is typed in minutes and seconds and listed as e.g. 4:30; each lesson has a
+  Comments (n) button opening its students' comments, which only the owner
+  (or the comment's author) can remove. **Needs a database migration.**
+
 - **Timetable fixes from the 26 Oct review (Decision 332)** — archived slots,
   closed Schools and archived Branches no longer get classes back overnight;
   a new or unarchived slot is bookable straight away; raising a slot's capacity
@@ -36,6 +56,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cleared; Archive asks first; every slot shows (not just the first 20); a
   cancelled or finished class says so in the booking dialog; cancellation
   notices show local time; waitlisted students hear when a class moves.
+
+- **Classes review fixes, first batch** (Decision 335; no database change):
+  - The Classes list opens on **Upcoming** (soonest first), with **Past** and
+    **All**; Timetable-made Classes carry a "Timetable" tag; a School with
+    styles filters by a style dropdown.
+  - The Class page and **roll call show every booked student** (not the first
+    20); the roll call lists who still needs checking in first, by name.
+  - **Coaches and Branch Staff** get a read-only Classes page, and the coach
+    dashboard's "Coming up" shows their next Classes with Roll call and Show QR.
+  - The Class form uses the **Branch's time zone** (else the School's), takes
+    the cancellation charge as a normal amount ("7.50", not cents), refuses a
+    blank title, and lets cut-off dates be cleared.
+  - Archiving asks first; an archived Class can't be edited until unarchived.
+  - The API refuses a QR window that closes before the start and cut-offs
+    after the end; making a full Class unlimited offers seats to its waitlist;
+    a guest needs a Friend Pass (one per guest); a closed School takes no new
+    bookings or waitlist entries.
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "此课程的签到尚未开放。开放时间：{time}。",
     capacityBelowBooked: "已预约学员：{count} 名。请将名额设为 {count} 或以上，或先取消部分预约。",
     bookedClassesChoice: "此时段中部分即将开始的课程已有预约。请选择移动、取消或保持不变。",
+    classArchived: "此课程已归档。取消归档后才能编辑。",
+    qrWindowBeforeStart: "签到时段必须在课程开始后结束。",
+    bookingCutoffAfterEnd: "预约截止时间不能晚于课程结束时间。",
+    refundCutoffAfterEnd: "退款截止时间不能晚于课程结束时间。",
+    guestNeedsFriendPass: "嘉宾只能使用好友卡预约。你的会员资格只适用于你本人，不适用于嘉宾。",
+    guestPassRepeated: "每位嘉宾都需要自己的好友卡。同一张好友卡被选择了不止一次。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",

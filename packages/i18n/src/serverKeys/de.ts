@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Der Check-in für diesen Kurs ist noch nicht geöffnet. Öffnung: {time}.",
     capacityBelowBooked: "Bereits gebuchte Schüler: {count}. Setze die Kapazität auf {count} oder mehr oder storniere zuerst einige Buchungen.",
     bookedClassesChoice: "Einige bevorstehende Kurse aus diesem Zeitfenster haben Buchungen. Wähle, ob sie verschoben, abgesagt oder beibehalten werden sollen.",
+    classArchived: "Dieser Kurs ist archiviert. Hol ihn aus dem Archiv, um ihn zu bearbeiten.",
+    qrWindowBeforeStart: "Das Check-in-Fenster muss nach Kursbeginn enden.",
+    bookingCutoffAfterEnd: "Der Buchungsschluss darf nicht nach dem Kursende liegen.",
+    refundCutoffAfterEnd: "Die Erstattungsfrist darf nicht nach dem Kursende liegen.",
+    guestNeedsFriendPass: "Ein Gast kann nur mit einem Freundespass gebucht werden. Deine eigene Mitgliedschaft gilt für dich, nicht für deine Gäste.",
+    guestPassRepeated: "Jeder Gast braucht einen eigenen Freundespass. Derselbe Freundespass wurde mehrmals ausgewählt.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",
