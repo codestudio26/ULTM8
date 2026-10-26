@@ -4,6 +4,7 @@ import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { theme, spacing, fontSize, radius } from '../theme/tokens';
 import type { Lesson } from './curriculumQueries';
+import { useT } from '../i18n/I18nProvider';
 
 const Muted = ({ children }: { children: React.ReactNode }) => (
   <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>{children}</Text>
@@ -75,20 +76,21 @@ export function LessonVideoPlayer({
   onProgress: (seconds: number) => void;
   onCompleted: () => void;
 }) {
+  const t = useT();
   if (lesson.locked || !lesson.videoRef) return null; // most Lessons have no video yet — PENDING is the common case
 
   if (lesson.captionStatus === 'PENDING') return null; // nothing to show at all, per this slice's own task description
   if (lesson.captionStatus === 'PROCESSING') {
     return (
       <View style={styles.notice}>
-        <Muted>Video is being processed — check back soon.</Muted>
+        <Muted>{t('curriculum.videoPlayer.processing')}</Muted>
       </View>
     );
   }
   if (lesson.captionStatus === 'FAILED') {
     return (
       <View style={styles.notice}>
-        <Muted>Video processing failed.</Muted>
+        <Muted>{t('curriculum.videoPlayer.failed')}</Muted>
       </View>
     );
   }
@@ -98,7 +100,7 @@ export function LessonVideoPlayer({
   if (!videoUrl) {
     return (
       <View style={styles.notice}>
-        <Muted>Video playback URL not yet wired — backend needs to expose it (see getLessonPlaybackUrl's comment in this file).</Muted>
+        <Muted>{t('curriculum.videoPlayer.playbackUrlMissing')}</Muted>
       </View>
     );
   }

@@ -22,11 +22,21 @@ import {
 import { flattenLadder } from './ladder';
 import { Muted, Section } from './parts';
 import { formatLocale } from '../i18n/format';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CoachDashboard'>;
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
-const dayLabel = (d: string) => d.charAt(0) + d.slice(1).toLowerCase();
+const WEEKDAY_KEY: Record<string, TranslationKey> = {
+  MONDAY: 'coach.dashboard.weekdays.monday',
+  TUESDAY: 'coach.dashboard.weekdays.tuesday',
+  WEDNESDAY: 'coach.dashboard.weekdays.wednesday',
+  THURSDAY: 'coach.dashboard.weekdays.thursday',
+  FRIDAY: 'coach.dashboard.weekdays.friday',
+  SATURDAY: 'coach.dashboard.weekdays.saturday',
+  SUNDAY: 'coach.dashboard.weekdays.sunday',
+};
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 
 /**
@@ -37,6 +47,7 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale
  * Staff land here (Decisions 184 item 4, 186); the student side is one tap away.
  */
 export function CoachDashboardScreen({ navigation }: Props) {
+  const t = useT();
   const schoolId = useCoachSchoolId();
   const { claims } = useAuth();
   const me = claims?.sub ?? '';
@@ -45,8 +56,8 @@ export function CoachDashboardScreen({ navigation }: Props) {
   if (!schoolId) {
     return (
       <ScrollView contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
-        <Text style={{ fontSize: fontSize.body, fontWeight: '600' }}>You're not a coach at a School yet</Text>
-        <Muted>Open the invite link the School sent you to get started.</Muted>
+        <Text style={{ fontSize: fontSize.body, fontWeight: '600' }}>{t('coach.dashboard.notCoachTitle')}</Text>
+        <Muted>{t('coach.dashboard.notCoachHint')}</Muted>
       </ScrollView>
     );
   }
@@ -58,7 +69,7 @@ export function CoachDashboardScreen({ navigation }: Props) {
       <ClassesSection schoolId={schoolId} me={me} />
       <NotificationsSection onSeeAll={() => navigation.navigate('Notifications')} />
       {isStudentHere ? <MyTrainingSection schoolId={schoolId} me={me} /> : null}
-      <Button title="Student home" variant="secondary" onPress={() => navigation.navigate('Home')} />
+      <Button title={t('coach.dashboard.studentHome')} variant="secondary" onPress={() => navigation.navigate('Home')} />
     </ScrollView>
   );
 }
@@ -70,6 +81,7 @@ export function CoachDashboardScreen({ navigation }: Props) {
  * (GradingBoardScreen, CoachStudentScreen) already receives `schoolId` as a
  * navigation param from here, not from `useCoachSchoolId()` directly. */
 function SchoolSwitcher() {
+  const t = useT();
   const { setActiveCoachSchoolId } = useAuth();
   const schoolIds = useCoachSchoolIds();
   const activeSchoolId = useCoachSchoolId();
@@ -79,29 +91,30 @@ function SchoolSwitcher() {
 
   return (
     <View style={{ marginBottom: spacing[3] }}>
-      <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>School</Text>
+      <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>{t('coach.dashboard.schoolLabel')}</Text>
       <SearchablePickerField
-        options={names.map((s) => ({ code: s.id, name: s.name ?? 'Loading…' }))}
+        options={names.map((s) => ({ code: s.id, name: s.name ?? t('coach.dashboard.schoolLoading') }))}
         value={activeSchoolId ?? ''}
         onSelect={setActiveCoachSchoolId}
-        triggerAccessibilityLabel="Switch School"
+        triggerAccessibilityLabel={t('coach.dashboard.switchSchool')}
       />
     </View>
   );
 }
 
 function GradingSection({ schoolId, onOpenStyle }: { schoolId: string; onOpenStyle: (style: DisciplineResponse) => void }) {
+  const t = useT();
   const my = useMyGrading(schoolId);
   const disciplines = useDisciplines(schoolId);
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   return (
-    <Section title="Grading">
+    <Section title={t('coach.dashboard.gradingTitle')}>
       {my.isLoading || disciplines.isLoading ? (
         <ActivityIndicator />
       ) : my.error || disciplines.error ? (
-        <InlineError message={getApiErrorMessage(my.error ?? disciplines.error, 'Could not load your grading.')} />
+        <InlineError message={getApiErrorMessage(my.error ?? disciplines.error, t('coach.dashboard.gradingError'))} />
       ) : styles.length === 0 ? (
-        <Muted>No styles to grade yet. The School owner hasn't given you grading in any style.</Muted>
+        <Muted>{t('coach.dashboard.noStyles')}</Muted>
       ) : (
         styles.map((style) => <StyleSummary key={style.id} schoolId={schoolId} style={style} onPress={() => onOpenStyle(style)} />)
       )}
@@ -110,6 +123,7 @@ function GradingSection({ schoolId, onOpenStyle }: { schoolId: string; onOpenSty
 }
 
 function StyleSummary({ schoolId, style, onPress }: { schoolId: string; style: DisciplineResponse; onPress: () => void }) {
+  const t = useT();
   const board = useGradingBoard(schoolId, style.id, false);
   const items = board.data?.items ?? [];
   const ready = items.filter((i) => i.eligibility.boardColumn === 'READY_TO_GRADE').length;
@@ -117,19 +131,17 @@ function StyleSummary({ schoolId, style, onPress }: { schoolId: string; style: D
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Open the Grading Board for ${style.name}`}
+      accessibilityLabel={t('coach.dashboard.openBoard', { style: style.name })}
       onPress={onPress}
       style={{ minHeight: minTouchTarget, paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}
     >
-      <Text style={{ fontWeight: '600', color: theme.textAccent }}>{style.name} ›</Text>
+      <Text style={{ fontWeight: '600', color: theme.textAccent }}>{t('coach.dashboard.styleLink', { style: style.name })}</Text>
       {board.isLoading ? (
         <ActivityIndicator />
       ) : board.error ? (
-        <InlineError message={getApiErrorMessage(board.error, 'Could not load this board.')} />
+        <InlineError message={getApiErrorMessage(board.error, t('coach.dashboard.boardError'))} />
       ) : (
-        <Muted>
-          {ready} ready to grade · {gettingThere} getting there · {items.length} students
-        </Muted>
+        <Muted>{t('coach.dashboard.boardSummary', { ready, gettingThere, count: items.length })}</Muted>
       )}
     </Pressable>
   );
@@ -137,6 +149,7 @@ function StyleSummary({ schoolId, style, onPress }: { schoolId: string; style: D
 
 /** Weekly slots and upcoming classes where they are the instructor. */
 function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
+  const t = useT();
   const classes = useSchoolClasses(schoolId);
   const slots = useSchoolTimetable(schoolId);
   const weekly = useMemo(
@@ -155,32 +168,35 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   }, [classes.data, me]);
   const error = classes.error ?? slots.error;
   return (
-    <Section title="My classes">
+    <Section title={t('coach.dashboard.classesTitle')}>
       {classes.isLoading || slots.isLoading ? (
         <ActivityIndicator />
       ) : error ? (
-        <InlineError message={getApiErrorMessage(error, 'Could not load your classes.')} />
+        <InlineError message={getApiErrorMessage(error, t('coach.dashboard.classesError'))} />
       ) : weekly.length === 0 && upcoming.length === 0 ? (
-        <Muted>No classes yet. Classes the School assigns to you will show here.</Muted>
+        <Muted>{t('coach.dashboard.noClasses')}</Muted>
       ) : (
         <>
           {weekly.length > 0 ? (
             <View style={{ marginBottom: spacing[3] }}>
-              <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>Every week</Text>
+              <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>{t('coach.dashboard.everyWeek')}</Text>
               {weekly.map((s) => (
                 <Text key={s.id}>
-                  {dayLabel(s.weekday)} {s.startTime}–{s.endTime} · {s.title}
+                  {t('coach.dashboard.weeklySlot', {
+                    day: WEEKDAY_KEY[s.weekday] ? t(WEEKDAY_KEY[s.weekday]!) : s.weekday,
+                    start: s.startTime,
+                    end: s.endTime,
+                    title: s.title,
+                  })}
                 </Text>
               ))}
             </View>
           ) : null}
           {upcoming.length > 0 ? (
             <View>
-              <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>Coming up</Text>
+              <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>{t('coach.dashboard.comingUp')}</Text>
               {upcoming.map((c) => (
-                <Text key={c.id}>
-                  {shortDate(c.startDate)} · {c.title}
-                </Text>
+                <Text key={c.id}>{t('coach.dashboard.upcomingClass', { date: shortDate(c.startDate), title: c.title })}</Text>
               ))}
             </View>
           ) : null}
@@ -192,17 +208,18 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
 
 /** Messages are their notifications for now (Decision 184 item 2). */
 function NotificationsSection({ onSeeAll }: { onSeeAll: () => void }) {
+  const t = useT();
   const notifications = useNotifications();
   const all = notifications.data?.pages.flatMap((p) => p.items) ?? [];
   const unread = all.filter((n) => !n.read).length;
   return (
-    <Section title="Notifications">
+    <Section title={t('coach.dashboard.notificationsTitle')}>
       {notifications.isLoading ? (
         <ActivityIndicator />
       ) : notifications.error ? (
-        <InlineError message={getApiErrorMessage(notifications.error, 'Could not load notifications.')} />
+        <InlineError message={getApiErrorMessage(notifications.error, t('coach.dashboard.notificationsError'))} />
       ) : all.length === 0 ? (
-        <Muted>No notifications.</Muted>
+        <Muted>{t('coach.dashboard.noNotifications')}</Muted>
       ) : (
         all.slice(0, 5).map((n) => (
           <View key={n.id} style={{ marginBottom: spacing[2] }}>
@@ -211,27 +228,28 @@ function NotificationsSection({ onSeeAll }: { onSeeAll: () => void }) {
           </View>
         ))
       )}
-      <Button title={unread > 0 ? `See all (${unread} unread)` : 'See all'} variant="secondary" onPress={onSeeAll} />
+      <Button title={unread > 0 ? t('coach.dashboard.seeAllUnread', { unread }) : t('coach.dashboard.seeAll')} variant="secondary" onPress={onSeeAll} />
     </Section>
   );
 }
 
 /** Their own ranks, when they also train here (a coach keeps their student side, Decision 183). */
 function MyTrainingSection({ schoolId, me }: { schoolId: string; me: string }) {
+  const t = useT();
   const eligibility = useStudentEligibility(me, schoolId);
   const disciplines = useDisciplines(schoolId);
   const items = eligibility.data?.items ?? [];
   return (
-    <Section title="My training">
+    <Section title={t('coach.dashboard.trainingTitle')}>
       {eligibility.isLoading || disciplines.isLoading ? (
         <ActivityIndicator />
       ) : eligibility.error ? (
-        <InlineError message={getApiErrorMessage(eligibility.error, 'Could not load your ranks.')} />
+        <InlineError message={getApiErrorMessage(eligibility.error, t('coach.dashboard.ranksError'))} />
       ) : items.length === 0 ? (
-        <Muted>No rank yet. Your ranks will show here once you're graded.</Muted>
+        <Muted>{t('coach.dashboard.noRank')}</Muted>
       ) : (
         items.map((item) => (
-          <MyRank key={item.disciplineId} item={item} styleName={disciplines.data?.items.find((d) => d.id === item.disciplineId)?.name ?? 'Style'} />
+          <MyRank key={item.disciplineId} item={item} styleName={disciplines.data?.items.find((d) => d.id === item.disciplineId)?.name ?? t('coach.dashboard.styleFallback')} />
         ))
       )}
     </Section>
@@ -239,6 +257,7 @@ function MyTrainingSection({ schoolId, me }: { schoolId: string; me: string }) {
 }
 
 function MyRank({ item, styleName }: { item: StudentEligibility; styleName: string }) {
+  const t = useT();
   const ranks = useStyleRanks(item.disciplineId);
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
   const rung = ladder.find((r) => r.id === item.currentStripeId) ?? null;
@@ -247,9 +266,9 @@ function MyRank({ item, styleName }: { item: StudentEligibility; styleName: stri
     <View style={{ marginBottom: spacing[2] }}>
       <Text style={{ fontWeight: '600' }}>{styleName}</Text>
       <Muted>
-        {rung?.name ?? '—'}
-        {e?.hasNext ? ` · ${e.progressPercent ?? 0}% to next rank` : ''}
-        {e?.hasNext && e.eligible ? ' · Ready to grade' : ''}
+        {e?.hasNext
+          ? t(e.eligible ? 'coach.dashboard.rankProgressReady' : 'coach.dashboard.rankProgress', { rung: rung?.name ?? '—', percent: e.progressPercent ?? 0 })
+          : rung?.name ?? '—'}
       </Muted>
     </View>
   );

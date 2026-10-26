@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import type { Lesson } from './curriculumQueries';
+import { translate, useT } from '../i18n/I18nProvider';
 
 const Muted = ({ children }: { children: React.ReactNode }) => (
   <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>{children}</Text>
@@ -21,7 +22,7 @@ export function Chip({ label, tone }: { label: string; tone: 'accent' | 'success
 
 export function formatDuration(seconds: number | null | undefined): string | null {
   if (!seconds) return null;
-  return `${Math.round(seconds / 60)} min`;
+  return translate('curriculum.lesson.durationMinutes', { minutes: Math.round(seconds / 60) });
 }
 
 /** One Lesson on LessonsScreen — title, category context (shown once per group by
@@ -46,6 +47,7 @@ export function LessonRow({
   favorited: boolean;
   onPress: () => void;
 }) {
+  const t = useT();
   const duration = formatDuration(lesson.durationSeconds);
   return (
     <Pressable
@@ -61,20 +63,20 @@ export function LessonRow({
           {lesson.title}
         </Text>
         {favorited ? (
-          <Text style={{ color: theme.textAccent, fontSize: fontSize.body, marginLeft: spacing[2] }} accessibilityLabel="Favorited">
+          <Text style={{ color: theme.textAccent, fontSize: fontSize.body, marginLeft: spacing[2] }} accessibilityLabel={t('curriculum.lesson.favoritedLabel')}>
             ★
           </Text>
         ) : null}
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[1], flexWrap: 'wrap' }}>
-        {lesson.free ? <Chip label="Free" tone="success" /> : null}
-        <Chip label={lesson.format === 'LIVE' ? 'Live' : 'Prerecorded'} tone="accent" />
+        {lesson.free ? <Chip label={t('curriculum.lesson.free')} tone="success" /> : null}
+        <Chip label={lesson.format === 'LIVE' ? t('curriculum.lesson.live') : t('curriculum.lesson.prerecorded')} tone="accent" />
         {duration ? <Chip label={duration} tone="muted" /> : null}
       </View>
 
       {lesson.locked ? (
-        <Muted>Locked — not included in your current membership.</Muted>
+        <Muted>{t('curriculum.lesson.locked')}</Muted>
       ) : lesson.description ? (
         <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote, marginTop: spacing[1] }} numberOfLines={3}>
           {lesson.description}

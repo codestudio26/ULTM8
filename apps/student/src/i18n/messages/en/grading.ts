@@ -27,7 +27,6 @@ export const grading = {
       one: '{tick} {classType}: {counted} of {count} class',
       other: '{tick} {classType}: {counted} of {count} classes',
     },
-    days: '{tick} Days at this rank: {elapsed} of {required} · {percent}%',
     daysNeededToo: '{tick} Days at this rank: {elapsed} of {required} · {percent}% · needed too, not in the %',
     daysNoMinimum: '{tick} Days at this rank: {elapsed} (no minimum) · {percent}%',
     daysCounts: '{tick} Days at this rank: {elapsed} of {required} · {percent}% · counts toward the %',

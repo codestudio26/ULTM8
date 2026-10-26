@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
 import { LegalFooter } from '../components/LegalFooter';
 import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
+import { useT } from '../i18n/I18nProvider';
 import type { AppStackParamList } from './types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -17,6 +18,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
  * hold both roles at once (e.g. a Guardian who also trains themselves), so
  * this doesn't replace the Student options, it adds to them. */
 export function HomeScreen({ navigation }: Props) {
+  const t = useT();
   const { logout } = useAuth();
   const isGuardian = useIsGuardian();
   const isCoach = !!useCoachSchoolId();
@@ -24,25 +26,25 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>ULTM8 Student</Text>
-      {isCoach ? <Button title="Coach dashboard" onPress={() => navigation.navigate('CoachDashboard')} /> : null}
-      <Button title="My profile" variant="secondary" onPress={() => navigation.navigate('Profile')} />
-      <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
-      <Button title="Check in" onPress={() => navigation.navigate('QrCheckIn')} />
-      {isStudent ? <Button title="My grading" onPress={() => navigation.navigate('MyGrading')} /> : null}
-      <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
-      <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
-      <Button title="Payment history" variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} />
-      <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />
-      {isStudent ? <Button title="Payment methods" onPress={() => navigation.navigate('PaymentMethods')} /> : null}
-      {isStudent ? <Button title="Lessons" onPress={() => navigation.navigate('Lessons')} /> : null}
-      <Button title="Notifications" onPress={() => navigation.navigate('Notifications')} />
-      {isGuardian ? <Button title="My minors" onPress={() => navigation.navigate('MyMinors')} /> : null}
-      {isGuardian ? <Button title="Kid Mode" onPress={() => navigation.navigate('KidModePin')} /> : null}
+      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
+      {isCoach ? <Button title={t('home.coachDashboard')} onPress={() => navigation.navigate('CoachDashboard')} /> : null}
+      <Button title={t('home.myProfile')} variant="secondary" onPress={() => navigation.navigate('Profile')} />
+      <Button title={t('home.browseAcademies')} onPress={() => navigation.navigate('Academies')} />
+      <Button title={t('home.checkIn')} onPress={() => navigation.navigate('QrCheckIn')} />
+      {isStudent ? <Button title={t('home.myGrading')} onPress={() => navigation.navigate('MyGrading')} /> : null}
+      <Button title={t('home.myBookings')} onPress={() => navigation.navigate('MyBookings')} />
+      <Button title={t('home.myMemberships')} onPress={() => navigation.navigate('MyMemberships')} />
+      <Button title={t('home.paymentHistory')} variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} />
+      <Button title={t('home.waivers')} onPress={() => navigation.navigate('Waivers')} />
+      {isStudent ? <Button title={t('home.paymentMethods')} onPress={() => navigation.navigate('PaymentMethods')} /> : null}
+      {isStudent ? <Button title={t('home.lessons')} onPress={() => navigation.navigate('Lessons')} /> : null}
+      <Button title={t('home.notifications')} onPress={() => navigation.navigate('Notifications')} />
+      {isGuardian ? <Button title={t('home.myMinors')} onPress={() => navigation.navigate('MyMinors')} /> : null}
+      {isGuardian ? <Button title={t('home.kidMode')} onPress={() => navigation.navigate('KidModePin')} /> : null}
       {isGuardian ? (
-        <Button title="Needs your review" variant="secondary" onPress={() => navigation.navigate('PendingReview')} />
+        <Button title={t('home.needsReview')} variant="secondary" onPress={() => navigation.navigate('PendingReview')} />
       ) : null}
-      <Button title="Log out" variant="secondary" onPress={() => logout()} />
+      <Button title={t('home.logOut')} variant="secondary" onPress={() => logout()} />
       <LegalFooter />
     </Screen>
   );

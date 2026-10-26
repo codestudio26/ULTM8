@@ -18,6 +18,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSchoolTheme } from '../theme/SchoolThemeContext';
 import { useI18n, useT } from '../i18n/I18nProvider';
+import { DEFAULT_LOCALE } from '../i18n/locales';
 import {
   ActivityIndicator,
   FlatList,
@@ -170,17 +171,17 @@ export interface PhoneFieldProps {
 export function PhoneField({ value, onChange, defaultCountry, placeholder }: PhoneFieldProps) {
   const { t, locale } = useI18n();
   // Country names in the app's language where the engine has `Intl.DisplayNames`
-  // (same approach as packages/ui's web PhoneField); the frozen English list otherwise.
-  const countries = useMemo<Array<[CountryCode, string, string, string]>>(() => {
+  // (same approach as packages/ui's web PhoneField), else the frozen English list
+  // above. The English name stays searchable either way.
+  const countries = useMemo(() => {
     let names: Intl.DisplayNames | undefined;
     try {
-      names = locale === 'en' ? undefined : new Intl.DisplayNames([locale], { type: 'region' });
+      if (locale !== DEFAULT_LOCALE) names = new Intl.DisplayNames([locale], { type: 'region' });
     } catch {
       names = undefined;
     }
-    if (!names) return PHONE_COUNTRIES.map(([code, name, dial]) => [code, name, dial, name]);
-    const list = PHONE_COUNTRIES.map(([code, name, dial]): [CountryCode, string, string, string] => [code, names?.of(code) ?? name, dial, name]);
-    return list.sort((a, b) => a[1].localeCompare(b[1], locale));
+    const list = PHONE_COUNTRIES.map(([code, name, dial]) => [code, names?.of(code) ?? name, dial, name] as [CountryCode, string, string, string]);
+    return names ? list.sort((a, b) => a[1].localeCompare(b[1], locale)) : list;
   }, [locale]);
   const [country, setCountry] = useState<CountryCode | undefined>(() => {
     if (value) return parsePhoneNumberFromString(value)?.country ?? defaultCountry;

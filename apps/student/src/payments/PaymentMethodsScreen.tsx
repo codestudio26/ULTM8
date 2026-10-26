@@ -5,6 +5,7 @@ import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useEnrolledSchoolIds } from '../auth/AuthContext';
+import { useT } from '../i18n/I18nProvider';
 import { useEnrolledSchoolNames } from '../waivers/waiverQueries';
 import { useCreateSetupSession, useDeletePaymentMethod, usePaymentMethodsForSchools } from './paymentMethodQueries';
 
@@ -33,6 +34,7 @@ import { useCreateSetupSession, useDeletePaymentMethod, usePaymentMethodsForScho
  * was added for this narrow, self-resolving window.
  */
 export function PaymentMethodsScreen() {
+  const t = useT();
   const schoolIds = useEnrolledSchoolIds();
   const schoolNames = useEnrolledSchoolNames(schoolIds);
   const results = usePaymentMethodsForSchools(schoolIds);
@@ -40,7 +42,7 @@ export function PaymentMethodsScreen() {
   if (schoolIds.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: theme.textSecondary }}>You're not enrolled at a School yet — saved cards appear here once you are.</Text>
+        <Text style={{ color: theme.textSecondary }}>{t('payments.methods.notEnrolled')}</Text>
       </Screen>
     );
   }
@@ -68,6 +70,7 @@ function SchoolPaymentMethodRow({
   schoolName: string;
   result: { data?: { hasSavedPaymentMethod: boolean; brand?: string; last4?: string }; isLoading: boolean; error: unknown; refetch: () => void };
 }) {
+  const t = useT();
   const createSetupSession = useCreateSetupSession(schoolId);
   const deletePaymentMethod = useDeletePaymentMethod(schoolId);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +82,7 @@ function SchoolPaymentMethodRow({
       await WebBrowser.openAuthSessionAsync(checkoutUrl, 'ultm8-student://payment-methods/complete');
       result.refetch();
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not start the card-setup flow — please try again.'));
+      setError(getApiErrorMessage(err, t('payments.methods.setupFailed')));
     }
   }
 
@@ -88,7 +91,7 @@ function SchoolPaymentMethodRow({
     try {
       await deletePaymentMethod.mutateAsync();
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not remove your saved card — please try again.'));
+      setError(getApiErrorMessage(err, t('payments.methods.removeFailed')));
     }
   }
 
@@ -99,25 +102,25 @@ function SchoolPaymentMethodRow({
       {result.isLoading ? (
         <ActivityIndicator style={{ marginTop: spacing[2] }} />
       ) : result.error ? (
-        <ErrorBanner message={getApiErrorMessage(result.error, 'Could not load this School\'s saved card.')} />
+        <ErrorBanner message={getApiErrorMessage(result.error, t('payments.methods.loadFailed'))} />
       ) : (
         <>
           <Text style={{ color: theme.textSecondary, marginTop: spacing[1], marginBottom: spacing[2] }}>
             {result.data?.hasSavedPaymentMethod
               ? result.data.brand && result.data.last4
-                ? `${result.data.brand.toUpperCase()} •••• ${result.data.last4}`
-                : 'Card saved'
-              : 'No card saved.'}
+                ? t('payments.methods.cardSummary', { brand: result.data.brand.toUpperCase(), last4: result.data.last4 })
+                : t('payments.methods.cardSaved')
+              : t('payments.methods.noCard')}
           </Text>
           <View style={{ flexDirection: 'row', gap: spacing[2] }}>
             <Button
-              title={result.data?.hasSavedPaymentMethod ? 'Update card' : 'Add card'}
+              title={result.data?.hasSavedPaymentMethod ? t('payments.methods.updateCard') : t('payments.methods.addCard')}
               variant="secondary"
               onPress={handleAddOrUpdate}
               loading={createSetupSession.isPending}
             />
             {result.data?.hasSavedPaymentMethod ? (
-              <Button title="Remove" variant="destructive" onPress={handleRemove} loading={deletePaymentMethod.isPending} />
+              <Button title={t('payments.methods.remove')} variant="destructive" onPress={handleRemove} loading={deletePaymentMethod.isPending} />
             ) : null}
           </View>
         </>

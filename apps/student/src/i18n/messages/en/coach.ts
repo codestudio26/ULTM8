@@ -1,7 +1,5 @@
 /** English text: coach (Decision 323). */
 export const coach = {
-  /** Shared by the coach screens: a grading requirement line starts with
-   * {tick}, a ✓ when it is met and a · when it isn't. */
   dashboard: {
     notCoachTitle: "You're not a coach at a School yet",
     notCoachHint: 'Open the invite link the School sent you to get started.',
