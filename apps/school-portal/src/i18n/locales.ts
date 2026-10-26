@@ -1,5 +1,12 @@
+import { SERVER_KEY_LOADERS, directionFor as sharedDirectionFor, resolveLocale as sharedResolveLocale } from '@ultm8/i18n';
 import type { PartialMessages } from './types';
 import type { EnglishMessages } from './messages/en-GB';
+
+/** A locale's catalogue with its `server` text, which lives in `@ultm8/i18n`
+ * so the student app shares it (Decision 323). */
+function withServerText(code: string, catalogue: Promise<{ messages: PartialMessages<EnglishMessages> }>): Promise<PartialMessages<EnglishMessages>> {
+  return Promise.all([catalogue, SERVER_KEY_LOADERS[code]()]).then(([m, server]) => ({ ...m.messages, server }));
+}
 
 /** The portal's own text catalogues, keyed by the same BCP-47 codes
  * GET /settings/languages serves. English ships in the main bundle (it's also
@@ -9,37 +16,26 @@ import type { EnglishMessages } from './messages/en-GB';
 export const DEFAULT_LOCALE = 'en-GB';
 
 export const LOCALE_LOADERS: Record<string, () => Promise<PartialMessages<EnglishMessages>>> = {
-  'pt-BR': () => import('./messages/pt-BR').then((m) => m.messages),
-  es: () => import('./messages/es').then((m) => m.messages),
-  ar: () => import('./messages/ar').then((m) => m.messages),
-  fr: () => import('./messages/fr').then((m) => m.messages),
-  de: () => import('./messages/de').then((m) => m.messages),
-  it: () => import('./messages/it').then((m) => m.messages),
-  nl: () => import('./messages/nl').then((m) => m.messages),
-  pl: () => import('./messages/pl').then((m) => m.messages),
-  ru: () => import('./messages/ru').then((m) => m.messages),
-  tr: () => import('./messages/tr').then((m) => m.messages),
-  ja: () => import('./messages/ja').then((m) => m.messages),
-  ko: () => import('./messages/ko').then((m) => m.messages),
-  'zh-CN': () => import('./messages/zh-CN').then((m) => m.messages),
-  th: () => import('./messages/th').then((m) => m.messages),
+  'pt-BR': () => withServerText('pt-BR', import('./messages/pt-BR')),
+  es: () => withServerText('es', import('./messages/es')),
+  ar: () => withServerText('ar', import('./messages/ar')),
+  fr: () => withServerText('fr', import('./messages/fr')),
+  de: () => withServerText('de', import('./messages/de')),
+  it: () => withServerText('it', import('./messages/it')),
+  nl: () => withServerText('nl', import('./messages/nl')),
+  pl: () => withServerText('pl', import('./messages/pl')),
+  ru: () => withServerText('ru', import('./messages/ru')),
+  tr: () => withServerText('tr', import('./messages/tr')),
+  ja: () => withServerText('ja', import('./messages/ja')),
+  ko: () => withServerText('ko', import('./messages/ko')),
+  'zh-CN': () => withServerText('zh-CN', import('./messages/zh-CN')),
+  th: () => withServerText('th', import('./messages/th')),
 };
 
-/** Scripts written right to left. Matched on the language subtag, so `ar-EG`
- * is RTL too. */
-const RTL_LANGUAGES = new Set(['ar', 'he', 'fa', 'ur']);
-
-export function directionFor(locale: string): 'ltr' | 'rtl' {
-  return RTL_LANGUAGES.has(locale.split('-')[0].toLowerCase()) ? 'rtl' : 'ltr';
-}
+export const directionFor = sharedDirectionFor;
 
 /** Picks the catalogue for a stored preference: an exact match first, then the
  * same language with any region (`pt` → `pt-BR`), else English. */
 export function resolveLocale(preferred: string | null | undefined): string {
-  if (!preferred) return DEFAULT_LOCALE;
-  const known = [DEFAULT_LOCALE, ...Object.keys(LOCALE_LOADERS)];
-  const exact = known.find((code) => code.toLowerCase() === preferred.toLowerCase());
-  if (exact) return exact;
-  const language = preferred.split('-')[0].toLowerCase();
-  return known.find((code) => code.split('-')[0].toLowerCase() === language) ?? DEFAULT_LOCALE;
+  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(LOCALE_LOADERS)]);
 }

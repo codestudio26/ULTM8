@@ -10,7 +10,8 @@ import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './l
 import { setFormatLocale } from './format';
 import { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 import { translateByCode } from './server/codes';
-import type { Message, MessageKey, MessageTree, MessageVars, PartialMessages } from './types';
+import { formatMessage as format, lookup } from '@ultm8/i18n';
+import type { MessageKey, MessageTree, MessageVars } from './types';
 
 /**
  * The portal's translation layer (product-owner decision, 20 Oct 2026: text
@@ -56,30 +57,6 @@ function readStoredLocale(): string | null {
   } catch {
     return null;
   }
-}
-
-function lookup(tree: MessageTree | PartialMessages<EnglishMessages> | undefined, key: string): Message | undefined {
-  let node: unknown = tree;
-  for (const part of key.split('.')) {
-    if (!node || typeof node !== 'object') return undefined;
-    node = (node as Record<string, unknown>)[part];
-  }
-  if (typeof node === 'string') return node;
-  if (node && typeof node === 'object' && typeof (node as { other?: unknown }).other === 'string') return node as Message;
-  return undefined;
-}
-
-function format(message: Message, locale: string, vars?: MessageVars): string {
-  let text: string;
-  if (typeof message === 'string') {
-    text = message;
-  } else {
-    const count = typeof vars?.count === 'number' ? vars.count : 0;
-    const category = new Intl.PluralRules(locale).select(count);
-    text = message[category] ?? message.other;
-  }
-  if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
 }
 
 /** Every server Translation row for one locale, across all pages. */

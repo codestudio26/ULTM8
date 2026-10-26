@@ -1,0 +1,129 @@
+import type { PartialMessages } from '../types';
+import type { ServerKeys } from './en';
+
+/** Thai — first-draft translation (Decision 273) of the `server` text: the API's
+ * own English shown translated. Keys left out fall back to English. */
+export const server: PartialMessages<ServerKeys> = {
+  generic: {
+    network: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
+    badRequest: "ไม่สามารถดำเนินการคำขอนี้ได้ โปรดตรวจสอบรายละเอียดแล้วลองอีกครั้ง",
+    unauthorized: "คุณต้องลงชื่อเข้าใช้อีกครั้ง หรือข้อมูลการลงชื่อเข้าใช้ไม่ถูกต้อง",
+    forbidden: "คุณไม่มีสิทธิ์ทำสิ่งนี้",
+    notFound: "ไม่พบรายการนี้ อาจถูกลบไปแล้ว",
+    conflict: "ไม่สามารถทำได้ เนื่องจากมีสิ่งอื่นเปลี่ยนแปลงหรือขึ้นอยู่กับรายการนี้",
+    tooLarge: "ไฟล์นี้ใหญ่เกินกว่าจะอัปโหลดได้",
+    validation: "รายละเอียดบางอย่างไม่ถูกต้อง โปรดตรวจสอบแล้วลองอีกครั้ง",
+    tooManyRequests: "พยายามหลายครั้งเกินไป โปรดรอสักครู่แล้วลองอีกครั้ง",
+    serverError: "เซิร์ฟเวอร์มีปัญหา โปรดลองอีกครั้งในอีกสักครู่",
+    unexpected: "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
+  },
+  codes: {
+    classFull: "คลาสนี้เต็มแล้ว คุณสามารถเพิ่มนักเรียนในรายชื่อรอแทนได้",
+    waitlistFirst: "มีนักเรียนรอที่ว่างในคลาสนี้อยู่แล้ว เข้ารายชื่อรอเพื่อรอคิวของคุณ",
+    bookingClosed: "ปิดรับการจองคลาสนี้แล้ว แต่พนักงานยังเพิ่มคุณได้",
+    classBusy: "ขณะนี้มีคนจองคลาสนี้จำนวนมาก โปรดลองอีกครั้งในอีกสักครู่",
+    checkInNotOpen: "ยังไม่เปิดเช็กอินสำหรับคลาสนี้",
+    checkInOpensAt: "ยังไม่เปิดเช็กอินสำหรับคลาสนี้ จะเปิดเวลา {time}",
+    capacityBelowBooked: "นักเรียนที่จองแล้ว: {count} คน ตั้งจำนวนที่รับเป็น {count} ขึ้นไป หรือยกเลิกการจองบางรายการก่อน",
+    bookedClassesChoice: "คลาสที่กำลังจะมาถึงบางคลาสจากช่วงเวลานี้มีการจอง เลือกว่าจะย้าย ยกเลิก หรือคงไว้ตามเดิม",
+  },
+  errors: {
+    beltInHistoryDelete: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงลบไม่ได้",
+    beltInHistoryArchive: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงเก็บถาวรไม่ได้",
+    beltDeclaredDelete: "มีผู้ฝึกสอนแจ้งว่าถือสายคาดนี้ จึงลบไม่ได้",
+    beltDeclaredArchive: "มีผู้ฝึกสอนแจ้งว่าถือสายคาดนี้ จึงเก็บถาวรไม่ได้",
+    classHasDependents: "ไม่สามารถเก็บถาวรคลาสนี้ได้ ขณะที่ยังมี{items}",
+    branchHasDependents: "ไม่สามารถเก็บถาวรสาขานี้ได้ ขณะที่ยังมี{items} โปรดย้ายหรือนำออกก่อน",
+    instructorHasDependents: "ไม่สามารถเก็บถาวรผู้ฝึกสอนคนนี้ได้ ขณะที่ยังได้รับมอบหมายให้ดูแล{items} โปรดมอบหมายให้คนอื่นก่อน",
+    schoolHasSubscription: "โรงเรียนนี้มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่แล้ว — ยังไม่รองรับการเปลี่ยนแผน",
+    franchiseHasSubscription: "แฟรนไชส์นี้มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่แล้ว — ยังไม่รองรับการเปลี่ยนแผน",
+    schoolNoSubscription: "โรงเรียนนี้ไม่มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่ให้ยกเลิก",
+    franchiseNoSubscription: "แฟรนไชส์นี้ไม่มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่ให้ยกเลิก",
+    rankLocked: "นักเรียนคนนี้ยังไม่ถึงระดับที่ปลดล็อกคลาส {style} · {classType}",
+    rankLockedAnyStyle: "นักเรียนคนนี้ยังไม่ถึงระดับที่ปลดล็อกคลาส {classType} ในประเภทกีฬานี้",
+    rankLockedStaffOverride: "พนักงานสามารถยกเว้นข้อจำกัดนี้ได้สำหรับการจองหนึ่งครั้ง",
+    gradingPermissionMissing: "สิทธิ์การเลื่อนระดับของคุณสำหรับประเภทกีฬานี้ไม่รวมสิ่งนี้: {toggle} เจ้าของโรงเรียนสามารถเปิดใช้ได้",
+    slotHasBookings: {
+      other: "ไม่สามารถเก็บถาวรช่วงเวลานี้ในตารางเรียนได้ ขณะที่คลาสของช่วงเวลานี้ยังมีการจองที่กำลังจะมาถึง {count} รายการ",
+    },
+    waiverHasSignatures: {
+      other: "ไม่สามารถเก็บถาวรเอกสารสละสิทธิ์นี้ได้ ขณะที่ยังมีบันทึกการลงนามหรือการมอบหมาย {count} รายการ (บันทึกทางกฎหมาย) แต่ยังแก้ไขเอกสารนี้ได้โดยตรงหากจำเป็น",
+    },
+    styleHasStudents: {
+      other: "มีนักเรียน {count} คนที่มีระดับในประเภทกีฬานี้ จึงลบไม่ได้",
+    },
+    beltHeldDelete: {
+      other: "มีนักเรียน {count} คนที่ถือสายคาดนี้ จึงลบไม่ได้",
+    },
+    beltHeldArchive: {
+      other: "มีนักเรียน {count} คนที่ถือสายคาดนี้ จึงเก็บถาวรไม่ได้",
+    },
+    items: {
+      upcomingBookings: {
+        other: "การจองที่กำลังจะมาถึง {count} รายการ",
+      },
+      waitlistStudents: {
+        other: "นักเรียนในรายชื่อรอ {count} คน",
+      },
+      classes: {
+        other: "คลาส {count} คลาส",
+      },
+      instructorProfiles: {
+        other: "โปรไฟล์ผู้ฝึกสอน {count} รายการ",
+      },
+      homeStudents: {
+        other: "นักเรียนที่ใช้สาขานี้เป็นสาขาหลัก {count} คน",
+      },
+      roleGrants: {
+        other: "บทบาทพนักงานหรือผู้ฝึกสอนที่ใช้งานอยู่ซึ่งผูกกับสาขานี้ {count} รายการ",
+      },
+      upcomingClasses: {
+        other: "คลาสที่กำลังจะมาถึง {count} คลาส",
+      },
+      activeSlots: {
+        other: "ช่วงเวลาที่ใช้งานอยู่ในตารางเรียน {count} ช่วง",
+      },
+    },
+  },
+  notifications: {
+    spotOpenedTitle: "มีที่ว่างแล้ว",
+    spotOpenedBody: "มีที่ว่างใน {class} แล้ว รีบจองเลย — หากคุณไม่จอง ที่นี้จะส่งต่อให้คนถัดไปในรายชื่อรอ",
+    readyToGradeTitle: "พร้อมสอบ",
+    readyToGradeBody: "{name} พร้อมสอบเลื่อนเป็น {rank} ({style})",
+    readyToGradeBodyNextRank: "{name} พร้อมสอบเลื่อนเป็นระดับถัดไป ({style})",
+    paymentRestrictedTitle: "นักเรียนถูกจำกัดการชำระเงิน",
+    paymentRestrictedBody: "นักเรียนคนหนึ่งในโรงเรียนของคุณถูกจำกัดให้ชำระเงินด้วยเงินสดหรือโอนเงินผ่านธนาคารเท่านั้น หลังจากแพ้ข้อโต้แย้งการชำระด้วยบัตรหลายครั้ง",
+    waiverRequestTitle: "มีคำขอให้ลงนามเอกสารสละสิทธิ์",
+    waiverRequestBody: "คุณได้รับเชิญให้ลงนามเอกสารสละสิทธิ์ต่อไปนี้: {waiver}",
+    newStripeTitle: "แถบใหม่!",
+    promotedTitle: "เลื่อนระดับแล้ว!",
+    rankUpdatedTitle: "อัปเดตระดับแล้ว",
+    youEarned: "คุณได้รับ {rank} แล้ว ({style})",
+    youPromoted: "คุณได้เลื่อนเป็น {rank} แล้ว ({style})",
+    youAdjusted: "ระดับของคุณถูกปรับเป็น {rank} ({style})",
+    childEarned: "{name} ได้รับ {rank} แล้ว ({style})",
+    childPromoted: "{name} ได้เลื่อนเป็น {rank} แล้ว ({style})",
+    childAdjusted: "ระดับของ {name} ถูกปรับเป็น {rank} ({style})",
+    yourChildEarned: "บุตรของคุณได้รับ {rank} แล้ว ({style})",
+    yourChildPromoted: "บุตรของคุณได้เลื่อนเป็น {rank} แล้ว ({style})",
+    yourChildAdjusted: "ระดับของบุตรของคุณถูกปรับเป็น {rank} ({style})",
+    disputeLostTitle: "แพ้ข้อโต้แย้งการชำระเงิน",
+    disputeResolvedTitle: "ข้อโต้แย้งการชำระเงินได้รับการแก้ไขแล้ว",
+    disputeOpenedTitle: "มีการเปิดข้อโต้แย้งการชำระเงิน",
+    membershipPayment: "การชำระค่าสมาชิก",
+    franchiseFeeCharge: "การเรียกเก็บค่าธรรมเนียมแฟรนไชส์",
+    disputeLostBody: "แพ้ข้อโต้แย้งเกี่ยวกับ{charge}จำนวน {amount} — รายการนี้ไม่ถือว่าชำระแล้วอีกต่อไป",
+    disputeResolvedBody: "ข้อโต้แย้งเกี่ยวกับ{charge}จำนวน {amount} ได้รับการตัดสินให้คุณเป็นฝ่ายชนะ",
+    disputeOpenedBody: "ผู้ชำระเงินได้โต้แย้ง{charge}จำนวน {amount} (สถานะ: {status})",
+    disputeStatus: {
+      warning_needs_response: "สอบถามข้อมูล ต้องตอบกลับ",
+      warning_under_review: "สอบถามข้อมูล อยู่ระหว่างตรวจสอบ",
+      warning_closed: "ปิดการสอบถามข้อมูลแล้ว",
+      needs_response: "ต้องตอบกลับ",
+      under_review: "อยู่ระหว่างตรวจสอบ",
+      won: "ชนะ",
+      lost: "แพ้",
+      prevented: "ป้องกันแล้ว",
+    },
+  },
+};
