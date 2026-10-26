@@ -164,8 +164,12 @@ describeIfDb('chargeback-pattern-restriction job (Decision 68/112)', () => {
     expect(updated.paymentRestrictedAt).not.toBeNull();
 
     expect(fakeNotificationFanoutQueue.addBulk).toHaveBeenCalledTimes(1);
-    const jobs = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0] as Array<{ data: { userId: string } }>;
+    const jobs = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0] as Array<{ data: { userId: string; body: string } }>;
     expect(jobs.map((j) => j.data.userId)).toEqual([fixture.owner.id]);
+    // Names the Student (Decision 333).
+    expect(jobs[0].data.body).toBe(
+      'Chargeback Student, a Student at your School, has been restricted to Cash/Bank Transfer payment methods only, following a pattern of lost Stripe disputes.',
+    );
   });
 
   it('a 3rd lost dispute after already restricted is idempotent — no duplicate notification', async () => {

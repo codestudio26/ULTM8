@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SelectField } from '@ultm8/ui';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
-import { useNotifications } from '../notifications/notificationQueries';
+import { useNotificationCounts } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
 import { AccountMenu } from './AccountMenu';
@@ -34,7 +34,7 @@ function nativeName(code: string, fallback: string): string {
 /**
  * App-shell header — rendered once by AppShell, above every page's own
  * content, not just Instructors'. Notifications and the profile are wired to
- * real data (GET /notifications/me, GET/PATCH /users/me), and the avatar
+ * real data (GET /notifications/me/counts, GET/PATCH /users/me), and the avatar
  * block opens the account menu (AccountMenu.tsx); language is a real,
  * working preference backed by the confirmed GET /settings/languages list —
  * picking one saves it to the profile and switches the portal's text
@@ -43,13 +43,15 @@ function nativeName(code: string, fallback: string): string {
  */
 export function TopBar() {
   const { claims } = useAuth();
-  const { data: notifications } = useNotifications();
+  // The counts endpoint covers every page and leaves snoozed notifications out,
+  // the same Unread number the Notifications page shows.
+  const { data: counts } = useNotificationCounts();
   const { data: me } = useCurrentUser();
   const { data: languages } = useLanguages();
   const updateCurrentUser = useUpdateCurrentUser();
   const { t, locale, rememberLocale } = useI18n();
 
-  const hasUnread = (notifications?.items ?? []).some((n) => !n.read);
+  const hasUnread = (counts?.unread ?? 0) > 0;
 
   return (
     <>
