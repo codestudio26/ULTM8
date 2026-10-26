@@ -81,7 +81,7 @@ export class SchoolsController {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
   }
 
-  /** The Student's full profile, for the staff edit form (Decision 324) — same
+  /** The Student's full profile, for the staff edit form (Decision 341) — same
    * access as the PATCH below. */
   @ApiOkResponse({ type: UserResponseDto })
   @Get(':id/students/:studentId/profile')

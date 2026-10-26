@@ -146,6 +146,17 @@ export class BookingsService {
     // RLS-visible into this School the same way the actual Booking create()
     // below already relies on (it also runs under `studentId`'s context).
     await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
+    // Decision 110: a closed School accepts no new Bookings, same as every other
+    // write there (Classes review C16: a Student could still book after closing).
+    await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
+    // Subscription or Class Pack never covers a guest, and one pass covers one
+    // guest (Classes review C13: one Subscription sent three times booked three
+    // free guests).
+    const guestIds = dto.attendeeMembershipIds ?? [];
+    if (new Set(guestIds).size !== guestIds.length) {
+      throw new BadRequestException({ code: 'GUEST_PASS_REPEATED', message: 'Each guest needs their own Friend Pass: the same pass was listed more than once.' });
+    }
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       if (resolvedClass.termsWaiverRequired) {
@@ -542,7 +553,7 @@ export class BookingsService {
 
   /**
    * GET /students/{id}/bookings/next — the student page's "Upcoming booking"
-   * (Decision 324, S14): the soonest UPCOMING booking whose class hasn't
+   * (Decision 341, S14): the soonest UPCOMING booking whose class hasn't
    * started yet, and how many more there are. The paged list above is in id
    * order, so the page used to pick the soonest from its first 20 only.
    * Staff who cover this student only (the owner, or by the Grading Board's
@@ -734,6 +745,10 @@ export class BookingsService {
     }
     if (membership.scopedClassId && membership.scopedClassId !== classId) {
       throw new BadRequestException(`Membership ${membershipId} is scoped to a different Class.`);
+    }
+    const plan = await tx.membershipPlan.findUnique({ where: { id: membership.membershipPlanId }, select: { type: true } });
+    if (plan?.type !== 'FRIEND_PASS') {
+      throw new BadRequestException({ code: 'GUEST_NEEDS_FRIEND_PASS', message: 'A guest can only be booked with a Friend Pass. Your own membership covers you, not your guests.' });
     }
     if (membership.classesRemaining === null) {
       return membership;

@@ -22,7 +22,7 @@ export class StudentSummaryResponseDto {
   email!: string;
 
   /** A child's account a Guardian manages (GuardiansService.createMinor);
-   * the Students page shows "Managed by a Guardian" for the email (Decision 324). */
+   * the Students page shows "Managed by a Guardian" for the email (Decision 341). */
   @ApiProperty()
   guardianManaged!: boolean;
 

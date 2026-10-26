@@ -1015,7 +1015,7 @@ The translations are first drafts: the native-speaker review from zero before la
 
 ### Not yet
 - **Paying the fee in the app**, and "Credit on your balance": paying an accepted fee belongs to staff-created charges (Decision 303), which aren't built; the app says to pay as the School asks.
-- The **Home** card and **Ask for a belt correction** (B8) from the design.
+- **Ask for a belt correction** (B8) from the design. The **Home** card is built (26 Oct 2026): one "Promotion fee" card per fee waiting for an answer, the student's own and each of a guardian's children's; **See and answer** opens My grading with that fee open.
 
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (9, 4 new) and the full suite (146, 26 files).

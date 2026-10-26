@@ -4956,7 +4956,136 @@ Platform Admin itself stays English (Decision 273). Who the native-speaker revie
 
 User (Code), 26 Oct 2026: *"we will need for the students app too. Make sure it is done"*; *"delete anything that has been done, so we can start fresh from zero and make sure it is done properly"*; and choosing the recommended options for the languages (the same 15), how the app picks its language (phone's language, can change) and overrides (yes, same as the portal).
 
-## Decision 324 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
+## Decision 324 — Curriculum: fourteen bug fixes (archived lessons, playlists, video uploads, blank text)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Curriculum section review of 26 Oct 2026 (bugs C1–C19, two passes, on master `685cc0c`). This decision covers the fourteen fixes that needed no product choice; C2, C7, C8, C11 and replacing a ready video (C5) wait on the product owner's answers, and C19 belongs with the v1.3 video work (Decision 267).
+
+### Decision
+
+1. **Clearing a lesson's fields (C1).** `PATCH /lessons/:id` takes `null` for `durationSeconds`, `description` and `instructorId` to clear them; leaving a field out still keeps it. The edit form sends `null` for an emptied field, so emptying one no longer silently keeps the old value.
+2. **Archived lessons are for staff only, on every route (C3).** `GET /lessons/:id` answers 404, and `GET /skills/:id/lessons` and `GET /schools/:id/curriculum/lessons?includeArchived=true` leave them out, for anyone who isn't staff at the School. A student's favourite or playlist entry for an archived lesson is kept (Unarchive brings it back) but isn't listed (favourites) or shows as unavailable (playlists). Decision 226's rule that students never see an archived lesson now holds everywhere, not only on the student list.
+3. **Video uploads not set up (C4).** While the Cloudflare account isn't configured, `POST …/video-upload-url` answers 503 "Video uploads aren't set up yet" instead of a bare 500, and a new `GET /schools/:id/curriculum/video-uploads` says `{ enabled }`, so the portal greys out Upload video with that sentence.
+4. **A stuck upload fails instead of processing forever (C5).** The video poll job marks a lesson FAILED when Cloudflare Stream reports an error, or when the one-time upload link expired with no file sent (Stream's `status.state` and `uploadExpiry`), which brings the Upload video button back. The portal also offers "Upload again" on a lesson that is still processing. Like the rest of the video pipeline, unverified against a real account until v1.3.
+5. **Blank text is refused (C6, C15).** Lesson titles, comments and playlist names are trimmed, and empty ones are refused, the same rule category names already had.
+6. **Playlists survive a student leaving a School (C14).** A playlist's items are read without joining their lessons; a lesson the student can no longer read (they left its School, or it is archived) comes back `available: false` with an empty title, still removable and reorderable. Before, one such lesson made the whole playlist fail with a server error. `PlaylistItemResponseDto` gains `available`.
+7. **Adding a lesson to a playlist twice changes nothing (C16)**, like favouriting twice, instead of a generic conflict error.
+8. **A closed School takes no new comments (C17).** Others read comments, so they follow Decision 110's read-only rule; favourites and watch progress are the student's own and stay allowed.
+9. **Duration is capped at 24 hours (C18).**
+10. **Smaller page fixes:** the grading page's "Watch:" lesson links leave out archived lessons (C9); the lesson form still shows a skill the lesson already has from an archived style, marked "(archived style)", so it can be unticked (C10); "No category" says "Put lessons in a category to choose their order." (C12); and the delete warning says students' favourites, playlist entries, watch progress and comments on the lesson go too, pointing to Archive (C13). All new text in 15 languages.
+
+### What this does NOT resolve
+
+Coaches' and Branch Staff's access to the Curriculum page (C2), deleting categories (C7), duration in minutes (C8), a comments panel (C11), replacing a ready video (C5) and what a "Live" lesson means: asked of the product owner on 26 Oct 2026. Signed playback links for members-only videos (C19) need the real Cloudflare account (v1.3).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"find the best solutions for the bugs and have another pass"*, then *"build it and ask me"* on the fix plan in the Curriculum Section Guide.
+
+## Decision 326 — Curriculum: the product owner's six answers (coaches read only, category delete, minutes and seconds, comments panel)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the six questions Decision 324 left open (C2, C5's replace, C7, C8, C11, and what "Live" means), each answered on its own decision card on 26 Oct 2026.
+
+### Decision
+
+1. **Coaches and Branch Staff see the curriculum read-only (C2).** They get the Curriculum page in their menu: lessons, categories (as headings) and comments, with no add, edit, reorder, upload, archive or delete. The server is tightened to match: creating or editing a lesson, uploading its video, and adding, renaming, reordering or deleting categories now need the School owner (`assertSchoolOwner`), not any staff member. **This replaces Decision 104's "Instructor/Staff-authored"** for lessons; Decision 104's School scoping is unchanged. Free, Archive and Delete were already owner-only (Decisions 190, 198, 226).
+2. **The owner deletes a category; its lessons move to "No category" (C7).** `DELETE /curriculum/categories/:id`, owner only; the existing `ON DELETE SET NULL` foreign key moves the lessons, nothing else is lost. The confirmation says how many lessons move. New migration `20261128000000_lesson_category_delete` grants DELETE on `LessonCategory` with an owner-only RLS policy.
+3. **Duration in minutes and seconds (C8).** The lesson form has two boxes, minutes and seconds (0–59), still saved as `durationSeconds` (24-hour cap from Decision 324). The portal and the student app list it as `m:ss`, or `h:mm:ss` from an hour up.
+4. **A comments panel; coaches read, the owner deletes (C11).** Each lesson response carries `commentCount`. On the portal each lesson has "Comments (n)", opening its comments oldest first. Anyone with the page reads them; only the School owner deletes one. `DELETE /comments/:id` now allows the comment's author or the School owner, not any staff member. An archived lesson's comments stay hidden until it is unarchived.
+5. **Replacing a ready video: not now (C5).** Upload stays offered only before a video is ready, after it fails, or while it is processing.
+6. **A real "Live" lesson is planned, not built (Q2).** The product owner wants Live to become a real live lesson (a date, a time and a joining link, possibly tied to a class), as later work. Until it is specified, `format: LIVE` stays a label only. **[UNRESOLVED]** for that future work: whether it is tied to a Class or TimetableSlot, which video-call tool provides the link, who may join (membership rules as for lessons, or the class's bookings), whether it is recorded and becomes a prerecorded lesson afterwards, and reminders.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, on the six decision cards in the Curriculum thread: "Read-only for them", "Owner deletes, lessons move", "Minutes and seconds", "Owner only, with a panel", "Not now", "Plan a real live lesson".
+---
+
+## Decision 294 — Branches list: City means the city, one search box, every Branch A to Z
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 252 and 276
+
+A test of the Branches City filter found it searched the whole one-line address. "London" also found "22 London Road, Manchester", "Lyon" found "Rue de Lyon, Paris", and "Sao Paulo" found nothing because of the accent. `%` and `_` acted as wildcards. The list also returned 20 Branches per page ordered by id, and the portal never asked for a second page, so a School with more than 20 Branches saw only 20 on the Branches page and in every Branch picker. The product owner chose the fixes plus the extras: *"Fixes plus the extras"*.
+
+### Decision
+
+1. **City matches the city field only** (`addressCity`), ignoring case and accents. A Branch saved before Decision 276 has no city field, so for it alone the City filter falls back to its free-text address containing the city.
+2. **The City filter is a dropdown** of the School's own cities with a count each, e.g. "London (3)", instead of a free-text box.
+3. **One search box** finds a Branch by name, city or postcode. Case and accents are ignored, and spaces in a postcode don't matter ("sw1a1aa" finds "SW1A 1AA"). Street names are not searched.
+4. **A Country filter**, shown only when the School has Branches in more than one country.
+5. **`%` and `_` are plain characters.** Matching is done in the API's own code rather than SQL, because the database has no `unaccent` extension and a School's Branch list is small.
+6. **Every Branch, A to Z.** The list is sorted by name (case and accents ignored). Paging uses the last row's name and id, so a page never skips or repeats a Branch. The portal loads every page, on the Branches page and in every Branch picker.
+7. **Students and upcoming classes per Branch.** Each row shows how many Students have it as their home Branch and how many classes there are from now on, not counting archived ones. Read only; nothing about how either is stored changes.
+
+### Recorded by
+
+User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.
+
+---
+
+## Decision 332 — Timetable review fixes: archived slots stay off, new slots bookable at once, capacity cuts and booking-rule changes on booked classes
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 322 §5 and §6 · **Builds on:** Decisions 172, 226
+
+A review of the Timetable section (26 Oct 2026) found 18 bugs (T1–T18). The product owner chose to fix 17 of them in one change, with the two open choices (T5, T6) settled as proposed: *"Build all 17, my way for T5/T6"*. T7 (the calendar draws slot templates rather than the real Classes) is left for its own change.
+
+### Decision
+
+1. **The nightly class run skips archived slots, closed Schools and archived Branches** (T1, T2). Before, archiving a slot removed its Classes and the 02:00 UTC run put them back.
+2. **A new or unarchived slot is bookable at once** (T3): its next 4 weeks of Classes are created when it is saved, not at the next nightly run.
+3. **Raising a slot's capacity offers the new seats to the waitlist** (T4), the same way raising one Class's capacity already does (Decision 322 §3).
+4. **A capacity cut below the seats booked** (T5, amends Decision 322 §6) is still refused with the count, unless the owner confirms with **Keep**: then every Class takes the new capacity except those already fuller than it, which keep their current size. Nobody's booking is cancelled. Cancel is not offered for a capacity cut.
+5. **Booking-rule changes reach booked Classes only if the owner says so** (T6, adds to Decision 322 §5). A change to the waiver requirement, membership inclusion, booking or refund cut-offs, QR window or cancellation charge always reaches unbooked upcoming Classes. For Classes with bookings the owner chooses **Apply** (they take the new rules) or **Keep** (they keep the rules they were booked under). The title, description, picture and coach always follow, booked or not.
+6. **Slot times are checked** (T8): the end is after the start; a break has both ends or neither, ends after it starts, and falls inside the class times. A slot's title is trimmed and can't be blank.
+7. **A break can be removed** (T9) by clearing both break times.
+8. **Archive asks first** (T10), like Branches.
+9. **The Timetable page needs a School** (T11): someone with no School (Branch Staff, coaches) is sent to their home page instead of a blank page.
+10. **The month view shows no booking dots for archived slots** (T12), and **a cancelled or finished Class says so** when someone tries to book it (T13).
+11. **Every slot loads** (T14): the page asks for every page of slots, not just the first 20.
+12. **A date the slot cancelled comes back when the slot does** (T15): Classes the slot cancels are unlinked from it, so switching the slot back on recreates that date. A single Class cancelled on the Classes page stays linked and does not come back by itself.
+13. **The cancellation notice gives the class's own local date and time** (T16), in the Branch's time zone, then the School's, then UTC (Decision 172).
+14. **A slot can't be put on an archived Branch** (T17).
+15. **Students on the waitlist are told when a class moves** (T18), as booked students already were.
+
+### What this does NOT resolve
+
+T7 (calendar from real Classes), a Timetable view for Branch Staff and coaches, and Decision 319 (closures, week start, calendar feeds, embed, filters) are still open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timetable fixes decision.
+
+---
+
+## Decision 335 — Classes review fixes, first batch
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner (fix plan, Classes review)
+**Resolves:** Classes review findings C2, C3, C4, C6, C7, C8 (date checks), C9, C10, C11, C12, C13, C16, C17. No database change.
+
+### Decision
+
+1. **Lists that must be complete load every page.** A Class's bookings (Class page and roll call) are no longer cut off at 20. The roll call lists students still to check in first, then those present, then cancelled ones, by name.
+2. **The Classes list shows Upcoming by default**, soonest first (a Class in progress counts as upcoming), with Past (newest first) and All. `GET /schools/:id/classes` takes `when=upcoming|past|all` and `instructorId`; leaving `when` out keeps the old order for existing callers. Classes made by the Timetable carry a "Timetable" tag (`timetableSlotId` on the response).
+3. **Coaches and Branch Staff can open the Classes list**, read-only, to reach each Class's roll call and QR code. The coach dashboard's "Coming up" asks the server for that coach's next Classes and links to both.
+4. **Capacity:** making a Class unlimited offers a seat to everyone on its waitlist (before, they were stuck while others booked past them). Decision 322 item 6 still applies to cuts.
+5. **A Class needs a real title** (spaces only is refused; extra spaces are trimmed).
+6. **Date checks:** the QR check-in window can't close before the start; the booking and refund cut-offs can't be after the end. Cut-off dates can be cleared.
+7. **An archived Class can't be edited** until it is unarchived. Archiving now asks for confirmation.
+8. **The School's styles filter the list** (a dropdown), instead of an exact-spelling text box. Schools with no styles keep the text box.
+9. **Money is typed in normal amounts** ("7.50"), stored in hundredths as before. Shared field: `apps/school-portal/src/lib/MoneyField.tsx`.
+10. **Class times use the Class's own clock:** its Branch's time zone, else the School's, else UTC, in the form and the list, wherever the person editing is.
+11. **Guests need a Friend Pass** (SKILL.md §10): the organizer's Subscription or Class Pack covers only them, and one pass covers one guest.
+12. **A closed School takes no new bookings or waitlist entries** (Decision 110).
+
+### What this does NOT resolve
+
+Waiting on the product owner: whether one-off Classes need their own ticket (C1, `membershipInclusion`), moving a booked Class's date or Branch (C5, C14), creating a Class in the past, and Cancel class (PR #273). C15 (a plan scoped to an archived Class) is in the Memberships fixes.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"have another pass for solutions until you get confident of the result and start building it"*, on the Classes fix plan.
+
+## Decision 341 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner approval of the Students fix plan (S1, S3, S4, S5 part 1, S6–S14) · **Plan:** the Students Fix Plan (25–26 Oct 2026), built from the Students section review
 
@@ -4985,13 +5114,13 @@ The Students section review reproduced 14 bugs against the real API and portal. 
 
 User, 26 Oct 2026, after the fix plan and four review passes: *"Build it .. and ask me what's on me"*. S2 and S5 part 2 were put to the user as separate questions.
 
-## Decision 325 — Only the School owner may change a birth date across the 18th birthday
+## Decision 342 — Only the School owner may change a birth date across the 18th birthday
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision (Students review, S5 part 2)
 
 ### Background
 
-A student's age decides whether a Guardian must consent for them (Decision 67). Staff edit a student's profile on their behalf, including the date of birth, so a coach could turn a 10-year-old into an adult (or the reverse) and switch the consent rules on or off. Decision 324 already refuses future, impossible and over-120-year dates.
+A student's age decides whether a Guardian must consent for them (Decision 67). Staff edit a student's profile on their behalf, including the date of birth, so a coach could turn a 10-year-old into an adult (or the reverse) and switch the consent rules on or off. Decision 341 already refuses future, impossible and over-120-year dates.
 
 ### Decision
 

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Students page review fixes (Decision 324), in a real browser against the
+ * Students page review fixes (Decision 341), in a real browser against the
  * real API: the edit form opens filled in, Language and Currency are lists,
  * a Guardian-managed child shows no placeholder email, a former student's
  * page, the real next booking, and coaches typing an owner-only address.

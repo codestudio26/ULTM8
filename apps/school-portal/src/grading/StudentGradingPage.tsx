@@ -40,7 +40,7 @@ import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
 import { formatHours } from './hours';
 
-type Lesson = { id: string; title: string; skillIds: string[] };
+type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
 
 /** A date the API stores as the start of a local day, shown as that day.
  * Uses the browser's time zone, like every date on the portal today (see
@@ -76,7 +76,7 @@ export function StudentGradingPage() {
   // include.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
   const my = useMyGrading(schoolId);
-  // Former students too, so their page still shows their name (Decision 324).
+  // Former students too, so their page still shows their name (Decision 341).
   const students = useStudents(schoolId, 'ALL');
   const disciplines = useDisciplines(schoolId);
   const eligibility = useStudentEligibility(studentId, schoolId);
@@ -226,7 +226,7 @@ export function StudentGradingPage() {
 }
 
 /** The soonest upcoming booking whose class hasn't started, as the API picks
- * it across all of the student's bookings (Decision 324). */
+ * it across all of the student's bookings (Decision 341). */
 function UpcomingBooking({ next, moreUpcoming }: { next: StudentBookingResponse | null; moreUpcoming: number }) {
   const t = useT();
   if (!next) {
@@ -814,7 +814,8 @@ function SkillsForNext({
         {ids.map((skillId) => {
           const skill = skills.find((s) => s.id === skillId);
           const status = statuses.find((s) => s.skillId === skillId)?.status ?? 'NOT_STARTED';
-          const linked = lessons.filter((l) => l.skillIds.includes(skillId));
+          // Archived lessons are hidden from students, so not offered here (C9).
+          const linked = lessons.filter((l) => l.skillIds.includes(skillId) && !l.archivedAt);
           const name = skill?.name ?? t('grading.student.skills.fallbackName');
           return (
             <li key={skillId} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

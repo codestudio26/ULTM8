@@ -33,7 +33,7 @@ export class BranchesController {
     @Param('schoolId') schoolId: string,
     @Query() query: BranchesQueryDto,
   ) {
-    return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.city, query.includeArchived, query.search);
+    return this.branchesService.findAllForSchool(user.sub, schoolId, query);
   }
 
   @ApiOkResponse({ type: BranchResponseDto })

@@ -459,7 +459,7 @@ export class RoleGrantsService {
       if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
         await tx.staffPermission.updateMany({ where: { userId: targetUserId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
       }
-      // A home branch belongs to an enrolment (Decision 324, S13): left
+      // A home branch belongs to an enrolment (Decision 341, S13): left
       // behind, it blocked re-enrolling (one per School and student) and
       // archiving the branch (Decision 252). Re-enrolling picks one again.
       if (grant.role === 'STUDENT') {

@@ -54,7 +54,7 @@ export function useInviteStudent() {
 }
 
 /** One Student's full profile, for the staff edit form (GET
- * /schools/{id}/students/{studentId}/profile, Decision 324): the form opens
+ * /schools/{id}/students/{studentId}/profile, Decision 341): the form opens
  * filled in, so emptying a field can really clear it. */
 export function useStudentProfile(schoolId: string | null, studentId: string | null) {
   return useQuery({

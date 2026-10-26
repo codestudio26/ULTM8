@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * Curriculum learner-facing redesign (Decision 227/254) — a Student-curated,
@@ -9,14 +10,18 @@ import { ArrayMinSize, IsArray, IsString, IsUUID, MaxLength } from 'class-valida
  */
 export class CreatePlaylistDto {
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(100)
   name!: string;
 }
 
 export class RenamePlaylistDto {
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(100)
   name!: string;
 }
@@ -82,6 +87,9 @@ export class PlaylistItemResponseDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty({ description: 'False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed.' })
+  available!: boolean;
 
   @ApiProperty()
   lessonTitle!: string;

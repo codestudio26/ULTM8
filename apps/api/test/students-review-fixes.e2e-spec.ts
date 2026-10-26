@@ -1,5 +1,5 @@
 /**
- * Students page review fixes (Decision 324): who sees and edits which
+ * Students page review fixes (Decision 341): who sees and edits which
  * students, the join checks, profile validation, the next-booking read and
  * home branches on revoke. Real HTTP, real Postgres/RLS.
  */
@@ -52,7 +52,7 @@ describe('isAdultOn', () => {
   });
 });
 
-describeIfDb('Students page review fixes (Decision 324)', () => {
+describeIfDb('Students page review fixes (Decision 341)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
@@ -221,7 +221,7 @@ describeIfDb('Students page review fixes (Decision 324)', () => {
     });
   });
 
-  describe('S5 part 2: only the owner changes a birth date across 18 (Decision 325)', () => {
+  describe('S5 part 2: only the owner changes a birth date across 18 (Decision 342)', () => {
     it('staff can correct a date that keeps the same side of 18, not one that crosses it', async () => {
       expect((await patch('northStaff', 'nora', { dateOfBirth: '1999-03-04' })).status).toBe(200);
       const crossing = await patch('northStaff', 'nora', { dateOfBirth: '2015-03-04' });

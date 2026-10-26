@@ -62,7 +62,7 @@ export class UsersService {
 
   /**
    * A Student's full profile for a Staff member editing it on their behalf
-   * (SchoolsService.getStudentProfile, Decision 324 S9). Read under the
+   * (SchoolsService.getStudentProfile, Decision 341 S9). Read under the
    * caller's own context: `user_self_or_shared_school` shows staff the User
    * rows of the students whose STUDENT grant they can see. Authorization is
    * the caller's job, as for updateProfileFor.

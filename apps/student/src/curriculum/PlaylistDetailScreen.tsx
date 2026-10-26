@@ -132,8 +132,8 @@ export function PlaylistDetailScreen({ route, navigation }: Props) {
 
       {items.map((item, i) => (
         <View key={item.id} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
-          <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading, color: theme.textPrimary }}>{item.lessonTitle}</Text>
-          {item.locked ? <Muted>{t('curriculum.playlistDetail.locked')}</Muted> : null}
+          <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading, color: theme.textPrimary }}>{item.available ? item.lessonTitle : t('curriculum.playlistDetail.unavailable')}</Text>
+          {item.available && item.locked ? <Muted>{t('curriculum.playlistDetail.locked')}</Muted> : null}
           <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
             <View style={{ flex: 1 }}>
               <Button title={t('curriculum.playlistDetail.moveUp')} variant="secondary" disabled={i === 0 || reorderItems.isPending} onPress={() => moveItem(i, -1)} />

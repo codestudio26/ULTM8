@@ -103,7 +103,7 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
 
     // Lessons, made by the coach through the API.
     for (const [title, s] of [['Armbar', 'BJJ'], ['Hip throw', 'Judo']] as const) {
-      const res = await as('coach').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, description: `${title} step by step`, format: 'PRERECORDED', skillIds: [skill[s]] });
+      const res = await as('owner').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, description: `${title} step by step`, format: 'PRERECORDED', skillIds: [skill[s]] });
       expect(res.status).toBe(201);
       lesson[title] = res.body.id;
     }

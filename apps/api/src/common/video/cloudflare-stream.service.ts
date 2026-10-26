@@ -36,6 +36,11 @@ export class CloudflareStreamService {
     }
   }
 
+  /** Whether the account settings are there at all (C4). */
+  isConfigured(): boolean {
+    return Boolean(this.accountId && this.apiToken);
+  }
+
   private assertConfigured(): { accountId: string; apiToken: string } {
     if (!this.accountId || !this.apiToken) {
       throw new Error(
@@ -85,6 +90,26 @@ export class CloudflareStreamService {
   }
 
   /**
+   * Where a video stands (C5): 'ready'; 'waiting' while it uploads or
+   * transcodes; 'failed' when Stream reports an error, or when the one-time
+   * upload link expired with no file ever sent — without this a lesson whose
+   * upload never arrived stayed PROCESSING forever. Uses Stream's own
+   * `status.state` and `uploadExpiry` fields; like the rest of this service,
+   * not yet verified against a real account (v1.3, Decision 267).
+   */
+  async videoState(videoRef: string, now = new Date()): Promise<'ready' | 'waiting' | 'failed'> {
+    const { accountId, apiToken } = this.assertConfigured();
+    const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${videoRef}`, {
+      headers: { Authorization: `Bearer ${apiToken}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Cloudflare Stream status request failed: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { result: { readyToStream: boolean; uploadExpiry?: string | null; status?: { state?: string } } };
+    return videoStateOf(body.result, now);
+  }
+
+  /**
    * The public HLS manifest URL — Stream's videos are public-by-default once
    * ready (same "public media, no per-request signing" reasoning as R2's own
    * public photo bucket), so this is a plain string build, no network call,
@@ -102,4 +127,16 @@ export class CloudflareStreamService {
   getPublicPlaybackUrl(videoRef: string): string {
     return `https://customer-${this.accountId ?? 'unconfigured'}.cloudflarestream.com/${videoRef}/manifest/video.m3u8`;
   }
+}
+
+/** Pure part of videoState(), exported for unit tests. */
+export function videoStateOf(
+  result: { readyToStream: boolean; uploadExpiry?: string | null; status?: { state?: string } },
+  now: Date,
+): 'ready' | 'waiting' | 'failed' {
+  if (result.readyToStream) return 'ready';
+  const state = result.status?.state;
+  if (state === 'error') return 'failed';
+  if (state === 'pendingupload' && result.uploadExpiry && new Date(result.uploadExpiry) < now) return 'failed';
+  return 'waiting';
 }

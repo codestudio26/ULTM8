@@ -80,7 +80,7 @@ export class StudentBookingListResponseDto {
   nextCursor!: string | null;
 }
 
-/** GET /students/{id}/bookings/next (Decision 324). */
+/** GET /students/{id}/bookings/next (Decision 341). */
 export class StudentNextBookingResponseDto {
   @ApiPropertyOptional({ type: () => StudentBookingResponseDto, nullable: true })
   next!: StudentBookingResponseDto | null;

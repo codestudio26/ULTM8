@@ -55,7 +55,7 @@ function formFrom(p: StudentProfileResponse): Form {
  * BranchSettingsPage (Decision 231).
  *
  * Opens with the Student's current profile (GET
- * /schools/{id}/students/{studentId}/profile, Decision 324) and sends only
+ * /schools/{id}/students/{studentId}/profile, Decision 341) and sends only
  * what changed, so a value saved before Language and Currency became lists
  * doesn't block saving something else. Emptying a field clears it; date of
  * birth and photo can't be cleared (the API keeps both). Language and

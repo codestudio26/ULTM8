@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
 
-/** The oldest date of birth accepted, in years before today (Decision 324). */
+/** The oldest date of birth accepted, in years before today (Decision 341). */
 export const MAX_AGE_YEARS = 120;
 
 export const BIRTH_DATE_MESSAGE = 'Enter a real date of birth: not in the future and not more than 120 years ago.';
@@ -8,7 +8,7 @@ export const BIRTH_DATE_MESSAGE = 'Enter a real date of birth: not in the future
 /** True when `value` starts with a real calendar date (YYYY-MM-DD) that is
  * not after today and not more than MAX_AGE_YEARS before it, both in UTC.
  * `@IsDateString` alone accepts 2021-02-30, which Postgres then saves as
- * 2 March, and any future date (Decision 324, S5). */
+ * 2 March, and any future date (Decision 341, S5). */
 export function isBirthDate(value: unknown, today: Date = new Date()): boolean {
   if (typeof value !== 'string') return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);

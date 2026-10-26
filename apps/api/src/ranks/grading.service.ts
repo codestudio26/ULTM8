@@ -487,7 +487,7 @@ export class GradingService {
     await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
 
-  /** Decision 168's branch rule, shared with the Students page (Decision 324):
+  /** Decision 168's branch rule, shared with the Students page (Decision 341):
    * see TenantAuthorizationService.staffBranchCoverage. */
   private branchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
     return this.tenantAuth.staffBranchCoverage(callerId, schoolId);

@@ -49,7 +49,7 @@ const KID_MODE_TOKEN_TTL_SECONDS = Number(process.env.KID_MODE_TOKEN_TTL_SECONDS
  */
 /** The placeholder email domain of a Guardian-managed minor's account
  * (createMinor). Never a real inbox; the Students page shows "Managed by a
- * Guardian" instead (Decision 324). */
+ * Guardian" instead (Decision 341). */
 export const GUARDIAN_MANAGED_EMAIL_DOMAIN = 'guardian-managed.ultm8.internal';
 
 @Injectable()
@@ -311,7 +311,7 @@ export class GuardiansService {
         where: { userId: existing.studentId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      // Their home branches go with the enrolments (Decision 324, S13), as
+      // Their home branches go with the enrolments (Decision 341, S13), as
       // RoleGrantsService.revoke does.
       await this.prismaJobs.studentHomeBranch.deleteMany({ where: { studentId: existing.studentId } });
       this.logger.log(

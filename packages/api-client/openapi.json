@@ -959,7 +959,25 @@
             "name": "city",
             "required": false,
             "in": "query",
-            "description": "Case-insensitive substring match against Branch.address (no dedicated city column exists).",
+            "description": "Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "description": "Decision 294 — ISO 3166-1 alpha-2 country code of the structured address.",
             "schema": {
               "type": "string"
             }
@@ -2789,6 +2807,29 @@
             "required": false,
             "in": "query",
             "description": "ISO 8601 date-time: only Classes starting at or before it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "Date view, sorted by start time. Omit for the unsorted list.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this User.",
             "schema": {
               "type": "string"
             }
@@ -10539,6 +10580,32 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/schools/{schoolId}/curriculum/categories/order": {
@@ -11356,6 +11423,41 @@
         "responses": {
           "204": {
             "description": "Deleted — by its own author or School staff (Comment's own schema.prisma comment)."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -12954,13 +13056,142 @@
           "updatedAt"
         ]
       },
+      "BranchListItemDto": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Branch has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "Students whose home branch this is."
+          },
+          "upcomingClassCount": {
+            "type": "number",
+            "description": "Classes at this Branch that have not started yet (archived ones left out)."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "activities",
+          "facilities",
+          "createdAt",
+          "updatedAt",
+          "studentCount",
+          "upcomingClassCount"
+        ]
+      },
       "BranchListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BranchResponseDto"
+              "$ref": "#/components/schemas/BranchListItemDto"
             }
           },
           "nextCursor": {
@@ -14659,6 +14890,11 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -14742,18 +14978,6 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "bookingEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — booking cutoff."
-          },
-          "qrAttendanceEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — end of the QR check-in window."
-          },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
@@ -14790,6 +15014,21 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — booking cutoff. Pass null to clear."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies)."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear."
           }
         }
       },
@@ -15633,14 +15872,6 @@
             "description": "24-hour clock, HH:mm.",
             "example": "19:00"
           },
-          "breakStart": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
-          },
-          "breakEnd": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -15681,7 +15912,7 @@
               "CANCEL",
               "KEEP"
             ],
-            "description": "Decision 322. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change."
+            "description": "Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change."
           },
           "branchId": {
             "type": "string",
@@ -15692,6 +15923,16 @@
             "type": "string",
             "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
             "nullable": true
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break."
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break."
           },
           "capacity": {
             "type": "number",
@@ -15737,7 +15978,7 @@
             "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
           },
           "attendeeMembershipIds": {
-            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
+            "description": "One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).",
             "type": "array",
             "items": {
               "type": "string"
@@ -21313,6 +21554,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -21350,6 +21595,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"
@@ -21381,10 +21627,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -21394,7 +21644,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -21691,6 +21943,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -21705,6 +21961,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -21811,6 +22068,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {

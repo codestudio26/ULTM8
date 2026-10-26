@@ -270,7 +270,7 @@ export class SchoolsService {
         } catch (guardianErr) {
           // Staff here who aren't the owner (and aren't this child's
           // Guardian) get the reason that applies to them, not the Guardian
-          // one (Decision 324, S11).
+          // one (Decision 341, S11).
           if (guardianErr instanceof ForbiddenException && (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))) {
             throw new ForbiddenException('Only the School owner can enrol students.');
           }
@@ -816,7 +816,7 @@ export class SchoolsService {
    * Authorization: any staff member at the School (Owner/Manager, Branch Staff or
    * Instructor), not only the owner, since editing a Student's contact details is
    * an ordinary Staff action. Staff other than the owner may edit only the students
-   * they cover by the Grading Board's branch rule (Decision 324) — see
+   * they cover by the Grading Board's branch rule (Decision 341) — see
    * assertStaffCanEditStudent.
    *
    * Field scope: UpdateStudentProfileDto reuses UpdateUserDto outright — see that
@@ -834,7 +834,7 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // A birth date that turns a child into an adult, or an adult into a
     // child, changes whether a Guardian must consent (Decision 67): only the
-    // School owner may make that change (Decision 325).
+    // School owner may make that change (Decision 342).
     if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
       const current = await this.usersService.getProfileFor(callerId, studentId);
       if (isAdultOn(current.dateOfBirth) !== isAdultOn(new Date(dto.dateOfBirth))) {
@@ -845,7 +845,7 @@ export class SchoolsService {
   }
 
   /** `GET /schools/{schoolId}/students/{studentId}/profile` — the profile the
-   * edit form opens with (Decision 324, S9). Same access as
+   * edit form opens with (Decision 341, S9). Same access as
    * updateStudentProfile. */
   async getStudentProfile(callerId: string, schoolId: string, studentId: string) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
@@ -854,7 +854,7 @@ export class SchoolsService {
 
   /** Staff at this School, `studentId` currently enrolled here, and — for
    * anyone but the owner — one of the students the caller covers, by the
-   * Grading Board's branch rule (Decision 324, S1; Decisions 168, 177).
+   * Grading Board's branch rule (Decision 341, S1; Decisions 168, 177).
    * Enrolment is read under the student's own context, as grading's
    * assertEnrolledStudent does, so a student outside the caller's branches
    * gets the branch message rather than "not a Student". */
@@ -876,7 +876,7 @@ export class SchoolsService {
 
 /** A roster row as the Students page shows it. A Guardian-managed child's
  * account has a placeholder email nobody reads (GuardiansService.createMinor):
- * it is blanked and flagged instead (Decision 324, S10). */
+ * it is blanked and flagged instead (Decision 341, S10). */
 function rosterRow<T extends { email: string }>(row: T): T & { guardianManaged: boolean } {
   const guardianManaged = row.email.toLowerCase().endsWith(`@${GUARDIAN_MANAGED_EMAIL_DOMAIN}`);
   return { ...row, email: guardianManaged ? '' : row.email, guardianManaged };

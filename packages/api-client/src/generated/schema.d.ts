@@ -3486,7 +3486,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CurriculumController_deleteCategory"];
         options?: never;
         head?: never;
         patch: operations["CurriculumController_renameCategory"];
@@ -3711,6 +3711,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["CurriculumController_deleteComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_videoUploadStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4205,8 +4221,45 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        BranchListItemDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
+            id: string;
+            schoolId: string;
+            name: string;
+            address?: string | null;
+            contactPhone?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
+            currencyOverride?: string | null;
+            type?: string | null;
+            activities: string[];
+            facilities: string[];
+            defaultLanguage?: string | null;
+            description?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
+            /** @description Decision 226 — set when this Branch has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise. */
+            purgedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Students whose home branch this is. */
+            studentCount: number;
+            /** @description Classes at this Branch that have not started yet (archived ones left out). */
+            upcomingClassCount: number;
+        };
         BranchListResponseDto: {
-            items: components["schemas"]["BranchResponseDto"][];
+            items: components["schemas"]["BranchListItemDto"][];
             nextCursor?: string | null;
         };
         UpdateBranchDto: {
@@ -4694,6 +4747,8 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /** @description Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class. */
+            timetableSlotId?: string | null;
             /** @description Decision 226 — set when this Class has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried). */
@@ -4718,12 +4773,6 @@ export interface components {
             startDate?: string;
             /** @description ISO 8601 date-time. */
             endDate?: string;
-            /** @description ISO 8601 date-time — booking cutoff. */
-            bookingEndAt?: string;
-            /** @description ISO 8601 date-time — end of the QR check-in window. */
-            qrAttendanceEndAt?: string;
-            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. */
-            refundFeeDate?: string;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
@@ -4738,6 +4787,12 @@ export interface components {
             capacity?: number | null;
             /** @description Minor currency unit (e.g. cents). Pass null to clear. */
             cancellationCharge?: number | null;
+            /** @description ISO 8601 date-time — booking cutoff. Pass null to clear. */
+            bookingEndAt?: string | null;
+            /** @description ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies). */
+            qrAttendanceEndAt?: string | null;
+            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear. */
+            refundFeeDate?: string | null;
         };
         SubscriptionPlanResponseDto: {
             id: string;
@@ -5002,10 +5057,6 @@ export interface components {
              * @example 19:00
              */
             endTime?: string;
-            /** @description 24-hour clock, HH:mm. */
-            breakStart?: string;
-            /** @description 24-hour clock, HH:mm. */
-            breakEnd?: string;
             /**
              * @description Defaults to ON when omitted.
              * @enum {string}
@@ -5021,7 +5072,7 @@ export interface components {
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
             /**
-             * @description Decision 322. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change.
+             * @description Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change.
              * @enum {string}
              */
             bookedClasses?: "MOVE" | "CANCEL" | "KEEP";
@@ -5029,6 +5080,10 @@ export interface components {
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
             instructorId?: string | null;
+            /** @description 24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break. */
+            breakStart?: string | null;
+            /** @description 24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break. */
+            breakEnd?: string | null;
             /** @description Pass null to clear (unlimited). */
             capacity?: number | null;
             description?: string | null;
@@ -5045,7 +5100,7 @@ export interface components {
         BookClassDto: {
             /** @description Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor. */
             studentId?: string;
-            /** @description One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass. */
+            /** @description One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10). */
             attendeeMembershipIds?: string[];
             /** @description Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded. */
             overrideReason?: string;
@@ -6709,6 +6764,8 @@ export interface components {
             captionTrackRef?: string | null;
             /** @description The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment). */
             playbackUrl?: string | null;
+            /** @description Comments on this lesson the caller can read (Decision 326). */
+            commentCount: number;
             skillIds: string[];
             /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
             archivedAt?: string | null;
@@ -6726,11 +6783,14 @@ export interface components {
             title?: string;
             /** @description Move it to another of this School's categories (to the end), or null for none. */
             categoryId?: string | null;
-            durationSeconds?: number;
-            description?: string;
+            /** @description null clears it. */
+            durationSeconds?: number | null;
+            /** @description null clears it. */
+            description?: string | null;
             /** @enum {string} */
             format?: "PRERECORDED" | "LIVE";
-            instructorId?: string;
+            /** @description null: no instructor. */
+            instructorId?: string | null;
             skillIds?: string[];
             /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
             free?: boolean;
@@ -6809,6 +6869,8 @@ export interface components {
             lessonId: string;
             order: number;
             createdAt: string;
+            /** @description False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed. */
+            available: boolean;
             lessonTitle: string;
             /** @description The caller may not watch this Lesson (Decisions 154, 190, 195). */
             locked: boolean;
@@ -6838,6 +6900,9 @@ export interface components {
             items: components["schemas"]["CommentResponseDto"][];
             /** @description Opaque cursor for the next page, ordered (createdAt, id) ASC (oldest first); null when there is no more. */
             nextCursor?: string | null;
+        };
+        VideoUploadStatusResponseDto: {
+            enabled: boolean;
         };
         VideoUploadUrlResponseDto: {
             uploadUrl: string;
@@ -7444,8 +7509,12 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
-                /** @description Case-insensitive substring match against Branch.address (no dedicated city column exists). */
+                /** @description Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city. */
                 city?: string;
+                /** @description Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents. */
+                q?: string;
+                /** @description Decision 294 — ISO 3166-1 alpha-2 country code of the structured address. */
+                country?: string;
                 /** @description Include archived Branches too (excluded by default). */
                 includeArchived?: boolean;
                 /** @description Case-insensitive substring match against Branch.name. */
@@ -8484,6 +8553,10 @@ export interface operations {
                 startsFrom?: string;
                 /** @description ISO 8601 date-time: only Classes starting at or before it. */
                 startsTo?: string;
+                /** @description Date view, sorted by start time. Omit for the unsorted list. */
+                when?: "upcoming" | "past" | "all";
+                /** @description Only Classes taught by this User. */
+                instructorId?: string;
             };
             header?: never;
             path: {
@@ -12843,6 +12916,26 @@ export interface operations {
             };
         };
     };
+    CurriculumController_deleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. Owner only. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CurriculumController_renameCategory: {
         parameters: {
             query?: never;
@@ -13313,6 +13406,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CurriculumController_videoUploadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoUploadStatusResponseDto"];
+                };
             };
         };
     };
