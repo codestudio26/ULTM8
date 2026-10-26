@@ -116,7 +116,7 @@ export class PaymentsController {
     return this.paymentsService.confirmTransaction(user.sub, id);
   }
 
-  /** A Pending Cash/Bank Transfer payment that never arrived (Decision 335). */
+  /** A Pending Cash/Bank Transfer payment that never arrived (Decision 339). */
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('transactions/:id/cancel')

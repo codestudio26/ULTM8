@@ -103,7 +103,7 @@ export class TransactionRevenueDto {
   amount!: number;
 }
 
-/** GET /schools/{id}/transactions/summary (Decision 335) — the Transactions
+/** GET /schools/{id}/transactions/summary (Decision 339) — the Transactions
  * page's tiles, counted over the whole ledger. */
 export class TransactionSummaryResponseDto {
   @ApiProperty()

@@ -149,7 +149,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
 
   afterAll(async () => {
     // Closed first so the notification workers stop before the cleanup below:
-    // cash purchases and confirms now send notices (Decision 335, T11).
+    // cash purchases and confirms now send notices (Decision 339, T11).
     await app.close();
     await superuser.notification.deleteMany({ where: { user: { email: { contains: 'memberships-http-' } } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });

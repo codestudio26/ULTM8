@@ -339,7 +339,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         await this.handlePaymentIntentSucceeded(tx, objectId);
         return noSideEffects;
       case 'payment_intent.payment_failed':
-      // Decision 335 (T12) — a card payment the Student walked away from: Stripe
+      // Decision 339 (T12) — a card payment the Student walked away from: Stripe
       // cancels the PaymentIntent (or its expired Checkout Session's), and the
       // row would otherwise sit Pending for ever. Failed is the nearest of the
       // five confirmed Transaction statuses; nothing else to undo, same as a

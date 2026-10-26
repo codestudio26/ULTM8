@@ -267,7 +267,7 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
         amount: formatAmount(m[2], m[3], locale),
         status: DISPUTE_STATUSES.has(m[4]) ? n(t, `disputeStatus.${m[4]}`) : m[4],
       }),
-  ],  // PaymentsService.notifyCashPayment — Cash/Bank Transfer payments (Decision 335, T11).
+  ],  // PaymentsService.notifyCashPayment — Cash/Bank Transfer payments (Decision 339, T11).
   [
     /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on the Transactions page once the money arrives\.$/s,
     (m, { t, locale }) => n(t, 'cashWaitingBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),

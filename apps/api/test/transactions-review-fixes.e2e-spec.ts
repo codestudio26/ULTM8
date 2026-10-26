@@ -1,5 +1,5 @@
 /**
- * Decision 335 — the Transactions review fixes (T1–T3, T8–T11, and Cancel for
+ * Decision 339 — the Transactions review fixes (T1–T3, T8–T11, and Cancel for
  * a Pending Cash/Bank payment), proven over real HTTP against a real Postgres.
  * T12 (payment_intent.canceled) lives in stripe-webhook-processing.e2e-spec.ts
  * with the other webhook events.
@@ -21,7 +21,7 @@ const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const hasDb = Boolean(DATABASE_URL && DATABASE_URL_APP && JWT_ACCESS_SECRET);
 const describeIfDb = hasDb ? describe : describe.skip;
 
-describeIfDb('Transactions review fixes (Decision 335)', () => {
+describeIfDb('Transactions review fixes (Decision 339)', () => {
   let app: INestApplication;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

@@ -49,14 +49,14 @@ export class TransactionsService {
     t: T,
   ): Omit<T, 'membershipPlan'> & { membershipPlanTitle: string } {
     const { membershipPlan, ...rest } = t;
-    // Currency codes in capitals (Decision 335, T3) — belt and braces on top of
+    // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
     return { ...rest, ...(currency ? { currency: currency.toUpperCase() } : {}), membershipPlanTitle: membershipPlan.title };
   }
 
   /**
-   * Newest first by billing date (Decision 335, T2) — the plain id-ordered
+   * Newest first by billing date (Decision 339, T2) — the plain id-ordered
    * `cursorPaginate` sorted by random UUID, so a ledger's rows came back in no
    * useful order and today's payment could sit on page 3. Same `(sortValue, id)
    * DESC` keyset the curriculum lists use (`encodeDescCursor`).
@@ -124,11 +124,11 @@ export class TransactionsService {
   }
 
   /**
-   * GET /schools/{id}/transactions/summary (Decision 335, T1) — the page's
+   * GET /schools/{id}/transactions/summary (Decision 339, T1) — the page's
    * tiles, counted over the whole ledger on the server. The page used to add up
    * whichever 20 rows it had loaded, so every tile was wrong once a School had
    * more. Revenue is Successful rows only, one figure per currency (codes are
-   * compared in capitals: rows written before Decision 335 may be lower-case).
+   * compared in capitals: rows written before Decision 339 may be lower-case).
    */
   async summaryForSchool(callerId: string, schoolId: string) {
     await this.schoolsService.findOne(callerId, schoolId);

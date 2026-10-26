@@ -993,9 +993,9 @@ export class PaymentsService {
   }
 
   /**
-   * Decision 335 (T8, T9) — checks shared by confirm and cancel. A closed School
+   * Decision 339 (T8, T9) — checks shared by confirm and cancel. A closed School
    * takes no new records (Decision 110; the cancelled-ULTM8-subscription state is
-   * deliberately NOT blocked here — the cash was taken before, see Decision 335).
+   * deliberately NOT blocked here — the cash was taken before, see Decision 339).
    * Confirm also needs the Student still at the School: a Membership for someone
    * who has left makes no sense, and Cancel is the Owner's way out.
    */
@@ -1019,7 +1019,7 @@ export class PaymentsService {
   }
 
   /**
-   * PATCH /transactions/{id}/cancel (Decision 335) — clears a Pending Cash/Bank
+   * PATCH /transactions/{id}/cancel (Decision 339) — clears a Pending Cash/Bank
    * Transfer payment that never arrived, marking it FAILED (the nearest of the
    * five confirmed Transaction statuses; no Membership was ever created for it,
    * Decision 6). School Owner/Manager only, same gate as confirm. Idempotent: a
@@ -1052,7 +1052,7 @@ export class PaymentsService {
   }
 
   /**
-   * Decision 335 (T11) — in-app notices around a Cash/Bank Transfer payment:
+   * Decision 339 (T11) — in-app notices around a Cash/Bank Transfer payment:
    * `waiting` tells the School's Owners/Managers one has arrived to check;
    * `confirmed`/`cancelled` tell the Student, or the Guardians of a linked minor
    * (who never logs in). Read through the jobs connection, since the caller's own

@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Transactions fixes from the 26 Oct review (Decision 335)** — the page now
+- **Transactions fixes from the 26 Oct review (Decision 339)** — the page now
   shows every payment newest first with Prev/Next, and its tiles count the
   whole ledger; revenue no longer splits "GBP" and "gbp"; Pending cash and
   bank transfer payments get Mark as paid and Cancel buttons; owners are told

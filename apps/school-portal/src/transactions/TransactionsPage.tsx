@@ -18,7 +18,7 @@ import { formatLocale } from '../i18n/format';
 /** One "Receipt" cell — a drill-down from the table, not a bulk action, so it's
  * its own small component (one `useTransactionReceiptUrl()` call per row)
  * rather than a single mutation shared across the whole table. Only card rows
- * get one (Decision 335, T7): Cash/Bank Transfer has no receipt to show. `null`
+ * get one (Decision 339, T7): Cash/Bank Transfer has no receipt to show. `null`
  * (Stripe has no receipt yet) shows an inline message instead of silently doing
  * nothing. Opens in a new tab (`window.open`) rather than navigating away from
  * the Transactions table. */
@@ -80,7 +80,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
 type SettleAction = 'confirm' | 'cancel';
 
 /** "Mark as paid" / "Cancel" for one Pending Cash/Bank Transfer payment
- * (Decision 335, G1). Asks first, naming the Student, plan and amount, since
+ * (Decision 339, G1). Asks first, naming the Student, plan and amount, since
  * marking it paid creates their Membership and neither can be undone here. */
 function SettleDialog({
   row,
@@ -129,7 +129,7 @@ function studentName(row: TransactionResponse): string {
   return row.studentFirstName || row.studentSurname ? `${row.studentFirstName} ${row.studentSurname}`.trim() : row.studentId.slice(0, 8);
 }
 
-/** The School's payment ledger, newest first, a page at a time (Decision 335).
+/** The School's payment ledger, newest first, a page at a time (Decision 339).
  * The tiles count the whole ledger on the server, not the page on screen.
  * Pending Cash/Bank Transfer rows can be marked paid or cancelled. */
 export function TransactionsPage() {
@@ -165,7 +165,7 @@ export function TransactionsPage() {
       <PageHeader title={t('transactions.title')} subtitle={t('transactions.subtitle')} />
 
       {/* Stats ribbon — counted over the whole ledger by
-          GET /schools/:id/transactions/summary (Decision 335, T1). */}
+          GET /schools/:id/transactions/summary (Decision 339, T1). */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
         <StatTile label={t('transactions.statTotal')} value={summary?.total ?? '—'} />
         <StatTile label={t('transactions.statSuccessful')} value={summary?.successful ?? '—'} />

@@ -32,7 +32,7 @@ export class TransactionsController {
     return this.transactionsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
   }
 
-  /** The page's tiles, counted over the whole ledger (Decision 335). */
+  /** The page's tiles, counted over the whole ledger (Decision 339). */
   @ApiOkResponse({ type: TransactionSummaryResponseDto })
   @Get('schools/:schoolId/transactions/summary')
   summaryForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {

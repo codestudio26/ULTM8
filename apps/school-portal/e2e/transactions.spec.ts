@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * The Transactions page after the 26 Oct review (Decision 335): the whole
+ * The Transactions page after the 26 Oct review (Decision 339): the whole
  * ledger newest first with Prev/Next, tiles counted on the server, Mark as
  * paid / Cancel on Pending cash rows, Receipt on card rows only, and a message
  * (not a blank page) for someone with no School of their own.

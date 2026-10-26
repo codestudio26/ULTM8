@@ -5057,7 +5057,7 @@ User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timet
 
 ---
 
-## Decision 335 — Transactions review fixes: the whole ledger newest first, Mark as paid and Cancel for cash payments, cash payment notices
+## Decision 339 — Transactions review fixes: the whole ledger newest first, Mark as paid and Cancel for cash payments, cash payment notices
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 110, 291, 292
 

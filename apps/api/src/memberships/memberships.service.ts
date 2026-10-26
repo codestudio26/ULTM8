@@ -699,7 +699,7 @@ export class MembershipsService {
     if (!CASH_BANK_ELIGIBLE_TYPES.includes(plan.type as (typeof CASH_BANK_ELIGIBLE_TYPES)[number])) {
       throw new BadRequestException(`${plan.type} is not Cash/Bank Transfer-eligible.`);
     }
-    // Decision 335 (T10) — one open Cash/Bank payment per Student per plan: a
+    // Decision 339 (T10) — one open Cash/Bank payment per Student per plan: a
     // second Buy (a double tap, or a retry because nothing seemed to happen)
     // returns the one already waiting instead of writing another the Owner
     // could confirm twice. The advisory lock serializes two concurrent taps.
