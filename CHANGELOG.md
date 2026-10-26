@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Memberships: sell at the desk, Friend Pass, cancel a subscription, member
+  list (Decision NNN)** — on a Student's page the owner now sees their
+  memberships, can record a plan sold at the desk (cash or bank transfer), give
+  a Friend Pass, and cancel a Subscription; each plan's menu has a Members list
+  showing who is on it with their dates. A cancelled Subscription runs to the
+  end of the paid month. Needs the migration `20261201000000_membership_cancel_at_period_end`.
 - **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
   whose Weekly Pass or Trial has run out can buy again (it used to be refused
   as if the old one were still live); a live Trial no longer blocks buying a

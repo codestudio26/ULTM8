@@ -693,6 +693,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "تنتهي في {date}",
       empty: "لا توجد عضويات بعد.",
       loadError: "تعذّر تحميل العضويات، يُرجى المحاولة مرة أخرى.",
+      cancelSubscription: "إلغاء الاشتراك",
+      keepSubscription: "الإبقاء عليه",
+      cancelConfirm: "تحتفظ باشتراكك حتى نهاية الشهر المدفوع. ثم ينتهي ولا تُؤخذ أي دفعات أخرى.",
+      cancelError: "تعذّر إلغاء اشتراكك — يُرجى المحاولة مرة أخرى.",
+      cancelledEnds: "أُلغي، ينتهي في {date}",
     },
     planRow: {
       classesIncluded: {

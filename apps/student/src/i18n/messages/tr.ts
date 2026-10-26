@@ -652,6 +652,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Bitiş: {date}",
       empty: "Henüz üyelik yok.",
       loadError: "Üyelikler yüklenemedi — lütfen tekrar deneyin.",
+      cancelSubscription: "Aboneliği iptal et",
+      keepSubscription: "Devam et",
+      cancelConfirm: "Ödediğin ayın sonuna kadar aboneliğini kullanmaya devam edersin. Sonra abonelik biter ve başka ödeme alınmaz.",
+      cancelError: "Aboneliğin iptal edilemedi — lütfen tekrar dene.",
+      cancelledEnds: "İptal edildi, {date} tarihinde bitiyor",
     },
     planRow: {
       classesIncluded: { one: "{count} ders", other: "{count} ders" },

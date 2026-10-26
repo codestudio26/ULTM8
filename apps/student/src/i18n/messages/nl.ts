@@ -652,6 +652,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Verloopt op {date}",
       empty: "Nog geen lidmaatschappen.",
       loadError: "Lidmaatschappen konden niet worden geladen — probeer het opnieuw.",
+      cancelSubscription: "Abonnement opzeggen",
+      keepSubscription: "Behouden",
+      cancelConfirm: "Je houdt je abonnement tot het einde van de betaalde maand. Daarna stopt het en worden er geen betalingen meer afgeschreven.",
+      cancelError: "Je abonnement kon niet worden opgezegd — probeer het opnieuw.",
+      cancelledEnds: "Opgezegd, eindigt op {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} les", other: "{count} lessen" },

@@ -669,6 +669,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Expire le {date}",
       empty: "Aucune adhésion pour le moment.",
       loadError: "Impossible de charger les adhésions — veuillez réessayer.",
+      cancelSubscription: "Résilier l'abonnement",
+      keepSubscription: "Le garder",
+      cancelConfirm: "Vous gardez votre abonnement jusqu'à la fin du mois payé. Il se termine ensuite et aucun autre paiement n'est prélevé.",
+      cancelError: "Impossible de résilier votre abonnement — veuillez réessayer.",
+      cancelledEnds: "Résilié, se termine le {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },

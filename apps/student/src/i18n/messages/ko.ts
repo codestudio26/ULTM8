@@ -647,6 +647,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date} 만료",
       empty: "아직 회원권이 없습니다.",
       loadError: "회원권을 불러오지 못했습니다. 다시 시도해 주세요.",
+      cancelSubscription: "구독 해지",
+      keepSubscription: "유지하기",
+      cancelConfirm: "결제한 달이 끝날 때까지 구독을 유지합니다. 그 후 구독이 끝나고 더 이상 결제되지 않습니다.",
+      cancelError: "구독을 해지할 수 없습니다 — 다시 시도해 주세요.",
+      cancelledEnds: "해지됨, {date}에 종료",
     },
     planRow: {
       classesIncluded: { other: "수업 {count}회" },

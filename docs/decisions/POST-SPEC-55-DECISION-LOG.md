@@ -5218,3 +5218,27 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
 ### Recorded by
 
 User, 26 Oct 2026, answering the Billing questions one by one and then *"Go ahead agree with all"*.
+
+---
+
+## Decision NNN — Memberships follow-ups: sell at the desk, give a Friend Pass, cancel a Subscription, member list per plan
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 6, 26, 334; Spec 55 §6.1, §10.2 · **Migration:** `20261201000000_membership_cancel_at_period_end` (adds `Membership.cancelAt`, `Membership.cancelledById`)
+
+After Decision 334, seven Memberships questions were put to the product owner with a recommendation each. They answered *"all recommended"*. This decision builds items 2 to 5. Item 1 (removing a Student) is Students S2 and is built in that thread; it calls the cancel method below. Items 6 and 7 are "no change for now".
+
+### Decision
+
+1. **The owner sells a plan at the desk** (item 2). From the Student's page, the owner picks a plan and records it as paid in cash or by bank transfer. The Membership starts at once with a Successful Transaction (the same result as confirming a Student's own cash order). A £0 plan creates no Transaction (Spec 55 §6.1). Subscriptions are card only (§6.1) and Friend Passes are given, so neither is sold here. The usual checks apply: owner only, open School, a current Student, a plan that isn't archived, the waiver when the plan needs one, a one-class plan whose class hasn't started, one live Weekly Pass or Subscription, and the trial allowance. A hidden plan can be sold at the desk: hiding takes a plan off the Students' list (Decision 334), not off the owner's desk. `POST /schools/:schoolId/students/:studentId/memberships/sell`.
+2. **The owner gives a Friend Pass** (item 3) from the Student's page: a £0, one-class pass recorded as given by the owner (`giftedById`), which the Student uses to book a guest. Each friend gets a separate pass (§6.1). Students still can't buy one. `POST /schools/:schoolId/students/:studentId/memberships/gift`.
+3. **A Subscription can be cancelled** (item 4) by the Student (in the app), a Guardian for a linked minor, or the owner (on the Student's page). It runs to the end of the paid month through Stripe's `cancel_at_period_end` (§10.2: no proration, no immediate cutoff); the Membership stays live and shows when it ends. When Stripe ends the Subscription, the existing `customer.subscription.deleted` handling expires it and cancels the Bookings it funded. Asking twice changes nothing. `POST /memberships/:id/cancel`; the shared method is `MembershipsService.cancelSubscriptionAtPeriodEnd()`.
+4. **A member list per plan** (item 5), owner only: everyone on the plan now (the same people the Active members tile counts), with start, end and classes left, and whether the School gave it. From the plan's row menu. `GET /membership-plans/:id/members`. The Student's page also lists all their memberships: `GET /schools/:schoolId/students/:studentId/memberships`.
+5. **Item 6** (styles don't limit booking) and **item 7** (the cancellation charge waits for refunds, PR #273): no change.
+
+### What this does NOT resolve
+
+Undoing a cancellation before the month ends, and a cancellation made directly in Stripe's dashboard (the `customer.subscription.updated` event is still log-only), are not handled. Branch Staff can't sell or give plans (Spec 55 §8.2 keeps Membership and Transaction owner-only).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"all recommended"*, on the seven open Memberships questions.

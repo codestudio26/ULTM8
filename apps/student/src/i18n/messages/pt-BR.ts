@@ -662,6 +662,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Expira em {date}",
       empty: "Nenhuma matrícula ainda.",
       loadError: "Não foi possível carregar as matrículas — tente novamente.",
+      cancelSubscription: "Cancelar assinatura",
+      keepSubscription: "Manter",
+      cancelConfirm: "Você mantém sua assinatura até o fim do mês já pago. Depois ela termina e nenhuma outra cobrança é feita.",
+      cancelError: "Não foi possível cancelar sua assinatura — tente novamente.",
+      cancelledEnds: "Cancelado, termina em {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} aula", other: "{count} aulas" },
