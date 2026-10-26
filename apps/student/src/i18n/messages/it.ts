@@ -675,7 +675,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
       durationDays: { one: "{count} giorno", many: "{count} giorni", other: "{count} giorni" },
       purchaseError: "Impossibile completare questo acquisto — riprova.",
-      friendPass: "Chiedi un Friend Pass allo staff della scuola.",
+      friendPass: "Chiedi un Pass amico allo staff della scuola.",
       purchase: "Acquista",
       payWithSavedCard: "Paga con la carta salvata",
       enrolled: "Sei iscritto ✓",
