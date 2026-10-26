@@ -1797,11 +1797,11 @@ export function AuthSuccessCard({
 
 /* ---------------------------------------------------------------------- Modal */
 
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return (
     <div className="ultm8-modal-overlay" role="presentation" onClick={onClose}>
       <div
-        className="ultm8-modal"
+        className={wide ? 'ultm8-modal ultm8-modal--wide' : 'ultm8-modal'}
         role="dialog"
         aria-modal="true"
         aria-label={title}
