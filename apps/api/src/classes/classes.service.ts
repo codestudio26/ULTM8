@@ -2,7 +2,9 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
-import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { DateTime } from 'luxon';
 import { randomUUID } from 'crypto';
 import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -27,6 +29,7 @@ export class ClassesService {
     private readonly schoolsService: SchoolsService,
     private readonly subscriptionGate: SubscriptionGateService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   /**
@@ -53,6 +56,12 @@ export class ClassesService {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
     this.assertValidDateRange(startDate, endDate);
+    // A Class that has already ended can't be booked or checked into, so it
+    // would only add clutter (product owner, 26 Oct 2026, Decision 345). A past
+    // session can still be credited with "Log a class" on the Student page.
+    if (endDate <= new Date()) {
+      throw new BadRequestException({ code: 'CLASS_ALREADY_ENDED', message: 'This class has already ended. Pick an end time in the future.' });
+    }
     this.assertValidCutoffs(startDate, endDate, {
       bookingEndAt: dto.bookingEndAt ? new Date(dto.bookingEndAt) : null,
       qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : null,
@@ -243,8 +252,37 @@ export class ClassesService {
       throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
     }
 
+    const branchChanges = dto.branchId !== undefined && dto.branchId !== existing.branchId;
+    const startChanges = nextStartDate.getTime() !== existing.startDate.getTime();
     let seatsToOffer = 0;
+    let movedFor: string[] = [];
+    let bookedCount = 0;
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (branchChanges || startChanges) {
+        // Held for the rest of this edit, so nobody books in between the check
+        // and the change (bookings take the same lock, booking-gates.ts).
+        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+        const [bookings, waiting] = await Promise.all([
+          tx.booking.findMany({ where: { classId, status: 'UPCOMING' }, select: { studentId: true } }),
+          tx.waitlistEntry.findMany({ where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } }, select: { studentId: true } }),
+        ]);
+        const booked = bookings.length + waiting.length > 0;
+        // C14 (Decision 345): Students only see Classes at their own Branch, so a
+        // booked Class moved elsewhere left bookings nobody could cancel or check
+        // into. Bookings and waitlist places have to be cleared first.
+        if (booked && branchChanges) {
+          throw new ConflictException({ code: 'CLASS_BRANCH_BOOKED', message: 'Students are booked or waiting for this Class. Cancel their bookings before moving it to another branch.' });
+        }
+        // C5 (Decision 345): moved into the past, the bookings would later be
+        // marked No-show and their credit kept.
+        if (booked && startChanges && nextStartDate <= new Date()) {
+          throw new ConflictException({ code: 'CLASS_MOVED_TO_PAST', message: 'Students are booked or waiting for this Class, so it can only move to a time that has not passed yet.' });
+        }
+        if (startChanges) {
+          movedFor = [...bookings, ...waiting].map((b) => b.studentId);
+          bookedCount = bookings.length;
+        }
+      }
       // Capacity can't drop below the seats already taken, and freed seats go to
       // the waitlist first (class-seats.ts; also used by Timetable slot edits).
       if (dto.capacity !== undefined) {
@@ -275,7 +313,38 @@ export class ClassesService {
       });
     });
     await offerSeatsToWaitlist(this.waitlistCascadeQueue, classId, seatsToOffer, this.logger);
+    if (movedFor.length > 0) {
+      await this.tellClassMoved(callerId, updated, movedFor, bookedCount > 0);
+    }
     return updated;
+  }
+
+  /** C5 (Decision 345): booked and waiting Students hear that a one-off Class
+   * moved, with the same notice a Timetable move sends (TimetableService). */
+  private async tellClassMoved(
+    callerId: string,
+    cls: { id: string; title: string; startDate: Date; schoolId: string; branchId: string | null },
+    studentIds: string[],
+    anyBooked: boolean,
+  ): Promise<void> {
+    const zone = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const branch = cls.branchId ? await tx.branch.findUnique({ where: { id: cls.branchId }, select: { timezone: true } }) : null;
+      const school = await tx.school.findUnique({ where: { id: cls.schoolId }, select: { timezone: true } });
+      return branch?.timezone ?? school?.timezone ?? 'UTC';
+    });
+    const key = `class-moved-${cls.id}-${cls.startDate.getTime()}`;
+    const body = `${cls.title} has moved to ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
+    for (const userId of new Set(studentIds)) {
+      try {
+        await this.notificationFanoutQueue.add('notify', { notificationId: `${key}-${userId}`, userId, title: 'Class moved', body, type: 'CLASS_MOVED' } satisfies NotificationFanoutJobData, {
+          jobId: `${key}-${userId}`,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue the "Class moved" notification for ${userId}: ${err}`);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

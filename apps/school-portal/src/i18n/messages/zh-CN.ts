@@ -544,6 +544,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "描述",
       waiverRequired: "预约需签署免责声明/条款",
       membershipInclusion: "包含在普通会员权限中（无需单独购票）",
+      membershipInclusionHint: "关闭：学员需要这节课的专属门票（仅限本课的课时包）。开启：任何订阅、周卡或课时包都可预约。",
     },
   },
   disciplines: {
@@ -2223,7 +2224,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "横幅 URL",
       descriptionLabel: "描述",
       waiverRequired: "预约需签署免责声明/条款",
-      membershipInclusion: "包含在普通会员权限中（无需单独购票）",
     },
     booking: {
       title: "预约 — {title}",

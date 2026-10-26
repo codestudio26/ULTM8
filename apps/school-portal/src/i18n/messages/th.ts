@@ -544,6 +544,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "คำอธิบาย",
       waiverRequired: "ต้องลงนามเอกสารสละสิทธิ์/ข้อกำหนดก่อนจอง",
       membershipInclusion: "รวมอยู่ในสิทธิ์สมาชิกทั่วไป (ไม่ต้องซื้อตั๋วแยก)",
+      membershipInclusionHint: "ปิด: นักเรียนต้องมีตั๋วสำหรับคลาสนี้ (แพ็กคลาสที่ใช้ได้เฉพาะคลาสนี้) เปิด: ใช้สมาชิกรายเดือน บัตรรายสัปดาห์ หรือแพ็กคลาสใดก็ได้ในการจอง",
     },
   },
   disciplines: {
@@ -2223,7 +2224,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL แบนเนอร์",
       descriptionLabel: "คำอธิบาย",
       waiverRequired: "ต้องลงนามเอกสารสละสิทธิ์/ข้อกำหนดก่อนจอง",
-      membershipInclusion: "รวมอยู่ในสิทธิ์สมาชิกทั่วไป (ไม่ต้องซื้อตั๋วแยก)",
     },
     booking: {
       title: "จอง — {title}",

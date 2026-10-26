@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "Il termine per il rimborso non può essere dopo la fine della lezione.",
     guestNeedsFriendPass: "Un ospite si può prenotare solo con un Pass amico. Il tuo abbonamento copre te, non i tuoi ospiti.",
     guestPassRepeated: "Ogni ospite ha bisogno del proprio Pass amico. Lo stesso pass è stato scelto più di una volta.",
+    ticketRequired: "Questa lezione singola richiede un biglietto dedicato. Un abbonamento, un pass settimanale o un carnet generico non la coprono.",
+    classBranchBooked: "Ci sono allievi prenotati o in lista d'attesa per questa lezione. Annulla le loro prenotazioni prima di spostarla in un'altra sede.",
+    classMovedToPast: "Ci sono allievi prenotati o in lista d'attesa per questa lezione, quindi può essere spostata solo a un orario non ancora passato.",
+    classAlreadyEnded: "Questa lezione è già finita. Scegli un orario di fine nel futuro.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",

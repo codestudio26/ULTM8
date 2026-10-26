@@ -546,6 +546,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Beschreibung",
       waiverRequired: "Unterschriebener Haftungsausschluss/AGB zum Buchen erforderlich",
       membershipInclusion: "Im allgemeinen Mitgliedschaftszugang enthalten (kein separates Ticket nötig)",
+      membershipInclusionHint: "Aus: Schüler brauchen ein Ticket für genau diesen Kurs (eine Kurskarte nur für ihn). An: Jedes Abo, jeder Wochenpass und jede Kurskarte kann ihn buchen.",
     },
   },
   disciplines: {
@@ -2256,7 +2257,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "Banner-URL",
       descriptionLabel: "Beschreibung",
       waiverRequired: "Unterschriebener Haftungsausschluss/AGB zum Buchen erforderlich",
-      membershipInclusion: "Im allgemeinen Mitgliedschaftszugang enthalten (kein separates Ticket nötig)",
     },
     booking: {
       title: "Buchen – {title}",

@@ -550,6 +550,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Opis",
       waiverRequired: "Wymaga podpisanego oświadczenia/regulaminu do rezerwacji",
       membershipInclusion: "Wliczone w ogólny dostęp członkowski (bez osobnego biletu)",
+      membershipInclusionHint: "Wyłączone: uczniowie potrzebują biletu na te zajęcia (pakietu tylko na nie). Włączone: każda subskrypcja, karnet tygodniowy lub pakiet zajęć pozwala je zarezerwować.",
     },
   },
   disciplines: {
@@ -2320,7 +2321,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL banera",
       descriptionLabel: "Opis",
       waiverRequired: "Wymaga podpisanego oświadczenia/regulaminu do rezerwacji",
-      membershipInclusion: "Wliczone w ogólny dostęp członkowski (bez osobnego biletu)",
     },
     booking: {
       title: "Zarezerwuj — {title}",

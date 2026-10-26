@@ -546,6 +546,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Açıklama",
       waiverRequired: "Rezervasyon için imzalı feragatname/koşullar gerekir",
       membershipInclusion: "Genel üyelik erişimine dahil (ayrı bilet gerekmez)",
+      membershipInclusionHint: "Kapalı: öğrencilerin bu ders için bilet alması gerekir (yalnızca bu derse özel paket). Açık: her abonelik, haftalık kart veya ders paketiyle rezerve edilebilir.",
     },
   },
   disciplines: {
@@ -2256,7 +2257,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "Banner URL’si",
       descriptionLabel: "Açıklama",
       waiverRequired: "Rezervasyon için imzalı feragatname/koşullar gerekir",
-      membershipInclusion: "Genel üyelik erişimine dahil (ayrı bilet gerekmez)",
     },
     booking: {
       title: "Rezerve et — {title}",

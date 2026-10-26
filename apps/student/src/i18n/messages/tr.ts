@@ -800,6 +800,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Bu derste yer için bekleyen başkaları zaten var. Sıranızı almak için bekleme listesine katılın.",
       bookingClosed: "Bu dersin rezervasyonu kapandı. Bir personel sizi yine de ekleyebilir.",
       classBusy: "Şu anda bu derse çok sayıda kişi rezervasyon yapıyor. Lütfen birazdan tekrar deneyin.",
+      ticketRequired: "Bu tek seferlik ders kendi biletini gerektirir. Abonelik, haftalık kart veya genel ders paketi bu dersi kapsamaz.",
       checkInNotOpen: "Bu ders için giriş henüz açılmadı.",
       checkInNotOpenAt: "Bu ders için giriş henüz açılmadı. Açılış: {time}.",
     },

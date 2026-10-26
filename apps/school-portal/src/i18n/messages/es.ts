@@ -546,6 +546,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Descripción",
       waiverRequired: "Requiere exención/términos firmados para reservar",
       membershipInclusion: "Incluida en el acceso general de la membresía (sin entrada aparte)",
+      membershipInclusionHint: "Desactivado: los alumnos necesitan una entrada para esta clase (un bono limitado a ella). Activado: cualquier suscripción, pase semanal o bono de clases puede reservarla.",
     },
   },
   disciplines: {
@@ -2256,7 +2257,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL del banner",
       descriptionLabel: "Descripción",
       waiverRequired: "Requiere exención/términos firmados para reservar",
-      membershipInclusion: "Incluida en el acceso general de la membresía (sin entrada aparte)",
     },
     booking: {
       title: "Reservar — {title}",

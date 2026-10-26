@@ -546,6 +546,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Beschrijving",
       waiverRequired: "Ondertekende vrijwaring/voorwaarden vereist om te boeken",
       membershipInclusion: "Inbegrepen in de algemene lidmaatschapstoegang (geen apart ticket nodig)",
+      membershipInclusionHint: "Uit: leerlingen hebben een ticket voor deze les nodig (een strippenkaart alleen voor deze les). Aan: elk abonnement, elke weekpas of strippenkaart kan hem boeken.",
     },
   },
   disciplines: {
@@ -2256,7 +2257,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "Banner-URL",
       descriptionLabel: "Beschrijving",
       waiverRequired: "Ondertekende vrijwaring/voorwaarden vereist om te boeken",
-      membershipInclusion: "Inbegrepen in de algemene lidmaatschapstoegang (geen apart ticket nodig)",
     },
     booking: {
       title: "Boeken — {title}",

@@ -105,6 +105,9 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
   });
 
   afterAll(async () => {
+    // Stop the app first: its notification worker can still be writing notices
+    // for these users, which would block deleting them.
+    await app.close();
     const where = { schoolId: { in: schoolIds } };
     await superuser.transaction.deleteMany({ where });
     await superuser.membership.deleteMany({ where });
@@ -119,7 +122,6 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
-    await app.close();
   });
 
   it('M1: a Weekly Pass that ran out by date no longer blocks buying another', async () => {

@@ -544,6 +544,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "설명",
       waiverRequired: "예약하려면 서명한 면책 동의서/약관이 필요",
       membershipInclusion: "일반 회원권 이용에 포함(별도 이용권 불필요)",
+      membershipInclusionHint: "끔: 이 수업 전용 티켓(이 수업 전용 수업 패키지)이 필요합니다. 켬: 모든 구독, 주간 패스, 수업 패키지로 예약할 수 있습니다.",
     },
   },
   disciplines: {
@@ -2223,7 +2224,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "배너 URL",
       descriptionLabel: "설명",
       waiverRequired: "예약하려면 서명한 면책 동의서/약관이 필요",
-      membershipInclusion: "일반 회원권 이용에 포함(별도 이용권 불필요)",
     },
     booking: {
       title: "예약 — {title}",

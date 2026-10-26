@@ -43,26 +43,39 @@ export function assertClassBookable(
  *
  * When two packs exist and a concurrent booking empties the first, the next one
  * is tried instead of failing the booking.
+ *
+ * A one-off Class (not made by the Timetable) needs its own ticket, a Membership
+ * scoped to that Class, unless the School ticked "Included in membership" on it
+ * (SKILL.md §6, Classes review C1, Decision 345). Timetable Classes are always
+ * covered by general access, whatever the flag says.
  */
 export async function selectAndConsumeMembership(
   tx: TenantTx,
   studentId: string,
   schoolId: string,
-  classId: string,
+  cls: OneOffMarkers,
   now: Date = new Date(),
 ): Promise<{ id: string }> {
+  const classId = cls.id;
+  const ticketOnly = needsOwnTicket(cls);
   const candidates = await tx.membership.findMany({
     where: {
       studentId,
       schoolId,
       status: 'ACTIVE',
       AND: [
-        { OR: [{ scopedClassId: null }, { scopedClassId: classId }] },
+        ticketOnly ? { scopedClassId: classId } : { OR: [{ scopedClassId: null }, { scopedClassId: classId }] },
         { OR: [{ expiryDate: null }, { expiryDate: { gt: now } }] },
       ],
     },
     orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
   });
+  if (ticketOnly && candidates.length === 0) {
+    throw new BadRequestException({
+      code: 'TICKET_REQUIRED',
+      message: 'This one-off class needs its own ticket. A Subscription, Weekly Pass or general Class Pack does not cover it.',
+    });
+  }
 
   const generalAccess = candidates.find((m) => m.classesRemaining === null);
   if (generalAccess) {
@@ -83,6 +96,16 @@ export async function selectAndConsumeMembership(
     }
   }
   throw new ConflictException('This Membership\'s remaining credit changed concurrently — please retry.');
+}
+
+/** The Class fields that tell a one-off Class from a Timetable one. */
+export type OneOffMarkers = { id: string; timetableSlotId: string | null; occurrenceDate: Date | null; membershipInclusion: boolean };
+
+/** Whether only a ticket for this Class (a Membership scoped to it) can pay for a
+ * seat. A Timetable Class keeps its occurrenceDate even if its slot is later
+ * deleted (timetableSlotId is SET NULL then), so both are checked. */
+export function needsOwnTicket(cls: OneOffMarkers): boolean {
+  return cls.timetableSlotId === null && cls.occurrenceDate === null && !cls.membershipInclusion;
 }
 
 /** Thrown inside a booking transaction when another booking holds the Class's seat lock. */
