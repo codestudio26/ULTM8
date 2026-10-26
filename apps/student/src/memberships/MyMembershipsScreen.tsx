@@ -6,6 +6,12 @@ import { formatDate } from '../lib/formatDate';
 import { useMyMemberships } from './membershipQueries';
 import { getRememberedPlanName } from './planNameCache';
 import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
+
+const MEMBERSHIP_STATUS: Record<string, TranslationKey> = {
+  ACTIVE: 'memberships.statusLabel.active',
+  EXPIRED: 'memberships.statusLabel.expired',
+};
 
 type Membership = components['schemas']['MembershipResponseDto'];
 
@@ -23,7 +29,7 @@ function MembershipRow({ membership }: { membership: Membership }) {
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{planName}</Text>
       <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
         {t('memberships.myMemberships.statusLine', {
-          status: membership.status,
+          status: MEMBERSHIP_STATUS[membership.status] ? t(MEMBERSHIP_STATUS[membership.status]) : membership.status,
           frequency: membership.frequency === 'RECURRING' ? t('memberships.myMemberships.recurring') : t('memberships.myMemberships.oneTime'),
         })}
       </Text>

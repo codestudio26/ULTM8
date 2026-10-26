@@ -3,7 +3,7 @@ export const memberships = {
   myMemberships: {
     /** Shown when the plan's name isn't known; the API gives only the plan's id. */
     planFallback: 'Plan {planId}',
-    /** {status} is the Membership status code from the API (e.g. ACTIVE), shown as is;
+    /** {status} is one of `statusLabel` below;
      * {frequency} is one of the two frequency texts below. */
     statusLine: 'Status: {status} · {frequency}',
     recurring: 'Recurring',
@@ -26,5 +26,10 @@ export const memberships = {
     pendingConfirmation: 'Payment pending confirmation by the School.',
     checkoutSubmitted: "Payment submitted — check My Memberships shortly once it's confirmed.",
     onlinePaymentUnavailable: "Online payment for this plan isn't available in the app yet.",
+  },
+  /** A membership's status, in capitals as the app has always shown it. */
+  statusLabel: {
+    active: 'ACTIVE',
+    expired: 'EXPIRED',
   },
 };

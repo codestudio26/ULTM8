@@ -7,6 +7,14 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useEnterCheckInCode } from '../attendance/attendanceQueries';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
+
+const BOOKING_STATUS: Record<string, TranslationKey> = {
+  UPCOMING: 'bookings.statusLabel.upcoming',
+  COMPLETED: 'bookings.statusLabel.completed',
+  CANCELLED: 'bookings.statusLabel.cancelled',
+  NO_SHOW: 'bookings.statusLabel.noShow',
+};
 
 type Booking = components['schemas']['BookingResponseDto'];
 
@@ -79,7 +87,7 @@ function BookingRow({ booking }: { booking: Booking }) {
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{t('bookings.myBookings.classLabel', { classId: booking.classId })}</Text>
-      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: booking.status })}</Text>
+      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: BOOKING_STATUS[booking.status] ? t(BOOKING_STATUS[booking.status]) : booking.status })}</Text>
       {error ? <InlineError message={error} /> : null}
 
       {booking.status === 'UPCOMING' && confirming ? (

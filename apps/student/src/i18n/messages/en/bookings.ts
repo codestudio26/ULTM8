@@ -3,7 +3,7 @@ export const bookings = {
   myBookings: {
     /** Row heading; the API gives only the Class's id, not its name. */
     classLabel: 'Class {classId}',
-    /** {status} is the Booking status code from the API (e.g. UPCOMING), shown as is. */
+    /** {status} is one of `statusLabel` below. */
     status: 'Status: {status}',
     cancelError: 'Could not cancel this booking — please try again.',
     codeError: 'Incorrect or expired code — ask Staff for the current code.',
@@ -31,5 +31,12 @@ export const bookings = {
     /** {position} is the Student's place in the waitlist queue (1, 2, 3…). */
     waitlistPosition: "You're #{position} on the waitlist.",
     leaveWaitlist: 'Leave waitlist',
+  },
+  /** A booking's status, in capitals as the app has always shown it. */
+  statusLabel: {
+    upcoming: 'UPCOMING',
+    completed: 'COMPLETED',
+    cancelled: 'CANCELLED',
+    noShow: 'NO_SHOW',
   },
 };
