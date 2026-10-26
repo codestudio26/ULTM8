@@ -1,8 +1,8 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, IsUrl, Min, MaxLength } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, IsUUID, IsUrl, Min, MaxLength } from 'class-validator';
 import { CreateClassDto } from './create-class.dto';
 
-const NULLABLE_ON_UPDATE = ['branchId', 'instructorId', 'bannerUrl', 'description', 'capacity', 'cancellationCharge'] as const;
+const NULLABLE_ON_UPDATE = ['branchId', 'instructorId', 'bannerUrl', 'description', 'capacity', 'cancellationCharge', 'bookingEndAt', 'qrAttendanceEndAt', 'refundFeeDate'] as const;
 
 /**
  * FOUND ON REVIEW (Phase 17, school-portal's own edit-Class form): every
@@ -30,6 +30,8 @@ const NULLABLE_ON_UPDATE = ['branchId', 'instructorId', 'bannerUrl', 'descriptio
  * explicit `null` the same as an omitted field, so declaring null-support here
  * without ALSO fixing that ternary would be a lie the type checker can't catch;
  * left as a separate, real, flagged gap rather than silently half-fixed).
+ * Closed by the Classes review (C11): those three now accept null too, and
+ * ClassesService.update() maps null to "clear" explicitly.
  */
 export class UpdateClassDto extends PartialType(OmitType(CreateClassDto, NULLABLE_ON_UPDATE)) {
   @ApiPropertyOptional({ description: 'Branch to scope this Class to. Pass null to clear (make it School-wide).', type: String, nullable: true })
@@ -66,4 +68,19 @@ export class UpdateClassDto extends PartialType(OmitType(CreateClassDto, NULLABL
   @IsInt()
   @Min(0)
   cancellationCharge?: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'ISO 8601 date-time — booking cutoff. Pass null to clear.' })
+  @IsOptional()
+  @IsDateString()
+  bookingEndAt?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies).' })
+  @IsOptional()
+  @IsDateString()
+  qrAttendanceEndAt?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear.' })
+  @IsOptional()
+  @IsDateString()
+  refundFeeDate?: string | null;
 }

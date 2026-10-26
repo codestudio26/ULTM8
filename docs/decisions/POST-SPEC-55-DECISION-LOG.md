@@ -5057,6 +5057,36 @@ User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timet
 
 ---
 
+## Decision 335 — Classes review fixes, first batch
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner (fix plan, Classes review)
+**Resolves:** Classes review findings C2, C3, C4, C6, C7, C8 (date checks), C9, C10, C11, C12, C13, C16, C17. No database change.
+
+### Decision
+
+1. **Lists that must be complete load every page.** A Class's bookings (Class page and roll call) are no longer cut off at 20. The roll call lists students still to check in first, then those present, then cancelled ones, by name.
+2. **The Classes list shows Upcoming by default**, soonest first (a Class in progress counts as upcoming), with Past (newest first) and All. `GET /schools/:id/classes` takes `when=upcoming|past|all` and `instructorId`; leaving `when` out keeps the old order for existing callers. Classes made by the Timetable carry a "Timetable" tag (`timetableSlotId` on the response).
+3. **Coaches and Branch Staff can open the Classes list**, read-only, to reach each Class's roll call and QR code. The coach dashboard's "Coming up" asks the server for that coach's next Classes and links to both.
+4. **Capacity:** making a Class unlimited offers a seat to everyone on its waitlist (before, they were stuck while others booked past them). Decision 322 item 6 still applies to cuts.
+5. **A Class needs a real title** (spaces only is refused; extra spaces are trimmed).
+6. **Date checks:** the QR check-in window can't close before the start; the booking and refund cut-offs can't be after the end. Cut-off dates can be cleared.
+7. **An archived Class can't be edited** until it is unarchived. Archiving now asks for confirmation.
+8. **The School's styles filter the list** (a dropdown), instead of an exact-spelling text box. Schools with no styles keep the text box.
+9. **Money is typed in normal amounts** ("7.50"), stored in hundredths as before. Shared field: `apps/school-portal/src/lib/MoneyField.tsx`.
+10. **Class times use the Class's own clock:** its Branch's time zone, else the School's, else UTC, in the form and the list, wherever the person editing is.
+11. **Guests need a Friend Pass** (SKILL.md §10): the organizer's Subscription or Class Pack covers only them, and one pass covers one guest.
+12. **A closed School takes no new bookings or waitlist entries** (Decision 110).
+
+### What this does NOT resolve
+
+Waiting on the product owner: whether one-off Classes need their own ticket (C1, `membershipInclusion`), moving a booked Class's date or Branch (C5, C14), creating a Class in the past, and Cancel class (PR #273). C15 (a plan scoped to an archived Class) is in the Memberships fixes.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"have another pass for solutions until you get confident of the result and start building it"*, on the Classes fix plan.
+
+---
+
 ## Decision 337 — Franchises review fixes: fees in dollars, fee model locked once billing, closed tenants stop billing, member list trimmed
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 99, 110

@@ -44,7 +44,7 @@ export class ClassesController {
       query.activities,
       query.search,
       query.includeArchived,
-      { disciplineId: query.disciplineId, startsFrom: query.startsFrom, startsTo: query.startsTo },
+      { disciplineId: query.disciplineId, startsFrom: query.startsFrom, startsTo: query.startsTo, when: query.when, instructorId: query.instructorId },
     );
   }
 

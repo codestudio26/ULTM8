@@ -55,6 +55,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cleared; Archive asks first; every slot shows (not just the first 20); a
   cancelled or finished class says so in the booking dialog; cancellation
   notices show local time; waitlisted students hear when a class moves.
+
+- **Classes review fixes, first batch** (Decision 335; no database change):
+  - The Classes list opens on **Upcoming** (soonest first), with **Past** and
+    **All**; Timetable-made Classes carry a "Timetable" tag; a School with
+    styles filters by a style dropdown.
+  - The Class page and **roll call show every booked student** (not the first
+    20); the roll call lists who still needs checking in first, by name.
+  - **Coaches and Branch Staff** get a read-only Classes page, and the coach
+    dashboard's "Coming up" shows their next Classes with Roll call and Show QR.
+  - The Class form uses the **Branch's time zone** (else the School's), takes
+    the cancellation charge as a normal amount ("7.50", not cents), refuses a
+    blank title, and lets cut-off dates be cleared.
+  - Archiving asks first; an archived Class can't be edited until unarchived.
+  - The API refuses a QR window that closes before the start and cut-offs
+    after the end; making a full Class unlimited offers seats to its waitlist;
+    a guest needs a Friend Pass (one per guest); a closed School takes no new
+    bookings or waitlist entries.
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

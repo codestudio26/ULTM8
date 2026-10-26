@@ -74,6 +74,8 @@ export class WaitlistService {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
     assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
+    // Decision 110: a closed School takes no new waitlist places (Classes review C16).
+    await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // FOUND ON REVIEW: reading the current max position then computing +1 is a
@@ -228,6 +230,8 @@ export class WaitlistService {
     // holds zero RoleGrant anywhere, Decision 92" reasoning
     // BookingsService.bookClass()'s own identical check already documents.
     await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
+    // Decision 110: a closed School takes no new Bookings (Classes review C16).
+    await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
