@@ -676,6 +676,16 @@ final provisioning step needs the product owner directly)
     actual owner, and legal counsel's review of the real retention/residency requirements
     before any of Decision 245's options are implemented.
 
+**H. Translation before launch** (Decision 323)
+21. Translate the student app (`apps/student`) into the same 15 languages as the
+    School Portal, with the phone's language by default, a picker in Profile, and
+    Platform Admin overrides. Not started as of 26 Oct 2026.
+22. Native-speaker review of every text, from zero, once the wording is final: export
+    the portal's and the student app's texts to the translation review page
+    (`apps/school-portal/scripts/i18n-review/`), share it per language, then apply the
+    corrections in one change. Earlier reviews were cleared on 26 Oct 2026. The
+    reviewers per language are for the product owner to arrange.
+
 ---
 
 ## 6. Keeping this tracked going forward
