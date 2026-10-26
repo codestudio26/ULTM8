@@ -4170,6 +4170,34 @@
         ]
       }
     },
+    "/v1/transactions/{id}/cancel": {
+      "patch": {
+        "operationId": "PaymentsController_cancelTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/timetable": {
       "post": {
         "operationId": "TimetableController_create",
@@ -6398,6 +6426,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TransactionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/transactions/summary": {
+      "get": {
+        "operationId": "TransactionsController_summaryForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionSummaryResponseDto"
                 }
               }
             }
@@ -18239,6 +18302,53 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "TransactionRevenueDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          }
+        },
+        "required": [
+          "amount"
+        ]
+      },
+      "TransactionSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "successful": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
+          },
+          "failedOrDisputed": {
+            "type": "number"
+          },
+          "revenue": {
+            "description": "Successful rows only, one entry per currency.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionRevenueDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "successful",
+          "pending",
+          "failedOrDisputed",
+          "revenue"
         ]
       },
       "TransactionReceiptUrlResponseDto": {

@@ -244,7 +244,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
           paymentAccountId: 'account-1',
           membershipPlanId: 'plan-1',
           amount: 3000,
-          currency: 'usd',
+          currency: 'USD', // stored in capitals (Decision 339, T3)
           status: 'PENDING',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: 'pi_checkout_1',

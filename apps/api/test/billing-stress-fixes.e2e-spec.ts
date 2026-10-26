@@ -100,6 +100,9 @@ describeIfDb('Billing stress-test fixes', () => {
   });
 
   afterAll(async () => {
+    // Stop the app first: its notification worker can still be writing notices
+    // for these users, which would block deleting them.
+    await app.close();
     const userIds = (await superuser.user.findMany({ where: { email: { contains: 'billing-fixes-' } }, select: { id: true } })).map((u) => u.id);
     await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
     await superuser.transaction.deleteMany({ where: { schoolId: school.id } });
@@ -107,10 +110,11 @@ describeIfDb('Billing stress-test fixes', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.paymentAccount.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+    // Confirmations notify the Student (Decision 339, T11).
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
-    await app.close();
   });
 
   it('20 cash payments confirmed at once all succeed (no nested transaction holding the pool)', async () => {

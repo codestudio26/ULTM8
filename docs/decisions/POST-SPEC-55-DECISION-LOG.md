@@ -5318,6 +5318,37 @@ User (Code), 26 Oct 2026: *"all recommended"*, on the seven open Memberships que
 
 ---
 
+## Decision 339 — Transactions review fixes: the whole ledger newest first, Mark as paid and Cancel for cash payments, cash payment notices
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 110, 291, 292
+
+A review of the Transactions section (26 Oct 2026) found bugs T1–T12 and gaps G1–G7. The product owner asked for the ready-to-build fixes in one change: *"Build it and Ask me what you need"*. The open questions were put to the owner separately; where this change needed an answer before it could be built (Q1, Q7), it follows the recommended option and says so below.
+
+### Decision
+
+1. **The page shows the whole ledger, newest first** (T1, T2). Rows are ordered by billing date, then id, and paged with Prev/Next (20 a page). A cursor that can't be read is refused with "cursor is not valid", not silently restarted.
+2. **The tiles count the whole ledger, not the page on screen** (T1). A new Owner-only `GET schools/:schoolId/transactions/summary` returns the total, Successful, Waiting for payment (Pending), Failed or disputed, and revenue per currency. Revenue counts Successful payments only.
+3. **Currency codes are stored in capitals** (T3). Every new Transaction is written with an upper-case code, and a migration fixes the rows already stored, so "GBP" and "gbp" no longer show as two revenue lines.
+4. **The Transactions page needs a School** (T5). Someone with no School of their own (Branch Staff, coaches) sees "Only the School Owner can see Transactions" instead of a blank page.
+5. **The plan name comes with each row** (T6) from the server, not from a lookup of the first 20 plans.
+6. **Receipt shows on card payments only** (T7). Cash and bank transfer rows show "—".
+7. **A payment can't be confirmed for a Student who has left the School** (T8). Confirming is refused with a message to cancel it instead.
+8. **A closed School can't confirm or cancel a payment** (T9, Decision 110). A School whose ULTM8 subscription is cancelled but which is not closed still can (Q7, recommended answer: the money was paid to the School, so recording it is still right).
+9. **Choosing Cash/Bank Transfer twice for the same plan does not make a second Pending row** (T10). While one is waiting, the same Student and plan get that row back. Once it is confirmed or cancelled, a new purchase makes a new row.
+10. **Cash payments send notices** (T11). The School's owners are told when a Student chooses to pay by cash or bank transfer. The Student (or their Guardians, for a minor) is told when the payment is marked as paid, and when it is cancelled.
+11. **An abandoned card checkout is marked Failed** (T12): Stripe's `payment_intent.canceled` is handled like `payment_intent.payment_failed`.
+12. **Mark as paid and Cancel on the page** (G1). A Pending cash or bank transfer row gets both buttons for the School Owner, each asking first. Mark as paid uses the existing confirm route and starts the membership. Cancel is a new `PATCH transactions/:id/cancel` and sets the row to **Failed** (Q1, recommended answer); no membership is created and a later confirm is refused. Card payments can't be cancelled here, since Stripe settles them.
+
+### What this does NOT resolve
+
+T4 (a plan with no currency is charged in US dollars) is fixed by the Memberships review, not here. Refunds and "refund owed" (G2, PR #273), subscription renewals and late-cancel fees as Transactions (G4, G5), Stripe-dashboard refunds (G6), filters and CSV export (G3), and staff recording desk payments (G7) wait on the owner's answers.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, asking to "Build it" on the Transactions fix plan.
+
+---
+
 ## Decision 350 — A member School shows its Franchise's name and logo only when both owners allow it
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decision 337 (Q7, second half of F13)

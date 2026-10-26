@@ -1476,6 +1476,22 @@ export interface paths {
         patch: operations["PaymentsController_confirmTransaction"];
         trace?: never;
     };
+    "/v1/transactions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PaymentsController_cancelTransaction"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/timetable": {
         parameters: {
             query?: never;
@@ -2188,6 +2204,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["TransactionsController_findAllForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/transactions/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_summaryForSchool"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5783,6 +5815,19 @@ export interface components {
         TransactionListResponseDto: {
             items: components["schemas"]["TransactionResponseDto"][];
             nextCursor?: string | null;
+        };
+        TransactionRevenueDto: {
+            currency?: string | null;
+            /** @description Minor units. */
+            amount: number;
+        };
+        TransactionSummaryResponseDto: {
+            total: number;
+            successful: number;
+            pending: number;
+            failedOrDisputed: number;
+            /** @description Successful rows only, one entry per currency. */
+            revenue: components["schemas"]["TransactionRevenueDto"][];
         };
         TransactionReceiptUrlResponseDto: {
             /** @description Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet. */
@@ -9562,6 +9607,25 @@ export interface operations {
             };
         };
     };
+    PaymentsController_cancelTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     TimetableController_findAll: {
         parameters: {
             query?: {
@@ -10795,6 +10859,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TransactionListResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_summaryForSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionSummaryResponseDto"];
                 };
             };
         };
