@@ -4977,3 +4977,28 @@ A test of the Branches City filter found it searched the whole one-line address.
 ### Recorded by
 
 User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.
+
+---
+
+## Decision 331 — Instructors: resend the temporary passcode, self-edit bio/photo/phone, no revoke while teaching, private address and certification
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 217, 226, 230, 311, 312
+
+The Instructors review (23 Oct 2026) left six product questions open. The product owner chose the recommended answer to each: *"Go with the suggestions"*.
+
+### Decision
+
+1. **The owner can resend the temporary passcode.** New `POST /instructors/:id/resend-passcode`, School Owner/Manager only, for someone "Add manually" created who still has the temporary passcode (`User.mustChangePasscode`) and still holds the Instructor role at this School. A new 6-digit passcode replaces the old one (which stops working) and is emailed the same way as at creation. Refused (409) once they have chosen their own passcode ("Forgot passcode" is theirs to use) or lost the role. Same per-account limit as "Add manually" (20 an hour). The detail page shows "Resend passcode" while they haven't signed in yet.
+2. **Instructors edit their own bio, photo and phone.** `PATCH /instructors/me/profile` also takes `bio`, `photoUrl` and `phone` (same limits as the owner's edit; null clears). `phone` here is `Instructor.phone`, the number the School sees, not the login phone, which this endpoint still never changes. An instructor may request a photo upload link for their own profile. The Complete Profile page has Photo, Bio and Phone.
+3. **Specializations and activities stay separate.** Specializations are the School's styles, set by the owner; activities are the instructor's own words (Decision 312 item 4). No change.
+4. **No revoking an Instructor role while it leaves classes without an instructor.** Revoking an INSTRUCTOR grant is refused (409) while the person still teaches an upcoming class (not ended, not archived) or an active weekly slot (ON, not archived) at this School that no other active Instructor role of theirs covers (the branch rule of `assertValidInstructor`). So removing one branch of several only blocks on that branch's classes. The message points to "Hand over classes" (Decision 312 item 6), and the detail page opens a box with that button instead of the revoke confirmation. Other roles are not affected. This replaces Decision 311 I5's warning.
+5. **Address and certification are private.** Instructor responses (`GET /schools/:id/instructors`, `GET /instructors/:id`) return the address fields, `certificationKey` and `certificationConsentedAt` only to the School Owner/Manager or to the instructor themselves; for anyone else (colleagues, Branch Staff) they are null. The owner-only endpoints are unchanged.
+6. **Archiving an instructor keeps their role.** Archiving hides the profile and stops new classes (Decision 226, 311 I2); the Instructor role stays until revoked. No change.
+
+### What this does NOT resolve
+
+The temporary passcode still has no expiry of its own (Decision 230). An instructor at more than one School still edits one set of profile fields for all of them (Decision 217).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"Go with the suggestions"*, answering the six open questions from the Instructors review.

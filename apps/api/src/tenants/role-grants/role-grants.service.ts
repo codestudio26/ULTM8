@@ -446,6 +446,7 @@ export class RoleGrantsService {
     }
 
     const schoolId = grant.schoolId;
+    if (grant.role === 'INSTRUCTOR') await this.assertNoClassesLeftWithoutInstructor(callerId, grant.id, targetUserId, schoolId);
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
       // Given the role again later, they start with today's permissions, not
@@ -468,5 +469,30 @@ export class RoleGrantsService {
     // Same JWT-staleness caveat as create() above: an already-issued token keeps this
     // grant's claim until it expires (≤15 min) or is refreshed — there is no
     // session-invalidation mechanism yet (flagged, not silently assumed away).
+  }
+
+  /** Decision 331 — an Instructor role can't be taken away while it still
+   * leaves upcoming Classes or active weekly Timetable slots at this School
+   * with an instructor who no longer holds the role there. A row is still
+   * covered when another active Instructor role of theirs covers its branch
+   * (the same rule as TenantAuthorizationService.assertValidInstructor), so
+   * removing one branch of several only blocks on that branch's rows. Same
+   * "upcoming"/"active" test as archiving an Instructor profile, so "Hand
+   * over classes" clears exactly what this counts. */
+  private async assertNoClassesLeftWithoutInstructor(callerId: string, grantId: string, userId: string, schoolId: string): Promise<void> {
+    const now = new Date();
+    const [others, classes, slots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.roleGrant.findMany({ where: { userId, schoolId, role: 'INSTRUCTOR', revokedAt: null, id: { not: grantId } }, select: { branchId: true } }),
+        tx.class.findMany({ where: { schoolId, instructorId: userId, endDate: { gte: now }, archivedAt: null }, select: { branchId: true } }),
+        tx.timetableSlot.findMany({ where: { schoolId, instructorId: userId, status: 'ON', archivedAt: null }, select: { branchId: true } }),
+      ]),
+    );
+    const covered = (branchId: string | null) => others.some((g) => g.branchId === null || branchId === null || g.branchId === branchId);
+    if (classes.some((c) => !covered(c.branchId)) || slots.some((t) => !covered(t.branchId))) {
+      throw new ConflictException(
+        'They still teach upcoming classes or weekly timetable slots here. Use "Hand over classes" on their instructor page first, then remove the role.',
+      );
+    }
   }
 }

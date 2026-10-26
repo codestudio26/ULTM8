@@ -1876,6 +1876,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/instructors/{id}/resend-passcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_resendPasscode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/instructors/me/certification-upload-url": {
         parameters: {
             query?: never;
@@ -5344,7 +5360,15 @@ export interface components {
             /** @description False if the temp-passcode email could not be sent — the Instructor profile was still created. */
             emailSent: boolean;
         };
+        ResendPasscodeResponseDto: {
+            /** @description False when the new passcode was set but the email could not be sent. */
+            emailSent: boolean;
+        };
         CompleteInstructorProfileDto: {
+            bio?: string | null;
+            photoUrl?: string | null;
+            /** @description School-facing contact number, E.164 — not the login phone. */
+            phone?: string | null;
             address?: string;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
@@ -10062,6 +10086,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateInstructorManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_resendPasscode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResendPasscodeResponseDto"];
                 };
             };
         };
