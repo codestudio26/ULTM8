@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
+
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 /**
  * FOUND DURING BUILD: Spec 55's own confirmed RanksModule endpoint table nests
@@ -11,10 +14,15 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, Vali
  * TimetableSlot's own template fields were in Phase 5. Field list verified
  * against skills/ultm8-domain-rules/SKILL.md §4 (quoted): "name, class types
  * offered."
+ *
+ * Decision 308: the name is trimmed and can't be blank; class types are
+ * trimmed, blanks dropped and repeats (any capitals) merged by the service.
  */
 export class CreateDisciplineDto {
   @ApiProperty()
+  @Transform(trim)
   @IsString()
+  @MinLength(1, { message: 'name must not be blank' })
   @MaxLength(100)
   name!: string;
 
@@ -23,6 +31,7 @@ export class CreateDisciplineDto {
   @IsArray()
   @ArrayMaxSize(50)
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   classTypesOffered?: string[];
 
   // No `default:` in the Swagger metadata, so existing callers that don't send

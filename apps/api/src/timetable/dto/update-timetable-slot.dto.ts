@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, IsUrl, Min, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, IsUrl, Min, MaxLength } from 'class-validator';
 import { CreateTimetableSlotDto } from './create-timetable-slot.dto';
 
 const NULLABLE_ON_UPDATE = [
@@ -36,6 +36,17 @@ const NULLABLE_ON_UPDATE = [
  * DTO-only change can fix — left alone rather than silently half-fixed).
  */
 export class UpdateTimetableSlotDto extends PartialType(OmitType(CreateTimetableSlotDto, NULLABLE_ON_UPDATE)) {
+  @ApiPropertyOptional({
+    enum: ['MOVE', 'CANCEL', 'KEEP'],
+    description:
+      'Decision 322. What to do with this slot\'s upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. ' +
+      'MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. ' +
+      'KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change.',
+  })
+  @IsOptional()
+  @IsIn(['MOVE', 'CANCEL', 'KEEP'])
+  bookedClasses?: 'MOVE' | 'CANCEL' | 'KEEP';
+
   @ApiPropertyOptional({ description: 'Branch to scope this slot to. Pass null to clear (make it School-wide).', type: String, nullable: true })
   @IsOptional()
   @IsUUID()

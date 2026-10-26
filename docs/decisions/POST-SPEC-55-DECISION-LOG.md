@@ -3979,6 +3979,33 @@ User ("Go for the notification change"), approving the recommendation to add Del
 
 ---
 
+## Decision 278 — Global Search in the School Portal header: names across five types, through each type's own list endpoint
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** §A of `docs/decisions/DRAFT-global-search-and-footer-scoping.md` (the header's disabled "Search (coming soon)" box, `v1.2-backend-backlog.md`'s "Global search" item), including its three open questions.
+
+### Decision
+
+1. **Scope: option (a).** One header box searches Students, Instructors, Classes, Branches and Franchises. Results are grouped by type, up to 5 per type, and each opens that record's existing page (`/students/:id`, `/instructors/:id`, `/classes/:id`, `/branches/:id`, `/franchises/:id`).
+2. **Match: case-insensitive substring on names only.** Students and Instructors: first name, surname, or the full name "first surname" ("jo" finds "John"). Classes: title. Branches and Franchises: name. Never email or phone. The box waits for 2 characters and 250 ms after the last keystroke.
+3. **Who sees what: the sidebar's own rule.** A type is searched only if the person's sidebar offers its page (`Shell.tsx`). Today that means School Owners/Managers get all five, and a coach or Branch Staff member who doesn't own the School (`COACH_NAV`) gets none, so the box isn't shown to them. Separately, the server still applies each list endpoint's own, unchanged authorization: the search can only narrow a list the caller could already read.
+4. **Archived records are excluded.** Students, Instructors, Classes and Branches already leave them out by default (Decision 226's `archivedAt`; for Students, the roster's default "Active" filter). `GET /franchises` lists closed (archived) Franchises by default, and that default is unchanged; it gains an optional `excludeArchived` param (default `false`, parsed as an explicit `true`/`false`), which the search box sends so the server leaves closed Franchises out. The open question the draft parked on Decision 226 is answered by what Decision 226 actually shipped.
+5. **Backend: approach 2, no new endpoint.** `GET /schools/:id/students`, `GET /schools/:schoolId/instructors`, `GET /schools/:schoolId/branches` and `GET /franchises` gain an optional `search` param, the same shape `GET /schools/:schoolId/classes` already had (at most 200 characters); on all five it is trimmed and blank means no filter (Classes' `search` gained the same trimming). Branches, Franchises and Classes add one Prisma `contains` + `mode: 'insensitive'` condition to their existing RLS-scoped query, with `%`, `_` and `\` escaped first (`escapeLike`), so those characters match themselves rather than acting as LIKE wildcards. Students and Instructors names live on `User`, whose RLS visibility doesn't cover every row these lists show (Decision 117), so their match runs on the rows the endpoint has already authorized: the Students roster is filtered after its unchanged query; for Instructors, the unchanged scoped query gives the profiles' user ids, `resolveUserNames` reads the names of exactly those ids, and the matching ids become one more condition on the paginated query. The portal fires the five requests in parallel.
+
+### Relation to Decision 116
+
+Decision 116 chose "exact email or phone match only, never a name search" for the Staff invite lookup, which reads Users the caller has no relationship with yet. That stays as it is. This decision allows name search **only inside lists the caller can already see at their own School** (and the Franchises they own); it is never a lookup across tenants or of Users outside those lists.
+
+### What this does NOT resolve
+
+No search over other records (Curriculum, Membership Plans, Transactions, Waivers), no fuzzy or accent-insensitive matching, and no search for coaches or Branch Staff: if their sidebar gains any of these pages, the box should follow it. Only Franchises the caller owns are ever listed.
+
+### Recorded by
+
+User (product owner), agreeing to the recommended option (a) with approach 2, substring name matching, sidebar-mirroring role scoping and archived records excluded, 21 Oct 2026; built the same day.
+
+---
+
 ## Decision 279 — New Schools start with a 60-minute waitlist claim window (was 120)
 
 **Date:** 21 Oct 2026 · **Status:** Approved by product owner
@@ -4230,6 +4257,47 @@ The product owner set this on 21 Oct 2026 for the New Portal grading screens. It
 
 User, 21 Oct 2026; logged 22 Oct 2026.
 
+## Decision 295 — One email, one account, whatever the capitals
+
+**Date:** 22 Oct 2026 · **Status:** Bug fix the product owner asked for · **Builds on:** Decisions 116 and 251
+
+The Staff page review (bug B1/B2) found that emails were matched letter for letter, capitals included. An owner could "Add staff manually" with `jane@gym.com` for someone already registered as `Jane@Gym.com` and get a second account for the same person, the exact thing Decision 116's existing-email check exists to stop. "Find" on the Staff page also missed people when the capitals differed. The product owner asked for B1–B8 to be fixed: *"deep dive and find best solution for bugs from B1 TO B8 and start fixing them"*.
+
+### Decision
+
+1. **Every email that creates or finds a User is trimmed and lower-cased** before anything else looks at it (`NormalizeEmail`, on the register, login, Staff Add Manually, Instructor Add Manually, invite-candidate and coach-invite inputs). Signing in works whatever capitals are typed. The passcode reset is by phone, so it is unaffected.
+2. **Existing accounts are brought into line** by migration `20261123000000_user_email_case_insensitive`: each email whose lower-case form no other account holds is lower-cased.
+3. **The database refuses a second account that differs only by case** (unique index `User_email_lower_key` on `lower(email)`). If a database already holds two real accounts that differ only by case, the migration leaves both alone and skips the index, with a warning naming how many there are; a person merges them and a later migration adds the index. The API's lower-casing stops new ones either way.
+
+Platform Admin accounts (`AdminUser`, a separate realm) are not changed by this decision.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B1 and B2 at the product owner's request, 22 Oct 2026.
+
+## Decision 296 — Staff page fixes: archived branches, closed Schools, and the page itself
+
+**Date:** 22 Oct 2026 · **Status:** Bug fixes the product owner asked for · **Builds on:** Decisions 110, 183, 193, 226 and 251
+
+The rest of the Staff page review's bugs (B3–B8), fixed together at the product owner's request.
+
+### Decision
+
+1. **No new staff or coaches at an archived Branch (B3).** Granting Instructor or Branch Staff, Add Manually and sending a coach invite all refuse a Branch that is archived ("This branch has been archived. Choose another branch."). A coach invite sent before its Branch was archived stops working: its page shows it as cancelled and accepting it is refused (`coach_invite_by_token()` now also returns `branchArchived`). Before, all of these went through, and a new role grant at an archived Branch would have blocked its 90-day purge. Hiding archived Branches in the pickers is Decision 293's (PR #275); this is the server-side half.
+2. **"Who can invite coaches" stays current (B4).** Granting, adding or removing Branch Staff on the Staff page refreshes that list straight away. Before, it needed a page reload.
+3. **Revoke asks first (B5).** "Remove the {role} role from {name}?", saying that the role ends now and that removing their last coach or staff role clears their grading permissions and "Can invite coaches" (Decision 193).
+4. **Branch names, not ids (B6),** in the "Look up a user's grants" table.
+5. **No role grants at a closed School (B7).** Inviting an existing account to a role now refuses a closed School, as Add Manually already did (Decision 110).
+6. **No blank page (B8).** Anyone but the School owner who opens `/staff` is sent to their own home screen (the coach dashboard for Branch Staff and coaches).
+
+### Not decided here
+
+The review's other notes (the "Send invite" wording, the 15-minute delay before a removed role takes effect, co-owners who can't be removed, blank names on Add Manually) and the missing Staff features (a staff list, edit, deactivate) are product questions, put to the product owner separately.
+
+### Recorded by
+
+Claude, from the Staff page review, fixing bugs B3–B8 at the product owner's request, 22 Oct 2026.
+
 ---
 
 ## Decision 297 — "Change grading settings" replaces "Change board %"; the promotion fee switch is owner-only
@@ -4444,6 +4512,449 @@ User, 22 Oct 2026.
 ### Recorded by
 
 User ("open a PR for bug fixes 1 to 4"), 21 Oct 2026.
+
+---
+
+## Decision 306 — Hours are logged, not graded (corrects Decisions 288 and 301)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 288 item 2 and Decision 301 items 2 and 3 · **Amends:** Decision 301 item 4
+
+Decisions 288 and 301 made hours a grading requirement. That was a misreading. The product owner: *"Leave grading as it is, I think you have misunderstood me. We will log the hours they have trained, not do the grading based on hours. Do not change the grading logic."*
+
+### Decision
+
+1. **Grading doesn't change.** A grade still requires classes (or time at the rank for a time-only rank), days at the rank and skills, as today. There is no "classes, hours or both" choice per grade and no hours requirement. Progress and "Ready to Grade" work exactly as they do now.
+2. **ULTM8 logs the hours each student has trained**, as a record. Decision 301 items 1, 5 and 6 still apply:
+   - each check-in adds the scheduled length of the class (90 minutes = 1.5 hours);
+   - "Log a class" by hand adds the length of the class picked, or the time the coach enters (60 minutes by default);
+   - "Open mat counts toward hours" (Grading → Settings) decides whether open mat time is logged in the hours.
+3. **Where hours show:** the student's hours trained are shown on their grading page and in the student app, next to the progress breakdown, as information. They never change the %.
+4. **The progress breakdown stays** (Decision 301 item 4), with the requirements grading already uses: classes, days at the rank and skills.
+
+### Recorded by
+
+User, 22 Oct 2026, reviewing the New Portal design.
+
+---
+
+## Decision 307 — Promotion fee: defaults, prices hidden when off, and the coach decides after a waive or cancel
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decision 300 · **Answers:** the four design questions of 22 Oct 2026 on the promotion fee
+
+### Decision
+
+1. **Both fee switches are off by default.** The promotion fee switch stays off by default (Decision 287). **"Allow grading before the fee is paid" is off by default**, so a priced promotion waits until the fee is paid.
+2. **With the promotion fee off, prices don't show anywhere:** the belt editor (Add rank and Edit) has no price field and the ladder shows no prices. They appear only once the owner turns the fee on.
+3. **Waiving or cancelling a fee never promotes on its own.** Whether the student is promoted stays a coach's decision:
+   - **Cancelling a fee while the promotion waits** leaves the student on their current rank, with the planned promotion waiting for a coach to decide. The product owner: *"should be a decision for the coach"*.
+   - **Waiving a fee the student declined** asks the coach to confirm the promotion; nothing is applied until they agree. The product owner: *"promotion should come from the coach, so we should prompt a question and they should agree to promote, meaning it should not be auto promote"*.
+   - A coach who may promote that student (or the owner) confirms it with the normal Promote dialog, and the history keeps the date they choose. No new fee request is created for a fee that was waived or cancelled.
+4. **Waiving a fee while the promotion waits** applies the promotion the coach already made (Decision 300 item 3, unchanged).
+
+### Still open
+
+- Whether a promotion left "to decide" after a cancel or waive should time out or remind the coach.
+
+### Recorded by
+
+User, 22 Oct 2026, answering the design questions one by one.
+
+---
+
+## Decision 308 — Disciplines: eight bug fixes (archived belts, renames, class types, names)
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 90, 198, 226
+
+The Disciplines review of 22 Oct 2026 found eight bugs (D1–D8). The product owner: *"Deep dive, find best uptodate solutions and what's going on in market. then get confident on the solutions then start fixing them"*.
+
+### Decision
+
+1. **An archived belt is out of the ladder (D1).** Grading never lands a student on an archived belt: the ladder, "declare your rank" at signup, coach verification and a new student's first rung all skip archived belts and their rungs.
+2. **Renaming a style renames it everywhere (D2).** The name copies on classes and timetable slots (`activities`) and on instructors (`specializations`, Decision 90's bridge) follow the new name.
+3. **Class types are edited one by one, and a rename carries over (D3).** Renaming a class type updates the classes, timetable slots and rungs that use it. Removing one that is still in use (an upcoming class, a live timetable slot or a rung) is refused with the counts, so nothing is orphaned silently.
+4. **Adding a belt closes gaps first (D4).** When the 90-day purge has removed an archived belt from the middle of the ladder, the next belt change renumbers the ladder instead of failing. The purge job itself is unchanged.
+5. **Names are trimmed and can't be blank (D5).** This applies to style, skill and template names.
+6. **No duplicate names (D6).** Style names are unique within a School and skill names within a style, ignoring case. A repeated class type in the same style is merged. This is checked by the API, not a database index, so existing duplicate data never blocks a migration.
+7. **Copies and templates get a free name (D7).** "Duplicate" and "Start from template" number the name ("BJJ (Copy 2)", "IBJJF (2)") when it is taken, cut to fit 100 characters.
+8. **Clearing a required field is refused (D8).** Sending an empty value for a style's name, class types or "skills required" switch returns a clear 400, not a server error.
+
+### What this does NOT resolve
+
+- Existing duplicate style names in live data are left as they are; the owner renames them.
+- The API's new error messages are English only; other languages show the generic message until they are added to the portal's server-message translations.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 309 — Disciplines: archive a style, students per style, skill order, and a read-only view for coaches
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 198, 226, 308
+
+The same review found five gaps. Other class-booking and martial-arts apps deactivate rather than delete a programme that has history, and keep the history. The product owner asked for all five to be built.
+
+### Decision
+
+1. **A style can be archived (G1).** Only the School owner archives or unarchives it.
+   - It is blocked while an upcoming class or a live timetable slot uses the style; the owner moves or archives those first.
+   - An archived style is hidden from every picker, read-only, and nobody can be graded in it. Students keep their rank and history, and voiding or noting past history still works.
+   - It is never purged (unlike Decision 226's 90-day purge for belts). Unarchive brings it back, if its name is still free.
+   - Past classes and membership plans that name it keep it.
+   - Delete (Decision 198) stays for styles nobody uses.
+2. **Class types are a list (G2)**, with add, remove, reorder and rename (Decision 308 item 3).
+3. **Students per style (G3).** The Disciplines list shows how many students hold a rank in each style, and the owner sees who they are, with their rank, on the style's page.
+4. **Skills have context and order (G4).** Each skill shows which rungs require it and how many lessons teach it, and the owner can put skills in order.
+5. **Coaches and Branch Staff can see the Disciplines page, read-only (G5)**, including the belts and skills. They don't see the students list.
+
+### What this does NOT resolve
+
+- Whether an archived style should eventually be purged, or a retention period apply.
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User, 22 Oct 2026, after the Disciplines section review.
+
+---
+
+## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 115, 169, 226, 230, 296
+
+The Instructors review of 23 Oct 2026 found fourteen bugs (I1–I14). The product owner: *"Find the best solution until you get confident that that's the best solution have many passes and then build it"*.
+
+### Decision
+
+1. **The belts box lists current instructors only (I1).** "Instructors' belts" no longer fails for the whole School once someone who chose a belt is revoked: their belt is left out, and verifying it says they are no longer an instructor here.
+2. **An archived instructor gets no new work (I2).** A new Class, timetable slot or lesson, or a change of instructor on one, refuses an archived instructor. The pickers on Classes, Timetable and Curriculum offer only active, unarchived instructors; a record that already has an archived or revoked instructor keeps them, marked, until it is changed. Someone with the Instructor role but no profile yet can still be picked, as before.
+3. **The roster shows every instructor, A to Z (I3).** The portal reads every page of the list instead of only the first 20. Every instructor picker and name lookup uses the same list.
+4. **No instructor joins an archived branch (I4).** Add manually, Add instructor and Edit refuse an archived branch, as Decision 296 already does for staff and coaches. A profile already on a branch that was archived later stays editable.
+5. **Revoking keeps its current rule, with a warning (I5).** Revoking an instructor is still allowed while they have upcoming classes; the confirmation now says how many and that those classes keep them until the owner changes it. A Class, timetable slot or lesson checks its instructor again only when the instructor or the branch actually changes, so the owner can still rename or reassign one whose instructor has left.
+6. **Archive is blocked only by what the owner can see (I6).** Only this School's live (unarchived) upcoming classes and active timetable slots block archiving.
+7. **The Status column shows Active or Revoked (I7).** The always-empty Login column is removed.
+8. **A revoked instructor's profile can still be edited (I8).** Only moving it to another branch checks the role again, with a plain message. This replaces the earlier deliberate "update() throws" side effect noted in InstructorsService.
+9. **"Add instructor" offers only people with no profile here yet (I9).** It also returns the branches each person's role covers, and the form starts on that branch.
+10. **Names are trimmed and can't be blank (I10)** in Add manually.
+11. **Coaches and Branch Staff who open the Instructors page go to their start page (I11)** instead of a blank page, as Decision 296 did for the Staff page.
+12. **Archive asks "Are you sure?" first (I12).** Unarchive does not need to.
+13. **A profile's branch must be one the role covers (I13).** A whole-School profile needs a whole-School Instructor role; a branch profile needs a whole-School role or one at that branch.
+14. **The detail page lists every class, split into upcoming and past (I14).** Archived classes are left out; past classes show the latest ten with "Show all"; the booked count shows only on upcoming classes, since it counts upcoming bookings.
+
+### What this does NOT resolve
+
+- **Revoking with upcoming classes (question 2 of the review).** Whether revoking should be blocked until classes are reassigned, or clear their instructor, is still the product owner's call. Until then it stays allowed, with the warning above. Timetable slots of a revoked instructor keep generating classes with them.
+- **Colleagues' profiles (question 1).** Any instructor or Branch Staff member can still read colleagues' full profiles (address, certification key) through the API.
+- **Archive and the role (question 3).** Archiving still leaves the person's login and Instructor role in place.
+- Existing profiles whose branch doesn't match their role (made before item 13) are left as they are.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.
+
+---
+
+## Decision 312 — Instructors: search and filters, hand over classes, give the role back, and what instructors filled in
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 115, 217, 226, 230, 311
+
+After the Decision 311 fixes, the product owner asked for the gaps the 23 Oct 2026 Instructors review listed: *"after fixing the bugs find best way of building the missing things prepare everything and check it to be error less and then start building it"*.
+
+### Decision
+
+1. **Roster search and filters.** The Instructors page has a search (name or email) and Branch, Style and Status filters, worked out in the browser from the full list (Decision 311, I3). Status includes "Hasn't signed in yet".
+2. **"Hasn't signed in yet".** Instructor responses carry `awaitingFirstLogin`: true while the person still has "Add manually"'s temporary passcode (`User.mustChangePasscode`). Shown on the roster and the detail page.
+3. **Invite, then add.** After "Invite existing user" grants the Instructor role, "Add instructor" opens straight away with that person and their branch picked, instead of a notice telling the owner to do it.
+4. **The detail page shows what the instructor filled in** on their Complete Profile page: activities, address and certification (with the consent date). Specializations (the School's styles, set by the owner) and activities (the instructor's own words) are shown as two separate, labelled lists; whether to merge them is not decided here. It also shows their branch, the Archived badge, and their active weekly timetable slots.
+5. **Certification download.** New `GET /instructors/:id/certification-url` returns a 15-minute link to the uploaded file, for the School Owner/Manager only (the same people who manage instructors), using the existing presigned-download helper waiver signatures use.
+6. **Hand over classes.** New `POST /instructors/:id/reassign { toUserId }` moves every upcoming, unarchived Class and every active (ON), unarchived timetable slot of this instructor at this School to another instructor, in one transaction, all or nothing. It uses the same "upcoming"/"active" test archiving does, so archiving works straight after. The new instructor must be assignable at each row's branch (the check a Class edit already makes: active Instructor role covering the branch, profile not archived). Like a Class or slot edit, it sends no notifications; past classes keep their instructor. School Owner/Manager only.
+7. **Give the role back.** A revoked instructor's detail page has "Give Instructor role back", which makes the same Instructor role grant the Staff page and "Invite existing user" make (`POST /users/:id/role-grants`), at the profile's branch by default.
+8. **Complete Profile starts from what's saved.** New `GET /instructors/me/profile` returns the caller's own Instructor profiles (an empty list if none); the page fills in the saved address and activities and says when a certification is already on file. Emptying a saved activities list now clears it.
+
+### What this does NOT resolve
+
+- **Resending the temporary passcode** to someone who hasn't signed in yet. It means making a new passcode for another person's account, so it waits for the product owner.
+- **Instructors editing their own bio, photo or phone.** Only the owner can change those today; whether instructors may is the product owner's call.
+- **Merging specializations and activities** (item 4).
+- Decision 311's open questions still stand: revoking with upcoming classes (now with "Hand over classes" as the way to clear them), colleagues reading each other's full profiles, and whether archiving should remove the role.
+
+### Recorded by
+
+User, 23 Oct 2026, after the Instructors section review.
+
+---
+
+## Decision 313 — "Promotion to decide": one reminder to the coaches after 3 days, only for a fully ready student
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Answers:** the open point of Decision 307 · **Adds to:** Decisions 145, 178
+
+### Decision
+
+1. **A promotion left "to decide" reminds the coaches; it never times out.** It stays "to decide" until a coach promotes the student or decides not to. The product owner: *"remind the coach"*.
+2. **One reminder, 3 days after** the promotion became "to decide" (after a fee was cancelled, or a declined fee was waived). It is not repeated.
+3. **It goes to the coaches who may promote** that student in that style and branch, and the owner: the same people as "ready to grade" (Decisions 145, 139). Delivery uses the same channels as "ready to grade".
+4. **Only for a fully ready student:** 100% of the classes required, enough days at the rank and every required skill signed off, the same test "ready to grade" already uses. A student who is not fully ready gets no reminder. The product owner: *"reminders just only go out for 100% + and all skills or curriculum done, otherwise we will overload the coaches with reminders, that are wrong."*
+5. Nothing else changes: the Grading Board's "Ready to Grade" column still starts at 66% (Decision 136). That column is a view of progress, not a reason to send anything.
+
+### What this does NOT resolve
+
+- Nothing new. A promotion that stays "to decide" after the one reminder simply stays visible on the board.
+
+### Recorded by
+
+User, 23 Oct 2026, answering the follow-up questions on the reminder.
+
+---
+
+## Decision 314 — Promotion fee: who sees prices, who can decide not to promote, and one waiting promotion at a time
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 300, 307, 313 · **Answers:** the open points of the B10 build (PR #293)
+
+### Decision
+
+1. **Prices are seen by everyone with access to grading:** the School owner and anyone with grading permission for that style. Other staff, students and guardians don't see the ladder's prices. (A student or Guardian still sees the amount of their own fee request.) The product owner: *"Any with access to the grading."* The same applies to the School's list of fee requests, whose amounts are prices: each person sees only the styles they have grading permission for.
+2. **Anyone with grading permission for the style can decide not to promote** a student whose promotion is "to decide" (Decisions 307, 313), as well as the owner. No particular action right is needed. The product owner: *"any one with the grading permission"*.
+3. **One waiting promotion at a time.** While a promotion is waiting for its fee, the student can't be promoted again in that style until the fee is paid, waived or cancelled. The product owner chose: *"No, wait for the fee first."*
+
+### Recorded by
+
+User, 23 Oct 2026, answering the B10 follow-up questions.
+
+---
+
+## Decision 315 — Gymdesk parity, members: visitors, check-in code, member details, data tools
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** `docs/design-references/gymdesk/QUESTIONS-BY-SECTION.md` Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q26, Q27, Q29, Q32, Q44, Q46, Q47, Q54, and the open points of `docs/v1.3-backend-backlog.md` §3.1–3.3, 3.9, 3.10, 3.15 and §5.1–5.4, 5.11, 5.13 · **Records:** the 20 Oct 2026 answers that were waiting for a decision entry
+
+### Decision
+
+1. **Visitors are their own status, separate from Trial Membership**, with no platform limit (20 Oct 2026). The School sets the visitor period (any length). A Visitor follows the same process as a member (waiver, booking, check-in). A child visitor needs a Guardian, as for any minor. The owner and staff the owner allows set the visitor period. A Visitor can have more than one visit pass in a row. Trial Membership's 30-day caps (Decisions 54, 64) are unchanged.
+2. **Personal check-in code** (a fallback for the QR): ULTM8 generates it; the School chooses 4 or 6 digits (4 by default); unique within the School; a Guardian can check a child in with the child's code; staff can issue a new one; the student can't change it.
+3. **Temporary passcode set by staff** (20 Oct 2026: ULTM8 generates it, changed at first login). For a child it goes on the **Guardian's** account; a child only has a login of their own through the Guardian's limited-login set-up (age 13+, Decision 77).
+4. **Join date:** defaults to the day the member is added; staff can set an earlier date (never in the future).
+5. **Contacts:** one secondary phone and one secondary email, plus a separate **emergency contact** (name, phone, relationship) who is not a Guardian and has no account.
+6. **"How did you hear about us?"** is each School's own list, starting with Friend, Instagram, Google, Walked past; the School can add, rename and remove options.
+7. **Tags:** a list each School manages (staff can add a new tag while tagging); members never see their tags.
+8. **Staff notes:** staff-only notes are seen by any staff at the School who can see the member; kept while the account exists and erased with it. The "show to member" tick box (20 Oct 2026) still applies.
+9. **Files on a member:** PDF, JPG and PNG, up to 10 MB each; seen by the owner and staff the owner grants access; never shown to the member; erased with the account.
+10. **Medical information** at sign-up: optional per School; explicit consent from the member (Guardian for a child); seen only by the owner and staff the owner grants access; erased with the account.
+11. **Export** the member list (CSV, all members including children, 20 Oct 2026): the owner and staff the owner grants the right.
+12. **Import members** from a spreadsheet: name, email, phone, date of birth, gender, join date, belt per style. A row whose email already exists is skipped and listed for review. Children are imported with their Guardian's email; the Guardian gets an invite and gives consent when accepting.
+13. **Data tools:** import memberships, merge duplicate members, export all signed documents (ZIP), and import past attendance (CSV).
+14. **Custom member fields and statuses:** each School can add its own fields (text, number, date, drop-down, yes/no) and its own member statuses (up to 50 characters), shown on the profile and as list filters.
+15. **Gender** accepts Female, Male or empty only. Existing other values are sample data and are cleared.
+
+### Recorded by
+
+User, 25 Oct 2026, answering the open Gymdesk questions in batches.
+
+---
+
+## Decision 316 — Gymdesk parity, memberships and billing: freeze, fees, plan dates, capacity, contracts, tax
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q14, Q15, Q16, Q17, Q18, Q25, Q35, Q36, Q42, and `docs/v1.3-backend-backlog.md` §3.4, 3.7 · **Changes:** Decision 6 (Membership status gains Frozen)
+
+### Decision
+
+1. **Freezing a membership** (20 Oct 2026: allowed; the School sets the maximum length, may charge a freeze fee; billing stops; the Guardian requests for a child). The member or Guardian requests it; the **owner or permitted staff approve**; no booking or check-in while frozen; the end date moves out by the freeze length; a freeze can be ended early. This adds a **Frozen** state to Membership, alongside Active and Expired (amends Decision 6).
+2. **Late fees** (fixed or %, every payment method, 20 Oct 2026): never charged to the card automatically. The fee goes on the member's balance (Decision 303) and is paid in the app or at the desk. Each School sets the grace period, 7 days by default.
+3. **Joining (sign-up) fee:** a one-off amount on a plan, charged with the first payment. It's switched on or off in the School's membership settings, and **the owner decides whether it's refundable**.
+4. **Plan dates:** each plan can start on the member's **first check-in** or run on **fixed dates** (e.g. a 6-week camp), and can **switch to another plan when it ends**. Prorating to a shared renewal day is already built (Decision 259).
+5. **Plan capacity:** a plan can have a maximum number of members, set by each School in its settings; when full, new buyers join a waitlist and are told when a place frees up.
+6. **Contracts** are between the School and its member (ULTM8 is the School's tool and charges no one). The School writes its contract text and terms on the plan (minimum term, early-exit fee, renews or ends). The member signs it at purchase like a waiver. If they cancel early, the School's exit fee goes onto their balance.
+7. **Recharge at check-in:** when a Class Pack has no credits left, the member is offered the same pack in the app and the check-in completes once paid.
+8. **Tax / VAT:** Platform Admin keeps a tax rate per country; ULTM8 adds it and shows it on receipts. No tax vendor.
+9. **Failed card payments:** Stripe's own retries for everyone; no School setting.
+10. **Income categories:** each plan and charge can carry an income category the School names, shown in exports. No accounting integration yet.
+11. **Card-fee surcharge** (20 Oct 2026): a School may pass the card processing fee on to the member **only in countries where that's legal**. ULTM8 keeps a country allow-list, legally reviewed before launch (it's illegal for consumer card payments in the UK and the EU).
+
+### Recorded by
+
+User, 25 Oct 2026.
+
+---
+
+## Decision 317 — Gymdesk parity, check-in and attendance: rules, kiosk, statistics, past attendance, rosters, reminders
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q19, Q21, Q22, Q31, Q41, Q52, and `docs/v1.3-backend-backlog.md` §3.5, §5.6, 5.7, 5.10
+
+### Decision
+
+1. **Check-in rules** are set per School (20 Oct 2026). They're changed by the **owner and staff the owner grants access**.
+2. **Kiosk mode:** Check-in can run as a locked kiosk on a front-desk tablet (QR, code and name search only); leaving it needs a staff passcode.
+3. **Attendance statistics:** the owner sees the whole School; staff the owner grants access see their own Branches. Trial, Visitor and Friend Pass check-ins count, with a filter to leave them out.
+4. **Logging past attendance:** staff can log attendance up to 30 days back. It counts like a normal check-in (uses a Class Pack credit, counts toward grading) and records who logged it.
+5. **Active students** (Dashboard): anyone with a current membership (Subscription, Class Pack with credits, Weekly Pass, Trial). Visitors and frozen members are shown as separate numbers.
+6. **Rosters** are named lists of members for staff (to message, take attendance or filter). Being on a roster doesn't change who can book.
+7. **Reminders:** an expiry reminder to the member 7 days before a membership ends (Guardian for a child); an absence alert to staff when a member hasn't checked in for N weeks (the School sets N); a weekly report to staff of memberships ending soon.
+
+### Recorded by
+
+User, 25 Oct 2026.
+
+---
+
+## Decision 318 — Gymdesk parity, the School and the member app: checklist, birthdays, messaging, ULTM8 trial, sign-up forms, app switches
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Q1, Q2, Q3, Q4 follow-up, Q5, Q24, Q30, Q37, Q40, Q43, Q45, and `docs/v1.3-backend-backlog.md` §3.12, 3.14
+
+### Decision
+
+1. **Setup checklist:** one per School, for the owner (add a Branch, a style and belts, a class, a membership plan, a waiver, connect Stripe, invite staff); the owner can hide it.
+2. **Birthdays** on the Dashboard: all staff at the School see this week's birthdays, children included, with the date but not the age.
+3. **"What's new":** written by ULTM8 HQ in Platform Admin, shown to owners and staff in their language (English if a translation is missing).
+4. **Support chat:** later; a Help link to email support for now.
+5. **Free trial of ULTM8** (20 Oct 2026: Platform Admin only, configurable length, no card): when it ends without a subscription, the School drops into the existing read-only ("degraded") portal state until it subscribes. Nothing is deleted.
+6. **Messaging:** in-app and email now; SMS later, once a vendor and who pays for it are decided. Messages to children still go through the Guardian (20 Oct 2026).
+7. **Member app switches** each School can turn on or off: edit own profile, cancel own membership, add family members, see payment history, and a **grading countdown**: the School's next grading day ("Grading in 23 days") and the student's own countdown to being ready for their next rank (classes and days still needed).
+   - The next grading day is a date the School sets. It is not the grading-events module, which stays in Version 2 (Decision 158).
+8. **Child's signature:** off by default (the Guardian signs); a School can also require the child's signature from an age it sets.
+9. **Sign-up forms:** several forms per School (front desk, website, invite); each section shown, hidden or required; staff approve website sign-ups before they become members.
+10. **Ad tracking:** ready-made connections only (the School enters its Meta Pixel or Google Analytics ID); no custom code on ULTM8 pages.
+11. **Members-only news feed:** not now; Broadcast notifications and Curriculum cover it.
+
+### Still open
+
+- **Family accounts and family discounts** stay deferred until the product owner has reviewed Gymdesk's "Manage family account" screen (Q13).
+
+### Recorded by
+
+User, 25 Oct 2026.
+
+---
+
+## Decision 319 — Gymdesk parity, schedule: one timetable per Branch, closure dates, and four calendar settings
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Gymdesk Schedule screenshots of 25 Oct 2026 (`GYMDESK-PARITY-BACKLOG.md` §5, S3–S10)
+
+### Decision
+
+1. **One timetable per Branch**, filtered by style and class type, as today. No separately named schedules with their own visibility.
+2. **Rosters stay lists only** (Decision 317): a roster can't be assigned to classes to book its members.
+3. **Closure dates:** the owner sets closure dates for the School or a Branch (e.g. Christmas). Classes in that time are cancelled under the School's normal cancellation rule (credit or refund), members are told, and the owner can choose to **freeze every membership** for those dates (Decision 316's freeze).
+4. **Schedule settings** the School can choose: the **week start day** (Sunday or Monday), the **default layout** (list or grid), **Google Calendar** connection (staff see their classes in their Google Calendar), and a **schedule embed** for the School's own website.
+
+### Recorded by
+
+User, 25 Oct 2026, reviewing Gymdesk's Schedule.
+
+
+## Decision 320 — Gymdesk parity, staff: one Access page per staff member, Front-Desk is Branch Staff, a personal staff code for the kiosk, a payroll report
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision · **Answers:** Gymdesk Managers & Staff screenshots of 25 Oct 2026 (`GYMDESK-PARITY-BACKLOG.md` §5, ST1–ST7, PY1–PY3)
+
+### Decision
+
+1. **One Access page per staff member.** Every right the owner can grant to staff is a tick box on that page. They're grouped by area (Members, Billing, Check-in and attendance, Grading, Schedule and bookings, Settings), and there's a "Toggle all". This covers the rights Decisions 315–319 left as "staff the owner grants access": check-in rules, export, member files, medical information, attendance statistics, approving freezes, setting the visitor period. It also brings onto this page the toggles that already exist ("Can invite coaches", Decision 183; the grading toggles, Decision 181). The owner always has every right. A School Owner/Manager has every right too, by role, not by tick box.
+2. **Staff types stay ULTM8's three roles.** Gymdesk's *Manager* is School Owner/Manager, its *Instructor* is Instructor, and its *Front-Desk* is **Branch Staff**. No new role is added. What a person may do beyond their role's floor comes from their tick boxes.
+3. **Personal staff code for the kiosk.** Each staff member has their own code. It is generated by ULTM8, like members' check-in codes (Decision 315). It unlocks the kiosk (Decision 316), and the log records who unlocked it. There is no one shared School passcode.
+4. **Payroll is a report only.** Each staff member can have an hourly rate and a per-class rate, in the School's currency. If both are blank, the person is left out. The report covers a date range, with presets (last 14 or 30 days, this or last month, last 12 months, custom). It adds up, per staff member, hours × the hourly rate plus classes taught × the per-class rate, and can be downloaded. **Hours are the classes taught only:** a class's length counts for the coach who actually taught it. There's no clock in or out. **A substitute is paid, not the assigned coach.** Staff need a way to mark a substitute on a single class; ULTM8 doesn't have one yet. **A class with more than one coach pays each coach in full:** each gets their own per-class rate and the full class length in hours. ULTM8 never pays staff; paying them stays outside ULTM8. Seeing the report and setting the rates is a right on the Access page (item 1).
+
+### Still open
+
+- Which role floors stay fixed, outside the tick boxes. For example, Spec 55 §8.2 rules out instructor management for Instructors (see Decision 183). The tick boxes can't grant past the spec, so the backend team checks each box against Spec 55 §8 before building it.
+
+### Recorded by
+
+User, 25 Oct 2026, reviewing Gymdesk's Managers & Staff and Payroll.
+
+## Decision 321 — Grading, from Gymdesk Programs: requirement tick boxes per style, automatic promotion, first belt on the first class
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision (grading; overrides Spec 55 where they conflict, per Decision 124) · **Answers:** Gymdesk Programs recording of 25 Oct 2026 (`GYMDESK-PARITY-BACKLOG.md` §5, PG1–PG8)
+
+### Decision
+
+1. **Requirement tick boxes on each style.** The owner ticks which requirements the style uses:
+   - **Classes** (exists);
+   - **Days in rank** (exists);
+   - **Skills** (exists);
+   - **Hours** (new as a requirement);
+   - **Days attended** (new);
+   - **Minimum age** (new).
+
+   The belt editor shows only the ticked requirements' fields. An unticked requirement is not checked, even if a belt still holds a number for it.
+2. **Hours, per style (amends Decision 306).** A style that ticks Hours counts hours trained toward its belts. The hours are the ones already logged (Decision 301/306, B11); open mat counts only while its switch is on. A style that doesn't tick Hours works as Decision 306 says: hours are logged and shown, never counted.
+3. **Days attended:** the number of different days the student checked in to a class of the style since their last promotion. Two classes on one day count once. It is counted per rung, like Classes.
+4. **Minimum age, per belt:** the student must be at least this age on the day they're promoted. It is set in the belt editor like the other requirements: usually on the belt's plain grade, and a stripe grade can have one too. Empty means any age. A student who meets everything else waits until their birthday.
+5. **Automatic promotion, per style, set by the owner.** The choices are:
+   - **Manual** (the default; the coach decides, as today);
+   - **Auto-award stripes** (stripes are given automatically; belts stay manual);
+   - **Auto-award all ranks.**
+
+   An automatic promotion happens when the student meets every ticked requirement for the next rung (100%).
+   - **Promotion fee:** if the next rung has a fee, ULTM8 waits for it (Decision 314). The fee request goes out, and the promotion happens automatically once the fee is paid. A waived fee also lets it happen. A cancelled fee doesn't promote (Decision 307).
+   - **Notices:** the student (the Guardian for a child) gets the usual promotion notice, in-app and by email. The coaches of that style are told too.
+   - **Undo:** a coach who may promote can undo an automatic promotion. The undo is recorded in the history.
+   - **Reminders:** "Promotion to decide" reminders (Decision 313) aren't sent for rungs that are awarded automatically.
+6. **Auto-assign first belt, per style (owner switch).** When it is on, a student with no belt in the style gets the style's first rung on their **first check-in to a class of that style**. That rung is verified, as in Decision 147. They can still declare a higher belt for staff to verify (Decisions 137, 147).
+7. **The progress % counts the ticked requirements** (26 Oct 2026). It is the **average** of the style's ticked requirements for the next grade: classes, days in rank, skills, hours and days attended. Each requirement is capped at 100%. Example: classes 30/40 (75%), days 90/180 (50%) and skills 4/8 (50%) give 58%. This replaces "progress is classes attended out of classes required; skills and minimum days aren't part of it". The board columns (Decision 136) and "Ready to grade" (Decision 313) use this %, so 100% means every ticked requirement is met.
+   - A requirement the grade doesn't ask for (e.g. no skills) is left out.
+   - A time-only rank still counts time at the rank.
+   - **Minimum age isn't in the %:** a student at 100% who is too young shows "Waiting for age N" and can't be promoted until then.
+
+### Recorded by
+
+User, 25 Oct 2026: *"for the grading, we have done that i want, but i like this detail"*. The answers were collected in the same conversation.
+
+## Decision 322 — Booking and schedule rules from the stress test: cut-offs, check-in opening, waitlist first, late cancellation, timetable edits
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (answers given during the booking/schedule stress test) · **Report:** `docs/handover/BOOKING-SCHEDULE-STRESS-TEST.md`
+
+### Background
+
+The stress test ran 30 Schools and 12,213 students through the real API: booking, check-in, grading, and attacks on the logic. It found rules the code did not enforce, and gaps no rule covered. The confirmed rules (Spec 55 / SKILL.md) were fixed as bugs: a Membership past its expiry date funded bookings (SKILL.md §8: expiry is checked at every booking). For the gaps, the product owner decided as follows.
+
+### Decision
+
+1. **Booking cut-off.** Nobody can book a Class that has ended or is archived. Students and Guardians are stopped at the Class's booking cut-off (`bookingEndAt`, from the timetable's booking cut-off). **Staff can still book a walk-in until the Class ends.**
+2. **Check-in opens before the start.** Check-in has always closed at the check-in end time (or the Class end). It now also **opens a set number of minutes before the Class starts**. Each School sets the number (`School.checkInOpensMinutesBeforeStart`, default 30). Before this, a Student could be checked into next week's Class and the attendance counted toward grading.
+3. **Waitlist first.**
+   - Only a full Class takes waitlist entries, or one others are already queued for. Never from a Student already booked into it.
+   - While anyone is waiting, Students and Guardians can't book directly: they join the waitlist, and freed seats go in waitlist order. A seat offered to a notified Student is held for them, even from Staff.
+   - Staff can still book a walk-in into a seat that is free and not held.
+   - Raising a full Class's capacity offers the new seats to the waitlist.
+4. **Late cancellation is a School setting** (`School.lateCancelRefundPolicy`). It covers cancelling a booking after the Class has started, when the Class has no refund cut-off of its own:
+   - **No refund once started** (default): the credit stays spent.
+   - **Refund until it ends.**
+   - **Always refund.**
+
+   Under the first two, a Class that has ended can no longer be cancelled; it becomes a No-Show. A Class's own refund cut-off still applies first. The late-cancellation fee stays tied to that cut-off only.
+5. **Timetable edits reach the Classes already generated** (4 weeks ahead).
+   - **Unbooked upcoming Classes always follow the change.** They are re-timed in the same week (a new weekday moves them, it doesn't add a second set). They leave the schedule when the slot is switched off or archived.
+   - **Classes with bookings follow the owner's choice.** A change that moves them (day, times, branch) or switches the slot off is refused until the owner chooses:
+     - **Move:** they follow, and booked students are told.
+     - **Cancel:** bookings are cancelled with credit back, the Classes archived, and students told.
+     - **Keep:** they stay as they are.
+   - The owner sees the counts first (`GET /timetable/:id/upcoming-impact`).
+   - When the School cancels a Class this way, the credit always comes back, whatever the refund cut-off, and no fee is charged.
+6. **Capacity can't be cut below the seats already booked.** The owner is shown the count ("8 students are booked. Cancel some bookings first, or set the capacity to 8 or more.").
+
+### Recorded by
+
+User, 26 Oct 2026, answering the stress-test questions: *"Staff can, students can't"*; check-in opening *"School sets it"*; *"Waitlist first"*; late cancellation *"We should give school owners the choice to choose what fits better for them, we should have the options for them, as default we can use No refund once started"*; timetable edits *"Update unbooked, ask for booked"*; capacity *"Refuse with the count"*.
+
+---
+
+## Decision 323 — Translation before launch: the student app too, and every text reviewed from zero by native speakers
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** Decision 273 left the student app (`apps/student`) untranslated "for this testing round", and its item 3 said non-English text needs a native-speaker review before real users rely on it, without saying how or when.
+
+### Decision
+
+1. **The student app is translated too**, into the same 15 languages as the School Portal (Decision 273 item 2). Arabic is right-to-left.
+2. **Its language:** it starts in the phone's language when that is one of the 15 (English otherwise). A language picker in Profile changes it and saves it to the account, the same saved setting (`language` on `GET /users/me`) the portal uses.
+3. **Platform Admin overrides apply to the student app as well**, as Decision 273 item 1 does for the portal: an override row for a text replaces the app's built-in text; a missing translation falls back to English, never to blank text.
+4. **Every text is reviewed by native speakers before launch, starting from zero.** Once the wording is final, the School Portal's and the student app's texts are exported to the shared translation review page (`apps/school-portal/scripts/i18n-review/`), reviewed per language by native speakers, and their corrections applied in one change to the translation files. Reviews made before that point were cleared (26 Oct 2026: 61 Portuguese (BR) checks and 25 Arabic AI pre-checks), so the launch review starts empty.
+
+### What this does NOT resolve
+
+Platform Admin itself stays English (Decision 273). Who the native-speaker reviewers are, per language, is for the product owner to arrange.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"we will need for the students app too. Make sure it is done"*; *"delete anything that has been done, so we can start fresh from zero and make sure it is done properly"*; and choosing the recommended options for the languages (the same 15), how the app picks its language (phone's language, can change) and overrides (yes, same as the portal).
 
 ---
 

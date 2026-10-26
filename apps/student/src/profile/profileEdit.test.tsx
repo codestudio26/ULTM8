@@ -96,7 +96,14 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     expect(call.gender).toBe('non-binary');
     expect(call.nationality).toBe('Testland');
     expect(call.username).toBe('jamie-lee');
-    expect(call.address).toBe('123 Test St');
+  });
+
+  it('an untouched address is left out, so a structured address saved elsewhere is kept', async () => {
+    const { getByText } = await render(<ProfileScreen />);
+    await fireEvent.press(getByText('Save'));
+
+    const call = updateProfile.mutate.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(call.address).toBeUndefined();
   });
 
   it('language/currency still send undefined, not null, when left at their current value (no clear option exists for either)', async () => {

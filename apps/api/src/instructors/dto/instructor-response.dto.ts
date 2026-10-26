@@ -34,6 +34,12 @@ export class InstructorResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ enum: ['ACTIVE', 'REVOKED'] })
   status!: 'ACTIVE' | 'REVOKED';
 
+  /** Decision 312 — true while the linked User still has the temporary
+   * passcode from "Add Manually" (User.mustChangePasscode), i.e. they haven't
+   * signed in yet. Not a raw Instructor column. */
+  @ApiProperty()
+  awaitingFirstLogin!: boolean;
+
   @ApiProperty()
   schoolId!: string;
 

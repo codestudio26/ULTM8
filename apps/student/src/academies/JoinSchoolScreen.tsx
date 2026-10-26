@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ApiError } from '@ultm8/api-client';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { useMyMinors } from '../guardians/guardianQueries';
 import { BeltSwatch } from '../grading/MyGradingScreen';
@@ -51,6 +52,7 @@ function Heading({ children }: { children: React.ReactNode }) {
  * 147). Opened with `beltsFor` it skips straight to the belts, for someone
  * who joined earlier and hasn't added a belt yet. */
 export function JoinSchoolScreen({ route, navigation }: Props) {
+  const t = useT();
   const { academyId, name, beltsFor } = route.params;
   const { claims, applyAccessToken, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
   const alreadyMine = useEnrolledSchoolIds().includes(academyId);
@@ -78,13 +80,13 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
   if (!academy) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load this School — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('academies.join.loadFailed'))} />
       </Screen>
     );
   }
 
   const people: Person[] = [
-    ...(claims && !alreadyMine ? [{ studentId: claims.sub, name: 'Me' }] : []),
+    ...(claims && !alreadyMine ? [{ studentId: claims.sub, name: t('academies.join.me') }] : []),
     ...(minors.data?.items ?? []).map((m) => ({ studentId: m.studentId, name: `${m.firstName} ${m.surname}` })),
   ];
   const branches = academy.branches;
@@ -106,7 +108,7 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
     } catch (err) {
       // Already a student here: they can still add a belt they haven't yet.
       if (err instanceof ApiError && err.status === 409) {
-        setNote(`${isMe ? 'You are' : `${who.name} is`} already a student here.`);
+        setNote(isMe ? t('academies.join.alreadyStudentMe') : t('academies.join.alreadyStudentOther', { name: who.name }));
         setJoinedAs(who);
         clearPendingPickIfThisSchool();
       }
@@ -127,13 +129,13 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
   return (
     <ScrollView>
       <Screen>
-        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>Join {academy.name}</Text>
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>{t('academies.join.title', { name: academy.name })}</Text>
 
         {people.length === 0 ? (
-          <Text style={{ marginTop: spacing[3], color: theme.textSecondary }}>You are already a student here.</Text>
+          <Text style={{ marginTop: spacing[3], color: theme.textSecondary }}>{t('academies.join.alreadyStudentMe')}</Text>
         ) : (
           <>
-            <Heading>Who is joining?</Heading>
+            <Heading>{t('academies.join.whoIsJoining')}</Heading>
             <View accessibilityRole="radiogroup">
               {people.map((p) => (
                 <Choice key={p.studentId} label={p.name} selected={who?.studentId === p.studentId} onPress={() => setWho(p)} />
@@ -142,8 +144,8 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
 
             {needsBranch ? (
               <>
-                <Heading>Home branch</Heading>
-                <Text style={{ color: theme.textSecondary, marginBottom: spacing[2] }}>The branch you mainly train at. Its coaches look after your grading.</Text>
+                <Heading>{t('academies.join.homeBranch')}</Heading>
+                <Text style={{ color: theme.textSecondary, marginBottom: spacing[2] }}>{t('academies.join.homeBranchHelp')}</Text>
                 <View accessibilityRole="radiogroup">
                   {branches.map((b) => (
                     <Choice key={b.id} label={b.name} selected={branchId === b.id} onPress={() => setBranchId(b.id)} />
@@ -153,10 +155,10 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
             ) : null}
 
             {join.isError && !(join.error instanceof ApiError && join.error.status === 409) ? (
-              <ErrorBanner message={getApiErrorMessage(join.error, 'Could not join — please try again.')} />
+              <ErrorBanner message={getApiErrorMessage(join.error, t('academies.join.joinFailed'))} />
             ) : null}
             <View style={{ marginTop: spacing[4] }}>
-              <Button title="Join" onPress={onJoin} loading={join.isPending} disabled={!ready} />
+              <Button title={t('academies.join.submit')} onPress={onJoin} loading={join.isPending} disabled={!ready} />
             </View>
           </>
         )}
@@ -183,6 +185,7 @@ function BeltsStep({
   note: string | null;
   navigation: Props['navigation'];
 }) {
+  const t = useT();
   const { data, isLoading, error } = useDeclareOptions(person.studentId, schoolId);
   const declare = useDeclareBelt();
   const [chosen, setChosen] = useState<Record<string, string>>({});
@@ -201,7 +204,7 @@ function BeltsStep({
       try {
         await declare.mutateAsync({ studentId: person.studentId, disciplineId: style.disciplineId, rankId: rung.rankId, stripeTierId: rung.id });
       } catch (err) {
-        setFailed(getApiErrorMessage(err, `Could not save the ${style.disciplineName} belt — please try again.`));
+        setFailed(getApiErrorMessage(err, t('academies.belts.saveFailed', { style: style.disciplineName })));
         return;
       }
     }
@@ -213,19 +216,19 @@ function BeltsStep({
     <ScrollView>
       <Screen>
         <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>
-          {isMe ? 'Your current belt' : `${person.name}'s current belt`}
+          {isMe ? t('academies.belts.titleMe') : t('academies.belts.titleOther', { name: person.name })}
         </Text>
         <Text style={{ color: theme.textSecondary, marginTop: spacing[1] }}>{schoolName}</Text>
         {note ? <Text style={{ marginTop: spacing[2] }}>{note}</Text> : null}
 
         {isLoading ? <ActivityIndicator /> : null}
-        {!isLoading && !data ? <ErrorBanner message={getApiErrorMessage(error, 'Could not load the belts — please try again.')} /> : null}
+        {!isLoading && !data ? <ErrorBanner message={getApiErrorMessage(error, t('academies.belts.loadFailed'))} /> : null}
 
         {data && styles.length === 0 ? (
           <>
-            <Text style={{ marginTop: spacing[3] }}>Nothing to add here: the School grades you from your first class.</Text>
+            <Text style={{ marginTop: spacing[3] }}>{t('academies.belts.nothingToAdd')}</Text>
             <View style={{ marginTop: spacing[4] }}>
-              <Button title="Done" onPress={() => navigation.goBack()} />
+              <Button title={t('academies.belts.done')} onPress={() => navigation.goBack()} />
             </View>
           </>
         ) : null}
@@ -233,14 +236,14 @@ function BeltsStep({
         {styles.length > 0 ? (
           <>
             <Text style={{ marginTop: spacing[3] }}>
-              Choose {isMe ? 'your' : 'their'} belt in each style {isMe ? 'you train' : 'they train'}. Never graded? Choose the first belt. Any other belt waits for the School to check it.
+              {isMe ? t('academies.belts.chooseMe') : t('academies.belts.chooseOther')}
             </Text>
             {styles.map((style) => (
               <View key={style.disciplineId}>
                 <Heading>{style.disciplineName}</Heading>
                 <View accessibilityRole="radiogroup" accessibilityLabel={style.disciplineName}>
                   <Choice
-                    label="I don't train this"
+                    label={t('academies.belts.dontTrain')}
                     selected={!chosen[style.disciplineId]}
                     onPress={() => setChosen((c) => ({ ...c, [style.disciplineId]: '' }))}
                   />
@@ -259,8 +262,8 @@ function BeltsStep({
             ))}
             {failed ? <ErrorBanner message={failed} /> : null}
             <View style={{ marginTop: spacing[4], gap: spacing[2] }}>
-              <Button title="Save" onPress={() => onSave(styles)} loading={declare.isPending} disabled={!Object.values(chosen).some(Boolean)} />
-              <Button title="Not now" variant="secondary" onPress={() => navigation.goBack()} />
+              <Button title={t('academies.belts.save')} onPress={() => onSave(styles)} loading={declare.isPending} disabled={!Object.values(chosen).some(Boolean)} />
+              <Button title={t('academies.belts.notNow')} variant="secondary" onPress={() => navigation.goBack()} />
             </View>
           </>
         ) : null}

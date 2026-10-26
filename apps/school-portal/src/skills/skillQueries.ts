@@ -52,3 +52,13 @@ export function useDeleteSkill(disciplineId: string) {
       ]),
   });
 }
+
+/** Put a style's skills in order (Decision 309): every skill id, once. */
+export function useReorderSkills(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (skillIds: string[]) =>
+      unwrap(apiClient.PUT('/v1/styles/{disciplineId}/skills/order', { params: { path: { disciplineId } }, body: { skillIds } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills', disciplineId] }),
+  });
+}

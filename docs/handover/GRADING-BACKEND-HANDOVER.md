@@ -4,6 +4,10 @@
 
 Read this before starting. Each task says what it must do, where the code is today, a suggested build, and when it's done. The frontend tasks that depend on yours are listed at the end, so you can agree the API shape with the frontend team first.
 
+> **Note to the backend team (23 Oct 2026, updated).** Everything left in this file is yours. **B11 (hours trained) and B10 (promotion fee) are built and on `master`** (PRs #292, #293, #294; Decisions 306, 307, 313, 314), so don't rebuild them; their sections below say what was built and what's still open. If anything is unclear, or you need information to start a task, ask the product owner: questions get answered quickly, and a gap that needs a business decision is recorded in the decision log before anyone builds it.
+>
+> **Suggested order:** **C1** first (charges and balances): until it exists a promotion fee can't be paid, and with the default setting a waiting promotion only goes through when the owner waives the fee. Then **B2** (it absorbs the two small settings endpoints B10 and B11 added), **B1**, and the rest in any order. Known issues in the repo are in section 6.
+
 ---
 
 ## 1. Read first
@@ -12,8 +16,8 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 **Sources, highest first** (from `CLAUDE.md`):
 1. Spec 55, then `skills/ultm8-domain-rules/SKILL.md`.
-2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290 and 297–304**.
-3. The New Portal design: `DESIGN.md` → "Grading screens" (on the design branch `claude/relaxed-bohr-j3ilir` until it merges), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
+2. `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. **For grading, Gus's rules (Decision 124 onward) override Spec 55** where they conflict. The decisions for this work are **280, 281, 285–290, 297–304, 306, 307 and 313**.
+3. The New Portal design: `DESIGN.md` → "Grading screens" (merged into `master`), and the published design (ask the product owner for the link). The design shows UI; it's never the source of a business rule on its own.
 
 **Rules that always apply:**
 - **Tenancy and RLS.** Every query stays inside the School (Franchise → School → Branch). Use `prismaApp.withTenantContext(...)` as `grading.service.ts` does. Add RLS policies and grants in the migration for any new table. Never read across Schools.
@@ -171,16 +175,23 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-### B10. Promotion fee — Decisions 287, 297, 300
+### B10. Promotion fee — Decisions 287, 297, 300 — ✅ built (#293, #294)
+
+> **Built.** Switches: `GET`/`PUT /v1/schools/:schoolId/promotion-fee-settings` (owner changes). Prices: `stripeTiers[].promotionFeeMinor` on the rank endpoints, shown only to the owner and people with grading permission for the style (Decision 314). Requests: `PromotionFeeRequest` table, payer accept/decline, owner waive/cancel, "to decide" with dismiss by anyone with grading permission for the style (314), the board's `feeStatus`, and the one reminder (313) in the daily sweep. One waiting promotion per student per style (314).
+> **Left for you:** the payment step. **C1** turns an ACCEPTED request into a charge and, once paid, calls `PromotionFeeService.markPaid(studentId, requestId)` (exported from the ranks module, tested), which applies a waiting promotion with the coach's date. There is no "paid at the desk" action: that isn't decided. The original brief follows for reference.
+
 
 **What it must do:**
 - **Prices per grade.** With the fee switch on, the owner can set a price on any belt and any stripe grade. **No price = free.** Stripes are free unless priced.
 - **Never charged directly.** At grading, a **fee request** appears in the student's account (the Guardian's, for a child). They **accept** it, then it's charged.
 - **"Allow grading before the fee is paid"** (owner switch):
   - **On:** the promotion happens straight away; the request waits. Declined → the owner sees **"Fee declined"** on the student; the promotion stays.
-  - **Off:** the promotion waits, shown as **"Waiting for fee"** on the board, and applies only once the fee is accepted and paid. Declined → nothing changes, the owner sees "Fee declined".
+  - **Off (the default, Decision 307):** the promotion waits, shown as **"Waiting for fee"** on the board, and applies only once the fee is accepted and paid. Declined → nothing changes, the owner sees "Fee declined".
   - No answer → the request stays open.
-- **The owner can waive or cancel a fee at any time.** Waiving a waiting promotion applies it straight away.
+- **The owner can waive or cancel a fee at any time** (Decision 307):
+  - Waiving a **waiting** promotion applies it straight away (the coach already made it).
+  - **Cancelling** a waiting promotion, or **waiving a declined** fee, never promotes on its own: the student stays on their rank and the planned promotion is marked **"to decide"** for a coach. A coach who may promote that student (or the owner) confirms it through the normal Promote flow; no new fee request is created for it.
+- **With the fee switch off, prices are hidden** everywhere (belt editor and ladder), and none are returned to the portal.
 - The history keeps **the grading date the coach chose**, not the payment date.
 - **Bulk promote:** one request per promoted student, for their own grade's price.
 - Owner-only: the switches and the prices.
@@ -189,33 +200,61 @@ Read this before starting. Each task says what it must do, where the code is tod
 - `RankStripeTier.promotionFeeMinor Int?` (plus the School's currency), null = free.
 - `PromotionFeeRequest { id, schoolId, studentId, payerId (student or Guardian), disciplineId, toRungId, amountMinor, currency, status (PENDING | ACCEPTED | PAID | DECLINED | WAIVED | CANCELLED), promotionEventId?, pendingGrade (target, grading date, note, acknowledgement) when the promotion waits, timestamps }` with RLS for the School and the payer.
 - In `changeRung` / bulk: if the target grade has a price and the fee switch is on, create the request. With "grade before paying" off, store the planned grade on the request instead of applying it; apply it (through `changeRung`, with the stored grading date) when the request is paid or waived. Keep the `expected` rung guard so a waiting grade can't apply twice.
-- Board: return `feeStatus` (waiting / declined) on cards.
+- Board: return `feeStatus` (waiting / declined / toDecide) on cards. "To decide" carries the planned grade so the Promote flow can start on it, flagged as fee-free.
+- "To decide" reminder (Decision 313): one in-app/email reminder, 3 days after the promotion became "to decide", to the coaches who may promote that student in that style and branch and the owner. Send it only if the student is fully eligible (`eligibilityOnLadder(...).eligible`: classes 100%, days and every required skill). Never repeat it; it never times out. Reuse the "ready to grade" sweep and recipients (Decisions 145, 178), with its own once-only marker.
 - Notify the payer when a request is created.
 - **Payment step:** an accepted fee becomes a charge on the member's balance (C1, Decision 303), paid in the app or at the desk. Build prices, requests, accept/decline, waiting promotions, waive and cancel first if C1 isn't ready yet.
 
-**Done when:** a priced grade creates a request; accepting (then paying) applies a waiting promotion; declining shows "Fee declined"; waiving applies it; bulk creates one request each; an unpriced grade is free; another School never sees the requests.
+**Done when:** a priced grade creates a request; accepting (then paying) applies a waiting promotion; declining shows "Fee declined"; waiving a waiting promotion applies it; cancelling it, or waiving a declined fee, leaves it "to decide" and nothing applies until a coach promotes; a fully eligible "to decide" student gets exactly one reminder after 3 days, and a not-fully-eligible one gets none; bulk creates one request each; an unpriced grade is free; with the fee off no prices are returned; another School never sees the requests.
 
 ---
 
-### B11. Attendance hours — Decision 301
+### B11. Hours trained (logged, not graded) — Decisions 301, 306 — ✅ built (#292)
+
+> **Built.** `TrainingLog` table (minutes per style per check-in or "Log a class"), `hoursTrained` and `progressBreakdown` on `GET /v1/students/:id/eligibility` and `GET /v1/students/:id/grading`, and "Open mat counts toward hours" at `GET`/`PUT /v1/schools/:schoolId/grading-settings/open-mat-hours` (off by default). Grading reads none of it.
+> **Left for you:** fold the open-mat switch into B2's settings page and the renamed right; add `TrainingLog` to account erasure once Decisions 245/265 settle it. The original brief follows for reference.
+
+
+**Hours are a record only. Do not change the grading logic** (Decision 306): no hours requirement on a grade, and progress, readiness and "Ready to Grade" stay exactly as they are.
 
 **What it must do:**
-- Each check-in adds the **scheduled length** of the class (90 min = 1.5 h).
-- Each grade requires **classes**, **hours** or **both** (School's choice per grade; classes is the default).
-- **Progress** for a grade needing both = the **lower** of the two percentages. "Ready to Grade" only when both are met.
+- Each check-in adds the **scheduled length** of the class to the student's hours trained (90 min = 1.5 h).
 - **"Log a class"** adds the picked class's length, or a time the coach enters (default 60 min).
-- **Open mat** sessions (C2, Decision 304) count toward hours only if the School's switch "Open mat counts toward hours" is on.
-- The **student's page** gets a progress breakdown per requirement (classes, hours, days at the rank, skills).
+- **Open mat** sessions (C2, Decision 304) add to the hours only if the switch "Open mat counts toward hours" is on.
+- The **student's page** shows a progress breakdown with the requirements grading already uses (classes, days at the rank, skills), each on its own next to the overall %, plus the **hours trained** as information.
 
 **Suggested build:**
-- `RankStripeTier.requirementKind` (`CLASSES | HOURS | BOTH`, default `CLASSES`) and `hoursRequired Int?` (minutes, to avoid fractions).
-- `StudentRank.minutesAttendedTowardCheckpoint`, incremented with the class count wherever classes are counted today (check-in, log a class, board move), and reset with it on a grade.
-- `eligibilityOnLadder` (`grading-eligibility.ts`): add hours to the readiness and `progressPercent` rules above; return each requirement's own progress for the breakdown.
-- A migration that leaves every existing grade on `CLASSES`, so nothing changes until a School opts in.
+- Minutes per attendance record (copied from the class's scheduled length at check-in, or from "Log a class"), summed per student and style. Store minutes to avoid fractions.
+- Return `hoursTrained` (total, and since the current rank if cheap) on the student grading data; never use it in `eligibilityOnLadder` or `progressPercent`.
+- Return each existing requirement's own progress (classes, days, skills) for the breakdown.
 
-**Done when:** an hours grade becomes ready from check-ins' lengths; a "both" grade shows the lower %; existing ladders behave exactly as before; the student page API returns the breakdown.
+**Done when:** check-ins and logged classes add hours; open mat follows the switch; the student page API returns the breakdown and the hours; every grade's progress and readiness are unchanged.
 
 ---
+
+### B12. Requirement tick boxes, automatic promotion, first belt on first class — Decision 321
+
+From the Gymdesk Programs study (25 Oct 2026).
+
+- **Requirement tick boxes, on each style (owner):** Classes, Days in rank, Skills, Hours, Days attended, Minimum age.
+  - An unticked requirement is never checked, even if a rung still holds a number for it.
+  - `progressBreakdown` (B11) lists only the ticked requirements, and "ready" (100%) is computed from them.
+  - **`progressPercent` becomes the average of the ticked requirements** for the next rung (classes, days in rank, skills, hours, days attended), each capped at 100%. It was the class % only.
+    - Requirements the rung doesn't ask for are left out. A time-only rung keeps the days %.
+    - Minimum age is not in the %: an otherwise-ready student who is too young gets a "Waiting for age N" state and can't be promoted until then.
+    - The board columns and the "Ready to grade" notifications use this % (Decision 321 item 7).
+- **Hours:** hours trained (B11) count toward a rung only in a style that ticks Hours. This amends Decision 306 for that style. Open mat counts only while its switch is on.
+- **Days attended:** distinct calendar days (School time zone) with a check-in to a class of the style, since the last promotion. Counted per rung.
+- **Minimum age, per rung:** age on the promotion day, from the date of birth. Eligibility stays false until then.
+- **Promotion setting, per style (owner):** `MANUAL` (default), `AUTO_STRIPES`, `AUTO_ALL`.
+  - **When:** an automatic promotion runs when the next rung is 100%: after a check-in, and in the grading sweep for time- and age-based requirements.
+  - **Fee:** if the next rung has a fee, the fee request is created and the promotion runs when it is paid or waived (B10's `markPaid()` hook). A cancelled fee doesn't promote.
+  - **History:** `PromotionEvent` records it as automatic, with no performer.
+  - **Notices:** the student (the Guardian for a child) gets the usual promotion notice. The coaches of the style are told.
+  - **Undo:** a coach with promote permission can undo an automatic promotion. The undo is recorded in the history.
+  - **Reminders:** no "Promotion to decide" reminder for rungs that are awarded automatically.
+- **Auto-assign first belt, per style (owner switch):** a student with no `StudentRank` in the style gets the first rung on their first check-in to a class of that style. It is created as VERIFIED (Decision 147). Self-declaring a higher belt stays possible (Decision 137).
+- **Questions?** Ask the product owner. Nothing here is guessed: every rule above was answered on 25 Oct 2026.
 
 ## 3. Related work that grading needs
 
@@ -275,11 +314,21 @@ The New Portal grading redesign (DESIGN.md → "Grading screens") is designed bu
 | Clean history notes and errors | B7 |
 | Belt correction requests (student app and portal) | B8 |
 | Belt progress on check-in | B9 |
-| Belt editor: price per grade; requirement per grade (classes / hours / both) | B10, B11 |
+| Belt editor: price per grade, only while the fee is on | B10 |
 | Board: "Waiting for fee" / "Fee declined"; owner waives or cancels a fee | B10 |
 | Student app: accept or decline a promotion fee (Guardian for a child) | B10 |
-| Student page: grading progress breakdown per requirement | B11 |
+| Student page: progress breakdown per requirement, and hours trained | B11 |
 
 Frontend-only (no backend): Grid/Rows views, sort by belt or name, the student panel and selection panel, click a progress bar to promote, the printable report with belts, the one-grade-at-a-time belt editor, duplicate a rank, drag and drop with touch, the two-tone belt picture, the 5-tab menu. In the student app, the coach screens still leave some actions to the web portal (skipping ranks, bulk promote, moving columns, editing rank dates, first rank); see `docs/TRACK-B-ROADMAP.md`.
 
-**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9 → B11 → B10. C1 before B10's payment step; C2 before open mat counts toward hours. B1 and B3 touch the same promote code; do them together or B1 first.
+**Suggested order:** B7 (small, clears the way) → B6 → B2 → B1 → B3 → B4 → B5 → B8 → B9 → B11 → B10. C1 before B10's payment step; C2 before open mat adds to hours. B1 and B3 touch the same promote code; do them together or B1 first.
+
+---
+
+## 6. Known issues in the repo (found while building B10 and B11)
+
+- **API lint doesn't run.** `npm run lint` in `apps/api` fails on a clean `master` too: the installed ESLint (v10) ignores `apps/api/.eslintrc.json`, so nothing is linted. Pin ESLint 8 with the repo's plugins, or move the config to the flat format.
+- **Schema and migrations have drifted.** `prisma migrate dev --create-only` proposes many unrelated changes, so the B10 and B11 migrations were written by hand. Worth one clean-up migration (or a reviewed baseline) so new migrations can be generated again.
+- **Local e2e runs** need `QR_CLASS_TOKEN_SECRET` and `QR_STUDENT_TOKEN_SECRET` set (any values), or the attendance and hours suites are skipped. A full local run can hit Node's memory limit; `NODE_OPTIONS=--max-old-space-size=8192` fixes it.
+- **Narrow readings still to confirm with the product owner** (listed in PRs #292 and #293): "Open mat" matched exactly by class type name; the open-mat switch applies at check-in time; every style on a class gets its minutes; a cancelled fee whose promotion already applied keeps the promotion; the payer can't decline after accepting; a reminder goes on the first day a "to decide" student is fully ready after day 3; turning the fee off doesn't close open requests; prices use the School's default currency.
+

@@ -21,6 +21,9 @@ export interface BranchListFilter {
   q?: string;
   /** ISO 3166-1 alpha-2, against `addressCountry`. */
   country?: string;
+  /** Decision 278 — the header Global Search: Branch name containing the
+   * text (case and accents ignored, like the other filters here). */
+  search?: string;
 }
 
 /** Decision 294 — done in memory rather than in SQL, because Postgres can't
@@ -38,6 +41,7 @@ export function matchesBranchFilter(branch: Pick<Branch, 'name' | 'address' | 'a
     }
   }
   if (filter.country && branch.addressCountry !== filter.country.toUpperCase()) return false;
+  if (filter.search && !foldText(branch.name).includes(foldText(filter.search))) return false;
   if (filter.q) {
     const q = foldText(filter.q);
     const haystacks = [branch.name, branch.addressCity ?? (branch.addressCountry ? null : branch.address)];

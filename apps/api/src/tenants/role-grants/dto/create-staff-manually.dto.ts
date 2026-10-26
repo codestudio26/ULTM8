@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 
 /**
  * Staff "Add Manually" (Decision 251) — mirrors Decision 1/230/237's
@@ -42,6 +43,7 @@ export class CreateStaffManuallyDto {
   surname!: string;
 
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

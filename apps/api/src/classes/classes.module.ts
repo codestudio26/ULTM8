@@ -3,6 +3,7 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
+import { QueueModule } from '../jobs/queue.module';
 
 /**
  * Phase 4 scope only: Class CRUD (no delete, no booking, no waitlist, no
@@ -20,7 +21,7 @@ import { ClassesService } from './classes.service';
  * header comment).
  */
 @Module({
-  imports: [TenantsModule, SubscriptionPlansModule],
+  imports: [TenantsModule, SubscriptionPlansModule, QueueModule],
   controllers: [ClassesController],
   providers: [ClassesService],
 })

@@ -120,6 +120,35 @@ export function computeEligibility(req: Requirement, input: StudentProgressInput
   };
 }
 
+/**
+ * The student page's progress breakdown (Decisions 301 item 4, 306 item 4):
+ * each requirement grading already uses, on its own, next to the overall %.
+ * Read straight off the engine's own eligibility, so it can never disagree
+ * with the board: `classes.percent` IS `progressPercent` (the % is classes
+ * only, Decision 136), and days and skills use the engine's same rounding.
+ * A time-only rung has days only. Hours are never part of it (Decision 306).
+ */
+export interface ProgressBreakdown {
+  /** null on a time-only rung: classes are not counted there. */
+  classes: { counted: number; required: number; percent: number; byType: TypeProgress[] } | null;
+  days: { elapsed: number; required: number; percent: number };
+  /** null on a time-only rung: skills are not required there. */
+  skills: { signedOff: number; required: number; percent: number } | null;
+}
+
+export function progressBreakdown(eligibility: Eligibility): ProgressBreakdown | null {
+  if (!eligibility.hasNext) return null;
+  const days = { elapsed: eligibility.elapsedDays, required: eligibility.requiredDays, percent: percent(eligibility.elapsedDays, eligibility.requiredDays) };
+  if (eligibility.timeOnly) return { classes: null, days, skills: null };
+  const requiredSkills = eligibility.requiredSkillIds.length;
+  const signedOff = requiredSkills - eligibility.missingSkillIds.length;
+  return {
+    classes: { counted: eligibility.countedClasses, required: eligibility.requiredClasses, percent: eligibility.progressPercent, byType: eligibility.byType },
+    days,
+    skills: { signedOff, required: requiredSkills, percent: percent(signedOff, requiredSkills) },
+  };
+}
+
 /** Rounded, capped at 100; nothing required reads as 100 (prototype). */
 function percent(done: number, required: number): number {
   return required > 0 ? Math.min(100, Math.round((done / required) * 100)) : 100;

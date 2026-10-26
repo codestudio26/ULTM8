@@ -102,6 +102,12 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   waitlistClaimWindowMinutes!: number;
 
+  @ApiProperty({ description: 'Minutes before a Class starts that check-in opens.' })
+  checkInOpensMinutesBeforeStart!: number;
+
+  @ApiProperty({ enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'] })
+  lateCancelRefundPolicy!: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
 

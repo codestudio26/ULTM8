@@ -6,6 +6,7 @@ import { apiClient } from '../api';
 export type TimetableSlotResponse = components['schemas']['TimetableSlotResponseDto'];
 export type CreateTimetableSlotInput = components['schemas']['CreateTimetableSlotDto'];
 export type UpdateTimetableSlotInput = components['schemas']['UpdateTimetableSlotDto'];
+export type UpcomingImpactResponse = components['schemas']['UpcomingImpactResponseDto'];
 /** GET /timetable/:id/occurrence's response — the materialized Class, field-for-field
  * (see TimetableService.findOccurrence's own comment for why this reuses
  * ClassResponseDto rather than a new, narrower DTO). */
@@ -42,6 +43,13 @@ export function useUpdateTimetableSlot(schoolId: string, slotId: string) {
       unwrap(apiClient.PATCH('/v1/timetable/{id}', { params: { path: { id: slotId } }, body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
   });
+}
+
+/** Decision 322 — upcoming Classes from a slot and how many have bookings, read
+ * just before saving an edit that moves them, so it's fetched on demand rather
+ * than kept as a query. */
+export function fetchUpcomingImpact(slotId: string): Promise<UpcomingImpactResponse> {
+  return unwrap(apiClient.GET('/v1/timetable/{id}/upcoming-impact', { params: { path: { id: slotId } } }));
 }
 
 /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by an

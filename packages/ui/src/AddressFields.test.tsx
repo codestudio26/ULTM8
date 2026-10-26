@@ -3,12 +3,15 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  ADDRESS_TEXT,
   AddressFields,
+  AddressTextProvider,
   postalAddressFromRecord,
   preparePostalAddress,
   type AddressAutocompleteProvider,
 } from './AddressFields';
 import { EMPTY_POSTAL_ADDRESS, type PostalAddress } from './postalAddress';
+import { DEFAULT_UI_STRINGS, UiStringsProvider } from './components';
 
 function Harness({ initial, autocomplete }: { initial: PostalAddress; autocomplete?: AddressAutocompleteProvider }) {
   const [value, setValue] = useState(initial);
@@ -80,5 +83,19 @@ describe('postalAddressFromRecord / preparePostalAddress', () => {
     const initial = postalAddressFromRecord({ addressCountry: 'GB', addressLine1: '1 High St', addressCity: 'Leeds', addressPostalCode: 'LS1 4AP' });
     expect(preparePostalAddress({ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }, initial)).toEqual({ ok: true, postalAddress: null });
     expect(preparePostalAddress({ ...initial, postalCode: '' }, initial)).toEqual({ ok: false, errors: { postalCode: 'required' } });
+  });
+
+  it('takes its text from AddressTextProvider and its country names from the UI locale', () => {
+    const text = { ...ADDRESS_TEXT, country: 'País', postal: { ...ADDRESS_TEXT.postal, zip: 'Código ZIP' } };
+    render(
+      <UiStringsProvider strings={DEFAULT_UI_STRINGS} locale="es">
+        <AddressTextProvider text={text}>
+          <Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />
+        </AddressTextProvider>
+      </UiStringsProvider>,
+    );
+    expect(screen.getByLabelText('Código ZIP')).toBeInTheDocument();
+    const country = screen.getByLabelText('País') as HTMLSelectElement;
+    expect(country.selectedOptions[0]?.textContent).toBe(new Intl.DisplayNames(['es'], { type: 'region' }).of('US'));
   });
 });
