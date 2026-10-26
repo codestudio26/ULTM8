@@ -541,6 +541,38 @@ export class BookingsService {
   }
 
   /**
+   * GET /students/{id}/bookings/next — the student page's "Upcoming booking"
+   * (Decision 323, S14): the soonest UPCOMING booking whose class hasn't
+   * started yet, and how many more there are. The paged list above is in id
+   * order, so the page used to pick the soonest from its first 20 only.
+   * Staff who cover this student only (the owner, or by the Grading Board's
+   * branch rule), as for the rest of that page.
+   */
+  async findNextForStudent(callerId: string, studentId: string, schoolId: string) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
+    const where = { studentId, schoolId, status: 'UPCOMING' as const, class: { startDate: { gt: new Date() } } };
+    const [next, total] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.booking.findFirst({
+          where,
+          orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
+          include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+        }),
+        tx.booking.count({ where }),
+      ]),
+    );
+    if (!next) return { next: null, moreUpcoming: 0 };
+    const { class: cls, ...rest } = next;
+    return {
+      next: { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate },
+      moreUpcoming: total - 1,
+    };
+  }
+
+  /**
    * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
    * "Bookings This Week" drill-down (nothing backed this before: see the backlog
    * doc's own entry for the full gap this closes). Staff-only (School Owner/

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
@@ -43,9 +43,12 @@ export function InviteStudentPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  if (!schoolId) return null;
+  // Owner only, like the Students page (Decision 323).
+  if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
-  const needsBranch = branches.length > 0;
+  // Archived branches can't be chosen, so only open ones make a home branch
+  // required (Decision 323), matching the API.
+  const needsBranch = branches.some((b) => !b.archivedAt);
 
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();

@@ -24,6 +24,8 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
  * read/attempt writes elsewhere; this check specifically closes it for the School-
  * Owner-gated actions in this module).
  */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class TenantAuthorizationService {
   constructor(private readonly prismaApp: PrismaAppService) {}
@@ -49,6 +51,69 @@ export class TenantAuthorizationService {
         'Only that School\'s Owner/Manager may perform this action (Spec §8.2).',
       );
     }
+  }
+
+  /** assertSchoolOwner as a yes/no. */
+  async isSchoolOwner(userId: string, schoolId: string): Promise<boolean> {
+    try {
+      await this.assertSchoolOwner(userId, schoolId);
+      return true;
+    } catch (err) {
+      if (err instanceof ForbiddenException) return false;
+      throw err;
+    }
+  }
+
+  /** Which students a staff member covers at a School (Decision 168, with
+   * 139 and 148; the Grading Board's rule, used for grading and for the
+   * Students page alike, Decision 323):
+   * - A School with no branches is one branch: every staff member covers
+   *   every student.
+   * - In a School with branches, staff cover the students whose home branch
+   *   is one of the branches they are assigned to (one staff RoleGrant per
+   *   branch; a coach may hold several). A staff grant with no branch covers
+   *   no students there, and a student with no home branch yet is the
+   *   owner's alone until the owner assigns one.
+   * Under the caller's context, Branch RLS shows a staff member at least
+   * their own branch, so any row means the School has branches. */
+  async staffBranchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const anyBranch = await tx.branch.findFirst({ where: { schoolId }, select: { id: true } });
+      if (!anyBranch) return { hasBranches: false, branchIds: new Set<string>() };
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
+        select: { branchId: true },
+      });
+      return { hasBranches: true, branchIds: new Set(grants.map((g) => g.branchId as string)) };
+    });
+  }
+
+  /** Throws unless `coverage` (staffBranchCoverage) includes the student's
+   * home branch. The home branch is read under the student's own context. */
+  async assertBranchCoversStudent(
+    coverage: { hasBranches: boolean; branchIds: Set<string> },
+    schoolId: string,
+    studentId: string,
+  ): Promise<void> {
+    if (!coverage.hasBranches) return;
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
+    const home = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branchId: true } }),
+    );
+    if (!home) {
+      throw new ForbiddenException('This student has no home branch yet. Only the School owner can see or grade them until one is assigned.');
+    }
+    if (!coverage.branchIds.has(home.branchId)) {
+      throw new ForbiddenException('This student belongs to a branch you are not assigned to.');
+    }
+  }
+
+  /** The owner covers every student; other staff the students of their own
+   * branches (staffBranchCoverage). */
+  async assertStaffCoversStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
+    if (await this.isSchoolOwner(callerId, schoolId)) return;
+    await this.assertStaffAtSchool(callerId, schoolId);
+    await this.assertBranchCoversStudent(await this.staffBranchCoverage(callerId, schoolId), schoolId, studentId);
   }
 
   /**
@@ -161,6 +226,17 @@ export class TenantAuthorizationService {
       throw new ForbiddenException(
         'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action (Spec §7).',
       );
+    }
+  }
+
+  /** assertStaffAtSchool as a yes/no. */
+  async isStaffAtSchool(userId: string, schoolId: string): Promise<boolean> {
+    try {
+      await this.assertStaffAtSchool(userId, schoolId);
+      return true;
+    } catch (err) {
+      if (err instanceof ForbiddenException) return false;
+      throw err;
     }
   }
 

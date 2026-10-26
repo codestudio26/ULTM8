@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "请选择另一位教练接手。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "其教练角色仅适用于部分分校，因此资料不能设为整个学校。请选择其分校。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "其教练角色不包括此分校。请先在员工页面为其授予该分校的角色，或选择其分校。",
+  "Only the School owner can enrol students.": "只有学校负责人可以为学员注册。",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "请输入真实的出生日期：不能是将来的日期，也不能早于 120 年前。",
+  "First name can't be blank.": "名字不能为空。",
+  "Surname can't be blank.": "姓氏不能为空。",
+  "Username can't be blank. Leave it empty to remove it.": "用户名不能只有空格。要删除它，请留空。",
+  "Choose a language from the list.": "请从列表中选择语言。",
+  "Choose a currency from the list.": "请从列表中选择货币。",
+  "This branch has been archived. Choose another branch.": "该分校已归档。请选择其他分校。",
 };

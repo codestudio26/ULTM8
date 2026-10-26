@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "引き継ぐ別のインストラクターを選んでください。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "インストラクターの役割は一部の支店のみのため、プロフィールをスクール全体にはできません。支店を選んでください。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "インストラクターの役割はこの支店を含みません。先にスタッフページでこの支店の役割を付与するか、正しい支店を選んでください。",
+  "Only the School owner can enrol students.": "生徒を登録できるのはスクールのオーナーだけです。",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "実在する生年月日を入力してください（未来の日付や120年以上前は不可）。",
+  "First name can't be blank.": "名を空欄にはできません。",
+  "Surname can't be blank.": "姓を空欄にはできません。",
+  "Username can't be blank. Leave it empty to remove it.": "ユーザー名を空白だけにはできません。削除する場合は空欄にしてください。",
+  "Choose a language from the list.": "一覧から言語を選んでください。",
+  "Choose a currency from the list.": "一覧から通貨を選んでください。",
+  "This branch has been archived. Choose another branch.": "この支部はアーカイブされています。別の支部を選んでください。",
 };

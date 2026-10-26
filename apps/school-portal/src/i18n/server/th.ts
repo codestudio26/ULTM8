@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "เลือกครูฝึกคนอื่นให้รับช่วงต่อ",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "บทบาทครูฝึกใช้ได้เฉพาะบางสาขา จึงตั้งโปรไฟล์เป็นทั้งโรงเรียนไม่ได้ เลือกสาขาของเขา",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "บทบาทครูฝึกไม่ครอบคลุมสาขานี้ ให้บทบาทที่สาขานั้นในหน้าพนักงานก่อน หรือเลือกสาขาของเขา",
+  "Only the School owner can enrol students.": "เฉพาะเจ้าของโรงเรียนเท่านั้นที่ลงทะเบียนนักเรียนได้",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "กรอกวันเกิดจริง: ต้องไม่เป็นวันในอนาคตและไม่เกิน 120 ปีที่แล้ว",
+  "First name can't be blank.": "ชื่อเว้นว่างไม่ได้",
+  "Surname can't be blank.": "นามสกุลเว้นว่างไม่ได้",
+  "Username can't be blank. Leave it empty to remove it.": "ชื่อผู้ใช้เป็นช่องว่างอย่างเดียวไม่ได้ เว้นว่างไว้เพื่อลบออก",
+  "Choose a language from the list.": "เลือกภาษาจากรายการ",
+  "Choose a currency from the list.": "เลือกสกุลเงินจากรายการ",
+  "This branch has been archived. Choose another branch.": "สาขานี้ถูกเก็บถาวรแล้ว เลือกสาขาอื่น",
 };

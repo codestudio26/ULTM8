@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Devralması için başka bir eğitmen seçin.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Eğitmen rolü yalnızca belirli şubeler için, bu yüzden profili tüm okul için olamaz. Şubesini seçin.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Eğitmen rolü bu şubeyi kapsamıyor. Önce Personel sayfasında orada rol verin veya şubesini seçin.",
+  "Only the School owner can enrol students.": "Öğrencileri yalnızca okul sahibi kaydedebilir.",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "Gerçek bir doğum tarihi girin: gelecekte olamaz ve 120 yıldan eski olamaz.",
+  "First name can't be blank.": "Ad boş bırakılamaz.",
+  "Surname can't be blank.": "Soyad boş bırakılamaz.",
+  "Username can't be blank. Leave it empty to remove it.": "Kullanıcı adı yalnızca boşluklardan oluşamaz. Kaldırmak için boş bırakın.",
+  "Choose a language from the list.": "Listeden bir dil seçin.",
+  "Choose a currency from the list.": "Listeden bir para birimi seçin.",
+  "This branch has been archived. Choose another branch.": "Bu şube arşivlendi. Başka bir şube seçin.",
 };

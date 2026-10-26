@@ -79,3 +79,13 @@ export class StudentBookingListResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   nextCursor!: string | null;
 }
+
+/** GET /students/{id}/bookings/next (Decision 323). */
+export class StudentNextBookingResponseDto {
+  @ApiPropertyOptional({ type: () => StudentBookingResponseDto, nullable: true })
+  next!: StudentBookingResponseDto | null;
+
+  /** Upcoming bookings after `next`. */
+  @ApiProperty()
+  moreUpcoming!: number;
+}

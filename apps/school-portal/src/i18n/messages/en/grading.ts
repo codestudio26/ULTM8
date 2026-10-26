@@ -396,6 +396,7 @@ export const grading = {
     backToStudents: '← Students',
     backToBoard: '← Grading Board',
     subtitle: 'Ranks, progress toward the next grade, skills and history, for each style at your School.',
+    inactiveSubtitle: "No longer enrolled at your School. Their ranks and history stay here, but can't be changed.",
     editProfile: 'Edit profile',
     revokeEnrollment: 'Revoke enrollment',
     upcomingBooking: 'Upcoming Booking',

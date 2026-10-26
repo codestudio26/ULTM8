@@ -4933,3 +4933,32 @@ The stress test ran 30 Schools and 12,213 students through the real API: booking
 ### Recorded by
 
 User, 26 Oct 2026, answering the stress-test questions: *"Staff can, students can't"*; check-in opening *"School sets it"*; *"Waitlist first"*; late cancellation *"We should give school owners the choice to choose what fits better for them, we should have the options for them, as default we can use No refund once started"*; timetable edits *"Update unbooked, ask for booked"*; capacity *"Refuse with the count"*.
+
+## Decision 323 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner approval of the Students fix plan (S1, S3, S4, S5 part 1, S6–S14) · **Plan:** the Students Fix Plan (25–26 Oct 2026), built from the Students section review
+
+### Background
+
+The Students section review reproduced 14 bugs against the real API and portal. Twelve follow rules already decided (Decisions 110, 139, 148, 168, 177, 226, 252, 276) and were approved for build together. Two need the product owner's own call and are **not** part of this decision: S2 (what revoking a student does to their memberships, bookings and waitlist places) and S5 part 2 (whether staff may change a date of birth across the 18th birthday).
+
+### Decision
+
+1. **Branch Staff and Instructors see and edit the students they cover (S1).** The Students list, a student's profile and its edit follow the Grading Board's rule (Decisions 168, 177): the owner sees every student; other staff see the current students whose home branch is one of their branches, or every student at a School without branches. A staff grant with no branch covers no students at a School with branches, and a student with no home branch yet stays the owner's alone (Decision 148). Former students are the owner's view only. Enforced in the database (RLS policy `rolegrant_branch_staff_student_read`, the branched half of Decision 177's `rolegrant_branchless_staff_student_read`) and in the API.
+2. **A home branch belongs to an enrolment (S13).** Revoking a student's enrolment removes their home branch at that School, and so does a Guardian withdrawing baseline consent. Leftover rows from before are removed once. Re-enrolling picks a home branch as usual. Before this, a former student could never be enrolled again ("A record with this value already exists") and their old branch could never be archived (Decision 252).
+3. **A closed School takes no new students (S4)**, however they join: the student app, a Guardian, or the owner's Invite (Decision 110).
+4. **Only open branches count (S6).** An archived branch can't be chosen as a home branch ("This branch has been archived. Choose another branch."). A School whose branches are all archived needs no home branch to enrol.
+5. **Staff who aren't the owner get the owner-only reason (S11)** when they try to enrol someone: "Only the School owner can enrol students."
+6. **Profile values (S5 part 1, S7, S8).**
+   - A date of birth must be a real calendar date, not in the future, and not more than 120 years ago. This applies to self-service and staff alike.
+   - Names and username are trimmed; one made only of spaces is refused.
+   - When staff edit a student, Language and Currency are picked from the lists the app serves (`GET /settings/languages`, `/settings/currencies`). Values saved before stay until someone changes them. Gender and nationality stay free text: no list is confirmed for them.
+7. **The staff edit form opens with the student's saved profile (S9)** (`GET /schools/:id/students/:studentId/profile`, same access as the edit). Emptying a field clears it; the form sends only what changed.
+8. **A Guardian-managed child shows "Managed by a Guardian" (S10)** instead of their account's placeholder email. Which Guardian is a separate question.
+9. **A former student's page (S3)** shows their name and an Inactive badge. Their ranks and history stay readable; grading, skill sign-off, Log a class and Edit profile are hidden, since the API refuses them.
+10. **"Upcoming Booking" is the real next one (S14):** the soonest upcoming booking whose class hasn't started, chosen by the API across all the student's bookings (`GET /students/:id/bookings/next`), with how many more there are.
+11. **Owner-only pages redirect (S12).** Anyone else opening `/students` or `/students/invite` goes to their own home screen.
+
+### Recorded by
+
+User, 26 Oct 2026, after the fix plan and four review passes: *"Build it .. and ask me what's on me"*. S2 and S5 part 2 were put to the user as separate questions.

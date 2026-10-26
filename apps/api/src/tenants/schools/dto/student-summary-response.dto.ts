@@ -16,8 +16,15 @@ export class StudentSummaryResponseDto {
   @ApiProperty()
   surname!: string;
 
+  /** Empty for a Guardian-managed child, whose account has only a placeholder
+   * address (guardianManaged). */
   @ApiProperty()
   email!: string;
+
+  /** A child's account a Guardian manages (GuardiansService.createMinor);
+   * the Students page shows "Managed by a Guardian" for the email (Decision 323). */
+  @ApiProperty()
+  guardianManaged!: boolean;
 
   /** User.profilePhotoUrl — resolved the same way firstName/surname/email already
    * are for this row (a direct User-row select for an ACTIVE-only roster, or

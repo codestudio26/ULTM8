@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Kies een andere instructeur om het over te nemen.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "De instructeursrol geldt alleen voor bepaalde vestigingen, dus het profiel kan niet voor de hele school gelden. Kies de vestiging.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "De instructeursrol geldt niet voor deze vestiging. Geef eerst daar de rol op de pagina Personeel, of kies de juiste vestiging.",
+  "Only the School owner can enrol students.": "Alleen de schooleigenaar kan leerlingen inschrijven.",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "Vul een echte geboortedatum in: niet in de toekomst en niet meer dan 120 jaar geleden.",
+  "First name can't be blank.": "De voornaam mag niet leeg zijn.",
+  "Surname can't be blank.": "De achternaam mag niet leeg zijn.",
+  "Username can't be blank. Leave it empty to remove it.": "De gebruikersnaam mag niet alleen uit spaties bestaan. Laat hem leeg om hem te verwijderen.",
+  "Choose a language from the list.": "Kies een taal uit de lijst.",
+  "Choose a currency from the list.": "Kies een valuta uit de lijst.",
+  "This branch has been archived. Choose another branch.": "Deze vestiging is gearchiveerd. Kies een andere vestiging.",
 };

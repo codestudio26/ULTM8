@@ -459,6 +459,13 @@ export class RoleGrantsService {
       if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
         await tx.staffPermission.updateMany({ where: { userId: targetUserId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
       }
+      // A home branch belongs to an enrolment (Decision 323, S13): left
+      // behind, it blocked re-enrolling (one per School and student) and
+      // archiving the branch (Decision 252). Re-enrolling picks one again.
+      if (grant.role === 'STUDENT') {
+        const stillEnrolled = await tx.roleGrant.count({ where: { userId: targetUserId, schoolId, role: 'STUDENT', revokedAt: null } });
+        if (stillEnrolled === 0) await tx.studentHomeBranch.deleteMany({ where: { schoolId, studentId: targetUserId } });
+      }
       return row;
     });
     // Branch Staff no longer at that branch can't have coach invites open

@@ -9,7 +9,7 @@ import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
 import { useLessons } from '../curriculum/curriculumQueries';
 import { useInstructors } from '../instructors/instructorQueries';
-import { useStudentBookings, type StudentBookingResponse } from '../bookings/bookingQueries';
+import { useNextStudentBooking, type StudentBookingResponse } from '../bookings/bookingQueries';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
@@ -72,10 +72,12 @@ export function StudentGradingPage() {
   const navigate = useNavigate();
   const t = useT();
   const { claims } = useAuth();
-  // The board passes the name along: a coach can't list the School's students.
+  // The board passes the name along, for a student a coach's list doesn't
+  // include.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
   const my = useMyGrading(schoolId);
-  const students = useStudents(schoolId);
+  // Former students too, so their page still shows their name (Decision 323).
+  const students = useStudents(schoolId, 'ALL');
   const disciplines = useDisciplines(schoolId);
   const eligibility = useStudentEligibility(studentId, schoolId);
   const lessons = useLessons(schoolId);
@@ -88,7 +90,7 @@ export function StudentGradingPage() {
   // additions to this real page (the de facto Student Detail screen at
   // /students/:id — no separate mockup-matching page exists in this app; see
   // the backlog's own "Student Detail (new mockup, not yet built)" entry).
-  const bookings = useStudentBookings(studentId, schoolId);
+  const nextBooking = useNextStudentBooking(studentId, schoolId);
   const roleGrants = useUserRoleGrants(studentId);
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
@@ -111,6 +113,9 @@ export function StudentGradingPage() {
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const ranks = eligibility.data?.items ?? [];
   const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? t('grading.studentFallback');
+  // A former student's grading history stays readable, but nothing can be
+  // changed: the API refuses grading a student who isn't enrolled.
+  const inactive = student?.status === 'INACTIVE';
   const performerName = (userId: string | null | undefined) =>
     !userId
       ? t('grading.student.formerInstructor')
@@ -131,9 +136,10 @@ export function StudentGradingPage() {
       </p>
       <PageHeader
         title={studentName}
-        subtitle={t('grading.student.subtitle')}
+        subtitle={inactive ? t('grading.student.inactiveSubtitle') : t('grading.student.subtitle')}
         actions={
           <>
+            {inactive ? <Badge>{t('students.statusInactive')}</Badge> : null}
             {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
               * reaching this page (School Owner/Manager, Branch Staff, or
               * Instructor) may use it, matching the backend's own
@@ -142,7 +148,7 @@ export function StudentGradingPage() {
               * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
               * /students/:id/edit), not a Modal — see that page's own header
               * comment for why. */}
-            {student ? (
+            {student && !inactive ? (
               <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
                 {t('grading.student.editProfile')}
               </Button>
@@ -161,12 +167,12 @@ export function StudentGradingPage() {
           <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
             {t('grading.student.upcomingBooking')}
           </h2>
-          {bookings.isLoading ? (
+          {nextBooking.isLoading ? (
             <Spinner />
-          ) : bookings.error ? (
-            <ErrorBanner message={bookings.error instanceof ApiError ? bookings.error.message : t('grading.student.bookingsLoadFailed')} />
+          ) : nextBooking.error ? (
+            <ErrorBanner message={nextBooking.error instanceof ApiError ? nextBooking.error.message : t('grading.student.bookingsLoadFailed')} />
           ) : (
-            <UpcomingBooking bookings={bookings.data?.items ?? []} />
+            <UpcomingBooking next={nextBooking.data?.next ?? null} moreUpcoming={nextBooking.data?.moreUpcoming ?? 0} />
           )}
         </Card>
       </div>
@@ -191,7 +197,7 @@ export function StudentGradingPage() {
             history={history.data?.items ?? []}
             historyLoading={history.isLoading}
             performerName={performerName}
-            can={(toggle) => my.can(discipline.id, toggle)}
+            can={(toggle) => !inactive && my.can(discipline.id, toggle)}
             isOwner={my.isOwner}
             firstName={student?.firstName || studentName}
             studentName={studentName}
@@ -219,17 +225,10 @@ export function StudentGradingPage() {
   );
 }
 
-/** The nearest Upcoming Booking, if any — id-ordered pagination (Decision 22)
- * means this list isn't date-sorted server-side, so the nearest is found
- * client-side across whatever page loaded. Good enough for this page's scale
- * (no pagination UI exists here yet, same convention as every other list on
- * this page). */
-function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
+/** The soonest upcoming booking whose class hasn't started, as the API picks
+ * it across all of the student's bookings (Decision 323). */
+function UpcomingBooking({ next, moreUpcoming }: { next: StudentBookingResponse | null; moreUpcoming: number }) {
   const t = useT();
-  const upcoming = bookings
-    .filter((b) => b.status === 'UPCOMING')
-    .sort((a, b) => new Date(a.classStartDate).getTime() - new Date(b.classStartDate).getTime());
-  const next = upcoming[0];
   if (!next) {
     return <p className="ultm8-field__hint" style={{ margin: 0 }}>{t('grading.student.noUpcomingBooking')}</p>;
   }
@@ -237,7 +236,7 @@ function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       <strong>{next.classTitle}</strong>
       <span className="ultm8-field__hint">{formatDay(next.classStartDate)}</span>
-      {upcoming.length > 1 ? <Badge>{t('grading.student.moreBookings', { count: upcoming.length - 1 })}</Badge> : null}
+      {moreUpcoming > 0 ? <Badge>{t('grading.student.moreBookings', { count: moreUpcoming })}</Badge> : null}
     </div>
   );
 }

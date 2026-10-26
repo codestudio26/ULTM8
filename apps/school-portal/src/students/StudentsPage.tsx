@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -33,9 +33,13 @@ export function StudentsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useStudents(schoolId, statusFilter);
 
-  if (!schoolId) return null;
+  // Only the owner has this page; anyone else typing /students goes to their
+  // own home screen (Decision 323). Coaches reach a student from the board.
+  if (!schoolId) return <Navigate to="/" replace />;
 
   const students = data?.items ?? [];
+  // A Guardian-managed child has no email of their own (Decision 323).
+  const emailOf = (s: StudentSummary) => (s.guardianManaged ? t('students.managedByGuardian') : s.email);
 
   return (
     <>
@@ -85,7 +89,7 @@ export function StudentsPage() {
                     </div>
                     <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
                   </div>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.email}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{emailOf(s)}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{t('students.enrolledOn', { date: new Date(s.enrolledAt).toLocaleDateString(formatLocale()) })}</p>
                 </Card>
               ))}
@@ -100,7 +104,7 @@ export function StudentsPage() {
                   render: (s) => <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />,
                 },
                 { key: 'name', header: t('students.columnName'), render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
-                { key: 'email', header: t('students.columnEmail'), render: (s) => s.email },
+                { key: 'email', header: t('students.columnEmail'), render: (s) => emailOf(s) },
                 {
                   key: 'status',
                   header: t('students.columnStatus'),

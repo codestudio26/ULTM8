@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "اختر مدرّبًا آخر ليتولّى المهمة.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "دوره كمدرّب لفروع معيّنة فقط، لذا لا يمكن أن يكون ملفه للمدرسة كلها. اختر فرعه.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "دوره كمدرّب لا يشمل هذا الفرع. امنحه الدور هناك أولًا في صفحة الموظفين، أو اختر فرعه.",
+  "Only the School owner can enrol students.": "مالك المدرسة وحده يمكنه تسجيل الطلاب.",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "أدخل تاريخ ميلاد حقيقيًا: ليس في المستقبل ولا قبل أكثر من 120 عامًا.",
+  "First name can't be blank.": "لا يمكن ترك الاسم الأول فارغًا.",
+  "Surname can't be blank.": "لا يمكن ترك اسم العائلة فارغًا.",
+  "Username can't be blank. Leave it empty to remove it.": "لا يمكن أن يكون اسم المستخدم مسافات فقط. اتركه فارغًا لإزالته.",
+  "Choose a language from the list.": "اختر لغة من القائمة.",
+  "Choose a currency from the list.": "اختر عملة من القائمة.",
+  "This branch has been archived. Choose another branch.": "تمت أرشفة هذا الفرع. اختر فرعًا آخر.",
 };

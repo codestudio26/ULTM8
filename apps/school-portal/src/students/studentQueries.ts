@@ -53,6 +53,22 @@ export function useInviteStudent() {
   });
 }
 
+/** One Student's full profile, for the staff edit form (GET
+ * /schools/{id}/students/{studentId}/profile, Decision 323): the form opens
+ * filled in, so emptying a field can really clear it. */
+export function useStudentProfile(schoolId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['studentProfile', schoolId, studentId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{id}/students/{studentId}/profile', {
+          params: { path: { id: schoolId!, studentId: studentId! } },
+        }),
+      ),
+    enabled: !!schoolId && !!studentId,
+  });
+}
+
 /**
  * v1.2 backend backlog — Student Detail "Edit" gap: a Staff member editing a
  * Student's own profile on their behalf (`PATCH /schools/{id}/students/{studentId}/profile`,
@@ -72,8 +88,9 @@ export function useUpdateStudentProfile(schoolId: string | null) {
           body,
         }),
       ),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['students', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile', schoolId, variables.studentId] });
     },
   });
 }

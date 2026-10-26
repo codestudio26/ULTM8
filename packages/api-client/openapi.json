@@ -627,6 +627,47 @@
       }
     },
     "/v1/schools/{id}/students/{studentId}/profile": {
+      "get": {
+        "operationId": "SchoolsController_getStudentProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "patch": {
         "operationId": "SchoolsController_updateStudentProfile",
         "parameters": [
@@ -4651,6 +4692,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/bookings/next": {
+      "get": {
+        "operationId": "BookingsController_findNextForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNextBookingResponseDto"
                 }
               }
             }
@@ -12326,6 +12410,9 @@
           "email": {
             "type": "string"
           },
+          "guardianManaged": {
+            "type": "boolean"
+          },
           "profilePhotoUrl": {
             "type": "string",
             "nullable": true
@@ -12342,6 +12429,7 @@
           "firstName",
           "surname",
           "email",
+          "guardianManaged",
           "enrolledAt",
           "status"
         ]
@@ -12407,77 +12495,6 @@
           "createdAt",
           "updatedAt"
         ]
-      },
-      "UpdateStudentProfileDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string",
-            "description": "Mobile-only per confirmed field list. Null clears it.",
-            "nullable": true
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "ISO 8601 date, no time component"
-          },
-          "gender": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "nationality": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "language": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
-            "nullable": true
-          },
-          "currency": {
-            "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "postalAddress": {
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PostalAddressDto"
-              }
-            ]
-          },
-          "profilePhotoUrl": {
-            "type": "string"
-          },
-          "weightCategory": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          },
-          "kimonoSize": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          },
-          "beltSize": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          }
-        }
       },
       "UserResponseDto": {
         "type": "object",
@@ -12591,6 +12608,77 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "UpdateStudentProfileDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
+          },
+          "gender": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "description": "A code from GET /settings/languages. Null clears it.",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "A code from GET /settings/currencies. Null clears it.",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
+          "profilePhotoUrl": {
+            "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          }
+        }
       },
       "JoinSchoolDto": {
         "type": "object",
@@ -14330,7 +14418,7 @@
           },
           "dateOfBirth": {
             "type": "string",
-            "description": "ISO 8601 date, no time component"
+            "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
           },
           "gender": {
             "type": "string",
@@ -15892,6 +15980,25 @@
           "attendees",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "StudentNextBookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "next": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudentBookingResponseDto"
+              }
+            ]
+          },
+          "moreUpcoming": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "moreUpcoming"
         ]
       },
       "StudentBookingListResponseDto": {

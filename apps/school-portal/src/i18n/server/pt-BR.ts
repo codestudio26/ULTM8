@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Escolha outro instrutor para assumir.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "O papel de instrutor vale só para algumas unidades, então o perfil não pode ser da escola inteira. Escolha a unidade.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "O papel de instrutor não cobre esta unidade. Dê o papel lá primeiro na página Equipe ou escolha a unidade certa.",
+  "Only the School owner can enrol students.": "Só o proprietário da escola pode matricular alunos.",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "Informe uma data de nascimento real: não pode estar no futuro nem ter mais de 120 anos.",
+  "First name can't be blank.": "O nome não pode ficar em branco.",
+  "Surname can't be blank.": "O sobrenome não pode ficar em branco.",
+  "Username can't be blank. Leave it empty to remove it.": "O nome de usuário não pode ser só espaços. Deixe vazio para removê-lo.",
+  "Choose a language from the list.": "Escolha um idioma da lista.",
+  "Choose a currency from the list.": "Escolha uma moeda da lista.",
+  "This branch has been archived. Choose another branch.": "Esta filial foi arquivada. Escolha outra filial.",
 };

@@ -384,4 +384,12 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Выберите другого инструктора, который примет занятия.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Роль инструктора действует только в некоторых филиалах, поэтому профиль не может относиться ко всей школе. Выберите филиал.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Роль инструктора не распространяется на этот филиал. Сначала выдайте роль там на странице «Персонал» или выберите нужный филиал.",
+  "Only the School owner can enrol students.": "Записывать учеников может только владелец школы.",
+  "Enter a real date of birth: not in the future and not more than 120 years ago.": "Укажите настоящую дату рождения: не в будущем и не более 120 лет назад.",
+  "First name can't be blank.": "Имя не может быть пустым.",
+  "Surname can't be blank.": "Фамилия не может быть пустой.",
+  "Username can't be blank. Leave it empty to remove it.": "Имя пользователя не может состоять только из пробелов. Оставьте поле пустым, чтобы удалить его.",
+  "Choose a language from the list.": "Выберите язык из списка.",
+  "Choose a currency from the list.": "Выберите валюту из списка.",
+  "This branch has been archived. Choose another branch.": "Этот филиал заархивирован. Выберите другой филиал.",
 };

@@ -81,6 +81,18 @@ export class SchoolsController {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
   }
 
+  /** The Student's full profile, for the staff edit form (Decision 323) — same
+   * access as the PATCH below. */
+  @ApiOkResponse({ type: UserResponseDto })
+  @Get(':id/students/:studentId/profile')
+  getStudentProfile(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentProfile(user.sub, id, studentId);
+  }
+
   /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
    * own profile on their behalf — see SchoolsService.updateStudentProfile's own
    * header comment for the full authorization/field-scope account. */
