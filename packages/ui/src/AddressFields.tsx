@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { COUNTRY_NAMES, Field, SelectField, TextField } from './components';
+import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { COUNTRY_NAMES, Field, SelectField, TextField, useUiLocale } from './components';
 import {
   EMPTY_POSTAL_ADDRESS,
   POSTAL_ADDRESS_MAX_LENGTH,
@@ -19,7 +19,8 @@ import {
 /* ---------------------------------------------------------------------- Text
  * Decision 276 — every string this component shows lives in this one object, so
  * the School Portal's translation layer (Decision 273) can pass translated text
- * through the `text` prop instead of these English defaults. */
+ * through `AddressTextProvider` (every form at once) or the `text` prop (one
+ * form) instead of these English defaults. */
 export const ADDRESS_TEXT = {
   legend: 'Address',
   country: 'Country',
@@ -57,6 +58,14 @@ export const ADDRESS_TEXT = {
   },
 };
 export type AddressText = typeof ADDRESS_TEXT;
+
+const AddressTextContext = React.createContext<AddressText>(ADDRESS_TEXT);
+
+/** Sets the text every `AddressFields` below it uses, the same way
+ * `UiStringsProvider` does for the rest of this package. */
+export function AddressTextProvider({ text, children }: { text: AddressText; children: ReactNode }) {
+  return <AddressTextContext.Provider value={text}>{children}</AddressTextContext.Provider>;
+}
 
 function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? '');
@@ -169,7 +178,10 @@ export interface AddressFieldsProps {
  * postal-code format — the same rules the API checks (`postalAddress.ts`).
  * Changing the country keeps what's typed in the fields both countries use.
  */
-export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, autocomplete, text = ADDRESS_TEXT, legend, hint, disabled }: AddressFieldsProps) {
+export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, autocomplete, text: textProp, legend, hint, disabled }: AddressFieldsProps) {
+  const contextText = React.useContext(AddressTextContext);
+  const text = textProp ?? contextText;
+  const countryNames = useLocalCountryNames(useUiLocale());
   const format = getAddressFormat(value.country);
   const fields = visibleAddressFields(format);
 
@@ -205,9 +217,9 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
     return fill(text.errors.regionInvalid, { field: name.toLowerCase() });
   }
 
-  const countryOptions = [{ value: '', label: text.chooseCountry }, ...COUNTRY_NAMES.map(([code, name]) => ({ value: code, label: name }))];
+  const countryOptions = [{ value: '', label: text.chooseCountry }, ...countryNames.map(([code, name]) => ({ value: code, label: name }))];
   // A stored country the list doesn't know (shouldn't happen) still shows rather than silently blanking.
-  if (value.country && !COUNTRY_NAMES.some(([code]) => code === value.country)) {
+  if (value.country && !countryNames.some(([code]) => code === value.country)) {
     countryOptions.push({ value: value.country, label: value.country });
   }
 
@@ -300,6 +312,21 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
       </div>
     </fieldset>
   );
+}
+
+/** The country list in the reader's language, sorted in it, when a locale is
+ * set (same approach as `PhoneField`); English keeps the package's own names. */
+function useLocalCountryNames(locale: string | undefined): ReadonlyArray<readonly [string, string]> {
+  return useMemo(() => {
+    if (!locale) return COUNTRY_NAMES;
+    let names: Intl.DisplayNames | undefined;
+    try {
+      names = new Intl.DisplayNames([locale], { type: 'region' });
+    } catch {
+      return COUNTRY_NAMES;
+    }
+    return COUNTRY_NAMES.map(([code, name]) => [code, names?.of(code) ?? name] as const).sort((a, b) => a[1].localeCompare(b[1], locale));
+  }, [locale]);
 }
 
 /** Line 1 with an autocomplete list underneath. Only used when a provider is passed. */

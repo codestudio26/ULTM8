@@ -58,6 +58,11 @@ function useUiStrings() {
   return React.useContext(UiStringsContext);
 }
 
+/** The locale passed to `UiStringsProvider`, or `undefined` for English. */
+export function useUiLocale(): string | undefined {
+  return React.useContext(UiStringsContext).locale;
+}
+
 export function fillUiString(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
 }

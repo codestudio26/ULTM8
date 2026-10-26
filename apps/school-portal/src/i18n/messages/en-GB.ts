@@ -25,6 +25,7 @@ import { disciplines } from './en/disciplines';
 import { ui } from './en/ui';
 import { serverKeys as server } from '@ultm8/i18n';
 import { profile } from './en/profile';
+import { address } from './en/address';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -63,6 +64,7 @@ export const messages = {
   ui,
   server,
   profile,
+  address,
 };
 
 export type EnglishMessages = typeof messages;

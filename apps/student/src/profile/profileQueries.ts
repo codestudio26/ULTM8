@@ -93,6 +93,20 @@ export function useLanguages() {
   return useQuery({ queryKey: ['settings-languages'], queryFn: () => unwrap(apiClient.GET('/v1/settings/languages')) });
 }
 
+/** Listed first, in this order, ahead of the alphabetical rest (product owner,
+ * 21 Oct 2026) — the same order as `@ultm8/ui`'s `CurrencyField` on the web. */
+const PINNED_CURRENCIES = ['USD', 'GBP', 'EUR', 'BRL'];
+
+function currencyRank(code: string): number {
+  const pinned = PINNED_CURRENCIES.indexOf(code);
+  return pinned === -1 ? PINNED_CURRENCIES.length : pinned;
+}
+
 export function useCurrencies() {
-  return useQuery({ queryKey: ['settings-currencies'], queryFn: () => unwrap(apiClient.GET('/v1/settings/currencies')) });
+  return useQuery({
+    queryKey: ['settings-currencies'],
+    queryFn: () => unwrap(apiClient.GET('/v1/settings/currencies')),
+    // Stable sort: the rest keep the server's own (alphabetical) order.
+    select: (currencies) => [...currencies].sort((a, b) => currencyRank(a.code) - currencyRank(b.code)),
+  });
 }
