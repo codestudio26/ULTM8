@@ -33,6 +33,19 @@ export function translateByCode(t: Translate, code: string, message: string): st
     }
     case 'BOOKED_CLASSES_CHOICE_REQUIRED':
       return t('server.codes.bookedClassesChoice');
+    // Classes review (C8, C11, C13).
+    case 'CLASS_ARCHIVED':
+      return t('server.codes.classArchived');
+    case 'QR_WINDOW_BEFORE_START':
+      return t('server.codes.qrWindowBeforeStart');
+    case 'BOOKING_CUTOFF_AFTER_END':
+      return t('server.codes.bookingCutoffAfterEnd');
+    case 'REFUND_CUTOFF_AFTER_END':
+      return t('server.codes.refundCutoffAfterEnd');
+    case 'GUEST_NEEDS_FRIEND_PASS':
+      return t('server.codes.guestNeedsFriendPass');
+    case 'GUEST_PASS_REPEATED':
+      return t('server.codes.guestPassRepeated');
     default:
       return null;
   }

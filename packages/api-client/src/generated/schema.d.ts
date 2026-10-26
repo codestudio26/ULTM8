@@ -4677,6 +4677,8 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /** @description Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class. */
+            timetableSlotId?: string | null;
             /** @description Decision 226 — set when this Class has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried). */
@@ -4701,12 +4703,6 @@ export interface components {
             startDate?: string;
             /** @description ISO 8601 date-time. */
             endDate?: string;
-            /** @description ISO 8601 date-time — booking cutoff. */
-            bookingEndAt?: string;
-            /** @description ISO 8601 date-time — end of the QR check-in window. */
-            qrAttendanceEndAt?: string;
-            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. */
-            refundFeeDate?: string;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
@@ -4721,6 +4717,12 @@ export interface components {
             capacity?: number | null;
             /** @description Minor currency unit (e.g. cents). Pass null to clear. */
             cancellationCharge?: number | null;
+            /** @description ISO 8601 date-time — booking cutoff. Pass null to clear. */
+            bookingEndAt?: string | null;
+            /** @description ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies). */
+            qrAttendanceEndAt?: string | null;
+            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear. */
+            refundFeeDate?: string | null;
         };
         SubscriptionPlanResponseDto: {
             id: string;
@@ -8441,6 +8443,10 @@ export interface operations {
                 startsFrom?: string;
                 /** @description ISO 8601 date-time: only Classes starting at or before it. */
                 startsTo?: string;
+                /** @description Date view, sorted by start time. Omit for the unsorted list. */
+                when?: "upcoming" | "past" | "all";
+                /** @description Only Classes taught by this User. */
+                instructorId?: string;
             };
             header?: never;
             path: {

@@ -3,7 +3,8 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, PhotoUploadField, SelectFi
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
-import { isoToLocalInput, localInputToIso } from '../lib/datetime';
+import { classZone, isoToZonedInput, zonedInputToIso } from '../lib/datetime';
+import { MoneyField } from '../lib/MoneyField';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { ClassResponse } from './classQueries';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -36,14 +37,12 @@ export interface ClassFormValues {
   startDate: string;
   endDate: string;
   capacity?: number | null;
-  /** Not clearable via this form yet — ClassesService.update() converts these
-   * via `dto.X ? new Date(dto.X) : undefined`, a falsy check that would treat
-   * an explicit `null` the same as an omitted field. A real, separate,
-   * flagged backend gap (see that service's own comment), not something this
-   * form can fix on its own. */
-  bookingEndAt?: string;
-  qrAttendanceEndAt?: string;
-  refundFeeDate?: string;
+  /** `null` clears the date on edit (Classes review C11: the API used to
+   * ignore an empty value, so a cutoff could never be removed). */
+  bookingEndAt?: string | null;
+  qrAttendanceEndAt?: string | null;
+  refundFeeDate?: string | null;
+  /** In hundredths, like every money column (C10). */
   cancellationCharge?: number | null;
   /** Always populated — the checkbox defaults to false, never undefined. */
   termsWaiverRequired: boolean;
@@ -63,6 +62,8 @@ export interface ClassFormValues {
 export function ClassFormModal({
   title,
   schoolId,
+  schoolTimezone,
+  currency,
   initial,
   branches,
   instructors,
@@ -76,6 +77,11 @@ export function ClassFormModal({
    * (School Owner at this School — see UploadsService's own comment), on
    * both create (no Class id yet) and edit. */
   schoolId: string;
+  /** Times are typed on the Branch's clock, else the School's, else UTC
+   * (Classes review C12: they used to follow the editor's own computer). */
+  schoolTimezone: string | null;
+  /** The School's currency, shown beside the cancellation charge. */
+  currency: string | null;
   initial?: Partial<ClassResponse>;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
@@ -87,6 +93,9 @@ export function ClassFormModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const zoneFor = (branchId: string | null | undefined) =>
+    classZone(branches.find((b) => b.id === branchId)?.timezone, schoolTimezone);
+  const initialZone = zoneFor(initial?.branchId);
   const [form, setForm] = useState({
     branchId: initial?.branchId ?? '',
     instructorId: initial?.instructorId ?? '',
@@ -94,19 +103,22 @@ export function ClassFormModal({
     activities: (initial?.activities ?? []).join(', '),
     bannerUrl: initial?.bannerUrl ?? '',
     description: initial?.description ?? '',
-    startDate: isoToLocalInput(initial?.startDate),
-    endDate: isoToLocalInput(initial?.endDate),
+    startDate: isoToZonedInput(initial?.startDate, initialZone),
+    endDate: isoToZonedInput(initial?.endDate, initialZone),
     capacity: initial?.capacity?.toString() ?? '',
-    bookingEndAt: isoToLocalInput(initial?.bookingEndAt),
-    qrAttendanceEndAt: isoToLocalInput(initial?.qrAttendanceEndAt),
-    refundFeeDate: isoToLocalInput(initial?.refundFeeDate),
-    cancellationCharge: initial?.cancellationCharge?.toString() ?? '',
+    bookingEndAt: isoToZonedInput(initial?.bookingEndAt, initialZone),
+    qrAttendanceEndAt: isoToZonedInput(initial?.qrAttendanceEndAt, initialZone),
+    refundFeeDate: isoToZonedInput(initial?.refundFeeDate, initialZone),
     termsWaiverRequired: initial?.termsWaiverRequired ?? false,
     membershipInclusion: initial?.membershipInclusion ?? false,
   });
   const [styles, setStyles] = useState<StyleSelection[]>(
     initial?.styles?.length ? initial.styles.map((s) => ({ disciplineId: s.disciplineId, classType: s.classType ?? null })) : [{ disciplineId: '', classType: null }],
   );
+  const [cancellationCharge, setCancellationCharge] = useState<number | null>(initial?.cancellationCharge ?? null);
+  const [chargeValid, setChargeValid] = useState(true);
+  // The wall-clock times typed are read on the zone of the Branch picked now.
+  const zone = zoneFor(form.branchId);
   const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
@@ -114,8 +126,17 @@ export function ClassFormModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const startDate = localInputToIso(form.startDate);
-    const endDate = localInputToIso(form.endDate);
+    const title = form.title.trim();
+    if (!title) {
+      setError(t('classes.form.titleRequired'));
+      return;
+    }
+    if (!chargeValid) {
+      setError(t('classes.form.cancellationChargeInvalid'));
+      return;
+    }
+    const startDate = zonedInputToIso(form.startDate, zone);
+    const endDate = zonedInputToIso(form.endDate, zone);
     if (!startDate || !endDate) {
       setError(t('classes.form.datesRequired'));
       return;
@@ -148,17 +169,17 @@ export function ClassFormModal({
       await onSubmit({
         branchId: form.branchId || null,
         instructorId: form.instructorId || null,
-        title: form.title,
+        title,
         ...(usesStyles ? { styles } : { activities }),
         bannerUrl: form.bannerUrl || null,
         description: form.description || null,
         startDate,
         endDate,
         capacity: form.capacity ? Number(form.capacity) : null,
-        bookingEndAt: localInputToIso(form.bookingEndAt),
-        qrAttendanceEndAt: localInputToIso(form.qrAttendanceEndAt),
-        refundFeeDate: localInputToIso(form.refundFeeDate),
-        cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
+        bookingEndAt: zonedInputToIso(form.bookingEndAt, zone) ?? null,
+        qrAttendanceEndAt: zonedInputToIso(form.qrAttendanceEndAt, zone) ?? null,
+        refundFeeDate: zonedInputToIso(form.refundFeeDate, zone) ?? null,
+        cancellationCharge,
         termsWaiverRequired: form.termsWaiverRequired,
         membershipInclusion: form.membershipInclusion,
       });
@@ -202,7 +223,7 @@ export function ClassFormModal({
             ]}
           />
         </Field>
-        <Field label={t('classes.form.startDateLabel')} htmlFor="class-startDate">
+        <Field label={t('classes.form.startDateLabel')} htmlFor="class-startDate" hint={t('classes.form.timezoneHint', { zone })}>
           <TextField
             required
             type="datetime-local"
@@ -229,7 +250,7 @@ export function ClassFormModal({
         <Field
           label={t('classes.form.bookingCutoffLabel')}
           htmlFor="class-bookingEndAt"
-          hint={initial?.bookingEndAt ? t('classes.form.cantClearHint') : undefined}
+          hint={t('classes.form.optionalDateHint')}
         >
           <TextField
             type="datetime-local"
@@ -240,7 +261,7 @@ export function ClassFormModal({
         <Field
           label={t('classes.form.qrWindowEndsLabel')}
           htmlFor="class-qrAttendanceEndAt"
-          hint={initial?.qrAttendanceEndAt ? t('classes.form.cantClearHint') : undefined}
+          hint={t('classes.form.optionalDateHint')}
         >
           <TextField
             type="datetime-local"
@@ -251,7 +272,7 @@ export function ClassFormModal({
         <Field
           label={t('classes.form.refundCutoffLabel')}
           htmlFor="class-refundFeeDate"
-          hint={initial?.refundFeeDate ? t('classes.form.cantClearHint') : undefined}
+          hint={t('classes.form.optionalDateHint')}
         >
           <TextField
             type="datetime-local"
@@ -260,11 +281,14 @@ export function ClassFormModal({
           />
         </Field>
         <Field label={t('classes.form.cancellationChargeLabel')} htmlFor="class-cancellationCharge" hint={t('classes.form.cancellationChargeHint')}>
-          <TextField
-            type="number"
-            min={0}
-            value={form.cancellationCharge}
-            onChange={(e) => setForm((f) => ({ ...f, cancellationCharge: e.target.value }))}
+          <MoneyField
+            id="class-cancellationCharge"
+            value={cancellationCharge}
+            currency={currency}
+            onChange={(minorUnits, valid) => {
+              setCancellationCharge(minorUnits);
+              setChargeValid(valid);
+            }}
           />
         </Field>
         <Field label={t('classes.form.bannerLabel')} htmlFor="class-banner">
