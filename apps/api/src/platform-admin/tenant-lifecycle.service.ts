@@ -75,7 +75,7 @@ export class TenantLifecycleService {
   ) {}
 
   /**
-   * Decision 336 (F16, product owner's answer to Q8) — closing a School, or the
+   * Decision 337 (F16, product owner's answer to Q8) — closing a School, or the
    * Franchise it belongs to, ends that School's franchise-fee billing straight
    * away, the same way leaving the Franchise does (SchoolsService.leaveFranchise):
    * a final invoice for what has accrued, then the subscription is cancelled and

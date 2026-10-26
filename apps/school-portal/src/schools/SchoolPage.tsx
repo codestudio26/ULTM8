@@ -337,7 +337,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   const leaveFranchise = useLeaveFranchise(schoolId);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
-  // Decision 336 (F6) — Leave asks first: it ends the School's franchise-fee billing.
+  // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
   const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   async function handleJoin(e: React.FormEvent) {

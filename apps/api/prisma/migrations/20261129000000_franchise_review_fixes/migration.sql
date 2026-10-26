@@ -1,4 +1,4 @@
--- Decision 336 (Franchises review, F2) — the Franchise Owner's member-School
+-- Decision 337 (Franchises review, F2) — the Franchise Owner's member-School
 -- roster returned every column of every member School (`SELECT s.*`), including
 -- the School's student join code and its internal Stripe subscription ids.
 -- The roster only needs to show who the members are and how their franchise-fee

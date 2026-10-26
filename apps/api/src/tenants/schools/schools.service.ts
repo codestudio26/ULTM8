@@ -422,10 +422,10 @@ export class SchoolsService {
    */
   async joinFranchise(callerId: string, schoolId: string, franchiseId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    // Decision 336 (F4) — a closed School can't join, the same rule leaveFranchise()
+    // Decision 337 (F4) — a closed School can't join, the same rule leaveFranchise()
     // and every other write at a closed School already follow.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    // Decision 336 (F3) — nor can anyone join a closed Franchise. A School Owner
+    // Decision 337 (F3) — nor can anyone join a closed Franchise. A School Owner
     // can't read the Franchise row through RLS, so this one-column check uses the
     // same jobs connection leaveFranchise() below already uses for the Franchise's
     // PaymentAccount. A Franchise that doesn't exist falls through to the FK check
@@ -537,7 +537,7 @@ export class SchoolsService {
         });
         const account = oldFranchise?.paymentAccount;
         if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
-          // Decision 336 (F19, product owner's answer to Q9) — the School pays for
+          // Decision 337 (F19, product owner's answer to Q9) — the School pays for
           // the month it leaves in: the subscription is cancelled with a final
           // invoice for what has accrued (a Per-headcount School's count was
           // reported on the 1st), so the month's Pending fee charge resolves

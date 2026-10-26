@@ -24,11 +24,11 @@ import { formatLocale } from '../i18n/format';
 // from components['schemas'][...], never re-declared by hand" convention
 // every other query/page in this codebase follows.
 //
-// Decision 336 (F2): the roster now has its own narrow response type
+// Decision 337 (F2): the roster now has its own narrow response type
 // (FranchiseMemberSchoolResponseDto), no longer the whole School record.
 type FranchiseSchool = FranchiseMemberSchool;
 
-/** Decision 336 (F13) — copies the Franchise ID, falling back to selecting the
+/** Decision 337 (F13) — copies the Franchise ID, falling back to selecting the
  * text when the clipboard is unavailable. */
 function FranchiseIdLine({ id }: { id: string }) {
   const t = useT();
@@ -103,7 +103,7 @@ export function FranchiseDetailPage() {
 
   const schools: FranchiseSchool[] = schoolData?.items ?? [];
   const charges = chargeData?.items ?? [];
-  // Decision 336 (F7) — say why member Schools stay "Not billing yet" instead of
+  // Decision 337 (F7) — say why member Schools stay "Not billing yet" instead of
   // leaving it a mystery: no fee set for the chosen fee model, and/or no Stripe
   // account to bill through (connecting one isn't in the portal yet).
   const feeMissing = franchise
@@ -164,7 +164,7 @@ export function FranchiseDetailPage() {
                 {
                   key: 'name',
                   header: t('franchises.detail.columnName'),
-                  // Decision 336 (F9) — a closed member School says so.
+                  // Decision 337 (F9) — a closed member School says so.
                   render: (s) => (
                     <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       {s.name}
@@ -201,7 +201,7 @@ export function FranchiseDetailPage() {
               {
                 key: 'school',
                 header: t('franchises.detail.columnSchool'),
-                // Decision 336 (F14) — a School that has since left isn't in the roster.
+                // Decision 337 (F14) — a School that has since left isn't in the roster.
                 render: (c) => schools.find((s) => s.id === c.schoolId)?.name ?? t('franchises.detail.formerMember'),
               },
               {

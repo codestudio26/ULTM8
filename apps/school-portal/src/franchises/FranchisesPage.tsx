@@ -112,7 +112,7 @@ export function FranchisesPage() {
                     <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
                       {t('franchises.list.viewDetails')}
                     </Button>
-                    {/* Decision 336 (F8) — a closed Franchise can't be edited. */}
+                    {/* Decision 337 (F8) — a closed Franchise can't be edited. */}
                     {f.archivedAt ? null : (
                       <Button variant="secondary" onClick={() => setEditing(f)}>
                         {t('franchises.list.edit')}
@@ -142,7 +142,7 @@ export function FranchisesPage() {
                       >
                         {f.name}
                       </button>
-                      {/* Decision 336 (F8) */}
+                      {/* Decision 337 (F8) */}
                       {f.archivedAt ? <Badge variant="danger">{t('franchises.list.closed')}</Badge> : null}
                     </span>
                   ),

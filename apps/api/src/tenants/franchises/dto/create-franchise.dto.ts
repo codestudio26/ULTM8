@@ -6,7 +6,7 @@ import { CURRENCIES } from '../../../settings/constants/currencies';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
-/** Decision 336 (F21) — the same lists GET /settings/languages and
+/** Decision 337 (F21) — the same lists GET /settings/languages and
  * /settings/currencies serve the form's pickers from. */
 export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code);
 export const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
@@ -57,7 +57,7 @@ export enum FeeModelDto {
  * elements) — one convention, not re-derived per model.
  */
 export class CreateFranchiseDto {
-  // Decision 336 (F10) — trimmed, and a name of only spaces is rejected.
+  // Decision 337 (F10) — trimmed, and a name of only spaces is rejected.
   @ApiProperty()
   @Transform(trim)
   @IsString()

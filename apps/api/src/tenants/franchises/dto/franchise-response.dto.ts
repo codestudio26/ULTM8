@@ -93,7 +93,7 @@ export class FranchiseListResponseDto {
   nextCursor!: string | null;
 }
 
-/** Decision 336 (F2) — one row of a Franchise Owner's member-School roster
+/** Decision 337 (F2) — one row of a Franchise Owner's member-School roster
  * (GET /franchises/{id}/schools). Deliberately narrow: who the member is and how
  * its franchise-fee billing stands, nothing else from the School's record. */
 export class FranchiseMemberSchoolResponseDto {

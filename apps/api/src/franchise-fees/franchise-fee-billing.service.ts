@@ -89,7 +89,7 @@ export class FranchiseFeeBillingService {
     // key instead of creating a SECOND standing Subscription for the same School.
     // Stripe's own idempotency-key mechanism (any `.create()` call's second
     // params argument), not a bespoke one.
-    // Decision 336 (F15) — the Franchise and the School row's updatedAt are part
+    // Decision 337 (F15) — the Franchise and the School row's updatedAt are part
     // of the key. With the School id alone, a School that left and rejoined within
     // Stripe's 24-hour key window would get the old request's answer (or a
     // parameter-mismatch error) instead of a new subscription. Leaving and joining
@@ -122,7 +122,7 @@ export class FranchiseFeeBillingService {
         {
           customer: customer.id,
           items: [{ price: priceId }], // metered — no `quantity`, Stripe derives it from reported usage
-          // Decision 336 (F18) — billing months run midnight to midnight UTC on the
+          // Decision 337 (F18) — billing months run midnight to midnight UTC on the
           // 1st. Otherwise each month would end at the second this subscription was
           // created (about 03:00 on the 1st, when the monthly job runs), and next
           // month's 03:00 usage report could land a few seconds before that and be

@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 /**
- * Decision 336 — how a School's franchise-fee subscription is ended when the
+ * Decision 337 — how a School's franchise-fee subscription is ended when the
  * School leaves its Franchise (F19) or when the School or its Franchise is
  * closed (F16). `invoice_now` bills what has accrued this month (a Per-headcount
  * School's student count is reported on the 1st), so the month's Pending fee

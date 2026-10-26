@@ -1,5 +1,5 @@
 /**
- * Decision 336 — the Franchises section review fixes (F1–F4, F10–F12, F15–F21,
+ * Decision 337 — the Franchises section review fixes (F1–F4, F10–F12, F15–F21,
  * roster F2). One file so each fix has a test that names it.
  *
  * Stripe is faked throughout (no live key in CI or this sandbox): the fake
@@ -100,7 +100,7 @@ function makeFakeStripe() {
   };
 }
 
-describeIfDb('Franchises review fixes (Decision 336)', () => {
+describeIfDb('Franchises review fixes (Decision 337)', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const tenantJwt = new JwtService({ secret: process.env.JWT_ACCESS_SECRET });
   const adminJwt = new JwtService({ secret: process.env.PLATFORM_ADMIN_JWT_SECRET });

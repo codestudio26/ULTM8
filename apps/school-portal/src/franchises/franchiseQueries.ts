@@ -118,7 +118,7 @@ export function useRefundFeeCharge(franchiseId: string) {
   });
 }
 
-/** Decision 336 (F7) — whether the Franchise has a Stripe account franchise-fee
+/** Decision 337 (F7) — whether the Franchise has a Stripe account franchise-fee
  * billing can run on. `null` when it has none yet (the API answers 404); the
  * Franchise page uses this to explain why member Schools stay "Not billing yet". */
 export function useFranchisePaymentAccount(franchiseId: string | null) {

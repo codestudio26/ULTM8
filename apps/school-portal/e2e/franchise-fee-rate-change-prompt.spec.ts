@@ -91,7 +91,7 @@ test('Save is blocked until a strategy is chosen, and the rate change round-trip
   await page.getByRole('row', { name: /Rate Prompt Co/ }).getByRole('button', { name: 'Edit' }).click();
   await expect(page.getByRole('heading', { name: 'Edit franchise' })).toBeVisible();
 
-  // Decision 336 (F5) — the form takes US dollars; the API stores cents.
+  // Decision 337 (F5) — the form takes US dollars; the API stores cents.
   await page.getByLabel('Flat fee (USD per month)').fill('75.00');
 
   // The prompt itself depends on an async GET (useFranchiseBillingStatus) —

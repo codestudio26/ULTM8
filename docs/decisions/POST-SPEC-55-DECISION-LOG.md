@@ -5057,7 +5057,7 @@ User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timet
 
 ---
 
-## Decision 336 — Franchises review fixes: fees in dollars, fee model locked once billing, closed tenants stop billing, member list trimmed
+## Decision 337 — Franchises review fixes: fees in dollars, fee model locked once billing, closed tenants stop billing, member list trimmed
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 99, 110
 

@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Franchises fixes from the 26 Oct review (Decision 336)** — fees are typed
+- **Franchises fixes from the 26 Oct review (Decision 337)** — fees are typed
   in US dollars (not cents) and a Franchise needs a fee for its fee model; the
   fee model is locked while Schools are being billed; the "Schools already
   billing" check now works for real Schools, so the rate-change prompt shows;

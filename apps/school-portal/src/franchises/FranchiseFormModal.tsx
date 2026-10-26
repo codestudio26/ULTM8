@@ -12,7 +12,7 @@ const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
 const FEE_RATE_CHANGE_STRATEGIES = ['MIGRATE_NEXT_CYCLE', 'MIGRATE_IMMEDIATE'] as const;
 
-/** Decision 336 (F5) — fees are typed in US dollars and cents (e.g. 50.00), the
+/** Decision 337 (F5) — fees are typed in US dollars and cents (e.g. 50.00), the
  * same way the Refund box already takes them; the API stores and bills cents. */
 function centsToDollarsInput(cents: number | null | undefined): string {
   return cents == null ? '' : (cents / 100).toFixed(2);
@@ -38,7 +38,7 @@ export interface FranchiseFormValues {
   logoUrl?: string | null;
   bannerUrl?: string | null;
   feeModel: (typeof FEE_MODELS)[number];
-  /** In cents, as the API takes it (the form itself shows dollars, Decision 336).
+  /** In cents, as the API takes it (the form itself shows dollars, Decision 337).
    * Deliberately never sent as `null` from this form — see
    * UpdateFranchiseDto's own header comment on why clearing a configured fee
    * rate is out of scope this phase. Left blank means "don't change it"
@@ -115,10 +115,10 @@ export function FranchiseFormModal({
   const flatChanged = initial && flatCents !== undefined && flatCents !== (initial.flatFeeAmount ?? null);
   const perHeadcountChanged = initial && perHeadcountCents !== undefined && perHeadcountCents !== (initial.perHeadcountRate ?? null);
   const feeRateChangeDecisionRequired = !!initial && (flatChanged || perHeadcountChanged) && schoolsAlreadyBillingCount > 0;
-  // Decision 336 (F1) — the fee model can't change once any School is billing;
+  // Decision 337 (F1) — the fee model can't change once any School is billing;
   // the server refuses it too.
   const feeModelLocked = !!initial && schoolsAlreadyBillingCount > 0;
-  // Decision 336 (F7) — the amount for the chosen fee model is required on a new
+  // Decision 337 (F7) — the amount for the chosen fee model is required on a new
   // Franchise, and whenever the fee model is changed. An existing Franchise that
   // never had one can still be saved as it is.
   const feeModelChanged = !!initial && form.feeModel !== initial.feeModel;

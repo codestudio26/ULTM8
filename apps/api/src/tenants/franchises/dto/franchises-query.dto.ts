@@ -13,7 +13,7 @@ import { FeeModelDto } from './create-franchise.dto';
  *
  * `feeModel` is an exact match against the real `Franchise.feeModel` enum column.
  * `activity` matches one element of `Franchise.activities`, ignoring capitals
- * (Decision 336, F11 — an Owner typing "jiu jitsu" expects to find "Jiu Jitsu").
+ * (Decision 337, F11 — an Owner typing "jiu jitsu" expects to find "Jiu Jitsu").
  * Prisma's array `has` can't ignore case, so FranchisesService.findAllForCaller
  * does the match in SQL.
  */

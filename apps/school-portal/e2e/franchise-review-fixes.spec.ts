@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, signIn } from './fixtures';
 
 /**
- * Decision 336 — the Franchises section review's portal fixes: fees typed in
+ * Decision 337 — the Franchises section review's portal fixes: fees typed in
  * dollars (F5), a fee required for the chosen model (F7), the fee model locked
  * while Schools are billed (F1), Closed labels (F8, F9), the Franchise ID with
  * a Copy button (F13), the "billing can't start yet" notice, and charges from a

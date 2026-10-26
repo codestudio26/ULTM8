@@ -124,7 +124,7 @@ export class FranchiseFeeUsageReportingProcessor extends WorkerHost {
    * per-slot loop. */
   private async ensureSubscriptionsPass(): Promise<number> {
     const unsubscribedSchools = await this.prismaJobs.school.findMany({
-      // Decision 336 (F16) — never start billing a closed School, or a School in a
+      // Decision 337 (F16) — never start billing a closed School, or a School in a
       // closed Franchise.
       where: { franchiseId: { not: null }, stripeFranchiseFeeSubscriptionId: null, archivedAt: null, franchise: { archivedAt: null } },
       include: { franchise: { include: { paymentAccount: true } } },
@@ -167,7 +167,7 @@ export class FranchiseFeeUsageReportingProcessor extends WorkerHost {
     const activeSchools = await this.prismaJobs.school.findMany({
       where: {
         stripeFranchiseFeeSubscriptionId: { not: null },
-        // Decision 336 (F16) — a closed School, or one in a closed Franchise, is
+        // Decision 337 (F16) — a closed School, or one in a closed Franchise, is
         // not reported further usage (closing also cancels its subscription;
         // this covers a cancellation that failed).
         archivedAt: null,

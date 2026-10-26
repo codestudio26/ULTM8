@@ -702,7 +702,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // in the installed Stripe API version.
     const paymentIntentId = this.extractPaymentIntentId(invoice);
 
-    // Decision 336 (F17) — a Per-headcount (metered) franchise-fee subscription
+    // Decision 337 (F17) — a Per-headcount (metered) franchise-fee subscription
     // opens with a $0 invoice for no usage yet. It isn't a fee charge, and it must
     // not mark the month's Pending charge paid either.
     if (invoice.billing_reason === 'subscription_create' && invoice.amount_paid === 0) {
@@ -710,7 +710,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       if (openingFor) return;
     }
 
-    // Decision 336 (F17) — match the Pending charge for the period this invoice
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
     // billed, not simply the newest one. Stripe bills a month's usage just after
     // that month ends, by which time the monthly job may already have recorded
     // next month's Pending charge; matching the newest one marked next month paid
@@ -874,7 +874,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return;
     }
 
-    // Decision 336 (F17) — match the Pending charge for the period this invoice
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
     // billed, not simply the newest one. Stripe bills a month's usage just after
     // that month ends, by which time the monthly job may already have recorded
     // next month's Pending charge; matching the newest one marked next month paid
