@@ -233,7 +233,8 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | BL4 | Sub-tabs **Paid / Scheduled / Overdue** with counts, and a total for the tab | 🟡 | ULTM8 lists past payments only; Scheduled/Overdue need C1 |
-| BL5 | Search by first or last name, **Filter**, **Print**, **Export ▾** | ❌ | No search, filter or export on Transactions. Filter and Export menus not yet captured |
+| BL5 | Search by first or last name, **Filter**, **Print**, **Export ▾** (Export as PDF, Export as CSV) | ❌ | No search, filter or export on Transactions |
+| BL5a | Payments **Filter**: invoice number, transaction ID, **due dates** (range), **paid dates** (range), payment type (all methods …), **card last 4 digits**, program, member status, **"show retried payments only"**; Reset / Cancel / Apply | ❌ | ULTM8's equivalents: style (= program), membership status. Due dates need C1; "retried" maps to Stripe's own retries (Decision 316.9) |
 | BL6 | Columns: Member, Amount (+ method), Description, **Invoice #** (`#0000001`, sequential per gym), Status (+ date), invoice, edit | 🟡 | No invoice number (see B4) |
 | BL7 | **Mark paid** column (on Overdue) and **Select** for bulk actions | ❌ | Desk payment = C1 ("pay at the desk", Decision 303) |
 | BL8 | **Edit Charge** (from the list or the member profile): amount, description ("appears on invoices and payment history"), **+ Discount** (% or fixed), charge date, payment method (saved card or **Manual Payment**), warning "Add a payment card before payment is due", Save / **Cancel payment** | ❌ | C1. Discount % or fixed: ✅ agreed (Decision 303) |
@@ -263,7 +264,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 |---|---|---|---|
 | BL13 | Sub-tabs **All Payments / Product Revenue / Member Balances**, date range | ❌ | Member Balances = C1's balance (Decision 303) |
 | BL14 | Tiles: **Total revenue, Base amount, Taxes & fees, Refunds**; revenue chart (week / month) | 🟡 | ULTM8 shows revenue only; tax comes with Decision 316.8, refunds with C1 |
-| BL15 | **Transactions** table: search by description, filter, **Export** | ❌ | Export: Decision 316.10 says income categories show "in exports", so an export is implied |
+| BL15 | **Transactions** table: search by description, **Filter** (program, transaction type, payment type, date range), **Export** | ❌ | Export: Decision 316.10 says income categories show "in exports", so an export is implied |
 
 ### Growth
 
