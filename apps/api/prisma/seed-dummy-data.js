@@ -287,6 +287,8 @@ async function main() {
       title: '1-Week Free Trial',
       price: 0,
       currency: 'USD',
+      // A Trial lasts 1-30 days (Decision 334).
+      expiryDurationDays: 7,
     },
   });
 
