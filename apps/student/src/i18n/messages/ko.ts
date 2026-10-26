@@ -441,8 +441,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "동영상을 처리하는 중입니다. 잠시 후 다시 확인해 주세요.",
       failed: "동영상 처리에 실패했습니다.",
-      playbackUrlMissing:
-        "동영상 재생 URL이 아직 연결되지 않았습니다. 백엔드에서 제공해야 합니다(이 파일의 getLessonPlaybackUrl 주석 참고).",
+      playbackUrlMissing: "이 동영상은 아직 이용할 수 없습니다.",
     },
     playlists: {
       loadError: "재생목록을 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -718,11 +717,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "국적",
       address: "주소",
       weightCategory: "체급",
-      weightCategoryHint: "자유 입력 — 단위/기준 미확정(Decision 220/246)",
+      weightCategoryHint: "도장에서 쓰는 방식대로 입력해 주세요.",
       kimonoSize: "도복 사이즈",
-      kimonoSizeHint: "자유 입력 — 사이즈표 미확정(Decision 220/246)",
+      kimonoSizeHint: "도장에서 쓰는 방식대로 입력해 주세요.",
       beltSize: "띠 사이즈",
-      beltSizeHint: "자유 입력 — 사이즈표 미확정(Decision 220/246)",
+      beltSizeHint: "도장에서 쓰는 방식대로 입력해 주세요.",
       language: "언어",
       rtlRestartHint: "앱을 다시 시작하면 아랍어가 오른쪽에서 왼쪽으로 표시됩니다.",
       currency: "통화",

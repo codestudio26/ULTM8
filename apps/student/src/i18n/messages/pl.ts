@@ -458,8 +458,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "Film jest przetwarzany — zajrzyj tu wkrótce.",
       failed: "Przetwarzanie filmu nie powiodło się.",
-      playbackUrlMissing:
-        "Adres URL odtwarzania filmu nie jest jeszcze podłączony — backend musi go udostępnić (zobacz komentarz do getLessonPlaybackUrl w tym pliku).",
+      playbackUrlMissing: "Ten film nie jest jeszcze dostępny.",
     },
     playlists: {
       loadError: "Nie udało się wczytać Twoich playlist — spróbuj ponownie.",
@@ -758,11 +757,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Narodowość",
       address: "Adres",
       weightCategory: "Kategoria wagowa",
-      weightCategoryHint: "Dowolny tekst — brak ustalonej jednostki/skali (Decision 220/246)",
+      weightCategoryHint: "Wpisz tak, jak robi to Twoja Szkoła.",
       kimonoSize: "Rozmiar kimona",
-      kimonoSizeHint: "Dowolny tekst — brak ustalonej tabeli rozmiarów (Decision 220/246)",
+      kimonoSizeHint: "Wpisz tak, jak robi to Twoja Szkoła.",
       beltSize: "Rozmiar pasa",
-      beltSizeHint: "Dowolny tekst — brak ustalonej tabeli rozmiarów (Decision 220/246)",
+      beltSizeHint: "Wpisz tak, jak robi to Twoja Szkoła.",
       language: "Język",
       rtlRestartHint: "Po ponownym uruchomieniu aplikacji arabski będzie wyświetlany od prawej do lewej.",
       currency: "Waluta",

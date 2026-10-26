@@ -445,8 +445,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "De video wordt verwerkt — kom straks terug.",
       failed: "Het verwerken van de video is mislukt.",
-      playbackUrlMissing:
-        "De afspeel-URL van de video is nog niet gekoppeld — de backend moet die beschikbaar maken (zie het commentaar bij getLessonPlaybackUrl in dit bestand).",
+      playbackUrlMissing: "Deze video is nog niet beschikbaar.",
     },
     playlists: {
       loadError: "Je afspeellijsten konden niet worden geladen — probeer het opnieuw.",
@@ -723,11 +722,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Nationaliteit",
       address: "Adres",
       weightCategory: "Gewichtsklasse",
-      weightCategoryHint: "Vrije tekst — geen bevestigde eenheid/schaal (Besluit 220/246)",
+      weightCategoryHint: "Schrijf het zoals je school het doet.",
       kimonoSize: "Kimonomaat",
-      kimonoSizeHint: "Vrije tekst — geen bevestigde maattabel (Besluit 220/246)",
+      kimonoSizeHint: "Schrijf het zoals je school het doet.",
       beltSize: "Bandmaat",
-      beltSizeHint: "Vrije tekst — geen bevestigde maattabel (Besluit 220/246)",
+      beltSizeHint: "Schrijf het zoals je school het doet.",
       language: "Taal",
       rtlRestartHint: "Arabisch wordt van rechts naar links weergegeven nadat je de app opnieuw hebt gestart.",
       currency: "Valuta",

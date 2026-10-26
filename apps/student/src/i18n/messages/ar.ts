@@ -468,8 +468,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "تجري معالجة الفيديو — عُد قريبًا.",
       failed: "فشلت معالجة الفيديو.",
-      playbackUrlMissing:
-        "رابط تشغيل الفيديو غير موصول بعد — يجب أن يوفّره الخادم (راجع تعليق getLessonPlaybackUrl في هذا الملف).",
+      playbackUrlMissing: "هذا الفيديو غير متاح بعد.",
     },
     playlists: {
       loadError: "تعذّر تحميل قوائم التشغيل الخاصة بك، يُرجى المحاولة مرة أخرى.",
@@ -778,11 +777,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "الجنسية",
       address: "العنوان",
       weightCategory: "فئة الوزن",
-      weightCategoryHint: "نص حر — لا توجد وحدة/مقياس معتمد (القرار 220/246)",
+      weightCategoryHint: "اكتبها بالطريقة التي تستخدمها مدرستك.",
       kimonoSize: "مقاس الكيمونو",
-      kimonoSizeHint: "نص حر — لا يوجد جدول مقاسات معتمد (القرار 220/246)",
+      kimonoSizeHint: "اكتبها بالطريقة التي تستخدمها مدرستك.",
       beltSize: "مقاس الحزام",
-      beltSizeHint: "نص حر — لا يوجد جدول مقاسات معتمد (القرار 220/246)",
+      beltSizeHint: "اكتبها بالطريقة التي تستخدمها مدرستك.",
       language: "اللغة",
       rtlRestartHint: "تظهر العربية من اليمين إلى اليسار بعد إعادة تشغيل التطبيق.",
       currency: "العملة",

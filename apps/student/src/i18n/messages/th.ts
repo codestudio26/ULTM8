@@ -441,8 +441,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "กำลังประมวลผลวิดีโอ โปรดกลับมาดูอีกครั้งในไม่ช้า",
       failed: "การประมวลผลวิดีโอล้มเหลว",
-      playbackUrlMissing:
-        "ยังไม่ได้เชื่อมต่อ URL สำหรับเล่นวิดีโอ — แบ็กเอนด์ต้องเปิดให้ใช้ (ดูความคิดเห็นของ getLessonPlaybackUrl ในไฟล์นี้)",
+      playbackUrlMissing: "วิดีโอนี้ยังไม่พร้อมใช้งาน",
     },
     playlists: {
       loadError: "ไม่สามารถโหลดเพลย์ลิสต์ของคุณได้ โปรดลองอีกครั้ง",
@@ -717,11 +716,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "สัญชาติ",
       address: "ที่อยู่",
       weightCategory: "รุ่นน้ำหนัก",
-      weightCategoryHint: "กรอกได้อิสระ — ยังไม่ได้กำหนดหน่วย/มาตรฐาน (Decision 220/246)",
+      weightCategoryHint: "กรอกตามแบบที่โรงเรียนของคุณใช้",
       kimonoSize: "ขนาดชุดกิโมโน",
-      kimonoSizeHint: "กรอกได้อิสระ — ยังไม่ได้กำหนดตารางขนาด (Decision 220/246)",
+      kimonoSizeHint: "กรอกตามแบบที่โรงเรียนของคุณใช้",
       beltSize: "ขนาดสายคาด",
-      beltSizeHint: "กรอกได้อิสระ — ยังไม่ได้กำหนดตารางขนาด (Decision 220/246)",
+      beltSizeHint: "กรอกตามแบบที่โรงเรียนของคุณใช้",
       language: "ภาษา",
       rtlRestartHint: "ภาษาอาหรับจะแสดงจากขวาไปซ้ายหลังจากคุณรีสตาร์ทแอป",
       currency: "สกุลเงิน",

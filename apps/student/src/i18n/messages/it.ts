@@ -453,8 +453,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "Il video è in elaborazione — torna a controllare tra poco.",
       failed: "Elaborazione del video non riuscita.",
-      playbackUrlMissing:
-        "URL di riproduzione del video non ancora collegato — il backend deve esporlo (vedi il commento di getLessonPlaybackUrl in questo file).",
+      playbackUrlMissing: "Questo video non è ancora disponibile.",
     },
     playlists: {
       loadError: "Impossibile caricare le tue playlist — riprova.",
@@ -740,11 +739,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Nazionalità",
       address: "Indirizzo",
       weightCategory: "Categoria di peso",
-      weightCategoryHint: "Testo libero — nessuna unità/scala confermata (Decision 220/246)",
+      weightCategoryHint: "Scrivilo come lo fa la tua Scuola.",
       kimonoSize: "Taglia del kimono",
-      kimonoSizeHint: "Testo libero — nessuna tabella taglie confermata (Decision 220/246)",
+      kimonoSizeHint: "Scrivilo come lo fa la tua Scuola.",
       beltSize: "Taglia della cintura",
-      beltSizeHint: "Testo libero — nessuna tabella taglie confermata (Decision 220/246)",
+      beltSizeHint: "Scrivilo come lo fa la tua Scuola.",
       language: "Lingua",
       rtlRestartHint: "L’arabo viene mostrato da destra a sinistra dopo il riavvio dell’app.",
       currency: "Valuta",

@@ -441,8 +441,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "動画を処理中です。しばらくしてからもう一度ご確認ください。",
       failed: "動画の処理に失敗しました。",
-      playbackUrlMissing:
-        "動画の再生URLはまだ接続されていません。バックエンドで公開する必要があります（このファイル内の getLessonPlaybackUrl のコメントを参照）。",
+      playbackUrlMissing: "この動画はまだご利用いただけません。",
     },
     playlists: {
       loadError: "プレイリストを読み込めませんでした。もう一度お試しください。",
@@ -718,11 +717,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "国籍",
       address: "住所",
       weightCategory: "体重区分",
-      weightCategoryHint: "自由記入 — 単位・基準は未確定（Decision 220/246）",
+      weightCategoryHint: "スクールでの書き方に合わせて入力してください。",
       kimonoSize: "道着のサイズ",
-      kimonoSizeHint: "自由記入 — サイズ表は未確定（Decision 220/246）",
+      kimonoSizeHint: "スクールでの書き方に合わせて入力してください。",
       beltSize: "帯のサイズ",
-      beltSizeHint: "自由記入 — サイズ表は未確定（Decision 220/246）",
+      beltSizeHint: "スクールでの書き方に合わせて入力してください。",
       language: "言語",
       rtlRestartHint: "アプリを再起動すると、アラビア語は右から左に表示されます。",
       currency: "通貨",

@@ -458,8 +458,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "Видео обрабатывается — загляните чуть позже.",
       failed: "Не удалось обработать видео.",
-      playbackUrlMissing:
-        "URL воспроизведения видео ещё не подключён — бэкенд должен его отдавать (см. комментарий к getLessonPlaybackUrl в этом файле).",
+      playbackUrlMissing: "Это видео пока недоступно.",
     },
     playlists: {
       loadError: "Не удалось загрузить ваши плейлисты — попробуйте ещё раз.",
@@ -758,11 +757,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Гражданство",
       address: "Адрес",
       weightCategory: "Весовая категория",
-      weightCategoryHint: "Свободный текст — единица/шкала не утверждена (Decision 220/246)",
+      weightCategoryHint: "Укажите так, как это принято в вашей Школе.",
       kimonoSize: "Размер кимоно",
-      kimonoSizeHint: "Свободный текст — таблица размеров не утверждена (Decision 220/246)",
+      kimonoSizeHint: "Укажите так, как это принято в вашей Школе.",
       beltSize: "Размер пояса",
-      beltSizeHint: "Свободный текст — таблица размеров не утверждена (Decision 220/246)",
+      beltSizeHint: "Укажите так, как это принято в вашей Школе.",
       language: "Язык",
       rtlRestartHint: "Арабский будет отображаться справа налево после перезапуска приложения.",
       currency: "Валюта",

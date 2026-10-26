@@ -445,8 +445,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "Video işleniyor — birazdan tekrar bakın.",
       failed: "Video işlenemedi.",
-      playbackUrlMissing:
-        "Video oynatma URL'si henüz bağlanmadı — backend'in bunu sunması gerekiyor (bu dosyadaki getLessonPlaybackUrl yorumuna bakın).",
+      playbackUrlMissing: "Bu video henüz kullanılamıyor.",
     },
     playlists: {
       loadError: "Oynatma listeleriniz yüklenemedi — lütfen tekrar deneyin.",
@@ -723,11 +722,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Uyruk",
       address: "Adres",
       weightCategory: "Kilo kategorisi",
-      weightCategoryHint: "Serbest metin — onaylanmış birim/ölçek yok (Karar 220/246)",
+      weightCategoryHint: "Okulunuzun kullandığı şekilde yazın.",
       kimonoSize: "Kimono bedeni",
-      kimonoSizeHint: "Serbest metin — onaylanmış beden tablosu yok (Karar 220/246)",
+      kimonoSizeHint: "Okulunuzun kullandığı şekilde yazın.",
       beltSize: "Kuşak bedeni",
-      beltSizeHint: "Serbest metin — onaylanmış beden tablosu yok (Karar 220/246)",
+      beltSizeHint: "Okulunuzun kullandığı şekilde yazın.",
       language: "Dil",
       rtlRestartHint: "Arapça, uygulamayı yeniden başlattıktan sonra sağdan sola gösterilir.",
       currency: "Para birimi",

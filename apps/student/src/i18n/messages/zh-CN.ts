@@ -441,8 +441,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "视频正在处理中，请稍后再来查看。",
       failed: "视频处理失败。",
-      playbackUrlMissing:
-        "视频播放地址尚未接入 — 需要后端提供该地址（参见此文件中 getLessonPlaybackUrl 的注释）。",
+      playbackUrlMissing: "该视频暂不可用。",
     },
     playlists: {
       loadError: "无法加载你的播放列表，请重试。",
@@ -717,11 +716,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "国籍",
       address: "地址",
       weightCategory: "体重级别",
-      weightCategoryHint: "自由填写 — 未确定单位/标准（Decision 220/246）",
+      weightCategoryHint: "按你所在学校的写法填写。",
       kimonoSize: "道服尺码",
-      kimonoSizeHint: "自由填写 — 未确定尺码表（Decision 220/246）",
+      kimonoSizeHint: "按你所在学校的写法填写。",
       beltSize: "腰带尺码",
-      beltSizeHint: "自由填写 — 未确定尺码表（Decision 220/246）",
+      beltSizeHint: "按你所在学校的写法填写。",
       language: "语言",
       rtlRestartHint: "重启应用后，阿拉伯语将从右到左显示。",
       currency: "货币",

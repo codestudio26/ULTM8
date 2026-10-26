@@ -49,8 +49,7 @@ export const curriculum = {
   videoPlayer: {
     processing: 'Video is being processed — check back soon.',
     failed: 'Video processing failed.',
-    playbackUrlMissing:
-      "Video playback URL not yet wired — backend needs to expose it (see getLessonPlaybackUrl's comment in this file).",
+    playbackUrlMissing: "This video isn't available yet.",
   },
   playlists: {
     loadError: 'Could not load your playlists — please try again.',

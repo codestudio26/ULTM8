@@ -445,8 +445,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     videoPlayer: {
       processing: "Das Video wird verarbeitet — schau bald wieder vorbei.",
       failed: "Die Videoverarbeitung ist fehlgeschlagen.",
-      playbackUrlMissing:
-        "Die Video-Wiedergabe-URL ist noch nicht angebunden — das Backend muss sie bereitstellen (siehe den Kommentar zu getLessonPlaybackUrl in dieser Datei).",
+      playbackUrlMissing: "Dieses Video ist noch nicht verfügbar.",
     },
     playlists: {
       loadError: "Deine Playlists konnten nicht geladen werden — bitte versuche es erneut.",
@@ -723,11 +722,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       nationality: "Staatsangehörigkeit",
       address: "Adresse",
       weightCategory: "Gewichtsklasse",
-      weightCategoryHint: "Freitext — keine bestätigte Einheit/Skala (Entscheidung 220/246)",
+      weightCategoryHint: "Schreib es so, wie deine Schule es macht.",
       kimonoSize: "Kimonogröße",
-      kimonoSizeHint: "Freitext — keine bestätigte Größentabelle (Entscheidung 220/246)",
+      kimonoSizeHint: "Schreib es so, wie deine Schule es macht.",
       beltSize: "Gürtelgröße",
-      beltSizeHint: "Freitext — keine bestätigte Größentabelle (Entscheidung 220/246)",
+      beltSizeHint: "Schreib es so, wie deine Schule es macht.",
       language: "Sprache",
       rtlRestartHint: "Arabisch wird nach einem Neustart der App von rechts nach links angezeigt.",
       currency: "Währung",
