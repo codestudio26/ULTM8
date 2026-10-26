@@ -53,10 +53,10 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Avatars on the board and panels | B6 |
 | Kids · Adult switch, "Adult program" in Promote to, "Ready for Adult program" tag | B1 |
 | Grading → Settings page | B2, B10, B11 · **built for what exists** (26 Oct 2026): board columns per style, promotion fee (owner), open mat hours; Ready for Adult age and Belts/Levels wait for B1/B4, and the right is still named "Change board %" until B2 renames it |
-| Belt editor: price per grade, shown only while the fee is on | B10 |
+| Belt editor: price per grade, shown only while the fee is on | B10 · ✅ **built** (26 Oct 2026) |
 | Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 · ✅ **built** (26 Oct 2026) |
 | Student page: progress breakdown per requirement, and hours trained | B11 |
-| Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — |
+| Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — · ✅ **built** (26 Oct 2026) |
 | Colour wheel with saved colours | B5 |
 | Levels badge | B4 |
 | Two-tone belt picture (middle band) | — · ✅ **built** (26 Oct 2026) |
