@@ -59,7 +59,7 @@ export const server = {
     beltDeclaredDelete: "An instructor has declared this belt, so it can't be deleted.",
     beltDeclaredArchive: "An instructor has declared this belt, so it can't be archived.",
     classHasDependents: "This class can't be archived while it still has {items}.",
-    branchHasDependents: "This branch can't be archived while it still has {items}. Move or remove them first.",
+    branchHasDependents: "This branch can't be closed while it still has {items}. Choose where they go, or move them first.",
     instructorHasDependents: "This instructor can't be archived while they're assigned to {items}. Reassign them first.",
     items: {
       upcomingBookings: { one: '{count} upcoming booking', other: '{count} upcoming bookings' },
@@ -73,6 +73,7 @@ export const server = {
       },
       upcomingClasses: { one: '{count} upcoming class', other: '{count} upcoming classes' },
       activeSlots: { one: '{count} active timetable slot', other: '{count} active timetable slots' },
+      weeklySlots: { one: "{count} weekly timetable slot", other: "{count} weekly timetable slots" },
     },
     schoolHasSubscription: 'This school already has an active platform subscription — plan changes are not supported yet.',
     franchiseHasSubscription: 'This franchise already has an active platform subscription — plan changes are not supported yet.',

@@ -55,6 +55,7 @@ const LIST_ITEMS: Array<[RegExp, string]> = [
   [/^(\d+) active staff\/instructor role grants? scoped to it$/, 'roleGrants'],
   [/^(\d+) upcoming Class(?:es)?$/, 'upcomingClasses'],
   [/^(\d+) active TimetableSlots?$/, 'activeSlots'],
+  [/^(\d+) weekly timetable slots?$/, 'weeklySlots'],
 ];
 
 function translateList(list: string, { t, locale }: Context): string | null {
@@ -110,7 +111,7 @@ const ERROR_RULES: Array<[RegExp, Rule]> = [
     (m, ctx) => withItems(ctx, 'classHasDependents', translateList(m[1], ctx)),
   ],
   [
-    /^This Branch can't be archived while it still has (.+)\. Move or remove them first\.$/,
+    /^This Branch can't be closed while it still has (.+)\. Choose where they go, or move them first\.$/,
     (m, ctx) => withItems(ctx, 'branchHasDependents', translateList(m[1], ctx)),
   ],
   [

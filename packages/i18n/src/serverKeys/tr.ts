@@ -33,7 +33,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "Bir eğitmen bu kuşağı beyan ettiği için silinemez.",
     beltDeclaredArchive: "Bir eğitmen bu kuşağı beyan ettiği için arşivlenemez.",
     classHasDependents: "Bu ders şunlar varken arşivlenemez: {items}.",
-    branchHasDependents: "Bu şube şunlar varken arşivlenemez: {items}. Önce bunları taşıyın veya kaldırın.",
+    branchHasDependents: "Bu şube şunlar varken kapatılamaz: {items}. Nereye gideceklerini seçin veya önce taşıyın.",
     instructorHasDependents: "Bu eğitmen şunlara atanmışken arşivlenemez: {items}. Önce bunları başka birine atayın.",
     schoolHasSubscription: "Bu okulun zaten aktif bir platform aboneliği var — plan değişikliği henüz desteklenmiyor.",
     franchiseHasSubscription: "Bu franchise’ın zaten aktif bir platform aboneliği var — plan değişikliği henüz desteklenmiyor.",
@@ -95,6 +95,10 @@ export const server: PartialMessages<ServerKeys> = {
       activeSlots: {
         one: "{count} aktif zaman dilimi",
         other: "{count} aktif zaman dilimi",
+      },
+      weeklySlots: {
+        one: "{count} haftalık zaman dilimi",
+        other: "{count} haftalık zaman dilimi",
       },
     },
   },
