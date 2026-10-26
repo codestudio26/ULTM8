@@ -5089,6 +5089,35 @@ User (Code), 26 Oct 2026, "build it and ask me" on the Notifications fix plan.
 
 ---
 
+## Decision 334 — Memberships review fixes: renew after expiry, Trial is not general access, plan shape rules, prices in pounds, purchase checks
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 26, 54, 64, 110, 152, 241, 249, 259 · **Replaces:** the partial unique index `Membership_one_active_general_access_per_school` (Phase 9)
+
+A review of the Memberships section (26 Oct 2026) found 20 bugs (M1–M20) and 8 questions. The product owner asked for the best option on the three open choices and then said *"Build it"*. This change fixes 18 of the bugs plus the three choices; the subscription and booking side of removing a Student stays with the Students review (S2).
+
+### Decision
+
+1. **Renewing after expiry works** (M1). The old partial unique index keyed on the stored status, which stays ACTIVE after a Weekly Pass or Trial runs out by date (Decision 26: expiry is live-computed, never flipped). It is dropped. In its place, `assertCanCreateMembership()` runs in the same transaction as every Membership insert (free and saved-card purchases, cash/bank confirmation, the Stripe `payment_intent.succeeded` handler), under a per-Student-per-School advisory lock, and checks for a *live* Membership. Stored status is still never flipped, so franchise headcount billing is unchanged. The same check runs before any charge at purchase.
+2. **Only Subscription and Weekly Pass are general access** (M20), as Spec 55 §6.1 says. A live Trial no longer blocks buying either.
+3. **Trial limits are enforced** (M3, Decisions 54/64): a Trial plan lasts 1–30 days, and a Student can have at most 30 trial days per School in any rolling 12 months. A refusal says the date the next trial can start. Existing Trial plans with no expiry or more than 30 days are set to 30; Memberships already sold keep their dates.
+4. **Plan shape follows the type** (M2, M4). Credits and a one-class scope apply only to Class Pack and Friend Pass; an expiry applies to every type except Subscription. A field the type doesn't use is refused when sent and cleared on a type change. A Class Pack needs its class count; a Weekly Pass needs its expiry. Required fields are checked only when an edit touches them or the type, so older plans can still be edited.
+5. **A plan's type is locked while it has live members** (M14). Duplicating the plan is the way to sell a different type. A type change also drops the plan's saved Stripe price.
+6. **Prices are typed in pounds and pence** (Q1). The price and cancellation charge use the shared money field (12.50 is stored as 1250). The API still takes hundredths.
+7. **Currency** (M6, M11, M12): a purchase is charged in the plan's currency, else the School's default; with neither it is refused rather than charged in US dollars. Currencies must be one of the Stripe-supported codes (Decision 241) and are stored upper-case. A plan with running Stripe subscriptions can't change currency. With no subscribers, a price or currency change drops the saved Stripe price so the next purchase is charged correctly. Titles are trimmed and can't be blank.
+8. **Purchase checks** (M7, M13, M15, M16, M17, Q2): a plan that requires a waiver needs any Signed Waiver at the School, the same check as class booking. Hidden plans can't be bought by their link. A closed School takes no purchases or confirmations. A plan for one class can't be made or sold once that class has started or been archived (also Classes C15). A second cash/bank order for the same plan returns the one already waiting. Only a current Student of the School (or their Guardian, for them) can buy.
+9. **Removed Students** (M18, membership side only): they aren't counted in Active members, and their Pending cash payment can't be confirmed.
+10. **Smaller fixes**: prices above the 32-bit limit are a 400, not a 500 (M8); the price-change prompt counts running subscriptions, the same count the API checks (M9); the list shows every plan, not the first 20 (M5); Branch Staff and coaches see "Only the School owner manages membership plans" instead of a blank page (M10).
+
+### What this does NOT resolve
+
+Students S2 (what removing a Student does to their subscription, bookings and money), staff selling or gifting a plan at the desk, a member list per plan, Friend Pass gifting, subscription cancellation, collecting the cancellation charge, and Decision 316 are still open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, asking for the best option on removed Students, hidden plans and prices in pounds, then *"Build it"*.
+
+---
+
 ## Decision 335 — Classes review fixes, first batch
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (fix plan, Classes review)

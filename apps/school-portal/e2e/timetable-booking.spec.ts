@@ -60,8 +60,10 @@ test.beforeEach(async () => {
       id: randomUUID(),
       schoolId: s.schoolId,
       weekday: todayWeekday(),
-      startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
-      endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+      // Late evening, so today's class hasn't ended whenever CI runs (the
+      // booking dialog refuses an ended class, Decision 332).
+      startTime: new Date(Date.UTC(1970, 0, 1, 23, 0)),
+      endTime: new Date(Date.UTC(1970, 0, 1, 23, 59)),
       title: slotTitle,
       activities: ['BJJ'],
       status: 'ON',
@@ -80,8 +82,8 @@ test.beforeEach(async () => {
       occurrenceDate: new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())),
       title: slotTitle,
       activities: ['BJJ'],
-      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 18, 0),
-      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 19, 0),
+      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 0),
+      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59),
     },
   });
   classId = cls.id;

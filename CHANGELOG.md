@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
+  whose Weekly Pass or Trial has run out can buy again (it used to be refused
+  as if the old one were still live); a live Trial no longer blocks buying a
+  Weekly Pass or Subscription; changing a plan's type clears the fields the new
+  type doesn't use, and is locked while the plan has active members; a Trial
+  lasts 1-30 days, with at most 30 trial days per Student per School in 12
+  months; a Class Pack needs its class count and a Weekly Pass its expiry;
+  prices and cancellation charges are typed in pounds and pence (12.50), not
+  pence; every plan is listed (not just the first 20); Branch Staff see who
+  manages plans instead of a blank page; a purchase is charged in the plan's
+  currency or the School's default, never US dollars by default; plans that
+  require a waiver, hidden plans, closed Schools, classes that have already
+  taken place, staff who aren't Students, and removed Students are all refused
+  at purchase; a second cash order for the same plan returns the first; the
+  Active members count leaves out removed Students. **Needs a database
+  migration.**
 - **Notifications fixes from the 26 Oct review (Decision 333)** — the page
   has **Load more**, so notifications past the newest 20 can be seen; the bell's
   red dot follows the real Unread count (all pages, snoozed left out), as does

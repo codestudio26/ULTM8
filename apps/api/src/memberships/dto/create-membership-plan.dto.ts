@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, MaxLength } from 'class-validator';
 
+/** The largest amount a 32-bit integer column holds. */
+const MAX_MINOR_UNITS = 2147483647;
+
 export enum MembershipPlanTypeDto {
   SUBSCRIPTION = 'SUBSCRIPTION',
   CLASS_PACK = 'CLASS_PACK',
@@ -42,9 +45,12 @@ export class CreateMembershipPlanDto {
   @MaxLength(100)
   title!: string;
 
+  // Decision 334 (Memberships review M8): the column is a 32-bit integer; a
+  // larger number used to reach the database and fail as a 500.
   @ApiProperty({ description: 'Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS.' })
   @IsInt()
   @Min(0)
+  @Max(MAX_MINOR_UNITS)
   price!: number;
 
   @ApiPropertyOptional({ description: "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241)." })
@@ -87,6 +93,7 @@ export class CreateMembershipPlanDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_MINOR_UNITS)
   cancellationCharge?: number;
 
   // No `default:` in the Swagger metadata, for the same reason as visible
