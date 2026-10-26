@@ -117,6 +117,14 @@ export class PaymentsController {
     return this.paymentsService.confirmTransaction(user.sub, id);
   }
 
+  /** A Pending Cash/Bank Transfer payment that never arrived (Decision 339). */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('transactions/:id/cancel')
+  cancelTransaction(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.paymentsService.cancelTransaction(user.sub, id);
+  }
+
   // ---- Webhook receiving — Stripe calls this directly, no ULTM8 access token ----
 
   /**
