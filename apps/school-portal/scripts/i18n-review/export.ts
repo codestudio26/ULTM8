@@ -17,11 +17,16 @@ import { messages as english } from '../../src/i18n/messages/en-GB';
 import { LOCALE_LOADERS, directionFor } from '../../src/i18n/locales';
 import { SERVER_MESSAGES, SERVER_PATTERNS } from '../../src/i18n/server/en';
 import { SERVER_MESSAGE_LOADERS } from '../../src/i18n/server/translate';
-import { messages as studentEnglish } from '../../../student/src/i18n/messages/en';
-import { LOCALE_LOADERS as STUDENT_LOCALE_LOADERS } from '../../../student/src/i18n/locales';
 
 /** Student app keys carry this prefix here (and in Platform Admin overrides). */
 const STUDENT = 'studentApp.';
+
+/** One student app catalogue file, `en` or a locale (the student app is not an
+ * ES module, so its exports arrive under `default` here). */
+async function studentCatalogueOf(code: string): Promise<unknown> {
+  const mod = (await import(`../../../student/src/i18n/messages/${code}.ts`)) as { messages?: unknown; default?: { messages?: unknown } };
+  return mod.messages ?? mod.default?.messages ?? {};
+}
 
 type Text = string | Record<string, string>;
 type Tree = { [k: string]: Text | Tree };
@@ -103,7 +108,7 @@ async function main() {
   const keyToId = new Map<string, string>();
   // The student app's `server` group is the portal's own (shared through
   // @ultm8/i18n), so only its screen text is added.
-  const { server: _sharedServer, ...studentScreens } = studentEnglish;
+  const { server: _sharedServer, ...studentScreens } = (await studentCatalogueOf('en')) as Record<string, unknown>;
   const allLeaves = [...leaves(english as unknown as Tree), ...leaves(studentScreens as unknown as Tree, STUDENT)];
   for (const [key, en] of allLeaves) {
     const id = idOf('ui', en);
@@ -133,7 +138,7 @@ async function main() {
 
   for (const code of locales) {
     const catalogue = await LOCALE_LOADERS[code]();
-    const studentCatalogue = STUDENT_LOCALE_LOADERS[code] ? await STUDENT_LOCALE_LOADERS[code]() : {};
+    const studentCatalogue = await studentCatalogueOf(code);
     const server = SERVER_MESSAGE_LOADERS[code] ? await SERVER_MESSAGE_LOADERS[code]() : {};
     const out: Record<string, { variants: Array<{ text: Text | null; keys: string[] }>; checks: string[] }> = {};
     for (const item of items.values()) {
