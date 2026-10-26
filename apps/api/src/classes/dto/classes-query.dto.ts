@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { trimSearch } from '../../common/search/name-search';
 
@@ -43,4 +43,21 @@ export class ClassesQueryDto extends PaginationQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   includeArchived?: boolean;
+
+  /** "Log a class" on the student's Ranks tab (Decision 301 item 5): the
+   * classes of one style, the ones the coach can pick. */
+  @ApiPropertyOptional({ description: 'Only Classes that list this style (Class.styles).' })
+  @IsOptional()
+  @IsUUID()
+  disciplineId?: string;
+
+  @ApiPropertyOptional({ description: 'ISO 8601 date-time: only Classes starting at or after it.' })
+  @IsOptional()
+  @IsISO8601()
+  startsFrom?: string;
+
+  @ApiPropertyOptional({ description: 'ISO 8601 date-time: only Classes starting at or before it.' })
+  @IsOptional()
+  @IsISO8601()
+  startsTo?: string;
 }

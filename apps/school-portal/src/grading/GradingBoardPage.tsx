@@ -22,7 +22,7 @@ import {
 import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
 import { GradingTabs } from './GradingTabs';
-import { Avatar, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
+import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 /** Column labels are translation keys, resolved at render time. */
@@ -499,7 +499,9 @@ export function GradingBoardPage() {
       ) : null}
       {decidingItem?.feeRequest ? (
         <DecideDialog
-          item={decidingItem}
+          name={fullName(decidingItem)}
+          firstName={decidingItem.firstName}
+          rank={decidingItem.feeRequest.toRungName}
           from={ladder.find((r) => r.id === decidingItem.currentStripeId) ?? null}
           to={ladder.find((r) => r.id === decidingItem.feeRequest!.toRungId) ?? null}
           canPromote={canPromote}
@@ -711,47 +713,6 @@ function BoardRow({ item, rung, next, selected, open, onOpen, onToggle, onProgre
       </div>
       {footer}
     </li>
-  );
-}
-
-/** "Promote {name}?" after a fee is cancelled, or a declined one waived
- * (Decision 307): promoting is a coach's decision and never happens on its
- * own. Not now leaves "Promotion to decide" on the card. */
-function DecideDialog({
-  item,
-  from,
-  to,
-  canPromote,
-  onPromote,
-  onClose,
-}: {
-  item: GradingBoardItem;
-  from: Rung | null;
-  to: Rung | null;
-  canPromote: boolean;
-  onPromote: () => void;
-  onClose: () => void;
-}) {
-  const t = useT();
-  const rank = to?.name ?? item.feeRequest?.toRungName ?? '';
-  return (
-    <Modal title={t('grading.board.decide.title', { name: fullName(item) })} onClose={onClose}>
-      <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('grading.board.decide.cancelled', { rank })}</p>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        {from ? <BeltChip rung={from} /> : null}
-        <span>{from?.name}</span>
-        <span aria-hidden="true">→</span>
-        {to ? <BeltChip rung={to} /> : null}
-        <span>{rank}</span>
-      </div>
-      <p className="ultm8-field__hint">{t('grading.board.decide.explanation', { name: item.firstName, rank })}</p>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-        <Button variant="secondary" onClick={onClose}>
-          {t('grading.board.decide.notNow')}
-        </Button>
-        {canPromote ? <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank })}</Button> : null}
-      </div>
-    </Modal>
   );
 }
 

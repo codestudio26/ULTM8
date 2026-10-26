@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, ErrorBanner, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
@@ -345,5 +345,51 @@ export function SelectionPanel({
         </div>
       </section>
     </Card>
+  );
+}
+
+/** "Promote {name}?" after a fee is cancelled, or a declined one waived
+ * (Decision 307): promoting is a coach's decision and never happens on its
+ * own. Not now leaves "Promotion to decide". The board and the Ranks tab. */
+export function DecideDialog({
+  name,
+  firstName,
+  rank,
+  from,
+  to,
+  canPromote,
+  onPromote,
+  onClose,
+}: {
+  name: string;
+  firstName: string;
+  /** The planned rank's name, from the fee request. */
+  rank: string;
+  from: Rung | null;
+  to: Rung | null;
+  canPromote: boolean;
+  onPromote: () => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const toName = to?.name ?? rank;
+  return (
+    <Modal title={t('grading.board.decide.title', { name })} onClose={onClose}>
+      <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('grading.board.decide.cancelled', { rank: toName })}</p>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {from ? <BeltChip rung={from} /> : null}
+        <span>{from?.name}</span>
+        <span aria-hidden="true">→</span>
+        {to ? <BeltChip rung={to} /> : null}
+        <span>{toName}</span>
+      </div>
+      <p className="ultm8-field__hint">{t('grading.board.decide.explanation', { name: firstName, rank: toName })}</p>
+      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+        <Button variant="secondary" onClick={onClose}>
+          {t('grading.board.decide.notNow')}
+        </Button>
+        {canPromote ? <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank: toName })}</Button> : null}
+      </div>
+    </Modal>
   );
 }
