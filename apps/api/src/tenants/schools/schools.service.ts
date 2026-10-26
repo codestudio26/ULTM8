@@ -10,6 +10,7 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
+import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { UsersService } from '../../users/users.service';
 import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -421,6 +422,18 @@ export class SchoolsService {
    */
   async joinFranchise(callerId: string, schoolId: string, franchiseId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 336 (F4) — a closed School can't join, the same rule leaveFranchise()
+    // and every other write at a closed School already follow.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // Decision 336 (F3) — nor can anyone join a closed Franchise. A School Owner
+    // can't read the Franchise row through RLS, so this one-column check uses the
+    // same jobs connection leaveFranchise() below already uses for the Franchise's
+    // PaymentAccount. A Franchise that doesn't exist falls through to the FK check
+    // below, keeping its existing 404.
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { archivedAt: true } });
+    if (target?.archivedAt) {
+      throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
+    }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       let count: number;
@@ -452,7 +465,7 @@ export class SchoolsService {
         // reduction this method exists to have made; not worth it for a race this
         // narrow with a consequence this small.
         throw new ConflictException(
-          'This School is already affiliated with a Franchise — leaving or switching Franchise is not supported yet.',
+          'This School is already in a Franchise. Leave it first, then join the new one.',
         );
       }
       return tx.school.findUniqueOrThrow({ where: { id: schoolId } });
@@ -524,7 +537,14 @@ export class SchoolsService {
         });
         const account = oldFranchise?.paymentAccount;
         if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
-          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(oldSubscriptionId);
+          // Decision 336 (F19, product owner's answer to Q9) — the School pays for
+          // the month it leaves in: the subscription is cancelled with a final
+          // invoice for what has accrued (a Per-headcount School's count was
+          // reported on the 1st), so the month's Pending fee charge resolves
+          // instead of staying Pending forever. No proration credit either way.
+          await this.stripeClient
+            .scopedClient(account.stripeConnectedAccountId)
+            .subscriptions.cancel(oldSubscriptionId, FRANCHISE_FEE_FINAL_CANCEL);
         }
       } catch (err) {
         this.logger.error(

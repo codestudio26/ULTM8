@@ -43,7 +43,16 @@ test('School Owner joins, leaves, then switches Franchise from the School profil
   const afterJoin = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(afterJoin.franchiseId).toBe(franchiseA.id);
 
+  // Decision 336 (F6) — Leave asks first; Cancel keeps the School in.
   await page.getByRole('button', { name: 'Leave Franchise' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Leave this Franchise?' });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirm).toHaveCount(0);
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).franchiseId).toBe(franchiseA.id);
+
+  await page.getByRole('button', { name: 'Leave Franchise' }).click();
+  await page.getByRole('dialog', { name: 'Leave this Franchise?' }).getByRole('button', { name: 'Leave Franchise' }).click();
   await expect(page.getByText('This School is independent')).toBeVisible();
 
   const afterLeave = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });

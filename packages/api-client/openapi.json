@@ -1443,7 +1443,7 @@
             "name": "activity",
             "required": false,
             "in": "query",
-            "description": "Exact match against one element of Franchise.activities.",
+            "description": "Matches one element of Franchise.activities, ignoring capitals.",
             "schema": {
               "type": "string"
             }
@@ -1622,7 +1622,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolListResponseDto"
+                  "$ref": "#/components/schemas/FranchiseMemberSchoolListResponseDto"
                 }
               }
             }
@@ -13779,6 +13779,67 @@
         },
         "required": [
           "schoolsAlreadyBillingCount"
+        ]
+      },
+      "FranchiseMemberSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseFeeSubscriptionStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ],
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the School has been closed."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ]
+      },
+      "FranchiseMemberSchoolListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseMemberSchoolResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CreateCoachInviteDto": {

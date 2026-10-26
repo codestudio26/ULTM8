@@ -702,10 +702,35 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // in the installed Stripe API version.
     const paymentIntentId = this.extractPaymentIntentId(invoice);
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 336 (F17) — a Per-headcount (metered) franchise-fee subscription
+    // opens with a $0 invoice for no usage yet. It isn't a fee charge, and it must
+    // not mark the month's Pending charge paid either.
+    if (invoice.billing_reason === 'subscription_create' && invoice.amount_paid === 0) {
+      const openingFor = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId }, select: { id: true } });
+      if (openingFor) return;
+    }
+
+    // Decision 336 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       // FOUND ON REVIEW: `amount` is deliberately NOT overwritten with
       // `invoice.amount_paid` here, unlike the fallback branch below — the
@@ -849,10 +874,27 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return;
     }
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 336 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED' } });
     }

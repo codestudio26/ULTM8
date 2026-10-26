@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Franchises fixes from the 26 Oct review (Decision 336)** — fees are typed
+  in US dollars (not cents) and a Franchise needs a fee for its fee model; the
+  fee model is locked while Schools are being billed; the "Schools already
+  billing" check now works for real Schools, so the rate-change prompt shows;
+  closed Franchises and Schools are labelled and a closed Franchise can't be
+  joined or edited; the detail page shows the Franchise ID with a Copy button
+  and says why billing can't start yet; Leave Franchise asks first and bills the
+  month the School leaves in; closing a School or Franchise stops its fee
+  billing; the member list no longer sends join codes or Stripe ids; the
+  Activity filter ignores capitals; several franchise-fee billing timing fixes.
+  Needs a database migration on deploy.
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

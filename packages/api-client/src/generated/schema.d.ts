@@ -4435,6 +4435,25 @@ export interface components {
         FranchiseBillingStatusResponseDto: {
             schoolsAlreadyBillingCount: number;
         };
+        FranchiseMemberSchoolResponseDto: {
+            id: string;
+            name: string;
+            businessType?: string | null;
+            logoUrl?: string | null;
+            /** @enum {string|null} */
+            franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
+            /**
+             * Format: date-time
+             * @description Set when the School has been closed.
+             */
+            archivedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FranchiseMemberSchoolListResponseDto: {
+            items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
+            nextCursor?: string | null;
+        };
         CreateCoachInviteDto: {
             email: string;
             /** @description Required when the School has branches; the branch they will coach at. */
@@ -7735,7 +7754,7 @@ export interface operations {
                 cursor?: string;
                 limit?: number;
                 feeModel?: "FLAT" | "PER_HEADCOUNT";
-                /** @description Exact match against one element of Franchise.activities. */
+                /** @description Matches one element of Franchise.activities, ignoring capitals. */
                 activity?: string;
                 /** @description Case-insensitive substring match against Franchise.name. */
                 search?: string;
@@ -7864,7 +7883,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchoolListResponseDto"];
+                    "application/json": components["schemas"]["FranchiseMemberSchoolListResponseDto"];
                 };
             };
         };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -337,6 +337,8 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   const leaveFranchise = useLeaveFranchise(schoolId);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Decision 336 (F6) — Leave asks first: it ends the School's franchise-fee billing.
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -351,6 +353,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
 
   async function handleLeave() {
     setError(null);
+    setConfirmingLeave(false);
     try {
       await leaveFranchise.mutateAsync();
     } catch (err) {
@@ -372,9 +375,22 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.leaveExplanation')}
           </p>
-          <Button variant="danger" onClick={handleLeave} loading={leaveFranchise.isPending}>
+          <Button variant="danger" onClick={() => setConfirmingLeave(true)} loading={leaveFranchise.isPending}>
             {t('schools.franchise.leave')}
           </Button>
+          {confirmingLeave ? (
+            <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
+              <p>{t('schools.franchise.leaveConfirmBody')}</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <Button variant="danger" onClick={handleLeave}>
+                  {t('schools.franchise.leave')}
+                </Button>
+                <Button variant="secondary" onClick={() => setConfirmingLeave(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </Modal>
+          ) : null}
         </>
       ) : (
         <>

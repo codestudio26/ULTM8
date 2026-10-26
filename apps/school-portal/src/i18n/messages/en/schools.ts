@@ -66,5 +66,8 @@ export const schools = {
     independent: 'This School is independent — not affiliated with any Franchise.',
     franchiseId: 'Franchise ID',
     join: 'Join Franchise',
+    leaveConfirmTitle: 'Leave this Franchise?',
+    leaveConfirmBody:
+      "This School's franchise-fee billing stops, with a final bill for this month. Past fee charges stay on record. You can join again later with the Franchise ID.",
   },
 };

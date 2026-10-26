@@ -92,3 +92,37 @@ export class FranchiseListResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Cursor for the next page, or null if this is the last page.' })
   nextCursor!: string | null;
 }
+
+/** Decision 336 (F2) — one row of a Franchise Owner's member-School roster
+ * (GET /franchises/{id}/schools). Deliberately narrow: who the member is and how
+ * its franchise-fee billing stands, nothing else from the School's record. */
+export class FranchiseMemberSchoolResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  businessType!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  logoUrl!: string | null;
+
+  @ApiPropertyOptional({ enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'], nullable: true })
+  franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true, description: 'Set when the School has been closed.' })
+  archivedAt!: string | null;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  createdAt!: string;
+}
+
+export class FranchiseMemberSchoolListResponseDto {
+  @ApiProperty({ type: [FranchiseMemberSchoolResponseDto] })
+  items!: FranchiseMemberSchoolResponseDto[];
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  nextCursor!: string | null;
+}

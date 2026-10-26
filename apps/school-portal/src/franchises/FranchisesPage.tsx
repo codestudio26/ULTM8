@@ -97,6 +97,11 @@ export function FranchisesPage() {
                   >
                     {f.name}
                   </button>
+                  {f.archivedAt ? (
+                    <span style={{ marginLeft: 8 }}>
+                      <Badge variant="danger">{t('franchises.list.closed')}</Badge>
+                    </span>
+                  ) : null}
                   <div style={{ margin: '8px 0' }}>
                     {f.activities.map((a, i) => (
                       <Badge key={`${a}-${i}`}>{a}</Badge>
@@ -107,9 +112,12 @@ export function FranchisesPage() {
                     <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
                       {t('franchises.list.viewDetails')}
                     </Button>
-                    <Button variant="secondary" onClick={() => setEditing(f)}>
-                      {t('franchises.list.edit')}
-                    </Button>
+                    {/* Decision 336 (F8) — a closed Franchise can't be edited. */}
+                    {f.archivedAt ? null : (
+                      <Button variant="secondary" onClick={() => setEditing(f)}>
+                        {t('franchises.list.edit')}
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}
@@ -126,13 +134,17 @@ export function FranchisesPage() {
                   // backlog, "Franchises page", "Rows-table identity column is
                   // non-clickable").
                   render: (f) => (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/franchises/${f.id}`)}
-                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-accent)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
-                    >
-                      {f.name}
-                    </button>
+                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/franchises/${f.id}`)}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-accent)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
+                      >
+                        {f.name}
+                      </button>
+                      {/* Decision 336 (F8) */}
+                      {f.archivedAt ? <Badge variant="danger">{t('franchises.list.closed')}</Badge> : null}
+                    </span>
                   ),
                 },
                 {
@@ -149,9 +161,11 @@ export function FranchisesPage() {
                       <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
                         {t('franchises.list.viewDetails')}
                       </Button>
-                      <Button variant="secondary" onClick={() => setEditing(f)}>
-                        {t('franchises.list.edit')}
-                      </Button>
+                      {f.archivedAt ? null : (
+                        <Button variant="secondary" onClick={() => setEditing(f)}>
+                          {t('franchises.list.edit')}
+                        </Button>
+                      )}
                     </div>
                   ),
                 },
