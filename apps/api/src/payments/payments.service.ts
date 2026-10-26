@@ -10,6 +10,7 @@ import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
  * payment method (or their Customer has no default one set) at this School —
@@ -395,7 +396,7 @@ export class PaymentsService {
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency,
+      currency: currency.toLowerCase(),
       description,
       automatic_payment_methods: { enabled: true },
     });
@@ -463,7 +464,7 @@ export class PaymentsService {
       ? { price: existingPriceId }
       : {
           price_data: {
-            currency,
+            currency: currency.toLowerCase(),
             unit_amount: amount,
             recurring: { interval: 'month' as const },
             product: (await stripe.products.create({ name: productName })).id,
@@ -540,7 +541,7 @@ export class PaymentsService {
     const price = await stripe.prices.create({
       product: productId,
       unit_amount: params.amount,
-      currency: params.currency,
+      currency: params.currency.toLowerCase(),
       // Monthly, matching subscribe()'s own hardcoded interval above — same
       // "no MembershipPlan-level interval field exists" reasoning, flagged
       // there, applies identically here.
@@ -753,7 +754,7 @@ export class PaymentsService {
       line_items: [
         {
           price_data: {
-            currency,
+            currency: currency.toLowerCase(),
             unit_amount: amount,
             // Inline product_data, same simplification charge()/subscribe()
             // above already use (no persisted MembershipPlan<->Stripe Product
@@ -823,7 +824,7 @@ export class PaymentsService {
     try {
       const intent = await stripe.paymentIntents.create({
         amount,
-        currency,
+        currency: currency.toLowerCase(),
         description,
         customer: saved.stripeCustomerId,
         payment_method: pmId,
@@ -898,8 +899,7 @@ export class PaymentsService {
    *
    * Idempotency is a CONDITIONAL UPDATE (`WHERE status = 'PENDING'`, checked via
    * affected-row-count), NOT the create()+caught-P2002 dedup pattern used elsewhere
-   * in this codebase (ProcessedStripeEvent, the Membership two-simultaneous-Active
-   * check) — deliberately different technique, since nothing is being deduped here;
+   * in this codebase (ProcessedStripeEvent) — deliberately different technique, since nothing is being deduped here;
    * an existing Transaction is transitioning state, and the thing being guarded
    * against is a double state-transition on an already-resolved row, not a
    * duplicate insert. A repeat call finds 0 rows affected and no-ops (Spec 55 §6.1:
@@ -909,28 +909,7 @@ export class PaymentsService {
    * that same sentence describes for a genuinely competing Cash/Bank purchase).
    */
   async confirmTransaction(callerId: string, transactionId: string) {
-    try {
-      return await this.confirmTransactionInner(callerId, transactionId);
-    } catch (err) {
-      // FOUND ON REVIEW: the two-simultaneous-Active-general-access-Membership
-      // partial unique index (this phase's migration) can collide here exactly
-      // like it can in MembershipsService.createMembershipAndReturn, which catches
-      // it and throws a friendly ConflictException — this method didn't, falling
-      // through to the generic Prisma-error filter's "A record with this value
-      // already exists" instead. The catch MUST live out here, outside
-      // withTenantContext's own `$transaction` — catching it INSIDE that
-      // transaction and trying to keep going would hit the exact Postgres
-      // transaction-abort bug documented at length in
-      // stripe-webhook-processing.processor.ts's handlePaymentIntentSucceeded
-      // (once any statement inside a Postgres transaction errors, the whole
-      // transaction is aborted regardless of a JS-level try/catch) — this whole
-      // method's writes (the Transaction status flip included) correctly roll
-      // back together when the Membership create collides, same as intended.
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
-        throw new ConflictException('This Student already holds an active general-access Membership at this School.');
-      }
-      throw err;
-    }
+    return this.confirmTransactionInner(callerId, transactionId);
   }
 
   private async confirmTransactionInner(callerId: string, transactionId: string) {
@@ -950,6 +929,19 @@ export class PaymentsService {
         throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
       }
 
+      // Decision 334 (Memberships review M13): a closed School takes no new
+      // payments (Decision 110).
+      await this.tenantAuth.assertSchoolNotArchived(callerId, transaction.schoolId);
+      // Decision 334 (Memberships review M18): a Student removed from the
+      // School since ordering can't be given a Membership there.
+      const studentGrant = await tx.roleGrant.findFirst({
+        where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!studentGrant) {
+        throw new ConflictException('This Student has been removed from the School, so their payment can\'t be confirmed.');
+      }
+
       const updateResult = await tx.transaction.updateMany({
         where: { id: transactionId, status: 'PENDING' },
         data: { status: 'SUCCESSFUL' },
@@ -962,6 +954,17 @@ export class PaymentsService {
       }
 
       const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+      // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
+      // unique index; see assertCanCreateMembership's own comment. A refusal
+      // throws, which rolls back the status flip above with it.
+      try {
+        await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
+      } catch (err) {
+        if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+          throw new ConflictException(err.message);
+        }
+        throw err;
+      }
       const membership = await tx.membership.create({
         data: {
           id: randomUUID(),

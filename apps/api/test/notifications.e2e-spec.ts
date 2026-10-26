@@ -314,6 +314,13 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   // backend backlog — Snooze, approved by the product owner).
   // ---------------------------------------------------------------------------
 
+  it('GET /notifications/me answers a cursor it never wrote with a 400, not a server error', async () => {
+    for (const cursor of ['garbage', Buffer.from('{"createdAt":"x","id":"y"}').toString('base64url'), Buffer.from('[]').toString('base64url')]) {
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me').query({ cursor }).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(400);
+    }
+  });
+
   describe('PATCH /notifications/:id/snooze', () => {
     it('hides the Notification from the unread count while snoozed; validates input; self-only', async () => {
       const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
@@ -338,6 +345,14 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
         .set('Authorization', `Bearer ${tokenStudentA}`)
         .send({ until: new Date(Date.now() - 60_000).toISOString() });
       expect(pastSnooze.status).toBe(400);
+
+      // Further than 7 days — `minutes` already stops there, and `until` now
+      // does too, rather than hiding a notification for years.
+      const tooLong = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ until: '3000-01-01T00:00:00.000Z' });
+      expect(tooLong.status).toBe(400);
 
       // Cross-caller snooze is RLS-blocked — indistinguishable from
       // not-found, same design as every other self-only resource.
@@ -612,7 +627,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     // being absent either — a real class here would make process() reject
     // with a config error today and silently change behavior the moment
     // someone sets those env vars locally).
-    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined), isConfigured: jest.fn().mockReturnValue(true) };
     // Same reasoning as fakeDelivery above, for push (Decision 223/264) — this
     // suite's scope is the Notification-row write/idempotency and the
     // email/push wiring itself, not live FCM delivery (no real credentials in
@@ -639,6 +654,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
     beforeEach(() => {
       fakePush.send.mockReset().mockResolvedValue({ sent: 0, staleTokens: [] });
+      fakeDelivery.sendEmail.mockReset().mockResolvedValue(undefined);
+      fakeDelivery.isConfigured.mockReset().mockReturnValue(true);
     });
 
     it("fans out to every active Student at the Waiver's own School only — not a revoked grant, not a different School", async () => {
@@ -660,7 +677,9 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(enqueuedUserIds).not.toContain(owner.id);
 
       const studentAJob = enqueued.find((job) => job.data.userId === studentA.id)!;
-      expect(studentAJob.data.body).toBe('Direct-Invocation Waiver has invited you to sign the following waiver.');
+      // Names the School as the sender and the waiver by its title (it used
+      // to put the waiver's title where the sender belongs).
+      expect(studentAJob.data.body).toBe('Notifications HTTP School has invited you to sign the waiver "Direct-Invocation Waiver".');
       expect(studentAJob.data.type).toBe('WAIVER_SIGNATURE_REQUEST');
       expect(studentAJob.data.notificationId).toBe(`waiver-${waiver.id}-${studentA.id}`);
 
@@ -739,6 +758,100 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Push test 3', 'push body 3');
 
       await superuser.deviceToken.delete({ where: { id: goodToken.id } });
+    });
+
+    it('push does not wait on email: no email service skips email quietly, a failing email still retries, and a retry never re-sends push', async () => {
+      const token = await superuser.deviceToken.create({
+        data: { id: randomUUID(), userId: studentA.id, platform: 'IOS', token: `order-${randomUUID()}` },
+      });
+
+      // No email service configured (staging this round): push goes out, the
+      // job succeeds, and email is not attempted at all.
+      fakeDelivery.isConfigured.mockReturnValue(false);
+      const idNoEmail = `order-no-email-${randomUUID()}`;
+      await expect(
+        fanoutProcessor.process({ id: 'order-1', data: { notificationId: idNoEmail, userId: studentA.id, title: 'T', body: 'B' } } as never),
+      ).resolves.toBeUndefined();
+      notificationIds.push(idNoEmail);
+      expect(fakePush.send).toHaveBeenCalledTimes(1);
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+
+      // Email configured but failing: push has already gone out, and the job
+      // still fails so BullMQ retries the email.
+      fakeDelivery.isConfigured.mockReturnValue(true);
+      fakeDelivery.sendEmail.mockRejectedValueOnce(new Error('Postmark down'));
+      const idEmailDown = `order-email-down-${randomUUID()}`;
+      const jobData = { notificationId: idEmailDown, userId: studentA.id, title: 'T2', body: 'B2' };
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 0 } as never)).rejects.toThrow('Postmark down');
+      notificationIds.push(idEmailDown);
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+
+      // The retry sends the email but not a second push.
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 1 } as never)).resolves.toBeUndefined();
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+      expect(fakeDelivery.sendEmail).toHaveBeenLastCalledWith(studentA.email, 'T2', 'B2');
+
+      await superuser.deviceToken.delete({ where: { id: token.id } });
+    });
+
+    it("parents (Decision 333): a child's notification is copied to each linked guardian, a minor's placeholder address gets no push or email, and a copy is never copied on", async () => {
+      const guardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'Parent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const revokedGuardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-old-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'OldParent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const minorId = randomUUID();
+      const minor = await superuser.user.create({
+        data: { id: minorId, email: `minor+${minorId}@guardian-managed.ultm8.internal`, phone: `+000${Math.floor(100_000_000_000 + Math.random() * 899_999_999_999)}`, firstName: 'Mia', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2018-01-01') },
+      });
+      userIds.push(guardian.id, revokedGuardian.id, minor.id);
+      await superuser.guardianLink.createMany({
+        data: [
+          { id: randomUUID(), guardianId: guardian.id, studentId: minor.id },
+          { id: randomUUID(), guardianId: revokedGuardian.id, studentId: minor.id, revokedAt: new Date() },
+        ],
+      });
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+
+      const id = `guardian-test-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-1', data: { notificationId: id, userId: minor.id, title: 'Class cancelled', body: 'Kids Judo was cancelled.' } } as never);
+      notificationIds.push(id);
+
+      // The child's own in-app row is still written…
+      expect(await superuser.notification.findUnique({ where: { id } })).not.toBeNull();
+      // …but nothing goes to the placeholder address.
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+      expect(fakePush.send).not.toHaveBeenCalled();
+
+      // One copy, for the live link only.
+      expect(fakeNotificationFanoutQueue.addBulk).toHaveBeenCalledTimes(1);
+      const copies: Array<{ data: NotificationFanoutJobData; opts: { jobId: string } }> = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0];
+      expect(copies).toHaveLength(1);
+      expect(copies[0].data).toEqual({
+        notificationId: `${id}-guardian-${guardian.id}`,
+        userId: guardian.id,
+        title: 'Class cancelled',
+        body: 'For Mia: Kids Judo was cancelled.',
+        type: undefined,
+        guardianCopyOf: minor.id,
+      });
+      expect(copies[0].opts.jobId).toBe(copies[0].data.notificationId);
+
+      // Processing the copy delivers to the parent and copies nothing further.
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+      await fanoutProcessor.process({ id: 'guardian-2', data: copies[0].data } as never);
+      notificationIds.push(copies[0].data.notificationId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+      expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(guardian.email, 'Class cancelled', 'For Mia: Kids Judo was cancelled.');
+
+      // A Student with no guardians is untouched.
+      const plainId = `guardian-test-plain-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-3', data: { notificationId: plainId, userId: studentA.id, title: 'T', body: 'B' } } as never);
+      notificationIds.push(plainId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+
+      await superuser.guardianLink.deleteMany({ where: { studentId: minor.id } });
     });
   });
 });

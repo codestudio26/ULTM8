@@ -65,8 +65,7 @@ export class MembershipsController {
   @ApiOkResponse({ type: MembershipPlanActiveCountResponseDto })
   @Get('membership-plans/:id/active-count')
   async getActiveCount(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    const activeCount = await this.membershipsService.getActiveMemberCount(user.sub, id);
-    return { activeCount };
+    return this.membershipsService.getActiveMemberCount(user.sub, id);
   }
 
   /** v1.2 backend backlog "Archive action" — School Owner/Manager only, same
