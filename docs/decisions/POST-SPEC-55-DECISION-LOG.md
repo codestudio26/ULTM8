@@ -5054,3 +5054,27 @@ T7 (calendar from real Classes), a Timetable view for Branch Staff and coaches, 
 ### Recorded by
 
 User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timetable fixes decision.
+
+## Decision 336 — Live lessons are online classes (plan for v1.3, not built)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner as the plan; not built · **Follows:** Decision 326 item 6
+
+The product owner wants a lesson's "Live" format to become a real live lesson. Agreed shape, to build in v1.3:
+
+### Decision
+
+1. **A live lesson is an online class.** A Class (and a TimetableSlot, so the online class can repeat each week) gets an **Online** switch and a **joining link**, not a new kind of lesson. Booking, capacity, membership rules, waivers, reminders and the waitlist work exactly as for any class. The Curriculum page shows a Live lesson as a link to its class.
+2. **The video tool is the coach's own link to start with.** The coach pastes a Zoom, Google Meet or Teams link, so there is no vendor or integration. Hosting inside the app (Cloudflare Stream Live, the existing video vendor, Decision 101) is a possible later step.
+3. **Who joins: students booked into the class.** The link is shown only to them, from 15 minutes before the start, and never on public or unbooked screens.
+4. **Attendance is marked by the coach at roll call.** QR check-in doesn't apply online, and opening the link doesn't count as attending.
+5. **No recording by default.** A coach may upload a recording afterwards as an ordinary prerecorded lesson.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Recording sessions with minors: whether guardian consent (Decision 236's consent tiers) is needed, and its wording. This is a legal question for the product owner and Gus.
+- **[UNRESOLVED]** What happens to `Lesson.format = LIVE` once online classes exist: kept as a link to the class, or removed.
+- Exactly when the link appears (15 minutes is the proposal) and whether coaches can change it.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, replying "ok" to the suggested plan in the Curriculum thread.
