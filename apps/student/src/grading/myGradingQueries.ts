@@ -34,12 +34,22 @@ export type FeeRequest = components['schemas']['PromotionFeeRequestResponseDto']
 
 /** The student's promotion fee requests at every School, newest first, for
  * the student or their Guardian (Decisions 287, 300). */
-export function useMyFeeRequests(studentId: string | null) {
-  return useQuery({
+export function feeRequestsQuery(studentId: string | null) {
+  return {
     queryKey: ['my-fee-requests', studentId],
     queryFn: () => unwrap(apiClient.GET('/v1/students/{id}/promotion-fee-requests', { params: { path: { id: studentId! } } })),
     enabled: !!studentId,
-  });
+  };
+}
+
+export function useMyFeeRequests(studentId: string | null) {
+  return useQuery(feeRequestsQuery(studentId));
+}
+
+/** A fee waiting for an answer: not yet accepted or declined, and not a
+ * promotion left "to decide" by a coach (Decision 307). */
+export function isFeeToAnswer(r: FeeRequest): boolean {
+  return r.status === 'PENDING' && !r.toDecide;
 }
 
 /** Accept or decline a fee (the student, or the Guardian for a child). The
