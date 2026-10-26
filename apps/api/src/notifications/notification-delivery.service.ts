@@ -77,6 +77,13 @@ export class NotificationDeliveryService {
    * on total failure) accurately reflects what happened rather than assuming
    * a fixed two-provider shape.
    */
+  /** True when a sender address and at least one provider are set, so a
+   * sendEmail() failure is a real delivery error worth retrying rather than
+   * missing configuration. notification-fanout skips email when this is false. */
+  isConfigured(): boolean {
+    return !!this.fromEmail && (this.postmarkClient !== null || this.sesClient !== null);
+  }
+
   async sendEmail(to: string, subject: string, textBody: string): Promise<void> {
     if (!this.fromEmail) {
       throw new Error('NotificationDeliveryService is not configured — set NOTIFICATIONS_FROM_EMAIL');

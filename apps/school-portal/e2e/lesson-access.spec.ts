@@ -32,7 +32,7 @@ test('a priced plan includes lessons by default, a free one doesn\'t; both tick 
   await page.getByLabel('Type').selectOption({ label: 'Class Pack' });
   await page.getByLabel('Title').fill('Ten classes');
   await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByLabel('Price').fill('9000');
+  await page.getByLabel('Price').fill('90');
   await page.getByLabel(/Classes included/).fill('10');
   await page.getByRole('button', { name: '4. Disciplines & Lessons' }).click();
   await page.getByLabel('BJJ').check();

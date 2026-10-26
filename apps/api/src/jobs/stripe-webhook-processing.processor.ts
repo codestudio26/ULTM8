@@ -10,12 +10,15 @@ import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
+import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
 /**
- * Thrown by handlePaymentIntentSucceeded's own `tx.membership.create()` call when
- * it collides with `Membership_one_active_general_access_per_school` — a signal to
+ * Thrown by handlePaymentIntentSucceeded when assertCanCreateMembership() refuses
+ * the new Membership (Decision 334; before that, when its `tx.membership.create()`
+ * collided with the since-dropped `Membership_one_active_general_access_per_school`
+ * index) — a signal to
  * process()'s own catch block to run resolveMembershipCollision(), not a generic
  * failure. A dedicated type, not a `P2002` + `err.meta?.target` inspection at the
  * call site that needs to react to it — see that call site's own catch block for
@@ -438,6 +441,20 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
 
     const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+
+    // Decision 334 (Memberships review M1/M20/M3) — replaces the partial unique
+    // index Membership_one_active_general_access_per_school. A refusal is the
+    // same collision as before: thrown as MembershipCollisionError, so the
+    // whole transaction rolls back and process() refunds the payment (and
+    // cancels a Subscription) via resolveMembershipCollision().
+    try {
+      await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
+    } catch (err) {
+      if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+        throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: ${err.message}`);
+      }
+      throw err;
+    }
 
     // The create() below is wrapped in its own try/catch, but — critically — NOT to
     // swallow a P2002 collision (Spec 55 §11.5's two-simultaneous-Active-Memberships

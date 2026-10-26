@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -15,24 +15,22 @@ import { MembershipPlanPriceMigrationJobData } from '../jobs/membership-plan-pri
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
+import {
+  assertCanCreateMembership,
+  GeneralAccessConflictError,
+  isMembershipLive,
+  TRIAL_MAX_DAYS,
+  TrialAllowanceError,
+} from './membership-creation-guard';
+import { CURRENCIES } from '../settings/constants/currencies';
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
 // type=Subscription... auto-recurring billing has no Cash/Bank Transfer equivalent").
 const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
-/** A membership in effect now: ACTIVE, not past its expiry date (a
- * live-computed predicate, Decision 26), and not a used-up pack. Shared with
- * the Grading Board's "currently attending" (Decision 152). */
-export function isMembershipLive(
-  m: { status: string; expiryDate: Date | null; classesRemaining: number | null },
-  now: Date = new Date(),
-): boolean {
-  if (m.status !== 'ACTIVE') return false;
-  if (m.expiryDate && m.expiryDate < now) return false;
-  if (m.classesRemaining !== null && m.classesRemaining <= 0) return false;
-  return true;
-}
+// Re-exported: grading and curriculum import it from here.
+export { isMembershipLive };
 
 @Injectable()
 export class MembershipsService {
@@ -59,16 +57,21 @@ export class MembershipsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId);
+    const title = this.normalizeTitle(dto.title);
+    const currency = this.normalizeCurrency(dto.currency);
+    // Decision 334 (Memberships review M2-M4): fields a type doesn't use are
+    // refused, and the ones it needs are required.
+    const shape = this.resolvePlanShape(
+      dto.type,
+      { expiryDurationDays: dto.expiryDurationDays ?? null, classesIncluded: dto.classesIncluded ?? null, scopedClassId: dto.scopedClassId ?? null },
+      dto,
+      { expiry: true, credits: true },
+    );
+    this.assertValidPlanShape(dto.type, dto.price, shape.classesIncluded ?? undefined, shape.scopedClassId ?? undefined);
     this.assertValidNewMemberBillingStrategy(dto.type, dto.newMemberBillingStrategy ?? 'FRESH_CYCLE', dto.billingCycleAnchorDay);
 
-    if (dto.scopedClassId) {
-      const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.class.findUnique({ where: { id: dto.scopedClassId }, select: { id: true, schoolId: true } }),
-      );
-      if (!scopedClass || scopedClass.schoolId !== schoolId) {
-        throw new BadRequestException('scopedClassId must reference a Class belonging to this School');
-      }
+    if (shape.scopedClassId) {
+      await this.assertScopedClassSellable(callerId, schoolId, shape.scopedClassId);
     }
 
     if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, schoolId, dto.disciplineIds);
@@ -81,12 +84,12 @@ export class MembershipsService {
           id,
           schoolId,
           type: dto.type,
-          title: dto.title,
-          price: dto.type === 'FRIEND_PASS' ? 0 : dto.price,
-          currency: dto.currency,
-          expiryDurationDays: dto.expiryDurationDays,
-          classesIncluded: this.resolveClassesIncluded(dto.type, dto.classesIncluded, dto.scopedClassId),
-          scopedClassId: dto.scopedClassId,
+          title,
+          price,
+          currency,
+          expiryDurationDays: shape.expiryDurationDays,
+          classesIncluded: shape.classesIncluded,
+          scopedClassId: shape.scopedClassId,
           visible: dto.visible ?? true,
           refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
           cancellationCharge: dto.cancellationCharge,
@@ -151,6 +154,24 @@ export class MembershipsService {
     }
 
     const nextType = dto.type ?? existing.type;
+    const typeChanged = dto.type !== undefined && dto.type !== existing.type;
+    // Decision 334 (Memberships review M14): the type decides what a live
+    // member's Membership means (credits, expiry, renewal), so it is locked
+    // while anyone holds one. Duplicating the plan is the way to sell a
+    // different type.
+    if (typeChanged) {
+      const liveMembers = await this.countLiveMembers(callerId, planId);
+      if (liveMembers > 0) {
+        throw new ConflictException(
+          `This plan has ${liveMembers} active member(s), so its type can't change. Create a new plan for the new type instead.`,
+        );
+      }
+    }
+    const title = dto.title !== undefined ? this.normalizeTitle(dto.title) : undefined;
+    const currencyGiven = dto.currency !== undefined;
+    const nextCurrency = currencyGiven ? this.normalizeCurrency(dto.currency) ?? null : existing.currency;
+    const currencyChanged = currencyGiven && (nextCurrency ?? '').toUpperCase() !== (existing.currency ?? '').toUpperCase();
+
     // FOUND ON REVIEW: validate against the FORCED values (0 / 1 for FRIEND_PASS),
     // not the raw incoming ones — an earlier draft validated nextPrice/
     // nextClassesIncluded before forcing, so `PATCH { type: 'FRIEND_PASS' }` alone
@@ -158,13 +179,26 @@ export class MembershipsService {
     // value) was wrongly rejected as invalid, even though the write below would
     // have forced them correctly. Mirror createPlan's own create-time shape exactly.
     const nextPrice = nextType === 'FRIEND_PASS' ? 0 : dto.price ?? existing.price;
-    const nextScopedClassId = dto.scopedClassId !== undefined ? dto.scopedClassId : existing.scopedClassId;
-    const nextClassesIncluded = this.resolveClassesIncluded(
+    // Decision 334 (Memberships review M2/M4): a type change clears the fields
+    // the new type doesn't use (Class Pack -> Subscription used to keep its 10
+    // credits). Required fields are only checked when this edit touches them or
+    // the type, so a legacy plan can still have e.g. Visible toggled.
+    const shapeTouched =
+      dto.type !== undefined || dto.expiryDurationDays !== undefined || dto.classesIncluded !== undefined || dto.scopedClassId !== undefined;
+    const shape = this.resolvePlanShape(
       nextType,
-      dto.classesIncluded ?? existing.classesIncluded ?? undefined,
-      nextScopedClassId ?? undefined,
+      {
+        expiryDurationDays: dto.expiryDurationDays !== undefined ? dto.expiryDurationDays : existing.expiryDurationDays,
+        classesIncluded: dto.classesIncluded !== undefined ? dto.classesIncluded : existing.classesIncluded,
+        scopedClassId: dto.scopedClassId !== undefined ? dto.scopedClassId : existing.scopedClassId,
+      },
+      dto,
+      {
+        expiry: dto.type !== undefined || dto.expiryDurationDays !== undefined,
+        credits: dto.type !== undefined || dto.classesIncluded !== undefined || dto.scopedClassId !== undefined,
+      },
     );
-    this.assertValidPlanShape(nextType, nextPrice, nextClassesIncluded, nextScopedClassId ?? undefined);
+    this.assertValidPlanShape(nextType, nextPrice, shape.classesIncluded ?? undefined, shape.scopedClassId ?? undefined);
     // Decision 259 — validated against the resolved NEXT combination, same
     // discipline as nextType/nextPrice above: a PATCH that only changes type
     // away from SUBSCRIPTION while an existing PRORATED_TO_SHARED_CYCLE/
@@ -174,22 +208,12 @@ export class MembershipsService {
     const nextBillingCycleAnchorDay = dto.billingCycleAnchorDay !== undefined ? dto.billingCycleAnchorDay : existing.billingCycleAnchorDay;
     this.assertValidNewMemberBillingStrategy(nextType, nextNewMemberBillingStrategy, nextBillingCycleAnchorDay);
 
-    // FOUND ON REVIEW (Phase 18): `dto.scopedClassId` narrowed via `if
-    // (dto.scopedClassId)` doesn't stay narrowed inside the async closure
-    // below — a TS property-narrowing limitation across function boundaries,
-    // now actually surfaced now that scopedClassId's type includes `| null`
-    // (see this DTO's own header comment on why). Hoisted to a local const,
-    // which DOES stay narrowed.
     if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds);
 
-    const scopedClassIdToValidate = dto.scopedClassId;
-    if (scopedClassIdToValidate) {
-      const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.class.findUnique({ where: { id: scopedClassIdToValidate }, select: { id: true, schoolId: true } }),
-      );
-      if (!scopedClass || scopedClass.schoolId !== existing.schoolId) {
-        throw new BadRequestException('scopedClassId must reference a Class belonging to this School');
-      }
+    // Only a new scope is checked: re-saving a plan for a class that has since
+    // taken place must still work for its other fields.
+    if (dto.scopedClassId && shape.scopedClassId && dto.scopedClassId !== existing.scopedClassId) {
+      await this.assertScopedClassSellable(callerId, existing.schoolId, shape.scopedClassId);
     }
 
     // Write the already-resolved next* values whenever ANY field that could affect
@@ -198,7 +222,6 @@ export class MembershipsService {
     // price-only PATCH against an EXISTING FRIEND_PASS plan must still force price
     // back to 0, even though dto.type itself is undefined on that request).
     const priceOrTypeChanged = dto.price !== undefined || dto.type !== undefined;
-    const classesIncludedChanged = dto.classesIncluded !== undefined || dto.scopedClassId !== undefined || dto.type !== undefined;
 
     // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
     // prompt. Only SUBSCRIPTION-staying-SUBSCRIPTION edits are in scope — a
@@ -209,33 +232,36 @@ export class MembershipsService {
     // against the forced value" discipline this method's own FRIEND_PASS
     // comment above already established.
     const priceChanged = existing.type === 'SUBSCRIPTION' && nextType === 'SUBSCRIPTION' && priceOrTypeChanged && nextPrice !== existing.price;
-    let stripeProductId: string | undefined;
-    let stripePriceId: string | undefined;
-    let affectedMembershipCount = 0;
-    if (priceChanged) {
-      affectedMembershipCount = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.membership.count({ where: { membershipPlanId: planId, status: 'ACTIVE', stripeSubscriptionId: { not: null } } }),
+    const subscriberCount = priceChanged || currencyChanged ? await this.countSubscribers(callerId, planId) : 0;
+    // Decision 334 (Memberships review M12): a running Stripe subscription
+    // can't switch currency, so neither can its plan.
+    if (currencyChanged && subscriberCount > 0) {
+      throw new BadRequestException(
+        `This plan has ${subscriberCount} active subscription(s) billed in ${existing.currency ?? 'its current currency'}, so its currency can't change. Create a new plan instead.`,
       );
+    }
+    let stripeProductId: string | undefined;
+    let stripePriceId: string | null | undefined;
+    const affectedMembershipCount = priceChanged ? subscriberCount : 0;
+    if (priceChanged && affectedMembershipCount > 0) {
       // A brand-new/never-subscribed plan has nothing to migrate or
       // grandfather — no choice is required, and no decision row is created;
       // the price simply changes, same as any other field edit.
-      if (affectedMembershipCount > 0) {
-        if (!dto.priceChangeStrategy) {
-          throw new BadRequestException(
-            `This SUBSCRIPTION plan has ${affectedMembershipCount} active subscriber(s) — choose priceChangeStrategy ("MIGRATE" or "GRANDFATHER") before changing its price.`,
-          );
-        }
-        const nextCurrency = dto.currency !== undefined ? dto.currency : existing.currency;
-        const connectedAccountId = await this.paymentsService.getStripeConnectedAccountId(callerId, existing.schoolId);
-        const created = await this.paymentsService.createPriceForPlan(connectedAccountId, {
-          existingProductId: existing.stripeProductId,
-          productName: dto.title ?? existing.title,
-          amount: nextPrice,
-          currency: nextCurrency ?? 'usd',
-        });
-        stripeProductId = created.productId;
-        stripePriceId = created.priceId;
+      if (!dto.priceChangeStrategy) {
+        throw new BadRequestException(
+          `This SUBSCRIPTION plan has ${affectedMembershipCount} active subscriber(s) — choose priceChangeStrategy ("MIGRATE" or "GRANDFATHER") before changing its price.`,
+        );
       }
+      const chargeCurrency = await this.resolveChargeCurrency(callerId, existing.schoolId, nextCurrency);
+      const connectedAccountId = await this.paymentsService.getStripeConnectedAccountId(callerId, existing.schoolId);
+      const created = await this.paymentsService.createPriceForPlan(connectedAccountId, {
+        existingProductId: existing.stripeProductId,
+        productName: title ?? existing.title,
+        amount: nextPrice,
+        currency: chargeCurrency.toLowerCase(),
+      });
+      stripeProductId = created.productId;
+      stripePriceId = created.priceId;
     } else if (dto.priceChangeStrategy) {
       // FOUND ON REVIEW: a strategy sent when nothing actually requires one
       // (price unchanged, or this isn't a SUBSCRIPTION-staying-SUBSCRIPTION
@@ -244,6 +270,11 @@ export class MembershipsService {
       // surfacing" discipline this codebase already applies elsewhere (e.g.
       // classesIncluded: null above).
       throw new BadRequestException('priceChangeStrategy was provided but this edit does not change a SUBSCRIPTION plan\'s price — omit it.');
+    } else if (typeChanged || currencyChanged || (priceOrTypeChanged && nextPrice !== existing.price)) {
+      // Decision 334 (Memberships review M12): a saved Stripe Price carries the
+      // old amount and currency. With no subscribers to migrate, drop it so the
+      // next purchase is charged at the plan's current price.
+      stripePriceId = null;
     }
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -251,12 +282,12 @@ export class MembershipsService {
         where: { id: planId },
         data: {
           type: dto.type,
-          title: dto.title,
+          title,
           price: priceOrTypeChanged ? nextPrice : undefined,
-          currency: dto.currency,
-          expiryDurationDays: dto.expiryDurationDays,
-          classesIncluded: classesIncludedChanged ? nextClassesIncluded : undefined,
-          scopedClassId: dto.scopedClassId,
+          currency: currencyGiven ? nextCurrency : undefined,
+          expiryDurationDays: shapeTouched ? shape.expiryDurationDays : undefined,
+          classesIncluded: shapeTouched ? shape.classesIncluded : undefined,
+          scopedClassId: shapeTouched ? shape.scopedClassId : undefined,
           visible: dto.visible,
           // Decision 209: distinguishes omitted (undefined, leave unchanged) from
           // an explicit null (clear) from a real date string — the old
@@ -454,6 +485,133 @@ export class MembershipsService {
     return classesIncluded;
   }
 
+  /**
+   * Decision 334 (Memberships review M2-M4). Which of the type-dependent
+   * fields a plan type uses:
+   *   - credits (classesIncluded) and a one-class scope: CLASS_PACK and
+   *     FRIEND_PASS only. SUBSCRIPTION, WEEKLY_PASS and TRIAL_MEMBERSHIP are
+   *     general access, so a credit count would turn them into a Class Pack
+   *     at booking time (selectAndConsumeMembership treats null credits as
+   *     general access).
+   *   - expiry: every type except SUBSCRIPTION, which renews until cancelled.
+   * A field the type doesn't use is refused when sent and cleared when only
+   * carried over from before a type change. `check` turns on the required-
+   * field rules: CLASS_PACK needs credits, WEEKLY_PASS an expiry, and
+   * TRIAL_MEMBERSHIP an expiry of 1-30 days (Decisions 54/64).
+   */
+  private resolvePlanShape(
+    type: string,
+    values: { expiryDurationDays: number | null; classesIncluded: number | null; scopedClassId: string | null },
+    explicit: { expiryDurationDays?: number | null; classesIncluded?: number | null; scopedClassId?: string | null },
+    check: { expiry: boolean; credits: boolean },
+  ): { expiryDurationDays: number | null; classesIncluded: number | null; scopedClassId: string | null } {
+    const usesCredits = type === 'CLASS_PACK' || type === 'FRIEND_PASS';
+    const usesExpiry = type !== 'SUBSCRIPTION';
+    if (!usesCredits && explicit.classesIncluded != null) {
+      throw new BadRequestException(`A ${type} plan gives general access, so it has no class count — omit classesIncluded.`);
+    }
+    if (!usesCredits && explicit.scopedClassId != null) {
+      throw new BadRequestException('Only a CLASS_PACK or FRIEND_PASS plan can be limited to one class — omit scopedClassId.');
+    }
+    if (!usesExpiry && explicit.expiryDurationDays != null) {
+      throw new BadRequestException('A SUBSCRIPTION renews every month until cancelled, so it has no expiry — omit expiryDurationDays.');
+    }
+    const scopedClassId = usesCredits ? values.scopedClassId : null;
+    const classesIncluded = usesCredits
+      ? this.resolveClassesIncluded(type, values.classesIncluded ?? undefined, scopedClassId ?? undefined) ?? null
+      : null;
+    const expiryDurationDays = usesExpiry ? values.expiryDurationDays : null;
+    if (check.credits && type === 'CLASS_PACK' && classesIncluded === null) {
+      throw new BadRequestException('A CLASS_PACK plan needs classesIncluded (how many classes it gives).');
+    }
+    if (check.expiry && type === 'WEEKLY_PASS' && expiryDurationDays === null) {
+      throw new BadRequestException('A WEEKLY_PASS plan needs expiryDurationDays (how many days it lasts).');
+    }
+    if (check.expiry && type === 'TRIAL_MEMBERSHIP' && (expiryDurationDays === null || expiryDurationDays > TRIAL_MAX_DAYS)) {
+      throw new BadRequestException(`A TRIAL_MEMBERSHIP plan must last between 1 and ${TRIAL_MAX_DAYS} days (expiryDurationDays).`);
+    }
+    return { expiryDurationDays, classesIncluded, scopedClassId };
+  }
+
+  /** Decision 334 (Memberships review M11): a title of only spaces is no title. */
+  private normalizeTitle(title: string): string {
+    const trimmed = title.trim();
+    if (!trimmed) {
+      throw new BadRequestException('title cannot be blank.');
+    }
+    return trimmed;
+  }
+
+  /** Decision 334 (Memberships review M11): a currency must be one of the
+   * Stripe-supported codes GET /settings/currencies lists (Decision 241),
+   * stored upper-case. null stays null (clear on update). */
+  private normalizeCurrency(currency: string | null | undefined): string | null | undefined {
+    if (currency === undefined || currency === null) return currency;
+    const code = currency.trim().toUpperCase();
+    if (!CURRENCIES.some((c) => c.code === code)) {
+      throw new BadRequestException(`${currency} is not a supported currency — pick one from GET /settings/currencies.`);
+    }
+    return code;
+  }
+
+  /**
+   * Decision 334 (Memberships review M6): the currency a purchase is charged
+   * in. The plan's own, else the School's default currency. Neither set is
+   * refused rather than charged in US dollars, which is what the old
+   * `?? 'usd'` fallback did. Upper-case, as stored on Transaction; lower-case
+   * it for Stripe.
+   */
+  private async resolveChargeCurrency(contextUserId: string, schoolId: string, planCurrency: string | null): Promise<string> {
+    if (planCurrency) return planCurrency.toUpperCase();
+    const school = await this.prismaApp.withTenantContext(contextUserId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
+    );
+    if (!school?.defaultCurrency) {
+      throw new BadRequestException("This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.");
+    }
+    return school.defaultCurrency.toUpperCase();
+  }
+
+  /**
+   * Decision 334 (Memberships review M15, and Classes review C15): a plan
+   * limited to one class can only be made or sold while that class is still to
+   * come and not archived.
+   */
+  private async assertScopedClassSellable(contextUserId: string, schoolId: string, classId: string): Promise<void> {
+    const scopedClass = await this.prismaApp.withTenantContext(contextUserId, (tx) =>
+      tx.class.findUnique({ where: { id: classId }, select: { schoolId: true, startDate: true, archivedAt: true } }),
+    );
+    if (!scopedClass || scopedClass.schoolId !== schoolId) {
+      throw new BadRequestException('scopedClassId must reference a Class belonging to this School');
+    }
+    if (scopedClass.archivedAt) {
+      throw new BadRequestException('This class has been archived, so a plan for it can no longer be made or sold.');
+    }
+    if (scopedClass.startDate <= new Date()) {
+      throw new BadRequestException('This class has already taken place, so a plan for it can no longer be made or sold.');
+    }
+  }
+
+  /** Memberships on this plan in effect now (isMembershipLive). */
+  private async countLiveMembers(callerId: string, planId: string): Promise<number> {
+    const memberships = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membership.findMany({
+        where: { membershipPlanId: planId, status: 'ACTIVE' },
+        select: { status: true, expiryDate: true, classesRemaining: true },
+      }),
+    );
+    const now = new Date();
+    return memberships.filter((m) => isMembershipLive(m, now)).length;
+  }
+
+  /** Running Stripe subscriptions on this plan: the ones a price change can
+   * migrate or grandfather. */
+  private countSubscribers(callerId: string, planId: string): Promise<number> {
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membership.count({ where: { membershipPlanId: planId, status: 'ACTIVE', stripeSubscriptionId: { not: null } } }),
+    );
+  }
+
   /** Decision 259 — see MembershipPlan.newMemberBillingStrategy's own schema
    * comment. Validated against the already-resolved NEXT values (same
    * discipline assertValidPlanShape above and updatePlan()'s own FRIEND_PASS
@@ -533,6 +691,18 @@ export class MembershipsService {
     if (plan.archivedAt) {
       throw new BadRequestException('This MembershipPlan has been archived and can no longer be purchased.');
     }
+    // Decision 334 (Memberships review Q2): a hidden plan is off sale, not
+    // only off the list. The owner hides a plan to stop selling it.
+    if (!plan.visible) {
+      throw new BadRequestException('This plan is not on sale.');
+    }
+    // Decision 334 (Memberships review M17/M18): only a current Student of
+    // the School can hold its Membership. Staff buying as themselves, and a
+    // removed Student, are refused.
+    await this.assertActiveStudent(studentId, plan.schoolId);
+    // Decision 334 (Memberships review M13): a closed School takes no new
+    // payments (Decision 110).
+    await this.tenantAuth.assertSchoolNotArchived(studentId, plan.schoolId);
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
     // payments" is one of the three actions it explicitly names (Phase 54).
     // Checked under `studentId`'s own RLS context, not `callerId`'s — same
@@ -554,6 +724,28 @@ export class MembershipsService {
     if (plan.type === 'FRIEND_PASS') {
       throw new BadRequestException('FRIEND_PASS Memberships are School-gifted, not self-purchased — no staff-gifting endpoint exists yet (out of scope this phase).');
     }
+    // Decision 334 (Memberships review M7): the plan's own "requires a waiver"
+    // switch, checked the same way BookingsService.bookClass() checks a
+    // Class's: any Signed Waiver at this School.
+    if (plan.termsWaiverRequired) {
+      const signed = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.waiverSignature.findFirst({ where: { studentId, schoolId: plan.schoolId, status: 'SIGNED' }, select: { id: true } }),
+      );
+      if (!signed) {
+        throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
+      }
+    }
+    if (plan.scopedClassId) {
+      await this.assertScopedClassSellable(studentId, plan.schoolId, plan.scopedClassId);
+    }
+    // Decision 334 (Memberships review M1/M20/M3): checked before any charge,
+    // so a Student who can't hold this Membership is never asked to pay. The
+    // same check runs again where the Membership is created.
+    await this.prismaApp.withTenantContext(studentId, (tx) =>
+      assertCanCreateMembership(tx, studentId, plan.schoolId, plan).catch((err) => {
+        throw this.toCreationConflict(err);
+      }),
+    );
     const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId: plan.schoolId } }),
     );
@@ -599,7 +791,7 @@ export class MembershipsService {
     const student = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true, paymentRestrictedAt: true } }),
     );
-    const currency = plan.currency ?? 'usd';
+    const currency = await this.resolveChargeCurrency(studentId, plan.schoolId, plan.currency);
 
     if (paymentAccount.provider === 'STRIPE') {
       // Decision 68/112 — "restricted to Cash/Bank Transfer payment methods only"
@@ -830,7 +1022,7 @@ export class MembershipsService {
         await this.prismaApp.withTenantContext(studentId, (tx) =>
           tx.transaction.update({ where: { id: transactionId }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
         );
-        throw new ConflictException('This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.');
+        throw new ConflictException(`${err.message} Your saved card was charged and has now been refunded.`);
       }
       throw err;
     }
@@ -894,15 +1086,15 @@ export class MembershipsService {
   /**
    * Atomicity requirement (Spec 55 §11.5): a Student may not hold two simultaneous
    * Active general-access (Subscription/Weekly Pass) Memberships at the same School.
-   * Enforced via a partial unique index at the DB level (see this phase's migration)
-   * rather than a separate findFirst-then-create check — the same atomic
-   * create()+caught-unique-violation shape this codebase already established for
-   * ProcessedStripeEvent's dedup, not a TOCTOU-prone check-then-insert.
+   * Decision 334 replaced the partial unique index this used to rely on with
+   * assertCanCreateMembership(), run in the same transaction as the insert
+   * under an advisory lock — see that function's own comment for why.
    */
   async createMembershipAndReturn(studentId: string, plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null }, stripeSubscriptionId: string | null) {
     try {
-      const membership = await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.membership.create({
+      const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        await assertCanCreateMembership(tx, studentId, plan.schoolId, plan);
+        return tx.membership.create({
           data: {
             id: randomUUID(),
             studentId,
@@ -914,22 +1106,32 @@ export class MembershipsService {
             scopedClassId: plan.scopedClassId,
             stripeSubscriptionId: stripeSubscriptionId ?? undefined,
           },
-        }),
-      );
+        });
+      });
       return { outcome: 'active' as const, membership };
     } catch (err) {
-      // See this phase's migration for the partial unique index this relies on —
-      // P2002 here means the Student already holds an Active general-access
-      // Membership at this School.
-      if (this.isUniqueConstraintViolation(err)) {
-        throw new ConflictException('This Student already holds an active general-access Membership at this School.');
-      }
-      throw err;
+      throw this.toCreationConflict(err);
     }
   }
 
-  private isUniqueConstraintViolation(err: unknown): boolean {
-    return Boolean(err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002');
+  /** The guard's two refusals as a 409; anything else unchanged.
+   * purchaseWithSavedCard() refunds on any ConflictException. */
+  private toCreationConflict(err: unknown): unknown {
+    if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+      return new ConflictException(err.message);
+    }
+    return err;
+  }
+
+  /** Decision 334 (Memberships review M17/M18). Read under the Student's own
+   * context, which can always see its own RoleGrant. */
+  private async assertActiveStudent(studentId: string, schoolId: string): Promise<void> {
+    const grant = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!grant) {
+      throw new ForbiddenException('Only a current Student of this School can buy its membership plans.');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1014,17 +1216,32 @@ export class MembershipsService {
    * status flag alone" reasoning, just counted across every Membership
    * against this Plan instead of one Student's own.
    */
-  async getActiveMemberCount(callerId: string, planId: string): Promise<number> {
+  async getActiveMemberCount(callerId: string, planId: string): Promise<{ activeCount: number; subscriberCount: number }> {
     const plan = await this.findOnePlan(callerId, planId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, plan.schoolId);
 
-    const memberships = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.membership.findMany({
+    const { memberships, studentIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const rows = await tx.membership.findMany({
         where: { membershipPlanId: planId },
-        select: { status: true, expiryDate: true, classesRemaining: true },
-      }),
-    );
+        select: { studentId: true, status: true, expiryDate: true, classesRemaining: true, stripeSubscriptionId: true },
+      });
+      // Decision 334 (Memberships review M18): a Student removed from the
+      // School is no longer counted as a member, whatever their Membership
+      // row still says.
+      const grants = await tx.roleGrant.findMany({
+        where: { schoolId: plan.schoolId, role: 'STUDENT', revokedAt: null, userId: { in: [...new Set(rows.map((r) => r.studentId))] } },
+        select: { userId: true },
+      });
+      return { memberships: rows, studentIds: new Set(grants.map((g) => g.userId)) };
+    });
     const now = new Date();
-    return memberships.filter((m) => isMembershipLive(m, now)).length;
+    const live = memberships.filter((m) => studentIds.has(m.studentId) && isMembershipLive(m, now));
+    return {
+      activeCount: live.length,
+      // Decision 334 (Memberships review M9): the people a price change
+      // actually reaches. The portal's migrate-or-keep prompt uses this, the
+      // same count updatePlan() checks.
+      subscriberCount: live.filter((m) => m.stripeSubscriptionId !== null).length,
+    };
   }
 }

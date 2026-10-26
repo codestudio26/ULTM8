@@ -207,6 +207,10 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Cash payment waiting': 'cashWaitingTitle',
   'Payment confirmed': 'paymentConfirmedTitle',
   'Payment cancelled': 'paymentCancelledTitle',
+  'Class moved': 'classMovedTitle',
+  'Class cancelled': 'classCancelledTitle',
+  'Promotion to decide': 'toDecideTitle',
+  'Promotion fee': 'promotionFeeTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -238,10 +242,38 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   [body(String.raw`^(.+) is ready for (.+) \(${STYLE}\)\.$`), (m, { t }) => n(t, 'readyToGradeBody', { name: m[1], rank: m[2], style: m[3] })],
   [
+    /^(.+), a Student at your School, has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/s,
+    (m, { t }) => n(t, 'paymentRestrictedNamedBody', { name: m[1] }),
+  ],
+  // Older rows, written before the Student was named.
+  [
     /^A Student at your School has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/,
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
+  [/^(.+) has invited you to sign the waiver "(.+)"\.$/s, (m, { t }) => n(t, 'waiverRequestFromSchoolBody', { school: m[1], waiver: m[2] })],
+  // Older rows, written before the School was named (the waiver's title sat
+  // where the sender belongs).
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
+  // apps/api/src/timetable/timetable.service.ts — "Your booking moved with it." is
+  // the wording before the waitlist was told too.
+  [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t }) => n(t, 'classMovedBody', { class: m[1], when: m[2] })],
+  [/^(.+) has moved to (.+)\. Your waitlist place moved with it\.$/s, (m, { t }) => n(t, 'classMovedWaitlistBody', { class: m[1], when: m[2] })],
+  [
+    /^(.+) on (.+) was cancelled by your School\. Any class credit you used has been given back\.$/s,
+    (m, { t }) => n(t, 'classCancelledBody', { class: m[1], when: m[2] }),
+  ],
+  [
+    body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),
+    (m, { t }) => n(t, 'toDecideBody', { name: m[1], rank: m[2], style: m[3] }),
+  ],
+  [
+    body(String.raw`^Your promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
+    (m, { t }) => n(t, 'promotionFeeBody', { rank: m[1], style: m[2], amount: m[3] }),
+  ],
+  [
+    body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
+    (m, { t }) => n(t, 'childPromotionFeeBody', { name: m[1], rank: m[2], style: m[3], amount: m[4] }),
+  ],
   [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
   [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
   [body(String.raw`^Your rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],
@@ -355,12 +387,17 @@ export function createServerTextTranslator(
       return known(compile(messages), message) ?? t(`server.generic.${genericKey(status)}`);
     },
     notification({ title, body, type }) {
+      // A parent's copy of their child's notification (NotificationFanoutProcessor):
+      // the child's message, translated as usual, behind "For {name}: ".
+      const forChild = body.match(/^For ([^:]+): (.*)$/s);
+      const inner = forChild ? forChild[2] : body;
+      const wrap = (text: string) => (forChild ? n(t, 'forChild', { name: forChild[1], body: text }) : text);
       // A broadcast's text is the School's own words, never a template.
-      if (type === 'SCHOOL_BROADCAST') return { title, body };
+      if (type === 'SCHOOL_BROADCAST') return { title, body: wrap(inner) };
       const titleKey = NOTIFICATION_TITLES[title];
       return {
         title: titleKey ? n(t, titleKey) : title,
-        body: applyRules(BODY_RULES, body, ctx) ?? body,
+        body: wrap(applyRules(BODY_RULES, inner, ctx) ?? inner),
       };
     },
   };
