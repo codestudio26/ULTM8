@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "O check-in desta aula ainda não foi aberto. Abertura: {time}.",
     capacityBelowBooked: "Alunos já inscritos: {count}. Defina a capacidade como {count} ou mais, ou cancele algumas reservas antes.",
     bookedClassesChoice: "Algumas aulas futuras deste horário têm reservas. Escolha se quer movê-las, cancelá-las ou mantê-las.",
+    classArchived: "Esta aula está arquivada. Desarquive-a para editar.",
+    qrWindowBeforeStart: "A janela de check-in precisa terminar depois que a aula começa.",
+    bookingCutoffAfterEnd: "O encerramento das reservas não pode ser depois do fim da aula.",
+    refundCutoffAfterEnd: "O prazo de reembolso não pode ser depois do fim da aula.",
+    guestNeedsFriendPass: "Um convidado só pode ser reservado com um Passe de convidado. Sua assinatura cobre você, não seus convidados.",
+    guestPassRepeated: "Cada convidado precisa do próprio Passe de convidado. O mesmo passe foi escolhido mais de uma vez.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",
