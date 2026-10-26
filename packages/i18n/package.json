@@ -1,0 +1,16 @@
+{
+  "name": "@ultm8/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared translation core for the School Portal and the student app (Decisions 273, 323): message types, plural formatting, locale resolution, and the API's own English text translated per locale.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
