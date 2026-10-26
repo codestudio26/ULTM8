@@ -2769,6 +2769,29 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "Date view, sorted by start time. Omit for the unsorted list.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this User.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -14779,6 +14802,11 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -14862,18 +14890,6 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "bookingEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — booking cutoff."
-          },
-          "qrAttendanceEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — end of the QR check-in window."
-          },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
@@ -14910,6 +14926,21 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — booking cutoff. Pass null to clear."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies)."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear."
           }
         }
       },
@@ -15859,7 +15890,7 @@
             "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
           },
           "attendeeMembershipIds": {
-            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
+            "description": "One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).",
             "type": "array",
             "items": {
               "type": "string"

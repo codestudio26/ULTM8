@@ -27,6 +27,8 @@ export const coach = {
     noClassesDescription: 'Classes the School assigns to you will show here.',
     everyWeek: 'Every week',
     comingUp: 'Coming up',
+    rollCall: 'Roll call',
+    showQr: 'Show QR',
     notifications: 'Notifications',
     seeAll: 'See all',
     seeAllUnread: 'See all ({count} unread)',
