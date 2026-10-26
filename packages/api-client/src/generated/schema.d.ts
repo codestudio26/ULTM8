@@ -5038,10 +5038,6 @@ export interface components {
              * @example 19:00
              */
             endTime?: string;
-            /** @description 24-hour clock, HH:mm. */
-            breakStart?: string;
-            /** @description 24-hour clock, HH:mm. */
-            breakEnd?: string;
             /**
              * @description Defaults to ON when omitted.
              * @enum {string}
@@ -5057,7 +5053,7 @@ export interface components {
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
             /**
-             * @description Decision 322. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change.
+             * @description Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change.
              * @enum {string}
              */
             bookedClasses?: "MOVE" | "CANCEL" | "KEEP";
@@ -5065,6 +5061,10 @@ export interface components {
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
             instructorId?: string | null;
+            /** @description 24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break. */
+            breakStart?: string | null;
+            /** @description 24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break. */
+            breakEnd?: string | null;
             /** @description Pass null to clear (unlimited). */
             capacity?: number | null;
             description?: string | null;

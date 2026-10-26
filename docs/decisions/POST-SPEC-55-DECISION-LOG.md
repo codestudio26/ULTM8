@@ -5020,3 +5020,37 @@ A test of the Branches City filter found it searched the whole one-line address.
 ### Recorded by
 
 User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.
+
+---
+
+## Decision 332 — Timetable review fixes: archived slots stay off, new slots bookable at once, capacity cuts and booking-rule changes on booked classes
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 322 §5 and §6 · **Builds on:** Decisions 172, 226
+
+A review of the Timetable section (26 Oct 2026) found 18 bugs (T1–T18). The product owner chose to fix 17 of them in one change, with the two open choices (T5, T6) settled as proposed: *"Build all 17, my way for T5/T6"*. T7 (the calendar draws slot templates rather than the real Classes) is left for its own change.
+
+### Decision
+
+1. **The nightly class run skips archived slots, closed Schools and archived Branches** (T1, T2). Before, archiving a slot removed its Classes and the 02:00 UTC run put them back.
+2. **A new or unarchived slot is bookable at once** (T3): its next 4 weeks of Classes are created when it is saved, not at the next nightly run.
+3. **Raising a slot's capacity offers the new seats to the waitlist** (T4), the same way raising one Class's capacity already does (Decision 322 §3).
+4. **A capacity cut below the seats booked** (T5, amends Decision 322 §6) is still refused with the count, unless the owner confirms with **Keep**: then every Class takes the new capacity except those already fuller than it, which keep their current size. Nobody's booking is cancelled. Cancel is not offered for a capacity cut.
+5. **Booking-rule changes reach booked Classes only if the owner says so** (T6, adds to Decision 322 §5). A change to the waiver requirement, membership inclusion, booking or refund cut-offs, QR window or cancellation charge always reaches unbooked upcoming Classes. For Classes with bookings the owner chooses **Apply** (they take the new rules) or **Keep** (they keep the rules they were booked under). The title, description, picture and coach always follow, booked or not.
+6. **Slot times are checked** (T8): the end is after the start; a break has both ends or neither, ends after it starts, and falls inside the class times. A slot's title is trimmed and can't be blank.
+7. **A break can be removed** (T9) by clearing both break times.
+8. **Archive asks first** (T10), like Branches.
+9. **The Timetable page needs a School** (T11): someone with no School (Branch Staff, coaches) is sent to their home page instead of a blank page.
+10. **The month view shows no booking dots for archived slots** (T12), and **a cancelled or finished Class says so** when someone tries to book it (T13).
+11. **Every slot loads** (T14): the page asks for every page of slots, not just the first 20.
+12. **A date the slot cancelled comes back when the slot does** (T15): Classes the slot cancels are unlinked from it, so switching the slot back on recreates that date. A single Class cancelled on the Classes page stays linked and does not come back by itself.
+13. **The cancellation notice gives the class's own local date and time** (T16), in the Branch's time zone, then the School's, then UTC (Decision 172).
+14. **A slot can't be put on an archived Branch** (T17).
+15. **Students on the waitlist are told when a class moves** (T18), as booked students already were.
+
+### What this does NOT resolve
+
+T7 (calendar from real Classes), a Timetable view for Branch Staff and coaches, and Decision 319 (closures, week start, calendar feeds, embed, filters) are still open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timetable fixes decision.

@@ -35,6 +35,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Comments (n) button opening its students' comments, which only the owner
   (or the comment's author) can remove. **Needs a database migration.**
 
+- **Timetable fixes from the 26 Oct review (Decision 332)** — archived slots,
+  closed Schools and archived Branches no longer get classes back overnight;
+  a new or unarchived slot is bookable straight away; raising a slot's capacity
+  offers the seats to the waitlist; a capacity cut asks to confirm and leaves
+  fuller classes their size; changing waiver, membership or cut-off rules asks
+  whether booked classes take them too; break times are checked and can be
+  cleared; Archive asks first; every slot shows (not just the first 20); a
+  cancelled or finished class says so in the booking dialog; cancellation
+  notices show local time; waitlisted students hear when a class moves.
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address
