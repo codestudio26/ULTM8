@@ -7,7 +7,7 @@ import type { StripeClientService } from '../payments/stripe-client.service';
  * §10.2: Stripe's cancel_at_period_end, no proration, no immediate cutoff) and
  * record when it ends and who asked. The Membership stays live until then;
  * Stripe's customer.subscription.deleted later expires it and cancels the
- * Bookings it funded. Asking twice changes nothing. Decision NNN.
+ * Bookings it funded. Asking twice changes nothing. Decision 348.
  *
  * A plain function, not a service method, so both MembershipsService (the
  * Student, a Guardian or the owner cancelling) and RoleGrantsService (Students

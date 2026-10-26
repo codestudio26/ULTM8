@@ -1,9 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 
-/** Decision NNN — the shared cancel used by MembershipsService and by
+/** Decision 348 — the shared cancel used by MembershipsService and by
  * removing a Student (Students S2). The e2e test covers who may call it. */
-describe('cancelSubscriptionAtPeriodEnd (Decision NNN)', () => {
+describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
   const live = { id: 'm-1', schoolId: 'school-1', status: 'ACTIVE' as const, stripeSubscriptionId: 'sub_1', cancelAt: null };
 
   function setup(stripeReply: Record<string, unknown>) {

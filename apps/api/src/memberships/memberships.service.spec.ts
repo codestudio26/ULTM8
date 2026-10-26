@@ -57,7 +57,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       // never for a dependency this test's code path never touches"
       // convention every other argument here already follows.
       null as never,
-      null as never, // StripeClientService (Decision NNN cancel)
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, prismaApp, paymentsService, stepUpService };
   }
@@ -202,7 +202,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
       null as never,
       null as never,
       null as never,
-      null as never, // StripeClientService (Decision NNN cancel)
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, prismaApp, paymentsService };
   }
@@ -301,7 +301,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       subscriptionGate as never,
       null as never,
       null as never,
-      null as never, // StripeClientService (Decision NNN cancel)
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, tx, paymentsService, guardiansService };
   }

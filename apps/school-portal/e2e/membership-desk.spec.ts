@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision NNN — the owner's Memberships card on a Student's page (sell a
+ * Decision 348 — the owner's Memberships card on a Student's page (sell a
  * plan at the desk, give a Friend Pass, cancel a Subscription) and the
  * per-plan member list. Cancelling calls Stripe, so the browser test covers
  * the button and the cancelled state; the API test stubs Stripe and covers

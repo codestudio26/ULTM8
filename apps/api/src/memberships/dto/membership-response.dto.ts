@@ -83,7 +83,7 @@ export class PurchaseMembershipResponseDto {
   transactionId?: string;
 }
 
-/** One row of a Student's Memberships at a School, for the owner (Decision NNN). */
+/** One row of a Student's Memberships at a School, for the owner (Decision 348). */
 export class StudentMembershipResponseDto extends MembershipResponseDto {
   @ApiProperty()
   planTitle!: string;
@@ -100,7 +100,7 @@ export class StudentMembershipListResponseDto {
   items!: StudentMembershipResponseDto[];
 }
 
-/** One current member of a plan, for the owner (Decision NNN). */
+/** One current member of a plan, for the owner (Decision 348). */
 export class PlanMemberResponseDto {
   @ApiProperty()
   membershipId!: string;

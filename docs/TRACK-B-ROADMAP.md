@@ -871,7 +871,7 @@ saved-card reuse. Also unchanged: `AcademyMembershipPlanDto` still has no
 Stripe-backed plan still creates a real Transaction + Checkout Session before the
 client could ever pre-filter, same cost `requires_payment` already had.
 
-### Follow-up — cancel a Subscription (26 Oct 2026, Decision NNN)
+### Follow-up — cancel a Subscription (26 Oct 2026, Decision 348)
 
 My Memberships now offers "Cancel subscription" on a live Subscription, confirmed in an inline panel (not `Alert.alert`, a no-op on web). It calls `POST /memberships/:id/cancel`; the Subscription runs to the end of the paid month and the row then shows "Cancelled, ends …". Tested in `MyMembershipsScreen.test.tsx`. Guardians can cancel for a linked minor through the same endpoint (`studentId` in the body); no Guardian screen calls it yet.
 

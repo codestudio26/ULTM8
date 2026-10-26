@@ -9,7 +9,7 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { StripeClientService } from '../src/payments/stripe-client.service';
 
 /**
- * Decision NNN — the Memberships follow-ups the owner approved on 26 Oct 2026:
+ * Decision 348 — the Memberships follow-ups the owner approved on 26 Oct 2026:
  * the owner sells a plan at the desk (cash or bank), gives a Friend Pass,
  * cancels a Subscription at the end of its paid period (so can the Student or
  * their Guardian), and sees who is on each plan. Stripe is stubbed for the
@@ -29,7 +29,7 @@ if (!hasDb) {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decision NNN)', () => {
+describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decision 348)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
@@ -146,7 +146,7 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(res.body.membership.classesRemaining).toBe(10);
       expect(res.body.membership.status).toBe('ACTIVE');
       const tx = await superuser.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
-      expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: 'CASH', amount: 6000, currency: 'GBP', membershipId: res.body.membership.id });
+      expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: 'CASH', amount: 6000, currency: 'GBP', membershipId: res.body.membership.id, recordedById: owner.id });
     });
 
     it('records a bank transfer, and a hidden plan can still be sold at the desk', async () => {

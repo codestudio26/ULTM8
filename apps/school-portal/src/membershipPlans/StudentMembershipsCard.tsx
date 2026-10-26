@@ -33,7 +33,7 @@ function formatDay(iso: string): string {
 }
 
 /**
- * The owner's view of one Student's memberships (Decision NNN): what they
+ * The owner's view of one Student's memberships (Decision 348): what they
  * hold, selling a plan at the desk (cash or bank transfer), giving a Friend
  * Pass, and cancelling a Subscription at the end of its paid month.
  */

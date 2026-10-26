@@ -3,7 +3,7 @@ import { IsIn, IsOptional, IsUUID } from 'class-validator';
 
 /** POST /schools/{schoolId}/students/{studentId}/memberships/sell — the
  * owner records a plan sold at the desk, already paid in cash or by bank
- * transfer (Decision NNN). Not for a Subscription (card only, Spec 55 §6.1)
+ * transfer (Decision 348). Not for a Subscription (card only, Spec 55 §6.1)
  * or a Friend Pass (given, not sold: see GiftFriendPassDto). */
 export class SellMembershipDto {
   @ApiProperty()

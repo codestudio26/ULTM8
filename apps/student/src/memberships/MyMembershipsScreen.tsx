@@ -18,7 +18,7 @@ const MEMBERSHIP_STATUS: Record<string, TranslationKey> = {
 type Membership = components['schemas']['MembershipResponseDto'];
 
 /** MembershipStatus is ACTIVE/EXPIRED (apps/api/prisma/schema.prisma). The one
- * action is cancelling a live Subscription (Decision NNN): it runs to the end of
+ * action is cancelling a live Subscription (Decision 348): it runs to the end of
  * the paid month, so the row then shows when it ends. Confirmed in an inline
  * panel, not Alert.alert (a no-op on React Native Web; see MyBookingsScreen).
  * `MembershipResponseDto`

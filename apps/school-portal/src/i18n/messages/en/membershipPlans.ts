@@ -120,7 +120,7 @@ export const membershipPlans = {
     back: 'Back',
     next: 'Next',
   },
-  /** Decision NNN: who is on a plan now. */
+  /** Decision 348: who is on a plan now. */
   members: {
     back: 'Back to Membership Plans',
     title: 'Members of {plan}',
@@ -140,7 +140,7 @@ export const membershipPlans = {
     unlimited: 'Unlimited',
     given: 'Given by the School',
   },
-  /** Decision NNN: the owner's Memberships card on a Student's page. */
+  /** Decision 348: the owner's Memberships card on a Student's page. */
   studentCard: {
     title: 'Memberships',
     sell: 'Sell a plan',

@@ -12,7 +12,7 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/** Who is on a plan now, with their dates (Decision NNN). Owner only, like
+/** Who is on a plan now, with their dates (Decision 348). Owner only, like
  * the rest of Membership Plans. The same people the Active members tile
  * counts: live memberships of current Students. */
 export function MembershipPlanMembersPage() {

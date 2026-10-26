@@ -719,7 +719,7 @@ export class MembershipsService {
     // through this same generic Student-facing purchase() (as an earlier draft
     // did) would let a Student self-grant themselves a free guest pass, and
     // nothing would ever set giftedById. The owner gives one with
-    // giftFriendPass() (Decision NNN). Applies identically to a Guardian-driven
+    // giftFriendPass() (Decision 348). Applies identically to a Guardian-driven
     // attempt — a Guardian buying a Friend Pass FOR a minor is the same
     // self-grant workaround under a different caller.
     if (plan.type === 'FRIEND_PASS') {
@@ -1130,7 +1130,7 @@ export class MembershipsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Owner actions on a Student's Memberships (Decision NNN): sell at the desk,
+  // Owner actions on a Student's Memberships (Decision 348): sell at the desk,
   // give a Friend Pass, cancel a Subscription, and the two owner lists.
   // ---------------------------------------------------------------------------
 
@@ -1144,7 +1144,21 @@ export class MembershipsService {
    * plan off the Students' list (Decision 334), not off the owner's desk.
    */
   async sellAtDesk(callerId: string, schoolId: string, studentId: string, dto: SellMembershipDto) {
-    const plan = await this.loadDeskPlan(callerId, schoolId, studentId, dto.membershipPlanId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    return this.recordDeskSale(schoolId, studentId, dto, { recordedById: callerId });
+  }
+
+  /**
+   * The desk sale itself, with every check on the plan and the Student, for
+   * a caller already allowed to record it: the owner (sellAtDesk above) or,
+   * from the Transactions follow-ups, Branch Staff when the School allows
+   * it. The one place a desk sale creates a Membership, so the creation
+   * guard (one live general access, trial allowance) always runs. Reads and
+   * writes run under the Student's own context, as purchase() does, so it
+   * doesn't depend on the recorder's access to Membership or Transaction.
+   */
+  async recordDeskSale(schoolId: string, studentId: string, dto: SellMembershipDto, { recordedById }: { recordedById: string }) {
+    const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
     if (plan.type === 'FRIEND_PASS') {
       throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
     }
@@ -1159,16 +1173,16 @@ export class MembershipsService {
         throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
       }
     }
-    const paymentAccount = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } }),
     );
     if (plan.price > 0 && !paymentAccount) {
       throw new BadRequestException('Set up this School\'s payments before recording a sale.');
     }
-    const currency = plan.price > 0 ? await this.resolveChargeCurrency(callerId, schoolId, plan.currency) : null;
+    const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
 
     try {
-      return await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      return await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
         if (plan.price === 0) {
@@ -1187,6 +1201,7 @@ export class MembershipsService {
             currency,
             status: 'SUCCESSFUL',
             paymentMethod: dto.paymentMethod,
+            recordedById,
           },
           select: { id: true },
         });
@@ -1201,12 +1216,13 @@ export class MembershipsService {
    * School-gifted, always £0, staff-attributed through giftedById). The
    * Student uses it when booking a guest (BookingsService.consumeGuestMembership). */
   async giftFriendPass(callerId: string, schoolId: string, studentId: string, dto: GiftFriendPassDto) {
-    const plan = await this.loadDeskPlan(callerId, schoolId, studentId, dto.membershipPlanId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
     if (plan.type !== 'FRIEND_PASS') {
       throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
     }
     try {
-      const membership = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });
       });
@@ -1216,28 +1232,27 @@ export class MembershipsService {
     }
   }
 
-  /** Shared checks for the two desk actions: owner only, open School, a plan
-   * of this School that isn't archived, a current Student, and a scoped class
-   * that can still be sold. */
-  private async loadDeskPlan(callerId: string, schoolId: string, studentId: string, planId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
-    const plan = await this.findOnePlan(callerId, planId);
+  /** Shared checks for the desk actions, after the caller is allowed: open
+   * School, a current Student, a plan of this School that isn't archived, and
+   * a scoped class that can still be sold. Under the Student's own context. */
+  private async loadDeskPlan(schoolId: string, studentId: string, planId: string) {
+    const grant = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!grant) {
+      throw new BadRequestException('Only a current Student of this School can be given a membership.');
+    }
+    await this.tenantAuth.assertSchoolNotArchived(studentId, schoolId);
+    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
+    const plan = await this.findOnePlan(studentId, planId);
     if (plan.schoolId !== schoolId) {
       throw new NotFoundException('MembershipPlan not found');
     }
     if (plan.archivedAt) {
       throw new BadRequestException('This MembershipPlan has been archived and can no longer be sold.');
     }
-    const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
-    );
-    if (!grant) {
-      throw new BadRequestException('Only a current Student of this School can be given a membership.');
-    }
     if (plan.scopedClassId) {
-      await this.assertScopedClassSellable(callerId, schoolId, plan.scopedClassId);
+      await this.assertScopedClassSellable(studentId, schoolId, plan.scopedClassId);
     }
     return plan;
   }

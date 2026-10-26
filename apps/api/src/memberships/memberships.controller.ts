@@ -73,7 +73,7 @@ export class MembershipsController {
     return this.membershipsService.getActiveMemberCount(user.sub, id);
   }
 
-  /** Decision NNN: who holds this plan now, by name. School Owner only. */
+  /** Decision 348: who holds this plan now, by name. School Owner only. */
   @ApiOkResponse({ type: PlanMemberListResponseDto })
   @Get('membership-plans/:id/members')
   findPlanMembers(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -128,7 +128,7 @@ export class MembershipsController {
     return this.membershipsService.purchase(user.sub, id, dto, stepUpToken);
   }
 
-  /** Decision NNN: cancel a Subscription at the end of its paid period. The
+  /** Decision 348: cancel a Subscription at the end of its paid period. The
    * Student, a Guardian of a linked minor, or the School's owner. */
   @ApiOkResponse({ type: MembershipResponseDto })
   @Post('memberships/:id/cancel')
@@ -136,14 +136,14 @@ export class MembershipsController {
     return this.membershipsService.cancelSubscriptionAtPeriodEnd(user.sub, id, dto?.studentId);
   }
 
-  /** Decision NNN: a Student's Memberships at the School. School Owner only. */
+  /** Decision 348: a Student's Memberships at the School. School Owner only. */
   @ApiOkResponse({ type: StudentMembershipListResponseDto })
   @Get('schools/:schoolId/students/:studentId/memberships')
   findStudentMemberships(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('studentId') studentId: string) {
     return this.membershipsService.findStudentMemberships(user.sub, schoolId, studentId);
   }
 
-  /** Decision NNN: the owner records a plan sold at the desk, paid in cash or
+  /** Decision 348: the owner records a plan sold at the desk, paid in cash or
    * by bank transfer. */
   @ApiCreatedResponse({ type: DeskMembershipResponseDto })
   @Post('schools/:schoolId/students/:studentId/memberships/sell')
@@ -156,7 +156,7 @@ export class MembershipsController {
     return this.membershipsService.sellAtDesk(user.sub, schoolId, studentId, dto);
   }
 
-  /** Decision NNN: the owner gives a Student a Friend Pass for one guest. */
+  /** Decision 348: the owner gives a Student a Friend Pass for one guest. */
   @ApiCreatedResponse({ type: DeskMembershipResponseDto })
   @Post('schools/:schoolId/students/:studentId/memberships/gift')
   giftFriendPass(

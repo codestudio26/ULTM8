@@ -16,7 +16,7 @@ const SUBSCRIPTION = {
   createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z',
 };
 
-/** Decision NNN — a Student cancels their own Subscription; it runs to the
+/** Decision 348 — a Student cancels their own Subscription; it runs to the
  * end of the paid month, so the row then shows when it ends. */
 describe('MembershipRow — cancelling a Subscription', () => {
   let cancel: { mutateAsync: jest.Mock; isPending: boolean };

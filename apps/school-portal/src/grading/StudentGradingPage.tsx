@@ -172,7 +172,7 @@ export function StudentGradingPage() {
         </Card>
       </div>
 
-      {/* Decision NNN: memberships, selling at the desk, Friend Pass and
+      {/* Decision 348: memberships, selling at the desk, Friend Pass and
           cancelling a Subscription. Owner only, like the API. */}
       {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
 

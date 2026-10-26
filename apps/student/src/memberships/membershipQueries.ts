@@ -7,7 +7,7 @@ import { usePaginatedQuery } from '../lib/usePaginatedQuery';
  * convention as My Bookings/Academies (Decision 22/70). MembershipStatus is
  * ACTIVE/EXPIRED (apps/api/prisma/schema.prisma) — both are real, resolved states,
  * unlike Booking's UPCOMING. The one action, cancelling a Subscription, is
- * useCancelSubscription() below (Decision NNN). */
+ * useCancelSubscription() below (Decision 348). */
 export function useMyMemberships() {
   return usePaginatedQuery(['my-memberships'], (cursor) =>
     unwrap(apiClient.GET('/v1/memberships/me', { params: { query: { cursor } } })),
@@ -92,7 +92,7 @@ export function useInvalidateMyMemberships() {
   return () => queryClient.invalidateQueries({ queryKey: ['my-memberships'] });
 }
 
-/** POST /memberships/{id}/cancel (Decision NNN) — cancels the Student's own
+/** POST /memberships/{id}/cancel (Decision 348) — cancels the Student's own
  * Subscription at the end of the paid period. The Membership stays live until
  * then and comes back with `cancelAt` set. */
 export function useCancelSubscription() {
