@@ -5,6 +5,7 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, PhoneField, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -15,6 +16,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
  * is called out on the DTO as "Mobile app only", so unlike school-portal it's a
  * top-level field here rather than tucked into an "optional details" section. */
 export function RegisterScreen({ navigation }: Props) {
+  const t = useT();
   const [form, setForm] = useState({
     email: '',
     phone: '',
@@ -36,7 +38,7 @@ export function RegisterScreen({ navigation }: Props) {
     if (submitting) return;
     setError(null);
     if (form.passcode !== form.passcodeConfirm) {
-      setError('Passcode and confirmation must match.');
+      setError(t('auth.register.passcodeMismatch'));
       return;
     }
     setSubmitting(true);
@@ -58,7 +60,7 @@ export function RegisterScreen({ navigation }: Props) {
       // Registration sends the OTP itself (AuthService.register()) — no separate send call needed.
       navigation.navigate('VerifyOtp', { phone: form.phone });
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Something went wrong — please try again.'));
+      setError(getApiErrorMessage(err, t('auth.errors.generic')));
     } finally {
       setSubmitting(false);
     }
@@ -67,12 +69,12 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>Create your account</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>{t('auth.register.title')}</Text>
         <Text style={{ fontSize: 14, color: '#5F6368', marginBottom: 20 }}>
-          Register, then verify your phone to log in.
+          {t('auth.register.intro')}
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Email">
+        <Field label={t('auth.fields.email')}>
           <TextField
             keyboardType="email-address"
             autoCapitalize="none"
@@ -80,19 +82,19 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={(v) => set('email', v)}
           />
         </Field>
-        <Field label="Phone">
+        <Field label={t('auth.fields.phone')}>
           <PhoneField value={form.phone} onChange={(v) => set('phone', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="First name">
+        <Field label={t('auth.register.firstName')}>
           <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
         </Field>
-        <Field label="Surname">
+        <Field label={t('auth.register.surname')}>
           <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
         </Field>
-        <Field label="Username" hint="Optional">
+        <Field label={t('auth.register.username')} hint={t('auth.register.optional')}>
           <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
         </Field>
-        <Field label="Passcode" hint="6 digits — this is your entire login credential">
+        <Field label={t('auth.fields.passcode')} hint={t('auth.register.passcodeHint')}>
           <TextField
             keyboardType="number-pad"
             secureTextEntry
@@ -101,7 +103,7 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={(v) => set('passcode', v)}
           />
         </Field>
-        <Field label="Confirm passcode">
+        <Field label={t('auth.register.confirmPasscode')}>
           <TextField
             keyboardType="number-pad"
             secureTextEntry
@@ -110,15 +112,15 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={(v) => set('passcodeConfirm', v)}
           />
         </Field>
-        <Field label="Date of birth" hint="YYYY-MM-DD">
+        <Field label={t('auth.register.dateOfBirth')} hint={t('auth.register.dateFormat')}>
           <TextField
-            placeholder="YYYY-MM-DD"
+            placeholder={t('auth.register.dateFormat')}
             value={form.dateOfBirth}
             onChangeText={(v) => set('dateOfBirth', v)}
           />
         </Field>
-        <Button title="Create account" onPress={handleSubmit} loading={submitting} />
-        <Button title="Already have an account? Log in" variant="secondary" onPress={() => navigation.navigate('Login')} />
+        <Button title={t('auth.register.submit')} onPress={handleSubmit} loading={submitting} />
+        <Button title={t('auth.register.haveAccount')} variant="secondary" onPress={() => navigation.navigate('Login')} />
       </Screen>
     </ScrollView>
   );

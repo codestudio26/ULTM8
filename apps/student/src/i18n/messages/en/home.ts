@@ -1,2 +1,20 @@
 /** English text: home (Decision 323). */
-export const home = {};
+export const home = {
+  title: 'ULTM8 Student',
+  coachDashboard: 'Coach dashboard',
+  myProfile: 'My profile',
+  browseAcademies: 'Browse academies',
+  checkIn: 'Check in',
+  myGrading: 'My grading',
+  myBookings: 'My bookings',
+  myMemberships: 'My memberships',
+  paymentHistory: 'Payment history',
+  waivers: 'Waivers',
+  paymentMethods: 'Payment methods',
+  lessons: 'Lessons',
+  notifications: 'Notifications',
+  myMinors: 'My minors',
+  kidMode: 'Kid Mode',
+  needsReview: 'Needs your review',
+  logOut: 'Log out',
+};

@@ -1,2 +1,30 @@
 /** English text: memberships (Decision 323). */
-export const memberships = {};
+export const memberships = {
+  myMemberships: {
+    /** Shown when the plan's name isn't known; the API gives only the plan's id. */
+    planFallback: 'Plan {planId}',
+    /** {status} is the Membership status code from the API (e.g. ACTIVE), shown as is;
+     * {frequency} is one of the two frequency texts below. */
+    statusLine: 'Status: {status} · {frequency}',
+    recurring: 'Recurring',
+    oneTime: 'One time',
+    classesRemaining: { one: '{count} class remaining', other: '{count} classes remaining' },
+    expires: 'Expires {date}',
+    empty: 'No memberships yet.',
+    loadError: 'Failed to load memberships — please try again.',
+  },
+  planRow: {
+    /** Joined to the price with " · ". */
+    classesIncluded: { one: '{count} class', other: '{count} classes' },
+    /** How long the plan lasts; joined to the price with " · ". */
+    durationDays: { one: '{count} day', other: '{count} days' },
+    purchaseError: 'Could not complete this purchase — please try again.',
+    friendPass: 'Ask School staff for a Friend Pass.',
+    purchase: 'Purchase',
+    payWithSavedCard: 'Pay with saved card',
+    enrolled: "You're enrolled ✓",
+    pendingConfirmation: 'Payment pending confirmation by the School.',
+    checkoutSubmitted: "Payment submitted — check My Memberships shortly once it's confirmed.",
+    onlinePaymentUnavailable: "Online payment for this plan isn't available in the app yet.",
+  },
+};
