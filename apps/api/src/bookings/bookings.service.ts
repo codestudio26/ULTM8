@@ -205,7 +205,7 @@ export class BookingsService {
         }
       }
 
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
 
       const bookingId = randomUUID();
       try {
@@ -300,7 +300,10 @@ export class BookingsService {
     let cancellationChargeAmount: number | null = null;
     let cancellationChargeCurrency = 'usd';
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
+      // Read past RLS: the Booking above already proved the caller may act on it,
+      // and a Student can lose sight of their Class (moved to another Branch
+      // before Decision 345 blocked that, C14), which left the Booking stuck.
+      const cls = await this.prismaJobs.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
       // Kickoff prompt §1.c: refunds/credits back before the Class's own
       // refundFeeDate cutoff; withholds on/after it.

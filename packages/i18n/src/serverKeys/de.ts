@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "Die Erstattungsfrist darf nicht nach dem Kursende liegen.",
     guestNeedsFriendPass: "Ein Gast kann nur mit einem Freundespass gebucht werden. Deine eigene Mitgliedschaft gilt für dich, nicht für deine Gäste.",
     guestPassRepeated: "Jeder Gast braucht einen eigenen Freundespass. Derselbe Freundespass wurde mehrmals ausgewählt.",
+    ticketRequired: "Für diesen Einzelkurs brauchst du ein eigenes Ticket. Ein Abo, ein Wochenpass oder eine allgemeine Kurskarte deckt ihn nicht ab.",
+    classBranchBooked: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste. Storniere ihre Buchungen, bevor du ihn an einen anderen Standort verlegst.",
+    classMovedToPast: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste, daher kann er nur auf eine Zeit verlegt werden, die noch nicht vorbei ist.",
+    classAlreadyEnded: "Dieser Kurs ist bereits vorbei. Wähle eine Endzeit in der Zukunft.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",

@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "Termin zwrotu nie może przypadać po zakończeniu zajęć.",
     guestNeedsFriendPass: "Gościa można zarezerwować tylko z karnetem dla znajomego. Twoje członkostwo obejmuje ciebie, a nie twoich gości.",
     guestPassRepeated: "Każdy gość potrzebuje własnego karnetu dla znajomego. Ten sam karnet wybrano więcej niż raz.",
+    ticketRequired: "Te jednorazowe zajęcia wymagają osobnego biletu. Subskrypcja, karnet tygodniowy ani ogólny pakiet zajęć ich nie obejmują.",
+    classBranchBooked: "Na te zajęcia są zapisani lub czekający uczniowie. Anuluj ich rezerwacje, zanim przeniesiesz zajęcia do innej filii.",
+    classMovedToPast: "Na te zajęcia są zapisani lub czekający uczniowie, więc można je przenieść tylko na termin, który jeszcze nie minął.",
+    classAlreadyEnded: "Te zajęcia już się skończyły. Wybierz godzinę zakończenia w przyszłości.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",

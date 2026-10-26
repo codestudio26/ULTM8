@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "환불 마감은 수업 종료 후일 수 없습니다.",
     guestNeedsFriendPass: "게스트는 친구 패스로만 예약할 수 있습니다. 본인의 멤버십은 본인에게만 적용됩니다.",
     guestPassRepeated: "게스트마다 각자의 친구 패스가 필요합니다. 같은 패스가 두 번 이상 선택되었습니다.",
+    ticketRequired: "이 일회성 수업은 전용 티켓이 필요합니다. 구독, 주간 패스, 일반 수업 패키지로는 예약할 수 없습니다.",
+    classBranchBooked: "이 수업에 예약했거나 대기 중인 학생이 있습니다. 다른 지점으로 옮기기 전에 예약을 취소하세요.",
+    classMovedToPast: "이 수업에 예약했거나 대기 중인 학생이 있어 아직 지나지 않은 시간으로만 옮길 수 있습니다.",
+    classAlreadyEnded: "이 수업은 이미 끝났습니다. 미래의 종료 시간을 선택하세요.",
   },
   errors: {
     beltInHistoryDelete: "이 띠는 수련생의 승급 기록에 있어 삭제할 수 없습니다.",

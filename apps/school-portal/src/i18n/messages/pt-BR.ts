@@ -525,6 +525,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Descrição",
       waiverRequired: "Exige termo de responsabilidade assinado para reservar",
       membershipInclusion: "Incluída no acesso geral da matrícula (sem ingresso separado)",
+      membershipInclusionHint: "Desligado: os alunos precisam de um ingresso para esta aula (um pacote só para ela). Ligado: qualquer assinatura, passe semanal ou pacote de aulas pode reservá-la.",
     },
   },
   disciplines: {
@@ -2223,7 +2224,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL do banner",
       descriptionLabel: "Descrição",
       waiverRequired: "Exige termo de responsabilidade assinado para reservar",
-      membershipInclusion: "Incluída no acesso geral da matrícula (sem ingresso separado)",
     },
     booking: {
       title: "Reservar — {title}",

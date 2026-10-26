@@ -648,6 +648,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Outras pessoas já estão esperando uma vaga nesta aula. Entre na lista de espera para aguardar sua vez.",
       bookingClosed: "As reservas para esta aula foram encerradas. Alguém da equipe ainda pode incluir você.",
       classBusy: "Muitas pessoas estão reservando esta aula agora. Tente novamente em instantes.",
+      ticketRequired: "Esta aula avulsa precisa de um ingresso próprio. Uma assinatura, passe semanal ou pacote de aulas geral não a cobre.",
       checkInNotOpen: "O check-in desta aula ainda não abriu.",
       checkInNotOpenAt: "O check-in desta aula ainda não abriu. Ele abre em {time}.",
     },

@@ -533,6 +533,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "الوصف",
       waiverRequired: "يتطلب توقيع إقرار إخلاء المسؤولية/الشروط للحجز",
       membershipInclusion: "مشمولة في وصول العضوية العام (دون تذكرة منفصلة)",
+      membershipInclusionHint: "إيقاف: يحتاج الطلاب إلى تذكرة لهذا الصف (باقة مخصصة له فقط). تشغيل: يمكن الحجز بأي اشتراك أو تصريح أسبوعي أو باقة حصص.",
     },
   },
   disciplines: {
@@ -2347,7 +2348,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "رابط صورة البانر",
       descriptionLabel: "الوصف",
       waiverRequired: "يتطلب توقيع إقرار إخلاء المسؤولية/الشروط للحجز",
-      membershipInclusion: "مشمولة في وصول العضوية العام (دون تذكرة منفصلة)",
     },
     booking: {
       title: "حجز — {title}",

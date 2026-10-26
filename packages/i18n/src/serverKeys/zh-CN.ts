@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "退款截止时间不能晚于课程结束时间。",
     guestNeedsFriendPass: "嘉宾只能使用好友卡预约。你的会员资格只适用于你本人，不适用于嘉宾。",
     guestPassRepeated: "每位嘉宾都需要自己的好友卡。同一张好友卡被选择了不止一次。",
+    ticketRequired: "这节单次课程需要专属门票。订阅、周卡或通用课时包都不包含它。",
+    classBranchBooked: "这节课有已预约或候补的学员。请先取消他们的预约，再把课程移到其他分馆。",
+    classMovedToPast: "这节课有已预约或候补的学员，因此只能改到尚未过去的时间。",
+    classAlreadyEnded: "这节课已经结束。请选择一个未来的结束时间。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",

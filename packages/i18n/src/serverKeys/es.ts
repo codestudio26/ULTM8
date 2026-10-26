@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "El límite de reembolso no puede ser posterior al final de la clase.",
     guestNeedsFriendPass: "Un invitado solo se puede reservar con un Pase de invitado. Tu membresía te cubre a ti, no a tus invitados.",
     guestPassRepeated: "Cada invitado necesita su propio Pase de invitado. Se eligió el mismo pase más de una vez.",
+    ticketRequired: "Esta clase única necesita su propia entrada. Una suscripción, un pase semanal o un bono de clases general no la cubren.",
+    classBranchBooked: "Hay alumnos reservados o en espera para esta clase. Cancela sus reservas antes de moverla a otra sede.",
+    classMovedToPast: "Hay alumnos reservados o en espera para esta clase, así que solo puede moverse a una hora que aún no haya pasado.",
+    classAlreadyEnded: "Esta clase ya terminó. Elige una hora de fin en el futuro.",
   },
   errors: {
     beltInHistoryDelete: "Este cinturón está en el historial de grados de los alumnos, así que no se puede eliminar.",

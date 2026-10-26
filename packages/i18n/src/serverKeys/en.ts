@@ -38,6 +38,10 @@ export const server = {
     refundCutoffAfterEnd: "The refund cutoff can't be after the class ends.",
     guestNeedsFriendPass: "A guest can only be booked with a Friend Pass. Your own membership covers you, not your guests.",
     guestPassRepeated: "Each guest needs their own Friend Pass. The same pass was picked more than once.",
+    ticketRequired: "This one-off class needs its own ticket. A subscription, weekly pass or general class pack doesn't cover it.",
+    classBranchBooked: "Students are booked or waiting for this class. Cancel their bookings before moving it to another branch.",
+    classMovedToPast: "Students are booked or waiting for this class, so it can only move to a time that hasn't passed yet.",
+    classAlreadyEnded: "This class has already ended. Pick an end time in the future.",
   },
   errors: {
     slotHasBookings: {

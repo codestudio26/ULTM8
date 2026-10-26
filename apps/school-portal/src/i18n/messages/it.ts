@@ -525,6 +525,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Descrizione",
       waiverRequired: "Richiede liberatoria/termini firmati per prenotare",
       membershipInclusion: "Incluso nell'accesso generale dell'iscrizione (nessun biglietto separato)",
+      membershipInclusionHint: "Disattivato: gli allievi hanno bisogno di un biglietto per questa lezione (un carnet limitato a essa). Attivato: qualsiasi abbonamento, pass settimanale o carnet può prenotarla.",
     },
   },
   disciplines: {
@@ -2223,7 +2224,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL banner",
       descriptionLabel: "Descrizione",
       waiverRequired: "Richiede liberatoria/termini firmati per prenotare",
-      membershipInclusion: "Incluso nell'accesso generale dell'iscrizione (nessun biglietto separato)",
     },
     booking: {
       title: "Prenota — {title}",
