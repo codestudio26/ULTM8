@@ -60,8 +60,8 @@ test.beforeEach(async () => {
       id: randomUUID(),
       schoolId: s.schoolId,
       weekday: todayWeekday(),
-      // Late in the day so today's class hasn't ended yet whenever CI runs; a
-      // finished class can't be booked (Decision 332, T13).
+      // Late evening, so today's class hasn't ended whenever CI runs (the
+      // booking dialog refuses an ended class, Decision 332).
       startTime: new Date(Date.UTC(1970, 0, 1, 23, 0)),
       endTime: new Date(Date.UTC(1970, 0, 1, 23, 59)),
       title: slotTitle,
