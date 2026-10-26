@@ -411,6 +411,7 @@ model User {
   lessonsAuthored                   Lesson[]                    @relation("LessonInstructor")
   memberships                       Membership[]                @relation("MembershipStudent")
   membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
+  membershipsCancelled              Membership[]                @relation("MembershipCancelledBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
   franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
@@ -1910,6 +1911,13 @@ model Membership {
   giftedBy   User?   @relation("MembershipGiftedBy", fields: [giftedById], references: [id])
 
   stripeSubscriptionId String? @unique // see header comment; SUBSCRIPTION-type only
+
+  // Subscription only: when the Student or the owner asked to cancel, the
+  // date the paid period ends (Stripe's cancel_at). The Membership stays
+  // live until then; Stripe's customer.subscription.deleted expires it.
+  cancelAt      DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("MembershipCancelledBy", fields: [cancelledById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

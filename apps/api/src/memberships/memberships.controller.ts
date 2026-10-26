@@ -8,11 +8,16 @@ import { MembershipsService } from './memberships.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
+import { CancelMembershipDto, GiftFriendPassDto, SellMembershipDto } from './dto/desk-membership.dto';
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
+  DeskMembershipResponseDto,
   MembershipListResponseDto,
+  MembershipResponseDto,
   MembershipStatusResponseDto,
+  PlanMemberListResponseDto,
   PurchaseMembershipResponseDto,
+  StudentMembershipListResponseDto,
 } from './dto/membership-response.dto';
 import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
 import { MembershipPlanPriceChangeListResponseDto } from './dto/membership-plan-price-change-response.dto';
@@ -68,6 +73,13 @@ export class MembershipsController {
     return this.membershipsService.getActiveMemberCount(user.sub, id);
   }
 
+  /** Decision NNN: who holds this plan now, by name. School Owner only. */
+  @ApiOkResponse({ type: PlanMemberListResponseDto })
+  @Get('membership-plans/:id/members')
+  findPlanMembers(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.membershipsService.findPlanMembers(user.sub, id);
+  }
+
   /** v1.2 backend backlog "Archive action" — School Owner/Manager only, same
    * gate as createPlan/updatePlan. Idempotent — see
    * MembershipsService.archivePlan's own header comment. */
@@ -114,6 +126,46 @@ export class MembershipsController {
     @Headers('x-step-up-token') stepUpToken?: string,
   ) {
     return this.membershipsService.purchase(user.sub, id, dto, stepUpToken);
+  }
+
+  /** Decision NNN: cancel a Subscription at the end of its paid period. The
+   * Student, a Guardian of a linked minor, or the School's owner. */
+  @ApiOkResponse({ type: MembershipResponseDto })
+  @Post('memberships/:id/cancel')
+  cancel(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelMembershipDto) {
+    return this.membershipsService.cancelSubscriptionAtPeriodEnd(user.sub, id, dto?.studentId);
+  }
+
+  /** Decision NNN: a Student's Memberships at the School. School Owner only. */
+  @ApiOkResponse({ type: StudentMembershipListResponseDto })
+  @Get('schools/:schoolId/students/:studentId/memberships')
+  findStudentMemberships(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('studentId') studentId: string) {
+    return this.membershipsService.findStudentMemberships(user.sub, schoolId, studentId);
+  }
+
+  /** Decision NNN: the owner records a plan sold at the desk, paid in cash or
+   * by bank transfer. */
+  @ApiCreatedResponse({ type: DeskMembershipResponseDto })
+  @Post('schools/:schoolId/students/:studentId/memberships/sell')
+  sellAtDesk(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('studentId') studentId: string,
+    @Body() dto: SellMembershipDto,
+  ) {
+    return this.membershipsService.sellAtDesk(user.sub, schoolId, studentId, dto);
+  }
+
+  /** Decision NNN: the owner gives a Student a Friend Pass for one guest. */
+  @ApiCreatedResponse({ type: DeskMembershipResponseDto })
+  @Post('schools/:schoolId/students/:studentId/memberships/gift')
+  giftFriendPass(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('studentId') studentId: string,
+    @Body() dto: GiftFriendPassDto,
+  ) {
+    return this.membershipsService.giftFriendPass(user.sub, schoolId, studentId, dto);
   }
 
   @ApiOkResponse({ type: MembershipListResponseDto })

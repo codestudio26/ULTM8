@@ -586,6 +586,18 @@ export class PaymentsService {
     });
   }
 
+  /** Memberships follow-ups (Decision NNN): a Subscription cancelled by the
+   * Student or the owner runs out its paid period (Spec 55 §10.2,
+   * cancel_at_period_end: no proration, no immediate cutoff). Returns the
+   * date it ends. Stripe's customer.subscription.deleted then expires the
+   * Membership, as it already does. */
+  async cancelSubscriptionAtPeriodEnd(connectedAccountId: string, stripeSubscriptionId: string): Promise<Date | null> {
+    const stripe = this.stripeClient.scopedClient(connectedAccountId);
+    const subscription = await stripe.subscriptions.update(stripeSubscriptionId, { cancel_at_period_end: true });
+    const endsAt = subscription.cancel_at ?? subscription.items.data[0]?.current_period_end ?? null;
+    return endsAt ? new Date(endsAt * 1000) : null;
+  }
+
   // ---------------------------------------------------------------------------
   // Saved payment methods (Decision 234's own dependency — see
   // StudentPaymentMethod's schema.prisma comment for why this didn't exist before

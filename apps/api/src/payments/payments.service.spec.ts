@@ -277,3 +277,28 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
     expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_1' });
   });
 });
+
+/** Decision NNN — a Subscription cancelled by the Student or the owner runs
+ * to the end of its paid period (Spec 55 §10.2). */
+describe('PaymentsService — cancelSubscriptionAtPeriodEnd (Decision NNN)', () => {
+  function makeService(update: jest.Mock) {
+    const scopedClient = jest.fn().mockReturnValue({ subscriptions: { update } });
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);
+    return { service, scopedClient };
+  }
+
+  it('sets cancel_at_period_end on the School\'s connected account and returns cancel_at', async () => {
+    const update = jest.fn().mockResolvedValue({ cancel_at: 1_800_000_000, items: { data: [{ current_period_end: 1_700_000_000 }] } });
+    const { service, scopedClient } = makeService(update);
+    const endsAt = await service.cancelSubscriptionAtPeriodEnd('acct_school', 'sub_1');
+    expect(scopedClient).toHaveBeenCalledWith('acct_school');
+    expect(update).toHaveBeenCalledWith('sub_1', { cancel_at_period_end: true });
+    expect(endsAt).toEqual(new Date(1_800_000_000 * 1000));
+  });
+
+  it('falls back to the item\'s period end when cancel_at is missing', async () => {
+    const update = jest.fn().mockResolvedValue({ cancel_at: null, items: { data: [{ current_period_end: 1_700_000_000 }] } });
+    const { service } = makeService(update);
+    expect(await service.cancelSubscriptionAtPeriodEnd('acct_school', 'sub_2')).toEqual(new Date(1_700_000_000 * 1000));
+  });
+});

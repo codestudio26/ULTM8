@@ -35,6 +35,12 @@ export class MembershipResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   giftedById!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Subscription only: set once the Student or the owner cancels; the date the paid period ends.' })
+  cancelAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelledById!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -75,6 +81,67 @@ export class PurchaseMembershipResponseDto {
 
   @ApiPropertyOptional({ description: 'The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236).' })
   transactionId?: string;
+}
+
+/** One row of a Student's Memberships at a School, for the owner (Decision NNN). */
+export class StudentMembershipResponseDto extends MembershipResponseDto {
+  @ApiProperty()
+  planTitle!: string;
+
+  @ApiProperty()
+  planType!: string;
+
+  @ApiProperty({ description: 'In effect now: Active, not past its expiry date, and not a used-up pack.' })
+  live!: boolean;
+}
+
+export class StudentMembershipListResponseDto {
+  @ApiProperty({ type: [StudentMembershipResponseDto] })
+  items!: StudentMembershipResponseDto[];
+}
+
+/** One current member of a plan, for the owner (Decision NNN). */
+export class PlanMemberResponseDto {
+  @ApiProperty()
+  membershipId!: string;
+
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
+  @ApiProperty()
+  startDate!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  expiryDate!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  classesRemaining!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelAt!: string | null;
+
+  @ApiProperty({ description: 'True when the owner gave it (a Friend Pass).' })
+  gifted!: boolean;
+}
+
+export class PlanMemberListResponseDto {
+  @ApiProperty({ type: [PlanMemberResponseDto] })
+  items!: PlanMemberResponseDto[];
+}
+
+/** POST .../memberships/sell and .../gift. */
+export class DeskMembershipResponseDto {
+  @ApiProperty({ type: MembershipResponseDto })
+  membership!: MembershipResponseDto;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass.' })
+  transactionId!: string | null;
 }
 
 /** GET /students/{id}/membership-status — computed signal only, never a raw row. */
