@@ -213,7 +213,8 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [x] Payments list (Paid/Scheduled/Overdue), Edit Charge, Recurring list, create/edit recurring payment
 - [x] Reports: Overview, Accounting, Growth, Income Categories
 - [x] The **Filter** and **Export** menus opened (Payments, Accounting) (received 26 Oct 2026)
-- [ ] An **invoice opened** (the document icon), and "Overdue (**Why?**)" clicked
+- [x] An **invoice opened**, Mark Paid and Cancel (recording 26 Oct 2026)
+- [ ] "Overdue (**Why?**)" clicked
 - [ ] **Creating a one-off charge** (where it starts: member profile?), and a **refund**
 - [ ] Accounting → **Product Revenue** and **Member Balances** sub-tabs
 - [ ] Optional: a discount and a payment form filled in, then saved

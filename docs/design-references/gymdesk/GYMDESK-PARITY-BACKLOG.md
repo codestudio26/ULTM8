@@ -238,6 +238,9 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 | BL6 | Columns: Member, Amount (+ method), Description, **Invoice #** (`#0000001`, sequential per gym), Status (+ date), invoice, edit | 🟡 | No invoice number (see B4) |
 | BL7 | **Mark paid** column (on Overdue) and **Select** for bulk actions | ❌ | Desk payment = C1 ("pay at the desk", Decision 303) |
 | BL8 | **Edit Charge** (from the list or the member profile): amount, description ("appears on invoices and payment history"), **+ Discount** (% or fixed), charge date, payment method (saved card or **Manual Payment**), warning "Add a payment card before payment is due", Save / **Cancel payment** | ❌ | C1. Discount % or fixed: ✅ agreed (Decision 303) |
+| BL8a | **Invoice page** (opened from the list): **Back, Edit, Resend invoice, Print**; gym name, **Invoice #0000002**, issue date, **due date**; **Billed to** name and full postal address; rows Scheduled date / Description / Payment method / Amount; **Total remaining**; **Mark paid** and **Cancel** (recording 26 Oct 2026) | 🟡 | ULTM8 has a receipt download per transaction, no invoice for an unpaid charge, no due date, no "resend". "Edit" opens the Edit Charge form on the member's profile |
+| BL8b | **Mark Paid** dialog: payment date, payment method (**Cash** …), **amount paid** (prefilled, editable), transaction ID / cheque number (optional), **Send payment receipt** tick box, Confirm payment | ❌ | Desk payment, C1 (Decision 303). An editable amount implies part-payment: BLQ12 |
+| BL8c | **Cancel payment** with a confirm ("Are you sure you want to cancel this payment?" Go back / Confirm) | ❌ | C1. Who may cancel: BLQ11 |
 
 ### Recurring
 
@@ -308,6 +311,8 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 - **BLQ9 Importing payment history** when a School moves from another system: wanted?
 - **BLQ10 Refunds:** Decision 303 makes refunds owner-only. Partial refunds? Refund to card, or as balance credit, or both?
 - **BLQ11 Cancel a scheduled charge / restart a recurring one:** who may (the charge's creator, the owner)?
+- **BLQ12 Paying at the desk:** which methods (cash, bank transfer, Pix, cheque, card on a terminal)? Can staff record a **part payment** (the rest stays on the balance)? Is the receipt always sent, or can staff untick it?
+- **BLQ13 Invoices for unpaid charges:** should a member get an invoice (with due date and "Billed to" address) before paying, and can staff resend it? Today ULTM8 only has a receipt after payment.
 
 ---
 
