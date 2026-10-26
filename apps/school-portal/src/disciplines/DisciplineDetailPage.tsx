@@ -10,6 +10,7 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { SkillFormModal } from '../skills/SkillFormModal';
 import { useRanks, useRungHolders } from '../ranks/rankQueries';
 import { LadderSection } from '../ranks/LadderSection';
+import { GradingTabs } from '../grading/GradingTabs';
 import { useT } from '../i18n/I18nProvider';
 
 /** A Discipline's own Skills and Ranks catalog. Reached via a "Manage
@@ -86,6 +87,7 @@ export function DisciplineDetailPage() {
         title={discipline?.name ?? t('disciplines.detail.fallbackTitle')}
         subtitle={discipline?.classTypesOffered.length ? discipline.classTypesOffered.join(', ') : undefined}
       />
+      <GradingTabs />
       {discipline?.archivedAt ? (
         <div style={{ marginBottom: 16 }}>
           <Badge variant="default">{t('disciplines.list.archived')}</Badge> <span className="ultm8-field__hint">{t('disciplines.detail.archivedNote')}</span>
