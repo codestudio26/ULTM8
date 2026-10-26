@@ -4933,3 +4933,25 @@ The stress test ran 30 Schools and 12,213 students through the real API: booking
 ### Recorded by
 
 User, 26 Oct 2026, answering the stress-test questions: *"Staff can, students can't"*; check-in opening *"School sets it"*; *"Waitlist first"*; late cancellation *"We should give school owners the choice to choose what fits better for them, we should have the options for them, as default we can use No refund once started"*; timetable edits *"Update unbooked, ask for booked"*; capacity *"Refuse with the count"*.
+
+---
+
+## Decision 323 — Translation before launch: the student app too, and every text reviewed from zero by native speakers
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** Decision 273 left the student app (`apps/student`) untranslated "for this testing round", and its item 3 said non-English text needs a native-speaker review before real users rely on it, without saying how or when.
+
+### Decision
+
+1. **The student app is translated too**, into the same 15 languages as the School Portal (Decision 273 item 2). Arabic is right-to-left.
+2. **Its language:** it starts in the phone's language when that is one of the 15 (English otherwise). A language picker in Profile changes it and saves it to the account, the same saved setting (`language` on `GET /users/me`) the portal uses.
+3. **Platform Admin overrides apply to the student app as well**, as Decision 273 item 1 does for the portal: an override row for a text replaces the app's built-in text; a missing translation falls back to English, never to blank text.
+4. **Every text is reviewed by native speakers before launch, starting from zero.** Once the wording is final, the School Portal's and the student app's texts are exported to the shared translation review page (`apps/school-portal/scripts/i18n-review/`), reviewed per language by native speakers, and their corrections applied in one change to the translation files. Reviews made before that point were cleared (26 Oct 2026: 61 Portuguese (BR) checks and 25 Arabic AI pre-checks), so the launch review starts empty.
+
+### What this does NOT resolve
+
+Platform Admin itself stays English (Decision 273). Who the native-speaker reviewers are, per language, is for the product owner to arrange.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"we will need for the students app too. Make sure it is done"*; *"delete anything that has been done, so we can start fresh from zero and make sure it is done properly"*; and choosing the recommended options for the languages (the same 15), how the app picks its language (phone's language, can change) and overrides (yes, same as the portal).
