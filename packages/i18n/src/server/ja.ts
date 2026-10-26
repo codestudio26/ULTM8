@@ -1,5 +1,17 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "この操作ができるのは、スクールのオーナー/マネージャーまたはその支店のスタッフのみです。",
+  "This class is already cancelled.": "このクラスはすでにキャンセルされています。",
+  "This class has already finished.": "このクラスはすでに終了しています。",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "返金できるのはスクールのオーナー/マネージャーのみです。",
+  "Guest not found on this booking": "この予約にゲストが見つかりません",
+  "This booking has nothing left to resolve.": "この予約には対応が必要なものはもうありません。",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "この予約にはすでに未払いの返金があります。返金が済んだら返金済みにしてください。",
+  "There is no cash refund owed on this booking yet.": "この予約にはまだ未払いの現金返金はありません。",
+  "Someone else has already resolved this booking.": "この予約はすでに別の人が対応しました。",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "この予約は自動で返金できません（支払いが異議申し立て中、返金済み、または支払い済みの回数券がありません）。代わりに受講回数を戻すか、そのままにしてください。",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe でこの返金を処理できませんでした。一覧に残っています。もう一度お試しいただくか、代わりに受講回数を戻してください。",
+  "This class has been cancelled by the school.": "このクラスはスクールによりキャンセルされました。",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "「コーチを招待できる」は支店スタッフ専用の権限です。コーチがコーチを招待することはできません。",
   "\"Getting There\" must start below \"Ready to Grade\".": "「もう少し」は「昇級可能」より下から始まる必要があります。",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "保護者は overrideReason を指定できません。段級の受講資格条件を例外扱いにできるのはインストラクターまたはスタッフのみです。",

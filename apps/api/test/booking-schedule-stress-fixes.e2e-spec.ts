@@ -227,6 +227,12 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
   });
 
   describe('late cancellation (School setting)', () => {
+    // A new School's cancellation policy is Manual (Decision 291), which leaves a
+    // refunded seat for staff to resolve. Auto-credit gives it straight back, so
+    // these checks see the credit count move.
+    beforeAll(() => setSchool({ classCancellationPolicy: 'AUTO_CREDIT' }));
+    afterAll(() => setSchool({ classCancellationPolicy: 'MANUAL' }));
+
     async function packStudentBooking(cls: { id: string }) {
       const s = await mkUser(`pack${randomUUID().slice(0, 6)}`, 'STUDENT');
       const m = await superuser.membership.create({ data: { id: randomUUID(), studentId: s.id, schoolId: school.id, membershipPlanId: packPlanId, frequency: 'ONE_TIME', classesRemaining: 4 } });

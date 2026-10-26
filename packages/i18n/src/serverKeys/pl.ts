@@ -135,6 +135,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} ({when}) zostały odwołane przez szkołę.",
+    classCancelledBySchoolBodyWithReason: "{class} ({when}) zostały odwołane przez szkołę. Powód: {reason}",
+    cancellationsTitle: "Anulowania do rozpatrzenia",
+    cancellationReviewBody: "Anulowana rezerwacja wymaga decyzji o zwrocie lub wypłaty zwrotu gotówką. Zobacz Anulowania do rozpatrzenia.",
+    cancellationClassReviewBody: "Rezerwacje z odwołanych zajęć {class} wymagają decyzji o zwrocie lub wypłaty zwrotu gotówką ({count}). Zobacz Anulowania do rozpatrzenia.",
     spotOpenedTitle: "Zwolniło się miejsce",
     spotOpenedBody: "Zwolniło się miejsce na zajęciach {class}. Zajmij je szybko — inaczej trafi do następnej osoby z listy oczekujących.",
     readyToGradeTitle: "Gotowy do egzaminu",

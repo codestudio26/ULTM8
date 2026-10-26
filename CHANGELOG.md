@@ -85,6 +85,22 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   when sending to one class, the Owner ticks who gets it (booked, waitlist,
   cancelled; booked by default); and the payment-restricted alert names the
   student.
+- **Class cancellations, chosen by each academy** (Decision 291) — the
+  School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
+  actually applies, in its own "Class cancellations" section with new
+  settings: whether it applies only before a class's cutoff or any time, a
+  default cutoff for classes without one, whether the late fee is charged, an
+  optional no-show fee, and what students get when the school cancels a whole
+  class. New **Cancel class** button on a class's page (with a reason sent to
+  students), and a new **Cancellations** page where staff resolve cancelled
+  bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
+  Pass always gets its credit back, and only an Owner or Manager can send money
+  back.
+- **Cancellation settings per branch** (Decision 292) — on a branch's
+  settings page, the owner can keep "Same as the school" (the default) or give
+  that branch its own cancellation settings. Existing schools keep giving the
+  class credit back, as before, and the dashboard and School page ask the
+  owner to choose a policy until they save one.
 
 - **Transactions fixes from the 26 Oct review (Decision 339)** — the page now
   shows every payment newest first with Prev/Next, and its tiles count the

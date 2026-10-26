@@ -869,6 +869,20 @@ export class PaymentsService {
   }
 
   /**
+   * Decision 291 — a partial refund of a Student's own Stripe payment (one
+   * class's share of a Class Pack, sent by CancellationService). Same
+   * connected-account scoping as refundOffSessionCharge() above, plus an
+   * idempotency key from the caller (one per cancelled seat) so a retry can
+   * never refund the same seat twice. Returns the Stripe Refund id.
+   */
+  async refundPayment(studentId: string, schoolId: string, paymentIntentId: string, amount: number, idempotencyKey: string): Promise<string> {
+    const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, amount }, { idempotencyKey });
+    return refund.id;
+  }
+
+  /**
    * A School's single configured PaymentAccount must be STRIPE-provider and fully
    * onboarded (stripeConnectedAccountId set) before it can charge/subscribe anyone —
    * derived, not client-chosen (see MembershipPlan's own schema comment for the full

@@ -109,6 +109,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} am {when} wurde von der Schule abgesagt.",
+    classCancelledBySchoolBodyWithReason: "{class} am {when} wurde von der Schule abgesagt. Grund: {reason}",
+    cancellationsTitle: "Offene Stornierungen",
+    cancellationReviewBody: "Eine stornierte Buchung braucht eine Erstattungsentscheidung oder eine Barerstattung. Siehe Offene Stornierungen.",
+    cancellationClassReviewBody: "Buchungen des abgesagten Kurses {class} brauchen eine Erstattungsentscheidung oder eine Barerstattung ({count}). Siehe Offene Stornierungen.",
     spotOpenedTitle: "Ein Platz ist frei geworden",
     spotOpenedBody: "In {class} ist ein Platz frei geworden. Sichere ihn dir bald – sonst geht er an die nächste Person auf der Warteliste.",
     readyToGradeTitle: "Bereit zur Prüfung",

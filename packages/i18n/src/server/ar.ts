@@ -1,5 +1,17 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "لا يمكن القيام بذلك إلا لمالك المدرسة أو مديرها أو موظفي ذلك الفرع.",
+  "This class is already cancelled.": "هذه الحصة ملغاة بالفعل.",
+  "This class has already finished.": "انتهت هذه الحصة بالفعل.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "لا يمكن إعادة الأموال إلا لمالك المدرسة أو مديرها.",
+  "Guest not found on this booking": "لم يُعثر على الضيف في هذا الحجز",
+  "This booking has nothing left to resolve.": "لم يعد في هذا الحجز ما يحتاج إلى حسم.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "يوجد استرداد مستحق بالفعل على هذا الحجز — حدده كمدفوع بعد إعادة المال.",
+  "There is no cash refund owed on this booking yet.": "لا يوجد استرداد نقدي مستحق على هذا الحجز بعد.",
+  "Someone else has already resolved this booking.": "حسم شخص آخر هذا الحجز بالفعل.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "لا يمكن استرداد هذا الحجز تلقائيًا (الدفعة متنازع عليها، أو مستردة بالفعل، أو لا توجد باقة حصص مدفوعة). أعد الرصيد أو احتفظ به بدلًا من ذلك.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "تعذر على Stripe معالجة هذا الاسترداد. لا يزال في القائمة — حاول مرة أخرى، أو أعد الرصيد بدلًا من ذلك.",
+  "This class has been cancelled by the school.": "ألغت المدرسة هذه الحصة.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "صلاحية «يمكنه دعوة المدربين» مخصّصة لموظفي الفروع فقط. لا يمكن للمدربين دعوة مدربين آخرين.",
   "\"Getting There\" must start below \"Ready to Grade\".": "يجب أن يبدأ مستوى «في الطريق» أدنى من مستوى «جاهز للترقية».",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "لا يمكن لولي الأمر إدخال overrideReason — تجاوز شرط أهلية الرتبة متاح للمدرب أو الموظفين فقط.",

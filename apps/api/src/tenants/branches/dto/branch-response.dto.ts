@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from '../../schools/dto/create-school.dto';
 import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /** Response shape — see school-response.dto.ts's header comment (including why every
@@ -46,6 +47,27 @@ export class BranchResponseDto extends PostalAddressColumnsResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   bannerUrl!: string | null;
+
+  @ApiProperty({ description: 'Decision 292 — true when this Branch uses its own cancellation settings below instead of its School\'s.' })
+  cancellationSettingsOverride!: boolean;
+
+  @ApiProperty({ enum: ClassCancellationPolicyDto })
+  classCancellationPolicy!: ClassCancellationPolicyDto;
+
+  @ApiProperty({ enum: ClassCancellationPolicyWindowDto })
+  classCancellationPolicyWindow!: ClassCancellationPolicyWindowDto;
+
+  @ApiProperty()
+  chargeLateCancellationFee!: boolean;
+
+  @ApiProperty({ enum: SchoolCancelledClassResolutionDto })
+  schoolCancelledClassResolution!: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  defaultRefundCutoffHours!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  noShowFee!: number | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Branch has been archived. Null when active.' })
   archivedAt!: string | null;

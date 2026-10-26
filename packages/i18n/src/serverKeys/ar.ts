@@ -161,6 +161,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "أُلغيت {class} في {when} من قبل المدرسة.",
+    classCancelledBySchoolBodyWithReason: "أُلغيت {class} في {when} من قبل المدرسة. السبب: {reason}",
+    cancellationsTitle: "الإلغاءات المطلوب حسمها",
+    cancellationReviewBody: "حجز ملغى يحتاج إلى قرار استرداد أو دفع استرداد نقدي. راجع الإلغاءات المطلوب حسمها.",
+    cancellationClassReviewBody: "حجوزات من الحصة الملغاة {class} تحتاج إلى قرار استرداد أو دفع استرداد نقدي ({count}). راجع الإلغاءات المطلوب حسمها.",
     spotOpenedTitle: "توفّر مكان",
     spotOpenedBody: "توفّر مكان في {class}. احجزه قريبًا — وإلا سينتقل إلى الشخص التالي في قائمة الانتظار.",
     readyToGradeTitle: "جاهز للترقية",

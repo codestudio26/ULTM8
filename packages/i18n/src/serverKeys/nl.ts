@@ -109,6 +109,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} op {when} is geannuleerd door de school.",
+    classCancelledBySchoolBodyWithReason: "{class} op {when} is geannuleerd door de school. Reden: {reason}",
+    cancellationsTitle: "Open annuleringen",
+    cancellationReviewBody: "Een geannuleerde boeking heeft een terugbetalingsbeslissing of een contante terugbetaling nodig. Zie Open annuleringen.",
+    cancellationClassReviewBody: "Boekingen van de geannuleerde les {class} hebben een terugbetalingsbeslissing of een contante terugbetaling nodig ({count}). Zie Open annuleringen.",
     spotOpenedTitle: "Er is een plek vrijgekomen",
     spotOpenedBody: "Er is een plek vrijgekomen in {class}. Claim hem snel — anders gaat hij naar de volgende op de wachtlijst.",
     readyToGradeTitle: "Klaar voor examen",

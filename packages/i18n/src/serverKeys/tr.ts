@@ -109,6 +109,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{when} tarihli {class} okul tarafından iptal edildi.",
+    classCancelledBySchoolBodyWithReason: "{when} tarihli {class} okul tarafından iptal edildi. Neden: {reason}",
+    cancellationsTitle: "Çözülecek iptaller",
+    cancellationReviewBody: "İptal edilmiş bir rezervasyon için iade kararı ya da nakit iade ödemesi gerekiyor. Çözülecek iptaller sayfasına bakın.",
+    cancellationClassReviewBody: "İptal edilen {class} dersinin rezervasyonları için iade kararı ya da nakit iade ödemesi gerekiyor ({count}). Çözülecek iptaller sayfasına bakın.",
     spotOpenedTitle: "Bir yer açıldı",
     spotOpenedBody: "{class} dersinde bir yer açıldı. Hemen alın — almazsanız bekleme listesindeki sıradaki kişiye geçer.",
     readyToGradeTitle: "Sınava hazır",

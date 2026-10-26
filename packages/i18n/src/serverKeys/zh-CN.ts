@@ -96,6 +96,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{when} 的 {class} 已被学校取消。",
+    classCancelledBySchoolBodyWithReason: "{when} 的 {class} 已被学校取消。原因：{reason}",
+    cancellationsTitle: "待处理的取消",
+    cancellationReviewBody: "有一个已取消的预约需要决定是否退款或支付现金退款。请查看“待处理的取消”。",
+    cancellationClassReviewBody: "已取消课程 {class} 的预约需要决定是否退款或支付现金退款（{count}）。请查看“待处理的取消”。",
     spotOpenedTitle: "有空位了",
     spotOpenedBody: "{class} 有空位了。请尽快领取——否则将顺延给候补名单上的下一位。",
     readyToGradeTitle: "可晋级",

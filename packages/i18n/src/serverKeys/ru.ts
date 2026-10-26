@@ -135,6 +135,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} ({when}) отменено школой.",
+    classCancelledBySchoolBodyWithReason: "{class} ({when}) отменено школой. Причина: {reason}",
+    cancellationsTitle: "Отмены к решению",
+    cancellationReviewBody: "По отменённой записи нужно решить вопрос возврата или выплатить возврат наличными. См. «Отмены к решению».",
+    cancellationClassReviewBody: "По записям на отменённое занятие {class} нужно решить вопрос возврата или выплатить возврат наличными ({count}). См. «Отмены к решению».",
     spotOpenedTitle: "Освободилось место",
     spotOpenedBody: "В {class} освободилось место. Займите его поскорее — иначе оно перейдёт следующему человеку из листа ожидания.",
     readyToGradeTitle: "Готов к аттестации",

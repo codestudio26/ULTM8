@@ -43,6 +43,7 @@ export const layout = {
     timetable: 'Timetable',
     membershipPlans: 'Membership Plans',
     transactions: 'Transactions',
+    cancellations: 'Cancellations',
     waivers: 'Waivers',
     franchises: 'Franchises',
     notifications: 'Notifications',

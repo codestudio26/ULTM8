@@ -1,5 +1,17 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Somente o Proprietário/Gerente da Escola ou a Equipe daquela filial pode fazer isso.",
+  "This class is already cancelled.": "Esta aula já foi cancelada.",
+  "This class has already finished.": "Esta aula já terminou.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Somente o Proprietário/Gerente da Escola pode devolver dinheiro.",
+  "Guest not found on this booking": "Convidado não encontrado nesta reserva",
+  "This booking has nothing left to resolve.": "Esta reserva não tem mais nada a resolver.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Já há um reembolso pendente nesta reserva — marque como pago quando o dinheiro for devolvido.",
+  "There is no cash refund owed on this booking yet.": "Ainda não há reembolso em dinheiro pendente nesta reserva.",
+  "Someone else has already resolved this booking.": "Outra pessoa já resolveu esta reserva.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Esta reserva não pode ser reembolsada automaticamente (o pagamento está em disputa, já foi reembolsado ou não há Pacote de Aulas pago). Devolva o crédito ou mantenha.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "O Stripe não conseguiu processar este reembolso. Ele continua na lista — tente de novo ou devolva o crédito.",
+  "This class has been cancelled by the school.": "Esta aula foi cancelada pela escola.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "\"Pode convidar professores\" é apenas para a equipe da filial. Professores não podem convidar professores.",
   "\"Getting There\" must start below \"Ready to Grade\".": "\"Quase lá\" deve começar abaixo de \"Pronto para graduar\".",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Um responsável não pode informar overrideReason — apenas instrutores ou a equipe podem ignorar a restrição de elegibilidade por graduação.",

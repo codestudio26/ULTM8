@@ -96,6 +96,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{when} の {class} はスクールによりキャンセルされました。",
+    classCancelledBySchoolBodyWithReason: "{when} の {class} はスクールによりキャンセルされました。理由：{reason}",
+    cancellationsTitle: "対応が必要なキャンセル",
+    cancellationReviewBody: "キャンセルされた予約について、返金の判断または現金での返金が必要です。「対応が必要なキャンセル」をご確認ください。",
+    cancellationClassReviewBody: "キャンセルされたクラス {class} の予約について、返金の判断または現金での返金が必要です（{count}）。「対応が必要なキャンセル」をご確認ください。",
     spotOpenedTitle: "空きが出ました",
     spotOpenedBody: "{class}に空きが出ました。お早めに確保してください。確保しない場合は、キャンセル待ちの次の方に回ります。",
     readyToGradeTitle: "審査可能",
