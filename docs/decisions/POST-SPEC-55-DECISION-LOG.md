@@ -4858,3 +4858,41 @@ User, 25 Oct 2026, reviewing Gymdesk's Schedule.
 ### Recorded by
 
 User, 25 Oct 2026, reviewing Gymdesk's Managers & Staff and Payroll.
+
+## Decision 321 — Grading, from Gymdesk Programs: requirement tick boxes per style, automatic promotion, first belt on the first class
+
+**Date:** 25 Oct 2026 · **Status:** Product-owner decision (grading; overrides Spec 55 where they conflict, per Decision 124) · **Answers:** Gymdesk Programs recording of 25 Oct 2026 (`GYMDESK-PARITY-BACKLOG.md` §5, PG1–PG8)
+
+### Decision
+
+1. **Requirement tick boxes on each style.** The owner ticks which requirements the style uses:
+   - **Classes** (exists);
+   - **Days in rank** (exists);
+   - **Skills** (exists);
+   - **Hours** (new as a requirement);
+   - **Days attended** (new);
+   - **Minimum age** (new).
+
+   The belt editor shows only the ticked requirements' fields. An unticked requirement is not checked, even if a belt still holds a number for it.
+2. **Hours, per style (amends Decision 306).** A style that ticks Hours counts hours trained toward its belts. The hours are the ones already logged (Decision 301/306, B11); open mat counts only while its switch is on. A style that doesn't tick Hours works as Decision 306 says: hours are logged and shown, never counted.
+3. **Days attended:** the number of different days the student checked in to a class of the style since their last promotion. Two classes on one day count once. It is counted per rung, like Classes.
+4. **Minimum age, per belt:** the student must be at least this age on the day they're promoted. It is set in the belt editor like the other requirements: usually on the belt's plain grade, and a stripe grade can have one too. Empty means any age. A student who meets everything else waits until their birthday.
+5. **Automatic promotion, per style, set by the owner.** The choices are:
+   - **Manual** (the default; the coach decides, as today);
+   - **Auto-award stripes** (stripes are given automatically; belts stay manual);
+   - **Auto-award all ranks.**
+
+   An automatic promotion happens when the student meets every ticked requirement for the next rung (100%).
+   - **Promotion fee:** if the next rung has a fee, ULTM8 waits for it (Decision 314). The fee request goes out, and the promotion happens automatically once the fee is paid. A waived fee also lets it happen. A cancelled fee doesn't promote (Decision 307).
+   - **Notices:** the student (the Guardian for a child) gets the usual promotion notice, in-app and by email. The coaches of that style are told too.
+   - **Undo:** a coach who may promote can undo an automatic promotion. The undo is recorded in the history.
+   - **Reminders:** "Promotion to decide" reminders (Decision 313) aren't sent for rungs that are awarded automatically.
+6. **Auto-assign first belt, per style (owner switch).** When it is on, a student with no belt in the style gets the style's first rung on their **first check-in to a class of that style**. That rung is verified, as in Decision 147. They can still declare a higher belt for staff to verify (Decisions 137, 147).
+7. **The progress % counts the ticked requirements** (26 Oct 2026). It is the **average** of the style's ticked requirements for the next grade: classes, days in rank, skills, hours and days attended. Each requirement is capped at 100%. Example: classes 30/40 (75%), days 90/180 (50%) and skills 4/8 (50%) give 58%. This replaces "progress is classes attended out of classes required; skills and minimum days aren't part of it". The board columns (Decision 136) and "Ready to grade" (Decision 313) use this %, so 100% means every ticked requirement is met.
+   - A requirement the grade doesn't ask for (e.g. no skills) is left out.
+   - A time-only rank still counts time at the rank.
+   - **Minimum age isn't in the %:** a student at 100% who is too young shows "Waiting for age N" and can't be promoted until then.
+
+### Recorded by
+
+User, 25 Oct 2026: *"for the grading, we have done that i want, but i like this detail"*. The answers were collected in the same conversation.

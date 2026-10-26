@@ -2,7 +2,7 @@
 
 **Date:** 22 Oct 2026, updated 23 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307, 313, 314).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307, 313, 314, 321).
 
 **Handed to the backend team (23 Oct 2026).** B10 and B11 are built and on `master`; everything else below is yours, **C1 first** (it lets a promotion fee be paid). **Need information?** Ask the product owner.
 
@@ -36,6 +36,7 @@ The two related topics are answered too: **student charges and balances** (Decis
 | B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ **built** (#293, #294); payment step comes with C1 |
 | C1 | Staff-created charges and member balances, paid in the app (Decision 303) — **do first** | ✅ ready |
 | C2 | Open mat sessions: scheduled and unplanned, walk-in bookings, credits, alerts (Decision 304) | ✅ ready |
+| B12 | Requirement tick boxes per style (Classes, Days in rank, Skills, Hours, Days attended, Minimum age); automatic promotion per style (manual / stripes / all ranks; waits for a fee; notices; coach can undo); auto-assign first belt on first check-in (Decision 321) | ✅ ready |
 
 ## Frontend team — School Portal (`apps/school-portal`)
 
@@ -60,6 +61,7 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Levels badge | B4 |
 | Two-tone belt picture (middle band) | — |
 | Belt correction requests (review list) | B8 |
+| Styles & Belts: requirement tick boxes per style (belt editor shows only ticked fields), Promotion setting, Auto-assign first belt; board/history show automatic promotions and Undo (Decision 321) | B12 |
 
 ## Frontend team — Student app (`apps/student`)
 
