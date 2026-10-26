@@ -6,7 +6,6 @@ export const curriculum = {
     live: 'Live',
     prerecorded: 'Prerecorded',
     /** A Lesson's length, rounded to whole minutes. */
-    durationMinutes: '{minutes} min',
     locked: 'Locked — not included in your current membership.',
     favoritedLabel: 'Favorited',
   },
@@ -74,6 +73,7 @@ export const curriculum = {
     moveDown: '↓ Down',
     remove: 'Remove',
     removeError: 'Could not remove this item.',
+    unavailable: 'No longer available',
     deleteConfirm: 'Delete this playlist? This cannot be undone.',
     keep: 'Keep playlist',
     delete: 'Delete playlist',

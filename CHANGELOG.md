@@ -15,7 +15,37 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Classes review fixes, first batch** (Decision 326; no database change):
+- **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
+  clear its description, duration and instructor; archived lessons are hidden
+  from students everywhere (direct links, favourites, playlists, skill lists);
+  Upload video is greyed out with a plain reason while video isn't set up, and
+  a stuck upload turns "Video failed" so it can be tried again ("Upload
+  again"); blank lesson titles, comments and playlist names are refused; a
+  playlist no longer breaks when the student has left one of its Schools;
+  adding a lesson to a playlist twice no longer errors; a closed School takes
+  no new comments; duration is capped at 24 hours; the grading page's lesson
+  links skip archived lessons; a skill from an archived style can be unticked;
+  and the delete warning says what students lose.
+
+- **Curriculum: the owner's answers** (Decision 326) — coaches and Branch
+  Staff now have the Curriculum page, read-only (lessons, categories and
+  comments), and only the School owner can add, edit, reorder or upload; the
+  owner can delete a category, its lessons moving to "No category"; duration
+  is typed in minutes and seconds and listed as e.g. 4:30; each lesson has a
+  Comments (n) button opening its students' comments, which only the owner
+  (or the comment's author) can remove. **Needs a database migration.**
+
+- **Timetable fixes from the 26 Oct review (Decision 332)** — archived slots,
+  closed Schools and archived Branches no longer get classes back overnight;
+  a new or unarchived slot is bookable straight away; raising a slot's capacity
+  offers the seats to the waitlist; a capacity cut asks to confirm and leaves
+  fuller classes their size; changing waiver, membership or cut-off rules asks
+  whether booked classes take them too; break times are checked and can be
+  cleared; Archive asks first; every slot shows (not just the first 20); a
+  cancelled or finished class says so in the booking dialog; cancellation
+  notices show local time; waitlisted students hear when a class moves.
+
+- **Classes review fixes, first batch** (Decision 334; no database change):
   - The Classes list opens on **Upcoming** (soonest first), with **Past** and
     **All**; Timetable-made Classes carry a "Timetable" tag; a School with
     styles filters by a style dropdown.
@@ -31,6 +61,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     after the end; making a full Class unlimited offers seats to its waitlist;
     a guest needs a Friend Pass (one per guest); a closed School takes no new
     bookings or waitlist entries.
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

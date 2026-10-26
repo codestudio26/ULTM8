@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, MaxLength } from 'class-validator';
+import { IsString, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * Curriculum learner-facing redesign (Decision 227/254) — a Comment on a
@@ -8,7 +9,9 @@ import { IsString, MaxLength } from 'class-validator';
  */
 export class CreateCommentDto {
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(2000)
   body!: string;
 }

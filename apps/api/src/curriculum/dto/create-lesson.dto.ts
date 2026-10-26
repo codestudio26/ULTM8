@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { LessonFormat } from '@prisma/client';
 
 /**
@@ -28,7 +29,9 @@ import { LessonFormat } from '@prisma/client';
  */
 export class CreateLessonDto {
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(200)
   title!: string;
 
@@ -41,6 +44,7 @@ export class CreateLessonDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(86_400)
   durationSeconds?: number;
 
   @ApiPropertyOptional()

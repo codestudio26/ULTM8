@@ -12,17 +12,28 @@ export type UpcomingImpactResponse = components['schemas']['UpcomingImpactRespon
  * ClassResponseDto rather than a new, narrower DTO). */
 export type TimetableOccurrenceResponse = components['schemas']['ClassResponseDto'];
 
-/** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors/useClasses (see their own header
- * comments). Decision 226 — always fetches `includeArchived: true`, same
+/** Loads every page (100 at a time), like useInstructors: the list used to
+ * stop at the API's default page of 20, so a School with more slots lost the
+ * rest from the calendar (Decision 332, T14). Decision 226 — always fetches
+ * `includeArchived: true`, same
  * "fetch everything, filter/toggle client-side" convention useBranches
  * already established, so TimetablePage can show an accurate count and let
  * the caller toggle archived slots' visibility without a second request. */
 export function useTimetableSlots(schoolId: string | null) {
   return useQuery({
     queryKey: ['timetable', schoolId],
-    queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
+    queryFn: async () => {
+      const items: TimetableSlotResponse[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true, limit: 100, cursor } } }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items, nextCursor: null };
+    },
     enabled: !!schoolId,
   });
 }
