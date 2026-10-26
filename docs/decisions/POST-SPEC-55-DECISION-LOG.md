@@ -5084,3 +5084,50 @@ Waiting on the product owner: whether one-off Classes need their own ticket (C1,
 ### Recorded by
 
 User (Code), 26 Oct 2026: *"have another pass for solutions until you get confident of the result and start building it"*, on the Classes fix plan.
+
+---
+
+## Decision 338 — Gymdesk parity, Billing: charges, cancelling, refunds, invoices, desk payments, reports
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 253, 303, 316, 320 · **Answers:** Billing questions BLQ1–BLQ14 in `docs/design-references/gymdesk/GYMDESK-PARITY-BACKLOG.md` §6
+
+The product owner reviewed every Gymdesk Billing tab and Settings → Billing page (screenshots and recordings, 26 Oct 2026). Everything here extends C1, staff-created charges and member balances (Decision 303).
+
+### Decision
+
+1. **Cancelling a charge.**
+   - A **Cancel** button on the charge itself (the member's payments list and the invoice page) opens an "Are you sure?" page. Staff don't have to open Edit first.
+   - A charge is **never deleted**. A cancelled charge stays as a record, marked **Cancelled**, with who cancelled it, when, and the reason.
+   - **Who can cancel:** the owner, and staff the owner turns on with a **"Can cancel charges"** tick box on their Access page (Decision 320). It is separate from "Can create charges", so front-desk staff can add charges without being able to remove them.
+   - **Reason:** always asked for. The owner chooses in settings whether it is required or optional; **required by default**. The reason is for staff only.
+   - **The member (or Guardian) still sees the charge in the app:** greyed out, labelled Cancelled, with the cancel date and "Nothing to pay", listed below what is still owed. They get a notification ("Your charge 'Rash guard, R$120' was cancelled. Nothing to pay.").
+   - If part of the charge was already paid, that money doesn't vanish: it goes onto the member's balance as credit, or the owner refunds it.
+   - Bulk actions on the payments list cancel, never delete.
+2. **Restarting a stopped recurring payment:** the owner and staff with access to payments.
+3. **Refunds** (owner only, Decision 303):
+   - **Part refunds are allowed.**
+   - **The owner chooses each time** whether the money goes back to the card (through Stripe) or onto the member's balance as credit. Refunding a cash payment only updates the records.
+   - **Refund notes:** the owner chooses in settings whether they are required or optional; **required by default**. Notes are for staff only.
+   - The member sees **"Refunded"** in the app.
+4. **Invoice numbers:** every charge gets a running number per School (#0000001), **always on**, because some countries require it.
+5. **Invoices before payment:** a member gets an invoice (with its due date) before paying, and staff can resend it.
+6. **Receipts:** a School may add its tax ID, address and payment instructions.
+7. **Tax:** whether prices include tax or have it added on top is set **per country by Platform Admin**, with the per-country rate (Decision 316 item 8).
+8. **Paying by card:** the member chooses whether to save a card for automatic charging on the due date, or to pay each charge themselves in the app or at the desk.
+9. **Paying at the desk:**
+   - Staff can record **cash, Pix, bank transfer and card on a terminal**.
+   - **Part payments are allowed**; what's left stays on the member's balance.
+   - The receipt is sent by default; staff can untick it.
+10. **Payment notifications** (reminder before a charge is due, receipt, failed or overdue payment, dispute): all on by default, and the School can switch each one off.
+11. **Reports, first:** an Overview (scheduled, paid and overdue totals, revenue by month) and **Member balances**. Seen by the owner and staff with payment access.
+12. **Later, after C1** (no version assigned): saved discounts and public promo codes (C1 keeps discounts typed on each charge, Decision 303), branded payment forms, importing past payment history.
+
+### What this does NOT resolve
+
+- Gymdesk's Growth report (year-to-date, projection, per member), its accounting codes (GL, department, venue) and income-category CSV tools: not asked for. Decision 316 item 10 still applies.
+- The card-fee surcharge allow-list (Decision 316 item 11) still needs legal review.
+- Membership cash payments (Decision 335 in PR #321, if merged) are cancelled to **Failed**, owner only, with no reason. Whether they should follow item 1 here (Cancelled, reason, staff access) is for the product owner.
+
+### Recorded by
+
+User, 26 Oct 2026, answering the Billing questions one by one and then *"Go ahead agree with all"*.
