@@ -5103,6 +5103,7 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
    - **The member (or Guardian) still sees the charge in the app:** greyed out, labelled Cancelled, with the cancel date and "Nothing to pay", listed below what is still owed. They get a notification ("Your charge 'Rash guard, R$120' was cancelled. Nothing to pay.").
    - If part of the charge was already paid, that money doesn't vanish: it goes onto the member's balance as credit, or the owner refunds it.
    - Bulk actions on the payments list cancel, never delete.
+   - **The same rule applies to cancelling a membership's cash or bank-transfer payment** (product owner, 26 Oct 2026). Decision 339 (PR #321) built that cancel as owner only, setting the payment to Failed with no reason; it changes to Cancelled, with a reason and the "Can cancel charges" access, as this item says.
 2. **Restarting a stopped recurring payment:** the owner and staff with access to payments.
 3. **Refunds** (owner only, Decision 303):
    - **Part refunds are allowed.**
@@ -5126,7 +5127,6 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
 
 - Gymdesk's Growth report (year-to-date, projection, per member), its accounting codes (GL, department, venue) and income-category CSV tools: not asked for. Decision 316 item 10 still applies.
 - The card-fee surcharge allow-list (Decision 316 item 11) still needs legal review.
-- Membership cash payments (Decision 335 in PR #321, if merged) are cancelled to **Failed**, owner only, with no reason. Whether they should follow item 1 here (Cancelled, reason, staff access) is for the product owner.
 
 ### Recorded by
 
