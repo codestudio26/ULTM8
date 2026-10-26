@@ -3470,7 +3470,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CurriculumController_deleteCategory"];
         options?: never;
         head?: never;
         patch: operations["CurriculumController_renameCategory"];
@@ -3695,6 +3695,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["CurriculumController_deleteComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_videoUploadStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4714,6 +4730,8 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /** @description Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class. */
+            timetableSlotId?: string | null;
             /** @description Decision 226 — set when this Class has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried). */
@@ -4738,12 +4756,6 @@ export interface components {
             startDate?: string;
             /** @description ISO 8601 date-time. */
             endDate?: string;
-            /** @description ISO 8601 date-time — booking cutoff. */
-            bookingEndAt?: string;
-            /** @description ISO 8601 date-time — end of the QR check-in window. */
-            qrAttendanceEndAt?: string;
-            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. */
-            refundFeeDate?: string;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
@@ -4758,6 +4770,12 @@ export interface components {
             capacity?: number | null;
             /** @description Minor currency unit (e.g. cents). Pass null to clear. */
             cancellationCharge?: number | null;
+            /** @description ISO 8601 date-time — booking cutoff. Pass null to clear. */
+            bookingEndAt?: string | null;
+            /** @description ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies). */
+            qrAttendanceEndAt?: string | null;
+            /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear. */
+            refundFeeDate?: string | null;
         };
         SubscriptionPlanResponseDto: {
             id: string;
@@ -5065,7 +5083,7 @@ export interface components {
         BookClassDto: {
             /** @description Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor. */
             studentId?: string;
-            /** @description One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass. */
+            /** @description One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10). */
             attendeeMembershipIds?: string[];
             /** @description Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded. */
             overrideReason?: string;
@@ -6727,6 +6745,8 @@ export interface components {
             captionTrackRef?: string | null;
             /** @description The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment). */
             playbackUrl?: string | null;
+            /** @description Comments on this lesson the caller can read (Decision 326). */
+            commentCount: number;
             skillIds: string[];
             /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
             archivedAt?: string | null;
@@ -6744,11 +6764,14 @@ export interface components {
             title?: string;
             /** @description Move it to another of this School's categories (to the end), or null for none. */
             categoryId?: string | null;
-            durationSeconds?: number;
-            description?: string;
+            /** @description null clears it. */
+            durationSeconds?: number | null;
+            /** @description null clears it. */
+            description?: string | null;
             /** @enum {string} */
             format?: "PRERECORDED" | "LIVE";
-            instructorId?: string;
+            /** @description null: no instructor. */
+            instructorId?: string | null;
             skillIds?: string[];
             /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
             free?: boolean;
@@ -6827,6 +6850,8 @@ export interface components {
             lessonId: string;
             order: number;
             createdAt: string;
+            /** @description False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed. */
+            available: boolean;
             lessonTitle: string;
             /** @description The caller may not watch this Lesson (Decisions 154, 190, 195). */
             locked: boolean;
@@ -6856,6 +6881,9 @@ export interface components {
             items: components["schemas"]["CommentResponseDto"][];
             /** @description Opaque cursor for the next page, ordered (createdAt, id) ASC (oldest first); null when there is no more. */
             nextCursor?: string | null;
+        };
+        VideoUploadStatusResponseDto: {
+            enabled: boolean;
         };
         VideoUploadUrlResponseDto: {
             uploadUrl: string;
@@ -8484,6 +8512,10 @@ export interface operations {
                 startsFrom?: string;
                 /** @description ISO 8601 date-time: only Classes starting at or before it. */
                 startsTo?: string;
+                /** @description Date view, sorted by start time. Omit for the unsorted list. */
+                when?: "upcoming" | "past" | "all";
+                /** @description Only Classes taught by this User. */
+                instructorId?: string;
             };
             header?: never;
             path: {
@@ -12820,6 +12852,26 @@ export interface operations {
             };
         };
     };
+    CurriculumController_deleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. Owner only. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CurriculumController_renameCategory: {
         parameters: {
             query?: never;
@@ -13290,6 +13342,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CurriculumController_videoUploadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoUploadStatusResponseDto"];
+                };
             };
         };
     };

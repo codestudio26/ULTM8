@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import type { Lesson } from './curriculumQueries';
-import { translate, useT } from '../i18n/I18nProvider';
+import { useT } from '../i18n/I18nProvider';
 
 const Muted = ({ children }: { children: React.ReactNode }) => (
   <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>{children}</Text>
@@ -20,9 +20,14 @@ export function Chip({ label, tone }: { label: string; tone: 'accent' | 'success
   );
 }
 
-export function formatDuration(seconds: number | null | undefined): string | null {
-  if (!seconds) return null;
-  return translate('curriculum.lesson.durationMinutes', { minutes: Math.round(seconds / 60) });
+/** "4:30", or "1:05:00" from an hour up — the same as the School Portal
+ * (Decision 326). */
+export function formatDuration(totalSeconds: number | null | undefined): string | null {
+  if (!totalSeconds) return null;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const ss = String(totalSeconds % 60).padStart(2, '0');
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${ss}` : `${minutes}:${ss}`;
 }
 
 /** One Lesson on LessonsScreen — title, category context (shown once per group by

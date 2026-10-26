@@ -2769,6 +2769,29 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "Date view, sorted by start time. Omit for the unsorted list.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this User.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10473,6 +10496,32 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/schools/{schoolId}/curriculum/categories/order": {
@@ -11290,6 +11339,41 @@
         "responses": {
           "204": {
             "description": "Deleted — by its own author or School staff (Comment's own schema.prisma comment)."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -14718,6 +14802,11 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -14801,18 +14890,6 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "bookingEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — booking cutoff."
-          },
-          "qrAttendanceEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — end of the QR check-in window."
-          },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
@@ -14849,6 +14926,21 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — booking cutoff. Pass null to clear."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies)."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear."
           }
         }
       },
@@ -15798,7 +15890,7 @@
             "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
           },
           "attendeeMembershipIds": {
-            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
+            "description": "One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).",
             "type": "array",
             "items": {
               "type": "string"
@@ -21360,6 +21452,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -21397,6 +21493,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"
@@ -21428,10 +21525,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -21441,7 +21542,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -21738,6 +21841,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -21752,6 +21859,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -21858,6 +21966,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {
