@@ -679,7 +679,8 @@ final provisioning step needs the product owner directly)
 **H. Translation before launch** (Decision 323)
 21. Translate the student app (`apps/student`) into the same 15 languages as the
     School Portal, with the phone's language by default, a picker in Profile, and
-    Platform Admin overrides. Not started as of 26 Oct 2026.
+    Platform Admin overrides. Built 26 Oct 2026 (shared `@ultm8/i18n` package,
+    then the app's translation layer, all screens and 14 first-draft translations).
 22. Native-speaker review of every text, from zero, once the wording is final: export
     the portal's and the student app's texts to the translation review page
     (`apps/school-portal/scripts/i18n-review/`), share it per language, then apply the
