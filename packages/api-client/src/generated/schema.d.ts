@@ -2164,6 +2164,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/desk-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_recordDeskPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/desk-payments/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_deskPaymentOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/memberships/me": {
         parameters: {
             query?: never;
@@ -4059,6 +4091,8 @@ export interface components {
              * @enum {string}
              */
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
+            branchStaffCanRecordPayments?: boolean;
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4105,6 +4139,8 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @enum {string} */
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Branch Staff may record desk payments (Decision 347). */
+            branchStaffCanRecordPayments: boolean;
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4155,6 +4191,8 @@ export interface components {
              * @enum {string}
              */
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
+            branchStaffCanRecordPayments?: boolean;
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -5784,6 +5822,35 @@ export interface components {
         GiftFriendPassDto: {
             membershipPlanId: string;
         };
+        RecordDeskPaymentDto: {
+            studentId: string;
+            membershipPlanId: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+        };
+        RecordDeskPaymentResponseDto: {
+            /** @description Null for a free plan, which has no Transaction. */
+            transactionId: string | null;
+            membershipId: string;
+        };
+        DeskPaymentStudentDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+        };
+        DeskPaymentPlanDto: {
+            id: string;
+            title: string;
+            /** @enum {string} */
+            type: "CLASS_PACK" | "WEEKLY_PASS" | "TRIAL_MEMBERSHIP";
+            /** @description In hundredths of the currency. */
+            price: number;
+            currency: string | null;
+        };
+        DeskPaymentOptionsDto: {
+            students: components["schemas"]["DeskPaymentStudentDto"][];
+            plans: components["schemas"]["DeskPaymentPlanDto"][];
+        };
         MembershipListResponseDto: {
             items: components["schemas"]["MembershipResponseDto"][];
             nextCursor?: string | null;
@@ -5799,8 +5866,13 @@ export interface components {
             studentFirstName: string;
             studentSurname: string;
             paymentAccountId: string;
-            membershipPlanId: string;
-            membershipPlanTitle: string;
+            membershipPlanId?: string | null;
+            membershipPlanTitle?: string | null;
+            /** @enum {string} */
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+            bookingId?: string | null;
+            bookingClassTitle?: string | null;
+            recordedById?: string | null;
             membershipId?: string | null;
             billingDate: string;
             amount: number;
@@ -10792,6 +10864,52 @@ export interface operations {
             };
         };
     };
+    MembershipsController_recordDeskPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordDeskPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordDeskPaymentResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_deskPaymentOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskPaymentOptionsDto"];
+                };
+            };
+        };
+    };
     MembershipsController_findMyMemberships: {
         parameters: {
             query?: {
@@ -10844,6 +10962,14 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                membershipPlanId?: string;
+                /** @description First day included, YYYY-MM-DD (UTC). */
+                from?: string;
+                /** @description Last day included, YYYY-MM-DD (UTC). */
+                to?: string;
             };
             header?: never;
             path: {
@@ -10865,7 +10991,16 @@ export interface operations {
     };
     TransactionsController_summaryForSchool: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                membershipPlanId?: string;
+                /** @description First day included, YYYY-MM-DD (UTC). */
+                from?: string;
+                /** @description Last day included, YYYY-MM-DD (UTC). */
+                to?: string;
+            };
             header?: never;
             path: {
                 schoolId: string;

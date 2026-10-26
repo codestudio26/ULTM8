@@ -14,6 +14,7 @@ import { MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE } from '../jobs/queue.constants';
 import { MembershipPlanPriceMigrationJobData } from '../jobs/membership-plan-price-migration.types';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
+import { RecordDeskPaymentDto } from './dto/record-desk-payment.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
 import { GiftFriendPassDto, SellMembershipDto } from './dto/desk-membership.dto';
 import {
@@ -1357,6 +1358,95 @@ export class MembershipsService {
     }));
     items.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`) || a.membershipId.localeCompare(b.membershipId));
     return { items };
+  }
+
+  /**
+   * POST /schools/{schoolId}/desk-payments (Decision 346, G7) — money the
+   * School took in person, recorded so the Student's membership starts at once.
+   * The owner always may; Branch Staff only with the School's switch on, and
+   * only for their own branches' students (Decision 347). The sale itself is
+   * recordDeskSale(), the one desk-sale path (Decision 348), which runs every
+   * plan, Student and creation-guard check.
+   */
+  async recordDeskPayment(callerId: string, schoolId: string, dto: RecordDeskPaymentDto) {
+    const school = await this.schoolsService.findOne(callerId, schoolId);
+    const as = await this.assertMayRecordDeskPayment(callerId, schoolId, school.branchStaffCanRecordPayments);
+    const payable = (await this.deskPayableStudents(callerId, schoolId, as)).some((st) => st.id === dto.studentId);
+    if (!payable) {
+      throw new BadRequestException('This person is not a student at this School.');
+    }
+    const { membership, transactionId } = await this.recordDeskSale(
+      schoolId,
+      dto.studentId,
+      { membershipPlanId: dto.membershipPlanId, paymentMethod: dto.paymentMethod },
+      { recordedById: callerId },
+    );
+    if (transactionId) {
+      const transaction = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
+        tx.transaction.findUnique({
+          where: { id: transactionId },
+          select: { id: true, schoolId: true, studentId: true, membershipPlanId: true, amount: true, currency: true },
+        }),
+      );
+      if (transaction) await this.paymentsService.notifyCashPayment(transaction, 'confirmed');
+    }
+    return { transactionId, membershipId: membership.id };
+  }
+
+  /** The School Owner/Manager always may; Branch Staff only when the owner has
+   * switched it on for the School (Decision 347, amending Spec 55 §8.2 for this
+   * one action). Instructors never may. */
+  private async assertMayRecordDeskPayment(callerId: string, schoolId: string, branchStaffAllowed: boolean): Promise<'OWNER' | 'BRANCH_STAFF'> {
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      }),
+    );
+    if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'OWNER';
+    if (branchStaffAllowed && grants.some((g) => g.role === 'BRANCH_STAFF')) return 'BRANCH_STAFF';
+    throw new ForbiddenException(
+      branchStaffAllowed || !grants.length
+        ? "Only that School's Owner/Manager may perform this action (Spec §8.2)."
+        : 'The School owner has not let Branch Staff record payments.',
+    );
+  }
+
+  /** The students the caller may record a desk payment for: every current
+   * Student for the owner; for Branch Staff, the students of their own branches
+   * (every Student in a School without branches), the grading board's rule
+   * (Decisions 168, 169, 177) through desk_payment_students(). */
+  private async deskPayableStudents(callerId: string, schoolId: string, as: 'OWNER' | 'BRANCH_STAFF') {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (as === 'BRANCH_STAFF') {
+        return tx.$queryRaw<Array<{ id: string; firstName: string; surname: string }>>`SELECT * FROM desk_payment_students(${schoolId})`;
+      }
+      const grants = await tx.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', revokedAt: null },
+        distinct: ['userId'],
+        select: { user: { select: { id: true, firstName: true, surname: true } } },
+      });
+      return grants.map((g) => g.user);
+    });
+  }
+
+  /** GET schools/:schoolId/desk-payments/options — the students and plans
+   * Record a payment can be used for, by the same caller rules as recording one
+   * (Decision 347). Plans: not archived, paid once (no Subscriptions), never a
+   * Friend Pass. Branch Staff can't read the plan list otherwise. */
+  async deskPaymentOptions(callerId: string, schoolId: string) {
+    const school = await this.schoolsService.findOne(callerId, schoolId);
+    const as = await this.assertMayRecordDeskPayment(callerId, schoolId, school.branchStaffCanRecordPayments);
+    const students = await this.deskPayableStudents(callerId, schoolId, as);
+    students.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`));
+    const plans = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membershipPlan.findMany({
+        where: { schoolId, archivedAt: null, type: { in: CASH_BANK_ELIGIBLE_TYPES.filter((type) => type !== 'FRIEND_PASS') } },
+        orderBy: [{ title: 'asc' }, { id: 'asc' }],
+        select: { id: true, title: true, type: true, price: true, currency: true },
+      }),
+    );
+    return { students, plans };
   }
 
   // ---------------------------------------------------------------------------

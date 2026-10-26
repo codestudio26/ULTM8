@@ -394,4 +394,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage desteklenen dil kodlarından biri olmalıdır.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency desteklenen para birimi kodlarından biri olmalıdır.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "Bu franchise'ın zaten faturalandırılan {v1} okulu var, bu yüzden ücret modeli değiştirilemez. Ücret tutarı yine de değiştirilebilir.",
+  "This person is not a student at this School.": "Bu kişi bu okulun öğrencisi değil.",
+  "This payment is not for a membership plan.": "Bu ödeme bir üyelik planına ait değil.",
+  "The start date must be on or before the end date.": "Başlangıç tarihi bitiş tarihiyle aynı veya ondan önce olmalıdır.",
+  "The School owner has not let Branch Staff record payments.": "Okul sahibi, şube personelinin ödeme kaydetmesine izin vermedi.",
 };

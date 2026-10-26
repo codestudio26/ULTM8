@@ -394,4 +394,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage deve ser um dos códigos de idioma suportados.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency deve ser um dos códigos de moeda suportados.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "Esta franquia tem {v1} escola(s) já sendo cobrada(s), então o modelo de taxa não pode ser alterado. O valor da taxa ainda pode ser alterado.",
+  "This person is not a student at this School.": "Esta pessoa não é aluno desta escola.",
+  "This payment is not for a membership plan.": "Este pagamento não é de um plano de assinatura.",
+  "The start date must be on or before the end date.": "A data inicial deve ser igual ou anterior à data final.",
+  "The School owner has not let Branch Staff record payments.": "O dono da escola não permitiu que a equipe das unidades registre pagamentos.",
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
+import { useSchool } from '../schools/schoolQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
 import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
@@ -27,6 +28,8 @@ const CLASSES_NAV: NavItem = { label: 'layout.nav.classes', to: '/classes' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
+/** Branch Staff whose owner lets them take desk payments (Decision 347). */
+const RECORD_PAYMENT_NAV: NavItem = { label: 'layout.nav.recordPayment', to: '/transactions' };
 /** Decision 1/217/237 — self-service completion of the fields "Add
  * Manually" leaves blank; not a blocking gate, so it's an ordinary nav item,
  * not a forced redirect. */
@@ -59,12 +62,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isCoachOnly = useIsCoachOnly();
   const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
+  const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
+  const mayRecordPayments = useSchool(isCoachOnly && isBranchStaff ? coachSchoolId : null).data?.branchStaffCanRecordPayments ?? false;
   return (
     <AppShell
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

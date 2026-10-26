@@ -92,6 +92,35 @@ describe('TransactionHistoryScreen', () => {
     expect(getByText('SUCCESSFUL')).toBeTruthy();
   });
 
+  it('labels a renewal and a late-cancellation fee (Decision 346)', async () => {
+    const base = {
+      schoolId: 's1',
+      studentId: 'me',
+      paymentAccountId: 'pa1',
+      membershipId: null,
+      billingDate: '2026-10-01T12:00:00.000Z',
+      currency: 'gbp',
+      status: 'SUCCESSFUL',
+      paymentMethod: 'STRIPE',
+      disputedAmount: null,
+      refundedAmount: null,
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    };
+    mocked(transactionQueries.useMyTransactions).mockReturnValue(
+      pagedQuery([
+        { ...base, id: 'tx1', kind: 'RENEWAL', membershipPlanId: 'mp1', membershipPlanTitle: 'Monthly', amount: 4000 },
+        { ...base, id: 'tx2', kind: 'LATE_CANCEL_FEE', membershipPlanId: null, membershipPlanTitle: null, bookingClassTitle: 'Kids BJJ', amount: 500 },
+        { ...base, id: 'tx3', kind: 'LATE_CANCEL_FEE', membershipPlanId: null, membershipPlanTitle: null, bookingClassTitle: null, amount: 500 },
+      ]),
+    );
+
+    const { getByText } = await render(<TransactionHistoryScreen />);
+    expect(getByText('Renewal: Monthly')).toBeTruthy();
+    expect(getByText('Late-cancellation fee: Kids BJJ')).toBeTruthy();
+    expect(getByText('Late-cancellation fee')).toBeTruthy();
+  });
+
   it('shows the real error message when there is no cached page to fall back on', async () => {
     mocked(transactionQueries.useMyTransactions).mockReturnValue(
       pagedQuery([], { isError: true, error: new ApiError(500, 'INTERNAL', 'boom'), data: undefined }),

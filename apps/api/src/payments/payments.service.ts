@@ -952,6 +952,9 @@ export class PaymentsService {
         return { transaction, membershipCreated: false };
       }
 
+      if (!transaction.membershipPlanId) {
+        throw new BadRequestException('This payment is not for a membership plan.');
+      }
       const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
       // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
       // unique index; see assertCanCreateMembership's own comment. A refusal
@@ -1053,12 +1056,14 @@ export class PaymentsService {
    * The English shapes are matched in @ultm8/i18n's server/translate.ts.
    */
   async notifyCashPayment(
-    transaction: { id: string; schoolId: string; studentId: string; membershipPlanId: string; amount: number; currency: string | null },
+    transaction: { id: string; schoolId: string; studentId: string; membershipPlanId: string | null; amount: number; currency: string | null },
     event: 'waiting' | 'confirmed' | 'cancelled',
   ): Promise<void> {
     try {
       const [plan, student] = await Promise.all([
-        this.prismaJobs.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { title: true } }),
+        transaction.membershipPlanId
+          ? this.prismaJobs.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { title: true } })
+          : null,
         this.prismaJobs.user.findUnique({ where: { id: transaction.studentId }, select: { firstName: true, surname: true } }),
       ]);
       const amount = `${(transaction.amount / 100).toFixed(2)} ${(transaction.currency ?? 'USD').toUpperCase()}`;

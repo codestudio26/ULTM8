@@ -139,6 +139,7 @@ export class SchoolsService {
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       });
 
@@ -783,6 +784,7 @@ export class SchoolsService {
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       }),
     );

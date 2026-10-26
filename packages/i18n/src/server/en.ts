@@ -357,6 +357,10 @@ export const SERVER_MESSAGES: string[] = [
  "activities/facilities cannot be null — send an empty list to clear them.",
  "defaultLanguage must be one of the supported language codes.",
  "defaultCurrency must be one of the supported currency codes.",
+ "This person is not a student at this School.",
+ "This payment is not for a membership plan.",
+ "The start date must be on or before the end date.",
+ "The School owner has not let Branch Staff record payments.",
 ];
 
 export const SERVER_PATTERNS: string[] = [

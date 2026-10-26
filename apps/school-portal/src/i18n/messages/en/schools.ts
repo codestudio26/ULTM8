@@ -27,6 +27,7 @@ export const schools = {
     lateCancelRefundUntilEnd: 'Refund until the class ends',
     lateCancelAlwaysRefund: 'Always refund, even after it ends',
     ranksToggle: 'Enable belt/rank tracking',
+    branchStaffPayments: 'Let Branch Staff record payments taken at the desk',
   },
   create: {
     createdTitle: 'School created',

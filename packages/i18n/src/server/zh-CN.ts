@@ -394,4 +394,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage 必须是受支持的语言代码之一。",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency 必须是受支持的货币代码之一。",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "这个加盟品牌已有 {v1} 所学校在计费，因此不能更改费用模式。费用金额仍可修改。",
+  "This person is not a student at this School.": "此人不是本学校的学生。",
+  "This payment is not for a membership plan.": "这笔付款不属于会员计划。",
+  "The start date must be on or before the end date.": "开始日期必须早于或等于结束日期。",
+  "The School owner has not let Branch Staff record payments.": "学校所有者未允许分校员工记录付款。",
 };
