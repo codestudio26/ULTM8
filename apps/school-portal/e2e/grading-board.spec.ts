@@ -290,12 +290,12 @@ test('works with the keyboard only: move a student', async ({ page }) => {
 test('student panel: "Log a class" adds one, and the Active switch sets attending by hand', async ({ page }) => {
   await page.goto(`/students/${ben.id}`);
   const bjj = page.getByRole('region', { name: 'BJJ' });
-  await expect(bjj.getByText('Classes: 0 of 3')).toBeVisible();
-  await bjj.getByRole('button', { name: 'Log a class (+1)' }).click();
+  await expect(bjj.getByRole('listitem', { name: 'Classes: 0 of 3' })).toBeVisible();
+  await bjj.getByRole('button', { name: 'Log a class' }).click();
   const dialog = page.getByRole('dialog', { name: 'Log a class — BJJ' });
   await dialog.getByRole('button', { name: 'Log class' }).click();
   await expect(dialog).toBeHidden();
-  await expect(bjj.getByText('Classes: 1 of 3')).toBeVisible();
+  await expect(bjj.getByRole('listitem', { name: 'Classes: 1 of 3' })).toBeVisible();
   await expect(bjj.getByText(/Class logged by hand/)).toBeVisible();
 
   await bjj.getByLabel('Currently attending BJJ').selectOption('INACTIVE');

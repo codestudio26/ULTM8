@@ -8435,6 +8435,12 @@ export interface operations {
                 search?: string;
                 /** @description Include archived Classes too (excluded by default). */
                 includeArchived?: boolean;
+                /** @description Only Classes that list this style (Class.styles). */
+                disciplineId?: string;
+                /** @description ISO 8601 date-time: only Classes starting at or after it. */
+                startsFrom?: string;
+                /** @description ISO 8601 date-time: only Classes starting at or before it. */
+                startsTo?: string;
             };
             header?: never;
             path: {
