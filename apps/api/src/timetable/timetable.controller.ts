@@ -9,6 +9,7 @@ import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 import { TimetableSlotListResponseDto, TimetableSlotResponseDto } from './dto/timetable-slot-response.dto';
 import { TimetableOccurrenceQueryDto } from './dto/timetable-occurrence-query.dto';
 import { TimetableQueryDto } from './dto/timetable-query.dto';
+import { UpcomingImpactResponseDto } from './dto/upcoming-impact-response.dto';
 import { ClassResponseDto } from '../classes/dto/class-response.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
@@ -48,6 +49,14 @@ export class TimetableController {
   }
 
   @ApiOkResponse({ type: TimetableSlotResponseDto })
+  /** Decision 322 — School Owner/Manager only: upcoming Classes from this slot,
+   * and how many have bookings, before a change that moves them. */
+  @ApiOkResponse({ type: UpcomingImpactResponseDto })
+  @Get('timetable/:id/upcoming-impact')
+  getUpcomingImpact(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.timetableService.getUpcomingImpact(user.sub, id);
+  }
+
   @Patch('timetable/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTimetableSlotDto) {
     return this.timetableService.update(user.sub, id, dto);

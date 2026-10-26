@@ -1,4 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { randomUUID } from 'crypto';
 import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -14,11 +17,14 @@ const RETENTION_WINDOW_DAYS = 90;
 
 @Injectable()
 export class ClassesService {
+  private readonly logger = new Logger(ClassesService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
     private readonly subscriptionGate: SubscriptionGateService,
+    @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
   /**
@@ -165,7 +171,31 @@ export class ClassesService {
       throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
     }
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    let seatsToOffer = 0;
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Capacity can't drop below the seats already taken (product owner, 26 Oct
+      // 2026; the stress test cut a class of 8 bookings to 3 unchallenged). The row
+      // lock is the same one booking takes, so no booking slips in meanwhile.
+      if (dto.capacity !== undefined && dto.capacity !== null) {
+        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+        const [bookings, guests] = await Promise.all([
+          tx.booking.count({ where: { classId, status: 'UPCOMING' } }),
+          tx.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+        ]);
+        const taken = bookings + guests;
+        if (dto.capacity < taken) {
+          throw new ConflictException(
+            `${taken} ${taken === 1 ? 'student is' : 'students are'} booked. Cancel some bookings first, or set the capacity to ${taken} or more.`,
+          );
+        }
+        // Seats a raise frees go to the waitlist first: with Students queued,
+        // nobody can book them directly (waitlist first), so offer them now.
+        const [waiting, notified] = await Promise.all([
+          tx.waitlistEntry.count({ where: { classId, status: 'WAITING' } }),
+          tx.waitlistEntry.count({ where: { classId, status: 'NOTIFIED' } }),
+        ]);
+        seatsToOffer = Math.max(0, Math.min(waiting, dto.capacity - taken - notified));
+      }
       // Styles are replaced when sent and kept when omitted (Decision 170).
       const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
       return tx.class.update({
@@ -190,6 +220,14 @@ export class ClassesService {
         },
       });
     });
+    for (let i = 0; i < seatsToOffer; i++) {
+      try {
+        await this.waitlistCascadeQueue.add('seat-freed', { classId });
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue waitlist-cascade-processing after raising Class ${classId}'s capacity: ${err}`);
+      }
+    }
+    return updated;
   }
 
   // ---------------------------------------------------------------------------

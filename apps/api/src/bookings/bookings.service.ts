@@ -20,6 +20,7 @@ import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
 import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
 import { localDay } from '../ranks/engine';
+import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -135,6 +136,7 @@ export class BookingsService {
       // §9: "An Instructor/Staff member can override", never the Student themselves.
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
+    assertClassBookable(resolvedClass, { byStaff: isStaffAction });
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
     // Bookings" is one of the three actions it explicitly names (Phase 54).
     // Checked under `studentId`'s own RLS context, NOT `callerId`'s — a Guardian
@@ -145,7 +147,7 @@ export class BookingsService {
     // below already relies on (it also runs under `studentId`'s context).
     await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       if (resolvedClass.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({
           where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
@@ -170,20 +172,28 @@ export class BookingsService {
         // credit, Booking status), capacity is an aggregate COUNT across two child
         // tables (Booking + BookingAttendee), which the established
         // updateMany+count-guard pattern can't express directly — so this takes an
-        // explicit row lock on the Class itself for the duration of the
+        // explicit row lock on the Class itself (taken with NOWAIT and retried — see
+        // lockClassSeats in booking-gates.ts) for the duration of the
         // count-then-create, serializing concurrent bookers for THIS Class only
         // (other Classes are entirely unaffected). First use of an explicit lock in
         // this codebase; flagged here rather than silently introduced.
-        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+        await lockClassSeats(tx, classId);
         const occupied = await this.countOccupiedSeats(classId);
-        if (occupied + partySize > resolvedClass.capacity) {
+        // Waitlist first (product owner, 26 Oct 2026): a seat offered to a waitlisted
+        // Student (NOTIFIED) is held for them, and while anyone is queued a Student
+        // can't book past the queue. Staff can still book a walk-in into a free seat.
+        const queue = await this.countActiveWaitlist(classId);
+        if (!isStaffAction && queue.waiting + queue.notified > 0) {
+          throw new ConflictException('Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).');
+        }
+        if (occupied + queue.notified + partySize > resolvedClass.capacity) {
           throw new ConflictException(
             'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
           );
         }
       }
 
-      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
 
       const bookingId = randomUUID();
       try {
@@ -228,7 +238,7 @@ export class BookingsService {
       }
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
-    });
+    }, BOOKING_TX_OPTIONS));
   }
 
   /**
@@ -247,8 +257,11 @@ export class BookingsService {
    * authorization check afterward is always keyed off the row's own REAL
    * `studentId` (whichever context actually found it), never trusted from
    * `dto.studentId` directly.
+   *
+   * `opts.schoolCancelled` (Decision 322): the School cancelled the Class itself,
+   * so the credit always comes back, with no late-cancel rule and no fee.
    */
-  async cancelBooking(callerId: string, bookingId: string, dto?: CancelBookingDto) {
+  async cancelBooking(callerId: string, bookingId: string, dto?: CancelBookingDto, opts?: { schoolCancelled?: boolean }) {
     let existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
     );
@@ -278,10 +291,18 @@ export class BookingsService {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
       // Kickoff prompt §1.c: refunds/credits back before the Class's own
-      // refundFeeDate cutoff; withholds on/after it. No cutoff configured (null)
-      // means never past it — always refunded.
+      // refundFeeDate cutoff; withholds on/after it.
       const pastCutoff = cls.refundFeeDate !== null && now >= cls.refundFeeDate;
-      const resolution: 'REFUNDED' | 'WITHHELD' = pastCutoff ? 'WITHHELD' : 'REFUNDED';
+      // Once the Class has started, the School's late-cancel setting decides
+      // (product owner, 26 Oct 2026; default: no refund once started). Under the
+      // first two settings an ended Class can't be cancelled: it will be marked a
+      // No-Show instead. Before this, credit always came back, even after the end.
+      const policy = (await this.prismaJobs.school.findUnique({ where: { id: cls.schoolId }, select: { lateCancelRefundPolicy: true } }))?.lateCancelRefundPolicy ?? 'NO_REFUND_ONCE_STARTED';
+      if (!opts?.schoolCancelled && now >= cls.endDate && policy !== 'ALWAYS_REFUND') {
+        throw new ConflictException('This Class has already ended, so the Booking can no longer be cancelled.');
+      }
+      const startedNoRefund = now >= cls.startDate && policy === 'NO_REFUND_ONCE_STARTED';
+      const resolution: 'REFUNDED' | 'WITHHELD' = !opts?.schoolCancelled && (pastCutoff || startedNoRefund) ? 'WITHHELD' : 'REFUNDED';
 
       // Decision 234 — a sibling action to credit-withholding above, not a
       // replacement: captured here (inside the transaction, where cls/
@@ -289,7 +310,9 @@ export class BookingsService {
       // actual Stripe call happens AFTER this transaction commits (no external
       // I/O inside a transaction, same discipline every other Stripe-calling
       // write in this codebase follows) — see the try/catch below.
-      if (resolution === 'WITHHELD' && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
+      // The late-cancellation fee stays tied to the refund cut-off itself; the
+      // late-cancel setting above only keeps the credit.
+      if (!opts?.schoolCancelled && pastCutoff && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
         cancellationChargeAmount = cls.cancellationCharge;
         // No currency field on Class itself — reuses the Booking's own
         // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
@@ -649,47 +672,18 @@ export class BookingsService {
     ]);
     return bookingCount + attendeeCount;
   }
-
-  /** Selects the Student's own funding Membership for their own seat — prefers a
-   * non-consuming general-access Membership (classesRemaining IS NULL, i.e.
-   * Subscription/Weekly Pass) over a credit-consuming one (Class Pack/Friend Pass/
-   * Trial), per SKILL.md §10's confirmed spend-order rule, so a paid credit is never
-   * spent unnecessarily. */
-  private async selectAndConsumeMembership(
-    tx: TenantTx,
-    studentId: string,
-    schoolId: string,
-    classId: string,
-  ): Promise<{ id: string }> {
-    const candidates = await tx.membership.findMany({
-      where: {
-        studentId,
-        schoolId,
-        status: 'ACTIVE',
-        OR: [{ scopedClassId: null }, { scopedClassId: classId }],
-      },
-    });
-
-    const generalAccess = candidates.find((m) => m.classesRemaining === null);
-    if (generalAccess) {
-      return generalAccess;
-    }
-
-    const classPack = candidates.find((m) => m.classesRemaining !== null && m.classesRemaining > 0);
-    if (!classPack) {
-      throw new BadRequestException('This Student has no Active Membership eligible to fund this Booking.');
-    }
-    const result = await tx.membership.updateMany({
-      where: { id: classPack.id, classesRemaining: { gt: 0 } },
-      data: { classesRemaining: { decrement: 1 } },
-    });
-    if (result.count === 0) {
-      throw new ConflictException('This Membership\'s remaining credit changed concurrently — please retry.');
-    }
-    return classPack;
+  /** Active waitlist for a Class, read via ultm8_jobs for the same reason as
+   * countOccupiedSeats: a Student's own context only sees their own entries. */
+  private async countActiveWaitlist(classId: string): Promise<{ waiting: number; notified: number }> {
+    const [waiting, notified] = await Promise.all([
+      this.prismaJobs.waitlistEntry.count({ where: { classId, status: 'WAITING' } }),
+      this.prismaJobs.waitlistEntry.count({ where: { classId, status: 'NOTIFIED' } }),
+    ]);
+    return { waiting, notified };
   }
 
-  /** Guest-seat equivalent of selectAndConsumeMembership above — the caller names a
+
+  /** Guest-seat equivalent of selectAndConsumeMembership (booking-gates.ts) — the caller names a
    * SPECIFIC Membership id rather than letting the server auto-select, since a guest
    * seat is deliberately funded by a distinct Membership from the organizer's own
    * (see bookClass's own comment on why this must belong to the SAME studentId as
@@ -702,7 +696,7 @@ export class BookingsService {
     classId: string,
   ): Promise<{ id: string }> {
     const membership = await tx.membership.findUnique({ where: { id: membershipId } });
-    if (!membership || membership.studentId !== organizerId || membership.schoolId !== schoolId || membership.status !== 'ACTIVE') {
+    if (!membership || membership.studentId !== organizerId || membership.schoolId !== schoolId || membership.status !== 'ACTIVE' || (membership.expiryDate !== null && membership.expiryDate <= new Date())) {
       throw new BadRequestException(`attendeeMembershipIds must each reference an Active Membership belonging to the organizing Student at this School (got ${membershipId}).`);
     }
     if (membership.scopedClassId && membership.scopedClassId !== classId) {
