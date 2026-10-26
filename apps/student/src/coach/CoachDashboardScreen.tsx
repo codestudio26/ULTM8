@@ -21,12 +21,13 @@ import {
 } from './coachQueries';
 import { flattenLadder } from './ladder';
 import { Muted, Section } from './parts';
+import { formatLocale } from '../i18n/format';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CoachDashboard'>;
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 const dayLabel = (d: string) => d.charAt(0) + d.slice(1).toLowerCase();
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 
 /**
  * The coach's dashboard in the mobile app (Decision 184), the same as the
