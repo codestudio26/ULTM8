@@ -26,7 +26,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   ("Gracie Barra has invited you to sign the waiver …"); Class moved, Class
   cancelled, Promotion to decide and Promotion fee are translated; broadcasts
   refuse an archived branch or class and a blank title or message; a snooze
-  is capped at 7 days; a bad page link is a 400, not a server error.
+  is capped at 7 days; a bad page link is a 400, not a server error. A
+  child's notifications now also reach their linked parents ("For Mia: …");
+  when sending to one class, the Owner ticks who gets it (booked, waitlist,
+  cancelled; booked by default); and the payment-restricted alert names the
+  student.
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

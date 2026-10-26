@@ -22,4 +22,7 @@ export interface NotificationFanoutJobData {
   title: string;
   body: string;
   type?: string;
+  /** Set on a parent's copy of a child's notification (the child's userId) —
+   * see NotificationFanoutProcessor. A copy is never copied on again. */
+  guardianCopyOf?: string;
 }

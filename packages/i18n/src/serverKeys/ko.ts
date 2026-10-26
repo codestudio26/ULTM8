@@ -99,6 +99,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name}님이 다음 등급 심사를 받을 준비가 되었습니다({style}).",
     paymentRestrictedTitle: "수련생 결제 제한",
     paymentRestrictedBody: "카드 결제 이의 제기에서 여러 번 패소하여, 도장의 한 수련생은 이제 현금 또는 계좌 이체로만 결제할 수 있습니다.",
+    paymentRestrictedNamedBody: "카드 결제 이의 제기에서 여러 번 패소하여, 도장의 수련생 {name} 님은 이제 현금 또는 계좌 이체로만 결제할 수 있습니다.",
     waiverRequestTitle: "면책 동의서 서명 요청",
     waiverRequestBody: "다음 면책 동의서에 서명해 달라는 요청을 받았습니다: {waiver}.",
     newStripeTitle: "새 그랄!",
@@ -132,6 +133,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}님의 {rank}({style}) 승급이 결정을 기다리고 있습니다. 승급하거나 하지 않기로 결정하세요.",
     promotionFeeBody: "{rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
     childPromotionFeeBody: "{name}님의 {rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
+    forChild: "{name} 관련: {body}",
     disputeStatus: {
       warning_needs_response: "문의, 응답 필요",
       warning_under_review: "문의 검토 중",

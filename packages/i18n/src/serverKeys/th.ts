@@ -99,6 +99,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} พร้อมสอบเลื่อนเป็นระดับถัดไป ({style})",
     paymentRestrictedTitle: "นักเรียนถูกจำกัดการชำระเงิน",
     paymentRestrictedBody: "นักเรียนคนหนึ่งในโรงเรียนของคุณถูกจำกัดให้ชำระเงินด้วยเงินสดหรือโอนเงินผ่านธนาคารเท่านั้น หลังจากแพ้ข้อโต้แย้งการชำระด้วยบัตรหลายครั้ง",
+    paymentRestrictedNamedBody: "{name} นักเรียนในโรงเรียนของคุณถูกจำกัดให้ชำระเงินด้วยเงินสดหรือโอนเงินผ่านธนาคารเท่านั้น หลังจากแพ้ข้อโต้แย้งการชำระด้วยบัตรหลายครั้ง",
     waiverRequestTitle: "มีคำขอให้ลงนามเอกสารสละสิทธิ์",
     waiverRequestBody: "คุณได้รับเชิญให้ลงนามเอกสารสละสิทธิ์ต่อไปนี้: {waiver}",
     newStripeTitle: "แถบใหม่!",
@@ -132,6 +133,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     childPromotionFeeBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
+    forChild: "สำหรับ {name}: {body}",
     disputeStatus: {
       warning_needs_response: "สอบถามข้อมูล ต้องตอบกลับ",
       warning_under_review: "สอบถามข้อมูล อยู่ระหว่างตรวจสอบ",

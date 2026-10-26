@@ -99,6 +99,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} 已可晋级至下一级别（{style}）。",
     paymentRestrictedTitle: "学员付款受限",
     paymentRestrictedBody: "由于多次银行卡争议失败，你学校的一名学员现在只能使用现金或银行转账付款。",
+    paymentRestrictedNamedBody: "由于多次银行卡争议失败，你学校的学员 {name} 现在只能使用现金或银行转账付款。",
     waiverRequestTitle: "请求签署免责声明",
     waiverRequestBody: "你被邀请签署以下免责声明：{waiver}。",
     newStripeTitle: "新条纹！",
@@ -132,6 +133,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
+    forChild: "关于{name}：{body}",
     disputeStatus: {
       warning_needs_response: "问询，需要回复",
       warning_under_review: "问询审核中",

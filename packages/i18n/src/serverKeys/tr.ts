@@ -112,6 +112,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name}, bir sonraki dereceye hazır ({style}).",
     paymentRestrictedTitle: "Öğrencinin ödemeleri kısıtlandı",
     paymentRestrictedBody: "Okulunuzdaki bir öğrenci, kaybedilen birkaç kart itirazının ardından artık yalnızca nakit veya banka havalesiyle ödeme yapabilir.",
+    paymentRestrictedNamedBody: "Okulunuzdaki öğrenci {name}, kaybedilen birkaç kart itirazının ardından artık yalnızca nakit veya banka havalesiyle ödeme yapabilir.",
     waiverRequestTitle: "Feragatname imzası istendi",
     waiverRequestBody: "Şu feragatnameyi imzalamaya davet edildiniz: {waiver}.",
     newStripeTitle: "Yeni şerit!",
@@ -145,6 +146,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
     childPromotionFeeBody: "{name} için {rank} ({style}) terfisinin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
+    forChild: "{name} için: {body}",
     disputeStatus: {
       warning_needs_response: "bilgi talebi, yanıt gerekiyor",
       warning_under_review: "bilgi talebi inceleniyor",

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
 
 /** The three audience scopes the product owner approved tonight — all
  * Students at the School (the default a caller gets by choosing ALL), one
@@ -11,6 +11,16 @@ export enum BroadcastAudienceDto {
   ALL = 'ALL',
   BRANCH = 'BRANCH',
   CLASS = 'CLASS',
+}
+
+/** Who on one Class's list a CLASS broadcast reaches — ticked by the School
+ * Owner (Decision 333, 26 Oct 2026). BOOKED is every Booking that wasn't
+ * cancelled (upcoming, attended or no-show), WAITLIST every waitlist place
+ * still open (waiting or offered a spot), CANCELLED every cancelled Booking. */
+export enum BroadcastClassAudienceDto {
+  BOOKED = 'BOOKED',
+  WAITLIST = 'WAITLIST',
+  CANCELLED = 'CANCELLED',
 }
 
 /**
@@ -55,4 +65,15 @@ export class BroadcastNotificationDto {
   @ValidateIf((o: BroadcastNotificationDto) => o.audience === BroadcastAudienceDto.CLASS)
   @IsUUID()
   classId?: string;
+
+  @ApiPropertyOptional({
+    enum: BroadcastClassAudienceDto,
+    isArray: true,
+    description: 'Audience CLASS only: which people on the class list receive it. Defaults to BOOKED.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(BroadcastClassAudienceDto, { each: true })
+  classAudience?: BroadcastClassAudienceDto[];
 }

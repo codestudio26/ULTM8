@@ -239,6 +239,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   [body(String.raw`^(.+) is ready for (.+) \(${STYLE}\)\.$`), (m, { t }) => n(t, 'readyToGradeBody', { name: m[1], rank: m[2], style: m[3] })],
   [
+    /^(.+), a Student at your School, has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/s,
+    (m, { t }) => n(t, 'paymentRestrictedNamedBody', { name: m[1] }),
+  ],
+  // Older rows, written before the Student was named.
+  [
     /^A Student at your School has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/,
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
@@ -359,12 +364,17 @@ export function createServerTextTranslator(
       return known(compile(messages), message) ?? t(`server.generic.${genericKey(status)}`);
     },
     notification({ title, body, type }) {
+      // A parent's copy of their child's notification (NotificationFanoutProcessor):
+      // the child's message, translated as usual, behind "For {name}: ".
+      const forChild = body.match(/^For ([^:]+): (.*)$/s);
+      const inner = forChild ? forChild[2] : body;
+      const wrap = (text: string) => (forChild ? n(t, 'forChild', { name: forChild[1], body: text }) : text);
       // A broadcast's text is the School's own words, never a template.
-      if (type === 'SCHOOL_BROADCAST') return { title, body };
+      if (type === 'SCHOOL_BROADCAST') return { title, body: wrap(inner) };
       const titleKey = NOTIFICATION_TITLES[title];
       return {
         title: titleKey ? n(t, titleKey) : title,
-        body: applyRules(BODY_RULES, body, ctx) ?? body,
+        body: wrap(applyRules(BODY_RULES, inner, ctx) ?? inner),
       };
     },
   };

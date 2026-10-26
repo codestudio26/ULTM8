@@ -125,6 +125,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} está pronto para a próxima graduação ({style}).",
     paymentRestrictedTitle: "Aluno com pagamento restrito",
     paymentRestrictedBody: "Um aluno da sua escola agora só pode pagar em dinheiro ou por transferência bancária, após várias contestações de cartão perdidas.",
+    paymentRestrictedNamedBody: "{name}, aluno da sua escola, agora só pode pagar em dinheiro ou por transferência bancária, após várias contestações de cartão perdidas.",
     waiverRequestTitle: "Assinatura de termo solicitada",
     waiverRequestBody: "Você foi convidado a assinar o seguinte termo: {waiver}.",
     newStripeTitle: "Novo grau!",
@@ -158,6 +159,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "A promoção de {name} para {rank} ({style}) aguarda sua decisão. Promova ou decida não promover.",
     promotionFeeBody: "Sua promoção para {rank} ({style}) tem uma taxa de {amount}. Abra o app para aceitar ou recusar.",
     childPromotionFeeBody: "A promoção de {name} para {rank} ({style}) tem uma taxa de {amount}. Abra o app para aceitar ou recusar.",
+    forChild: "Para {name}: {body}",
     disputeStatus: {
       warning_needs_response: "consulta, precisa de resposta",
       warning_under_review: "consulta em análise",

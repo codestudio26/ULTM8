@@ -793,5 +793,65 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
       await superuser.deviceToken.delete({ where: { id: token.id } });
     });
+
+    it("parents (Decision 333): a child's notification is copied to each linked guardian, a minor's placeholder address gets no push or email, and a copy is never copied on", async () => {
+      const guardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'Parent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const revokedGuardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-old-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'OldParent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const minorId = randomUUID();
+      const minor = await superuser.user.create({
+        data: { id: minorId, email: `minor+${minorId}@guardian-managed.ultm8.internal`, phone: `+000${Math.floor(100_000_000_000 + Math.random() * 899_999_999_999)}`, firstName: 'Mia', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2018-01-01') },
+      });
+      userIds.push(guardian.id, revokedGuardian.id, minor.id);
+      await superuser.guardianLink.createMany({
+        data: [
+          { id: randomUUID(), guardianId: guardian.id, studentId: minor.id },
+          { id: randomUUID(), guardianId: revokedGuardian.id, studentId: minor.id, revokedAt: new Date() },
+        ],
+      });
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+
+      const id = `guardian-test-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-1', data: { notificationId: id, userId: minor.id, title: 'Class cancelled', body: 'Kids Judo was cancelled.' } } as never);
+      notificationIds.push(id);
+
+      // The child's own in-app row is still written…
+      expect(await superuser.notification.findUnique({ where: { id } })).not.toBeNull();
+      // …but nothing goes to the placeholder address.
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+      expect(fakePush.send).not.toHaveBeenCalled();
+
+      // One copy, for the live link only.
+      expect(fakeNotificationFanoutQueue.addBulk).toHaveBeenCalledTimes(1);
+      const copies: Array<{ data: NotificationFanoutJobData; opts: { jobId: string } }> = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0];
+      expect(copies).toHaveLength(1);
+      expect(copies[0].data).toEqual({
+        notificationId: `${id}-guardian-${guardian.id}`,
+        userId: guardian.id,
+        title: 'Class cancelled',
+        body: 'For Mia: Kids Judo was cancelled.',
+        type: undefined,
+        guardianCopyOf: minor.id,
+      });
+      expect(copies[0].opts.jobId).toBe(copies[0].data.notificationId);
+
+      // Processing the copy delivers to the parent and copies nothing further.
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+      await fanoutProcessor.process({ id: 'guardian-2', data: copies[0].data } as never);
+      notificationIds.push(copies[0].data.notificationId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+      expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(guardian.email, 'Class cancelled', 'For Mia: Kids Judo was cancelled.');
+
+      // A Student with no guardians is untouched.
+      const plainId = `guardian-test-plain-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-3', data: { notificationId: plainId, userId: studentA.id, title: 'T', body: 'B' } } as never);
+      notificationIds.push(plainId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+
+      await superuser.guardianLink.deleteMany({ where: { studentId: minor.id } });
+    });
   });
 });

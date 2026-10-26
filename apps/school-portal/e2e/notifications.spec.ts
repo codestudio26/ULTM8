@@ -224,3 +224,37 @@ test('Broadcast to one class — the picker lists upcoming classes only, soonest
   expect(options.some((o) => o.startsWith('Past Class'))).toBe(false);
   expect(options.some((o) => o.startsWith('Archived Class'))).toBe(false);
 });
+
+test('Broadcast to one class — the Owner ticks who on the class list gets it (Decision 333)', async ({ page }) => {
+  const cls = await db.class.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, title: 'Teen Judo', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+  });
+  classIds.push(cls.id);
+  let sent: Record<string, unknown> | null = null;
+  await page.route('**/v1/schools/*/notifications/broadcast', (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ broadcastId: randomUUID(), audience: 'CLASS', recipientCount: 1 }) });
+  });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  await page.getByRole('button', { name: 'Send a message to students' }).click();
+  await page.getByLabel('Title').fill('Mats moved');
+  await page.getByLabel('Message', { exact: true }).fill('Class is in the back room tonight.');
+  await page.getByLabel('Send to').selectOption('CLASS');
+  await page.getByLabel('Class', { exact: true }).selectOption(cls.id);
+
+  // Booked is ticked by default; nothing ticked is refused before sending.
+  await expect(page.getByLabel('Booked')).toBeChecked();
+  await expect(page.getByLabel('On the waitlist')).not.toBeChecked();
+  await page.getByLabel('Booked').uncheck();
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Tick at least one group on the class list.')).toBeVisible();
+  expect(sent).toBeNull();
+
+  await page.getByLabel('On the waitlist').check();
+  await page.getByLabel('Cancelled their booking').check();
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Sent to 1 Student')).toBeVisible();
+  expect(sent).toMatchObject({ audience: 'CLASS', classId: cls.id, classAudience: ['WAITLIST', 'CANCELLED'] });
+});

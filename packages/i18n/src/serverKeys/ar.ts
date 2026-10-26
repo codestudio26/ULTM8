@@ -164,6 +164,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} جاهز للترقية إلى الدرجة التالية ({style}).",
     paymentRestrictedTitle: "تقييد مدفوعات طالب",
     paymentRestrictedBody: "أصبح أحد طلاب مدرستك مقيّدًا بالدفع نقدًا أو بالتحويل البنكي فقط، بعد تكرار خسارة نزاعات البطاقات.",
+    paymentRestrictedNamedBody: "أصبح الطالب {name} في مدرستك مقيّدًا بالدفع نقدًا أو بالتحويل البنكي فقط، بعد تكرار خسارة نزاعات البطاقات.",
     waiverRequestTitle: "طلب توقيع إقرار إخلاء مسؤولية",
     waiverRequestBody: "تمت دعوتك لتوقيع إقرار إخلاء المسؤولية التالي: {waiver}.",
     newStripeTitle: "شريط جديد!",
@@ -197,6 +198,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "ترقية {name} إلى {rank} ({style}) بانتظار قرارك. قم بالترقية أو قرر عدم الترقية.",
     promotionFeeBody: "ترقيتك إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     childPromotionFeeBody: "ترقية {name} إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
+    forChild: "بخصوص {name}: {body}",
     disputeStatus: {
       warning_needs_response: "استفسار، يحتاج إلى رد",
       warning_under_review: "استفسار قيد المراجعة",

@@ -125,6 +125,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} est prêt pour son prochain grade ({style}).",
     paymentRestrictedTitle: "Paiements restreints pour un élève",
     paymentRestrictedBody: "Un élève de votre école ne peut plus payer qu’en espèces ou par virement bancaire, après plusieurs litiges de carte perdus.",
+    paymentRestrictedNamedBody: "{name}, élève de votre école, ne peut plus payer qu’en espèces ou par virement bancaire, après plusieurs litiges de carte perdus.",
     waiverRequestTitle: "Signature de décharge demandée",
     waiverRequestBody: "Vous êtes invité à signer la décharge suivante : {waiver}.",
     newStripeTitle: "Nouvelle barrette !",
@@ -158,6 +159,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "La promotion de {name} au grade {rank} ({style}) attend votre décision. Promouvez, ou décidez de ne pas le faire.",
     promotionFeeBody: "Votre promotion au grade {rank} ({style}) entraîne des frais de {amount}. Ouvrez l’application pour accepter ou refuser.",
     childPromotionFeeBody: "La promotion de {name} au grade {rank} ({style}) entraîne des frais de {amount}. Ouvrez l’application pour accepter ou refuser.",
+    forChild: "Pour {name} : {body}",
     disputeStatus: {
       warning_needs_response: "demande de renseignements, réponse requise",
       warning_under_review: "demande de renseignements en cours d’examen",

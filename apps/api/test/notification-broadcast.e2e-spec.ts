@@ -41,7 +41,7 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
 import { NotificationBroadcastService } from '../src/notifications/broadcast/notification-broadcast.service';
-import { BroadcastAudienceDto } from '../src/notifications/broadcast/dto/broadcast-notification.dto';
+import { BroadcastAudienceDto, BroadcastClassAudienceDto } from '../src/notifications/broadcast/dto/broadcast-notification.dto';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -214,6 +214,15 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
     });
     bookingIds.push(bookingCancelled.id);
 
+    // Decision 333's class audience: studentBranchY waits for a place;
+    // studentBranchX's place expired, so it is never on the list.
+    await superuser.waitlistEntry.createMany({
+      data: [
+        { id: randomUUID(), studentId: studentBranchY.id, classId: classInBranchX.id, schoolId: school.id, branchId: branchX.id, position: 1, status: 'WAITING' },
+        { id: randomUUID(), studentId: studentBranchX.id, classId: classInBranchX.id, schoolId: school.id, branchId: branchX.id, position: 2, status: 'EXPIRED' },
+      ],
+    });
+
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOtherSchoolOwner = signAccessToken(otherSchoolOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchX.id }]);
@@ -227,6 +236,7 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
     // fixture Students. Those must go before the Users they reference, same
     // FK-ordering notifications.e2e-spec.ts's own cleanup already follows.
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.waitlistEntry.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.booking.deleteMany({ where: { id: { in: bookingIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -309,7 +319,20 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       .set('Authorization', `Bearer ${tokenOwner}`)
       .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id });
     expect(cls.status).toBe(201);
-    expect(cls.body.recipientCount).toBe(2); // studentClassBooker + studentCancelledBooker.
+    expect(cls.body.recipientCount).toBe(1); // Booked only by default: studentClassBooker.
+
+    const ticked = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/notifications/broadcast`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id, classAudience: ['BOOKED', 'WAITLIST', 'CANCELLED'] });
+    expect(ticked.status).toBe(201);
+    expect(ticked.body.recipientCount).toBe(3);
+
+    const badGroup = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/notifications/broadcast`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id, classAudience: ['EVERYONE'] });
+    expect(badGroup.status).toBe(400);
   });
 
   it('BRANCH/CLASS audiences require their matching id; an empty-audience broadcast is a no-op (0 recipients, still 201)', async () => {
@@ -425,19 +448,34 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       expect(recipients).not.toContain(studentPlain.id);
     });
 
-    it('audience CLASS — every distinct Student with a Booking for that Class, reusing the same shape BookingsService.findAllForClass already uses (any Booking status, including Cancelled)', async () => {
+    it('audience CLASS — booked Students only by default (not cancelled, not the waitlist)', async () => {
       const result = await broadcastService.broadcast(owner.id, school.id, {
         title: 'Class roster',
         body: 'Body',
         audience: BroadcastAudienceDto.CLASS,
         classId: classInBranchX.id,
       });
-      expect(result.recipientCount).toBe(2);
+      expect(result.recipientCount).toBe(1);
+      expect(recipientIdsFromLastCall()).toEqual([studentClassBooker.id]);
+    });
 
-      const recipients = recipientIdsFromLastCall();
-      expect(recipients.sort()).toEqual([studentCancelledBooker.id, studentClassBooker.id].sort());
-      expect(recipients).not.toContain(studentPlain.id);
-      expect(recipients).not.toContain(studentBranchX.id);
+    it('audience CLASS — the Owner ticks which groups get it (Decision 333)', async () => {
+      const send = (classAudience: BroadcastClassAudienceDto[]) => {
+        fakeQueue.addBulk.mockClear();
+        return broadcastService.broadcast(owner.id, school.id, { title: 'Class roster', body: 'Body', audience: BroadcastAudienceDto.CLASS, classId: classInBranchX.id, classAudience });
+      };
+
+      await send([BroadcastClassAudienceDto.WAITLIST]);
+      // Only the open waitlist place; the expired one is not on the list.
+      expect(recipientIdsFromLastCall()).toEqual([studentBranchY.id]);
+
+      await send([BroadcastClassAudienceDto.CANCELLED]);
+      expect(recipientIdsFromLastCall()).toEqual([studentCancelledBooker.id]);
+
+      const all = await send([BroadcastClassAudienceDto.BOOKED, BroadcastClassAudienceDto.WAITLIST, BroadcastClassAudienceDto.CANCELLED]);
+      expect(all.recipientCount).toBe(3);
+      expect(recipientIdsFromLastCall().sort()).toEqual([studentClassBooker.id, studentBranchY.id, studentCancelledBooker.id].sort());
+      expect(recipientIdsFromLastCall()).not.toContain(studentBranchX.id);
     });
 
     it('a per-recipient notificationId/jobId is derived from this one broadcastId — dedup-safe the same way WaiverSignatureRequestsProcessor already established', async () => {

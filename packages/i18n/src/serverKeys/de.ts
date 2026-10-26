@@ -112,6 +112,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} ist bereit für den nächsten Grad ({style}).",
     paymentRestrictedTitle: "Zahlungen eines Schülers eingeschränkt",
     paymentRestrictedBody: "Ein Schüler deiner Schule kann nach mehreren verlorenen Kartenanfechtungen nur noch bar oder per Banküberweisung zahlen.",
+    paymentRestrictedNamedBody: "{name}, ein Schüler deiner Schule, kann nach mehreren verlorenen Kartenanfechtungen nur noch bar oder per Banküberweisung zahlen.",
     waiverRequestTitle: "Unterschrift für Haftungsausschluss angefordert",
     waiverRequestBody: "Du wurdest gebeten, folgenden Haftungsausschluss zu unterschreiben: {waiver}.",
     newStripeTitle: "Neuer Streifen!",
@@ -145,6 +146,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Die Beförderung von {name} zu {rank} ({style}) wartet auf deine Entscheidung. Befördere oder entscheide dich dagegen.",
     promotionFeeBody: "Deine Beförderung zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     childPromotionFeeBody: "Die Beförderung von {name} zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
+    forChild: "Für {name}: {body}",
     disputeStatus: {
       warning_needs_response: "Anfrage, Antwort erforderlich",
       warning_under_review: "Anfrage wird geprüft",

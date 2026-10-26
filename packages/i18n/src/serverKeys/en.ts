@@ -98,6 +98,7 @@ export const server = {
     paymentRestrictedTitle: 'Student payment-restricted',
     paymentRestrictedBody:
       'A student at your school has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
+    paymentRestrictedNamedBody: '{name}, a student at your school, has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
     waiverRequestTitle: 'Waiver signature requested',
     waiverRequestBody: '{waiver} has invited you to sign the following waiver.',
     newStripeTitle: 'New stripe!',
@@ -131,6 +132,7 @@ export const server = {
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",
+    forChild: "For {name}: {body}",
     disputeStatus: {
       warning_needs_response: 'inquiry, needs a response',
       warning_under_review: 'inquiry under review',

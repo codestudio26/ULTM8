@@ -2,12 +2,13 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
+import { BookingStatus } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../../tenants/tenant-authorization.service';
 import { SchoolsService } from '../../tenants/schools/schools.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
-import { BroadcastAudienceDto, BroadcastNotificationDto } from './dto/broadcast-notification.dto';
+import { BroadcastAudienceDto, BroadcastClassAudienceDto, BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 
 /**
  * POST /schools/{schoolId}/notifications/broadcast — the one gap the
@@ -112,10 +113,12 @@ export class NotificationBroadcastService {
    * cascade on RoleGrant revocation), and a broadcast audience should never
    * include someone no longer actually enrolled.
    *
-   * CLASS: the exact `where: { classId }` shape
-   * BookingsService.findAllForClass already uses for "who's booked into
-   * this Class" — every real attendee (any Booking status), not re-derived
-   * from scratch.
+   * CLASS: the Class's own list, narrowed to the groups the Owner ticked
+   * (`classAudience`, Decision 333) — booked (any Booking not cancelled),
+   * waitlist (WAITING or NOTIFIED entries) and/or cancelled Bookings.
+   * Booked only when nothing is ticked: before this, every Booking status
+   * was sent to, so people who had cancelled still got it and the waitlist
+   * never did.
    */
   private async resolveAudience(callerId: string, schoolId: string, dto: BroadcastNotificationDto): Promise<string[]> {
     if (dto.audience === BroadcastAudienceDto.ALL) {
@@ -171,9 +174,23 @@ export class NotificationBroadcastService {
     if (cls.archivedAt) {
       throw new BadRequestException('This class is archived. Pick an upcoming class.');
     }
-    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.booking.findMany({ where: { classId: dto.classId }, distinct: ['studentId'], select: { studentId: true } }),
-    );
-    return bookings.map((b) => b.studentId);
+    const groups = new Set(dto.classAudience?.length ? dto.classAudience : [BroadcastClassAudienceDto.BOOKED]);
+    const bookingStatuses: BookingStatus[] = [];
+    if (groups.has(BroadcastClassAudienceDto.BOOKED)) bookingStatuses.push('UPCOMING', 'COMPLETED', 'NO_SHOW');
+    if (groups.has(BroadcastClassAudienceDto.CANCELLED)) bookingStatuses.push('CANCELLED');
+    const classId = cls.id;
+    const { bookings, waitlist } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      bookings: bookingStatuses.length
+        ? await tx.booking.findMany({ where: { classId, status: { in: bookingStatuses } }, distinct: ['studentId'], select: { studentId: true } })
+        : [],
+      waitlist: groups.has(BroadcastClassAudienceDto.WAITLIST)
+        ? await tx.waitlistEntry.findMany({
+            where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } },
+            distinct: ['studentId'],
+            select: { studentId: true },
+          })
+        : [],
+    }));
+    return [...new Set([...bookings, ...waitlist].map((r) => r.studentId))];
   }
 }

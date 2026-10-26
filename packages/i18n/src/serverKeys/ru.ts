@@ -138,6 +138,7 @@ export const server: PartialMessages<ServerKeys> = {
     readyToGradeBodyNextRank: "{name} готов к аттестации на следующую ступень ({style}).",
     paymentRestrictedTitle: "Способы оплаты ученика ограничены",
     paymentRestrictedBody: "Ученик вашей школы теперь может платить только наличными или банковским переводом после нескольких проигранных споров по картам.",
+    paymentRestrictedNamedBody: "{name}, ученик вашей школы, теперь может платить только наличными или банковским переводом после нескольких проигранных споров по картам.",
     waiverRequestTitle: "Запрошена подпись отказа от ответственности",
     waiverRequestBody: "Вас приглашают подписать следующий отказ от ответственности: {waiver}.",
     newStripeTitle: "Новая полоска!",
@@ -171,6 +172,7 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     childPromotionFeeBody: "За повышение {name} до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
+    forChild: "Для {name}: {body}",
     disputeStatus: {
       warning_needs_response: "запрос, нужен ответ",
       warning_under_review: "запрос на рассмотрении",
