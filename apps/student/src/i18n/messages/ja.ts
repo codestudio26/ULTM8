@@ -647,6 +647,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date}に期限切れ",
       empty: "会員プランはまだありません。",
       loadError: "会員プランを読み込めませんでした。もう一度お試しください。",
+      cancelSubscription: "サブスクリプションを解約",
+      keepSubscription: "継続する",
+      cancelConfirm: "支払い済みの月の終わりまでサブスクリプションを利用できます。その後終了し、以降の支払いは発生しません。",
+      cancelError: "サブスクリプションを解約できませんでした。もう一度お試しください。",
+      cancelledEnds: "解約済み、{date} に終了",
     },
     planRow: {
       classesIncluded: { other: "{count}クラス" },

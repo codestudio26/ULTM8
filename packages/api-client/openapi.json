@@ -5845,6 +5845,41 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/members": {
+      "get": {
+        "operationId": "MembershipsController_findPlanMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanMemberListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/membership-plans/{id}/archive": {
       "post": {
         "operationId": "MembershipsController_archivePlan",
@@ -5989,6 +6024,200 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PurchaseMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/memberships/{id}/cancel": {
+      "post": {
+        "operationId": "MembershipsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelMembershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships": {
+      "get": {
+        "operationId": "MembershipsController_findStudentMemberships",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentMembershipListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/sell": {
+      "post": {
+        "operationId": "MembershipsController_sellAtDesk",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellMembershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
+      "post": {
+        "operationId": "MembershipsController_giftFriendPass",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiftFriendPassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
                 }
               }
             }
@@ -17315,6 +17544,64 @@
           "subscriberCount"
         ]
       },
+      "PlanMemberResponseDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "gifted": {
+            "type": "boolean",
+            "description": "True when the owner gave it (a Friend Pass)."
+          }
+        },
+        "required": [
+          "membershipId",
+          "studentId",
+          "firstName",
+          "surname",
+          "startDate",
+          "gifted"
+        ]
+      },
+      "PlanMemberListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanMemberResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "MembershipPlanPriceChangeResponseDto": {
         "type": "object",
         "properties": {
@@ -17463,6 +17750,15 @@
             "type": "string",
             "nullable": true
           },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
@@ -17517,6 +17813,158 @@
         },
         "required": [
           "outcome"
+        ]
+      },
+      "CancelMembershipDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: the linked minor whose Subscription this is."
+          }
+        }
+      },
+      "StudentMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "giftedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string"
+          },
+          "live": {
+            "type": "boolean",
+            "description": "In effect now: Active, not past its expiry date, and not a used-up pack."
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "membershipPlanId",
+          "schoolId",
+          "status",
+          "startDate",
+          "frequency",
+          "createdAt",
+          "updatedAt",
+          "planTitle",
+          "planType",
+          "live"
+        ]
+      },
+      "StudentMembershipListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentMembershipResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SellMembershipDto": {
+        "type": "object",
+        "properties": {
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK_TRANSFER",
+              "PIX",
+              "CARD_TERMINAL"
+            ]
+          }
+        },
+        "required": [
+          "membershipPlanId",
+          "paymentMethod"
+        ]
+      },
+      "DeskMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "membership": {
+            "$ref": "#/components/schemas/MembershipResponseDto"
+          },
+          "transactionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass."
+          }
+        },
+        "required": [
+          "membership"
+        ]
+      },
+      "GiftFriendPassDto": {
+        "type": "object",
+        "properties": {
+          "membershipPlanId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "membershipPlanId"
         ]
       },
       "MembershipListResponseDto": {
