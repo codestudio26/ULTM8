@@ -201,7 +201,7 @@ describeIfDb('Waivers review fixes', () => {
     spy.mockRestore();
     // The app's own worker may also have run the job queued on create.
     expect(fanoutAdds.length).toBeGreaterThanOrEqual(students.length);
-    expect(new Set(fanoutAdds.map((j) => j.data.body))).toEqual(new Set(['Review Dojo asks you to sign: Adult Liability Waiver. Open it in the app to read and sign.']));
+    expect(new Set(fanoutAdds.map((j) => j.data.body))).toEqual(new Set(['Review Dojo has invited you to sign the waiver "Adult Liability Waiver".']));
   });
 
   it('W10: signing is refused once the School is closed', async () => {

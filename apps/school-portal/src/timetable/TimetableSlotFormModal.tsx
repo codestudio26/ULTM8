@@ -298,11 +298,6 @@ export function TimetableSlotFormModal({
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
-        <Checkbox
-          label={t('timetable.form.membershipInclusion')}
-          checked={form.membershipInclusion}
-          onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
-        />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}

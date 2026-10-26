@@ -283,7 +283,7 @@ export class WaitlistService {
         }
       }
 
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls.id);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls);
 
       const bookingId = randomUUID();
       try {

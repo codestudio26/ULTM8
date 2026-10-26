@@ -189,24 +189,24 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     const past = new Date(Date.now() - 24 * 3_600_000);
 
     classBasic = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Open Mat', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Open Mat', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     classWaiverGated = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Sparring', startDate: future, endDate: new Date(future.getTime() + 3_600_000), termsWaiverRequired: true },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Sparring', startDate: future, endDate: new Date(future.getTime() + 3_600_000), termsWaiverRequired: true },
     });
     classRankGated = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: 'Fundamentals' }], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: 'Fundamentals' }], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     classFull = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Small Group', capacity: 1, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Small Group', capacity: 1, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     classPastCutoff = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Already Cutoff', startDate: future, endDate: new Date(future.getTime() + 3_600_000), refundFeeDate: past },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Already Cutoff', startDate: future, endDate: new Date(future.getTime() + 3_600_000), refundFeeDate: past },
     });
     // Decision 234 — same past-cutoff shape as classPastCutoff above, plus a
     // real cancellationCharge, to exercise the late-cancellation-fee path.
     classPastCutoffWithFee = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         title: 'Already Cutoff, With Fee',
@@ -222,7 +222,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // elsewhere in this suite (classBasic/classFull both already carry Booking
     // state from earlier tests this file doesn't want to disturb).
     classBeforeCutoffWithFee = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         title: 'Before Cutoff, With Fee',
@@ -402,7 +402,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     });
     const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
     const classBranchA = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         branchId: branchA.id,
@@ -481,7 +481,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
     ]);
     const classBranchA = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         branchId: branchA.id,
@@ -634,7 +634,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
   it('CONCURRENCY: two simultaneous bookClass calls for a capacity=1 Class never both succeed (the FOR UPDATE lock fix)', async () => {
     const classConcurrency = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Concurrency Check', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Concurrency Check', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
     });
     const mkRacer = async (label: string) => {
       const user = await superuser.user.create({
@@ -801,7 +801,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     });
     const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
     const classBranchA = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         branchId: branchA.id,
@@ -852,7 +852,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
     ]);
     const classBranchA = await superuser.class.create({
-      data: {
+      data: { membershipInclusion: true,
         id: randomUUID(),
         schoolId: school.id,
         branchId: branchA.id,
@@ -1177,7 +1177,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // by schoolId), same precedent the "CONCURRENCY" test's own
     // classConcurrency fixture above already established.
     const classForCancel = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Cancel Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Guardian Cancel Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
     });
 
     const bookRes = await request(app.getHttpServer())
@@ -1236,7 +1236,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // Full (one seat, taken), since only a full Class takes a waitlist entry
     // (booking/schedule stress test, 26 Oct 2026).
     const classForGuardianWaitlist = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
     });
     const seatHolder = await mkActiveMembership(studentB.id, subscriptionPlanId, null);
     const seat = await superuser.booking.create({
@@ -1276,7 +1276,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
   it('a Guardian CAN claim a Notified entry on behalf of a linked minor — creates a real Booking for the MINOR', async () => {
     const classForGuardianClaim = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Claim Fixture', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Guardian Claim Fixture', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
     });
     // Full first (only a full Class takes a waitlist entry); the seat is freed
     // below, standing in for the cancellation that triggers the cascade.
@@ -1319,7 +1319,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // flip, not a row delete, so it still holds a live FK to this Class; same
     // reasoning as every other throwaway-Class fixture in this section.
     const classForGuardianWithdraw = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000), capacity: 1 },
     });
     const withdrawSeatHolder = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id, schoolId: school.id, status: 'ACTIVE' } });
     const withdrawSeat = await superuser.booking.create({
@@ -1397,7 +1397,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       // direct-insert attempt there into an unrelated 500, not a clean fixture.
       const future = new Date(Date.now() + 24 * 3_600_000);
       const classForStudentBookingsRead = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Student Bookings Read Fixture', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Student Bookings Read Fixture', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
       });
       const membership = await mkActiveMembership(studentA.id, subscriptionPlanId, null);
       const booking = await superuser.booking.create({
@@ -1489,16 +1489,16 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     beforeAll(async () => {
       classMon = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
       });
       classTueMulti = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Tue Judo+BJJ', activities: ['Judo', 'BJJ'], startDate: dt('2026-01-06', 9), endDate: dt('2026-01-06', 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Tue Judo+BJJ', activities: ['Judo', 'BJJ'], startDate: dt('2026-01-06', 9), endDate: dt('2026-01-06', 10) },
       });
       classWedNoTags = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Wed No Tags', activities: [], startDate: dt('2026-01-07', 9), endDate: dt('2026-01-07', 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Wed No Tags', activities: [], startDate: dt('2026-01-07', 9), endDate: dt('2026-01-07', 10) },
       });
       classOutOfRange = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Out Of Range', activities: ['Judo'], startDate: dt('2026-01-12', 9), endDate: dt('2026-01-12', 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Out Of Range', activities: ['Judo'], startDate: dt('2026-01-12', 9), endDate: dt('2026-01-12', 10) },
       });
       summaryClassIds.push(classMon.id, classTueMulti.id, classWedNoTags.id, classOutOfRange.id);
 
@@ -1556,7 +1556,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id } });
       tokenOwnerB = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null }]);
       classB = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: schoolB.id, title: 'School B Summary Class', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: schoolB.id, title: 'School B Summary Class', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
       });
       const membershipPlanB = await superuser.membershipPlan.create({
         data: { id: randomUUID(), schoolId: schoolB.id, type: 'SUBSCRIPTION', title: 'School B Unlimited', price: 5000 },

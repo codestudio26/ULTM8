@@ -20,13 +20,51 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   students"); each signature keeps a copy of the exact text signed, viewable
   by opening it, and signing an out-of-date version asks the student to read
   it again; blank waivers and blank signatures are refused; archived waivers
-  are no longer assigned or signable, and Archive asks first; the request
-  notification names the School; every waiver and signature loads, with
+  are no longer assigned or signable, and Archive asks first; every waiver and signature loads, with
   All / Signed / Not signed tabs sorted A to Z; clearer signing errors;
   waitlists need a signed waiver when the class does; "include archived =
   false" now works on Waivers, Classes, Timetable, Branches and Instructors;
   drawn signature images are deleted with their signature. Needs migration
   `20261130000000_waiver_signed_copy`.
+- **Classes: second batch of fixes** (Decision 345, needs a migration) — a
+  one-off class now needs its own ticket unless "Included in membership" is
+  ticked (existing one-off classes were ticked so nothing changes for them;
+  Timetable classes are always included and lose the switch); moving a booked
+  class to a new time tells booked and waiting students and can't move it into
+  the past; a booked class can't move to another branch; a class that has
+  already ended can't be created.
+- **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
+  whose Weekly Pass or Trial has run out can buy again (it used to be refused
+  as if the old one were still live); a live Trial no longer blocks buying a
+  Weekly Pass or Subscription; changing a plan's type clears the fields the new
+  type doesn't use, and is locked while the plan has active members; a Trial
+  lasts 1-30 days, with at most 30 trial days per Student per School in 12
+  months; a Class Pack needs its class count and a Weekly Pass its expiry;
+  prices and cancellation charges are typed in pounds and pence (12.50), not
+  pence; every plan is listed (not just the first 20); Branch Staff see who
+  manages plans instead of a blank page; a purchase is charged in the plan's
+  currency or the School's default, never US dollars by default; plans that
+  require a waiver, hidden plans, closed Schools, classes that have already
+  taken place, staff who aren't Students, and removed Students are all refused
+  at purchase; a second cash order for the same plan returns the first; the
+  Active members count leaves out removed Students. **Needs a database
+  migration.**
+- **Notifications fixes from the 26 Oct review (Decision 333)** — the page
+  has **Load more**, so notifications past the newest 20 can be seen; the bell's
+  red dot follows the real Unread count (all pages, snoozed left out), as does
+  the coach dashboard's unread count; Snooze is greyed out on read
+  notifications; the broadcast "One class" picker lists upcoming classes
+  soonest first with their date, time and branch; push no longer waits on
+  email, and with no email service set up a notification is delivered in-app
+  without three failed retries; the waiver request names the School
+  ("Gracie Barra has invited you to sign the waiver …"); Class moved, Class
+  cancelled, Promotion to decide and Promotion fee are translated; broadcasts
+  refuse an archived branch or class and a blank title or message; a snooze
+  is capped at 7 days; a bad page link is a 400, not a server error. A
+  child's notifications now also reach their linked parents ("For Mia: …");
+  when sending to one class, the Owner ticks who gets it (booked, waitlist,
+  cancelled; booked by default); and the payment-restricted alert names the
+  student.
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

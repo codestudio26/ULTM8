@@ -113,7 +113,7 @@ describeIfDb('Decision 123 — Guardian Kid Mode booking delegation: HTTP-level 
 
     const future = new Date(Date.now() + 24 * 3_600_000);
     cls = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Kid Mode Fixture Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Kid Mode Fixture Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
   });
 
