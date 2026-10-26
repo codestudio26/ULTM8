@@ -247,6 +247,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | BL9 | Recurring list: Member, Amount, Details (description + method), Started (+ "Every Month"), **Next payment** date, edit; search, filter, 10/25/50/100 per page | ❌ | C1 recurring charges (Decision 303). Membership subscriptions are separate and already exist |
+| BL9a | Recurring **Filter**: member status (All members …), **recurrence** (All …), payment type (All methods); Reset / Cancel / Apply | ❌ | Comes with C1's recurring charges |
 | BL10 | **Create / Edit Recurring Payment**: member, amount, + discount, **Add Sales Tax** (typed %), **every N months**, **scheduled day** (1st–31st), description, **first payment now or on a date**, payment method; **Restart payments** | ❌ | C1. Tax is **not** typed in ULTM8: per-country rate kept by Platform Admin (Decisions 303, 316.8) |
 
 ### Discounts
