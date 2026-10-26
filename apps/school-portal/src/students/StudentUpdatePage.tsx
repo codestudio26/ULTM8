@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AddressFields, Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useStudents, useUpdateStudentProfile } from './studentQueries';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { languageName } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 
 /**
@@ -51,6 +53,8 @@ export function StudentUpdatePage() {
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
   const navigate = useNavigate();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
   const students = useStudents(schoolId);
   const updateProfile = useUpdateStudentProfile(schoolId);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
@@ -197,10 +201,19 @@ export function StudentUpdatePage() {
             <TextField value={form.nationality} onChange={(e) => setForm((f) => ({ ...f!, nationality: e.target.value }))} />
           </Field>
           <Field label={t('students.update.language')} htmlFor="student-update-language" hint={t('students.update.keepHint')}>
-            <TextField value={form.language} onChange={(e) => setForm((f) => ({ ...f!, language: e.target.value }))} />
+            <SelectField
+              value={form.language}
+              onChange={(e) => setForm((f) => ({ ...f!, language: e.target.value }))}
+              options={[{ value: '', label: t('common.none') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
+            />
           </Field>
           <Field label={t('students.update.currency')} htmlFor="student-update-currency" hint={t('students.update.keepHint')}>
-            <TextField value={form.currency} onChange={(e) => setForm((f) => ({ ...f!, currency: e.target.value }))} />
+            <CurrencyField
+              id="student-update-currency"
+              value={form.currency}
+              onChange={(code) => setForm((f) => ({ ...f!, currency: code }))}
+              options={[{ code: '', name: t('common.none') }, ...(currencies ?? [])]}
+            />
           </Field>
           <AddressFields
             idPrefix="student-update-address"

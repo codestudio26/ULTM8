@@ -130,7 +130,10 @@ export function ProfileScreen() {
         dateOfBirth: form.dateOfBirth.trim(),
         gender: form.gender.trim() || null,
         nationality: form.nationality.trim() || null,
-        address: form.address.trim() || null,
+        // Left out when untouched: this screen still edits the one-line text,
+        // and sending it would clear a structured (Decision 276) address the
+        // School Portal saved, even though the Student never changed it.
+        address: form.address.trim() === (profile.data?.address ?? '') ? undefined : form.address.trim() || null,
         // Still `undefined`, not `null`, for these two — neither picker offers
         // a "none" selection, so an empty `form.language`/`form.currency`
         // genuinely can't happen via this screen's own UI today; see this
