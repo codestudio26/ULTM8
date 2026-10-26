@@ -5057,6 +5057,38 @@ User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timet
 
 ---
 
+## Decision 333 — Notifications review fixes: Load more, bell count, push before email, named waiver sender, archived broadcast targets, parents, class audience, named payment alert
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 204, 223, 264, 273, 277
+
+A review of the Notifications section (26 Oct 2026) found 14 bugs (N1–N14). The product owner asked for the fixes that need no further choice to be built (*"build it and ask me"*); N2 (a child's notifications reaching their parents), N9 (who a class broadcast reaches) and naming the student in the payment-restricted alert were put to them as separate questions; their answers (same day) are items 11–13. N7 (cancellation date in UTC) was already fixed by Decision 332 §13.
+
+### Decision
+
+1. **Every notification can be reached** (N1): the Notifications page loads the inbox one page at a time with a **Load more** button, instead of only the newest 20.
+2. **The bell and the coach dashboard use the real Unread count** (N3): `GET /notifications/me/counts`, which covers every page and leaves snoozed notifications out, the same number as the Unread tile.
+3. **Snooze is greyed out on a read notification** (N10): it is already out of the Unread count.
+4. **The broadcast class picker lists upcoming, live Classes** (N4): from now to 30 days ahead, soonest first, each labelled with its date, time and branch.
+5. **Push does not wait on email** (N5): notification-fanout sends push first, on the first attempt only (a retry exists only for email), and when no email service is configured at all it skips email instead of failing and retrying the job. A real email failure still retries.
+6. **The waiver request names the School as the sender** (N6): "{School} has invited you to sign the waiver "{title}"." Spec 55 §9's sample leaves the sender out ("...has invited you to sign the following waiver"); the earlier text put the waiver's title in the sender's place. Older rows keep translating.
+7. **Four more job-written notifications are translated** (N8): Class moved, Class cancelled, Promotion to decide and Promotion fee, in all 15 languages. The date inside the Class moved/cancelled text stays as the API writes it.
+8. **A broadcast refuses an archived Branch or Class** (N11) with a clear message, and **a title or message of only spaces** (N13), trimmed on the server as the portal already does.
+9. **A snooze is capped at 7 days whichever way it is set** (N14), matching the existing `minutes` ceiling.
+10. **A cursor the API did not write is a 400** (N12), not a server error.
+11. **A child's notifications also go to their linked parents** (N2; product owner: "Yes, send to parents"). notification-fanout copies every notification for a Student with a live GuardianLink to each linked guardian, as "For {first name}: {message}", one job per guardian with a deterministic id. A guardian-created minor (no login, placeholder email) gets only its in-app row, no push or email to the placeholder. A copy is never copied on, and the grading notifications, which already address guardians instead of the minor, are not doubled.
+12. **The School Owner ticks who a one-class broadcast reaches** (N9; product owner: "this should be decided by the school owner"). `classAudience` on the broadcast: **Booked** (any Booking not cancelled), **On the waitlist** (waiting or offered a spot) and/or **Cancelled their booking**, at least one, Booked ticked by default. Before this every Booking was sent to, cancelled ones included, and the waitlist never was.
+13. **The payment-restricted alert names the Student** (product owner: "Yes, name the student"): "{first name} {surname}, a Student at your School, has been restricted to …". Older rows keep translating.
+
+### What this does NOT resolve
+
+A School label on each notification, Mark all read, click-through, a sent-broadcast history, notification settings and automatic clean-up are still open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, "build it and ask me" on the Notifications fix plan.
+
+---
+
 ## Decision 335 — Classes review fixes, first batch
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (fix plan, Classes review)

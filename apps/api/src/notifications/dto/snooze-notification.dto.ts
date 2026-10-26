@@ -17,7 +17,7 @@ import { IsISO8601, IsInt, IsOptional, Max, Min } from 'class-validator';
  */
 export class SnoozeNotificationDto {
   @ApiPropertyOptional({
-    description: 'Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both.',
+    description: 'Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both.',
   })
   @IsOptional()
   @IsISO8601()
