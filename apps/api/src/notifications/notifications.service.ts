@@ -181,6 +181,11 @@ export class NotificationsService {
     if (snoozedUntil.getTime() <= Date.now()) {
       throw new BadRequestException('`until`/`minutes` must resolve to a future time.');
     }
+    // The same 7-day ceiling `minutes` has (SnoozeNotificationDto), so `until`
+    // can't hide a notification for years.
+    if (snoozedUntil.getTime() > Date.now() + MAX_SNOOZE_MS) {
+      throw new BadRequestException('A notification can be snoozed for at most 7 days.');
+    }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const existing = await tx.notification.findUnique({ where: { id: notificationId } });
@@ -289,6 +294,8 @@ export class NotificationsService {
   }
 }
 
+const MAX_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface NotificationCursor {
   createdAt: Date;
   id: string;
@@ -298,7 +305,19 @@ function encodeCursor(n: { createdAt: Date; id: string }): string {
   return Buffer.from(JSON.stringify({ createdAt: n.createdAt.toISOString(), id: n.id })).toString('base64url');
 }
 
+/** A cursor that isn't one this service wrote is the caller's mistake (a 400),
+ * not a server fault: JSON.parse and an Invalid Date used to surface as 500s. */
 function decodeCursor(cursor: string): NotificationCursor {
-  const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { createdAt: string; id: string };
-  return { createdAt: new Date(parsed.createdAt), id: parsed.id };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+  } catch {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  const { createdAt, id } = (parsed ?? {}) as { createdAt?: unknown; id?: unknown };
+  const date = typeof createdAt === 'string' ? new Date(createdAt) : null;
+  if (!date || Number.isNaN(date.getTime()) || typeof id !== 'string') {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  return { createdAt: date, id };
 }

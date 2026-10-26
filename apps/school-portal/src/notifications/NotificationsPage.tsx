@@ -3,7 +3,6 @@ import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, RowActionsMen
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
-import { useClasses } from '../classes/classQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import {
   useBroadcastNotification,
@@ -11,8 +10,9 @@ import {
   useDeleteNotification,
   useMarkNotificationRead,
   useNotificationCounts,
-  useNotifications,
+  useNotificationPages,
   useSnoozeNotification,
+  useUpcomingClassesForBroadcast,
   type NotificationResponse,
 } from './notificationQueries';
 import { BroadcastNotificationModal } from './BroadcastNotificationModal';
@@ -75,7 +75,8 @@ function isSnoozed(n: NotificationResponse): boolean {
 export function NotificationsPage() {
   const schoolId = useOwnedSchoolId();
   const { t, serverText } = useI18n();
-  const { data, isLoading, error } = useNotifications();
+  // Every loaded page, newest first, with "Load more" for the next one.
+  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotificationPages();
   // v1.2 backend backlog (Decision 204's Concept 5 finding) — a SEPARATE
   // query against the new dedicated counts endpoint, deliberately NOT
   // `data.items.length`/`.filter(n => !n.read).length` over the list above:
@@ -100,14 +101,14 @@ export function NotificationsPage() {
   // handed down to the modal, same "page owns the data, modal owns the form"
   // split BranchFormModal/ClassFormModal callers already use elsewhere.
   const branches = useBranches(schoolId);
-  const classes = useClasses(schoolId);
+  const classes = useUpcomingClassesForBroadcast(schoolId);
   const broadcast = useBroadcastNotification(schoolId ?? '');
 
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('notifications.loadFailed')} />;
 
   // Titles/bodies the API's jobs wrote in English, shown in the picked language.
-  const notifications = (data?.items ?? []).map((n) => ({ ...n, ...serverText.notification(n) }));
+  const notifications = (data?.pages ?? []).flatMap((p) => p.items).map((n) => ({ ...n, ...serverText.notification(n) }));
 
   async function handleMarkRead(id: string) {
     setActionError(null);
@@ -217,7 +218,9 @@ export function NotificationsPage() {
                     label={t('notifications.rowActionsAria', { title: n.title })}
                     actions={[
                       { label: t('notifications.markRead'), onClick: () => handleMarkRead(n.id), disabled: n.read },
-                      { label: t('notifications.snooze'), onClick: () => setSnoozing(n) },
+                      // A read notification is already out of the Unread count,
+                      // so snoozing it would change nothing but its badge.
+                      { label: t('notifications.snooze'), onClick: () => setSnoozing(n), disabled: n.read },
                       { label: t('notifications.delete'), onClick: () => setDeleting(n), variant: 'danger' },
                     ]}
                   />
@@ -227,6 +230,13 @@ export function NotificationsPage() {
           />
         )}
       </Card>
+      {hasNextPage ? (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+          <Button variant="secondary" loading={isFetchingNextPage} onClick={() => fetchNextPage()}>
+            {t('notifications.loadMore')}
+          </Button>
+        </div>
+      ) : null}
 
       {snoozing ? (
         <SnoozeNotificationModal
@@ -261,7 +271,7 @@ export function NotificationsPage() {
       {broadcasting ? (
         <BroadcastNotificationModal
           branches={branches.data?.items ?? []}
-          classes={classes.data?.items ?? []}
+          classes={classes.data ?? []}
           submitting={broadcast.isPending}
           onSubmit={(input) => broadcast.mutateAsync(input)}
           onClose={() => setBroadcasting(false)}

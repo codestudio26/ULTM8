@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -20,6 +20,20 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: () => unwrap(apiClient.GET('/v1/notifications/me', {})),
+  });
+}
+
+/** The whole inbox for NotificationsPage, one page at a time ("Load more").
+ * `useNotifications` above stays the newest page only, for the short previews
+ * elsewhere. Same `['notifications']` prefix, so every mutation below that
+ * invalidates `['notifications']` refreshes every loaded page too. */
+export function useNotificationPages() {
+  return useInfiniteQuery({
+    queryKey: ['notifications', 'pages'],
+    queryFn: ({ pageParam }) =>
+      unwrap(apiClient.GET('/v1/notifications/me', { params: { query: { cursor: pageParam ?? undefined } } })),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? null,
   });
 }
 
@@ -106,5 +120,40 @@ export function useBroadcastNotification(schoolId: string) {
   return useMutation({
     mutationFn: (body: BroadcastNotificationInput) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/notifications/broadcast', { params: { path: { schoolId } }, body })),
+  });
+}
+
+const BROADCAST_CLASS_WINDOW_DAYS = 30;
+const BROADCAST_CLASS_PAGE_LIMIT = 10;
+
+/** The "One class" picker in BroadcastNotificationModal: live (not archived)
+ * Classes starting from now to 30 days ahead, soonest first. The Classes list
+ * endpoint pages in id order, so this walks its pages (up to 10 × 100) and
+ * sorts here — a plain `useClasses` call returned only its first 20 rows, in
+ * an order that meant nothing to the person picking. */
+export function useUpcomingClassesForBroadcast(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['classes', schoolId, 'broadcast-upcoming'],
+    enabled: !!schoolId,
+    queryFn: async () => {
+      const startsFrom = new Date();
+      const startsTo = new Date(startsFrom.getTime() + BROADCAST_CLASS_WINDOW_DAYS * 86_400_000);
+      const items: components['schemas']['ClassResponseDto'][] = [];
+      let cursor: string | undefined;
+      for (let page = 0; page < BROADCAST_CLASS_PAGE_LIMIT; page++) {
+        const res = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/classes', {
+            params: {
+              path: { schoolId: schoolId! },
+              query: { startsFrom: startsFrom.toISOString(), startsTo: startsTo.toISOString(), limit: 100, cursor },
+            },
+          }),
+        );
+        items.push(...res.items);
+        if (!res.nextCursor) break;
+        cursor = res.nextCursor;
+      }
+      return items.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    },
   });
 }

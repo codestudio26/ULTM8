@@ -269,6 +269,16 @@ Not grading features themselves, but B10 and B11 depend on them. Both are decide
 - Members (or Guardians) **pay in the app**, the whole balance or one charge, through Stripe hosted Checkout as for memberships (Decisions 238/243), or at the desk. The receipt shows in their account.
 - An accepted promotion fee (B10) is one of these charges.
 
+- **Decision 338 adds** (Gymdesk Billing review, 26 Oct 2026):
+  - **cancel, never delete**, with who, when and a reason (required or optional by the owner's setting, required by default); a separate **"Can cancel charges"** tick box; the member sees Cancelled and is notified;
+  - **refunds:** part refunds, owner picks card or balance credit each time, notes required by default;
+  - a running **invoice number** per School; an invoice before payment, resendable;
+  - **desk payments:** cash, Pix, bank transfer, card terminal; part payments; receipt by default;
+  - the member chooses whether a saved card is **charged automatically**;
+  - **notifications** on by default with off switches;
+  - an **Overview** report and **Member balances** for the owner and staff with payment access;
+  - restarting a recurring payment: the owner and staff with payment access.
+
 **Suggested build (from backlog §3.6):** `Charge { schoolId, studentId, description, amount, discountType?, discountValue?, taxRate (from country), total, dueAt, status, paymentMethod, createdById }`; `RecurringCharge { …, interval, dayOfMonth, firstChargeAt, nextChargeAt }`; a ledger for the balance (charges, payments, credits, refunds) rather than a stored number; a per-country tax table set by Platform Admin; card payments through Stripe Connect on the School's account, cash and transfer recorded by staff; a scheduler for recurring charges; a `canCreateCharges` flag on the staff role grant.
 
 **Done when:** staff can create one-off and recurring charges with discounts and country tax; the balance (including credit) shows on the profile and panel; members pay in the app and see the receipt; only permitted staff can create charges and only the owner can refund or credit.
