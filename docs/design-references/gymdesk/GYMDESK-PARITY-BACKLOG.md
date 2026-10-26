@@ -226,7 +226,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 |---|---|---|---|
 | BL1 | Date-range picker; **Totals** rings: Scheduled, Paid, Overdue | 🟡 | Transactions page has a revenue tile, no date range, no scheduled/overdue (nothing is "scheduled" or "overdue" until C1 exists) |
 | BL2 | **Revenue** bar chart by month (12 months) | ❌ | Data exists in `Transaction`; frontend + one aggregate query |
-| BL3 | **Overdue Payments** table (member + status badge, amount + method, description, invoice #, due date with "Overdue" / "Overdue (Why?)", invoice icon, edit) and **Recent Payments**; buttons to the full lists | ❌ | Needs C1's charges. The "Why?" explains a failed card payment |
+| BL3 | **Overdue Payments** table (member + status badge, amount + method, description, invoice #, due date with "Overdue" / "Overdue (Why?)", invoice icon, edit) and **Recent Payments**; buttons to the full lists | ❌ | Needs C1's charges. **"Why?"** is a hover tooltip giving the reason a card charge didn't happen, e.g. **"No card assigned to payment"** (screenshot 26 Oct 2026). ULTM8 has Stripe's failure reason from the webhook; showing it to staff is frontend + one field |
 
 ### Payments
 

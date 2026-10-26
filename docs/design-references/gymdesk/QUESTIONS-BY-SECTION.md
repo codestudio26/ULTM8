@@ -215,7 +215,7 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [x] The **Filter** and **Export** menus opened (Payments, Accounting) (received 26 Oct 2026)
 - [x] An **invoice opened**, Mark Paid and Cancel (recording 26 Oct 2026)
 - [x] Bulk select and **Mass Payment Changes** (recording 26 Oct 2026)
-- [ ] "Overdue (**Why?**)" clicked
+- [x] "Overdue (**Why?**)": a tooltip, "No card assigned to payment" (26 Oct 2026)
 - [ ] **Creating a one-off charge** (where it starts: member profile?), and a **refund**
 - [ ] Accounting → **Product Revenue** and **Member Balances** sub-tabs
 - [ ] Optional: a discount and a payment form filled in, then saved
