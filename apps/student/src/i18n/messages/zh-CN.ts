@@ -401,7 +401,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "免费",
       live: "直播",
       prerecorded: "录播",
-      durationMinutes: "{minutes} 分钟",
       locked: "已锁定 — 不包含在你当前的会员中。",
       favoritedLabel: "已收藏",
     },

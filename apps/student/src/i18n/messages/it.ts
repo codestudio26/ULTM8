@@ -413,7 +413,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Gratuita",
       live: "In diretta",
       prerecorded: "Preregistrata",
-      durationMinutes: "{minutes} min",
       locked: "Bloccata — non inclusa nella tua iscrizione attuale.",
       favoritedLabel: "Nei preferiti",
     },

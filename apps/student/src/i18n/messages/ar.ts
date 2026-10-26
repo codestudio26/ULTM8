@@ -428,7 +428,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "مجاني",
       live: "مباشر",
       prerecorded: "مسجّل مسبقًا",
-      durationMinutes: "{minutes} د",
       locked: "مقفل — غير مشمول في عضويتك الحالية.",
       favoritedLabel: "في المفضّلة",
     },

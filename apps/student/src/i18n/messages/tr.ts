@@ -405,7 +405,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Ücretsiz",
       live: "Canlı",
       prerecorded: "Önceden kaydedilmiş",
-      durationMinutes: "{minutes} dk",
       locked: "Kilitli — mevcut üyeliğinize dahil değil.",
       favoritedLabel: "Favorilerde",
     },

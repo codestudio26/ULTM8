@@ -401,7 +401,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "ฟรี",
       live: "สด",
       prerecorded: "บันทึกไว้ล่วงหน้า",
-      durationMinutes: "{minutes} นาที",
       locked: "ล็อกอยู่ — ไม่รวมอยู่ในสมาชิกภาพปัจจุบันของคุณ",
       favoritedLabel: "รายการโปรด",
     },

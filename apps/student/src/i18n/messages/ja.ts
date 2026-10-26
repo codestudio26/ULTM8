@@ -401,7 +401,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "無料",
       live: "ライブ",
       prerecorded: "録画",
-      durationMinutes: "{minutes}分",
       locked: "ロック中 — 現在の会員プランには含まれていません。",
       favoritedLabel: "お気に入り済み",
     },

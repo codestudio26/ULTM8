@@ -405,7 +405,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Kostenlos",
       live: "Live",
       prerecorded: "Aufgezeichnet",
-      durationMinutes: "{minutes} Min.",
       locked: "Gesperrt — nicht in deiner aktuellen Mitgliedschaft enthalten.",
       favoritedLabel: "Favorit",
     },

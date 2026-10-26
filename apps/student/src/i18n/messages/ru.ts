@@ -418,7 +418,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Бесплатно",
       live: "В прямом эфире",
       prerecorded: "В записи",
-      durationMinutes: "{minutes} мин",
       locked: "Закрыто — не входит в ваш текущий абонемент.",
       favoritedLabel: "В избранном",
     },

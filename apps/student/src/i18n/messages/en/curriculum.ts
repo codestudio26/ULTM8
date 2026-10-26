@@ -6,7 +6,6 @@ export const curriculum = {
     live: 'Live',
     prerecorded: 'Prerecorded',
     /** A Lesson's length, rounded to whole minutes. */
-    durationMinutes: '{minutes} min',
     locked: 'Locked — not included in your current membership.',
     favoritedLabel: 'Favorited',
   },
