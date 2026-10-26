@@ -209,10 +209,17 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] **Schedule:** the **ASSIGN** menu opened and **adding a class**
 
 ## B4. Billing (left-nav item)
-- [ ] Every tab
-- [ ] Transactions list, filters, and opening one transaction
-- [ ] Creating an invoice / charge, refunds, failed payments
-- [ ] Any reports
+- [x] Every tab, and every Settings → Billing page (received 26 Oct 2026; compared in the parity backlog §6)
+- [x] Payments list (Paid/Scheduled/Overdue), Edit Charge, Recurring list, create/edit recurring payment
+- [x] Reports: Overview, Accounting, Growth, Income Categories
+- [x] The **Filter** and **Export** menus opened (Payments, Accounting) (received 26 Oct 2026)
+- [x] An **invoice opened**, Mark Paid and Cancel (recording 26 Oct 2026)
+- [x] Bulk select and **Mass Payment Changes** (recording 26 Oct 2026)
+- [x] "Overdue (**Why?**)": a tooltip, "No card assigned to payment" (26 Oct 2026)
+- [x] **Creating a one-off charge** from the member profile, and cancelling it (recordings 26 Oct 2026)
+- [x] A **refund** of a cash payment (recording 26 Oct 2026)
+- [x] Accounting → **Product Revenue** and **Member Balances** sub-tabs (recording 26 Oct 2026). **Billing captures complete.**
+- [ ] Optional: a discount and a payment form filled in, then saved
 
 ## B5. Marketing
 - [ ] Every tab
