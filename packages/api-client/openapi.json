@@ -14833,7 +14833,7 @@
         "properties": {
           "until": {
             "type": "string",
-            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both."
+            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both."
           },
           "minutes": {
             "type": "number",
@@ -17799,10 +17799,15 @@
         "properties": {
           "activeCount": {
             "type": "number"
+          },
+          "subscriberCount": {
+            "type": "number",
+            "description": "Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334)."
           }
         },
         "required": [
-          "activeCount"
+          "activeCount",
+          "subscriberCount"
         ]
       },
       "MembershipPlanPriceChangeResponseDto": {
@@ -21673,6 +21678,18 @@
           "classId": {
             "type": "string",
             "description": "Required when audience is CLASS — must be a Class of this School."
+          },
+          "classAudience": {
+            "type": "array",
+            "description": "Audience CLASS only: which people on the class list receive it. Defaults to BOOKED.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BOOKED",
+                "WAITLIST",
+                "CANCELLED"
+              ]
+            }
           }
         },
         "required": [

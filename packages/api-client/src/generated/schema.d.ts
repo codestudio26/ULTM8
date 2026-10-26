@@ -4746,7 +4746,7 @@ export interface components {
             cleared: number;
         };
         SnoozeNotificationDto: {
-            /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both. */
+            /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both. */
             until?: string;
             /** @description Snooze for this many minutes from now (1 to 10080 / 7 days — a Developer-chosen upper bound, not a confirmed business rule). Provide this OR `until`, not both. */
             minutes?: number;
@@ -5669,6 +5669,8 @@ export interface components {
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
+            /** @description Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334). */
+            subscriberCount: number;
         };
         MembershipPlanPriceChangeResponseDto: {
             id: string;
@@ -6834,6 +6836,8 @@ export interface components {
             branchId?: string;
             /** @description Required when audience is CLASS — must be a Class of this School. */
             classId?: string;
+            /** @description Audience CLASS only: which people on the class list receive it. Defaults to BOOKED. */
+            classAudience?: ("BOOKED" | "WAITLIST" | "CANCELLED")[];
         };
         BroadcastResponseDto: {
             /** @description Correlates every Notification this call fanned out — used as the shared prefix of each one's notificationId/jobId. */

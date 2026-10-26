@@ -211,7 +211,7 @@ export class BookingsService {
         }
       }
 
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
 
       const bookingId = randomUUID();
       try {
@@ -315,7 +315,10 @@ export class BookingsService {
     const refunds: StripeRefundPlan[] = [];
     let needsStaff = 0;
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
+      // Read past RLS: the Booking above already proved the caller may act on it,
+      // and a Student can lose sight of their Class (moved to another Branch
+      // before Decision 345 blocked that, C14), which left the Booking stuck.
+      const cls = await this.prismaJobs.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       // Decision 292 — the class's Branch's own settings when it has them.
       const school = await this.cancellation.settingsFor(resolvedBooking.schoolId, cls.branchId);
       const now = new Date();

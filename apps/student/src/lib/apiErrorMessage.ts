@@ -24,6 +24,8 @@ function codedMessage(err: ApiError): string | null {
       return translate('lib.apiError.bookingClosed');
     case 'CLASS_BUSY':
       return translate('lib.apiError.classBusy');
+    case 'TICKET_REQUIRED':
+      return translate('lib.apiError.ticketRequired');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = err.message.match(/opens at (\S+?)\.?$/)?.[1];
       return iso && !Number.isNaN(new Date(iso).getTime())

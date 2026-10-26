@@ -62,7 +62,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
   async function mkClass(extra: Partial<Prisma.ClassUncheckedCreateInput> = {}) {
     const start = new Date(Date.now() + 24 * 3_600_000);
     return superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: `Class ${randomUUID().slice(0, 6)}`, startDate: start, endDate: new Date(start.getTime() + 3_600_000), ...extra },
+      data: { id: randomUUID(), schoolId: school.id, title: `Class ${randomUUID().slice(0, 6)}`, startDate: start, endDate: new Date(start.getTime() + 3_600_000), membershipInclusion: true, ...extra },
     });
   }
 

@@ -837,6 +837,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Inni już czekają na miejsce na tych zajęciach. Dołącz do listy oczekujących, aby poczekać na swoją kolej.",
       bookingClosed: "Rezerwacja na te zajęcia została zamknięta. Członek personelu nadal może Cię dopisać.",
       classBusy: "Wiele osób rezerwuje teraz te zajęcia. Spróbuj ponownie za chwilę.",
+      ticketRequired: "Te jednorazowe zajęcia wymagają osobnego biletu. Subskrypcja, karnet tygodniowy ani ogólny pakiet zajęć ich nie obejmują.",
       checkInNotOpen: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło.",
       checkInNotOpenAt: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło. Rozpocznie się {time}.",
     },
