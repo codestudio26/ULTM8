@@ -6,6 +6,8 @@ import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { formatMoney } from '../lib/formatMoney';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 import { useMyTransactions, useTransactionReceiptUrl } from './transactionQueries';
 
 type Transaction = components['schemas']['TransactionResponseDto'];
@@ -16,6 +18,14 @@ const STATUS_COLOR: Record<string, string> = {
   FAILED: '#C5221F',
   REFUNDED: '#9AA0A6',
   DISPUTED: '#C5221F',
+};
+
+const STATUS_LABEL: Record<string, TranslationKey> = {
+  SUCCESSFUL: 'transactions.status.successful',
+  PENDING: 'transactions.status.pending',
+  FAILED: 'transactions.status.failed',
+  REFUNDED: 'transactions.status.refunded',
+  DISPUTED: 'transactions.status.disputed',
 };
 
 /** One receipt — what it paid for (the membership plan title, joined server-side,
@@ -33,7 +43,9 @@ const STATUS_COLOR: Record<string, string> = {
  * inline message instead of silently doing nothing — a real, normal state, not
  * treated as an error. */
 function TransactionRow({ transaction }: { transaction: Transaction }) {
+  const t = useT();
   const statusColor = STATUS_COLOR[transaction.status] ?? '#5F6368';
+  const statusLabel = STATUS_LABEL[transaction.status];
   const getReceiptUrl = useTransactionReceiptUrl();
   const [error, setError] = useState<string | null>(null);
 
@@ -42,12 +54,12 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     try {
       const { receiptUrl } = await getReceiptUrl.mutateAsync(transaction.id);
       if (!receiptUrl) {
-        setError('No receipt is available for this payment.');
+        setError(t('transactions.row.noReceipt'));
         return;
       }
       await WebBrowser.openBrowserAsync(receiptUrl);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not load the receipt — please try again.'));
+      setError(getApiErrorMessage(err, t('transactions.row.receiptFailed')));
     }
   }
 
@@ -59,11 +71,11 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDate(transaction.billingDate)}</Text>
-        <Text style={{ color: statusColor, fontSize: 12, fontWeight: '600' }}>{transaction.status}</Text>
+        <Text style={{ color: statusColor, fontSize: 12, fontWeight: '600' }}>{statusLabel ? t(statusLabel) : transaction.status}</Text>
       </View>
       <Pressable onPress={handleViewReceipt} disabled={getReceiptUrl.isPending} style={{ marginTop: 8 }}>
         <Text style={{ color: '#1A73E8', fontSize: 13, fontWeight: '600' }}>
-          {getReceiptUrl.isPending ? 'Loading…' : 'View receipt'}
+          {getReceiptUrl.isPending ? t('transactions.row.loading') : t('transactions.row.viewReceipt')}
         </Text>
       </Pressable>
       {error ? <Text style={{ color: '#C5221F', fontSize: 12, marginTop: 4 }}>{error}</Text> : null}
@@ -72,14 +84,15 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
 }
 
 export function TransactionHistoryScreen() {
+  const t = useT();
   const query = useMyTransactions();
 
   return (
     <PaginatedListScreen
       query={query}
       renderItem={(item: Transaction) => <TransactionRow transaction={item} />}
-      emptyMessage="No payment history yet."
-      errorFallbackMessage="Failed to load your payment history — please try again."
+      emptyMessage={t('transactions.list.empty')}
+      errorFallbackMessage={t('transactions.list.loadFailed')}
     />
   );
 }

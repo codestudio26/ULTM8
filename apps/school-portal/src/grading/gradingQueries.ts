@@ -46,6 +46,8 @@ function useGradingMutation<TVars>(studentId: string, fn: (vars: TVars) => Promi
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['pending-verifications'] }),
+        // The board shows the same student (its right panel promotes too).
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
       ]),
   });
 }
@@ -194,9 +196,37 @@ export function useBoardMove(disciplineId: string) {
 
 /** "Log a class" (Decisions 128 item 6, 176). */
 export function useLogClass(disciplineId: string) {
-  return useBoardMutation(({ studentId, classType }: { studentId: string; classType: string | null }) =>
-    unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/log-class', { params: { path: { id: studentId, disciplineId } }, body: { classType } })),
+  return useBoardMutation(
+    ({ studentId, classType, classId, minutes }: { studentId: string; classType: string | null; classId?: string | null; minutes?: number | null }) =>
+      unwrap(
+        apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/log-class', {
+          params: { path: { id: studentId, disciplineId } },
+          body: { classType, classId: classId ?? null, minutes: classId ? null : minutes ?? null },
+        }),
+      ),
   );
+}
+
+/** The classes of one style that started in the last week, newest first:
+ * what "Log a class" offers (Decision 301 item 5; the API logs the picked
+ * class's length as hours trained). */
+export function useRecentStyleClasses(schoolId: string | null, disciplineId: string) {
+  return useQuery({
+    queryKey: ['classes', schoolId, 'recent-of-style', disciplineId],
+    queryFn: async () => {
+      const now = new Date();
+      const page = await unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/classes', {
+          params: {
+            path: { schoolId: schoolId! },
+            query: { disciplineId, startsFrom: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(), startsTo: now.toISOString(), limit: 100 },
+          },
+        }),
+      );
+      return [...page.items].sort((a, b) => b.startDate.localeCompare(a.startDate));
+    },
+    enabled: !!schoolId,
+  });
 }
 
 /** The manual Active/Inactive switch for one style (Decisions 152, 176); null
@@ -294,11 +324,17 @@ export function useBulkPromote(schoolId: string) {
 
 /** A style's Grading Board columns (Decisions 75, 136, 181). */
 export function useSetBoardThresholds(disciplineId: string) {
+  const set = useSetAnyBoardThresholds();
+  return { ...set, mutateAsync: (body: { gettingThere: number; readyToGrade: number }) => set.mutateAsync({ disciplineId, ...body }) };
+}
+
+/** The same, for whichever style is passed (Grading → Settings saves several). */
+export function useSetAnyBoardThresholds() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { gettingThere: number; readyToGrade: number }) =>
+    mutationFn: ({ disciplineId, ...body }: { disciplineId: string; gettingThere: number; readyToGrade: number }) =>
       unwrap(apiClient.PUT('/v1/disciplines/{id}/board-thresholds', { params: { path: { id: disciplineId } }, body })),
-    onSuccess: async () => {
+    onSuccess: async (_data, { disciplineId }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
         queryClient.invalidateQueries({ queryKey: ['discipline', disciplineId] }),
@@ -348,5 +384,99 @@ export function usePendingVerifications(schoolId: string | null) {
     queryKey: ['pending-verifications', schoolId],
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/rank-verifications', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
+  });
+}
+
+export type PromotionFeeRequest = components['schemas']['BoardFeeRequestDto'];
+
+/** The owner waives or cancels a promotion fee; a coach dismisses a promotion
+ * left "to decide" (Decisions 300, 307, 313). Waiving a waiting promotion
+ * applies it; nothing else promotes on its own. */
+export function useFeeRequestAction(action: 'waive' | 'cancel' | 'dismiss') {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) => {
+      const params = { params: { path: { id: requestId } } };
+      if (action === 'waive') return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/waive', params));
+      if (action === 'cancel') return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/cancel', params));
+      return unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/dismiss', params));
+    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]),
+  });
+}
+
+export type StudentFeeRequest = components['schemas']['PromotionFeeRequestResponseDto'];
+
+/** One student's promotion fee requests at this School, newest first. Under
+ * 'student-grading' so grading and fee actions refresh it. */
+export function useStudentFeeRequests(studentId: string | null, schoolId: string | null) {
+  return useQuery({
+    queryKey: ['student-grading', studentId, 'fee-requests', schoolId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/promotion-fee-requests', { params: { path: { schoolId: schoolId! }, query: { studentId: studentId!, limit: 100 } } }),
+      ),
+    enabled: !!studentId && !!schoolId,
+  });
+}
+
+/** The fee tag for one style, the board's rule (apps/api promotion-fee.ts
+ * feeStatusFor): only a request that still concerns the current rung counts.
+ * Waiting first, then "to decide", then declined. */
+export function feeStatusOf(
+  requests: StudentFeeRequest[],
+  currentStripeId: string | null | undefined,
+): { status: 'waiting' | 'declined' | 'toDecide'; request: StudentFeeRequest } | null {
+  const onCurrent = (r: StudentFeeRequest) => (r.promotionApplied ? r.toRungId === currentStripeId : r.expectedCurrentRungId === currentStripeId);
+  const waiting = requests.find((r) => r.promotionWaits && !r.promotionApplied && !r.toDecide && (r.status === 'PENDING' || r.status === 'ACCEPTED') && onCurrent(r));
+  if (waiting) return { status: 'waiting', request: waiting };
+  const toDecide = requests.find((r) => r.toDecide && r.expectedCurrentRungId === currentStripeId);
+  if (toDecide) return { status: 'toDecide', request: toDecide };
+  const declined = requests.find((r) => r.status === 'DECLINED' && onCurrent(r));
+  if (declined) return { status: 'declined', request: declined };
+  return null;
+}
+
+export type PromotionFeeSettings = components['schemas']['PromotionFeeSettingsResponseDto'];
+
+/** Whether the School's promotion fee is on, and its currency (Decisions 287, 300). */
+export function usePromotionFeeSettings(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['promotion-fee-settings', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** The owner turns the promotion fee and "Allow grading before the fee is
+ * paid" on or off (Decisions 297, 300, 307). */
+export function useUpdatePromotionFeeSettings(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { promotionFeeEnabled?: boolean; gradeBeforeFeePaid?: boolean }) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['promotion-fee-settings', schoolId] }),
+  });
+}
+
+/** "Open mat counts toward hours" (Decisions 301, 304, 306). */
+export function useOpenMatHours(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['open-mat-hours', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/grading-settings/open-mat-hours', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+export function useSetOpenMatHours(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (openMatCountsTowardHours: boolean) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/grading-settings/open-mat-hours', { params: { path: { schoolId } }, body: { openMatCountsTowardHours } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['open-mat-hours', schoolId] }),
   });
 }

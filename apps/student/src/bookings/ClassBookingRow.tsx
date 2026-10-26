@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
+import { useT } from '../i18n/I18nProvider';
 
 interface ClassSummary {
   id: string;
@@ -20,7 +21,11 @@ interface ClassSummary {
  * failure leaving the waitlist threw away the entry's id — and since there's no
  * GET /waitlist/me (see waitlistMutations.ts), that id can never be recovered,
  * stranding the Student on the waitlist with no in-app way off it. */
-type RowState = { kind: 'idle' } | { kind: 'booked' } | { kind: 'full' } | { kind: 'waitlisted'; entryId: string; position: number };
+type RowState =
+  | { kind: 'idle' }
+  | { kind: 'booked' }
+  | { kind: 'full'; reason: 'full' | 'queue' }
+  | { kind: 'waitlisted'; entryId: string; position: number };
 
 /** Per-class booking action for AcademyDetailScreen's "Upcoming classes" list
  * (Slice 2). Three real, server-verified gates can reject a booking attempt
@@ -30,6 +35,7 @@ type RowState = { kind: 'idle' } | { kind: 'booked' } | { kind: 'full' } | { kin
  * waitlist" follow-up action, since apps/api's own error message for it literally
  * names that as the next step. */
 export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
+  const t = useT();
   const [state, setState] = useState<RowState>({ kind: 'idle' });
   const [actionError, setActionError] = useState<string | null>(null);
   const bookClass = useBookClass();
@@ -46,10 +52,13 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
       await bookClass.mutateAsync(classItem.id);
       setState({ kind: 'booked' });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setState({ kind: 'full' });
+      // Only "full" and "students already waiting" lead to the waitlist
+      // (Decision 322); any other refusal — a busy Class, no membership credit —
+      // is shown as it is, with Book still the next action.
+      if (isWaitlistNext(err)) {
+        setState({ kind: 'full', reason: err instanceof ApiError && err.code === 'WAITLIST_FIRST' ? 'queue' : 'full' });
       } else {
-        setActionError(getApiErrorMessage(err, 'Could not book this class — please try again.'));
+        setActionError(getApiErrorMessage(err, t('bookings.classRow.bookError')));
       }
     }
   }
@@ -64,7 +73,7 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
       // Stay on 'full' (not idle) — the class is still full either way, and this
       // keeps "Join waitlist" as the visible next action rather than silently
       // reverting to "Book", which would just 409 again.
-      setActionError(getApiErrorMessage(err, 'Could not join the waitlist — please try again.'));
+      setActionError(getApiErrorMessage(err, t('bookings.classRow.joinWaitlistError')));
     }
   }
 
@@ -78,7 +87,7 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
       // Deliberately do NOT clear `state` here — losing `entryId` on a transient
       // failure would be unrecoverable (no way to look it back up), stranding the
       // Student on the waitlist with only a "Book" button that will just 409 again.
-      setActionError(getApiErrorMessage(err, 'Could not leave the waitlist — please try again.'));
+      setActionError(getApiErrorMessage(err, t('bookings.classRow.leaveWaitlistError')));
     }
   }
 
@@ -86,27 +95,29 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
     <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
-        {formatDate(classItem.startDate)} – {formatDate(classItem.endDate)}
+        {t('bookings.classRow.dateRange', { start: formatDate(classItem.startDate), end: formatDate(classItem.endDate) })}
       </Text>
 
       {actionError ? <InlineError message={actionError} /> : null}
 
-      {state.kind === 'idle' ? <Button title="Book" onPress={handleBook} loading={bookClass.isPending} /> : null}
+      {state.kind === 'idle' ? <Button title={t('bookings.classRow.book')} onPress={handleBook} loading={bookClass.isPending} /> : null}
 
-      {state.kind === 'booked' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>Booked ✓</Text> : null}
+      {state.kind === 'booked' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.booked')}</Text> : null}
 
       {state.kind === 'full' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>This class is full.</Text>
-          <Button title="Join waitlist" variant="secondary" onPress={handleJoinWaitlist} loading={joinWaitlist.isPending} />
+          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
+            {state.reason === 'queue' ? t('bookings.classRow.othersWaiting') : t('bookings.classRow.full')}
+          </Text>
+          <Button title={t('bookings.classRow.joinWaitlist')} variant="secondary" onPress={handleJoinWaitlist} loading={joinWaitlist.isPending} />
         </>
       ) : null}
 
       {state.kind === 'waitlisted' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>You're #{state.position} on the waitlist.</Text>
+          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.waitlistPosition', { position: state.position })}</Text>
           <Button
-            title="Leave waitlist"
+            title={t('bookings.classRow.leaveWaitlist')}
             variant="secondary"
             onPress={() => handleLeaveWaitlist(state.entryId)}
             loading={withdrawWaitlist.isPending}

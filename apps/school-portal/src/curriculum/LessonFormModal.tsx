@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import type { DisciplineSkillGroup } from './curriculumQueries';
 import type { LessonCategory, LessonResponse } from './curriculumQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -141,7 +141,7 @@ export function LessonFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('curriculum.form.none') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() || i.userId })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>

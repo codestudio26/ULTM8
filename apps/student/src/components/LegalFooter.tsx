@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { theme, spacing, fontSize } from '../theme/tokens';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 
 /**
  * Standard B2B SaaS footer (Decision 256) — copyright line + Terms of
@@ -17,19 +19,20 @@ import { theme, spacing, fontSize } from '../theme/tokens';
  * until that happens — reads as "not live yet," not broken, same convention
  * every other not-yet-built feature in this app already uses.
  */
-export const LEGAL_FOOTER_LINKS: { label: string; enabled: boolean }[] = [
-  { label: 'Terms of Service', enabled: false },
-  { label: 'Privacy Policy', enabled: false },
-  { label: 'Support', enabled: false },
+export const LEGAL_FOOTER_LINKS: { label: TranslationKey; enabled: boolean }[] = [
+  { label: 'common.legalFooter.termsOfService', enabled: false },
+  { label: 'common.legalFooter.privacyPolicy', enabled: false },
+  { label: 'common.legalFooter.support', enabled: false },
 ];
 
 export function LegalFooter() {
+  const t = useT();
   const year = new Date().getFullYear();
   return (
     <View style={{ marginTop: spacing[6], paddingTop: spacing[4], borderTopWidth: 1, borderTopColor: theme.border }}>
-      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>{`© ${year} ULTM8`}</Text>
+      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>{t('common.legalFooter.copyright', { year: String(year) })}</Text>
       <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
-        {LEGAL_FOOTER_LINKS.map((link) => `${link.label} (coming soon)`).join('  ·  ')}
+        {LEGAL_FOOTER_LINKS.map((link) => t('common.legalFooter.comingSoon', { label: t(link.label) })).join('  ·  ')}
       </Text>
     </View>
   );

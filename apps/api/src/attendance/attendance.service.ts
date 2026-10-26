@@ -7,6 +7,7 @@ import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
+import { recordCheckInMinutes } from '../ranks/hours-trained';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
@@ -109,7 +110,7 @@ export class AttendanceService {
       throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
     }
 
-    this.assertWithinWindow(booking.class);
+    await this.assertWithinWindow(booking.class);
     await this.assertCameraConsentNotWithdrawn(callerId);
 
     return this.completeBooking(callerId, booking, 'SELF_SERVICE', null);
@@ -139,7 +140,7 @@ export class AttendanceService {
     if (!booking) {
       throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
     }
-    this.assertWithinWindow(booking.class);
+    await this.assertWithinWindow(booking.class);
 
     return this.completeBooking(studentId, booking, 'SELF_SERVICE_CODE', null);
   }
@@ -182,7 +183,7 @@ export class AttendanceService {
     if (!booking) {
       throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
     }
-    this.assertWithinWindow(booking.class);
+    await this.assertWithinWindow(booking.class);
 
     return this.completeBooking(dto.studentId, booking, method, instructorId);
   }
@@ -197,9 +198,19 @@ export class AttendanceService {
   // methods (Decision 107) — exempting INSTRUCTOR_MANUAL would turn "just say
   // manual" into an easy bypass of the one anti-fraud/no-show boundary the
   // whole check-in system is built around.
-  private assertWithinWindow(cls: { qrAttendanceEndAt: Date | null; endDate: Date }): void {
+  private async assertWithinWindow(cls: { schoolId: string; startDate: Date; qrAttendanceEndAt: Date | null; endDate: Date }): Promise<void> {
+    const now = new Date();
+    // Check-in opens the School's set number of minutes before the Class starts
+    // (product owner, 26 Oct 2026; 30 by default). Before this, a Student could be
+    // checked into next week's Class and the attendance counted toward grading.
+    // Read via ultm8_jobs: a School setting, not a row the caller owns.
+    const school = await this.prismaJobs.school.findUnique({ where: { id: cls.schoolId }, select: { checkInOpensMinutesBeforeStart: true } });
+    const opensAt = new Date(cls.startDate.getTime() - (school?.checkInOpensMinutesBeforeStart ?? 30) * 60_000);
+    if (now < opensAt) {
+      throw new BadRequestException({ code: 'CHECK_IN_NOT_OPEN', message: `Check-in for this Class hasn't opened yet. It opens at ${opensAt.toISOString()}.` });
+    }
     const cutoff = cls.qrAttendanceEndAt ?? cls.endDate;
-    if (new Date() > cutoff) {
+    if (now > cutoff) {
       throw new BadRequestException('The check-in window for this Class has closed.');
     }
   }
@@ -253,6 +264,11 @@ export class AttendanceService {
       // check-in happens regardless of ranking: a style the student has no rank
       // in is skipped.
       await creditAttendance(tx, studentId, booking);
+
+      // Hours trained (Decisions 301 item 1, 306): the class's scheduled
+      // length, per style, as a record only. Separate from the class count
+      // above and never read by grading.
+      await recordCheckInMinutes(tx, studentId, booking);
 
       return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
     });

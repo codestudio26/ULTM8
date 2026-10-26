@@ -28,9 +28,14 @@ import {
   useTimetableSlots,
   useUnarchiveTimetableSlot,
   useUpdateTimetableSlot,
+  fetchUpcomingImpact,
   type TimetableSlotResponse,
+  type UpcomingImpactResponse,
+  type UpdateTimetableSlotInput,
 } from './timetableQueries';
 import { TimetableSlotFormModal } from './TimetableSlotFormModal';
+import { BookedClassesDialog } from './BookedClassesDialog';
+import { changedSlotFields, slotChangeMovesClasses } from './slotChanges';
 import { TimetableBookingDialog } from './TimetableBookingDialog';
 import {
   addDays,
@@ -280,6 +285,10 @@ export function TimetablePage() {
             setBooking(null);
             setBookedMessage(t('timetable.booked', { title: booking.slotTitle, date: booking.date }));
           }}
+          onWaitlisted={(position) => {
+            setBooking(null);
+            setBookedMessage(t('timetable.waitlisted', { title: booking.slotTitle, date: booking.date, position }));
+          }}
         />
       ) : null}
     </>
@@ -523,22 +532,79 @@ function EditSlotModal({
 }) {
   const t = useT();
   const updateSlot = useUpdateTimetableSlot(schoolId, slot.id);
+  // Decision 322 — set when the edit affects upcoming Classes that already have
+  // bookings; the owner picks Move/Cancel/Keep before anything is saved.
+  const [pending, setPending] = useState<{
+    changes: UpdateTimetableSlotInput;
+    impact: UpcomingImpactResponse;
+    allowMove: boolean;
+    capacityCut: boolean;
+  } | null>(null);
+  const [choiceError, setChoiceError] = useState<string | null>(null);
+
+  async function save(changes: UpdateTimetableSlotInput) {
+    await updateSlot.mutateAsync(changes);
+    onClose();
+  }
+
   return (
-    <TimetableSlotFormModal
-      title={t('timetable.editSlotTitle')}
-      initial={slot}
-      branches={branches}
-      instructors={instructors}
-      disciplines={disciplines}
-      submitting={updateSlot.isPending}
-      onSubmit={async (values) => {
-        // Passed straight through, nulls included — UpdateTimetableSlotDto
-        // accepts null on these fields to mean "clear it" (see
-        // TimetableSlotFormValues' own header comment).
-        await updateSlot.mutateAsync(values);
-        onClose();
-      }}
-      onClose={onClose}
-    />
+    <>
+      <TimetableSlotFormModal
+        title={t('timetable.editSlotTitle')}
+        initial={slot}
+        branches={branches}
+        instructors={instructors}
+        disciplines={disciplines}
+        submitting={updateSlot.isPending}
+        onSubmit={async (values) => {
+          // Only the changed fields, nulls included — UpdateTimetableSlotDto
+          // accepts null on these fields to mean "clear it" (see
+          // TimetableSlotFormValues' own header comment).
+          const changes = changedSlotFields(slot, values);
+          if (Object.keys(changes).length === 0) {
+            onClose();
+            return;
+          }
+          const moves = slotChangeMovesClasses(slot, changes);
+          const newCapacity = changes.capacity ?? null;
+          const askIfBooked = async () => {
+            const impact = await fetchUpcomingImpact(slot.id);
+            const capacityCut = newCapacity !== null && impact.mostTaken > newCapacity;
+            if (!(moves && impact.bookedClasses > 0) && !capacityCut) return false;
+            const switchingOff = changes.status === 'OFF' && slot.status === 'ON';
+            setChoiceError(null);
+            setPending({ changes, impact, allowMove: !switchingOff && !capacityCut, capacityCut });
+            return true;
+          };
+          if ((moves || newCapacity !== null) && (await askIfBooked())) return;
+          try {
+            await save(changes);
+          } catch (err) {
+            // A booking made since the check above: ask now instead.
+            if (err instanceof ApiError && err.status === 409 && (await askIfBooked())) return;
+            throw err;
+          }
+        }}
+        onClose={onClose}
+      />
+      {pending ? (
+        <BookedClassesDialog
+          impact={pending.impact}
+          allowMove={pending.allowMove}
+          capacityCut={pending.capacityCut}
+          submitting={updateSlot.isPending}
+          error={choiceError}
+          onConfirm={async (bookedClasses) => {
+            setChoiceError(null);
+            try {
+              await save({ ...pending.changes, bookedClasses });
+            } catch (err) {
+              setChoiceError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+            }
+          }}
+          onClose={() => setPending(null)}
+        />
+      ) : null}
+    </>
   );
 }

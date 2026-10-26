@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { ApiError, type components } from '@ultm8/api-client';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useAuth } from '../auth/AuthContext';
 import { theme, spacing, fontSize, fontWeight, radius, minTouchTarget } from '../theme/tokens';
 import { useSchoolByJoinCode, useSchoolSearch } from './publicSchoolQueries';
@@ -28,6 +29,7 @@ type Mode = 'search' | 'code';
  * flow: who's joining, home branch, current belt).
  */
 export function SchoolPickScreen() {
+  const t = useT();
   const [mode, setMode] = useState<Mode>('search');
   const { setPendingSchoolPick } = useAuth();
 
@@ -38,14 +40,14 @@ export function SchoolPickScreen() {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: 4 }}>Find your School</Text>
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: 4 }}>{t('academies.schoolPick.title')}</Text>
         <Text style={{ fontSize: fontSize.body, color: theme.textSecondary, marginBottom: spacing[4] }}>
-          Search by name, or enter the join code your School gave you.
+          {t('academies.schoolPick.intro')}
         </Text>
 
         <View style={{ flexDirection: 'row', marginBottom: spacing[4], borderRadius: radius.input, borderWidth: 1, borderColor: theme.border, overflow: 'hidden' }}>
-          <ModeTab label="Search" selected={mode === 'search'} onPress={() => setMode('search')} />
-          <ModeTab label="Join code" selected={mode === 'code'} onPress={() => setMode('code')} />
+          <ModeTab label={t('academies.schoolPick.searchTab')} selected={mode === 'search'} onPress={() => setMode('search')} />
+          <ModeTab label={t('academies.schoolPick.joinCodeTab')} selected={mode === 'code'} onPress={() => setMode('code')} />
         </View>
 
         {mode === 'search' ? <SearchMode onPick={pick} /> : <JoinCodeMode onPick={pick} />}
@@ -94,6 +96,7 @@ function SchoolRow({ school, onPress }: { school: { id: string; name: string; ad
 const SEARCH_DEBOUNCE_MS = 350;
 
 function SearchMode({ onPick }: { onPick: (school: { id: string; name: string }) => void }) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
@@ -106,14 +109,14 @@ function SearchMode({ onPick }: { onPick: (school: { id: string; name: string })
 
   return (
     <View>
-      <Field label="School name">
-        <TextField value={query} onChangeText={setQuery} placeholder="e.g. Downtown Jiu-Jitsu" autoCapitalize="words" />
+      <Field label={t('academies.schoolPick.schoolName')}>
+        <TextField value={query} onChangeText={setQuery} placeholder={t('academies.schoolPick.schoolNamePlaceholder')} autoCapitalize="words" />
       </Field>
 
       {query.trim() && (query !== debouncedQuery || isLoading) ? <ActivityIndicator style={{ marginTop: spacing[3] }} /> : null}
-      {error ? <ErrorBanner message={getApiErrorMessage(error, 'Could not search — please try again.')} /> : null}
+      {error ? <ErrorBanner message={getApiErrorMessage(error, t('academies.schoolPick.searchFailed'))} /> : null}
       {!isLoading && query === debouncedQuery && debouncedQuery.trim() && data?.items.length === 0 ? (
-        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>No School matched “{debouncedQuery.trim()}”.</Text>
+        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>{t('academies.schoolPick.noMatch', { query: debouncedQuery.trim() })}</Text>
       ) : null}
 
       <View style={{ marginTop: spacing[2], opacity: isFetching && !isLoading ? 0.6 : 1 }}>
@@ -126,6 +129,7 @@ function SearchMode({ onPick }: { onPick: (school: { id: string; name: string })
 }
 
 function JoinCodeMode({ onPick }: { onPick: (school: { id: string; name: string }) => void }) {
+  const t = useT();
   const [code, setCode] = useState('');
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
   const { data, isLoading, error } = useSchoolByJoinCode(submittedCode);
@@ -133,17 +137,17 @@ function JoinCodeMode({ onPick }: { onPick: (school: { id: string; name: string 
 
   return (
     <View>
-      <Field label="Join code">
+      <Field label={t('academies.schoolPick.joinCode')}>
         <TextField
           value={code}
           onChangeText={(v) => setCode(v.toUpperCase())}
-          placeholder="e.g. DDZ8KFAA"
+          placeholder={t('academies.schoolPick.joinCodePlaceholder')}
           autoCapitalize="characters"
           autoCorrect={false}
           maxLength={8}
         />
       </Field>
-      <Button title="Find my School" onPress={() => setSubmittedCode(code.trim())} disabled={code.trim().length === 0} loading={isLoading} />
+      <Button title={t('academies.schoolPick.findMySchool')} onPress={() => setSubmittedCode(code.trim())} disabled={code.trim().length === 0} loading={isLoading} />
 
       {/* FOUND ON REVIEW: gated on `code === submittedCode`, not just
           `data`/`error` truthiness — without this, editing the field after a
@@ -152,16 +156,16 @@ function JoinCodeMode({ onPick }: { onPick: (school: { id: string; name: string 
           no longer matches what's actually typed. The moment the field
           changes, the stale result disappears until re-submitted. */}
       {code === submittedCode && notFound ? (
-        <ErrorBanner message="No School has that join code — check with your School and try again." />
+        <ErrorBanner message={t('academies.schoolPick.codeNotFound')} />
       ) : null}
       {code === submittedCode && error && !notFound ? (
-        <ErrorBanner message={getApiErrorMessage(error, 'Could not look that up — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('academies.schoolPick.lookupFailed'))} />
       ) : null}
 
       {code === submittedCode && data ? (
         <View style={{ marginTop: spacing[4] }}>
           <SchoolRow school={data} onPress={() => onPick({ id: data.id, name: data.name })} />
-          <Text style={{ color: theme.textSecondary, marginTop: spacing[2] }}>Tap above to continue with this School.</Text>
+          <Text style={{ color: theme.textSecondary, marginTop: spacing[2] }}>{t('academies.schoolPick.tapToContinue')}</Text>
         </View>
       ) : null}
     </View>

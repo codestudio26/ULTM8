@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { ConsentTierRow } from './ConsentTierRow';
 import { BookingDelegationRow } from './BookingDelegationRow';
 import { useMyConsentRecords } from './guardianQueries';
@@ -16,6 +17,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MinorConsent'>;
  * BASELINE/CAMERA — SKILL.md §14), regardless of whether either has ever been
  * granted. */
 export function MinorConsentScreen({ route }: Props) {
+  const t = useT();
   const { studentId, name } = route.params;
   const consent = useMyConsentRecords();
   const delegations = useMyBookingDelegations();
@@ -39,7 +41,7 @@ export function MinorConsentScreen({ route }: Props) {
     return (
       <Screen>
         <ErrorBanner
-          message={getApiErrorMessage(consent.error ?? delegations.error, 'Failed to load this minor\'s settings — please try again.')}
+          message={getApiErrorMessage(consent.error ?? delegations.error, t('guardians.minorConsent.loadError'))}
         />
       </Screen>
     );

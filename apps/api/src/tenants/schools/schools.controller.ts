@@ -65,7 +65,7 @@ export class SchoolsController {
   @ApiOkResponse({ type: StudentListResponseDto })
   @Get(':id/students')
   findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
-    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status);
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status, query.search);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch

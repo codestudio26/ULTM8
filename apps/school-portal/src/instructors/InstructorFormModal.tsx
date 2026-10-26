@@ -114,7 +114,14 @@ export function InstructorFormModal({
             <SelectField
               required
               value={form.userId}
-              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              onChange={(e) => {
+                const userId = e.target.value;
+                // Start on the branch their Instructor role is for: a whole-School
+                // profile needs a whole-School role (Decision 311, I13).
+                const picked = (eligibleUsers ?? []).find((u) => u.id === userId);
+                const roleBranch = picked && !picked.schoolWide ? picked.branchIds.find((id) => branches.some((b) => b.id === id && !b.archivedAt)) : undefined;
+                setForm((f) => ({ ...f, userId, branchId: roleBranch ?? (picked?.schoolWide ? f.branchId : '') }));
+              }}
               options={[
                 { value: '', label: t('instructors.form.userPlaceholder') },
                 ...(eligibleUsers ?? []).map((u) => ({

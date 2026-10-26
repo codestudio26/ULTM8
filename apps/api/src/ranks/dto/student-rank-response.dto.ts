@@ -144,9 +144,76 @@ export class EligibilityResponseDto {
   boardColumn?: 'JUST_STARTING' | 'GETTING_THERE' | 'READY_TO_GRADE';
 }
 
+/** Hours trained in this style at this School (Decisions 301, 306): a record
+ * only, shown as information. Never part of the grading %, readiness or the
+ * board. In whole minutes; the apps show hours (90 minutes = 1.5 hours). */
+export class HoursTrainedResponseDto {
+  @ApiProperty({ description: 'Every minute logged in this style at this School (check-ins and "Log a class").' })
+  totalMinutes!: number;
+
+  @ApiProperty({ description: 'Minutes trained on or after the current rank date.' })
+  sinceCurrentRankMinutes!: number;
+}
+
+export class ClassesProgressResponseDto {
+  @ApiProperty({ description: 'Classes counted toward the next rank (eligibility.countedClasses).' })
+  counted!: number;
+
+  @ApiProperty()
+  required!: number;
+
+  @ApiProperty({ description: '0–100. The same number as eligibility.progressPercent: the overall % is classes only.' })
+  percent!: number;
+
+  @ApiProperty({ type: [TypeProgressResponseDto], description: '"Each ticked type required" rungs only; otherwise empty.' })
+  byType!: TypeProgressResponseDto[];
+}
+
+export class DaysProgressResponseDto {
+  @ApiProperty({ description: 'Days at the current rank.' })
+  elapsed!: number;
+
+  @ApiProperty({ description: 'Minimum days at the rank.' })
+  required!: number;
+
+  @ApiProperty({ description: '0–100, capped. 100 when no minimum is set.' })
+  percent!: number;
+}
+
+export class SkillsProgressResponseDto {
+  @ApiProperty({ description: 'Required skills signed off.' })
+  signedOff!: number;
+
+  @ApiProperty({ description: 'Required skills for the next rank.' })
+  required!: number;
+
+  @ApiProperty({ description: '0–100. 100 when none are required.' })
+  percent!: number;
+}
+
+/** Each requirement grading already uses, on its own, for the student page's
+ * breakdown (Decisions 301 item 4, 306 item 4). Taken from `eligibility`, so
+ * it always agrees with it. */
+export class ProgressBreakdownResponseDto {
+  @ApiPropertyOptional({ type: ClassesProgressResponseDto, nullable: true, description: 'null on a time-only rank (days only).' })
+  classes!: ClassesProgressResponseDto | null;
+
+  @ApiProperty({ type: DaysProgressResponseDto })
+  days!: DaysProgressResponseDto;
+
+  @ApiPropertyOptional({ type: SkillsProgressResponseDto, nullable: true, description: 'null on a time-only rank (days only).' })
+  skills!: SkillsProgressResponseDto | null;
+}
+
 export class StudentEligibilityResponseDto extends StudentRankResponseDto {
   @ApiProperty({ type: EligibilityResponseDto })
   eligibility!: EligibilityResponseDto;
+
+  @ApiPropertyOptional({ type: ProgressBreakdownResponseDto, nullable: true, description: 'null when there is no next rank.' })
+  progressBreakdown!: ProgressBreakdownResponseDto | null;
+
+  @ApiProperty({ type: HoursTrainedResponseDto })
+  hoursTrained!: HoursTrainedResponseDto;
 }
 
 export class StudentEligibilityListResponseDto {
@@ -265,6 +332,12 @@ export class StudentGradingStyleDto {
 
   @ApiProperty({ type: EligibilityResponseDto })
   eligibility!: EligibilityResponseDto;
+
+  @ApiPropertyOptional({ type: ProgressBreakdownResponseDto, nullable: true, description: 'null when there is no next rank.' })
+  progressBreakdown!: ProgressBreakdownResponseDto | null;
+
+  @ApiProperty({ type: HoursTrainedResponseDto })
+  hoursTrained!: HoursTrainedResponseDto;
 
   @ApiProperty({ type: [GradingSkillDto], description: 'The skills for the next grade.' })
   skills!: GradingSkillDto[];

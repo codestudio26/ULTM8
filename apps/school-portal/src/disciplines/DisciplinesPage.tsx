@@ -14,6 +14,7 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
 import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
+import { GradingTabs } from '../grading/GradingTabs';
 import { useT } from '../i18n/I18nProvider';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
@@ -76,6 +77,7 @@ export function DisciplinesPage() {
           ) : undefined
         }
       />
+      <GradingTabs />
       <Card>
         <div style={{ marginBottom: 12 }}>
           <Checkbox label={t('disciplines.list.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />

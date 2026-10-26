@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 
@@ -16,14 +17,19 @@ import { NormalizeEmail } from '../../common/decorators/normalize-email.decorato
  * everything else is left blank and the instructor fills it in themselves
  * after their first login."
  */
+/** Spaces alone are not a name (Decision 311, I10). */
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
 export class CreateInstructorManuallyDto {
   @ApiProperty()
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(100)
   firstName!: string;
 
   @ApiProperty()
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(100)

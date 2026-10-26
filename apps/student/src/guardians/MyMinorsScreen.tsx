@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateOnly } from '../lib/formatDate';
+import { useT } from '../i18n/I18nProvider';
 import { useAddMinor, useMyMinors } from './guardianQueries';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -18,6 +19,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MyMinors'>;
 const EMPTY_FORM = { firstName: '', surname: '', dateOfBirth: '' };
 
 export function MyMinorsScreen({ navigation }: Props) {
+  const t = useT();
   const { data, isLoading, isError, error } = useMyMinors();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -40,7 +42,7 @@ export function MyMinorsScreen({ navigation }: Props) {
   if (isError && !data) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load your minors — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('guardians.myMinors.loadError'))} />
       </Screen>
     );
   }
@@ -68,7 +70,7 @@ export function MyMinorsScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      {minors.length === 0 ? <Text style={{ color: '#5F6368', marginBottom: 12 }}>No linked minors yet.</Text> : null}
+      {minors.length === 0 ? <Text style={{ color: '#5F6368', marginBottom: 12 }}>{t('guardians.myMinors.empty')}</Text> : null}
 
       {minors.map((minor) => (
         <Pressable
@@ -81,16 +83,18 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ fontSize: 16, fontWeight: '600' }}>
             {minor.firstName} {minor.surname}
           </Text>
-          <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Born {formatDateOnly(minor.dateOfBirth)}</Text>
+          <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
+            {t('guardians.myMinors.born', { date: formatDateOnly(minor.dateOfBirth) })}
+          </Text>
           {/* Their ranks, progress, skills and history, read-only (Decision 132). */}
           <Button
-            title="Grading"
+            title={t('guardians.myMinors.grading')}
             variant="secondary"
             onPress={() => navigation.navigate('MyGrading', { studentId: minor.studentId, name: minor.firstName })}
           />
           {/* The Lessons their enrolled School(s) have published (Decisions 154, 190, 195). */}
           <Button
-            title="Lessons"
+            title={t('guardians.myMinors.lessons')}
             variant="secondary"
             onPress={() => navigation.navigate('Lessons', { studentId: minor.studentId, name: minor.firstName })}
           />
@@ -99,35 +103,35 @@ export function MyMinorsScreen({ navigation }: Props) {
 
       {adding ? (
         <View style={{ marginTop: 16 }}>
-          <Field label="First name">
+          <Field label={t('guardians.myMinors.firstName')}>
             <TextField
               value={form.firstName}
               onChangeText={(firstName) => setForm((f) => ({ ...f, firstName }))}
-              placeholder="First name"
+              placeholder={t('guardians.myMinors.firstName')}
             />
           </Field>
-          <Field label="Surname">
-            <TextField value={form.surname} onChangeText={(surname) => setForm((f) => ({ ...f, surname }))} placeholder="Surname" />
+          <Field label={t('guardians.myMinors.surname')}>
+            <TextField value={form.surname} onChangeText={(surname) => setForm((f) => ({ ...f, surname }))} placeholder={t('guardians.myMinors.surname')} />
           </Field>
-          <Field label="Date of birth" hint="YYYY-MM-DD">
+          <Field label={t('guardians.myMinors.dateOfBirth')} hint={t('guardians.myMinors.dateOfBirthHint')}>
             <TextField
               value={form.dateOfBirth}
               onChangeText={(dateOfBirth) => setForm((f) => ({ ...f, dateOfBirth }))}
-              placeholder="2015-06-01"
+              placeholder={t('guardians.myMinors.dateOfBirthPlaceholder')}
             />
           </Field>
           {addMinor.isError ? (
-            <InlineError message={getApiErrorMessage(addMinor.error, 'Could not add this minor — please try again.')} />
+            <InlineError message={getApiErrorMessage(addMinor.error, t('guardians.myMinors.addError'))} />
           ) : null}
           <Button
-            title="Add minor"
+            title={t('guardians.myMinors.addMinor')}
             onPress={handleAddMinor}
             loading={addMinor.isPending}
             disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim()}
           />
         </View>
       ) : (
-        <Button title="Add a minor" variant="secondary" onPress={() => setAdding(true)} />
+        <Button title={t('guardians.myMinors.addAMinor')} variant="secondary" onPress={() => setAdding(true)} />
       )}
     </Screen>
   );

@@ -27,6 +27,7 @@ import { CoachStudentScreen } from '../coach/CoachStudentScreen';
 import { MyGradingScreen } from '../grading/MyGradingScreen';
 import { GradingHistoryScreen } from '../grading/GradingHistoryScreen';
 import { useCoachSchoolId, useAuth, useEnrolledSchoolIds } from '../auth/AuthContext';
+import { useT } from '../i18n/I18nProvider';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -42,6 +43,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
  * clears it, this falls through to the ordinary coach/student branch on
  * every later launch, including re-logins. */
 export function AppNavigator() {
+  const t = useT();
   const coachSchoolId = useCoachSchoolId();
   const { pendingSchoolPick } = useAuth();
   const enrolledSchoolIds = useEnrolledSchoolIds();
@@ -51,9 +53,9 @@ export function AppNavigator() {
 
   return (
     <Stack.Navigator initialRouteName={initialRouteName}>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ULTM8 Student' }} />
-      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
-      <Stack.Screen name="Academies" component={AcademiesListScreen} options={{ title: 'Academies' }} />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ title: t('navigation.app.home') }} />
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: t('navigation.app.profile') }} />
+      <Stack.Screen name="Academies" component={AcademiesListScreen} options={{ title: t('navigation.app.academies') }} />
       <Stack.Screen
         name="AcademyDetail"
         component={AcademyDetailScreen}
@@ -63,44 +65,44 @@ export function AppNavigator() {
         name="JoinSchool"
         component={JoinSchoolScreen}
         initialParams={needsToJoinPickedSchool ? { academyId: pendingSchoolPick!.id, name: pendingSchoolPick!.name } : undefined}
-        options={({ route }) => ({ title: route.params.beltsFor ? 'Add a belt' : `Join ${route.params.name}` })}
+        options={({ route }) => ({ title: route.params.beltsFor ? t('navigation.app.addBelt') : t('navigation.app.joinSchool', { name: route.params.name }) })}
       />
-      <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-      <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
-      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ title: 'Payment History' }} />
-      <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
-      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods' }} />
+      <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: t('navigation.app.myBookings') }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: t('navigation.app.notifications') }} />
+      <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: t('navigation.app.myMemberships') }} />
+      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ title: t('navigation.app.paymentHistory') }} />
+      <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: t('navigation.app.waivers') }} />
+      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: t('navigation.app.paymentMethods') }} />
       <Stack.Screen
         name="Lessons"
         component={LessonsScreen}
-        options={({ route }) => ({ title: route.params?.name ? `${route.params.name}'s lessons` : 'Lessons' })}
+        options={({ route }) => ({ title: route.params?.name ? t('navigation.app.childLessons', { name: route.params.name }) : t('navigation.app.lessons') })}
       />
       <Stack.Screen
         name="LessonDetail"
         component={LessonDetailScreen}
         options={({ route }) => ({ title: route.params.lesson.title })}
       />
-      <Stack.Screen name="Playlists" component={PlaylistsScreen} options={{ title: 'My Playlists' }} />
+      <Stack.Screen name="Playlists" component={PlaylistsScreen} options={{ title: t('navigation.app.myPlaylists') }} />
       <Stack.Screen
         name="PlaylistDetail"
         component={PlaylistDetailScreen}
         options={({ route }) => ({ title: route.params.name })}
       />
-      <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
+      <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: t('navigation.app.myMinors') }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
-      <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />
-      <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: 'Kid Mode' }} />
-      <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: 'Needs Your Review' }} />
-      <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: 'Check In' }} />
+      <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />
+      <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: t('navigation.app.kidMode') }} />
+      <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: t('navigation.app.needsReview') }} />
+      <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: t('navigation.app.checkIn') }} />
       <Stack.Screen
         name="MyGrading"
         component={MyGradingScreen}
-        options={({ route }) => ({ title: route.params?.name ? `${route.params.name}'s grading` : 'My Grading' })}
+        options={({ route }) => ({ title: route.params?.name ? t('navigation.app.childGrading', { name: route.params.name }) : t('navigation.app.myGrading') })}
       />
       <Stack.Screen name="GradingHistory" component={GradingHistoryScreen} options={({ route }) => ({ title: route.params.title })} />
-      <Stack.Screen name="CoachDashboard" component={CoachDashboardScreen} options={{ title: 'Coach' }} />
-      <Stack.Screen name="GradingBoard" component={GradingBoardScreen} options={({ route }) => ({ title: `Grading Board — ${route.params.name}` })} />
+      <Stack.Screen name="CoachDashboard" component={CoachDashboardScreen} options={{ title: t('navigation.app.coach') }} />
+      <Stack.Screen name="GradingBoard" component={GradingBoardScreen} options={({ route }) => ({ title: t('navigation.app.gradingBoard', { name: route.params.name }) })} />
       <Stack.Screen name="CoachStudent" component={CoachStudentScreen} options={({ route }) => ({ title: route.params.name })} />
     </Stack.Navigator>
   );

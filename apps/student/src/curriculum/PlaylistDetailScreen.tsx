@@ -12,6 +12,7 @@ import {
   useRenamePlaylist,
   useReorderPlaylistItems,
 } from './playlistQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaylistDetail'>;
 
@@ -34,6 +35,7 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
  * deliberately not tappable into the detail screen, unlike LessonRow on
  * LessonsScreen. */
 export function PlaylistDetailScreen({ route, navigation }: Props) {
+  const t = useT();
   const { playlistId, name } = route.params;
   const { data, isLoading, isError, error } = usePlaylistItems(playlistId);
   const removeItem = useRemovePlaylistItem(playlistId);
@@ -57,7 +59,7 @@ export function PlaylistDetailScreen({ route, navigation }: Props) {
   if (isError && !data) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Could not load this playlist — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('curriculum.playlistDetail.loadError'))} />
       </Screen>
     );
   }
@@ -72,7 +74,7 @@ export function PlaylistDetailScreen({ route, navigation }: Props) {
     try {
       await reorderItems.mutateAsync(ids);
     } catch (err) {
-      setMoveError(getApiErrorMessage(err, 'Could not reorder this playlist.'));
+      setMoveError(getApiErrorMessage(err, t('curriculum.playlistDetail.reorderError')));
     }
   }
 
@@ -99,14 +101,14 @@ export function PlaylistDetailScreen({ route, navigation }: Props) {
     <Screen>
       {renaming ? (
         <View style={{ marginBottom: spacing[4] }}>
-          <TextField value={renameValue} onChangeText={setRenameValue} placeholder="Playlist name" />
+          <TextField value={renameValue} onChangeText={setRenameValue} placeholder={t('curriculum.playlistDetail.namePlaceholder')} />
           {renamePlaylist.isError ? (
-            <InlineError message={getApiErrorMessage(renamePlaylist.error, 'Could not rename this playlist.')} />
+            <InlineError message={getApiErrorMessage(renamePlaylist.error, t('curriculum.playlistDetail.renameError'))} />
           ) : null}
           <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
             <View style={{ flex: 1 }}>
               <Button
-                title="Cancel"
+                title={t('curriculum.playlistDetail.cancel')}
                 variant="secondary"
                 onPress={() => {
                   setRenaming(false);
@@ -115,60 +117,60 @@ export function PlaylistDetailScreen({ route, navigation }: Props) {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button title="Save" onPress={handleRename} loading={renamePlaylist.isPending} disabled={!renameValue.trim()} />
+              <Button title={t('curriculum.playlistDetail.save')} onPress={handleRename} loading={renamePlaylist.isPending} disabled={!renameValue.trim()} />
             </View>
           </View>
         </View>
       ) : (
-        <Button title="Rename playlist" variant="secondary" onPress={() => setRenaming(true)} />
+        <Button title={t('curriculum.playlistDetail.rename')} variant="secondary" onPress={() => setRenaming(true)} />
       )}
 
       {moveError ? <InlineError message={moveError} /> : null}
       {items.length === 0 ? (
-        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>No lessons in this playlist yet.</Text>
+        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>{t('curriculum.playlistDetail.empty')}</Text>
       ) : null}
 
       {items.map((item, i) => (
         <View key={item.id} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
           <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading, color: theme.textPrimary }}>{item.lessonTitle}</Text>
-          {item.locked ? <Muted>Locked</Muted> : null}
+          {item.locked ? <Muted>{t('curriculum.playlistDetail.locked')}</Muted> : null}
           <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
             <View style={{ flex: 1 }}>
-              <Button title="↑ Up" variant="secondary" disabled={i === 0 || reorderItems.isPending} onPress={() => moveItem(i, -1)} />
+              <Button title={t('curriculum.playlistDetail.moveUp')} variant="secondary" disabled={i === 0 || reorderItems.isPending} onPress={() => moveItem(i, -1)} />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                title="↓ Down"
+                title={t('curriculum.playlistDetail.moveDown')}
                 variant="secondary"
                 disabled={i === items.length - 1 || reorderItems.isPending}
                 onPress={() => moveItem(i, 1)}
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button title="Remove" variant="secondary" loading={removeItem.isPending} onPress={() => removeItem.mutate(item.id)} />
+              <Button title={t('curriculum.playlistDetail.remove')} variant="secondary" loading={removeItem.isPending} onPress={() => removeItem.mutate(item.id)} />
             </View>
           </View>
         </View>
       ))}
-      {removeItem.isError ? <InlineError message={getApiErrorMessage(removeItem.error, 'Could not remove this item.')} /> : null}
+      {removeItem.isError ? <InlineError message={getApiErrorMessage(removeItem.error, t('curriculum.playlistDetail.removeError'))} /> : null}
 
       <View style={{ marginTop: spacing[6] }}>
         {deletingPlaylist ? (
           <View>
-            <Text style={{ color: theme.textDanger, fontSize: fontSize.footnote }}>Delete this playlist? This cannot be undone.</Text>
+            <Text style={{ color: theme.textDanger, fontSize: fontSize.footnote }}>{t('curriculum.playlistDetail.deleteConfirm')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
               <View style={{ flex: 1 }}>
-                <Button title="Keep playlist" variant="secondary" onPress={() => setDeletingPlaylist(false)} />
+                <Button title={t('curriculum.playlistDetail.keep')} variant="secondary" onPress={() => setDeletingPlaylist(false)} />
               </View>
               <View style={{ flex: 1 }}>
-                <Button title="Delete playlist" variant="destructive" loading={deletePlaylist.isPending} onPress={handleDeletePlaylist} />
+                <Button title={t('curriculum.playlistDetail.delete')} variant="destructive" loading={deletePlaylist.isPending} onPress={handleDeletePlaylist} />
               </View>
             </View>
           </View>
         ) : (
-          <Button title="Delete playlist" variant="destructive" onPress={() => setDeletingPlaylist(true)} />
+          <Button title={t('curriculum.playlistDetail.delete')} variant="destructive" onPress={() => setDeletingPlaylist(true)} />
         )}
-        {deletePlaylist.isError ? <InlineError message={getApiErrorMessage(deletePlaylist.error, 'Could not delete this playlist.')} /> : null}
+        {deletePlaylist.isError ? <InlineError message={getApiErrorMessage(deletePlaylist.error, t('curriculum.playlistDetail.deleteError'))} /> : null}
       </View>
     </Screen>
   );
