@@ -45,7 +45,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cancelled or finished class says so in the booking dialog; cancellation
   notices show local time; waitlisted students hear when a class moves.
 
-- **Classes review fixes, first batch** (Decision 334; no database change):
+- **Classes review fixes, first batch** (Decision 335; no database change):
   - The Classes list opens on **Upcoming** (soonest first), with **Past** and
     **All**; Timetable-made Classes carry a "Timetable" tag; a School with
     styles filters by a style dropdown.

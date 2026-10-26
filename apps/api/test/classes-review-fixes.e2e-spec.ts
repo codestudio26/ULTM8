@@ -1,5 +1,5 @@
 /**
- * Regression gate for the Classes section review of 26 Oct 2026 (Decision 334).
+ * Regression gate for the Classes section review of 26 Oct 2026 (Decision 335).
  * Each block pins one finding, over real HTTP:
  *
  * - C3/C17: the date views (upcoming soonest first, past newest first) and the
@@ -39,7 +39,7 @@ if (!hasDb) {
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-describeIfDb('Classes review fixes (Decision 334)', () => {
+describeIfDb('Classes review fixes (Decision 335)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

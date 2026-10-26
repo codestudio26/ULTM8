@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Classes review fixes (Decision 334), in the browser against the real API:
+ * Classes review fixes (Decision 335), in the browser against the real API:
  * the Upcoming/Past views (C3), archive confirmation and no Edit on an archived
  * Class (C11), the form on the Branch's clock with normal money amounts and
  * clearable dates (C10, C11, C12), coaches reaching roll call and QR (C4, C17),

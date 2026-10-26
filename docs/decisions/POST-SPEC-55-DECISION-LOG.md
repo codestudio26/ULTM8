@@ -5057,7 +5057,7 @@ User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timet
 
 ---
 
-## Decision 334 — Classes review fixes, first batch
+## Decision 335 — Classes review fixes, first batch
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (fix plan, Classes review)
 **Resolves:** Classes review findings C2, C3, C4, C6, C7, C8 (date checks), C9, C10, C11, C12, C13, C16, C17. No database change.
