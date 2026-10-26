@@ -276,6 +276,9 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 | BL13 | Sub-tabs **All Payments / Product Revenue / Member Balances**, date range | ❌ | Member Balances = C1's balance (Decision 303) |
 | BL14 | Tiles: **Total revenue, Base amount, Taxes & fees, Refunds**; revenue chart (week / month) | 🟡 | ULTM8 shows revenue only; tax comes with Decision 316.8, refunds with C1 |
 | BL15 | **Transactions** table: search by description, **Filter** (program, transaction type, payment type, date range), **Export** | ❌ | Export: Decision 316.10 says income categories show "in exports", so an export is implied |
+| BL15a | Transactions table **columns**: Date, Description, Payment method / transaction ID, **Amount, Tax, Total**, GL code, Department code, Income category, Venue code, **Type**. After the refund test the tiles read Base R$3,422.00, Refunds **R$-3,422.00**, Total R$0.00, so refunds are netted off revenue (recording 26 Oct 2026) | ❌ | Tax column comes with Decision 316.8; income category with 316.10; no GL/department/venue codes |
+| BL15b | **Product Revenue** opens the **Point of Sale → Report** page: Total revenue, **Cost of goods**, **Net profit**, profit chart, item value, taxes & fees, discounts, refunds; a Product Revenue table "Report by: Product", Export | — | Belongs to the Sales (Point of Sale) section, not compared yet |
+| BL15c | **Member Balances**: list of members with a balance, **Export**; empty here ("No members with balance found") | ❌ | C1 balance (Decision 303). Owner and staff with billing access: BLQ3 |
 
 ### Growth
 

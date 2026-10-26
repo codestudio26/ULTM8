@@ -218,7 +218,7 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [x] "Overdue (**Why?**)": a tooltip, "No card assigned to payment" (26 Oct 2026)
 - [x] **Creating a one-off charge** from the member profile, and cancelling it (recordings 26 Oct 2026)
 - [x] A **refund** of a cash payment (recording 26 Oct 2026)
-- [ ] Accounting → **Product Revenue** and **Member Balances** sub-tabs
+- [x] Accounting → **Product Revenue** and **Member Balances** sub-tabs (recording 26 Oct 2026). **Billing captures complete.**
 - [ ] Optional: a discount and a payment form filled in, then saved
 
 ## B5. Marketing
