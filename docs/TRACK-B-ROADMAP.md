@@ -992,6 +992,20 @@ Nothing — see the new Lessons section below, which closes this gap for metadat
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
 
+## My grading: breakdown, hours trained, promotion fee (Decisions 287, 300, 301, 306) — DONE (26 Oct 2026)
+
+### What was built
+- **Breakdown** on each style in My grading: classes (and per type), days at this rank and skills signed off, each with ✓, "x of y" and its %, and whether it counts toward the % — the same rule as the portal's Ranks tab, from the API's `progressBreakdown`.
+- **Hours trained:** hours at this rank and in all, "A record of your time on the mat. Grading doesn't use it." (`hoursTrained`).
+- **Promotion fee** at the top of My grading, for the student or a guardian for their child ("Ben was graded to …"): the grade, School and price; **See and answer** shows the grading date and "Nothing is charged until you accept it…", then **Accept {price}** or **Decline** (Decline asks again, in red, and says the School is told). An accepted fee shows that the promotion goes through once it is paid. Uses `GET /students/{id}/promotion-fee-requests` and `POST /promotion-fee-requests/{id}/accept|decline`.
+
+### Not yet
+- **Paying the fee in the app**, and "Credit on your balance": paying an accepted fee belongs to staff-created charges (Decision 303), which aren't built; the app says to pay as the School asks.
+- The **Home** card and **Ask for a belt correction** (B8) from the design.
+
+### Verified
+`tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (9, 4 new) and the full suite (146, 26 files).
+
 ## Lessons, metadata + lock state (Decisions 101, 154, 190, 195, 208) — DONE
 
 The CurriculumModule's (Phase 44) Student/Guardian-facing endpoint had no UI anywhere in the app — this closes that, for everything the backend can actually show today.

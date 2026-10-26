@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Student Ranks tab: breakdown, hours and the promotion fee** (DESIGN.md →
+  "Hours trained: logged, not graded" and "Promotion fee"):
+  - **Breakdown** under "Toward {rank}": classes, days at this rank and skills
+    signed off, each with ✓ or ○, "x of y", its own % and bar, and whether it
+    counts toward the % (classes; days on a time-only rank) or is "Needed too,
+    not in the %".
+  - **Hours trained:** hours at this rank and in all, "A record only. Grading
+    doesn't use hours."
+  - **Log a class** (no longer "+1"): pick a class of this style from the last
+    7 days, whose length is logged, or "No class (enter the time)", 60 minutes
+    by default. The API's class list gains optional `disciplineId`,
+    `startsFrom` and `startsTo` filters for it.
+  - **Promotion fee box**, as on the board: "Waiting for fee" / "Fee declined" /
+    "Promotion to decide" first among the tags; the owner waives or cancels; a
+    coach promotes or doesn't. A student waiting for a fee has no Grade button
+    and no "Ready" tag.
 - **Belt editor redesign** (DESIGN.md → "Belt editor: one grade at a time"):
   - **One grade at a time:** a row of grade pills (plain belt, 1 stripe…)
     with the students on each, a live preview of the picked grade, and

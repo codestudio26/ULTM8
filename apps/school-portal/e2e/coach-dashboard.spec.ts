@@ -70,7 +70,7 @@ test('the board and the student panel show only what the coach may do', async ({
   const bjj = page.getByRole('region', { name: 'BJJ' });
   await expect(bjj.getByRole('button', { name: 'Grade' })).toBeVisible();
   await expect(bjj.getByRole('button', { name: 'Correct date' })).toHaveCount(0);
-  await expect(bjj.getByRole('button', { name: 'Log a class (+1)' })).toHaveCount(0);
+  await expect(bjj.getByRole('button', { name: 'Log a class' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: '← Grading Board' })).toBeVisible();
 });
 

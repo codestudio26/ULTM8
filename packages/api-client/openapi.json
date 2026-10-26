@@ -2724,6 +2724,33 @@
               "default": false,
               "type": "boolean"
             }
+          },
+          {
+            "name": "disciplineId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes that list this style (Class.styles).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsFrom",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time: only Classes starting at or after it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsTo",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time: only Classes starting at or before it.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

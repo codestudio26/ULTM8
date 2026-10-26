@@ -98,6 +98,7 @@ export class ClassesService {
     activities?: string,
     search?: string,
     includeArchived?: boolean,
+    filter: { disciplineId?: string; startsFrom?: string; startsTo?: string } = {},
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -111,6 +112,11 @@ export class ClassesService {
               // Decision 278 — `%`/`_` match themselves, not any text (escapeLike).
               ...(search ? { title: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
               ...(includeArchived ? {} : { archivedAt: null }),
+              // Class.styles is a JSON array of { disciplineId, classType }: jsonb @> finds the style.
+              ...(filter.disciplineId ? { styles: { array_contains: [{ disciplineId: filter.disciplineId }] } } : {}),
+              ...(filter.startsFrom || filter.startsTo
+                ? { startDate: { ...(filter.startsFrom ? { gte: new Date(filter.startsFrom) } : {}), ...(filter.startsTo ? { lte: new Date(filter.startsTo) } : {}) } }
+                : {}),
             },
           }),
         cursor,
