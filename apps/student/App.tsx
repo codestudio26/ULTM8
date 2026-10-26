@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider } from './src/auth/AuthContext';
+import { I18nProvider } from './src/i18n/I18nProvider';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { asyncStoragePersister, MAX_CACHED_QUERY_AGE_MS, PERSISTED_QUERY_KEY_PREFIXES } from './src/lib/queryPersister';
 
@@ -53,7 +54,9 @@ export default function App() {
           }}
         >
           <AuthProvider>
-            <RootNavigator />
+            <I18nProvider>
+              <RootNavigator />
+            </I18nProvider>
           </AuthProvider>
         </PersistQueryClientProvider>
         <StatusBar style="auto" />

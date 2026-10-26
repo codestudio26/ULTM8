@@ -1,5 +1,6 @@
 import { ApiError } from '@ultm8/api-client';
 import { formatDateTime } from './formatDate';
+import { translate } from '../i18n/I18nProvider';
 
 /** Every screen in this app needs "show the real backend message if there is one,
  * otherwise a friendly fallback" — this was duplicated as the same
@@ -16,18 +17,18 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
 function codedMessage(err: ApiError): string | null {
   switch (err.code) {
     case 'CLASS_FULL':
-      return 'This class is full. You can join the waitlist instead.';
+      return translate('lib.apiError.classFull');
     case 'WAITLIST_FIRST':
-      return 'Others are already waiting for a place in this class. Join the waitlist to take your turn.';
+      return translate('lib.apiError.waitlistFirst');
     case 'BOOKING_CLOSED':
-      return 'Booking for this class has closed. A member of staff can still add you.';
+      return translate('lib.apiError.bookingClosed');
     case 'CLASS_BUSY':
-      return 'Lots of people are booking this class right now. Please try again in a moment.';
+      return translate('lib.apiError.classBusy');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = err.message.match(/opens at (\S+?)\.?$/)?.[1];
       return iso && !Number.isNaN(new Date(iso).getTime())
-        ? `Check-in for this class hasn't opened yet. It opens ${formatDateTime(iso)}.`
-        : "Check-in for this class hasn't opened yet.";
+        ? translate('lib.apiError.checkInNotOpenAt', { time: formatDateTime(iso) })
+        : translate('lib.apiError.checkInNotOpen');
     }
     default:
       return null;

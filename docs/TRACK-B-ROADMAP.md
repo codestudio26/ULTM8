@@ -992,6 +992,20 @@ Nothing — see the new Lessons section below, which closes this gap for metadat
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
 
+## Translation into 15 languages (Decision 323) — DONE (26 Oct 2026)
+
+### What was built
+- **Translation layer** (`src/i18n/`): `useT()` / `translate()`, the same lookup and plural rules as the School Portal through the shared `@ultm8/i18n` package. Order for every text: a Platform Admin Translations row for the language (screen `studentApp.<group>`, so it never collides with the portal's own rows) → the app's own translation → English, never a blank.
+- **Which language:** the account's saved `language` (Profile's language picker, the same setting the portal uses), else the phone's language when it is one of the 15, else English. Dates and money follow it too. Arabic flips the layout to right to left after the app restarts (a React Native limit); Profile says so.
+- **Every screen's text** (610 texts in 20 groups, `src/i18n/messages/en/*.ts`) in English, Portuguese (BR), Spanish, Arabic, French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese, Korean, Chinese (Simplified) and Thai. The API's own messages (errors, job-written notifications) are translated with the portal's shared catalogue.
+- **Native-speaker review:** the translation review page now lists the student app's texts too (`studentApp.<key>`), one item per English text across both apps.
+
+### Not yet
+The translations are first drafts: the native-speaker review from zero before launch (Decision 323 item 4) is what makes them final.
+
+### Verified
+`tsc --noEmit`; jest full suite (165 tests, 28 files), including `src/i18n/catalogue.test.ts` (every English key in all 14 languages with the same placeholders) and `src/i18n/I18nProvider.test.tsx` (saved language, then the phone's, then English; `studentApp.*` overrides).
+
 ## My grading: breakdown, hours trained, promotion fee (Decisions 287, 300, 301, 306) — DONE (26 Oct 2026)
 
 ### What was built

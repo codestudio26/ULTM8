@@ -5,6 +5,7 @@ import { Button, InlineError } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateTime } from '../lib/formatDate';
+import { useI18n, useT } from '../i18n/I18nProvider';
 import { useMarkNotificationRead, useNotifications } from './notificationQueries';
 
 type Notification = components['schemas']['NotificationResponseDto'];
@@ -20,7 +21,12 @@ type Notification = components['schemas']['NotificationResponseDto'];
  * infrastructure with no present payoff. This deviation from the roadmap's original
  * plan is recorded in the roadmap doc itself, not just here, per CLAUDE.md's "flag
  * the mismatch, don't silently pick one." Revisit once server-side dispatch exists. */
-function NotificationRow({ notification }: { notification: Notification }) {
+function NotificationRow({ notification: raw }: { notification: Notification }) {
+  const { t, serverText } = useI18n();
+  // Titles/bodies the API's own jobs wrote, in the app's language (a School's
+  // own broadcast is shown as written) — the same call the portal's
+  // NotificationsPage makes.
+  const notification = { ...raw, ...serverText.notification(raw) };
   const markRead = useMarkNotificationRead();
 
   function handleMarkRead() {
@@ -31,13 +37,13 @@ function NotificationRow({ notification }: { notification: Notification }) {
   return (
     <View
       style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
-      accessibilityLabel={`${notification.title}, ${notification.read ? 'read' : 'unread'}`}
+      accessibilityLabel={t(notification.read ? 'notifications.row.labelRead' : 'notifications.row.labelUnread', { title: notification.title })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <Text style={{ fontWeight: notification.read ? '400' : '700', flex: 1, marginRight: 8 }}>{notification.title}</Text>
         {!notification.read ? (
           <View
-            accessibilityLabel="Unread"
+            accessibilityLabel={t('notifications.row.unread')}
             style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1F6FEB', marginTop: 6 }}
           />
         ) : null}
@@ -45,22 +51,23 @@ function NotificationRow({ notification }: { notification: Notification }) {
       <Text style={{ color: '#5F6368', marginTop: 2 }}>{notification.body}</Text>
       <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 4 }}>{formatDateTime(notification.createdAt)}</Text>
       {markRead.isError ? (
-        <InlineError message={getApiErrorMessage(markRead.error, 'Could not mark this as read — please try again.')} />
+        <InlineError message={getApiErrorMessage(markRead.error, t('notifications.row.markReadFailed'))} />
       ) : null}
-      {!notification.read ? <Button title="Mark as read" variant="secondary" onPress={handleMarkRead} loading={markRead.isPending} /> : null}
+      {!notification.read ? <Button title={t('notifications.row.markAsRead')} variant="secondary" onPress={handleMarkRead} loading={markRead.isPending} /> : null}
     </View>
   );
 }
 
 export function NotificationsScreen() {
+  const t = useT();
   const query = useNotifications();
 
   return (
     <PaginatedListScreen
       query={query}
       renderItem={(item: Notification) => <NotificationRow notification={item} />}
-      emptyMessage="No notifications yet."
-      errorFallbackMessage="Failed to load notifications — please try again."
+      emptyMessage={t('notifications.list.empty')}
+      errorFallbackMessage={t('notifications.list.loadFailed')}
     />
   );
 }

@@ -3,6 +3,7 @@ import { ActivityIndicator, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Field, InlineError, Screen, TextField } from '../components/ui';
 import type { AppStackParamList } from '../navigation/types';
+import { useT } from '../i18n/I18nProvider';
 import { getKidModePin, setKidModePin } from './kidModePinStore';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'KidModePin'>;
@@ -16,6 +17,7 @@ const PIN_LENGTH = 4;
  * costs a retry, never a security consequence (the real boundary is the
  * scoped Kid-Mode token minted once this screen passes). */
 export function KidModePinScreen({ navigation }: Props) {
+  const t = useT();
   const [loadingPin, setLoadingPin] = useState(true);
   const [existingPin, setExistingPin] = useState<string | null>(null);
   const [pin, setPin] = useState('');
@@ -40,11 +42,11 @@ export function KidModePinScreen({ navigation }: Props) {
   async function handleSetPin() {
     setError(null);
     if (pin.length !== PIN_LENGTH) {
-      setError(`PIN must be ${PIN_LENGTH} digits.`);
+      setError(t('kidmode.pin.tooShort', { count: PIN_LENGTH }));
       return;
     }
     if (pin !== confirmPin) {
-      setError('PINs do not match.');
+      setError(t('kidmode.pin.mismatch'));
       return;
     }
     setSaving(true);
@@ -56,7 +58,7 @@ export function KidModePinScreen({ navigation }: Props) {
   function handleConfirmPin() {
     setError(null);
     if (pin !== existingPin) {
-      setError('Incorrect PIN.');
+      setError(t('kidmode.pin.incorrect'));
       setPin('');
       return;
     }
@@ -66,14 +68,12 @@ export function KidModePinScreen({ navigation }: Props) {
   if (existingPin === null) {
     return (
       <Screen>
-        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Set a Kid Mode PIN</Text>
-        <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 16 }}>
-          You'll enter this each time before handing the device over. It's just a handoff check — not a password.
-        </Text>
-        <Field label="New PIN">
+        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>{t('kidmode.pin.setTitle')}</Text>
+        <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 16 }}>{t('kidmode.pin.setIntro')}</Text>
+        <Field label={t('kidmode.pin.newPin')}>
           <TextField value={pin} onChangeText={setPin} secureTextEntry keyboardType="number-pad" maxLength={PIN_LENGTH} />
         </Field>
-        <Field label="Confirm PIN">
+        <Field label={t('kidmode.pin.confirmPin')}>
           <TextField
             value={confirmPin}
             onChangeText={setConfirmPin}
@@ -83,19 +83,19 @@ export function KidModePinScreen({ navigation }: Props) {
           />
         </Field>
         {error ? <InlineError message={error} /> : null}
-        <Button title="Set PIN" onPress={handleSetPin} loading={saving} disabled={!pin || !confirmPin} />
+        <Button title={t('kidmode.pin.setPin')} onPress={handleSetPin} loading={saving} disabled={!pin || !confirmPin} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>Enter Kid Mode PIN</Text>
-      <Field label="PIN">
+      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>{t('kidmode.pin.enterTitle')}</Text>
+      <Field label={t('kidmode.pin.pin')}>
         <TextField value={pin} onChangeText={setPin} secureTextEntry keyboardType="number-pad" maxLength={PIN_LENGTH} autoFocus />
       </Field>
       {error ? <InlineError message={error} /> : null}
-      <Button title="Continue" onPress={handleConfirmPin} disabled={pin.length !== PIN_LENGTH} />
+      <Button title={t('kidmode.pin.continue')} onPress={handleConfirmPin} disabled={pin.length !== PIN_LENGTH} />
     </Screen>
   );
 }

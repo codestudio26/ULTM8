@@ -4,6 +4,8 @@ import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 import { useGrantConsent, useWithdrawConsent } from './guardianQueries';
 
 type ConsentRecord = components['schemas']['ConsentRecordResponseDto'];
@@ -23,18 +25,16 @@ const CURRENT_POLICY_VERSION = '1.0-placeholder';
  * withdrawConsent's own header comment) — not invented, since a Guardian
  * deciding whether to withdraw BASELINE consent needs to know it deactivates
  * their minor's entire account before they tap it, not after. */
-const TIER_COPY: Record<ConsentTier, { title: string; description: string; withdrawWarning: string }> = {
+const TIER_COPY: Record<ConsentTier, { title: TranslationKey; description: TranslationKey; withdrawWarning: TranslationKey }> = {
   BASELINE: {
-    title: 'Baseline consent',
-    description: "Covers your minor's general account, attendance, and grading data — required for their account to stay active.",
-    withdrawWarning:
-      "Withdrawing baseline consent deactivates your minor's entire account — every role and enrollment they hold is revoked, the same effect as closing their account. This cannot be undone from this screen.",
+    title: 'guardians.consentTier.baselineTitle',
+    description: 'guardians.consentTier.baselineDescription',
+    withdrawWarning: 'guardians.consentTier.baselineWithdrawWarning',
   },
   CAMERA: {
-    title: 'Camera & photo consent',
-    description: 'Covers self-service QR check-in camera use and profile-photo capture.',
-    withdrawWarning:
-      "Withdrawing camera consent disables self-service QR check-in and clears your minor's stored profile photo. It does not affect their account, attendance, or grading history.",
+    title: 'guardians.consentTier.cameraTitle',
+    description: 'guardians.consentTier.cameraDescription',
+    withdrawWarning: 'guardians.consentTier.cameraWithdrawWarning',
   },
 };
 
@@ -47,6 +47,7 @@ export function ConsentTierRow({
   tier: ConsentTier;
   record: ConsentRecord | undefined;
 }) {
+  const t = useT();
   const grant = useGrantConsent();
   const withdraw = useWithdrawConsent();
   const copy = TIER_COPY[tier];
@@ -135,19 +136,19 @@ export function ConsentTierRow({
 
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>{copy.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{copy.description}</Text>
+      <Text style={{ fontWeight: '600' }}>{t(copy.title)}</Text>
+      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t(copy.description)}</Text>
 
       {grant.isError ? (
-        <InlineError message={getApiErrorMessage(grant.error, 'Could not save consent — please try again.')} />
+        <InlineError message={getApiErrorMessage(grant.error, t('guardians.consentTier.grantError'))} />
       ) : null}
       {withdraw.isError ? (
-        <InlineError message={getApiErrorMessage(withdraw.error, 'Could not withdraw consent — please try again.')} />
+        <InlineError message={getApiErrorMessage(withdraw.error, t('guardians.consentTier.withdrawError'))} />
       ) : null}
 
       {granted && confirming ? (
         <View style={{ marginTop: 8 }}>
-          <Text style={{ color: '#C5221F', fontSize: 13 }}>{copy.withdrawWarning}</Text>
+          <Text style={{ color: '#C5221F', fontSize: 13 }}>{t(copy.withdrawWarning)}</Text>
           {tier === 'BASELINE' ? (
             <Pressable
               onPress={() => setAcknowledged((a) => !a)}
@@ -164,7 +165,7 @@ export function ConsentTierRow({
                   marginRight: 8,
                 }}
               />
-              <Text style={{ fontSize: 13, flex: 1 }}>I understand this deactivates the account</Text>
+              <Text style={{ fontSize: 13, flex: 1 }}>{t('guardians.consentTier.acknowledge')}</Text>
             </Pressable>
           ) : null}
           {steppingUp ? (
@@ -172,11 +173,11 @@ export function ConsentTierRow({
           ) : (
             <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
               <View style={{ flex: 1 }}>
-                <Button title="Cancel" variant="secondary" onPress={cancelConfirm} />
+                <Button title={t('guardians.consentTier.cancel')} variant="secondary" onPress={cancelConfirm} />
               </View>
               <View style={{ flex: 1 }}>
                 <Button
-                  title="Confirm withdraw"
+                  title={t('guardians.consentTier.confirmWithdraw')}
                   variant="destructive"
                   onPress={confirmWithdraw}
                   loading={withdraw.isPending}
@@ -188,11 +189,11 @@ export function ConsentTierRow({
         </View>
       ) : granted ? (
         <>
-          <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Active ✓</Text>
-          <Button title="Withdraw" variant="secondary" onPress={openConfirm} loading={withdraw.isPending} />
+          <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>{t('guardians.consentTier.active')}</Text>
+          <Button title={t('guardians.consentTier.withdraw')} variant="secondary" onPress={openConfirm} loading={withdraw.isPending} />
         </>
       ) : (
-        <Button title="Grant consent" onPress={handleGrant} loading={grant.isPending} />
+        <Button title={t('guardians.consentTier.grantConsent')} onPress={handleGrant} loading={grant.isPending} />
       )}
     </View>
   );

@@ -5,12 +5,14 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, PhoneField, Screen, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'VerifyOtp'>;
 
 export function VerifyOtpScreen({ route, navigation }: Props) {
+  const t = useT();
   const [phone, setPhone] = useState(route.params?.phone ?? '');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export function VerifyOtpScreen({ route, navigation }: Props) {
       await unwrap(apiClient.POST('/v1/auth/otp/verify', { body: { phone, code } }));
       navigation.navigate('Login');
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Something went wrong — please try again.'));
+      setError(getApiErrorMessage(err, t('auth.errors.generic')));
     } finally {
       setSubmitting(false);
     }
@@ -41,7 +43,7 @@ export function VerifyOtpScreen({ route, navigation }: Props) {
       await unwrap(apiClient.POST('/v1/auth/otp/send', { body: { phone } }));
       setResent(true);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not resend the code.'));
+      setError(getApiErrorMessage(err, t('auth.verifyOtp.resendFailed')));
     } finally {
       setResending(false);
     }
@@ -50,20 +52,20 @@ export function VerifyOtpScreen({ route, navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>Verify your phone</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>{t('auth.verifyOtp.title')}</Text>
         <Text style={{ fontSize: 14, color: '#5F6368', marginBottom: 20 }}>
-          Enter the code we sent to complete registration.
+          {t('auth.verifyOtp.intro')}
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        {resent ? <SuccessBanner message="Code resent." /> : null}
-        <Field label="Phone">
+        {resent ? <SuccessBanner message={t('auth.verifyOtp.resent')} /> : null}
+        <Field label={t('auth.fields.phone')}>
           <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="Verification code">
+        <Field label={t('auth.fields.verificationCode')}>
           <TextField keyboardType="number-pad" value={code} onChangeText={setCode} />
         </Field>
-        <Button title="Verify" onPress={handleVerify} loading={submitting} />
-        <Button title="Resend code" variant="secondary" onPress={handleResend} loading={resending} />
+        <Button title={t('auth.verifyOtp.verify')} onPress={handleVerify} loading={submitting} />
+        <Button title={t('auth.verifyOtp.resend')} variant="secondary" onPress={handleResend} loading={resending} />
       </Screen>
     </ScrollView>
   );
