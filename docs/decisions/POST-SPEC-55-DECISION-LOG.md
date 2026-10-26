@@ -5218,3 +5218,26 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
 ### Recorded by
 
 User, 26 Oct 2026, answering the Billing questions one by one and then *"Go ahead agree with all"*.
+
+---
+
+## Decision 345 — Classes review fixes, second batch
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (Classes review decision cards 1–4) · **Follows:** Decision 335
+**Resolves:** Classes review findings C1, C5, C14, and C8's "a Class can be created in the past". Database change: one data migration.
+
+### Decision
+
+1. **"Included in membership" now works, for one-off Classes only** (C1, SKILL.md §6). A one-off Class (made on the Classes page, not by the Timetable) can only be booked with a ticket made for it (a Membership scoped to that Class) unless the owner ticks the switch. A Subscription, Weekly Pass or general Class Pack doesn't cover it; the booking is refused with `TICKET_REQUIRED`. Timetable Classes are always covered by general access, so the switch leaves the Timetable form and the edit form of a Timetable Class. A Class the Timetable made keeps counting as one after its slot is deleted (its `occurrenceDate` stays). New one-off Classes start with the switch off, as the spec says.
+2. **Existing one-off Classes keep today's bookings.** The flag was never read before, so migration `20261129000200_one_off_class_membership_inclusion` ticks it on every existing one-off Class. Owners can untick it on any of them.
+3. **Moving a booked Class to a new time** (C5): booked and waiting Students get a "Class moved" notice, the same one a Timetable move sends; moving it to a time that has already passed is refused (`CLASS_MOVED_TO_PAST`). A Class nobody booked or is waiting for moves freely, as before.
+4. **A booked Class can't move to another Branch** (C14) while Students are booked or waiting (`CLASS_BRANCH_BOOKED`): their bookings have to be cancelled first. Students only see Classes at their own Branch, so before this a moved Class left bookings nobody could cancel or check into. Cancelling a booking now reads its Class past that Branch limit, so a booking stranded by an earlier move can still be cancelled.
+5. **A Class that has already ended can't be created** (`CLASS_ALREADY_ENDED`). One already under way still can. A past session a Student attended can be credited with "Log a class" on the Student page.
+
+### What this does NOT resolve
+
+Add student and Cancel booking on the Class page wait for PR #273 (Cancel class), which the product owner chose to bring up to date and merge first (card 5).
+
+### Recorded by
+
+User (Code), 26 Oct 2026, on the Classes decision cards: "One-off only, keep today's bookings" (*"Go with the first option"*), "Notify, block the past", "Block while booked", "No, refuse it".

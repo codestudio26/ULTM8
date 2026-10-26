@@ -80,6 +80,8 @@ export const classes = {
     descriptionLabel: 'Description',
     waiverRequired: 'Requires signed waiver/terms to book',
     membershipInclusion: 'Included in general membership access (no separate ticket required)',
+    membershipInclusionHint:
+      'Off: students need a ticket made for this class (a class pack limited to it). On: any subscription, weekly pass or class pack can book it.',
   },
   detail: {
     fallbackTitle: 'Class',

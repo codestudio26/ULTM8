@@ -141,8 +141,8 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     return {
       title: 'Fixture Class',
       activities: ['BJJ'],
-      startDate: '2026-10-01T10:00:00.000Z',
-      endDate: '2026-10-01T11:00:00.000Z',
+      startDate: '2036-10-01T10:00:00.000Z',
+      endDate: '2036-10-01T11:00:00.000Z',
       ...overrides,
     };
   }
@@ -309,7 +309,7 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/classes`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send(classBody({ title: 'Backwards dates', startDate: '2026-10-01T11:00:00.000Z', endDate: '2026-10-01T10:00:00.000Z' }));
+      .send(classBody({ title: 'Backwards dates', startDate: '2036-10-01T11:00:00.000Z', endDate: '2036-10-01T10:00:00.000Z' }));
     expect(createRes.status).toBe(400);
 
     const validClass = await request(app.getHttpServer())
