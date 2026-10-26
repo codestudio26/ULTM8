@@ -56,7 +56,7 @@ describeIfDb('Classes review fixes (Decision 335)', () => {
   const http = () => request(app.getHttpServer());
   const at = (ms: number) => new Date(Date.now() + ms);
   const mkClass = (data: Record<string, unknown> = {}) =>
-    superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Fixture', startDate: at(2 * HOUR), endDate: at(3 * HOUR), ...data } });
+    superuser.class.create({ data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Fixture', startDate: at(2 * HOUR), endDate: at(3 * HOUR), ...data } });
   const patch = (classId: string, body: Record<string, unknown>) => http().patch(`/v1/classes/${classId}`).set('Authorization', `Bearer ${owner.token}`).send(body);
   const book = (classId: string, who: U, body: Record<string, unknown> = {}) => http().post(`/v1/classes/${classId}/book`).set('Authorization', `Bearer ${who.token}`).send(body);
   const list = (who: U, query: Record<string, string | number>) => http().get(`/v1/schools/${school.id}/classes`).query(query).set('Authorization', `Bearer ${who.token}`);

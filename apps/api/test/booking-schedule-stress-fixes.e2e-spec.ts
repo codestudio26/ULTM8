@@ -55,7 +55,7 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
   const http = () => request(app.getHttpServer());
   const at = (ms: number) => new Date(Date.now() + ms);
   const mkClass = (data: Record<string, unknown>) =>
-    superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Fixture', startDate: at(2 * HOUR), endDate: at(3 * HOUR), ...data } });
+    superuser.class.create({ data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Fixture', startDate: at(2 * HOUR), endDate: at(3 * HOUR), ...data } });
   const book = (classId: string, who: U, body: Record<string, unknown> = {}) => http().post(`/v1/classes/${classId}/book`).set('Authorization', `Bearer ${who.token}`).send(body);
   const upcoming = (classId: string) => superuser.booking.count({ where: { classId, status: 'UPCOMING' } });
   const setSchool = (data: Record<string, unknown>) => superuser.school.update({ where: { id: school.id }, data });

@@ -94,7 +94,6 @@ export const timetable = {
     bannerUrlLabel: 'Banner URL',
     descriptionLabel: 'Description',
     waiverRequired: 'Requires signed waiver/terms to book',
-    membershipInclusion: 'Included in general membership access (no separate ticket required)',
   },
   booking: {
     title: 'Book — {title}',

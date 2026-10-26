@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "O prazo de reembolso não pode ser depois do fim da aula.",
     guestNeedsFriendPass: "Um convidado só pode ser reservado com um Passe de convidado. Sua assinatura cobre você, não seus convidados.",
     guestPassRepeated: "Cada convidado precisa do próprio Passe de convidado. O mesmo passe foi escolhido mais de uma vez.",
+    ticketRequired: "Esta aula avulsa precisa de um ingresso próprio. Uma assinatura, passe semanal ou pacote de aulas geral não a cobre.",
+    classBranchBooked: "Há alunos reservados ou na lista de espera desta aula. Cancele as reservas deles antes de mudá-la para outra unidade.",
+    classMovedToPast: "Há alunos reservados ou na lista de espera desta aula, então ela só pode ir para um horário que ainda não passou.",
+    classAlreadyEnded: "Esta aula já terminou. Escolha um horário de término no futuro.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",

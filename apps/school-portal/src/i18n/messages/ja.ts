@@ -536,6 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "説明",
       waiverRequired: "予約には署名済みの免責同意書・規約が必要",
       membershipInclusion: "一般会員アクセスに含まれる（別チケット不要）",
+      membershipInclusionHint: "オフ：このクラス専用のチケット（このクラス限定の回数券）が必要です。オン：どのサブスクリプション、週間パス、回数券でも予約できます。",
     },
   },
   disciplines: {
@@ -2230,7 +2231,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "バナーURL",
       descriptionLabel: "説明",
       waiverRequired: "予約には署名済みの免責同意書・規約が必要",
-      membershipInclusion: "一般会員アクセスに含まれる（別チケット不要）",
     },
     booking: {
       title: "予約 — {title}",

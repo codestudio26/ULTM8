@@ -31,6 +31,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   billing; the member list no longer sends join codes or Stripe ids; the
   Activity filter ignores capitals; several franchise-fee billing timing fixes.
   Needs a database migration on deploy.
+- **Classes: second batch of fixes** (Decision 345, needs a migration) — a
+  one-off class now needs its own ticket unless "Included in membership" is
+  ticked (existing one-off classes were ticked so nothing changes for them;
+  Timetable classes are always included and lose the switch); moving a booked
+  class to a new time tells booked and waiting students and can't move it into
+  the past; a booked class can't move to another branch; a class that has
+  already ended can't be created.
 - **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
   whose Weekly Pass or Trial has run out can buy again (it used to be refused
   as if the old one were still live); a live Trial no longer blocks buying a
