@@ -100,6 +100,12 @@ export class ChargebackPatternRestrictionProcessor extends WorkerHost {
     if (ownerGrants.length === 0) {
       return;
     }
+    // Named (Decision 333, the product owner's choice 26 Oct 2026): "a Student"
+    // left the Owner unable to tell who to collect cash from.
+    const student = await this.prismaJobs.user.findUnique({ where: { id: studentId }, select: { firstName: true, surname: true } });
+    const body = student
+      ? `${`${student.firstName} ${student.surname}`.trim()}, a Student at your School, has been restricted to Cash/Bank Transfer payment methods only, following a pattern of lost Stripe disputes.`
+      : 'A Student at your School has been restricted to Cash/Bank Transfer payment methods only, following a pattern of lost Stripe disputes.';
 
     await this.notificationFanoutQueue.addBulk(
       ownerGrants.map((grant) => ({
@@ -108,7 +114,7 @@ export class ChargebackPatternRestrictionProcessor extends WorkerHost {
           notificationId: `chargeback-restriction-${studentId}-${grant.userId}`,
           userId: grant.userId,
           title: 'Student payment-restricted',
-          body: 'A Student at your School has been restricted to Cash/Bank Transfer payment methods only, following a pattern of lost Stripe disputes.',
+          body,
           type: 'CHARGEBACK_PATTERN_RESTRICTION',
         } satisfies NotificationFanoutJobData,
         opts: {

@@ -81,16 +81,29 @@ test("a job-written notification is shown in the picked language; a School's bro
   const broadcast = await db.notification.create({
     data: { id: randomUUID(), userId: s.ownerId, type: 'SCHOOL_BROADCAST', title: 'A spot opened up', body: 'Gym closed Friday.' },
   });
-  notificationIds.push(job.id, broadcast.id);
+  // A parent's copy of their child's notification (Decision 333).
+  const childCopy = await db.notification.create({
+    data: {
+      id: randomUUID(), userId: s.ownerId, type: 'WAITLIST_SPOT_OPENED', title: 'A spot opened up',
+      body: "For Mia: A spot opened up in Teen Judo. Claim it soon — it goes to the next person on the waitlist if you don't.",
+    },
+  });
+  notificationIds.push(job.id, broadcast.id, childCopy.id);
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
 
   const expectedTitle = ptBRServerKeys.notifications!.spotOpenedTitle!;
   const expectedBody = ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
-  await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toBeVisible();
+  // Two rows carry this title: the job's own, and the child's copy below.
+  await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toHaveCount(2);
   await expect(page.getByRole('cell', { name: expectedBody, exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'A spot opened up', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Gym closed Friday.', exact: true })).toBeVisible();
+  const childBody = ptBRServerKeys.notifications!.forChild!.replace('{name}', 'Mia').replace(
+    '{body}',
+    ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Teen Judo'),
+  );
+  await expect(page.getByRole('cell', { name: childBody, exact: true })).toBeVisible();
 });
 
 test("the API's error messages are shown in the picked language, and an untranslated one is never shown in English", async ({ page }) => {
