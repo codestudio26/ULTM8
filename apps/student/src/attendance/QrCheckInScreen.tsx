@@ -5,6 +5,7 @@ import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useMyQrToken } from './attendanceQueries';
 import { QrScanner } from './QrScanner';
+import { useT } from '../i18n/I18nProvider';
 
 type Mode = 'show' | 'scan';
 
@@ -32,6 +33,7 @@ type Mode = 'show' | 'scan';
  * way to launch a real Expo Go client or device, so the native-module path
  * itself is unexercised here; flagged, not asserted as device-verified. */
 export function QrCheckInScreen() {
+  const t = useT();
   const [mode, setMode] = useState<Mode>('show');
   const { data, isLoading, isError, error, isRefetching } = useMyQrToken(mode === 'show');
 
@@ -39,10 +41,10 @@ export function QrCheckInScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', marginBottom: 16, gap: 8 }}>
         <View style={{ flex: 1 }}>
-          <Button title="Show my code" variant={mode === 'show' ? 'primary' : 'secondary'} onPress={() => setMode('show')} />
+          <Button title={t('attendance.qrCheckIn.showMyCode')} variant={mode === 'show' ? 'primary' : 'secondary'} onPress={() => setMode('show')} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button title="Scan to check in" variant={mode === 'scan' ? 'primary' : 'secondary'} onPress={() => setMode('scan')} />
+          <Button title={t('attendance.qrCheckIn.scanToCheckIn')} variant={mode === 'scan' ? 'primary' : 'secondary'} onPress={() => setMode('scan')} />
         </View>
       </View>
 
@@ -55,7 +57,7 @@ export function QrCheckInScreen() {
       // WaiversScreen, ...) — only a full-screen error when there's genuinely
       // nothing cached to show.
       isError && !data ? (
-        <ErrorBanner message={getApiErrorMessage(error, 'Could not generate your check-in code — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('attendance.qrCheckIn.loadError'))} />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           {data ? (
@@ -66,7 +68,7 @@ export function QrCheckInScreen() {
             <ActivityIndicator testID="activity-indicator" />
           )}
           <Text style={{ color: '#5F6368', fontSize: 14, textAlign: 'center', maxWidth: 280 }}>
-            Show this to your Instructor to check in. It refreshes automatically — no action needed.
+            {t('attendance.qrCheckIn.hint')}
           </Text>
         </View>
       )}

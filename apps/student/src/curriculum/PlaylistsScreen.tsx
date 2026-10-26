@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import type { AppStackParamList } from '../navigation/types';
 import { useCreatePlaylist, useMyPlaylists } from './playlistQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Playlists'>;
 
@@ -18,6 +19,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Playlists'>;
  * as a judgment call ("your call, keep it simple"), and a count isn't needed
  * to use this screen (tapping a row already shows its items). */
 export function PlaylistsScreen({ navigation }: Props) {
+  const t = useT();
   const { data, isLoading, isError, error } = useMyPlaylists();
   const createPlaylist = useCreatePlaylist();
   const [creating, setCreating] = useState(false);
@@ -34,7 +36,7 @@ export function PlaylistsScreen({ navigation }: Props) {
   if (isError && !data) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Could not load your playlists — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('curriculum.playlists.loadError'))} />
       </Screen>
     );
   }
@@ -54,7 +56,7 @@ export function PlaylistsScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      {playlists.length === 0 ? <Text style={{ color: theme.textSecondary, marginBottom: spacing[3] }}>No playlists yet.</Text> : null}
+      {playlists.length === 0 ? <Text style={{ color: theme.textSecondary, marginBottom: spacing[3] }}>{t('curriculum.playlists.empty')}</Text> : null}
 
       {playlists.map((p) => (
         <Pressable
@@ -72,14 +74,14 @@ export function PlaylistsScreen({ navigation }: Props) {
 
       {creating ? (
         <View style={{ marginTop: spacing[4] }}>
-          <TextField value={name} onChangeText={setName} placeholder="Playlist name" />
+          <TextField value={name} onChangeText={setName} placeholder={t('curriculum.playlists.namePlaceholder')} />
           {createPlaylist.isError ? (
-            <InlineError message={getApiErrorMessage(createPlaylist.error, 'Could not create this playlist.')} />
+            <InlineError message={getApiErrorMessage(createPlaylist.error, t('curriculum.playlists.createError'))} />
           ) : null}
           <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
             <View style={{ flex: 1 }}>
               <Button
-                title="Cancel"
+                title={t('curriculum.playlists.cancel')}
                 variant="secondary"
                 onPress={() => {
                   setCreating(false);
@@ -88,12 +90,12 @@ export function PlaylistsScreen({ navigation }: Props) {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Button title="Create" onPress={handleCreate} loading={createPlaylist.isPending} disabled={!name.trim()} />
+              <Button title={t('curriculum.playlists.create')} onPress={handleCreate} loading={createPlaylist.isPending} disabled={!name.trim()} />
             </View>
           </View>
         </View>
       ) : (
-        <Button title="New playlist" variant="secondary" onPress={() => setCreating(true)} />
+        <Button title={t('curriculum.playlists.newPlaylist')} variant="secondary" onPress={() => setCreating(true)} />
       )}
     </Screen>
   );

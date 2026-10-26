@@ -1,7 +1,9 @@
 /**
- * Exports every School Portal string for native-speaker review (the
- * "Translation Review" page). Each distinct English text is one item, checked
- * once per language however many screens use it. Run from apps/school-portal:
+ * Exports every School Portal and student app string for native-speaker
+ * review (the "Translation Review" page; Decision 323). Each distinct English
+ * text is one item, checked once per language however many screens (in either
+ * app) use it; student app keys are listed as `studentApp.<key>`. Run from
+ * apps/school-portal:
  *
  *   npx tsx scripts/i18n-review/export.ts <out-dir>
  *
@@ -15,6 +17,16 @@ import { messages as english } from '../../src/i18n/messages/en-GB';
 import { LOCALE_LOADERS, directionFor } from '../../src/i18n/locales';
 import { SERVER_MESSAGES, SERVER_PATTERNS } from '../../src/i18n/server/en';
 import { SERVER_MESSAGE_LOADERS } from '../../src/i18n/server/translate';
+
+/** Student app keys carry this prefix here (and in Platform Admin overrides). */
+const STUDENT = 'studentApp.';
+
+/** One student app catalogue file, `en` or a locale (the student app is not an
+ * ES module, so its exports arrive under `default` here). */
+async function studentCatalogueOf(code: string): Promise<unknown> {
+  const mod = (await import(`../../../student/src/i18n/messages/${code}.ts`)) as { messages?: unknown; default?: { messages?: unknown } };
+  return mod.messages ?? mod.default?.messages ?? {};
+}
 
 type Text = string | Record<string, string>;
 type Tree = { [k: string]: Text | Tree };
@@ -94,7 +106,11 @@ async function main() {
 
   const items = new Map<string, Item>();
   const keyToId = new Map<string, string>();
-  for (const [key, en] of leaves(english as unknown as Tree)) {
+  // The student app's `server` group is the portal's own (shared through
+  // @ultm8/i18n), so only its screen text is added.
+  const { server: _sharedServer, ...studentScreens } = (await studentCatalogueOf('en')) as Record<string, unknown>;
+  const allLeaves = [...leaves(english as unknown as Tree), ...leaves(studentScreens as unknown as Tree, STUDENT)];
+  for (const [key, en] of allLeaves) {
     const id = idOf('ui', en);
     const item = items.get(id) ?? { id, source: 'ui' as const, en, keys: [], placeholders: placeholders(en) };
     item.keys.push(key);
@@ -122,13 +138,14 @@ async function main() {
 
   for (const code of locales) {
     const catalogue = await LOCALE_LOADERS[code]();
+    const studentCatalogue = await studentCatalogueOf(code);
     const server = SERVER_MESSAGE_LOADERS[code] ? await SERVER_MESSAGE_LOADERS[code]() : {};
     const out: Record<string, { variants: Array<{ text: Text | null; keys: string[] }>; checks: string[] }> = {};
     for (const item of items.values()) {
       const variants = new Map<string, { text: Text | null; keys: string[] }>();
       if (item.source === 'ui') {
         for (const key of item.keys) {
-          const text = lookup(catalogue, key) ?? null;
+          const text = (key.startsWith(STUDENT) ? lookup(studentCatalogue, key.slice(STUDENT.length)) : lookup(catalogue, key)) ?? null;
           const sig = JSON.stringify(text);
           const v = variants.get(sig) ?? { text, keys: [] };
           v.keys.push(key);

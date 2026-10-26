@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useMyMinors } from '../guardians/guardianQueries';
 import {
   useCancelPendingReviewBooking,
@@ -15,6 +16,7 @@ import {
  * existing Guardian-on-behalf-of PATCH /bookings/{id}/cancel path — no new
  * cancellation logic). */
 export function PendingReviewScreen() {
+  const t = useT();
   const review = usePendingReviewBookings();
   const minors = useMyMinors();
   const confirm = useConfirmPendingReviewBooking();
@@ -33,7 +35,7 @@ export function PendingReviewScreen() {
   if (review.isError && !review.data) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(review.error, 'Could not load your review queue — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(review.error, t('kidmode.pendingReview.loadError'))} />
       </Screen>
     );
   }
@@ -48,7 +50,7 @@ export function PendingReviewScreen() {
     try {
       await confirm.mutateAsync({ bookingId, studentId });
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not confirm this booking — please try again.'));
+      setActionError(getApiErrorMessage(err, t('kidmode.pendingReview.confirmError')));
     } finally {
       setActingOnId(null);
     }
@@ -61,7 +63,7 @@ export function PendingReviewScreen() {
     try {
       await cancel.mutateAsync({ bookingId, studentId });
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not cancel this booking — please try again.'));
+      setActionError(getApiErrorMessage(err, t('kidmode.pendingReview.cancelError')));
     } finally {
       setActingOnId(null);
     }
@@ -70,31 +72,29 @@ export function PendingReviewScreen() {
   if (items.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: '#5F6368' }}>Nothing needs your review right now.</Text>
+        <Text style={{ color: '#5F6368' }}>{t('kidmode.pendingReview.empty')}</Text>
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 12 }}>
-        These were booked under Kid Mode before it was disabled. Confirm to keep them, or cancel to release the credit.
-      </Text>
+      <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 12 }}>{t('kidmode.pendingReview.intro')}</Text>
       {actionError ? <InlineError message={actionError} /> : null}
       {items.map((booking) => (
         <View key={booking.id} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-          <Text style={{ fontWeight: '600' }}>{nameByStudentId.get(booking.studentId) ?? 'Linked minor'}</Text>
+          <Text style={{ fontWeight: '600' }}>{nameByStudentId.get(booking.studentId) ?? t('kidmode.pendingReview.linkedMinor')}</Text>
           <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Button
-                title="Confirm"
+                title={t('kidmode.pendingReview.confirm')}
                 onPress={() => handleConfirm(booking.id, booking.studentId)}
                 loading={actingOnId === booking.id && confirm.isPending}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                title="Cancel"
+                title={t('kidmode.pendingReview.cancel')}
                 variant="destructive"
                 onPress={() => handleCancel(booking.id, booking.studentId)}
                 loading={actingOnId === booking.id && cancel.isPending}
