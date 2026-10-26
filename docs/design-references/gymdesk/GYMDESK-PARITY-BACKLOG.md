@@ -44,7 +44,7 @@ into the decision log under the next free numbers.**
 | Members → Members, Add Member | ✅ 06–09, recording | §3 |
 | Members → Memberships, Add Membership Option | ✅ 06, recording | §4 |
 | Gym → Schedule | ✅ recording, plus screenshots 25 Oct 2026 (schedules, roster assign, settings, grid) | §5 |
-| Settings → Billing settings, Payment processor | ✅ recording | §6 |
+| Billing (all tabs) and Settings → Billing (all rows) | ✅ recording + screenshots 26 Oct 2026 | §6 |
 | Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
 | Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
 | Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
@@ -53,7 +53,7 @@ into the decision log under the next free numbers.**
 | Gym → Bookings, Managers & Staff | 🟡 screenshots 25 Oct 2026 (Bookings settings pages still needed) | §5 |
 | Gym → Payroll | ✅ screenshots 25 Oct 2026 | §5 |
 | Gym → Programs | ✅ recording 25 Oct 2026 | §5 |
-| Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
+| Marketing, Website, Sales (Point of Sale), Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
 
@@ -203,21 +203,110 @@ ULTM8's grading (Styles & Belts, Skills, Board) already goes further than Gymdes
 | PG7 | Rank rows: name, stripes, colour, per-rank requirements, + skills | ✅ | Belt editor |
 | PG8 | Skills: Library (title, measure, program, category, visible on schedule, description), Categories, **Star ratings** (1–5 stars, a name per star e.g. Introduction / Learning / Mastered) | 🟡 | Skills exist. Categories and star ratings: later (product owner, 25 Oct 2026) |
 
-## 6. Settings → Billing
+## 6. Billing (left nav) and Settings → Billing (screenshots + recording, 26 Oct 2026)
+
+Gymdesk's Billing area has nine tabs: **Overview, Payments, Recurring, Discounts, Payment Forms,
+Accounting, Growth, Income Categories, Settings** (the last opens Settings → Billing). Its
+"Sales" sub-tab on Payments jumps to the separate **Point of Sale** area (Create Sale, Sales,
+Products, Report, Settings), which belongs to the Sales section, not here.
+
+Screenshots not saved to the repo: they show a real member's name and photo.
+
+**ULTM8 today** (checked in code, 26 Oct 2026): one `Transaction` per payment (status
+Successful/Pending/Failed/Refunded/Disputed, amount, currency, method, billing date); a portal
+**Transactions** page with a revenue tile, failed/disputed count and a paged list; a receipt
+download (`GET /transactions/:id/invoice`); `GET /transactions/me` for the student app. There is
+**no** charge or recurring-charge model, member balance, invoice number, discount or promo code,
+member refund action, search, filter or export. Staff charges and balances are agreed but not
+built (Decision 303, backlog C1). Billing decisions already made are in **Decision 316**.
+
+### Overview
 
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
-| B1 | Enable payment processing toggle, currency | 🟡 | Currency ✅; no School-level on/off toggle field |
-| B2 | Retry failed payments after N days | ❌ | No School-configurable retry setting (Stripe's own defaults only) |
-| B3 | Late-fee grace period (days) | ❌ | See P11 |
-| B4 | Show invoice number | ❌ | |
-| B5 | Processing fee passed to member (%) | ❌ | |
-| B6 | Payment notifications, payment schedule, tax settings, invoice/receipt customisation, import payment data | ❓ | Need screenshots of each |
-| B7 | Connect Stripe account | ✅ | Stripe Connect exists |
+| BL1 | Date-range picker; **Totals** rings: Scheduled, Paid, Overdue | 🟡 | Transactions page has a revenue tile, no date range, no scheduled/overdue (nothing is "scheduled" or "overdue" until C1 exists) |
+| BL2 | **Revenue** bar chart by month (12 months) | ❌ | Data exists in `Transaction`; frontend + one aggregate query |
+| BL3 | **Overdue Payments** table (member + status badge, amount + method, description, invoice #, due date with "Overdue" / "Overdue (Why?)", invoice icon, edit) and **Recent Payments**; buttons to the full lists | ❌ | Needs C1's charges. The "Why?" explains a failed card payment |
 
-**Questions:**
-- **B5:** Surcharging card fees is restricted in some countries (e.g. UK, EU). Is it allowed at all?
-- **B6 tax:** Is VAT/sales tax handled by ULTM8 or by Stripe Tax?
+### Payments
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL4 | Sub-tabs **Paid / Scheduled / Overdue** with counts, and a total for the tab | 🟡 | ULTM8 lists past payments only; Scheduled/Overdue need C1 |
+| BL5 | Search by first or last name, **Filter**, **Print**, **Export ▾** | ❌ | No search, filter or export on Transactions. Filter and Export menus not yet captured |
+| BL6 | Columns: Member, Amount (+ method), Description, **Invoice #** (`#0000001`, sequential per gym), Status (+ date), invoice, edit | 🟡 | No invoice number (see B4) |
+| BL7 | **Mark paid** column (on Overdue) and **Select** for bulk actions | ❌ | Desk payment = C1 ("pay at the desk", Decision 303) |
+| BL8 | **Edit Charge** (from the list or the member profile): amount, description ("appears on invoices and payment history"), **+ Discount** (% or fixed), charge date, payment method (saved card or **Manual Payment**), warning "Add a payment card before payment is due", Save / **Cancel payment** | ❌ | C1. Discount % or fixed: ✅ agreed (Decision 303) |
+
+### Recurring
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL9 | Recurring list: Member, Amount, Details (description + method), Started (+ "Every Month"), **Next payment** date, edit; search, filter, 10/25/50/100 per page | ❌ | C1 recurring charges (Decision 303). Membership subscriptions are separate and already exist |
+| BL10 | **Create / Edit Recurring Payment**: member, amount, + discount, **Add Sales Tax** (typed %), **every N months**, **scheduled day** (1st–31st), description, **first payment now or on a date**, payment method; **Restart payments** | ❌ | C1. Tax is **not** typed in ULTM8: per-country rate kept by Platform Admin (Decisions 303, 316.8) |
+
+### Discounts
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL11 | Saved **discounts**: title, value (% or fixed), **Sign-up discount** switch, **Eligible memberships only** switch, **public discount code** (e.g. `20OFF`), **limited use** (N times), **expiry date** | ❌ | Not decided. Today a discount exists only typed on a charge (Decision 303). See question BLQ1 |
+
+### Payment Forms
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL12 | **Hosted payment form** with the gym's branding: title, fixed amount **or "user can enter custom amount"**, rich-text description above the form, rich-text confirmation message after paying | ❌ | Not decided. A public pay link with no member account behind it; see BLQ2 |
+
+### Accounting
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL13 | Sub-tabs **All Payments / Product Revenue / Member Balances**, date range | ❌ | Member Balances = C1's balance (Decision 303) |
+| BL14 | Tiles: **Total revenue, Base amount, Taxes & fees, Refunds**; revenue chart (week / month) | 🟡 | ULTM8 shows revenue only; tax comes with Decision 316.8, refunds with C1 |
+| BL15 | **Transactions** table: search by description, filter, **Export** | ❌ | Export: Decision 316.10 says income categories show "in exports", so an export is implied |
+
+### Growth
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL16 | **Year-to-date** and **End-of-year projection**; tiles Total, Memberships, Point-of-sale, Pending, **Per member**; revenue by month | ❌ | Not decided; BLQ3 |
+| BL17 | **Revenue Growth** table per month: paying members, memberships, sales, pending, total, per member | ❌ | Same |
+
+### Income Categories
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| BL18 | Income categories by source type **Membership / Booking / Retail / Casual**: per item a **GL code**, **department code**, **income category**, the resolved value; tiles Total, Fully assigned, Partially assigned, Using default, Venue code; **Bulk assign**, **Import CSV**, **Export CSV** | 🟡 | Decided in a smaller shape: a School-named income category on each plan and charge, shown in exports, **no GL/department codes, no accounting integration yet** (Decision 316.10) |
+
+### Settings → Billing
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| B1 | **Enable payment processing** switch, **currency** | 🟡 | Currency ✅; no School on/off switch |
+| B2 | **Retry failed payments** switch | ✅ decided | Not a School setting: Stripe's own retries for everyone (Decision 316.9) |
+| B3 | **Late-fee grace period** (days, 5 shown) | ❌ | Decided: School sets it, 7 days by default; fee goes on the balance, never charged to the card (Decision 316.2) |
+| B4 | **Show invoice number** switch | ❌ | ULTM8 has no invoice number at all; BLQ4 |
+| B5 | **Processing fees**: card fee % added to the member's payment | ❌ | Decided: only in countries where legal, with a reviewed allow-list (Decision 316.11) |
+| B6a | **Payment Notifications**: email invoices by default, receipt emails, failed/overdue emails, **scheduled-payment reminders N days before**, notify the client of a dispute, notify the manager when a member removes a card; SMS receipts and SMS failed/overdue | ❓ | Stripe payment results reach ULTM8 by webhook; which member/owner notifications go out for them is not confirmed (check before building). Receipts show in the app (Decision 303). SMS is later (Decision 318). Each switch: BLQ5 |
+| B6b | **Payment Schedule**: autopay time of day, manual/invoice payment time, **auto-mark manual payments paid on the due date**, **default payment day** (first payment prorated), **apply discounts to prorated payments**, **daily payment report by email** | 🟡 | Shared renewal day with prorating is built (Decision 259). The rest: BLQ6 |
+| B6c | **Tax Settings**: invoice label, rate %, applies to (none / memberships / products …), **+ secondary tax**, **tax exclusive / inclusive** | 🟡 | Decided differently: per-country rate kept by Platform Admin, not typed by the School (Decision 316.8). Inclusive vs exclusive and a second tax are open: BLQ7 |
+| B6d | **Income Category Settings**: venue code, casual income code and department code, allow location overrides | ❌ | Beyond Decision 316.10 (no codes yet) |
+| B6e | **Invoice / Receipt Customisation**: business tax ID (label + value), business address, country, invoice title, receipt title, rich-text payment instructions | ❌ | Receipts exist; none of this is configurable. BLQ8 |
+| B6f | **Import Payment Data** (historical payments from CSV) | ❌ | Members import is decided (Decision 315); payment history is not. BLQ9 |
+| B7 | **Connect Stripe account** (Stripe Connect onboarding; card-reader terminal mentioned) | ✅ | Stripe Connect exists. Card reader at the desk: not decided |
+
+**Questions (for the product owner, `[UNRESOLVED]` until answered):**
+- **BLQ1 Saved discounts and promo codes:** do Schools need reusable discounts (a sign-up discount, a public code like `20OFF`, use limit, expiry, only for some plans)? Or is a discount typed on each charge enough (Decision 303)?
+- **BLQ2 Payment forms:** a public pay link (fixed or "any amount", e.g. donations, seminar fees) for people who may have no ULTM8 account? Who receives the receipt, and is it tied to a member?
+- **BLQ3 Revenue reports:** which do you want: Overview (scheduled / paid / overdue + chart), Accounting (revenue, tax, refunds, balances), Growth (year-to-date, projection, per member)? Owner only, or also staff with billing access?
+- **BLQ4 Invoice numbers:** should every charge and payment get a sequential number per School (`#0000001`)? Some countries require it on invoices (e.g. Brazil, EU), so this may need to be always on rather than a switch.
+- **BLQ5 Payment notifications:** which are on by default, and can the School switch each off? (Reminder N days before a scheduled payment; dispute notice to the member; owner told when a member removes their card.)
+- **BLQ6 Payment schedule:** auto-charge a saved card on the due date (Gymdesk "autopay"), or always pay in the app / at the desk as Decision 303 says? "Mark manual payments paid on the due date" automatically? A daily payment report email?
+- **BLQ7 Tax:** with the per-country rate (Decision 316.8), is the price **tax-inclusive** (Europe, Brazil) or **exclusive** (US), per country? Any country needing a second tax?
+- **BLQ8 Invoice details:** may a School add its tax ID, address and payment instructions to receipts? Rename "Invoice" / "Receipt"?
+- **BLQ9 Importing payment history** when a School moves from another system: wanted?
+- **BLQ10 Refunds:** Decision 303 makes refunds owner-only. Partial refunds? Refund to card, or as balance credit, or both?
+- **BLQ11 Cancel a scheduled charge / restart a recurring one:** who may (the charge's creator, the owner)?
 
 ---
 

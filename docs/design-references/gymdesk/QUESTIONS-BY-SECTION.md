@@ -209,10 +209,14 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] **Schedule:** the **ASSIGN** menu opened and **adding a class**
 
 ## B4. Billing (left-nav item)
-- [ ] Every tab
-- [ ] Transactions list, filters, and opening one transaction
-- [ ] Creating an invoice / charge, refunds, failed payments
-- [ ] Any reports
+- [x] Every tab, and every Settings → Billing page (received 26 Oct 2026; compared in the parity backlog §6)
+- [x] Payments list (Paid/Scheduled/Overdue), Edit Charge, Recurring list, create/edit recurring payment
+- [x] Reports: Overview, Accounting, Growth, Income Categories
+- [ ] The **Filter** and **Export** menus opened (Payments, Accounting)
+- [ ] An **invoice opened** (the document icon), and "Overdue (**Why?**)" clicked
+- [ ] **Creating a one-off charge** (where it starts: member profile?), and a **refund**
+- [ ] Accounting → **Product Revenue** and **Member Balances** sub-tabs
+- [ ] Optional: a discount and a payment form filled in, then saved
 
 ## B5. Marketing
 - [ ] Every tab
