@@ -5438,3 +5438,20 @@ Decision 337 left Q7 open: should a member School show its Franchise's name and 
 ### Recorded by
 
 User (Code), 26 Oct 2026, choosing "Both must allow it" on the Q7 decision card.
+
+---
+
+## Decision 349 — Add student and Cancel booking on the Class page
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner request ("start Add student and Cancel booking on the Class page") · **Follows:** Decisions 291, 345
+**Resolves:** the Classes review's "staff can't book or cancel students into one-off classes in the portal". No database change, no new API.
+
+### Decision
+
+1. **Add student.** A Class's page has an Add student button for staff (Owner/Manager, Branch Staff, Instructor; the API's existing staff-on-behalf booking, `POST /classes/:id/book` with `studentId`). The place is paid from the Student's own membership, exactly as if they had booked it themselves, so every booking rule (Decision 345's ticket rule, rank gates, waivers, capacity) still applies server-side. Students already booked aren't offered. When the Class is full or students are already waiting, the dialog offers Add to waitlist instead, like the Timetable's booking dialog (Decision 322).
+2. **Cancel booking.** Each upcoming booking has a Cancel booking button (`PATCH /bookings/:id/cancel`, already open to staff). What goes back is the School's or Branch's cancellation settings (Decisions 291/292); a refund by anyone but an Owner/Manager waits on the Cancellations page. The confirm dialog says so.
+3. Both are shown only while the Class is open: not cancelled, archived or ended. The API refuses the rest anyway.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, Classes thread.
