@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import {
@@ -9,6 +9,7 @@ import {
   useCreateLesson,
   useCreateLessonCategory,
   useDeleteLesson,
+  useDeleteLessonCategory,
   useLessonCategories,
   useLessons,
   useOrderCategoryLessons,
@@ -17,6 +18,7 @@ import {
   useSchoolSkillGroups,
   useUnarchiveLesson,
   useUpdateLesson,
+  useVideoUploadStatus,
   type DisciplineSkillGroup,
   type LessonCategory,
   type LessonResponse,
@@ -24,6 +26,8 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { LessonFormModal } from './LessonFormModal';
 import { VideoUploadModal } from './VideoUploadModal';
+import { LessonCommentsModal } from './LessonCommentsModal';
+import { formatDuration } from './formatDuration';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 /** PENDING gets no badge at all — it's the common case (Decision 101's
@@ -55,7 +59,12 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * explains why) — uploading a video is its own dedicated flow, triggered
  * from this page's row actions instead. */
 export function CurriculumPage() {
-  const schoolId = useOwnedSchoolId();
+  // Coaches and Branch Staff see the curriculum read-only; only the owner
+  // changes it (Decision 326).
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const schoolId = ownedSchoolId ?? coachSchoolId;
+  const canEdit = !!ownedSchoolId;
   const { data, isLoading, error } = useLessons(schoolId);
   const categoriesQuery = useLessonCategories(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
@@ -83,6 +92,12 @@ export function CurriculumPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
   const [uploadingVideoFor, setUploadingVideoFor] = useState<LessonResponse | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [commentsFor, setCommentsFor] = useState<LessonResponse | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<LessonCategory | null>(null);
+  const deleteCategory = useDeleteLessonCategory(schoolId ?? '');
+  // Off until the video account is set up (C4); unknown counts as on, and the
+  // server still refuses with a plain message.
+  const videoUploadsOn = useVideoUploadStatus(canEdit ? schoolId : null).data?.enabled ?? true;
   const t = useT();
 
   if (!schoolId) return null;
@@ -143,7 +158,7 @@ export function CurriculumPage() {
     {
       key: 'duration',
       header: t('curriculum.columnDuration'),
-      render: (l: LessonResponse) => (l.durationSeconds ? t('curriculum.minutes', { count: Math.round(l.durationSeconds / 60) }) : t('common.none')),
+      render: (l: LessonResponse) => (l.durationSeconds ? formatDuration(l.durationSeconds) : t('common.none')),
     },
     {
       key: 'instructor',
@@ -162,8 +177,17 @@ export function CurriculumPage() {
       header: '',
       render: (l: LessonResponse) => {
         const i = inCategory.indexOf(l);
+        // Comments panel (Decision 326): an archived lesson's comments stay
+        // hidden until it's unarchived.
+        const comments = l.archivedAt ? null : (
+          <Button variant="secondary" onClick={() => setCommentsFor(l)} aria-label={t('curriculum.comments.openAria', { title: l.title, count: l.commentCount })}>
+            {t('curriculum.comments.button', { count: l.commentCount })}
+          </Button>
+        );
+        if (!canEdit) return comments;
         return (
           <div style={{ display: 'flex', gap: 6 }}>
+            {comments}
             {category ? (
               <>
                 <Button variant="secondary" onClick={() => moveLesson(category, inCategory, i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: l.title })}>
@@ -182,12 +206,19 @@ export function CurriculumPage() {
             <Button variant="secondary" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
               {t('curriculum.edit')}
             </Button>
-            {/* Only offered while there's no video yet, or the last one failed —
-                re-uploading over an already-PROCESSING/READY video (a real
-                "replace the video" workflow) isn't built; out of scope here. */}
-            {l.captionStatus === 'PENDING' || l.captionStatus === 'FAILED' ? (
-              <Button variant="secondary" onClick={() => setUploadingVideoFor(l)} aria-label={t('curriculum.uploadVideoAria', { title: l.title })}>
-                {t('curriculum.uploadVideo')}
+            {/* Offered while there's no video yet or the last one failed, and
+                as "Upload again" while one is processing, in case its upload
+                never arrived (C5). Replacing a ready video isn't built. Greyed
+                out until video uploads are set up (C4). */}
+            {l.captionStatus !== 'READY' ? (
+              <Button
+                variant="secondary"
+                disabled={!videoUploadsOn}
+                title={videoUploadsOn ? undefined : t('curriculum.videoUploadsOff')}
+                onClick={() => setUploadingVideoFor(l)}
+                aria-label={t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgainAria' : 'curriculum.uploadVideoAria', { title: l.title })}
+              >
+                {t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo')}
               </Button>
             ) : null}
             {/* Decision 226 — reversible alternative to Delete below, same
@@ -222,17 +253,18 @@ export function CurriculumPage() {
     <>
       <PageHeader
         title={t('curriculum.title')}
-        subtitle={t('curriculum.subtitle')}
-        actions={<Button onClick={() => setCreating(true)}>{t('curriculum.addLesson')}</Button>}
+        subtitle={canEdit ? t('curriculum.subtitle') : t('curriculum.readOnlySubtitle')}
+        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('curriculum.addLesson')}</Button> : null}
       />
       {moveError ? <ErrorBanner message={moveError} /> : null}
       {actionError ? <ErrorBanner message={actionError} /> : null}
       {uploadMessage ? <SuccessBanner message={uploadMessage} /> : null}
-      <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} />
+      {canEdit && !videoUploadsOn ? <p className="ultm8-field__hint">{t('curriculum.videoUploadsOff')}</p> : null}
+      {canEdit ? <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} onDelete={setDeletingCategory} /> : null}
 
       {lessons.length === 0 ? (
         <Card>
-          <EmptyState title={t('curriculum.emptyTitle')} description={t('curriculum.emptyDescription')} />
+          <EmptyState title={t('curriculum.emptyTitle')} description={canEdit ? t('curriculum.emptyDescription') : t('curriculum.emptyReadOnly')} />
         </Card>
       ) : (
         <>
@@ -256,6 +288,7 @@ export function CurriculumPage() {
               <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
                 {t('curriculum.noCategory')}
               </h2>
+              {canEdit ? <p className="ultm8-field__hint">{t('curriculum.uncategorisedHint')}</p> : null}
               <Table<LessonResponse> rows={uncategorised} columns={lessonColumns(null, uncategorised)} />
             </Card>
           ) : null}
@@ -296,6 +329,15 @@ export function CurriculumPage() {
           onClose={() => setEditing(null)}
         />
       ) : null}
+      {deletingCategory ? (
+        <ConfirmDeleteModal
+          title={t('curriculum.categories.deleteTitle', { name: deletingCategory.name })}
+          description={t('curriculum.categories.deleteDescription', { count: lessons.filter((l) => l.categoryId === deletingCategory.id).length })}
+          onConfirm={() => deleteCategory.mutateAsync(deletingCategory.id)}
+          onClose={() => setDeletingCategory(null)}
+        />
+      ) : null}
+      {commentsFor ? <LessonCommentsModal schoolId={schoolId} lesson={commentsFor} canDelete={canEdit} onClose={() => setCommentsFor(null)} /> : null}
       {renaming ? <RenameCategoryModal schoolId={schoolId} category={renaming} onClose={() => setRenaming(null)} /> : null}
       {uploadingVideoFor ? (
         <VideoUploadModal
@@ -313,17 +355,20 @@ export function CurriculumPage() {
 }
 
 /** The School's categories in order (Decisions 128.15, 191): add, rename,
- * and move up or down. Lessons follow their category's place. */
+ * move up or down, and delete (Decision 326). Lessons follow their
+ * category's place. */
 function CategoriesCard({
   schoolId,
   categories,
   onMove,
   onRename,
+  onDelete,
 }: {
   schoolId: string;
   categories: LessonCategory[];
   onMove: (index: number, delta: number) => void;
   onRename: (c: LessonCategory) => void;
+  onDelete: (c: LessonCategory) => void;
 }) {
   const create = useCreateLessonCategory(schoolId);
   const [name, setName] = useState('');
@@ -367,6 +412,9 @@ function CategoriesCard({
                 </Button>
                 <Button variant="secondary" onClick={() => onRename(c)} aria-label={t('curriculum.categories.renameAria', { name: c.name })}>
                   {t('curriculum.categories.rename')}
+                </Button>
+                <Button variant="secondary" onClick={() => onDelete(c)} aria-label={t('curriculum.categories.deleteAria', { name: c.name })}>
+                  {t('curriculum.delete')}
                 </Button>
               </span>
             </li>

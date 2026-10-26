@@ -3470,7 +3470,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CurriculumController_deleteCategory"];
         options?: never;
         head?: never;
         patch: operations["CurriculumController_renameCategory"];
@@ -3695,6 +3695,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["CurriculumController_deleteComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_videoUploadStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6725,6 +6741,8 @@ export interface components {
             captionTrackRef?: string | null;
             /** @description The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment). */
             playbackUrl?: string | null;
+            /** @description Comments on this lesson the caller can read (Decision 326). */
+            commentCount: number;
             skillIds: string[];
             /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
             archivedAt?: string | null;
@@ -6742,11 +6760,14 @@ export interface components {
             title?: string;
             /** @description Move it to another of this School's categories (to the end), or null for none. */
             categoryId?: string | null;
-            durationSeconds?: number;
-            description?: string;
+            /** @description null clears it. */
+            durationSeconds?: number | null;
+            /** @description null clears it. */
+            description?: string | null;
             /** @enum {string} */
             format?: "PRERECORDED" | "LIVE";
-            instructorId?: string;
+            /** @description null: no instructor. */
+            instructorId?: string | null;
             skillIds?: string[];
             /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
             free?: boolean;
@@ -6825,6 +6846,8 @@ export interface components {
             lessonId: string;
             order: number;
             createdAt: string;
+            /** @description False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed. */
+            available: boolean;
             lessonTitle: string;
             /** @description The caller may not watch this Lesson (Decisions 154, 190, 195). */
             locked: boolean;
@@ -6854,6 +6877,9 @@ export interface components {
             items: components["schemas"]["CommentResponseDto"][];
             /** @description Opaque cursor for the next page, ordered (createdAt, id) ASC (oldest first); null when there is no more. */
             nextCursor?: string | null;
+        };
+        VideoUploadStatusResponseDto: {
+            enabled: boolean;
         };
         VideoUploadUrlResponseDto: {
             uploadUrl: string;
@@ -12818,6 +12844,26 @@ export interface operations {
             };
         };
     };
+    CurriculumController_deleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. Owner only. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CurriculumController_renameCategory: {
         parameters: {
             query?: never;
@@ -13288,6 +13334,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CurriculumController_videoUploadStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoUploadStatusResponseDto"];
+                };
             };
         };
     };

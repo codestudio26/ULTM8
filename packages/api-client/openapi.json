@@ -10473,6 +10473,32 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/schools/{schoolId}/curriculum/categories/order": {
@@ -11290,6 +11316,41 @@
         "responses": {
           "204": {
             "description": "Deleted — by its own author or School staff (Comment's own schema.prisma comment)."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -21355,6 +21416,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -21392,6 +21457,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"
@@ -21423,10 +21489,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -21436,7 +21506,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -21733,6 +21805,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -21747,6 +21823,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -21853,6 +21930,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {

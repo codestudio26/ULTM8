@@ -4956,6 +4956,49 @@ Platform Admin itself stays English (Decision 273). Who the native-speaker revie
 
 User (Code), 26 Oct 2026: *"we will need for the students app too. Make sure it is done"*; *"delete anything that has been done, so we can start fresh from zero and make sure it is done properly"*; and choosing the recommended options for the languages (the same 15), how the app picks its language (phone's language, can change) and overrides (yes, same as the portal).
 
+## Decision 324 — Curriculum: fourteen bug fixes (archived lessons, playlists, video uploads, blank text)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Curriculum section review of 26 Oct 2026 (bugs C1–C19, two passes, on master `685cc0c`). This decision covers the fourteen fixes that needed no product choice; C2, C7, C8, C11 and replacing a ready video (C5) wait on the product owner's answers, and C19 belongs with the v1.3 video work (Decision 267).
+
+### Decision
+
+1. **Clearing a lesson's fields (C1).** `PATCH /lessons/:id` takes `null` for `durationSeconds`, `description` and `instructorId` to clear them; leaving a field out still keeps it. The edit form sends `null` for an emptied field, so emptying one no longer silently keeps the old value.
+2. **Archived lessons are for staff only, on every route (C3).** `GET /lessons/:id` answers 404, and `GET /skills/:id/lessons` and `GET /schools/:id/curriculum/lessons?includeArchived=true` leave them out, for anyone who isn't staff at the School. A student's favourite or playlist entry for an archived lesson is kept (Unarchive brings it back) but isn't listed (favourites) or shows as unavailable (playlists). Decision 226's rule that students never see an archived lesson now holds everywhere, not only on the student list.
+3. **Video uploads not set up (C4).** While the Cloudflare account isn't configured, `POST …/video-upload-url` answers 503 "Video uploads aren't set up yet" instead of a bare 500, and a new `GET /schools/:id/curriculum/video-uploads` says `{ enabled }`, so the portal greys out Upload video with that sentence.
+4. **A stuck upload fails instead of processing forever (C5).** The video poll job marks a lesson FAILED when Cloudflare Stream reports an error, or when the one-time upload link expired with no file sent (Stream's `status.state` and `uploadExpiry`), which brings the Upload video button back. The portal also offers "Upload again" on a lesson that is still processing. Like the rest of the video pipeline, unverified against a real account until v1.3.
+5. **Blank text is refused (C6, C15).** Lesson titles, comments and playlist names are trimmed, and empty ones are refused, the same rule category names already had.
+6. **Playlists survive a student leaving a School (C14).** A playlist's items are read without joining their lessons; a lesson the student can no longer read (they left its School, or it is archived) comes back `available: false` with an empty title, still removable and reorderable. Before, one such lesson made the whole playlist fail with a server error. `PlaylistItemResponseDto` gains `available`.
+7. **Adding a lesson to a playlist twice changes nothing (C16)**, like favouriting twice, instead of a generic conflict error.
+8. **A closed School takes no new comments (C17).** Others read comments, so they follow Decision 110's read-only rule; favourites and watch progress are the student's own and stay allowed.
+9. **Duration is capped at 24 hours (C18).**
+10. **Smaller page fixes:** the grading page's "Watch:" lesson links leave out archived lessons (C9); the lesson form still shows a skill the lesson already has from an archived style, marked "(archived style)", so it can be unticked (C10); "No category" says "Put lessons in a category to choose their order." (C12); and the delete warning says students' favourites, playlist entries, watch progress and comments on the lesson go too, pointing to Archive (C13). All new text in 15 languages.
+
+### What this does NOT resolve
+
+Coaches' and Branch Staff's access to the Curriculum page (C2), deleting categories (C7), duration in minutes (C8), a comments panel (C11), replacing a ready video (C5) and what a "Live" lesson means: asked of the product owner on 26 Oct 2026. Signed playback links for members-only videos (C19) need the real Cloudflare account (v1.3).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"find the best solutions for the bugs and have another pass"*, then *"build it and ask me"* on the fix plan in the Curriculum Section Guide.
+
+## Decision 326 — Curriculum: the product owner's six answers (coaches read only, category delete, minutes and seconds, comments panel)
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the six questions Decision 324 left open (C2, C5's replace, C7, C8, C11, and what "Live" means), each answered on its own decision card on 26 Oct 2026.
+
+### Decision
+
+1. **Coaches and Branch Staff see the curriculum read-only (C2).** They get the Curriculum page in their menu: lessons, categories (as headings) and comments, with no add, edit, reorder, upload, archive or delete. The server is tightened to match: creating or editing a lesson, uploading its video, and adding, renaming, reordering or deleting categories now need the School owner (`assertSchoolOwner`), not any staff member. **This replaces Decision 104's "Instructor/Staff-authored"** for lessons; Decision 104's School scoping is unchanged. Free, Archive and Delete were already owner-only (Decisions 190, 198, 226).
+2. **The owner deletes a category; its lessons move to "No category" (C7).** `DELETE /curriculum/categories/:id`, owner only; the existing `ON DELETE SET NULL` foreign key moves the lessons, nothing else is lost. The confirmation says how many lessons move. New migration `20261128000000_lesson_category_delete` grants DELETE on `LessonCategory` with an owner-only RLS policy.
+3. **Duration in minutes and seconds (C8).** The lesson form has two boxes, minutes and seconds (0–59), still saved as `durationSeconds` (24-hour cap from Decision 324). The portal and the student app list it as `m:ss`, or `h:mm:ss` from an hour up.
+4. **A comments panel; coaches read, the owner deletes (C11).** Each lesson response carries `commentCount`. On the portal each lesson has "Comments (n)", opening its comments oldest first. Anyone with the page reads them; only the School owner deletes one. `DELETE /comments/:id` now allows the comment's author or the School owner, not any staff member. An archived lesson's comments stay hidden until it is unarchived.
+5. **Replacing a ready video: not now (C5).** Upload stays offered only before a video is ready, after it fails, or while it is processing.
+6. **A real "Live" lesson is planned, not built (Q2).** The product owner wants Live to become a real live lesson (a date, a time and a joining link, possibly tied to a class), as later work. Until it is specified, `format: LIVE` stays a label only. **[UNRESOLVED]** for that future work: whether it is tied to a Class or TimetableSlot, which video-call tool provides the link, who may join (membership rules as for lessons, or the class's bookings), whether it is recorded and becomes a prerecorded lesson afterwards, and reminders.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, on the six decision cards in the Curriculum thread: "Read-only for them", "Owner deletes, lessons move", "Minutes and seconds", "Owner only, with a panel", "Not now", "Plan a real live lesson".
 ---
 
 ## Decision 294 — Branches list: City means the city, one search box, every Branch A to Z
