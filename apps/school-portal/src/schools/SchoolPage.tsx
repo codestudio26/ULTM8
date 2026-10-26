@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
-import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import { useJoinFranchise, useLeaveFranchise, useSchool, useSchoolFranchiseBranding, useUpdateSchool, type SchoolResponse } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
@@ -376,8 +376,13 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   const t = useT();
   const joinFranchise = useJoinFranchise(schoolId);
   const leaveFranchise = useLeaveFranchise(schoolId);
+  // Decision 350 — the Franchise's name and logo show only when both owners allow it.
+  const updateSchool = useUpdateSchool(schoolId);
+  const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -390,8 +395,18 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
     }
   }
 
+  async function handleShowBranding(showFranchiseBranding: boolean) {
+    setError(null);
+    try {
+      await updateSchool.mutateAsync({ showFranchiseBranding });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
   async function handleLeave() {
     setError(null);
+    setConfirmingLeave(false);
     try {
       await leaveFranchise.mutateAsync();
     } catch (err) {
@@ -413,9 +428,44 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.leaveExplanation')}
           </p>
-          <Button variant="danger" onClick={handleLeave} loading={leaveFranchise.isPending}>
+          {branding ? (
+            <div style={{ marginBottom: 16 }}>
+              <Switch
+                id="school-show-franchise-branding"
+                label={t('schools.franchise.showBrandingLabel')}
+                description={t('schools.franchise.showBrandingHint')}
+                checked={branding.schoolShows}
+                disabled={updateSchool.isPending}
+                onChange={handleShowBranding}
+              />
+              {!branding.franchiseAllows ? (
+                <p className="ultm8-field__hint" data-testid="franchise-branding-not-allowed">
+                  {t('schools.franchise.brandingNotAllowed')}
+                </p>
+              ) : branding.name ? (
+                <p style={{ display: 'flex', alignItems: 'center', gap: 8 }} data-testid="franchise-branding-preview">
+                  {branding.logoUrl ? <img src={branding.logoUrl} alt="" width={24} height={24} style={{ objectFit: 'contain' }} /> : null}
+                  {t('schools.franchise.partOf', { name: branding.name })}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <Button variant="danger" onClick={() => setConfirmingLeave(true)} loading={leaveFranchise.isPending}>
             {t('schools.franchise.leave')}
           </Button>
+          {confirmingLeave ? (
+            <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
+              <p>{t('schools.franchise.leaveConfirmBody')}</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <Button variant="danger" onClick={handleLeave}>
+                  {t('schools.franchise.leave')}
+                </Button>
+                <Button variant="secondary" onClick={() => setConfirmingLeave(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </Modal>
+          ) : null}
         </>
       ) : (
         <>

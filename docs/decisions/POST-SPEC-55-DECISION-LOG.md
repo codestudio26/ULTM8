@@ -5243,6 +5243,35 @@ User (Code), 26 Oct 2026, replying "ok" to the suggested plan in the Curriculum 
 
 ---
 
+## Decision 337 — Franchises review fixes: fees in dollars, fee model locked once billing, closed tenants stop billing, member list trimmed
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 99, 110
+
+A review of the Franchises section (26 Oct 2026, two passes) found 21 bugs (F1–F21) and asked nine questions (Q1–Q9). The product owner said *"build it"*: the 17 fixes marked ready, plus F1, F16 and F19 the recommended way (Q3, Q8, Q9 below). Building it found one more, older bug (item 3).
+
+### Decision
+
+1. **The fee model can't change while any School is being billed** (F1, Q3). Changing Flat ↔ Per-headcount is refused with the count; changing the amount still works through the Decision 99 rate-change choice. A School counts as billed while it holds a franchise-fee subscription that isn't cancelled and the School isn't closed. The portal greys out Fee model and says why.
+2. **The member Schools list returns only what the page shows** (F2): name, type, logo, fee-billing status, closed date, created date. It no longer sends join codes or Stripe ids. `franchise_member_schools()` replaces `schools_for_franchise()` and checks Franchise ownership itself.
+3. **The "Schools already billing" count is taken outside the caller's own view** (found while building). School rows are visible only to someone with a role at that School, so a Franchise Owner's count was always 0 for any School that has an Owner, and the Decision 99 rate-change prompt and its server check never fired. The count now runs on the jobs connection, after the ownership check, and returns only a number.
+4. **A closed Franchise can't be joined, and a closed School can't join** (F3, F4). Joining while in a Franchise says to leave first (F12).
+5. **Fees are typed in US dollars** (F5): the form shows and takes dollars and cents (e.g. 50.00); the API still stores cents. **A Franchise needs a fee for its fee model** (F7) when it's created or its model changes. The detail page says why billing can't start (no fee, or no connected Stripe account).
+6. **Leave Franchise asks first** (F6) and **the School pays for the month it leaves in** (F19, Q9): its fee subscription is cancelled with a final invoice and no proration, so that month's Pending charge resolves.
+7. **Closing a School or Franchise stops its fee billing** (F16, Q8): each affected subscription is cancelled the same way as leaving, and the monthly job skips closed Schools and Franchises.
+8. **Labels** (F8, F9, F14): closed Franchises and member Schools show Closed; a closed Franchise has no Edit button; a charge from a School that has left shows "Former member School". The detail page shows the Franchise ID with a Copy button (F13, first half).
+9. **Input checks** (F10, F20, F21): a name can't be blank or spaces and is trimmed; `null` name, fee model, activities or facilities is a 400, not a 500; language and currency must come from the supported lists (an older free-text value is kept if left unchanged). The Activity filter ignores capitals (F11).
+10. **Billing timing** (F15, F17, F18): a School that leaves and rejoins gets a new subscription rather than Stripe's cached answer; a paid invoice marks the Pending charge for the period it billed, not the newest one, and a metered subscription's $0 opening invoice marks nothing; per-headcount billing months run midnight to midnight UTC from the 1st.
+
+### What this does NOT resolve
+
+Q7 (showing the Franchise's name and logo on a member School's page — the second half of F13) is still open. Connecting a Franchise's Stripe account from the portal, join approval (Q1), an Owner removing a School (Q2), how a School pays (Q4), Stripe Connect timing (Q5) and an Owner closing their own Franchise (Q6) are unchanged.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, replying "build it" to the Franchises review's fix plan.
+
+---
+
 ## Decision 338 — Gymdesk parity, Billing: charges, cancelling, refunds, invoices, desk payments, reports
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 253, 303, 316, 320 · **Answers:** Billing questions BLQ1–BLQ14 in `docs/design-references/gymdesk/GYMDESK-PARITY-BACKLOG.md` §6
@@ -5331,3 +5360,50 @@ Add student and Cancel booking on the Class page wait for PR #273 (Cancel class)
 ### Recorded by
 
 User (Code), 26 Oct 2026, on the Classes decision cards: "One-off only, keep today's bookings" (*"Go with the first option"*), "Notify, block the past", "Block while booked", "No, refuse it".
+
+---
+
+## Decision 348 — Memberships follow-ups: sell at the desk, give a Friend Pass, cancel a Subscription, member list per plan
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 6, 26, 334; Spec 55 §6.1, §10.2 · **Migration:** `20261201000000_membership_cancel_at_period_end` (adds `Membership.cancelAt`, `Membership.cancelledById`, `Transaction.recordedById`)
+
+After Decision 334, seven Memberships questions were put to the product owner with a recommendation each. They answered *"all recommended"*. This decision builds items 2 to 5. Item 1 (removing a Student) is Students S2 and is built in that thread; it calls the cancel method below. Items 6 and 7 are "no change for now".
+
+### Decision
+
+1. **The owner sells a plan at the desk** (item 2). From the Student's page, the owner picks a plan and records it as paid in cash, by bank transfer, by Pix or on the School's own card terminal (the four desk methods Decision 338 lists; product owner's yes, 26 Oct 2026). Pix and card terminal are new `PaymentAccountProvider` values used only for desk payments, never for a School's payment account. The Membership starts at once with a Successful Transaction (the same result as confirming a Student's own cash order). A £0 plan creates no Transaction (Spec 55 §6.1). Subscriptions are card only (§6.1) and Friend Passes are given, so neither is sold here. The usual checks apply: owner only, open School, a current Student, a plan that isn't archived, the waiver when the plan needs one, a one-class plan whose class hasn't started, one live Weekly Pass or Subscription, and the trial allowance. A hidden plan can be sold at the desk: hiding takes a plan off the Students' list (Decision 334), not off the owner's desk. `POST /schools/:schoolId/students/:studentId/memberships/sell`. The sale records who took the payment (`Transaction.recordedById`). The creation and its checks live in `MembershipsService.recordDeskSale()`, the one desk path that creates a Membership; the Transactions follow-ups (Decisions 346/347) call it for their Record a payment, with their own permission check in front.
+2. **The owner gives a Friend Pass** (item 3) from the Student's page: a £0, one-class pass recorded as given by the owner (`giftedById`), which the Student uses to book a guest. Each friend gets a separate pass (§6.1). Students still can't buy one. `POST /schools/:schoolId/students/:studentId/memberships/gift`.
+3. **A Subscription can be cancelled** (item 4) by the Student (in the app), a Guardian for a linked minor, or the owner (on the Student's page). It runs to the end of the paid month through Stripe's `cancel_at_period_end` (§10.2: no proration, no immediate cutoff); the Membership stays live and shows when it ends. When Stripe ends the Subscription, the existing `customer.subscription.deleted` handling expires it and cancels the Bookings it funded. Asking twice changes nothing. `POST /memberships/:id/cancel`; the Stripe and database work is the plain function `cancelSubscriptionAtPeriodEnd()` in `apps/api/src/memberships/cancel-subscription.ts`, which removing a Student (Students S2) also calls.
+4. **A member list per plan** (item 5), owner only: everyone on the plan now (the same people the Active members tile counts), with start, end and classes left, and whether the School gave it. From the plan's row menu. `GET /membership-plans/:id/members`. The Student's page also lists all their memberships: `GET /schools/:schoolId/students/:studentId/memberships`.
+5. **Item 6** (styles don't limit booking) and **item 7** (the cancellation charge waits for refunds, PR #273): no change.
+
+### What this does NOT resolve
+
+Undoing a cancellation before the month ends, and a cancellation made directly in Stripe's dashboard (the `customer.subscription.updated` event is still log-only), are not handled. Branch Staff can't sell or give plans (Spec 55 §8.2 keeps Membership and Transaction owner-only).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"all recommended"*, on the seven open Memberships questions. Pix and card terminal: "Yes, add Pix and card terminal" on the follow-up decision card, 26 Oct 2026.
+
+---
+
+## Decision 350 — A member School shows its Franchise's name and logo only when both owners allow it
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decision 337 (Q7, second half of F13)
+
+Decision 337 left Q7 open: should a member School show its Franchise's name and logo, and who decides? The product owner first said it *"depends on franchise's owner or school owner's decision"*, then picked **"Both must allow it"**.
+
+### Decision
+
+1. **Two switches, both off to start.** The Franchise Owner's `Franchise.shareBrandingWithMembers` ("Let member Schools show this Franchise's name and logo", on the Franchise form) and the School Owner's `School.showFranchiseBranding` ("Show the Franchise's name and logo", on the School page's Franchise affiliation card). Nothing changes for existing Franchises and Schools.
+2. **Shown only when both are on and the Franchise isn't closed.** `GET /schools/{id}/franchise-branding` returns `franchiseAllows`, `schoolShows`, and the name and logo only in that case. Anyone with a role at the School can read it (same as the School's theme); another School's users get a 404. The Franchise row is read on the jobs connection after the School read proves the caller can see that School, and nothing else from it leaves the endpoint.
+3. **Where it shows:** "Part of {Franchise}" with the logo, under the School's name in the School Portal footer. The School page shows the same preview, or says the Franchise Owner hasn't allowed it yet (the School Owner's choice is kept and takes effect if they do).
+4. **The School's switch resets** when it joins or leaves a Franchise, so a new Franchise's name never shows without the School Owner turning it on again.
+
+### What this does NOT resolve
+
+`apps/student` doesn't show the Franchise's name yet. Q1, Q2 and Q6 from Decision 337 and connecting a Franchise's Stripe account from the portal are unchanged.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Both must allow it" on the Q7 decision card.

@@ -55,6 +55,10 @@ type DisputeSideEffects = {
   freedClassIds: string[];
 };
 
+/** Card Transactions a payment_intent.succeeded may still settle. FAILED is
+ * included because a failed attempt is not final (handlePaymentIntentSucceeded). */
+const SETTLEABLE: Transaction['status'][] = ['PENDING', 'FAILED'];
+
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
  * 55 §10.2's confirmed webhook flow; signature verification and enqueueing happen
@@ -419,7 +423,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return;
     }
-    if (transaction.status !== 'PENDING') {
+    // FAILED is not final: payment_intent.payment_failed fires for each failed
+    // attempt, and the payer can try again (another card in Checkout) on the
+    // same PaymentIntent, which then succeeds. Before, that payment stayed
+    // FAILED with no Membership though the money was taken (billing stress
+    // test, 26 Oct 2026).
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already settled by an earlier delivery of this same event, or a duplicate
       // payment_intent.succeeded Stripe occasionally sends for the same intent —
       // idempotent no-op, not an error.
@@ -427,7 +436,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
 
     const updateResult = await tx.transaction.updateMany({
-      where: { id: transaction.id, status: 'PENDING' },
+      where: { id: transaction.id, status: { in: SETTLEABLE } },
       data: { status: 'SUCCESSFUL' },
     });
     if (updateResult.count === 0) {
@@ -560,7 +569,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // drop a refund that's genuinely owed.
       throw new Error(`resolveMembershipCollision: no Transaction found for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) — this should be unreachable.`);
     }
-    if (transaction.status !== 'PENDING') {
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already resolved by an earlier delivery of this same event (a BullMQ retry,
       // or a genuine Stripe redelivery) — idempotent no-op.
       this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
@@ -593,7 +602,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     await this.prismaJobs.$transaction(async (tx) => {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
       await tx.transaction.updateMany({
-        where: { id: transaction.id, status: 'PENDING' },
+        where: { id: transaction.id, status: { in: SETTLEABLE } },
         data: { status: 'REFUNDED', refundedAmount: transaction.amount },
       });
     });
@@ -719,10 +728,35 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // in the installed Stripe API version.
     const paymentIntentId = this.extractPaymentIntentId(invoice);
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 337 (F17) — a Per-headcount (metered) franchise-fee subscription
+    // opens with a $0 invoice for no usage yet. It isn't a fee charge, and it must
+    // not mark the month's Pending charge paid either.
+    if (invoice.billing_reason === 'subscription_create' && invoice.amount_paid === 0) {
+      const openingFor = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId }, select: { id: true } });
+      if (openingFor) return;
+    }
+
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       // FOUND ON REVIEW: `amount` is deliberately NOT overwritten with
       // `invoice.amount_paid` here, unlike the fallback branch below — the
@@ -866,10 +900,27 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return;
     }
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED' } });
     }

@@ -10,6 +10,7 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
+import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { UsersService } from '../../users/users.service';
 import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -428,13 +429,27 @@ export class SchoolsService {
    */
   async joinFranchise(callerId: string, schoolId: string, franchiseId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 337 (F4) — a closed School can't join, the same rule leaveFranchise()
+    // and every other write at a closed School already follow.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // Decision 337 (F3) — nor can anyone join a closed Franchise. A School Owner
+    // can't read the Franchise row through RLS, so this one-column check uses the
+    // same jobs connection leaveFranchise() below already uses for the Franchise's
+    // PaymentAccount. A Franchise that doesn't exist falls through to the FK check
+    // below, keeping its existing 404.
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { archivedAt: true } });
+    if (target?.archivedAt) {
+      throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
+    }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       let count: number;
       try {
         ({ count } = await tx.school.updateMany({
           where: { id: schoolId, franchiseId: null },
-          data: { franchiseId },
+          // Decision 350 — a new Franchise's branding starts hidden until the
+          // School Owner turns it on.
+          data: { franchiseId, showFranchiseBranding: false },
         }));
       } catch (err) {
         // P2003 = foreign key constraint violation — franchiseId doesn't reference
@@ -459,7 +474,7 @@ export class SchoolsService {
         // reduction this method exists to have made; not worth it for a race this
         // narrow with a consequence this small.
         throw new ConflictException(
-          'This School is already affiliated with a Franchise — leaving or switching Franchise is not supported yet.',
+          'This School is already in a Franchise. Leave it first, then join the new one.',
         );
       }
       return tx.school.findUniqueOrThrow({ where: { id: schoolId } });
@@ -516,7 +531,7 @@ export class SchoolsService {
     const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.updateMany({
         where: { id: schoolId, franchiseId: oldFranchiseId },
-        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
       }),
     );
     if (count === 0) {
@@ -531,7 +546,14 @@ export class SchoolsService {
         });
         const account = oldFranchise?.paymentAccount;
         if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
-          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(oldSubscriptionId);
+          // Decision 337 (F19, product owner's answer to Q9) — the School pays for
+          // the month it leaves in: the subscription is cancelled with a final
+          // invoice for what has accrued (a Per-headcount School's count was
+          // reported on the 1st), so the month's Pending fee charge resolves
+          // instead of staying Pending forever. No proration credit either way.
+          await this.stripeClient
+            .scopedClient(account.stripeConnectedAccountId)
+            .subscriptions.cancel(oldSubscriptionId, FRANCHISE_FEE_FINAL_CANCEL);
         }
       } catch (err) {
         this.logger.error(
@@ -581,6 +603,37 @@ export class SchoolsService {
       throw new NotFoundException('School not found');
     }
     return school;
+  }
+
+  /**
+   * Decision 350 — the Franchise's name and logo for a member School, shown only
+   * when both owners allow it. Same RLS visibility as findTheme() (any RoleGrant
+   * holder at the School). The Franchise row itself isn't visible to School-side
+   * callers under RLS, so it's read through prismaJobs, and only after the School
+   * read above proved the caller can see this School; nothing beyond the name and
+   * logo leaves this method, and those only when both switches are on.
+   */
+  async findFranchiseBranding(callerId: string, schoolId: string) {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { franchiseId: true, showFranchiseBranding: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    const franchise = school.franchiseId
+      ? await this.prismaJobs.franchise.findUnique({
+          where: { id: school.franchiseId },
+          select: { name: true, logoUrl: true, archivedAt: true, shareBrandingWithMembers: true },
+        })
+      : null;
+    const franchiseAllows = !!franchise && !franchise.archivedAt && franchise.shareBrandingWithMembers;
+    const shown = franchiseAllows && school.showFranchiseBranding;
+    return {
+      franchiseAllows,
+      schoolShows: school.showFranchiseBranding,
+      name: shown ? franchise!.name : null,
+      logoUrl: shown ? franchise!.logoUrl : null,
+    };
   }
 
   /**
@@ -717,6 +770,7 @@ export class SchoolsService {
           activities: dto.activities,
           facilities: dto.facilities,
           ranksToggle: dto.ranksToggle,
+          showFranchiseBranding: dto.showFranchiseBranding,
           defaultLanguage: dto.defaultLanguage,
           defaultCurrency: dto.defaultCurrency,
           timezone: dto.timezone,

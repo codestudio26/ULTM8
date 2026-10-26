@@ -43,6 +43,11 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   ranksToggle!: boolean;
 
+  /** Decision 350 — the School Owner's half of the both-must-allow switch for
+   * showing the Franchise's name and logo. Reset on joining or leaving. */
+  @ApiProperty()
+  showFranchiseBranding!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   defaultLanguage!: string | null;
 
@@ -175,6 +180,23 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
  * (SchoolsService.findTheme) exists purely to narrow that.
  */
 export class SchoolThemeResponseDto extends PickType(SchoolResponseDto, ['id', 'accentColor', 'logoUrl'] as const) {}
+
+/** Decision 350 — the Franchise's name and logo for a member School, given only
+ * when both the Franchise Owner (shareBrandingWithMembers) and the School Owner
+ * (showFranchiseBranding) allow it, and the Franchise isn't closed. */
+export class SchoolFranchiseBrandingResponseDto {
+  @ApiProperty({ description: 'The School belongs to a Franchise whose Owner allows member Schools to show its name and logo.' })
+  franchiseAllows!: boolean;
+
+  @ApiProperty({ description: "The School Owner's own switch (School.showFranchiseBranding)." })
+  schoolShows!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set only when both allow it.' })
+  name!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set only when both allow it.' })
+  logoUrl!: string | null;
+}
 
 export class SchoolListResponseDto {
   @ApiProperty({ type: [SchoolResponseDto] })

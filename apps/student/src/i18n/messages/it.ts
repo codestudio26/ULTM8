@@ -669,6 +669,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Scade il {date}",
       empty: "Ancora nessuna iscrizione.",
       loadError: "Impossibile caricare le iscrizioni — riprova.",
+      cancelSubscription: "Disdici abbonamento",
+      keepSubscription: "Mantienilo",
+      cancelConfirm: "Mantieni il tuo abbonamento fino alla fine del mese pagato. Poi termina e non vengono addebitati altri pagamenti.",
+      cancelError: "Impossibile disdire il tuo abbonamento — riprova.",
+      cancelledEnds: "Disdetto, termina il {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
