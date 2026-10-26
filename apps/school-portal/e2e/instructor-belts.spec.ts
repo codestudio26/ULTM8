@@ -57,6 +57,6 @@ test('Branch Staff who aren\'t instructors have no "My belts"', async ({ page })
   const staff = await addPerson('Bea', 'Staff', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId }]);
   await signIn(page, staff.token);
   await page.goto('/coach');
-  await expect(page.getByRole('link', { name: 'Grading Board' })).toBeVisible();
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Grading', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'My belts' })).toHaveCount(0);
 });

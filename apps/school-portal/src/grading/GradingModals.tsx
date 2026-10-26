@@ -3,6 +3,7 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, Tex
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { type Rung, startingClassesFor } from './ladder';
+import { RankPicker } from './RankPicker';
 import {
   useChangeHistoryNote,
   useHistoryNoteLog,
@@ -66,6 +67,8 @@ export function GradeModal({
   ladder,
   current,
   eligibility,
+  title,
+  initialTargetId,
   onClose,
 }: {
   studentId: string;
@@ -73,6 +76,10 @@ export function GradeModal({
   ladder: Rung[];
   current: Rung | null;
   eligibility: Eligibility | null;
+  /** The board's "Promote {name}"; the Ranks tab names the style instead. */
+  title?: string;
+  /** Start on this rank, e.g. the planned rank of a promotion "to decide". */
+  initialTargetId?: string;
   onClose: () => void;
 }) {
   const promote = usePromote(studentId, discipline.id);
@@ -80,6 +87,7 @@ export function GradeModal({
   const t = useT();
   const options = ladder.filter((r) => !current || r.index > current.index);
   const [targetId, setTargetId] = useState(
+    (initialTargetId && options.some((r) => r.id === initialTargetId) ? initialTargetId : undefined) ??
     (eligibility?.hasNext && eligibility.nextRungId && options.some((r) => r.id === eligibility.nextRungId) ? eligibility.nextRungId : options[0]?.id) ?? '',
   );
   const [date, setDate] = useState('');
@@ -123,7 +131,7 @@ export function GradeModal({
 
   return (
     <Modal
-      title={current ? t('grading.modals.grade.title', { style: discipline.name }) : t('grading.modals.grade.firstRankTitle', { style: discipline.name })}
+      title={title ?? (current ? t('grading.modals.grade.title', { style: discipline.name }) : t('grading.modals.grade.firstRankTitle', { style: discipline.name }))}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
@@ -133,12 +141,7 @@ export function GradeModal({
         ) : (
           <>
             <Field label={t('grading.modals.newRankLabel')} htmlFor="grade-target" hint={current ? t('grading.modals.grade.now', { rank: current.name }) : undefined}>
-              <SelectField
-                id="grade-target"
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                options={options.map((r) => ({ value: r.id, label: r.name }))}
-              />
+              <RankPicker id="grade-target" value={targetId} onChange={setTargetId} options={options} />
             </Field>
             {skipped > 0 ? (
               <Warning>{t('grading.modals.grade.skips', { count: skipped })}</Warning>
@@ -244,12 +247,7 @@ export function DowngradeModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('grading.modals.newRankLabel')} htmlFor="downgrade-target" hint={t('grading.modals.downgrade.hint', { rank: current.name })}>
-          <SelectField
-            id="downgrade-target"
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
-            options={options.map((r) => ({ value: r.id, label: r.name }))}
-          />
+          <RankPicker id="downgrade-target" value={targetId} onChange={setTargetId} options={options} />
         </Field>
         <Field label={t('grading.modals.reasonLabel')} htmlFor="downgrade-reason" hint={t('grading.modals.downgrade.reasonHint')}>
           <TextArea id="downgrade-reason" required maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -396,7 +394,7 @@ export function VerifyRankModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('grading.modals.verify.rankLabel')} htmlFor="verify-target" hint={t('grading.modals.verify.hint', { rank: current.name })}>
-          <SelectField id="verify-target" value={targetId} onChange={(e) => setTargetId(e.target.value)} options={ladder.map((r) => ({ value: r.id, label: r.name }))} />
+          <RankPicker id="verify-target" value={targetId} onChange={setTargetId} options={ladder} />
         </Field>
         <Field label={t('grading.modals.noteLabel')} htmlFor="verify-note" hint={t('grading.modals.optional')}>
           <TextArea id="verify-note" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />

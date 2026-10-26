@@ -44,22 +44,22 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 
 | Task | Needs backend |
 |---|---|
-| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — |
-| Grid / Rows views, sort by belt or name inside each stage | — |
-| Right-hand student panel (rank, progress, skills, history) and the Selection panel / pill | — |
-| Click a progress bar to promote | — |
-| Our own "Promote to" drop-down (single and bulk) | B3 for bulk |
+| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — · **Board, Styles & Belts, Permissions built** (26 Oct 2026); Skills and Settings come with their pages |
+| Grid / Rows views, sort by belt or name inside each stage | — · ✅ **built** (26 Oct 2026) |
+| Right-hand student panel (rank, progress, skills, history) and the Selection panel / pill | — · ✅ **built** (26 Oct 2026; avatars are initials until B6) |
+| Click a progress bar to promote | — · ✅ **built** (26 Oct 2026) |
+| Our own "Promote to" drop-down (single and bulk) | B3 for bulk · **single built** (26 Oct 2026; also in Move down and Verify) |
 | Promote window and done list with belts; printable report with photos and belts | B6 |
 | Avatars on the board and panels | B6 |
 | Kids · Adult switch, "Adult program" in Promote to, "Ready for Adult program" tag | B1 |
 | Grading → Settings page | B2, B10, B11 |
 | Belt editor: price per grade, shown only while the fee is on | B10 |
-| Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 |
+| Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 · ✅ **built** (26 Oct 2026) |
 | Student page: progress breakdown per requirement, and hours trained | B11 |
 | Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — |
 | Colour wheel with saved colours | B5 |
 | Levels badge | B4 |
-| Two-tone belt picture (middle band) | — |
+| Two-tone belt picture (middle band) | — · ✅ **built** (26 Oct 2026) |
 | Belt correction requests (review list) | B8 |
 | Styles & Belts: requirement tick boxes per style (belt editor shows only ticked fields), Promotion setting, Auto-assign first belt; board/history show automatic promotions and Undo (Decision 321) | B12 |
 

@@ -56,7 +56,7 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
   const card = bjj(page);
   await card.getByRole('button', { name: 'Grade' }).click();
   const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
-  await expect(dialog.getByLabel('New rank')).toHaveValue(s.rung['White 2'].id);
+  await expect(dialog.getByLabel('New rank')).toHaveText(/White 2/);
   const submit = dialog.getByRole('button', { name: 'Award stripe' });
   await expect(submit).toBeDisabled();
   await dialog.getByLabel(/Grade without all skills signed off/).check();
@@ -122,7 +122,7 @@ test('a student with no rank gets a first rank', async ({ page }) => {
   await expect(card.getByText('No rank in this style yet.')).toBeVisible();
   await card.getByRole('button', { name: 'Give first rank' }).click();
   const dialog = page.getByRole('dialog', { name: 'Give a first rank — BJJ' });
-  await expect(dialog.getByLabel('New rank')).toHaveValue(s.rung['White 0'].id);
+  await expect(dialog.getByLabel('New rank')).toHaveText(/White 0/);
   await dialog.getByRole('button', { name: 'Grade' }).click();
   await expect(dialog).toBeHidden();
   await expect(card.getByText('White 0', { exact: true })).toBeVisible();

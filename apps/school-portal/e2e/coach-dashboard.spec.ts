@@ -44,7 +44,7 @@ test('a coach lands on their dashboard: grading, classes and notifications', asy
   await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
   await expect(page.getByText('Coach', { exact: true })).toBeVisible(); // role in the header
   const nav = page.getByRole('navigation');
-  await expect(nav.getByRole('link', { name: 'Grading Board' })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Grading', exact: true })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'Transactions' })).toHaveCount(0);
 
   const grading = page.getByRole('region', { name: 'Grading' });
