@@ -27,6 +27,11 @@ function dateKey(d: Date): string {
 }
 
 const todayKey = dateKey(new Date());
+// The slot runs at the very end of today, so today's occurrence hasn't ended
+// whenever the suite runs. The booking dialog says the class "has already ended" once
+// endDate is past, so an earlier fixed time (18:00-19:00) failed every evening run.
+const SLOT_START = { hour: 23, minute: 0 };
+const SLOT_END = { hour: 23, minute: 59 };
 const slotTitle = 'Spec BJJ Fundamentals';
 
 let s: GradingSchool;
@@ -60,8 +65,8 @@ test.beforeEach(async () => {
       id: randomUUID(),
       schoolId: s.schoolId,
       weekday: todayWeekday(),
-      startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
-      endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+      startTime: new Date(Date.UTC(1970, 0, 1, SLOT_START.hour, SLOT_START.minute)),
+      endTime: new Date(Date.UTC(1970, 0, 1, SLOT_END.hour, SLOT_END.minute)),
       title: slotTitle,
       activities: ['BJJ'],
       status: 'ON',
@@ -80,8 +85,8 @@ test.beforeEach(async () => {
       occurrenceDate: new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())),
       title: slotTitle,
       activities: ['BJJ'],
-      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 18, 0),
-      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 19, 0),
+      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), SLOT_START.hour, SLOT_START.minute),
+      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), SLOT_END.hour, SLOT_END.minute),
     },
   });
   classId = cls.id;
