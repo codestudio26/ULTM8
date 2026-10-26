@@ -32,8 +32,8 @@ test('shows the current rank, progress toward the next rank and the skills for i
   const card = bjj(page);
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
   await expect(card.getByRole('heading', { name: 'Toward White 2 — 100%' })).toBeVisible();
-  await expect(card.getByText('Classes: 3 of 3')).toBeVisible();
-  await expect(card.getByText('Skills: 0 of 1 signed off')).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Classes: 3 of 3' })).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Skills signed off: 0 of 1' })).toBeVisible();
   await expect(card.getByRole('link', { name: 'Armbar from guard' })).toBeVisible();
   await expect(card.getByText('Ready to grade')).toHaveCount(0);
 });
@@ -44,7 +44,7 @@ test('signing off the last skill makes the student ready to grade', async ({ pag
   await card.getByRole('button', { name: 'Armbar: Not started. Change to Learning' }).click();
   await card.getByRole('button', { name: 'Armbar: Learning. Change to Signed off' }).click();
   await expect(card.getByRole('button', { name: 'Armbar: Signed off. Change to Not started' })).toBeVisible();
-  await expect(card.getByText('Skills: 1 of 1 signed off')).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Skills signed off: 1 of 1' })).toBeVisible();
   await expect(card.getByText('Ready to grade')).toBeVisible();
 });
 

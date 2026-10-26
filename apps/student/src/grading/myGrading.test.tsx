@@ -7,7 +7,7 @@ import { MyGradingScreen } from './MyGradingScreen';
 import { GradingHistoryScreen } from './GradingHistoryScreen';
 
 jest.mock('../auth/AuthContext', () => ({ useAuth: jest.fn() }));
-jest.mock('./myGradingQueries', () => ({ useGradingOverview: jest.fn(), useMyRankHistory: jest.fn() }));
+jest.mock('./myGradingQueries', () => ({ useGradingOverview: jest.fn(), useMyRankHistory: jest.fn(), useMyFeeRequests: jest.fn(), useAnswerFee: jest.fn() }));
 
 // The first render loads every React Native component these screens use; on a
 // busy CI runner that alone can pass jest's default 5 s.
@@ -35,10 +35,19 @@ function nav() {
   return { navigate: jest.fn() } as never;
 }
 
+const answer = { mutate: jest.fn(), isPending: false, error: null };
+const FEE = {
+  id: 'fee1', schoolId: 'alpha', schoolName: 'Alpha Dojo', studentId: 'me', disciplineId: 'bjj', disciplineName: 'BJJ',
+  toRungId: 'w1', toRungName: 'White Belt · 1 Stripe', expectedCurrentRungId: 'w0', amountMinor: 6000, currency: 'BRL',
+  status: 'PENDING', promotionWaits: true, promotionApplied: false, gradingDate: '2026-10-18', toDecide: false, createdAt: '2026-10-18T12:00:00Z',
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mocked(auth.useAuth).mockReturnValue({ claims: { sub: 'me', grants: [] } });
   mocked(q.useGradingOverview).mockReturnValue(ok({ items: [BJJ, JUDO] }));
+  mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [] }));
+  mocked(q.useAnswerFee).mockReturnValue(answer);
 });
 
 describe('MyGradingScreen', () => {
@@ -73,6 +82,65 @@ describe('MyGradingScreen', () => {
     mocked(q.useGradingOverview).mockReturnValue(ok({ items: [] }));
     const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
     expect(getByText(/No rank yet/)).toBeTruthy();
+  });
+});
+
+describe('progress breakdown and hours trained', () => {
+  it('shows each requirement, what is in the %, and hours as a record only', async () => {
+    const item = {
+      ...BJJ,
+      eligibility: { ...BJJ.eligibility, progressPercent: 75, eligible: false },
+      progressBreakdown: {
+        classes: { counted: 30, required: 40, percent: 75, byType: [] },
+        days: { elapsed: 20, required: 30, percent: 67 },
+        skills: { signedOff: 1, required: 2, percent: 50 },
+      },
+      hoursTrained: { totalMinutes: 3700, sinceCurrentRankMinutes: 90 },
+    };
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [item] }));
+    const { getByText, getByLabelText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('· Classes: 30 of 40 · 75% · counts toward the %')).toBeTruthy();
+    expect(getByText(/Days at this rank: 20 of 30 · 67% · needed too, not in the %/)).toBeTruthy();
+    expect(getByText('· Skills signed off: 1 of 2 · 50% · needed too, not in the %')).toBeTruthy();
+    expect(getByText('The % is classes out of classes required.')).toBeTruthy();
+    expect(getByLabelText('Hours trained')).toBeTruthy();
+    expect(getByText('1.5 h at this rank · 61.7 h in all')).toBeTruthy();
+    expect(getByText("A record of your time on the mat. Grading doesn't use it.")).toBeTruthy();
+  });
+});
+
+describe('promotion fee', () => {
+  it('shows the fee, then Accept sends the answer', async () => {
+    mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [FEE] }));
+    const { getByText, queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('You were graded to White Belt · 1 Stripe')).toBeTruthy();
+    expect(queryByText(/Nothing is charged until you accept it/)).toBeNull();
+    await fireEvent.press(getByText('See and answer'));
+    expect(getByText(/Nothing is charged until you accept it\. Your promotion goes through once the fee is accepted and paid\./)).toBeTruthy();
+    await fireEvent.press(getByText(/^Accept /));
+    expect(answer.mutate).toHaveBeenCalledWith({ id: 'fee1', answer: 'accept' }, expect.anything());
+  });
+
+  it('Decline asks again, in red, before sending', async () => {
+    mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [FEE] }));
+    const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    await fireEvent.press(getByText('See and answer'));
+    await fireEvent.press(getByText('Decline'));
+    expect(answer.mutate).not.toHaveBeenCalled();
+    expect(getByText(/The School is told, and the promotion to White Belt · 1 Stripe doesn't go ahead\./)).toBeTruthy();
+    await fireEvent.press(getByText('Yes, decline'));
+    expect(answer.mutate).toHaveBeenCalledWith({ id: 'fee1', answer: 'decline' }, expect.anything());
+  });
+
+  it('a guardian answers for their child; an accepted fee waits for payment; settled ones are not shown', async () => {
+    mocked(q.useMyFeeRequests).mockReturnValue(
+      ok({ items: [FEE, { ...FEE, id: 'fee2', status: 'ACCEPTED', toRungName: 'Blue Belt' }, { ...FEE, id: 'fee3', status: 'PAID', toRungName: 'Purple Belt' }] }),
+    );
+    const { getByText, queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: { studentId: 'kid', name: 'Ben' } } as never} />);
+    expect(mocked(q.useMyFeeRequests)).toHaveBeenCalledWith('kid');
+    expect(getByText('Ben was graded to White Belt · 1 Stripe')).toBeTruthy();
+    expect(getByText(/You accepted the fee\. The promotion to Blue Belt goes through once it is paid\./)).toBeTruthy();
+    expect(queryByText(/Purple Belt/)).toBeNull();
   });
 });
 
