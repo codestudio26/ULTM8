@@ -1794,7 +1794,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "artık eğitmen değil",
     awaitingFirstLogin: "Henüz giriş yapmadı",
     filters: {
-      search: "Ara",
+      search: "Eğitmen ara",
       searchPlaceholder: "Ad veya e-posta",
       branch: "Şube",
       style: "Stil",

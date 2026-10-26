@@ -1966,7 +1966,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "لم يعد مدرّبًا",
     awaitingFirstLogin: "لم يسجّل الدخول بعد",
     filters: {
-      search: "بحث",
+      search: "البحث عن المدرّبين",
       searchPlaceholder: "الاسم أو البريد الإلكتروني",
       branch: "الفرع",
       style: "الأسلوب",

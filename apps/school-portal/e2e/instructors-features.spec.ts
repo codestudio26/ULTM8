@@ -39,16 +39,16 @@ test('search and the status filter narrow the roster, and a manually added instr
   await page.goto('/instructors');
   await expect(page.getByRole('row', { name: /Bea Fresh/ }).getByText("Hasn't signed in yet")).toBeVisible();
 
-  await page.getByRole('searchbox', { name: 'Search', exact: true }).fill('alma');
+  await page.getByLabel('Search instructors').fill('alma');
   await expect(page.getByRole('row', { name: /Alma Search/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /Bea Fresh/ })).toHaveCount(0);
 
-  await page.getByRole('searchbox', { name: 'Search', exact: true }).fill('');
+  await page.getByLabel('Search instructors').fill('');
   await page.getByLabel('Status', { exact: true }).selectOption({ label: "Hasn't signed in yet" });
   await expect(page.getByRole('row', { name: /Bea Fresh/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /Alma Search/ })).toHaveCount(0);
 
-  await page.getByRole('searchbox', { name: 'Search', exact: true }).fill('nobody-matches');
+  await page.getByLabel('Search instructors').fill('nobody-matches');
   await expect(page.getByText('No instructors match')).toBeVisible();
 });
 

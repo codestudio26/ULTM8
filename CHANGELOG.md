@@ -31,6 +31,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     "Promotion to decide" first among the tags; the owner waives or cancels; a
     coach promotes or doesn't. A student waiting for a fee has no Grade button
     and no "Ready" tag.
+- **Instructors search box is labelled "Search instructors"** — it was
+  just "Search", the same name as the header search, so screen readers
+  announced two identical boxes on the page. It now matches "Search classes"
+  and "Search students", in all 15 languages.
 - **Belt editor redesign** (DESIGN.md → "Belt editor: one grade at a time"):
   - **One grade at a time:** a row of grade pills (plain belt, 1 stripe…)
     with the students on each, a live preview of the picked grade, and

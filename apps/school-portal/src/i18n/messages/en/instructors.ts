@@ -33,7 +33,7 @@ export const instructors = {
   pickerArchived: 'archived',
   pickerRevoked: 'no longer an instructor',
   filters: {
-    search: 'Search',
+    search: 'Search instructors',
     searchPlaceholder: 'Name or email',
     branch: 'Branch',
     style: 'Style',

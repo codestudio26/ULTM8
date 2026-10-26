@@ -1794,7 +1794,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "kein Ausbilder mehr",
     awaitingFirstLogin: "Noch nicht angemeldet",
     filters: {
-      search: "Suche",
+      search: "Ausbilder durchsuchen",
       searchPlaceholder: "Name oder E-Mail",
       branch: "Filiale",
       style: "Stil",
