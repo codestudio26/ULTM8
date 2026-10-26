@@ -48,7 +48,6 @@ export class TimetableController {
     return this.timetableService.findOne(user.sub, id);
   }
 
-  @ApiOkResponse({ type: TimetableSlotResponseDto })
   /** Decision 322 — School Owner/Manager only: upcoming Classes from this slot,
    * and how many have bookings, before a change that moves them. */
   @ApiOkResponse({ type: UpcomingImpactResponseDto })
@@ -57,6 +56,7 @@ export class TimetableController {
     return this.timetableService.getUpcomingImpact(user.sub, id);
   }
 
+  @ApiOkResponse({ type: TimetableSlotResponseDto })
   @Patch('timetable/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTimetableSlotDto) {
     return this.timetableService.update(user.sub, id, dto);

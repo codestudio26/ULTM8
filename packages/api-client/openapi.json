@@ -4233,7 +4233,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -4265,7 +4272,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                  "$ref": "#/components/schemas/UpcomingImpactResponseDto"
                 }
               }
             }
@@ -15457,6 +15464,33 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "UpcomingImpactResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Upcoming, unarchived Classes generated from this slot."
+          },
+          "bookedClasses": {
+            "type": "number",
+            "description": "Of those, how many have bookings or a waitlist."
+          },
+          "bookedStudents": {
+            "type": "number",
+            "description": "Students (and guests) booked across those Classes."
+          },
+          "mostTaken": {
+            "type": "number",
+            "description": "The most seats taken in any one of those Classes. A capacity below this needs CANCEL or KEEP."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "bookedClasses",
+          "bookedStudents",
+          "mostTaken"
         ]
       },
       "UpdateTimetableSlotDto": {

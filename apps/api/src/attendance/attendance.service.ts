@@ -207,7 +207,7 @@ export class AttendanceService {
     const school = await this.prismaJobs.school.findUnique({ where: { id: cls.schoolId }, select: { checkInOpensMinutesBeforeStart: true } });
     const opensAt = new Date(cls.startDate.getTime() - (school?.checkInOpensMinutesBeforeStart ?? 30) * 60_000);
     if (now < opensAt) {
-      throw new BadRequestException(`Check-in for this Class hasn't opened yet. It opens at ${opensAt.toISOString()}.`);
+      throw new BadRequestException({ code: 'CHECK_IN_NOT_OPEN', message: `Check-in for this Class hasn't opened yet. It opens at ${opensAt.toISOString()}.` });
     }
     const cutoff = cls.qrAttendanceEndAt ?? cls.endDate;
     if (now > cutoff) {

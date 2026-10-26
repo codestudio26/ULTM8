@@ -130,6 +130,7 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
       const res = await book(cls.id, students[1]);
       expect(res.status).toBe(400);
       expect(res.body.error.message).toMatch(/Booking for this Class has closed/);
+      expect(res.body.error.code).toBe('BOOKING_CLOSED');
       expect((await book(cls.id, staff, { studentId: students[1].id })).status).toBe(201);
     });
 
@@ -150,6 +151,7 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
       const early = await http().post(`/v1/classes/${cls.id}/attendance-scan`).set('Authorization', `Bearer ${owner.token}`).send({ studentId: s.id });
       expect(early.status).toBe(400);
       expect(early.body.error.message).toMatch(/hasn't opened yet/);
+      expect(early.body.error.code).toBe('CHECK_IN_NOT_OPEN');
 
       const patched = await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${owner.token}`).send({ checkInOpensMinutesBeforeStart: 180 });
       expect(patched.status).toBe(200);
@@ -187,6 +189,7 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
       const jump = await book(cls.id, students[20]);
       expect(jump.status).toBe(409);
       expect(jump.body.error.message).toMatch(/waiting for this Class/);
+      expect(jump.body.error.code).toBe('WAITLIST_FIRST');
       expect((await book(cls.id, staff, { studentId: students[20].id })).status).toBe(201);
     });
 
@@ -210,6 +213,7 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
       const cut = await http().patch(`/v1/classes/${cls.id}`).set('Authorization', `Bearer ${owner.token}`).send({ capacity: 3 });
       expect(cut.status).toBe(409);
       expect(cut.body.error.message).toMatch(/4 students are booked/);
+      expect(cut.body.error.code).toBe('CAPACITY_BELOW_BOOKED');
       expect((await http().patch(`/v1/classes/${cls.id}`).set('Authorization', `Bearer ${owner.token}`).send({ capacity: 4 })).status).toBe(200);
     });
 
@@ -285,8 +289,9 @@ describeIfDb('Booking/schedule stress-test fixes (Decision 322)', () => {
 
       const ask = await patchSlot(slot, { startTime: '17:00', endTime: '18:00' });
       expect(ask.status).toBe(409);
+      expect(ask.body.error.code).toBe('BOOKED_CLASSES_CHOICE_REQUIRED');
       const impact = await http().get(`/v1/timetable/${slot}/upcoming-impact`).set('Authorization', `Bearer ${owner.token}`);
-      expect(impact.body).toEqual({ upcomingClasses: 4, bookedClasses: 1, bookedStudents: 1 });
+      expect(impact.body).toEqual({ upcomingClasses: 4, bookedClasses: 1, bookedStudents: 1, mostTaken: 1 });
 
       expect((await patchSlot(slot, { startTime: '17:00', endTime: '18:00', bookedClasses: 'MOVE' })).status).toBe(200);
       const moved = await upcomingOf(slot);

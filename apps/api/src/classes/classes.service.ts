@@ -184,9 +184,10 @@ export class ClassesService {
         ]);
         const taken = bookings + guests;
         if (dto.capacity < taken) {
-          throw new ConflictException(
-            `${taken} ${taken === 1 ? 'student is' : 'students are'} booked. Cancel some bookings first, or set the capacity to ${taken} or more.`,
-          );
+          throw new ConflictException({
+            code: 'CAPACITY_BELOW_BOOKED',
+            message: `${taken} ${taken === 1 ? 'student is' : 'students are'} booked. Cancel some bookings first, or set the capacity to ${taken} or more.`,
+          });
         }
         // Seats a raise frees go to the waitlist first: with Students queued,
         // nobody can book them directly (waitlist first), so offer them now.

@@ -1,0 +1,69 @@
+import React from 'react';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { ApiError } from '@ultm8/api-client';
+import * as bookingQueries from './bookingQueries';
+import * as waitlistMutations from './waitlistMutations';
+import { ClassBookingRow } from './ClassBookingRow';
+
+jest.mock('./bookingQueries', () => ({
+  useBookClass: jest.fn(),
+}));
+jest.mock('./waitlistMutations', () => ({
+  useJoinWaitlist: jest.fn(),
+  useWithdrawWaitlist: jest.fn(),
+}));
+
+const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
+const idleMutation = () => ({ mutateAsync: jest.fn<(...args: unknown[]) => Promise<unknown>>(), isPending: false });
+
+const classItem = { id: 'class-1', title: 'BJJ Fundamentals', startDate: '2026-11-02T18:00:00.000Z', endDate: '2026-11-02T19:00:00.000Z' };
+
+/** Decision 322 — only "full" and "students already waiting" lead to the
+ * waitlist; any other refusal is shown as it is, with Book still offered. */
+describe('ClassBookingRow — booking refusals', () => {
+  let book: ReturnType<typeof idleMutation>;
+  let join: ReturnType<typeof idleMutation>;
+
+  beforeEach(() => {
+    book = idleMutation();
+    join = idleMutation();
+    mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(join);
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+  });
+
+  it('offers the waitlist when the class is full, and joins it', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'CLASS_FULL', 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).'));
+    join.mutateAsync.mockResolvedValue({ id: 'entry-1', position: 3 });
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('This class is full.')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Join waitlist'));
+    await waitFor(() => expect(screen.getByText("You're #3 on the waitlist.")).toBeTruthy());
+  });
+
+  it('says others are waiting when the API puts the queue first', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'WAITLIST_FIRST', 'Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).'));
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Others are already waiting for a place in this class.')).toBeTruthy());
+    expect(screen.getByText('Join waitlist')).toBeTruthy();
+  });
+
+  it('keeps Book for a busy class and shows a clear message, not the waitlist', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'CLASS_BUSY', 'This Class is very busy right now. Please try again in a moment.'));
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Lots of people are booking this class right now. Please try again in a moment.')).toBeTruthy());
+    expect(screen.queryByText('Join waitlist')).toBeNull();
+    expect(screen.getByText('Book')).toBeTruthy();
+  });
+
+  it('explains that booking has closed', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(400, 'BOOKING_CLOSED', 'Booking for this Class has closed. Ask a member of staff if you want to join.'));
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Booking for this class has closed. A member of staff can still add you.')).toBeTruthy());
+  });
+});

@@ -19,6 +19,13 @@ export const schools = {
     policyAutoRefund: 'Auto-Refund',
     policyAutoCredit: 'Auto-Credit',
     waitlistWindow: 'Waitlist claim window (minutes)',
+    checkInOpens: 'Check-in opens (minutes before class)',
+    checkInOpensHint: 'How early students can check in to a class. 0 means only once it starts.',
+    lateCancel: 'Cancelling after a class starts',
+    lateCancelHint: "Whether the class credit comes back when a student cancels after the class has started. A class's own refund cut-off still applies.",
+    lateCancelNoRefund: 'No refund once started (default)',
+    lateCancelRefundUntilEnd: 'Refund until the class ends',
+    lateCancelAlwaysRefund: 'Always refund, even after it ends',
     ranksToggle: 'Enable belt/rank tracking',
   },
   create: {

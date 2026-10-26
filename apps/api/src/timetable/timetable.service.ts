@@ -228,19 +228,21 @@ export class TimetableService {
     const moves = this.movesClasses(existing, dto);
     const impact = await this.upcomingImpact(callerId, slotId);
     if (moves && impact.bookedClasses > 0 && !dto.bookedClasses) {
-      throw new ConflictException(
-        `${impact.bookedClasses} upcoming ${impact.bookedClasses === 1 ? 'class' : 'classes'} from this slot ${impact.bookedClasses === 1 ? 'has' : 'have'} ${impact.bookedStudents} booked ${impact.bookedStudents === 1 ? 'student' : 'students'}. ` +
+      throw new ConflictException({
+        code: 'BOOKED_CLASSES_CHOICE_REQUIRED',
+        message: `${impact.bookedClasses} upcoming ${impact.bookedClasses === 1 ? 'class' : 'classes'} from this slot ${impact.bookedClasses === 1 ? 'has' : 'have'} ${impact.bookedStudents} booked ${impact.bookedStudents === 1 ? 'student' : 'students'}. ` +
           'Choose what happens to them: bookedClasses MOVE, CANCEL or KEEP.',
-      );
+      });
     }
     const switchingOff = dto.status === 'OFF' && existing.status === 'ON';
     if (switchingOff && dto.bookedClasses === 'MOVE') {
       throw new BadRequestException('A slot that is switched off has nowhere to move its classes to. Use CANCEL or KEEP.');
     }
     if (dto.capacity !== undefined && dto.capacity !== null && impact.mostTaken > dto.capacity && dto.bookedClasses !== 'CANCEL' && dto.bookedClasses !== 'KEEP') {
-      throw new ConflictException(
-        `An upcoming class from this slot has ${impact.mostTaken} students booked. Set the capacity to ${impact.mostTaken} or more, or choose CANCEL or KEEP for booked classes.`,
-      );
+      throw new ConflictException({
+        code: 'CAPACITY_BELOW_BOOKED',
+        message: `An upcoming class from this slot has ${impact.mostTaken} students booked. Set the capacity to ${impact.mostTaken} or more, or choose CANCEL or KEEP for booked classes.`,
+      });
     }
 
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -272,11 +274,8 @@ export class TimetableService {
         },
       });
     });
-    // Deliberately NOT touching Classes already materialized from this slot — Spec 55
-    // doesn't say what should happen to them on an edit (status flip, instructor
-    // change, time change), and retroactively cancelling/mutating rows a Student may
-    // already hold real Bookings against is the wrong default to guess at. Flagged,
-    // not resolved — see the Phase 5 kickoff prompt.
+    // Upcoming Classes follow the change: unbooked ones always, booked ones as the
+    // owner chose (Decision 322).
     await this.syncUpcomingClasses(callerId, existing, updated, dto.bookedClasses ?? (moves ? 'KEEP' : 'MOVE'), Object.keys(dto));
     return this.toResponse(updated);
   }
@@ -290,8 +289,7 @@ export class TimetableService {
       throw new NotFoundException('TimetableSlot not found');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
-    const { upcomingClasses, bookedClasses, bookedStudents } = await this.upcomingImpact(callerId, slotId);
-    return { upcomingClasses, bookedClasses, bookedStudents };
+    return this.upcomingImpact(callerId, slotId);
   }
 
   /** Whether a slot change moves its Classes in time or place, or switches it off. */
