@@ -23,6 +23,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   rate-limited, so card purchases settle at once in a busy hour instead of
   waiting on Stripe's retries.
 
+- **Classes: second batch of fixes** (Decision 345, needs a migration) — a
+  one-off class now needs its own ticket unless "Included in membership" is
+  ticked (existing one-off classes were ticked so nothing changes for them;
+  Timetable classes are always included and lose the switch); moving a booked
+  class to a new time tells booked and waiting students and can't move it into
+  the past; a booked class can't move to another branch; a class that has
+  already ended can't be created.
 - **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
   whose Weekly Pass or Trial has run out can buy again (it used to be refused
   as if the old one were still live); a live Trial no longer blocks buying a

@@ -46,6 +46,15 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.guestNeedsFriendPass');
     case 'GUEST_PASS_REPEATED':
       return t('server.codes.guestPassRepeated');
+    // Classes review second batch (Decision 345: C1, C5, C14, past Classes).
+    case 'TICKET_REQUIRED':
+      return t('server.codes.ticketRequired');
+    case 'CLASS_BRANCH_BOOKED':
+      return t('server.codes.classBranchBooked');
+    case 'CLASS_MOVED_TO_PAST':
+      return t('server.codes.classMovedToPast');
+    case 'CLASS_ALREADY_ENDED':
+      return t('server.codes.classAlreadyEnded');
     default:
       return null;
   }
