@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A member School can show its Franchise's name and logo (Decision 350)** —
+  only when both the Franchise Owner (a new switch on the Franchise form) and the
+  School Owner (a new switch on the School page) turn it on. It shows as "Part of
+  {Franchise}" in the School Portal footer. Both start off, and the School's
+  switch resets when it joins or leaves a Franchise. Needs a migration.
+- **Franchises fixes from the 26 Oct review (Decision 337)** — fees are typed
+  in US dollars (not cents) and a Franchise needs a fee for its fee model; the
+  fee model is locked while Schools are being billed; the "Schools already
+  billing" check now works for real Schools, so the rate-change prompt shows;
+  closed Franchises and Schools are labelled and a closed Franchise can't be
+  joined or edited; the detail page shows the Franchise ID with a Copy button
+  and says why billing can't start yet; Leave Franchise asks first and bills the
+  month the School leaves in; closing a School or Franchise stops its fee
+  billing; the member list no longer sends join codes or Stripe ids; the
+  Activity filter ignores capitals; several franchise-fee billing timing fixes.
+  Needs a database migration on deploy.
 - **Memberships: sell at the desk, Friend Pass, cancel a subscription, member
   list (Decision 348)** — on a Student's page the owner now sees their
   memberships, can record a plan sold at the desk (cash, bank transfer, Pix or card

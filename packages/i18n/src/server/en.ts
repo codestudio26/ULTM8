@@ -184,7 +184,6 @@ export const SERVER_MESSAGES: string[] = [
  "This School has ranks disabled (School.ranksToggle) — enable it before creating or modifying rank data.",
  "This School has styles: choose at least one style for this class (styles).",
  "This School has styles: pick specialisations from them (specializationStyleIds), not free text.",
- "This School is already affiliated with a Franchise — leaving or switching Franchise is not supported yet.",
  "This School is already closed.",
  "This School is not affiliated with any Franchise.",
  "This School is not closed.",
@@ -347,7 +346,14 @@ export const SERVER_MESSAGES: string[] = [
  "studentId must be a valid UUID",
  "styles cannot be null; omit it to leave the styles unchanged.",
  "surname cannot be null.",
- "targetRungId is not a belt or stripe of this style."
+ "targetRungId is not a belt or stripe of this style.",
+ "This Franchise has been closed and no longer accepts new Schools.",
+ "This School is already in a Franchise. Leave it first, then join the new one.",
+ "Franchise name can't be empty.",
+ "feeModel cannot be null — omit the field to leave it unchanged.",
+ "activities/facilities cannot be null — send an empty list to clear them.",
+ "defaultLanguage must be one of the supported language codes.",
+ "defaultCurrency must be one of the supported currency codes.",
 ];
 
 export const SERVER_PATTERNS: string[] = [
@@ -392,5 +398,6 @@ export const SERVER_PATTERNS: string[] = [
  "stripeTiers order values must be contiguous starting at 0 — got [{v1}]",
  "{v1} is not Cash/Bank Transfer-eligible.",
  "{v1} student{v2} a rank in this style, so it can't be deleted.",
- "{v1} student{v2} this belt, so it can't be {v3}."
+ "{v1} student{v2} this belt, so it can't be {v3}.",
+ "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.",
 ];

@@ -212,6 +212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/franchise-branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_findFranchiseBranding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students": {
         parameters: {
             query?: never;
@@ -4030,6 +4046,7 @@ export interface components {
             activities: string[];
             facilities: string[];
             ranksToggle: boolean;
+            showFranchiseBranding: boolean;
             defaultLanguage?: string | null;
             defaultCurrency?: string | null;
             /** @description IANA timezone name. */
@@ -4076,6 +4093,16 @@ export interface components {
             /** @description 6-digit hex color, e.g. #1A73E8. */
             accentColor?: string | null;
         };
+        SchoolFranchiseBrandingResponseDto: {
+            /** @description The School belongs to a Franchise whose Owner allows member Schools to show its name and logo. */
+            franchiseAllows: boolean;
+            /** @description The School Owner's own switch (School.showFranchiseBranding). */
+            schoolShows: boolean;
+            /** @description Set only when both allow it. */
+            name?: string | null;
+            /** @description Set only when both allow it. */
+            logoUrl?: string | null;
+        };
         UpdateSchoolDto: {
             name?: string;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
@@ -4120,6 +4147,8 @@ export interface components {
             footerYoutubeUrl?: string | null;
             /** @description X (formerly Twitter). */
             footerTwitterUrl?: string | null;
+            /** @description Show this School's Franchise name and logo (the Franchise Owner must also allow it). */
+            showFranchiseBranding?: boolean;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -4444,6 +4473,8 @@ export interface components {
             flatFeeAmount?: number;
             /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
             perHeadcountRate?: number;
+            /** @description Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on). */
+            shareBrandingWithMembers?: boolean;
         };
         FranchiseResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4470,6 +4501,7 @@ export interface components {
             feeModel: "FLAT" | "PER_HEADCOUNT";
             flatFeeAmount?: number | null;
             perHeadcountRate?: number | null;
+            shareBrandingWithMembers: boolean;
             createdAt: string;
             updatedAt: string;
             archivedAt?: string | null;
@@ -4496,6 +4528,8 @@ export interface components {
             flatFeeAmount?: number;
             /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
             perHeadcountRate?: number;
+            /** @description Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on). */
+            shareBrandingWithMembers?: boolean;
             mobileNumber?: string | null;
             address?: string | null;
             type?: string | null;
@@ -4514,6 +4548,25 @@ export interface components {
         };
         FranchiseBillingStatusResponseDto: {
             schoolsAlreadyBillingCount: number;
+        };
+        FranchiseMemberSchoolResponseDto: {
+            id: string;
+            name: string;
+            businessType?: string | null;
+            logoUrl?: string | null;
+            /** @enum {string|null} */
+            franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
+            /**
+             * Format: date-time
+             * @description Set when the School has been closed.
+             */
+            archivedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FranchiseMemberSchoolListResponseDto: {
+            items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
+            nextCursor?: string | null;
         };
         CreateCoachInviteDto: {
             email: string;
@@ -7434,6 +7487,27 @@ export interface operations {
             };
         };
     };
+    SchoolsController_findFranchiseBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolFranchiseBrandingResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_findStudents: {
         parameters: {
             query?: {
@@ -7881,7 +7955,7 @@ export interface operations {
                 cursor?: string;
                 limit?: number;
                 feeModel?: "FLAT" | "PER_HEADCOUNT";
-                /** @description Exact match against one element of Franchise.activities. */
+                /** @description Matches one element of Franchise.activities, ignoring capitals. */
                 activity?: string;
                 /** @description Case-insensitive substring match against Franchise.name. */
                 search?: string;
@@ -8010,7 +8084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchoolListResponseDto"];
+                    "application/json": components["schemas"]["FranchiseMemberSchoolListResponseDto"];
                 };
             };
         };
