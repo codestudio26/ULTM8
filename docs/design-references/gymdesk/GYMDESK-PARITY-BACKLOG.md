@@ -261,7 +261,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
-| BL11 | Saved **discounts**: title, value (% or fixed), **Sign-up discount** switch, **Eligible memberships only** switch, **public discount code** (e.g. `20OFF`), **limited use** (N times), **expiry date** | ❌ | Not decided. Today a discount exists only typed on a charge (Decision 303). See question BLQ1 |
+| BL11 | Saved **discounts**: title, value (% or fixed), **Sign-up discount** switch, **Eligible memberships only** switch, **public discount code** (e.g. `20OFF`), **limited use** (N times), **expiry date** | ⏭ | Later, after C1 (product owner, 26 Oct 2026). C1 has discounts typed on each charge (Decision 303) |
 
 ### Payment Forms
 
@@ -311,7 +311,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 | B7 | **Connect Stripe account** (Stripe Connect onboarding; card-reader terminal mentioned) | ✅ | Stripe Connect exists. Card reader at the desk: not decided |
 
 **Questions (for the product owner, `[UNRESOLVED]` until answered):**
-- **BLQ1 Saved discounts and promo codes:** do Schools need reusable discounts (a sign-up discount, a public code like `20OFF`, use limit, expiry, only for some plans)? Or is a discount typed on each charge enough (Decision 303)?
+- **BLQ1 Saved discounts and promo codes:** do Schools need reusable discounts (a sign-up discount, a public code like `20OFF`, use limit, expiry, only for some plans)? Or is a discount typed on each charge enough (Decision 303)? **Answered (26 Oct 2026): later.** C1 first, with discounts typed on each charge (Decision 303); saved discounts, public promo codes, sign-up discounts, use limits and expiry follow as the next billing feature (version not assigned).
 - **BLQ2 Payment forms:** a public pay link (fixed or "any amount", e.g. donations, seminar fees) for people who may have no ULTM8 account? Who receives the receipt, and is it tied to a member?
 - **BLQ3 Revenue reports:** which do you want: Overview (scheduled / paid / overdue + chart), Accounting (revenue, tax, refunds, balances), Growth (year-to-date, projection, per member)? Owner only, or also staff with billing access?
 - **BLQ4 Invoice numbers:** should every charge and payment get a sequential number per School (`#0000001`)? Some countries require it on invoices (e.g. Brazil, EU), so this may need to be always on rather than a switch.
