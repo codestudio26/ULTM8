@@ -8,6 +8,7 @@ import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
 import { moveItem, useDragReorder } from './dragReorder';
 import { type RankResponse, useArchiveRank, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUnarchiveRank, useUpdateRank } from './rankQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
+import { usePromotionFeeSettings } from '../grading/gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 const stripesLabel = (t: TranslateFn, n: number) => (n === 0 ? t('ranks.ladder.noStripes') : t('ranks.ladder.stripes', { count: n }));
@@ -46,6 +47,10 @@ export function LadderSection({
   const [confirming, setConfirming] = useState<Holder[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<RankResponse | null>(null);
+  const [duplicating, setDuplicating] = useState<RankResponse | null>(null);
+  // Prices per grade show only while the School's promotion fee is on, and only to the owner (Decision 307).
+  const feeSettings = usePromotionFeeSettings(readOnly ? null : discipline.schoolId);
+  const fee = !readOnly && feeSettings.data?.promotionFeeEnabled ? { currency: feeSettings.data.currency ?? null } : null;
   const [deleting, setDeleting] = useState<RankResponse | null>(null);
   const deleteRank = useDeleteRank(discipline.id);
   // Decision 226 — reversible alternative to Delete. Shown INLINE (badged),
@@ -140,7 +145,7 @@ export function LadderSection({
                 key={rank.id}
                 aria-label={`${i + 1}. ${rank.name}`}
                 {...(readOnly ? {} : drag.targetProps(i))}
-                style={{ border: `1px solid ${drag.over === i ? 'var(--fill-accent)' : 'var(--border)'}`, borderRadius: 8, padding: 10 }}
+                style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, ...drag.rowStyle(i) }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   {readOnly ? null : <span {...drag.handleProps(i, rank.name)}>⠿</span>}
@@ -156,6 +161,9 @@ export function LadderSection({
                     <>
                   <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={t('ranks.editAria', { name: rank.name })}>
                     {t('ranks.edit')}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setDuplicating(rank)} disabled={changed} aria-label={t('ranks.ladder.duplicateAria', { name: rank.name })}>
+                    {t('ranks.ladder.duplicate')}
                   </Button>
                   <Button variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ranks.moveUpAria', { name: rank.name })}>
                     ↑
@@ -244,27 +252,51 @@ export function LadderSection({
         </Modal>
       ) : null}
 
-      {adding ? (
+      {adding || duplicating ? (
         <BeltEditorModal
-          title={t('ranks.ladder.addRank')}
+          title={duplicating ? t('ranks.ladder.duplicateTitle', { name: duplicating.name }) : t('ranks.ladder.addRank')}
+          mode={duplicating ? 'duplicate' : 'add'}
           discipline={discipline}
+          initial={duplicating ?? undefined}
+          ladder={saved}
+          originalIndex={duplicating ? saved.findIndex((r) => r.id === duplicating.id) : undefined}
           skills={skills}
           holders={holders}
-          submitting={createRank.isPending}
-          onSubmit={async (values: BeltValues) => {
-            // A new belt goes at the top of the ladder; reorder it after.
-            await createRank.mutateAsync({
+          fee={fee}
+          submitting={createRank.isPending || reorder.isPending}
+          onSubmit={async (values: BeltValues, position: number) => {
+            // Saved last, then moved to the place chosen in "Where it goes".
+            const created = await createRank.mutateAsync({
               ...values,
               secondaryColour: values.secondaryColour ?? undefined,
               tagColour: values.tagColour ?? undefined,
               order: saved.length,
             });
+            if (position < saved.length) {
+              const ids = saved.map((r) => r.id);
+              ids.splice(position, 0, created.id);
+              await reorder.mutateAsync(ids);
+            }
             setAdding(false);
+            setDuplicating(null);
           }}
-          onClose={() => setAdding(false)}
+          onClose={() => {
+            setAdding(false);
+            setDuplicating(null);
+          }}
         />
       ) : null}
-      {editing ? <EditBelt discipline={discipline} skills={skills} holders={holders} rank={editing} onClose={() => setEditing(null)} /> : null}
+      {editing ? (
+        <EditBelt
+          discipline={discipline}
+          skills={skills}
+          holders={holders}
+          rank={editing}
+          ladder={saved}
+          fee={fee}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </Card>
   );
 }
@@ -274,12 +306,16 @@ function EditBelt({
   skills,
   holders,
   rank,
+  ladder,
+  fee,
   onClose,
 }: {
   discipline: DisciplineResponse;
   skills: SkillResponse[];
   holders: Map<string, Holder[]>;
   rank: RankResponse;
+  ladder: RankResponse[];
+  fee: { currency: string | null } | null;
   onClose: () => void;
 }) {
   const update = useUpdateRank(discipline.id, rank.id);
@@ -289,8 +325,11 @@ function EditBelt({
       title={t('ranks.editAria', { name: rank.name })}
       discipline={discipline}
       initial={rank}
+      ladder={ladder}
+      originalIndex={ladder.findIndex((r) => r.id === rank.id)}
       skills={skills}
       holders={holders}
+      fee={fee}
       submitting={update.isPending}
       onSubmit={async (values) => {
         await update.mutateAsync(values);

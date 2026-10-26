@@ -19,6 +19,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   just "Search", the same name as the header search, so screen readers
   announced two identical boxes on the page. It now matches "Search classes"
   and "Search students", in all 15 languages.
+- **Belt editor redesign** (DESIGN.md → "Belt editor: one grade at a time"):
+  - **One grade at a time:** a row of grade pills (plain belt, 1 stripe…)
+    with the students on each, a live preview of the picked grade, and
+    "+ Add stripe grade", which copies the previous grade's numbers.
+  - **Chapters:** 01 Belt and stripes (rank name, colours, this grade's name,
+    stripe colour groups with one Remove), 02 What it takes, and 03 Promotion
+    fee, a price per grade, shown only to the owner while the fee is on.
+  - **"Ready to save"** lists what's missing; a grade that says nothing is a
+    warning, not a block.
+  - **Ladder:** Duplicate a rank, and choose where a new rank goes. Dragging
+    to reorder now works with a finger too.
 - **Grading tabs complete** (DESIGN.md → "Grading screens"): Board · Styles &
   Belts · Skills · Permissions · Settings.
   - **Settings:** every style's Grading Board columns, the promotion fee and
