@@ -27,6 +27,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   links skip archived lessons; a skill from an archived style can be unticked;
   and the delete warning says what students lose.
 
+- **Curriculum: the owner's answers** (Decision 326) — coaches and Branch
+  Staff now have the Curriculum page, read-only (lessons, categories and
+  comments), and only the School owner can add, edit, reorder or upload; the
+  owner can delete a category, its lessons moving to "No category"; duration
+  is typed in minutes and seconds and listed as e.g. 4:30; each lesson has a
+  Comments (n) button opening its students' comments, which only the owner
+  (or the comment's author) can remove. **Needs a database migration.**
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

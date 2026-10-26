@@ -23,7 +23,12 @@ import {
 import { CreateCommentDto } from './dto/comment.dto';
 
 /** `content` is null when the database doesn't let the caller read it (Decision 208). */
-const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } }, content: true } as const;
+const LESSON_INCLUDE = {
+  skills: { include: { skill: { select: { disciplineId: true } } } },
+  category: { select: { name: true } },
+  content: true,
+  _count: { select: { comments: true } },
+} as const;
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -76,9 +81,9 @@ const LESSON_ORDER: Prisma.LessonOrderByWithRelationInput[] = [{ category: { ord
  * the schema default (captionStatus PENDING, everything else null) — that's a
  * later phase's work, once real credentials exist to build and verify against.
  *
- * Writes (create/update) require Staff/Instructor (assertStaffAtSchool — Decision
- * 58's own "an instructor uploads", resolved as Decision 104 to mean ordinary
- * tenant Staff, not Platform Admin). Reads: lesson_tenant_isolation admits any
+ * Writes require the School owner (assertSchoolOwner, Decision 326 — it
+ * replaces Decision 104's "Instructor/Staff-authored"; coaches and Branch
+ * Staff see the curriculum read-only). Reads: lesson_tenant_isolation admits any
  * active RoleGrant at the School to the lesson itself; its content
  * (LessonContent) only to those who may watch it (Decisions 154, 190, 195,
  * 208), checked here and by the database.
@@ -96,7 +101,9 @@ export class CurriculumService {
 
   async createLesson(callerId: string, schoolId: string, dto: CreateLessonDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    // Only the owner changes the curriculum; coaches and Branch Staff see it
+    // read-only (Decision 326).
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     if (dto.instructorId) {
@@ -105,8 +112,6 @@ export class CurriculumService {
       await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, schoolId, null);
     }
     await this.assertSkillsBelongToSchool(callerId, dto.skillIds, schoolId);
-    // Only the owner makes a lesson free (Decision 190).
-    if (dto.free) await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const lessonId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -336,7 +341,7 @@ export class CurriculumService {
     if (!existing) {
       throw new NotFoundException('Lesson not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     // Decision 311: checked only when the instructor changes.
@@ -346,8 +351,6 @@ export class CurriculumService {
     if (dto.skillIds) {
       await this.assertSkillsBelongToSchool(callerId, dto.skillIds, existing.schoolId);
     }
-    // Only the owner makes a lesson free, or not (Decision 190).
-    if (dto.free !== undefined && dto.free !== existing.free) await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // A new category puts the lesson at its end (null: no category).
@@ -387,7 +390,7 @@ export class CurriculumService {
   // ---------------------------------------------------------------------------
 
   private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>, access: LessonAccess = 'all') {
-    const { skills, category, content, ...rest } = lesson;
+    const { skills, category, content, _count, ...rest } = lesson;
     const locked = this.isLocked(lesson, access);
     // A locked lesson shows what it is, not its content. The database applies
     // the same rule (Decision 208): content it won't give is null either way.
@@ -410,6 +413,8 @@ export class CurriculumService {
       videoRef: shown?.videoRef ?? null,
       captionTrackRef: shown?.captionTrackRef ?? null,
       playbackUrl,
+      // For the portal's comments panel (Decision 326).
+      commentCount: _count.comments,
     };
   }
 
@@ -488,7 +493,7 @@ export class CurriculumService {
 
   async createCategory(callerId: string, schoolId: string, name: string) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await this.assertNameFree(tx, schoolId, name);
@@ -501,7 +506,7 @@ export class CurriculumService {
   async renameCategory(callerId: string, categoryId: string, name: string) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
     if (!existing) throw new NotFoundException('Category not found');
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await this.assertNameFree(tx, existing.schoolId, name, categoryId);
@@ -509,10 +514,21 @@ export class CurriculumService {
     });
   }
 
+  /** The owner deletes a category; its lessons move to "No category" (the
+   * foreign key sets their categoryId to null), nothing else is lost
+   * (Decision 326). */
+  async deleteCategory(callerId: string, categoryId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
+    if (!existing) throw new NotFoundException('Category not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.deleteMany({ where: { id: categoryId } }));
+  }
+
   /** Every category of the School, in the new order. */
   async orderCategories(callerId: string, schoolId: string, dto: OrderLessonCategoriesDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const all = await tx.lessonCategory.findMany({ where: { schoolId }, select: { id: true } });
@@ -531,7 +547,7 @@ export class CurriculumService {
   async orderCategoryLessons(callerId: string, categoryId: string, dto: OrderCategoryLessonsDto) {
     const category = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
     if (!category) throw new NotFoundException('Category not found');
-    await this.tenantAuth.assertStaffAtSchool(callerId, category.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, category.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, category.schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const sent = new Set(dto.lessonIds);
@@ -868,8 +884,8 @@ export class CurriculumService {
     });
   }
 
-  /** Author or Staff at the School may delete (Comment's own schema.prisma/
-   * migration comment) — RLS only enforces the tenant boundary for DELETE,
+  /** The author or the School owner may delete (Decision 326; coaches read
+   * comments in the portal but don't remove them) — RLS only enforces the tenant boundary for DELETE,
    * this is the specific-action gate, same "RLS is the tenant boundary, the
    * service layer is the specific-action gate" split this codebase already
    * uses for every other write-authorization check. */
@@ -880,10 +896,10 @@ export class CurriculumService {
     }
     if (existing.authorId !== callerId) {
       try {
-        await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+        await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
-        throw new ForbiddenException('Only the Comment\'s own author, or School staff, may delete it.');
+        throw new ForbiddenException('Only the Comment\'s own author, or the School owner, may delete it.');
       }
     }
     await this.prismaApp.withTenantContext(callerId, (tx) => tx.comment.deleteMany({ where: { id: commentId } }));
@@ -922,16 +938,16 @@ export class CurriculumService {
    * VideoProcessingPollScheduler once AWS Transcribe completes); FAILED =
    * either stage failed (also set by that scheduler).
    *
-   * Staff-gated the same way every other Lesson write in this file is
-   * (assertStaffAtSchool + assertSchoolNotArchived, updateLesson's own
-   * gate) — the controller does not duplicate this check.
+   * Owner-gated the same way every other Lesson write in this file is
+   * (assertSchoolOwner + assertSchoolNotArchived, updateLesson's own
+   * gate, Decision 326) — the controller does not duplicate this check.
    */
   async requestVideoUploadUrl(callerId: string, schoolId: string, lessonId: string) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
     if (!existing || existing.schoolId !== schoolId) {
       throw new NotFoundException('Lesson not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (!this.cloudflareStream.isConfigured()) throw new ServiceUnavailableException(VIDEO_UPLOADS_OFF);
 

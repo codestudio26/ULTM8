@@ -30,7 +30,7 @@ test('emptying description and duration on edit clears them', async ({ page }) =
   const dialog = page.getByRole('dialog', { name: 'Edit lesson' });
   await expect(dialog.getByLabel('Description')).toHaveValue('Old steps');
   await dialog.getByLabel('Description').fill('');
-  await dialog.getByLabel('Duration (seconds)').fill('');
+  await dialog.getByLabel('Duration: minutes').fill('');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toBeHidden();
 

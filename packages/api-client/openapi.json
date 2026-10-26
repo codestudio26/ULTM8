@@ -10455,6 +10455,32 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/schools/{schoolId}/curriculum/categories/order": {
@@ -21241,6 +21267,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -21278,6 +21308,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"

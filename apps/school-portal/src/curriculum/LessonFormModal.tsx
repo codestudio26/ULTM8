@@ -53,7 +53,9 @@ export function LessonFormModal({
     title: initial?.title ?? '',
     categoryId: initial?.categoryId ?? '',
     free: initial?.free ?? false,
-    durationSeconds: initial?.durationSeconds?.toString() ?? '',
+    // Typed as minutes and seconds, saved as seconds (Decision 326).
+    durationMinutes: initial?.durationSeconds ? Math.floor(initial.durationSeconds / 60).toString() : '',
+    durationSecondsPart: initial?.durationSeconds ? (initial.durationSeconds % 60).toString() : '',
     description: initial?.description ?? '',
     format: initial?.format ?? 'PRERECORDED',
     instructorId: initial?.instructorId ?? '',
@@ -80,12 +82,19 @@ export function LessonFormModal({
       setError(t('curriculum.form.skillRequired'));
       return;
     }
+    const minutes = form.durationMinutes ? Number(form.durationMinutes) : 0;
+    const seconds = form.durationSecondsPart ? Number(form.durationSecondsPart) : 0;
+    if (!Number.isInteger(minutes) || !Number.isInteger(seconds) || minutes < 0 || seconds < 0 || seconds > 59 || minutes * 60 + seconds > 86_400) {
+      setError(t('curriculum.form.durationInvalid'));
+      return;
+    }
+    const durationSeconds = minutes * 60 + seconds;
     try {
       await onSubmit({
         title: form.title.trim(),
         categoryId: form.categoryId || null,
         free: form.free,
-        durationSeconds: form.durationSeconds ? Number(form.durationSeconds) : null,
+        durationSeconds: durationSeconds > 0 ? durationSeconds : null,
         description: form.description.trim() ? form.description : null,
         format: form.format as 'PRERECORDED' | 'LIVE',
         instructorId: form.instructorId || null,
@@ -119,14 +128,14 @@ export function LessonFormModal({
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
           {t('curriculum.form.freeHint')}
         </p>
-        <Field label={t('curriculum.form.duration')} htmlFor="lesson-duration">
-          <TextField
-            type="number"
-            min={1}
-            value={form.durationSeconds}
-            onChange={(e) => setForm((f) => ({ ...f, durationSeconds: e.target.value }))}
-          />
-        </Field>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Field label={t('curriculum.form.durationMinutes')} htmlFor="lesson-duration-minutes">
+            <TextField type="number" min={0} max={1440} value={form.durationMinutes} onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))} />
+          </Field>
+          <Field label={t('curriculum.form.durationSeconds')} htmlFor="lesson-duration-seconds">
+            <TextField type="number" min={0} max={59} value={form.durationSecondsPart} onChange={(e) => setForm((f) => ({ ...f, durationSecondsPart: e.target.value }))} />
+          </Field>
+        </div>
         <Field label={t('curriculum.form.description')} htmlFor="lesson-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>

@@ -213,3 +213,42 @@ export function useSchoolSkillGroups(schoolId: string | null) {
 
   return { groups, isLoading, error };
 }
+
+/** Owner only; the category's lessons move to "No category" (Decision 326). */
+export function useDeleteLessonCategory(schoolId: string) {
+  return useCategoryMutation(schoolId, (id: string) => unwrap(apiClient.DELETE('/v1/curriculum/categories/{id}', { params: { path: { id } } })));
+}
+
+export type LessonComment = components['schemas']['CommentResponseDto'];
+
+/** Every comment on one lesson, oldest first (Decision 326's comments panel). */
+export function useLessonComments(schoolId: string, lessonId: string) {
+  return useQuery({
+    queryKey: ['lesson-comments', lessonId],
+    queryFn: async () => {
+      const items: LessonComment[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/curriculum/lessons/{id}/comments', { params: { path: { schoolId, id: lessonId }, query: { limit: 100, cursor } } }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return items;
+    },
+  });
+}
+
+/** The School owner removes a comment (Decision 326). */
+export function useDeleteLessonComment(schoolId: string, lessonId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => unwrap(apiClient.DELETE('/v1/comments/{id}', { params: { path: { id: commentId } } })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['lesson-comments', lessonId] }),
+        queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+      ]),
+  });
+}

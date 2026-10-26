@@ -62,6 +62,7 @@ describeIfDb('Curriculum review fixes (Decision 324)', () => {
     get: (url: string) => http().get(url).set('Authorization', `Bearer ${token[label]}`),
     post: (url: string, body: object = {}) => http().post(url).set('Authorization', `Bearer ${token[label]}`).send(body),
     patch: (url: string, body: object) => http().patch(url).set('Authorization', `Bearer ${token[label]}`).send(body),
+    delete: (url: string) => http().delete(url).set('Authorization', `Bearer ${token[label]}`),
   });
   const newLesson = async (title: string, extra: object = {}, sid = school.id, skill = skillId) => {
     const res = await as('owner').post(`/v1/schools/${sid}/curriculum/lessons`, { title, format: 'PRERECORDED', skillIds: [skill], free: true, ...extra });
@@ -226,5 +227,21 @@ describeIfDb('Curriculum review fixes (Decision 324)', () => {
     } finally {
       await superuser.school.update({ where: { id: school.id }, data: { archivedAt: null } });
     }
+  });
+
+  it('Decision 326: comments show as a count; coaches read them, only the owner or the author deletes', async () => {
+    const lessonId = await newLesson('Commented');
+    const url = `/v1/schools/${school.id}/curriculum/lessons/${lessonId}/comments`;
+    const first = await as('student').post(url, { body: 'How tight is the grip?' });
+    const second = await as('student').post(url, { body: 'Thanks!' });
+    expect([first.status, second.status]).toEqual([201, 201]);
+    expect((await as('owner').get(`/v1/lessons/${lessonId}`)).body.commentCount).toBe(2);
+    const read = await as('coach').get(url);
+    expect(read.status).toBe(200);
+    expect(read.body.items.map((c: { body: string }) => c.body)).toEqual(['How tight is the grip?', 'Thanks!']);
+    expect((await as('coach').delete(`/v1/comments/${first.body.id}`)).status).toBe(403);
+    expect((await as('owner').delete(`/v1/comments/${first.body.id}`)).status).toBe(204);
+    expect((await as('student').delete(`/v1/comments/${second.body.id}`)).status).toBe(204);
+    expect((await as('owner').get(`/v1/lessons/${lessonId}`)).body.commentCount).toBe(0);
   });
 });

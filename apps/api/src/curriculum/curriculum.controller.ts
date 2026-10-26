@@ -123,6 +123,14 @@ export class CurriculumController {
     return this.curriculumService.renameCategory(user.sub, id, dto.name);
   }
 
+  /** Owner only; the category's lessons move to "No category" (Decision 326). */
+  @ApiNoContentResponse({ description: 'Deleted. Owner only.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('curriculum/categories/:id')
+  async deleteCategory(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.curriculumService.deleteCategory(user.sub, id);
+  }
+
   @ApiOkResponse({ type: LessonCategoryListResponseDto })
   @Put('schools/:schoolId/curriculum/categories/order')
   orderCategories(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: OrderLessonCategoriesDto) {

@@ -119,7 +119,7 @@ describeIfDb('Deleting what was never used (Decision 198)', () => {
 
   it('lessons: the owner deletes one; a coach can\'t', async () => {
     const s = await style('Lessons');
-    const lesson = await post('coach', `/v1/schools/${school}/curriculum/lessons`, { title: 'Armbar drill', format: 'PRERECORDED', skillIds: [s.skill] });
+    const lesson = await post('owner', `/v1/schools/${school}/curriculum/lessons`, { title: 'Armbar drill', format: 'PRERECORDED', skillIds: [s.skill] });
     expect(lesson.status).toBe(201);
     expect((await del('coach', `/v1/lessons/${lesson.body.id}`)).status).toBe(403);
     expect((await del('otherOwner', `/v1/lessons/${lesson.body.id}`)).status).toBe(404);
@@ -130,8 +130,8 @@ describeIfDb('Deleting what was never used (Decision 198)', () => {
   it('skills: deleted when never marked, coming off stripes and lessons; refused once a student was marked or it\'s a lesson\'s only skill', async () => {
     const s = await style('Skills');
     const spare = (await superuser.skill.create({ data: { id: randomUUID(), disciplineId: s.id, schoolId: school, name: 'Spare' } })).id;
-    const both = await post('coach', `/v1/schools/${school}/curriculum/lessons`, { title: 'Two skills', format: 'PRERECORDED', skillIds: [s.skill, spare] });
-    const only = await post('coach', `/v1/schools/${school}/curriculum/lessons`, { title: 'Only spare', format: 'PRERECORDED', skillIds: [spare] });
+    const both = await post('owner', `/v1/schools/${school}/curriculum/lessons`, { title: 'Two skills', format: 'PRERECORDED', skillIds: [s.skill, spare] });
+    const only = await post('owner', `/v1/schools/${school}/curriculum/lessons`, { title: 'Only spare', format: 'PRERECORDED', skillIds: [spare] });
     expect((await del('owner', `/v1/skills/${spare}`)).status).toBe(409); // "Only spare" would have no skill
     await del('owner', `/v1/lessons/${only.body.id}`);
     expect((await del('coach', `/v1/skills/${spare}`)).status).toBe(403);
@@ -198,7 +198,7 @@ describeIfDb('Deleting what was never used (Decision 198)', () => {
     expect((await del('owner', `/v1/disciplines/${taught.id}`)).status).toBe(409);
     await superuser.class.delete({ where: { id: cls.id } });
 
-    await post('coach', `/v1/schools/${school}/curriculum/lessons`, { title: 'Taught lesson', format: 'PRERECORDED', skillIds: [taught.skill] });
+    await post('owner', `/v1/schools/${school}/curriculum/lessons`, { title: 'Taught lesson', format: 'PRERECORDED', skillIds: [taught.skill] });
     const res = await del('owner', `/v1/disciplines/${taught.id}`);
     expect(res.status).toBe(409);
     expect(res.body.error.message).toMatch(/Lessons/);
