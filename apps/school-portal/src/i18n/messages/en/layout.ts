@@ -66,5 +66,6 @@ export const layout = {
     getTheApp: 'Get the app',
     comingSoonFor: 'Coming soon for{br}{platform}',
     copyright: '© {year} ULTM8. All rights reserved.',
+    partOfFranchise: 'Part of {name}',
   },
 };

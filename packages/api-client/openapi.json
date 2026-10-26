@@ -515,6 +515,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/franchise-branding": {
+      "get": {
+        "operationId": "SchoolsController_findFranchiseBranding",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolFranchiseBrandingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students": {
       "get": {
         "operationId": "SchoolsController_findStudents",
@@ -1443,7 +1478,7 @@
             "name": "activity",
             "required": false,
             "in": "query",
-            "description": "Exact match against one element of Franchise.activities.",
+            "description": "Matches one element of Franchise.activities, ignoring capitals.",
             "schema": {
               "type": "string"
             }
@@ -1622,7 +1657,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolListResponseDto"
+                  "$ref": "#/components/schemas/FranchiseMemberSchoolListResponseDto"
                 }
               }
             }
@@ -12389,6 +12424,9 @@
           "ranksToggle": {
             "type": "boolean"
           },
+          "showFranchiseBranding": {
+            "type": "boolean"
+          },
           "defaultLanguage": {
             "type": "string",
             "nullable": true
@@ -12515,6 +12553,7 @@
           "activities",
           "facilities",
           "ranksToggle",
+          "showFranchiseBranding",
           "joinCode",
           "classCancellationPolicy",
           "waitlistClaimWindowMinutes",
@@ -12561,6 +12600,33 @@
         },
         "required": [
           "id"
+        ]
+      },
+      "SchoolFranchiseBrandingResponseDto": {
+        "type": "object",
+        "properties": {
+          "franchiseAllows": {
+            "type": "boolean",
+            "description": "The School belongs to a Franchise whose Owner allows member Schools to show its name and logo."
+          },
+          "schoolShows": {
+            "type": "boolean",
+            "description": "The School Owner's own switch (School.showFranchiseBranding)."
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only when both allow it."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only when both allow it."
+          }
+        },
+        "required": [
+          "franchiseAllows",
+          "schoolShows"
         ]
       },
       "UpdateSchoolDto": {
@@ -12695,6 +12761,10 @@
             "type": "string",
             "nullable": true,
             "description": "X (formerly Twitter)."
+          },
+          "showFranchiseBranding": {
+            "type": "boolean",
+            "description": "Show this School's Franchise name and logo (the Franchise Owner must also allow it)."
           }
         }
       },
@@ -13848,6 +13918,10 @@
           "perHeadcountRate": {
             "type": "number",
             "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
+          },
+          "shareBrandingWithMembers": {
+            "type": "boolean",
+            "description": "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)."
           }
         },
         "required": [
@@ -13948,6 +14022,9 @@
             "type": "number",
             "nullable": true
           },
+          "shareBrandingWithMembers": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string"
           },
@@ -13976,6 +14053,7 @@
           "activities",
           "facilities",
           "feeModel",
+          "shareBrandingWithMembers",
           "createdAt",
           "updatedAt"
         ]
@@ -14041,6 +14119,10 @@
             "type": "number",
             "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
           },
+          "shareBrandingWithMembers": {
+            "type": "boolean",
+            "description": "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)."
+          },
           "mobileNumber": {
             "type": "string",
             "nullable": true
@@ -14094,6 +14176,67 @@
         },
         "required": [
           "schoolsAlreadyBillingCount"
+        ]
+      },
+      "FranchiseMemberSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseFeeSubscriptionStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ],
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the School has been closed."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ]
+      },
+      "FranchiseMemberSchoolListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseMemberSchoolResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CreateCoachInviteDto": {
