@@ -3,10 +3,10 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { SchoolsService } from '../schools/schools.service';
-import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
-import { escapeLike } from '../../common/search/name-search';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
+import { BranchesQueryDto } from './dto/branches-query.dto';
+import { compareBranches, matchesBranchFilter, paginateSorted } from './branch-list-filter';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { countBranchDependents, describeBranchDependents, hasBranchDependents } from './branch-dependents';
 
@@ -54,42 +54,36 @@ export class BranchesService {
    * Owner/Manager (sees every Branch under their School) or a Branch Staff grant
    * matching that one Branch (branch_tenant_isolation, migration.sql).
    *
-   * `city` — additive, optional filter (School Portal's Branches page City filter).
-   * Branch has no dedicated city column (see BranchesQueryDto's own header comment),
-   * so this is a case-insensitive substring match against `address`. Omitted entirely,
-   * it behaves exactly as before this filter existed. */
-  /** Decision 226 — `includeArchived` (default false) excludes archived Branches
+   * Decision 294 — sorted by name, filtered by `city` / `q` / `country`
+   * ignoring case and accents, and paged in memory (branch-list-filter.ts
+   * says why). Each row also carries its home-branch student count and
+   * upcoming class count for the list's overview columns.
+   *
+   * Decision 226 — `includeArchived` (default false) excludes archived Branches
    * from the default view, same "excluded by default, visible via a filter"
-   * convention applied to every one of the 7 entities this build covers.
-   * Decision 278 — `search` (header Global Search): case-insensitive substring on
-   * `name`, one more condition on the same RLS-scoped query; never widens it. */
-  async findAllForSchool(
-    callerId: string,
-    schoolId: string,
-    cursor?: string,
-    limit?: number,
-    city?: string,
-    includeArchived?: boolean,
-    search?: string,
-  ): Promise<CursorPage<{ id: string }>> {
+   * convention applied to every one of the 7 entities this build covers. */
+  async findAllForSchool(callerId: string, schoolId: string, query: BranchesQueryDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
-        (args) =>
-          tx.branch.findMany({
-            ...args,
-            where: {
-              schoolId,
-              ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}),
-              // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
-              ...(search ? { name: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
-              ...(includeArchived ? {} : { archivedAt: null }),
-            },
-          }),
-        cursor,
-        limit,
-      ),
-    );
+    const { rows, students, classes } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const rows = await tx.branch.findMany({ where: { schoolId, ...(query.includeArchived ? {} : { archivedAt: null }) } });
+      const branchIds = rows.map((r) => r.id);
+      const [students, classes] = await Promise.all([
+        tx.studentHomeBranch.groupBy({ by: ['branchId'], where: { branchId: { in: branchIds } }, _count: { _all: true } }),
+        tx.class.groupBy({
+          by: ['branchId'],
+          where: { branchId: { in: branchIds }, archivedAt: null, startDate: { gte: new Date() } },
+          _count: { _all: true },
+        }),
+      ]);
+      return { rows, students, classes };
+    });
+    const studentCounts = new Map(students.map((g) => [g.branchId, g._count._all]));
+    const classCounts = new Map(classes.map((g) => [g.branchId, g._count._all]));
+    const sorted = rows
+      .filter((b) => matchesBranchFilter(b, query))
+      .sort(compareBranches)
+      .map((b) => ({ ...b, studentCount: studentCounts.get(b.id) ?? 0, upcomingClassCount: classCounts.get(b.id) ?? 0 }));
+    return paginateSorted(sorted, query.cursor, query.limit);
   }
 
   async findOne(callerId: string, branchId: string) {

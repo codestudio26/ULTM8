@@ -4188,8 +4188,45 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        BranchListItemDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
+            id: string;
+            schoolId: string;
+            name: string;
+            address?: string | null;
+            contactPhone?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
+            currencyOverride?: string | null;
+            type?: string | null;
+            activities: string[];
+            facilities: string[];
+            defaultLanguage?: string | null;
+            description?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
+            /** @description Decision 226 — set when this Branch has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise. */
+            purgedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Students whose home branch this is. */
+            studentCount: number;
+            /** @description Classes at this Branch that have not started yet (archived ones left out). */
+            upcomingClassCount: number;
+        };
         BranchListResponseDto: {
-            items: components["schemas"]["BranchResponseDto"][];
+            items: components["schemas"]["BranchListItemDto"][];
             nextCursor?: string | null;
         };
         UpdateBranchDto: {
@@ -7401,8 +7438,12 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
-                /** @description Case-insensitive substring match against Branch.address (no dedicated city column exists). */
+                /** @description Exact city, ignoring case and accents, against the structured address city (Decision 276). A Branch with no structured address matches when its free-text address contains the city. */
                 city?: string;
+                /** @description Decision 294 — Branch name, city or postcode containing this text, ignoring case and accents. */
+                q?: string;
+                /** @description Decision 294 — ISO 3166-1 alpha-2 country code of the structured address. */
+                country?: string;
                 /** @description Include archived Branches too (excluded by default). */
                 includeArchived?: boolean;
                 /** @description Case-insensitive substring match against Branch.name. */

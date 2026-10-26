@@ -190,6 +190,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Branch pickers across the portal, except on a record that already uses
   one. The 90-day purge now rechecks before deleting, so students, staff or
   classes added to an archived Branch are never silently removed with it.
+- **Branches list: better filters, every Branch shown** (Decision 294) — the
+  City filter is now a dropdown of your own cities with counts, and matches the
+  city only (it no longer finds "London Road" in Manchester), ignoring case and
+  accents. A new search box finds a Branch by name, city or postcode, and a
+  Country filter appears when a School has Branches in more than one country.
+  Every Branch now shows, sorted A to Z, on the Branches page and in every
+  Branch picker (before, only the first 20 did). Each Branch shows its number
+  of Students and upcoming classes.
 - **Bulk promote can finish after a failure** (Decision 284) — if a large
   batch stops part-way, the group that failed is sent again once by itself,
   then the window offers "Try the remaining N again" or "Stop here and see the
