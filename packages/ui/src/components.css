@@ -514,6 +514,15 @@
   background: var(--bg-danger);
   color: var(--text-danger);
 }
+.ultm8-badge--warning {
+  background: var(--bg-warning);
+  color: var(--text-warning);
+}
+/* Soft blue: "Promotion to decide", "Ready for Adult program" (DESIGN.md → Tags). */
+.ultm8-badge--info {
+  background: #e5ecf6;
+  color: #2b4f80;
+}
 
 /* Spinner */
 .ultm8-spinner {
@@ -1342,4 +1351,247 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   column-gap: var(--space-3);
+}
+
+/* Grading (DESIGN.md → "Grading screens"). ------------------------------------ */
+
+/* Rank picker: our own drop-down of ranks with belt pictures ("Drop-downs"). */
+.ultm8-rank-picker {
+  position: relative;
+}
+.ultm8-rank-picker__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--form-field-bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-footnote);
+  text-align: left;
+  cursor: pointer;
+}
+.ultm8-rank-picker__field:focus-visible,
+.ultm8-rank-picker__field--open {
+  outline: none;
+  border-color: var(--color-accent-500);
+}
+.ultm8-rank-picker__value {
+  flex: 1;
+  min-width: 0;
+}
+.ultm8-rank-picker__chevron {
+  color: var(--text-secondary);
+}
+/* Opens under the field and pushes the content down, so a dialog never clips it. */
+.ultm8-rank-picker__list {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  list-style: none;
+  max-height: 264px;
+  overflow-y: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+}
+.ultm8-rank-picker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: 10px;
+  font-size: var(--font-size-footnote);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.ultm8-rank-picker__option--active {
+  background: var(--color-neutral-100);
+}
+.ultm8-rank-picker__option--selected {
+  background: #def2e2;
+  color: var(--text-primary);
+}
+.ultm8-rank-picker__option--selected > span[aria-hidden='true'] {
+  color: #3a7556;
+}
+
+/* Board: columns are soft grey trays with white cards. */
+.ultm8-board-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+  margin-top: var(--space-4);
+}
+.ultm8-board-layout--with-panel {
+  grid-template-columns: minmax(0, 1fr) var(--inspector-width);
+}
+.ultm8-board-panel {
+  position: sticky;
+  top: var(--space-4);
+}
+.ultm8-board-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+.ultm8-board-tray {
+  background: var(--color-neutral-100);
+  border-radius: 14px;
+  padding: var(--space-3);
+}
+.ultm8-board-group {
+  background: var(--color-neutral-100);
+  border-radius: 14px;
+  padding: var(--space-3);
+  border-left: 4px solid var(--color-neutral-300);
+  margin-bottom: var(--space-4);
+}
+.ultm8-board-group--ready {
+  border-left-color: #9fd3b2;
+}
+.ultm8-board-group--getting-there {
+  border-left-color: #a8c5ea;
+}
+.ultm8-board-group--just-starting {
+  border-left-color: #f4c7a1;
+}
+.ultm8-board-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--space-3);
+  cursor: pointer;
+}
+.ultm8-board-card--open {
+  box-shadow: 0 0 0 2px var(--color-accent-500);
+}
+.ultm8-board-card--ticked {
+  background: #f4faf6;
+}
+.ultm8-board-row {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1.2fr) minmax(160px, 1fr) minmax(120px, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .ultm8-board-layout--with-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ultm8-board-panel {
+    position: static;
+  }
+  .ultm8-board-row {
+    grid-template-columns: auto minmax(0, 1fr) minmax(80px, 0.6fr);
+  }
+  .ultm8-board-row__belt,
+  .ultm8-board-row__actions {
+    display: none;
+  }
+}
+/* A progress bar is a button that opens the promote dialog. */
+.ultm8-progress-button {
+  display: block;
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.ultm8-progress-button:hover,
+.ultm8-progress-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #def2e2;
+}
+.ultm8-progress-button[disabled] {
+  cursor: default;
+  box-shadow: none;
+}
+.ultm8-progress-track {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: #e1e3e5;
+  overflow: hidden;
+}
+.ultm8-progress-fill {
+  display: block;
+  height: 100%;
+}
+.ultm8-progress-fill--just-starting {
+  background: #f4c7a1;
+}
+.ultm8-progress-fill--getting-there {
+  background: #a8c5ea;
+}
+.ultm8-progress-fill--ready {
+  background: #9fd3b2;
+}
+/* The minimised Selection panel: a floating pill at the bottom right. */
+.ultm8-selection-pill {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.ultm8-board--pill-space {
+  padding-bottom: 96px;
+}
+.ultm8-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #d3d9df;
+  color: var(--color-neutral-700);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.ultm8-round-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+.ultm8-tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.ultm8-tabs__tab {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium, 500);
+}
+.ultm8-tabs__tab--active {
+  color: var(--text-primary);
+  border-bottom-color: var(--color-success);
 }

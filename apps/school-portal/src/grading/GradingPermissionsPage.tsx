@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner } from '@ultm8/ui';
+import { GradingTabs } from './GradingTabs';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -74,6 +75,7 @@ export function GradingPermissionsPage() {
         title={t('grading.permissions.title')}
         subtitle={t('grading.permissions.subtitle')}
       />
+      <GradingTabs />
       {staff.length === 0 ? (
         <Card>
           <EmptyState title={t('grading.permissions.noCoachesTitle')} description={t('grading.permissions.noCoachesDescription')} />

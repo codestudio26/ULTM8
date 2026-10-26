@@ -471,7 +471,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - **In the editor:** "Level and steps", "Badge colour" (no secondary or tag colour, no stripes), "Steps of Beginner", "+ Add step", "Delete step".
   - The page title stays "Add rank".
 - **Belt picture.** Always drawn like `BeltChip`:
-  - The belt colour. A two-tone belt has its **second colour as a band through the middle** (the middle 30%, from 35% to 65%), like a real Grey/White or Grey/Black kids' belt (product owner, 21 Oct 2026). It is never split top and bottom. The live `BeltChip` still splits top/bottom and must change when the redesign is built.
+  - The belt colour. A two-tone belt has its **second colour as a band through the middle** (the middle 30%, from 35% to 65%), like a real Grey/White or Grey/Black kids' belt (product owner, 21 Oct 2026). It is never split top and bottom. The live `BeltChip` draws it this way since the Board redesign (26 Oct 2026).
   - A tag with the stripes: 3px stripes with 2px gaps.
   - An 8px tip in the belt colour.
   - Sizes: 72 × 16 px in rows and cards; 168 × 30 px as the large picture in a panel or at the top of a student's style card. The rank name always sits next to it.

@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading Board redesign** (DESIGN.md → "Grading screens"):
+  - **Grading** is one menu item with tabs: Board · Styles & Belts ·
+    Permissions (Permissions moved to `/grading/permissions`; the old address
+    still works).
+  - **Grid or Rows**, with Ready to Grade on top in Rows, and **Sort: Belt ·
+    Name** with a direction inside each stage.
+  - **Student panel:** click a card to see Toward {next rank} with its ticks,
+    the skills for the next rank, the last 4 history entries, Promote and the
+    student page. **Selection panel** for ticked students, which shrinks to a
+    pill.
+  - **Click any progress bar to promote** that student, with our own
+    "Promote to" drop-down showing belt pictures (also in Move down and
+    Verify).
+  - **Promotion fee on the board:** "Waiting for fee", "Fee declined" and
+    "Promotion to decide" tags; the owner waives or cancels a fee, and a coach
+    then promotes or doesn't.
+  - Progress bars take their level's colour; a two-tone belt has its second
+    colour as a band through the middle.
 - **Booking and schedule rules on screen** (Decision 322):
   - **School page:** "Check-in opens (minutes before class)" and "Cancelling
     after a class starts" (no refund once started — the default — refund

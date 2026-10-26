@@ -14,7 +14,7 @@ type NavItem = { label: TranslationKey; to: string };
  * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
 const COACH_NAV: NavItem[] = [
   { label: 'layout.nav.dashboard', to: '/coach' },
-  { label: 'layout.nav.gradingBoard', to: '/grading' },
+  { label: 'layout.nav.grading', to: '/grading' },
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
 /** Read-only for coaches and Branch Staff, so they can check what each belt
@@ -36,8 +36,8 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.disciplines', to: '/disciplines' },
   { label: 'layout.nav.instructors', to: '/instructors' },
   { label: 'layout.nav.students', to: '/students' },
-  { label: 'layout.nav.gradingBoard', to: '/grading' },
-  { label: 'layout.nav.gradingPermissions', to: '/grading-permissions' },
+  // Board, Styles & Belts and Permissions are tabs inside Grading.
+  { label: 'layout.nav.grading', to: '/grading' },
   { label: 'layout.nav.classes', to: '/classes' },
   { label: 'layout.nav.curriculum', to: '/curriculum' },
   { label: 'layout.nav.timetable', to: '/timetable' },
