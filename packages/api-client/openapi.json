@@ -17212,10 +17212,15 @@
         "properties": {
           "activeCount": {
             "type": "number"
+          },
+          "subscriberCount": {
+            "type": "number",
+            "description": "Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334)."
           }
         },
         "required": [
-          "activeCount"
+          "activeCount",
+          "subscriberCount"
         ]
       },
       "MembershipPlanPriceChangeResponseDto": {

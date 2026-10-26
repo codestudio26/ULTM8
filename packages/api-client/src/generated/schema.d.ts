@@ -5481,6 +5481,8 @@ export interface components {
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
+            /** @description Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334). */
+            subscriberCount: number;
         };
         MembershipPlanPriceChangeResponseDto: {
             id: string;
