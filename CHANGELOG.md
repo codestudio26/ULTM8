@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading tabs complete** (DESIGN.md → "Grading screens"): Board · Styles &
+  Belts · Skills · Permissions · Settings.
+  - **Settings:** every style's Grading Board columns, the promotion fee and
+    "Allow grading before the fee is paid" (owner only), and "Open mat counts
+    toward hours", with an "About this setting" panel and one Discard / Save
+    changes bar.
+  - **Skills:** pick a style, then its skills with how many grades require
+    each and how many lessons teach it; add, edit, reorder and delete (owner).
+  - The Disciplines pages carry the tabs as Styles & Belts.
 - **Grading Board redesign** (DESIGN.md → "Grading screens"):
   - **Grading** is one menu item with tabs: Board · Styles & Belts ·
     Permissions (Permissions moved to `/grading/permissions`; the old address

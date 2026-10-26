@@ -44,7 +44,7 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 
 | Task | Needs backend |
 |---|---|
-| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — · **Board, Styles & Belts, Permissions built** (26 Oct 2026); Skills and Settings come with their pages |
+| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — · ✅ **built** (26 Oct 2026) |
 | Grid / Rows views, sort by belt or name inside each stage | — · ✅ **built** (26 Oct 2026) |
 | Right-hand student panel (rank, progress, skills, history) and the Selection panel / pill | — · ✅ **built** (26 Oct 2026; avatars are initials until B6) |
 | Click a progress bar to promote | — · ✅ **built** (26 Oct 2026) |
@@ -52,7 +52,7 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Promote window and done list with belts; printable report with photos and belts | B6 |
 | Avatars on the board and panels | B6 |
 | Kids · Adult switch, "Adult program" in Promote to, "Ready for Adult program" tag | B1 |
-| Grading → Settings page | B2, B10, B11 |
+| Grading → Settings page | B2, B10, B11 · **built for what exists** (26 Oct 2026): board columns per style, promotion fee (owner), open mat hours; Ready for Adult age and Belts/Levels wait for B1/B4, and the right is still named "Change board %" until B2 renames it |
 | Belt editor: price per grade, shown only while the fee is on | B10 |
 | Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 · ✅ **built** (26 Oct 2026) |
 | Student page: progress breakdown per requirement, and hours trained | B11 |
