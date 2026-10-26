@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Billing stress-test fixes** (`docs/handover/BILLING-STRESS-TEST.md`) —
+  confirming cash payments no longer fails with "busy" when several are
+  confirmed at once (5,917 of 6,071 failed in the test); a card payment that
+  fails once and then succeeds now gives the membership instead of staying
+  Failed with the money taken; and Stripe's payment notices are no longer
+  rate-limited, so card purchases settle at once in a busy hour instead of
+  waiting on Stripe's retries.
+
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

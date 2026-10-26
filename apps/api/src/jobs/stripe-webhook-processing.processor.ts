@@ -52,6 +52,10 @@ type DisputeSideEffects = {
   freedClassIds: string[];
 };
 
+/** Card Transactions a payment_intent.succeeded may still settle. FAILED is
+ * included because a failed attempt is not final (handlePaymentIntentSucceeded). */
+const SETTLEABLE: Transaction['status'][] = ['PENDING', 'FAILED'];
+
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
  * 55 §10.2's confirmed webhook flow; signature verification and enqueueing happen
@@ -416,7 +420,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return;
     }
-    if (transaction.status !== 'PENDING') {
+    // FAILED is not final: payment_intent.payment_failed fires for each failed
+    // attempt, and the payer can try again (another card in Checkout) on the
+    // same PaymentIntent, which then succeeds. Before, that payment stayed
+    // FAILED with no Membership though the money was taken (billing stress
+    // test, 26 Oct 2026).
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already settled by an earlier delivery of this same event, or a duplicate
       // payment_intent.succeeded Stripe occasionally sends for the same intent —
       // idempotent no-op, not an error.
@@ -424,7 +433,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
 
     const updateResult = await tx.transaction.updateMany({
-      where: { id: transaction.id, status: 'PENDING' },
+      where: { id: transaction.id, status: { in: SETTLEABLE } },
       data: { status: 'SUCCESSFUL' },
     });
     if (updateResult.count === 0) {
@@ -543,7 +552,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // drop a refund that's genuinely owed.
       throw new Error(`resolveMembershipCollision: no Transaction found for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) — this should be unreachable.`);
     }
-    if (transaction.status !== 'PENDING') {
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already resolved by an earlier delivery of this same event (a BullMQ retry,
       // or a genuine Stripe redelivery) — idempotent no-op.
       this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
@@ -576,7 +585,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     await this.prismaJobs.$transaction(async (tx) => {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
       await tx.transaction.updateMany({
-        where: { id: transaction.id, status: 'PENDING' },
+        where: { id: transaction.id, status: { in: SETTLEABLE } },
         data: { status: 'REFUNDED', refundedAmount: transaction.amount },
       });
     });

@@ -141,7 +141,9 @@ const upcoming = (classId) => db.booking.count({ where: { classId, status: 'UPCO
   ok('A9b OFF + CANCEL removes every upcoming class and refunds the bookings', off.status === 200 && left.length === 0 && after.status >= 400 && cancelled === 1, `PATCH ${off.status}; ${left.length} upcoming classes left; booking one now: ${after.status}; refunded bookings ${cancelled}`);
   // Slot 1: move the start time with MOVE; bookings follow.
   let cls1 = await future(s.slots[1]);
-  await call('A9:book', 'POST', `/classes/${cls1[0].id}/book`, subsOf(s)[92].tok, {});
+  // Book a class from tomorrow on: moving to an earlier time can put today's class in the past, which is cancelled by design (H8a).
+  const tomorrowCls = cls1.find((c) => c.startDate.getTime() > now + 24 * 3600e3) ?? cls1[0];
+  await call('A9:book', 'POST', `/classes/${tomorrowCls.id}/book`, subsOf(s)[92].tok, {});
   const mv = await call('A9:move', 'PATCH', `/timetable/${s.slots[1]}`, s.owner.tok, { startTime: '06:30', endTime: '07:30', capacity: 30, bookedClasses: 'MOVE' });
   cls1 = await future(s.slots[1]);
   const times = new Set(cls1.map((c) => c.startDate.toISOString().slice(11, 16)));
