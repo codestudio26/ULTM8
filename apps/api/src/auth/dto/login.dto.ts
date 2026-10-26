@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, Matches } from 'class-validator';
+import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 
 /**
  * Login is email + passcode only (Spec §8.1: "Email + a 6-digit Passcode"; Decision 72:
@@ -7,6 +8,7 @@ import { IsEmail, Matches } from 'class-validator';
  */
 export class LoginDto {
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

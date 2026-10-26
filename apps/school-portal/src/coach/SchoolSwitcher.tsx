@@ -14,13 +14,12 @@ import { useT } from '../i18n/I18nProvider';
  * that follow-up, closed the same way.
  *
  * A caller who owns at least one School always gets the Owner nav, never the
- * Coach one (`Shell.tsx`'s own `isCoachOnly = !useOwnedSchoolId() && ...`), so
+ * Coach one (`useIsCoachOnly()`, the test Shell.tsx picks the nav with), so
  * the two switcher modes below are mutually exclusive in practice — this
  * component picks whichever one applies rather than rendering two controls.
  * Renders nothing for the common case (one School, or none, on whichever side
- * applies) — same "don't clutter the header for the normal case" judgment
- * `TopBar`'s own disabled search box doesn't apply, but the language picker's
- * `languages?.length` guard does.
+ * applies) — same "don't clutter the header for the normal case" judgment the
+ * language picker's `languages?.length` guard makes.
  */
 export function SchoolSwitcher() {
   const t = useT();

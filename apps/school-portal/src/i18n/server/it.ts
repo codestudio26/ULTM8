@@ -378,4 +378,10 @@ export const serverMessages: Record<string, string> = {
   "{v1} is not Cash/Bank Transfer-eligible.": "{v1} non è idoneo al pagamento in contanti o con bonifico bancario.",
   "{v1} student{v2} a rank in this style, so it can't be deleted.": "Alcuni allievi hanno un grado in questo stile ({v1} student{v2}), quindi non può essere eliminato.",
   "{v1} student{v2} this belt, so it can't be {v3}.": "Alcuni allievi hanno questa cintura ({v1} student{v2}), quindi non può essere eliminata o archiviata ({v3}).",
+  "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Questo istruttore è archiviato. Ripristinalo nella pagina Istruttori o scegli un altro istruttore.",
+  "This person is no longer an instructor at this School.": "Questa persona non è più istruttore in questa scuola.",
+  "This instructor hasn't uploaded a certification.": "Questo istruttore non ha caricato alcuna certificazione.",
+  "Choose a different instructor to take over.": "Scegli un altro istruttore che subentri.",
+  "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Il suo ruolo di istruttore vale solo per alcune sedi, quindi il profilo non può valere per tutta la scuola. Scegli la sua sede.",
+  "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Il suo ruolo di istruttore non copre questa sede. Assegnagli prima il ruolo lì nella pagina Staff, oppure scegli la sua sede.",
 };

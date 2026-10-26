@@ -9,6 +9,7 @@ import { messages as english, type EnglishMessages } from './messages/en-GB';
 import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './locales';
 import { setFormatLocale } from './format';
 import { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
+import { translateByCode } from './server/codes';
 import type { Message, MessageKey, MessageTree, MessageVars, PartialMessages } from './types';
 
 /**
@@ -158,7 +159,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   );
   // Error messages are rewritten where every request's error is built
   // (@ultm8/api-client's unwrap), so each page's own error display needs no change.
-  setApiErrorMessageTranslator(locale === DEFAULT_LOCALE ? null : serverText.error);
+  // Coded booking/schedule errors get the portal's own wording in every language.
+  setApiErrorMessageTranslator((status, code, message) =>
+    translateByCode(t as (key: string, vars?: MessageVars) => string, code, message) ?? serverText.error(status, code, message),
+  );
 
   // The browser tab's title, which index.html starts in English.
   useEffect(() => {

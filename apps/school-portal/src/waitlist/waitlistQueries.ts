@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -15,5 +15,16 @@ export function useClassWaitlist(classId: string | null) {
     queryKey: ['classWaitlist', classId],
     queryFn: () => unwrap(apiClient.GET('/v1/classes/{id}/waitlist', { params: { path: { id: classId! } } })),
     enabled: !!classId,
+  });
+}
+
+/** POST /classes/:id/waitlist on a Student's behalf (Decision 103) — offered when
+ * a Class is full (Decision 322). */
+export function useJoinWaitlist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, studentId }: { classId: string; studentId: string }) =>
+      unwrap(apiClient.POST('/v1/classes/{id}/waitlist', { params: { path: { id: classId } }, body: { studentId } })),
+    onSuccess: (_entry, { classId }) => queryClient.invalidateQueries({ queryKey: ['classWaitlist', classId] }),
   });
 }

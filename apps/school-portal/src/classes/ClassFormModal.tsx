@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { ClassResponse } from './classQueries';
@@ -189,7 +189,7 @@ export function ClassFormModal({
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('classes.form.wholeSchool') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('classes.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
         </Field>
         <Field label={t('classes.form.instructorLabel')} htmlFor="class-instructor">
@@ -198,7 +198,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('classes.form.unassigned') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>

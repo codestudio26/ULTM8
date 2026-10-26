@@ -378,4 +378,10 @@ export const serverMessages: Record<string, string> = {
   "{v1} is not Cash/Bank Transfer-eligible.": "{v1} нельзя оплатить наличными или банковским переводом.",
   "{v1} student{v2} a rank in this style, so it can't be deleted.": "Учеников с рангом в этом стиле: {v1}{v2}, поэтому его нельзя удалить.",
   "{v1} student{v2} this belt, so it can't be {v3}.": "Учеников с этим поясом: {v1}{v2}, поэтому действие «{v3}» недоступно.",
+  "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Этот инструктор в архиве. Верните его из архива на странице «Инструкторы» или выберите другого инструктора.",
+  "This person is no longer an instructor at this School.": "Этот человек больше не инструктор в этой школе.",
+  "This instructor hasn't uploaded a certification.": "Этот инструктор не загрузил сертификат.",
+  "Choose a different instructor to take over.": "Выберите другого инструктора, который примет занятия.",
+  "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Роль инструктора действует только в некоторых филиалах, поэтому профиль не может относиться ко всей школе. Выберите филиал.",
+  "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Роль инструктора не распространяется на этот филиал. Сначала выдайте роль там на странице «Персонал» или выберите нужный филиал.",
 };

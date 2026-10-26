@@ -7,6 +7,7 @@ import { useNotifications } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
 import { AccountMenu } from './AccountMenu';
+import { GlobalSearch } from './GlobalSearch';
 import type { RoleGrantClaim } from '../auth/types';
 import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
 
@@ -37,10 +38,8 @@ function nativeName(code: string, fallback: string): string {
  * block opens the account menu (AccountMenu.tsx); language is a real,
  * working preference backed by the confirmed GET /settings/languages list —
  * picking one saves it to the profile and switches the portal's text
- * (I18nProvider, Decision 273). Search has no backing feature
- * anywhere in this codebase (no search endpoint exists anywhere) — shown
- * disabled rather than omitted or faked, so it reads as "not built yet," not
- * broken.
+ * (I18nProvider, Decision 273). The search box is the Global Search
+ * (GlobalSearch.tsx, Decision 278).
  */
 export function TopBar() {
   const { claims } = useAuth();
@@ -74,13 +73,7 @@ export function TopBar() {
       </span>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <input
-          disabled
-          className="ultm8-input"
-          placeholder={t('layout.searchPlaceholder')}
-          aria-label={t('layout.searchAria')}
-          style={{ width: 200, minHeight: 40 }}
-        />
+        <GlobalSearch />
 
         <Link
           to="/notifications"

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useIsCoachOnly } from '../auth/AuthContext';
 import type { CurrentUserResponse } from '../auth/currentUserQueries';
 import { Avatar } from '../lib/Avatar';
 import { useT } from '../i18n/I18nProvider';
@@ -21,8 +21,7 @@ import { useT } from '../i18n/I18nProvider';
 export function AccountMenu({ me, roleLabel }: { me: CurrentUserResponse; roleLabel: string }) {
   const t = useT();
   const { logout } = useAuth();
-  const coachSchoolId = useCoachSchoolId();
-  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const isCoachOnly = useIsCoachOnly();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);

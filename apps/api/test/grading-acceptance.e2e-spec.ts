@@ -22,6 +22,7 @@ import { randomUUID } from 'crypto';
 import { AddressInfo } from 'net';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { giveLiveMemberships } from './live-membership';
 
 const hasDb = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL_APP && process.env.JWT_ACCESS_SECRET);
 const describeIfDb = hasDb ? describe : describe.skip;
@@ -201,6 +202,7 @@ async function mkStudents(n: number, names?: (i: number) => [string, string]): P
     const chunk = rows.slice(i, i + 1000);
     await su.user.createMany({ data: chunk });
     await su.roleGrant.createMany({ data: chunk.map((u) => ({ id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id })) });
+    await giveLiveMemberships(su, school.id, chunk.map((u) => u.id));
   }
   return rows.map((r) => r.id);
 }

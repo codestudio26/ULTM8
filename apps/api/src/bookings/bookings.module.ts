@@ -42,5 +42,7 @@ import { WaitlistService } from './waitlist.service';
   imports: [TenantsModule, QueueModule, GuardiansModule, SubscriptionPlansModule, PaymentsModule],
   controllers: [BookingsController, WaitlistController],
   providers: [BookingsService, WaitlistService],
+  // TimetableService cancels bookings when an owner cancels a slot's Classes (Decision 322).
+  exports: [BookingsService],
 })
 export class BookingsModule {}

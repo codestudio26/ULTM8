@@ -42,9 +42,9 @@ const LEGAL_LABELS: Record<string, TranslationKey> = {
  * footer's Support column shows the School's own real Contact info instead).
  *
  * The zip search and the two "Get the app" QR tiles are deliberately
- * decorative only, same posture as `TopBar.tsx`'s own disabled Global Search
- * input: no cross-School "find a school" search exists anywhere in this
- * codebase (Global Search is still its own separate, unscoped item — see
+ * decorative only: no cross-School "find a school" search exists anywhere in
+ * this codebase (the header's Global Search, Decision 278, only searches the
+ * caller's own records — see
  * `docs/decisions/DRAFT-global-search-and-footer-scoping.md` §A), and
  * `apps/student` isn't published to an app store yet (Decision 256's own
  * disclosed gap) — plain placeholder boxes, not real/scannable QR codes

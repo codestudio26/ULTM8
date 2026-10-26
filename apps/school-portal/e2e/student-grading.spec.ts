@@ -32,8 +32,8 @@ test('shows the current rank, progress toward the next rank and the skills for i
   const card = bjj(page);
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
   await expect(card.getByRole('heading', { name: 'Toward White 2 — 100%' })).toBeVisible();
-  await expect(card.getByText('Classes: 3 of 3')).toBeVisible();
-  await expect(card.getByText('Skills: 0 of 1 signed off')).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Classes: 3 of 3' })).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Skills signed off: 0 of 1' })).toBeVisible();
   await expect(card.getByRole('link', { name: 'Armbar from guard' })).toBeVisible();
   await expect(card.getByText('Ready to grade')).toHaveCount(0);
 });
@@ -44,16 +44,19 @@ test('signing off the last skill makes the student ready to grade', async ({ pag
   await card.getByRole('button', { name: 'Armbar: Not started. Change to Learning' }).click();
   await card.getByRole('button', { name: 'Armbar: Learning. Change to Signed off' }).click();
   await expect(card.getByRole('button', { name: 'Armbar: Signed off. Change to Not started' })).toBeVisible();
-  await expect(card.getByText('Skills: 1 of 1 signed off')).toBeVisible();
+  await expect(card.getByRole('listitem', { name: 'Skills signed off: 1 of 1' })).toBeVisible();
   await expect(card.getByText('Ready to grade')).toBeVisible();
 });
 
 test('grading without the skill needs the acknowledgement, and is recorded', async ({ page }) => {
+  // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
+  const { db } = await import('./fixtures');
+  await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
   await page.goto(`/students/${s.student.id}`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Grade' }).click();
   const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
-  await expect(dialog.getByLabel('New rank')).toHaveValue(s.rung['White 2'].id);
+  await expect(dialog.getByLabel('New rank')).toHaveText(/White 2/);
   const submit = dialog.getByRole('button', { name: 'Award stripe' });
   await expect(submit).toBeDisabled();
   await dialog.getByLabel(/Grade without all skills signed off/).check();
@@ -67,6 +70,15 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
   await expect(history.getByText('White 1 → White 2')).toBeVisible();
   await expect(history.getByText('Graded without all skills signed off (acknowledged).')).toBeVisible();
   await expect(history.getByText('Note: Great roll today')).toBeVisible();
+});
+
+test('an inactive student can\'t be graded up, and the dialog says why (Decision 283)', async ({ page }) => {
+  await page.goto(`/students/${s.student.id}`);
+  await bjj(page).getByRole('button', { name: 'Grade' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
+  await dialog.getByLabel(/Grade without all skills signed off/).check();
+  await dialog.getByRole('button', { name: 'Award stripe' }).click();
+  await expect(dialog.getByText(/Only active students can be graded/)).toBeVisible();
 });
 
 test('a style that requires skills blocks grading until they are signed off', async ({ page }) => {
@@ -110,7 +122,7 @@ test('a student with no rank gets a first rank', async ({ page }) => {
   await expect(card.getByText('No rank in this style yet.')).toBeVisible();
   await card.getByRole('button', { name: 'Give first rank' }).click();
   const dialog = page.getByRole('dialog', { name: 'Give a first rank — BJJ' });
-  await expect(dialog.getByLabel('New rank')).toHaveValue(s.rung['White 0'].id);
+  await expect(dialog.getByLabel('New rank')).toHaveText(/White 0/);
   await dialog.getByRole('button', { name: 'Grade' }).click();
   await expect(dialog).toBeHidden();
   await expect(card.getByText('White 0', { exact: true })).toBeVisible();

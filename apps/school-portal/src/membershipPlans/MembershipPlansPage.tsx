@@ -27,9 +27,8 @@ const TYPE_LABELS: Record<string, TranslationKey> = {
 
 /** Small, page-local summary tile — not promoted to @ultm8/ui since nothing else
  * uses this shape yet. `proposed` renders it visibly inert (dashed border, muted
- * value, an aria-label saying why) rather than omitted — same convention
- * TopBar's disabled search input already established for "not built yet, not
- * broken" (see that component's own header comment). */
+ * value, an aria-label saying why) rather than omitted, so it reads as "not
+ * built yet," not broken. */
 function StatTile({
   testId,
   label,

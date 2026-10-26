@@ -22,10 +22,207 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   languages; Register and Student update pick Language and Currency from the
   real lists (USD, GBP, EUR and BRL first) instead of free text; and the
   Notifications page's Delete and Clear all read text is translated.
+- **Student Ranks tab: breakdown, hours and the promotion fee** (DESIGN.md →
+  "Hours trained: logged, not graded" and "Promotion fee"):
+  - **Breakdown** under "Toward {rank}": classes, days at this rank and skills
+    signed off, each with ✓ or ○, "x of y", its own % and bar, and whether it
+    counts toward the % (classes; days on a time-only rank) or is "Needed too,
+    not in the %".
+  - **Hours trained:** hours at this rank and in all, "A record only. Grading
+    doesn't use hours."
+  - **Log a class** (no longer "+1"): pick a class of this style from the last
+    7 days, whose length is logged, or "No class (enter the time)", 60 minutes
+    by default. The API's class list gains optional `disciplineId`,
+    `startsFrom` and `startsTo` filters for it.
+  - **Promotion fee box**, as on the board: "Waiting for fee" / "Fee declined" /
+    "Promotion to decide" first among the tags; the owner waives or cancels; a
+    coach promotes or doesn't. A student waiting for a fee has no Grade button
+    and no "Ready" tag.
+- **Instructors search box is labelled "Search instructors"** — it was
+  just "Search", the same name as the header search, so screen readers
+  announced two identical boxes on the page. It now matches "Search classes"
+  and "Search students", in all 15 languages.
+- **Belt editor redesign** (DESIGN.md → "Belt editor: one grade at a time"):
+  - **One grade at a time:** a row of grade pills (plain belt, 1 stripe…)
+    with the students on each, a live preview of the picked grade, and
+    "+ Add stripe grade", which copies the previous grade's numbers.
+  - **Chapters:** 01 Belt and stripes (rank name, colours, this grade's name,
+    stripe colour groups with one Remove), 02 What it takes, and 03 Promotion
+    fee, a price per grade, shown only to the owner while the fee is on.
+  - **"Ready to save"** lists what's missing; a grade that says nothing is a
+    warning, not a block.
+  - **Ladder:** Duplicate a rank, and choose where a new rank goes. Dragging
+    to reorder now works with a finger too.
+- **Grading tabs complete** (DESIGN.md → "Grading screens"): Board · Styles &
+  Belts · Skills · Permissions · Settings.
+  - **Settings:** every style's Grading Board columns, the promotion fee and
+    "Allow grading before the fee is paid" (owner only), and "Open mat counts
+    toward hours", with an "About this setting" panel and one Discard / Save
+    changes bar.
+  - **Skills:** pick a style, then its skills with how many grades require
+    each and how many lessons teach it; add, edit, reorder and delete (owner).
+  - The Disciplines pages carry the tabs as Styles & Belts.
+- **Grading Board redesign** (DESIGN.md → "Grading screens"):
+  - **Grading** is one menu item with tabs: Board · Styles & Belts ·
+    Permissions (Permissions moved to `/grading/permissions`; the old address
+    still works).
+  - **Grid or Rows**, with Ready to Grade on top in Rows, and **Sort: Belt ·
+    Name** with a direction inside each stage.
+  - **Student panel:** click a card to see Toward {next rank} with its ticks,
+    the skills for the next rank, the last 4 history entries, Promote and the
+    student page. **Selection panel** for ticked students, which shrinks to a
+    pill.
+  - **Click any progress bar to promote** that student, with our own
+    "Promote to" drop-down showing belt pictures (also in Move down and
+    Verify).
+  - **Promotion fee on the board:** "Waiting for fee", "Fee declined" and
+    "Promotion to decide" tags; the owner waives or cancels a fee, and a coach
+    then promotes or doesn't.
+  - Progress bars take their level's colour; a two-tone belt has its second
+    colour as a band through the middle.
+- **Booking and schedule rules on screen** (Decision 322):
+  - **School page:** "Check-in opens (minutes before class)" and "Cancelling
+    after a class starts" (no refund once started — the default — refund
+    until the class ends, or always refund).
+  - **Timetable slot edits:** when a change moves classes that already have
+    bookings, switches the slot off, or cuts the capacity below the seats taken,
+    the owner chooses to move, cancel or keep those classes. Only the changed
+    fields are saved, so a change made to one class on its own survives.
+  - **Booking a full class:** the booking dialog offers "Add to waitlist".
+  - **Clearer messages** for a full class, a waitlist queue, booking closed,
+    check-in not open yet (with the opening time) and a very busy class, in
+    every language. The API now marks these errors with their own codes.
+- **Booking and schedule rules from the stress test** (Decision 322):
+  - **Booking:** a class that has ended or is archived can't be booked, and a
+    membership past its expiry date no longer pays for a class.
+  - **Booking cut-off:** it now stops students; staff can still book a walk-in
+    until the class ends.
+  - **Check-in:** it opens a set time before the class starts (30 minutes by
+    default, set per School).
+  - **Waitlist:** seats freed in a full class go to the waitlist first, and
+    raising its capacity offers the new seats to the waitlist.
+  - **Late cancellation:** each School chooses what a cancellation after the
+    start gives back (default: no refund).
+  - **Timetable edits:** editing or switching off a slot now updates its
+    upcoming classes. Classes that already have bookings are moved, cancelled
+    with credit back, or kept, as the owner chooses, and booked students are
+    told.
+  - **Capacity:** it can't be cut below the bookings already made.
+  - **Busy times:** when many students book the same class at once, every
+    seat now fills and nobody sees an error page.
+  - **Rate limits:** they count per user, and per real client address behind
+    the load balancer.
+- **Instructors: search, hand over classes, give the role back** (Decision
+  312) — the roster has a search and Branch, Style and Status filters, and
+  shows who hasn't signed in yet; "Invite existing user" goes straight on to
+  "Add instructor" with them picked; the detail page shows their branch,
+  activities, address, certification (with a download link for the owner)
+  and weekly timetable, can hand all their upcoming classes and weekly slots
+  to another instructor in one step, and can give a revoked instructor their
+  role back; "Complete your profile" starts from what the instructor already
+  saved.
+- **Instructors page fixes** (Decision 311) — every instructor is listed,
+  A to Z, with an Active or Revoked status; archived and revoked instructors
+  can't be given new classes, timetable slots or lessons, and the pickers
+  leave them out; the "Instructors' belts" box no longer breaks after someone
+  is revoked; no instructor joins an archived branch; a profile's branch must
+  match the branch their role is for; Archive asks first; Revoke warns about
+  upcoming classes, which stay editable afterwards; the detail page lists
+  every class, upcoming and past; "Add instructor" only offers people with
+  no profile yet; coaches who open the page go to their own start page.
+- **Promotion fee: who sees what** (Decision 314) — prices on the ladder,
+  and the amounts in the School's list of fee requests, are now shown only to
+  the owner and to people with grading permission for that style. Anyone with
+  grading permission for the style can now decide not to promote a student
+  whose promotion is "to decide".
+- **Promotion fee, API** (Decisions 287, 297, 300, 307, 313) — the School
+  owner can turn on a promotion fee and "Allow grading before the fee is
+  paid" (both off by default) and price any belt or stripe; with the fee off,
+  no prices are shown or accepted. Grading to a priced rank sends the student
+  (or a child's Guardian) a fee request to accept or decline; by default the
+  promotion waits ("Waiting for fee") until the fee is paid, keeping the
+  coach's grading date. Bulk promote makes one request per student. The owner
+  can waive or cancel a fee at any time: waiving a waiting promotion applies
+  it; cancelling it, or waiving a declined fee, leaves it "to decide" for a
+  coach, with one reminder after 3 days when the student is fully ready. The
+  Grading Board shows each card's fee state. Paying a fee waits for
+  staff-created charges (Decision 303); the portal and app screens come next.
+- **Hours trained** (Decisions 301, 306; API only so far) — each check-in
+  now records the class's scheduled length (a 90-minute class is 1.5 hours)
+  for each style on the class, and "Log a class" records the picked class's
+  length or the minutes the coach enters (60 by default). A student's grading
+  data now returns their hours trained per style (in total and since their
+  current rank) and a progress breakdown: classes, days at the rank and
+  skills, each on its own. Hours are a record only: grading progress,
+  "Ready to Grade" and the Grading Board are unchanged. New School setting
+  **"Open mat counts toward hours"**, off by default, changed by the owner or
+  a coach with "Change board %": while off, open mat classes don't add to
+  hours. Hours start from this release; earlier check-ins are not counted.
+- **One email, one account** (Decision 295) — emails are no longer
+  case-sensitive. Signing in, "Find" on the Staff page and Add Manually all
+  ignore capitals and stray spaces, so an owner can no longer create a second
+  account for someone already registered with different capitals. Existing
+  emails are lower-cased, and the database refuses case-only duplicates.
+- **Staff page fixes** (Decision 296) — no new staff, coaches or coach
+  invites at an archived branch (and an invite to a branch archived later
+  stops working); no role grants at a closed School; "Who can invite coaches"
+  updates without a reload; Revoke asks "Are you sure?" first; the look-up
+  table shows branch names instead of ids; Branch Staff who open the Staff
+  page go to their own dashboard instead of a blank page.
+- **Disciplines fixes and new tools** (Decisions 308, 309) — archived belts
+  no longer appear in grading; renaming a style or a class type now updates
+  the classes, timetable, instructors and rungs that use it, and a class type
+  still in use can't be removed. Names can't be blank or repeated, and copies
+  get a free name. New: archive and unarchive a style the School no longer
+  teaches (students keep their rank and history), a Students count and list
+  per style, skills showing which rungs need them and how many lessons teach
+  them, skills you can put in order, class types edited as a list, and a
+  read-only Disciplines page for coaches and Branch Staff.
+- **Safari test fixes and belt wording** — the first nightly Firefox/Safari
+  run (Decision 302) passed in Firefox; two Safari failures were test-only
+  (a race on the belt-delete error, and a never-loading test photo). The
+  "can't delete a belt" message now reads "1 student holds" / "2 students
+  hold" instead of "1 student(s) hold".
+- **Branch archive fixes** (Decision 293) — archiving a Branch now asks
+  first and, if something still belongs to it, says what inside the dialog.
+  Weekly timetable slots now block archiving (before, sessions kept being
+  created for the archived Branch). Archived Branches no longer appear in
+  Branch pickers across the portal, except on a record that already uses
+  one. The 90-day purge now rechecks before deleting, so students, staff or
+  classes added to an archived Branch are never silently removed with it.
+- **Bulk promote can finish after a failure** (Decision 284) — if a large
+  batch stops part-way, the group that failed is sent again once by itself,
+  then the window offers "Try the remaining N again" or "Stop here and see the
+  report". Each student carries the rank the check found them on, so nobody is
+  ever promoted twice. Removing a student from the batch no longer re-checks
+  the whole batch.
+- **Grading Board: no bulk promote limit** (Decision 282) — a coach can
+  promote any number of ticked students at once. The portal sends them 200 at a
+  time, as Spec 55 always intended; before, more than 200 failed outright.
+- **Only active students are graded up** (Decision 283) — promote and stripe
+  award (single and bulk) now need the student to be active: their board Active
+  switch, or a live membership. Inactive students can't be ticked on the board,
+  and bulk promote lists them as "can't be promoted". Moving down still works.
+- **Grading Board at scale** — 25 cards per column with "Show all N", a
+  "N of them hidden by your search" note (with "Show them") when ticked students
+  are filtered out, and a count of students already on the top rank.
 - **Shorter default waitlist claim window** (Decision 279) — new Schools now
   give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
   more people on the list get a chance before class. Existing Schools keep
   their current setting, which owners can still change on the School page.
+- **Global Search in the School Portal header** (Decision 278) — the header's
+  search box, until now disabled ("coming soon"), finds Students,
+  Instructors, Classes, Branches and Franchises by name (any part of a first
+  name, surname or full name; a class's title), grouped by type, and opens
+  the one you pick. It works from the keyboard (arrows, Enter, Escape) and
+  closes on a click outside, and screen readers hear the number of results.
+  Everyone sees it except a coach or Branch Staff member who doesn't own a
+  School, matching the sidebar; results are limited to what each list
+  already shows them, and archived records are left out. The Students,
+  Instructors, Branches and Franchises list endpoints gained an optional
+  `search` param for it, like Classes' (`%` and `_` now match literally);
+  `GET /franchises` also gained an optional `excludeArchived` param.
+  Translated into all 15 languages.
 - **School Portal translation, 15 languages** (Decision 273) — the header's
   language picker now actually switches the portal's text instead of only
   saving a preference. Languages: English (UK), Portuguese (BR), Spanish,
