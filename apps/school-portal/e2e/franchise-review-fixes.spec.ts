@@ -8,7 +8,7 @@ import { cleanup, db, signIn } from './fixtures';
  * while Schools are billed (F1), Closed labels (F8, F9), the Franchise ID with
  * a Copy button (F13), the "billing can't start yet" notice, charges from a
  * School that has left (F14), and the Franchise Owner's switch for showing
- * its name and logo on member Schools (Decision 346). Leave's confirmation (F6) is in
+ * its name and logo on member Schools (Decision 350). Leave's confirmation (F6) is in
  * franchise-affiliation.spec.ts. Against the real API and Postgres.
  */
 function base64url(input: Buffer | string): string {
@@ -209,7 +209,7 @@ test('F9 and F14 — a closed member School is labelled, and a charge from a Sch
   await expect(page.getByRole('cell', { name: 'Former member School' })).toBeVisible();
 });
 
-test('Decision 346 — the Franchise Owner lets member Schools show the name and logo', async ({ page }) => {
+test('Decision 350 — the Franchise Owner lets member Schools show the name and logo', async ({ page }) => {
   await page.goto('/franchises');
   await page.getByLabel('Activity').fill(activityTag);
   await page.getByRole('row', { name: /Review Co/ }).getByRole('button', { name: 'Edit' }).click();

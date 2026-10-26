@@ -43,7 +43,7 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   ranksToggle!: boolean;
 
-  /** Decision 346 — the School Owner's half of the both-must-allow switch for
+  /** Decision 350 — the School Owner's half of the both-must-allow switch for
    * showing the Franchise's name and logo. Reset on joining or leaving. */
   @ApiProperty()
   showFranchiseBranding!: boolean;
@@ -163,7 +163,7 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
  */
 export class SchoolThemeResponseDto extends PickType(SchoolResponseDto, ['id', 'accentColor', 'logoUrl'] as const) {}
 
-/** Decision 346 — the Franchise's name and logo for a member School, given only
+/** Decision 350 — the Franchise's name and logo for a member School, given only
  * when both the Franchise Owner (shareBrandingWithMembers) and the School Owner
  * (showFranchiseBranding) allow it, and the Franchise isn't closed. */
 export class SchoolFranchiseBrandingResponseDto {

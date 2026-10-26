@@ -55,7 +55,7 @@ export function useUpdateSchool(schoolId: string) {
   });
 }
 
-/** Decision 346 — the Franchise's name and logo, set only when both the
+/** Decision 350 — the Franchise's name and logo, set only when both the
  * Franchise Owner and the School Owner allow it. Keyed under ['school', id] so
  * saving the School, joining or leaving refreshes it too. */
 export function useSchoolFranchiseBranding(schoolId: string | null) {

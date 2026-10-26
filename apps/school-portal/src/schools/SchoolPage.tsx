@@ -335,7 +335,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   const t = useT();
   const joinFranchise = useJoinFranchise(schoolId);
   const leaveFranchise = useLeaveFranchise(schoolId);
-  // Decision 346 — the Franchise's name and logo show only when both owners allow it.
+  // Decision 350 — the Franchise's name and logo show only when both owners allow it.
   const updateSchool = useUpdateSchool(schoolId);
   const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');

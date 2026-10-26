@@ -1,6 +1,13 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RequestContext } from '../request-context';
+
+type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+/** The transaction withTenantContext is currently running, so a call made from
+ * inside it for the same user reuses it (see withTenantContext). */
+const openTenantTx = new AsyncLocalStorage<{ client: PrismaAppService; userId: string; impersonationSchoolId: string | undefined; tx: TenantTx; open: boolean }>();
 
 /**
  * The connection apps/api uses for every tenant-scoped query, authenticated as the
@@ -62,12 +69,26 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
    * makes this additive-only in practice: `current_setting(..., true)` returns NULL
    * when unset, and every RLS check this feeds short-circuits to its original,
    * unmodified behavior in that case.
+   *
+   * A call made from inside another withTenantContext for the same user (and the
+   * same impersonation scope) runs in that open transaction instead of starting a
+   * second one. Before this, a check such as TenantAuthorizationService.
+   * assertSchoolOwner() called inside a transaction held one pooled connection
+   * while waiting for another: with as many such requests at once as the pool
+   * has connections, every one waited until Prisma's 2 s maxWait and failed
+   * ("busy", 503). The billing stress test of 26 Oct 2026 found it on
+   * PATCH /transactions/:id/confirm: 5,917 of 6,071 confirmations failed.
    */
   async withTenantContext<T>(
     userId: string,
-    fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
+    fn: (tx: TenantTx) => Promise<T>,
     options?: { timeoutMs?: number; maxWaitMs?: number },
   ): Promise<T> {
+    const impersonationSchoolId = RequestContext.getImpersonationSchoolId() ?? undefined;
+    const outer = openTenantTx.getStore();
+    if (outer && outer.open && outer.client === this && outer.userId === userId && outer.impersonationSchoolId === impersonationSchoolId) {
+      return fn(outer.tx);
+    }
     return this.$transaction(
       async (tx) => {
         // SET LOCAL cannot take a bind parameter for the identifier position in all
@@ -79,7 +100,14 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
         }
         await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${userId}'`);
         await this.setImpersonationScopeIfPresent(tx);
-        return fn(tx);
+        // `open` is cleared when this transaction ends, so work started inside it
+        // but still running afterwards opens its own transaction.
+        const store = { client: this, userId, impersonationSchoolId, tx, open: true };
+        try {
+          return await openTenantTx.run(store, () => fn(tx));
+        } finally {
+          store.open = false;
+        }
       },
       options?.timeoutMs || options?.maxWaitMs
         ? { ...(options.timeoutMs ? { timeout: options.timeoutMs } : {}), ...(options.maxWaitMs ? { maxWait: options.maxWaitMs } : {}) }

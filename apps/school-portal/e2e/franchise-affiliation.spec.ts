@@ -71,7 +71,7 @@ test('School Owner joins, leaves, then switches Franchise from the School profil
   expect(afterSwitch.franchiseId).toBe(franchiseB.id);
 });
 
-test("Decision 346 — the Franchise's name and logo show only when both owners allow it", async ({ page }) => {
+test("Decision 350 — the Franchise's name and logo show only when both owners allow it", async ({ page }) => {
   const name = `Branding Test Franchise ${randomUUID().slice(0, 8)}`;
   const franchise = await db.franchise.create({ data: { id: randomUUID(), name } });
   franchiseIds.push(franchise.id);

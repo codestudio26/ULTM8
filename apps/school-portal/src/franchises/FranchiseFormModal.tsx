@@ -45,7 +45,7 @@ export interface FranchiseFormValues {
    * (omitted from the request), not "clear it". */
   flatFeeAmount?: number;
   perHeadcountRate?: number;
-  /** Decision 346 — member Schools may show this Franchise's name and logo
+  /** Decision 350 — member Schools may show this Franchise's name and logo
    * (each School Owner must also turn it on). */
   shareBrandingWithMembers: boolean;
   /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */

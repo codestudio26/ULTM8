@@ -1,6 +1,6 @@
 /**
  * Decision 337 — the Franchises section review fixes (F1–F4, F10–F12, F15–F21,
- * roster F2). One file so each fix has a test that names it. Also Decision 346,
+ * roster F2). One file so each fix has a test that names it. Also Decision 350,
  * the both-must-allow switch for showing a Franchise's name and logo.
  *
  * Stripe is faked throughout (no live key in CI or this sandbox): the fake
@@ -374,7 +374,7 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
     });
   });
 
-  describe('Franchise name and logo on member Schools (Decision 346)', () => {
+  describe('Franchise name and logo on member Schools (Decision 350)', () => {
     const LOGO = 'https://example.test/franchise-logo.png';
     const branding = (schoolId: string, token: string) =>
       http().get(`/v1/schools/${schoolId}/franchise-branding`).set('Authorization', `Bearer ${token}`);

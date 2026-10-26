@@ -2004,6 +2004,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_findPlanMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/membership-plans/{id}/archive": {
         parameters: {
             query?: never;
@@ -2062,6 +2078,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["MembershipsController_purchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memberships/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_findStudentMemberships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/sell": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_sellAtDesk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_giftFriendPass"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5555,6 +5635,21 @@ export interface components {
             /** @description Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334). */
             subscriberCount: number;
         };
+        PlanMemberResponseDto: {
+            membershipId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            startDate: string;
+            expiryDate?: string | null;
+            classesRemaining?: number | null;
+            cancelAt?: string | null;
+            /** @description True when the owner gave it (a Friend Pass). */
+            gifted: boolean;
+        };
+        PlanMemberListResponseDto: {
+            items: components["schemas"]["PlanMemberResponseDto"][];
+        };
         MembershipPlanPriceChangeResponseDto: {
             id: string;
             membershipPlanId: string;
@@ -5597,6 +5692,9 @@ export interface components {
             expiryDate?: string | null;
             scopedClassId?: string | null;
             giftedById?: string | null;
+            /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
+            cancelAt?: string | null;
+            cancelledById?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -5611,6 +5709,48 @@ export interface components {
             membership?: components["schemas"]["MembershipResponseDto"];
             /** @description The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
             transactionId?: string;
+        };
+        CancelMembershipDto: {
+            /** @description Guardian-only: the linked minor whose Subscription this is. */
+            studentId?: string;
+        };
+        StudentMembershipResponseDto: {
+            id: string;
+            studentId: string;
+            membershipPlanId: string;
+            schoolId: string;
+            status: string;
+            startDate: string;
+            frequency: string;
+            classesRemaining?: number | null;
+            expiryDate?: string | null;
+            scopedClassId?: string | null;
+            giftedById?: string | null;
+            /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
+            cancelAt?: string | null;
+            cancelledById?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            planTitle: string;
+            planType: string;
+            /** @description In effect now: Active, not past its expiry date, and not a used-up pack. */
+            live: boolean;
+        };
+        StudentMembershipListResponseDto: {
+            items: components["schemas"]["StudentMembershipResponseDto"][];
+        };
+        SellMembershipDto: {
+            membershipPlanId: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+        };
+        DeskMembershipResponseDto: {
+            membership: components["schemas"]["MembershipResponseDto"];
+            /** @description The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass. */
+            transactionId?: string | null;
+        };
+        GiftFriendPassDto: {
+            membershipPlanId: string;
         };
         MembershipListResponseDto: {
             items: components["schemas"]["MembershipResponseDto"][];
@@ -10377,6 +10517,27 @@ export interface operations {
             };
         };
     };
+    MembershipsController_findPlanMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanMemberListResponseDto"];
+                };
+            };
+        };
+    };
     MembershipsController_archivePlan: {
         parameters: {
             query?: never;
@@ -10464,6 +10625,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PurchaseMembershipResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelMembershipDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_findStudentMemberships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentMembershipListResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_sellAtDesk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SellMembershipDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskMembershipResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_giftFriendPass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiftFriendPassDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskMembershipResponseDto"];
                 };
             };
         };

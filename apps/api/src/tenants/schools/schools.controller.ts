@@ -53,7 +53,7 @@ export class SchoolsController {
     return this.schoolsService.findTheme(user.sub, id);
   }
 
-  /** Decision 346 — see SchoolsService.findFranchiseBranding. */
+  /** Decision 350 — see SchoolsService.findFranchiseBranding. */
   @ApiOkResponse({ type: SchoolFranchiseBrandingResponseDto })
   @Get(':id/franchise-branding')
   findFranchiseBranding(@CurrentUser() user: JwtPayload, @Param('id') id: string) {

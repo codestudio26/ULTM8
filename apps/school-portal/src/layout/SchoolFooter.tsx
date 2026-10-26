@@ -54,7 +54,7 @@ export function SchoolFooter() {
   const t = useT();
   const schoolId = useGradingSchoolId();
   const { data: school } = useSchool(schoolId);
-  // Decision 346 — set only when both the Franchise Owner and the School Owner allow it.
+  // Decision 350 — set only when both the Franchise Owner and the School Owner allow it.
   const { data: branding } = useSchoolFranchiseBranding(school?.franchiseId ? schoolId : null);
   const { data: disciplines } = useDisciplines(schoolId);
   const year = new Date().getFullYear();

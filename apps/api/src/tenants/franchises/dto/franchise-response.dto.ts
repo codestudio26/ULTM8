@@ -58,7 +58,7 @@ export class FranchiseResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true })
   perHeadcountRate!: number | null;
 
-  /** Decision 346 — the Franchise Owner's half of the both-must-allow switch. */
+  /** Decision 350 — the Franchise Owner's half of the both-must-allow switch. */
   @ApiProperty()
   shareBrandingWithMembers!: boolean;
 

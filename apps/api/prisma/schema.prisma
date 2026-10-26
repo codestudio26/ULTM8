@@ -208,6 +208,10 @@ enum PaymentAccountProvider {
   STRIPE
   CASH
   BANK_TRANSFER
+  /// Desk payments only (Decision 348): a Pix transfer or a card on the
+  /// School's own terminal, recorded by the owner. Never a PaymentAccount provider.
+  PIX
+  CARD_TERMINAL
 }
 
 /// PaymentAccount.status — Phase 8. Confirmed field ("status (Active/De-active)"),
@@ -411,9 +415,11 @@ model User {
   lessonsAuthored                   Lesson[]                    @relation("LessonInstructor")
   memberships                       Membership[]                @relation("MembershipStudent")
   membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
+  membershipsCancelled              Membership[]                @relation("MembershipCancelledBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
   franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
+  transactionsRecorded              Transaction[]               @relation("TransactionRecordedBy")
   studentRanks                      StudentRank[]
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
   promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
@@ -705,7 +711,7 @@ model Franchise {
   flatFeeAmount    Int?
   perHeadcountRate Int?
 
-  /// Decision 346 — the Franchise Owner allows member Schools to show this
+  /// Decision 350 — the Franchise Owner allows member Schools to show this
   /// Franchise's name and logo. Shown only when the School's own
   /// School.showFranchiseBranding is also on (both must allow it).
   shareBrandingWithMembers Boolean @default(false)
@@ -855,7 +861,7 @@ model School {
   facilities        String[] @default([])
   ranksToggle       Boolean  @default(false)
 
-  /// Decision 346 — the School Owner chooses to show its Franchise's name and
+  /// Decision 350 — the School Owner chooses to show its Franchise's name and
   /// logo. Shown only when Franchise.shareBrandingWithMembers is also on. Reset
   /// when the School joins or leaves a Franchise.
   showFranchiseBranding Boolean @default(false)
@@ -1921,6 +1927,13 @@ model Membership {
 
   stripeSubscriptionId String? @unique // see header comment; SUBSCRIPTION-type only
 
+  // Subscription only: when the Student or the owner asked to cancel, the
+  // date the paid period ends (Stripe's cancel_at). The Membership stays
+  // live until then; Stripe's customer.subscription.deleted expires it.
+  cancelAt      DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("MembershipCancelledBy", fields: [cancelledById], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1990,6 +2003,11 @@ model Transaction {
 
   status        TransactionStatus
   paymentMethod PaymentAccountProvider
+
+  // Who recorded a payment taken at the desk (Decision 348); null for
+  // anything the Student paid themselves.
+  recordedById String?
+  recordedBy   User?   @relation("TransactionRecordedBy", fields: [recordedById], references: [id])
 
   // Only ever reachable for Stripe-paid Transactions (Decision 55) — Cash/Bank rows
   // have no Stripe charge id to match. No Phase 9 code path sets this (out of scope

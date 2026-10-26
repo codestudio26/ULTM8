@@ -440,7 +440,7 @@ export class SchoolsService {
       try {
         ({ count } = await tx.school.updateMany({
           where: { id: schoolId, franchiseId: null },
-          // Decision 346 — a new Franchise's branding starts hidden until the
+          // Decision 350 — a new Franchise's branding starts hidden until the
           // School Owner turns it on.
           data: { franchiseId, showFranchiseBranding: false },
         }));
@@ -599,7 +599,7 @@ export class SchoolsService {
   }
 
   /**
-   * Decision 346 — the Franchise's name and logo for a member School, shown only
+   * Decision 350 — the Franchise's name and logo for a member School, shown only
    * when both owners allow it. Same RLS visibility as findTheme() (any RoleGrant
    * holder at the School). The Franchise row itself isn't visible to School-side
    * callers under RLS, so it's read through prismaJobs, and only after the School

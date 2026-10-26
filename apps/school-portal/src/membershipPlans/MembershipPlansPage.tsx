@@ -223,6 +223,8 @@ export function MembershipPlansPage() {
                     <RowActionsMenu
                       label={t('membershipPlans.list.rowActionsAria', { title: p.title })}
                       actions={[
+                        // Decision 348: who is on this plan now.
+                        { label: t('membershipPlans.list.members'), onClick: () => navigate(`/membership-plans/${p.id}/members`) },
                         {
                           label: t('membershipPlans.list.duplicate'),
                           onClick: () =>

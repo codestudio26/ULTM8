@@ -175,7 +175,7 @@ export class CreateFranchiseDto {
   @Max(POSTGRES_INTEGER_MAX)
   perHeadcountRate?: number;
 
-  /** Decision 346 — the Franchise Owner allows member Schools to show this
+  /** Decision 350 — the Franchise Owner allows member Schools to show this
    * Franchise's name and logo. A member School shows them only when its own
    * School Owner also turns showFranchiseBranding on (both must allow it). */
   @ApiPropertyOptional({ description: "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)." })

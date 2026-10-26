@@ -162,7 +162,7 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsUrl()
   footerTwitterUrl?: string | null;
 
-  /** Decision 346 — show the Franchise's name and logo on this School. Shown only
+  /** Decision 350 — show the Franchise's name and logo on this School. Shown only
    * while the Franchise Owner also allows it (Franchise.shareBrandingWithMembers). */
   @ApiPropertyOptional({ description: "Show this School's Franchise name and logo (the Franchise Owner must also allow it)." })
   @IsOptional()
