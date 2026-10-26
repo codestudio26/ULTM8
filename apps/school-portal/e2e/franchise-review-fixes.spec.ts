@@ -6,8 +6,9 @@ import { cleanup, db, signIn } from './fixtures';
  * Decision 337 — the Franchises section review's portal fixes: fees typed in
  * dollars (F5), a fee required for the chosen model (F7), the fee model locked
  * while Schools are billed (F1), Closed labels (F8, F9), the Franchise ID with
- * a Copy button (F13), the "billing can't start yet" notice, and charges from a
- * School that has left (F14). Leave's confirmation (F6) is in
+ * a Copy button (F13), the "billing can't start yet" notice, charges from a
+ * School that has left (F14), and the Franchise Owner's switch for showing
+ * its name and logo on member Schools (Decision 346). Leave's confirmation (F6) is in
  * franchise-affiliation.spec.ts. Against the real API and Postgres.
  */
 function base64url(input: Buffer | string): string {
@@ -206,4 +207,17 @@ test('F9 and F14 — a closed member School is labelled, and a charge from a Sch
   await page.goto(`/franchises/${franchiseId}`);
   await expect(page.getByRole('row', { name: /Closed Member School/ }).getByText('Closed')).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Former member School' })).toBeVisible();
+});
+
+test('Decision 346 — the Franchise Owner lets member Schools show the name and logo', async ({ page }) => {
+  await page.goto('/franchises');
+  await page.getByLabel('Activity').fill(activityTag);
+  await page.getByRole('row', { name: /Review Co/ }).getByRole('button', { name: 'Edit' }).click();
+  const dialog = page.getByRole('dialog');
+  const toggle = dialog.getByRole('switch', { name: "Let member Schools show this Franchise's name and logo" });
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toHaveCount(0);
+  expect((await db.franchise.findUniqueOrThrow({ where: { id: franchiseId } })).shareBrandingWithMembers).toBe(true);
 });

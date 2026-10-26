@@ -440,7 +440,9 @@ export class SchoolsService {
       try {
         ({ count } = await tx.school.updateMany({
           where: { id: schoolId, franchiseId: null },
-          data: { franchiseId },
+          // Decision 346 — a new Franchise's branding starts hidden until the
+          // School Owner turns it on.
+          data: { franchiseId, showFranchiseBranding: false },
         }));
       } catch (err) {
         // P2003 = foreign key constraint violation — franchiseId doesn't reference
@@ -522,7 +524,7 @@ export class SchoolsService {
     const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.updateMany({
         where: { id: schoolId, franchiseId: oldFranchiseId },
-        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
       }),
     );
     if (count === 0) {
@@ -594,6 +596,37 @@ export class SchoolsService {
       throw new NotFoundException('School not found');
     }
     return school;
+  }
+
+  /**
+   * Decision 346 — the Franchise's name and logo for a member School, shown only
+   * when both owners allow it. Same RLS visibility as findTheme() (any RoleGrant
+   * holder at the School). The Franchise row itself isn't visible to School-side
+   * callers under RLS, so it's read through prismaJobs, and only after the School
+   * read above proved the caller can see this School; nothing beyond the name and
+   * logo leaves this method, and those only when both switches are on.
+   */
+  async findFranchiseBranding(callerId: string, schoolId: string) {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { franchiseId: true, showFranchiseBranding: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    const franchise = school.franchiseId
+      ? await this.prismaJobs.franchise.findUnique({
+          where: { id: school.franchiseId },
+          select: { name: true, logoUrl: true, archivedAt: true, shareBrandingWithMembers: true },
+        })
+      : null;
+    const franchiseAllows = !!franchise && !franchise.archivedAt && franchise.shareBrandingWithMembers;
+    const shown = franchiseAllows && school.showFranchiseBranding;
+    return {
+      franchiseAllows,
+      schoolShows: school.showFranchiseBranding,
+      name: shown ? franchise!.name : null,
+      logoUrl: shown ? franchise!.logoUrl : null,
+    };
   }
 
   /**
@@ -730,6 +763,7 @@ export class SchoolsService {
           activities: dto.activities,
           facilities: dto.facilities,
           ranksToggle: dto.ranksToggle,
+          showFranchiseBranding: dto.showFranchiseBranding,
           defaultLanguage: dto.defaultLanguage,
           defaultCurrency: dto.defaultCurrency,
           timezone: dto.timezone,

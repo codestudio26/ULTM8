@@ -5218,3 +5218,24 @@ The product owner reviewed every Gymdesk Billing tab and Settings → Billing pa
 ### Recorded by
 
 User, 26 Oct 2026, answering the Billing questions one by one and then *"Go ahead agree with all"*.
+
+## Decision 346 — A member School shows its Franchise's name and logo only when both owners allow it
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decision 337 (Q7, second half of F13)
+
+Decision 337 left Q7 open: should a member School show its Franchise's name and logo, and who decides? The product owner first said it *"depends on franchise's owner or school owner's decision"*, then picked **"Both must allow it"**.
+
+### Decision
+
+1. **Two switches, both off to start.** The Franchise Owner's `Franchise.shareBrandingWithMembers` ("Let member Schools show this Franchise's name and logo", on the Franchise form) and the School Owner's `School.showFranchiseBranding` ("Show the Franchise's name and logo", on the School page's Franchise affiliation card). Nothing changes for existing Franchises and Schools.
+2. **Shown only when both are on and the Franchise isn't closed.** `GET /schools/{id}/franchise-branding` returns `franchiseAllows`, `schoolShows`, and the name and logo only in that case. Anyone with a role at the School can read it (same as the School's theme); another School's users get a 404. The Franchise row is read on the jobs connection after the School read proves the caller can see that School, and nothing else from it leaves the endpoint.
+3. **Where it shows:** "Part of {Franchise}" with the logo, under the School's name in the School Portal footer. The School page shows the same preview, or says the Franchise Owner hasn't allowed it yet (the School Owner's choice is kept and takes effect if they do).
+4. **The School's switch resets** when it joins or leaves a Franchise, so a new Franchise's name never shows without the School Owner turning it on again.
+
+### What this does NOT resolve
+
+`apps/student` doesn't show the Franchise's name yet. Q1, Q2 and Q6 from Decision 337 and connecting a Franchise's Stripe account from the portal are unchanged.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Both must allow it" on the Q7 decision card.

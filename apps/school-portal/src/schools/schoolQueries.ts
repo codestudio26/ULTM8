@@ -55,6 +55,17 @@ export function useUpdateSchool(schoolId: string) {
   });
 }
 
+/** Decision 346 — the Franchise's name and logo, set only when both the
+ * Franchise Owner and the School Owner allow it. Keyed under ['school', id] so
+ * saving the School, joining or leaving refreshes it too. */
+export function useSchoolFranchiseBranding(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId, 'franchise-branding'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/franchise-branding', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
 /** Decision 98 — one-way join (409 if already affiliated). "Switch" is this
  * hook called again after useLeaveFranchise() below, not a separate call. */
 export function useJoinFranchise(schoolId: string) {

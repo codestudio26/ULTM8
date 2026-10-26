@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A member School can show its Franchise's name and logo (Decision 346)** —
+  only when both the Franchise Owner (a new switch on the Franchise form) and the
+  School Owner (a new switch on the School page) turn it on. It shows as "Part of
+  {Franchise}" in the School Portal footer. Both start off, and the School's
+  switch resets when it joins or leaves a Franchise. Needs a migration.
 - **Franchises fixes from the 26 Oct review (Decision 337)** — fees are typed
   in US dollars (not cents) and a Franchise needs a fee for its fee model; the
   fee model is locked while Schools are being billed; the "Schools already

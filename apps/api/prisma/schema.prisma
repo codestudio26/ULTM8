@@ -705,6 +705,11 @@ model Franchise {
   flatFeeAmount    Int?
   perHeadcountRate Int?
 
+  /// Decision 346 — the Franchise Owner allows member Schools to show this
+  /// Franchise's name and logo. Shown only when the School's own
+  /// School.showFranchiseBranding is also on (both must allow it).
+  shareBrandingWithMembers Boolean @default(false)
+
   /// Phase 16b-ii — lazily created the first time this Franchise's own
   /// PER_HEADCOUNT metered billing is set up (franchise-fee-usage-reporting job),
   /// never at Franchise creation/update time. A Stripe Billing Meter is scoped to
@@ -849,6 +854,11 @@ model School {
   activities        String[] @default([])
   facilities        String[] @default([])
   ranksToggle       Boolean  @default(false)
+
+  /// Decision 346 — the School Owner chooses to show its Franchise's name and
+  /// logo. Shown only when Franchise.shareBrandingWithMembers is also on. Reset
+  /// when the School joins or leaves a Franchise.
+  showFranchiseBranding Boolean @default(false)
 
   /// "Open mat counts toward hours" (Grading → Settings; Decisions 301 item 6,
   /// 306): off by default. When off, check-ins and logged classes whose class

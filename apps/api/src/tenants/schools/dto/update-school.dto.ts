@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
 import { CreateSchoolDto } from './create-school.dto';
 
 const NULLABLE_ON_UPDATE = [
@@ -161,4 +161,11 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @MaxLength(2048)
   @IsUrl()
   footerTwitterUrl?: string | null;
+
+  /** Decision 346 — show the Franchise's name and logo on this School. Shown only
+   * while the Franchise Owner also allows it (Franchise.shareBrandingWithMembers). */
+  @ApiPropertyOptional({ description: "Show this School's Franchise name and logo (the Franchise Owner must also allow it)." })
+  @IsOptional()
+  @IsBoolean()
+  showFranchiseBranding?: boolean;
 }

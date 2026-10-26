@@ -57,6 +57,7 @@ const FRANCHISE_PUBLIC_SELECT = {
   feeModel: true,
   flatFeeAmount: true,
   perHeadcountRate: true,
+  shareBrandingWithMembers: true,
   createdAt: true,
   updatedAt: true,
   // Phase 57 — FranchiseResponseDto now types archivedAt/purgeAt/purgedAt
@@ -153,6 +154,7 @@ export class FranchisesService {
           feeModel: dto.feeModel,
           flatFeeAmount: dto.flatFeeAmount,
           perHeadcountRate: dto.perHeadcountRate,
+          shareBrandingWithMembers: dto.shareBrandingWithMembers,
         },
         select: FRANCHISE_PUBLIC_SELECT,
       });
@@ -398,6 +400,7 @@ export class FranchisesService {
           feeModel: dto.feeModel,
           flatFeeAmount: dto.flatFeeAmount,
           perHeadcountRate: dto.perHeadcountRate,
+          shareBrandingWithMembers: dto.shareBrandingWithMembers,
         },
         select: FRANCHISE_PUBLIC_SELECT,
       });

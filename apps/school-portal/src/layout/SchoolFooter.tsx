@@ -1,7 +1,7 @@
 import React from 'react';
 import { LEGAL_FOOTER_LINKS } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
-import { useSchool } from '../schools/schoolQueries';
+import { useSchool, useSchoolFranchiseBranding } from '../schools/schoolQueries';
 import { useDisciplines } from '../disciplines/disciplineQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
@@ -54,6 +54,8 @@ export function SchoolFooter() {
   const t = useT();
   const schoolId = useGradingSchoolId();
   const { data: school } = useSchool(schoolId);
+  // Decision 346 — set only when both the Franchise Owner and the School Owner allow it.
+  const { data: branding } = useSchoolFranchiseBranding(school?.franchiseId ? schoolId : null);
   const { data: disciplines } = useDisciplines(schoolId);
   const year = new Date().getFullYear();
 
@@ -68,6 +70,12 @@ export function SchoolFooter() {
       <div className="ultm8-school-footer__top">
         <div className="ultm8-school-footer__brand-col">
           <p className="ultm8-school-footer__brand">{school.name}</p>
+          {branding?.name ? (
+            <p className="ultm8-school-footer__col-item" style={{ display: 'flex', alignItems: 'center', gap: 8 }} data-testid="footer-franchise-branding">
+              {branding.logoUrl ? <img src={branding.logoUrl} alt="" width={24} height={24} style={{ objectFit: 'contain' }} /> : null}
+              {t('layout.footer.partOfFranchise', { name: branding.name })}
+            </p>
+          ) : null}
           <label className="ultm8-school-footer__search-label" htmlFor="school-footer-zip">
             {t('layout.footer.findSchool')}
           </label>

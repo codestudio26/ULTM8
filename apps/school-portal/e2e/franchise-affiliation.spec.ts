@@ -70,3 +70,33 @@ test('School Owner joins, leaves, then switches Franchise from the School profil
   const afterSwitch = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(afterSwitch.franchiseId).toBe(franchiseB.id);
 });
+
+test("Decision 346 — the Franchise's name and logo show only when both owners allow it", async ({ page }) => {
+  const name = `Branding Test Franchise ${randomUUID().slice(0, 8)}`;
+  const franchise = await db.franchise.create({ data: { id: randomUUID(), name } });
+  franchiseIds.push(franchise.id);
+  await db.school.update({ where: { id: s.schoolId }, data: { franchiseId: franchise.id } });
+
+  await page.goto('/school');
+  const toggle = page.getByRole('switch', { name: "Show the Franchise's name and logo" });
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByTestId('franchise-branding-not-allowed')).toBeVisible();
+
+  // The School Owner turns it on first: kept, but nothing shows yet.
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).showFranchiseBranding).toBe(true);
+  await expect(page.getByTestId('franchise-branding-preview')).toHaveCount(0);
+  await expect(page.getByTestId('footer-franchise-branding')).toHaveCount(0);
+
+  // Then the Franchise Owner allows it: the name shows, here and in the footer.
+  await db.franchise.update({ where: { id: franchise.id }, data: { shareBrandingWithMembers: true } });
+  await page.reload();
+  await expect(page.getByTestId('franchise-branding-preview')).toHaveText(`Shown as: Part of ${name}`);
+  await expect(page.getByTestId('footer-franchise-branding')).toHaveText(`Part of ${name}`);
+
+  // The School Owner turns it off again.
+  await page.getByRole('switch', { name: "Show the Franchise's name and logo" }).click();
+  await expect(page.getByTestId('footer-franchise-branding')).toHaveCount(0);
+  await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).showFranchiseBranding).toBe(false);
+});

@@ -1,6 +1,7 @@
 /**
  * Decision 337 — the Franchises section review fixes (F1–F4, F10–F12, F15–F21,
- * roster F2). One file so each fix has a test that names it.
+ * roster F2). One file so each fix has a test that names it. Also Decision 346,
+ * the both-must-allow switch for showing a Franchise's name and logo.
  *
  * Stripe is faked throughout (no live key in CI or this sandbox): the fake
  * records every call, so the tests can check what WOULD be sent to Stripe —
@@ -370,6 +371,91 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
       const after = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
       expect(after.franchiseId).toBeNull();
       expect(after.stripeFranchiseFeeSubscriptionId).toBeNull();
+    });
+  });
+
+  describe('Franchise name and logo on member Schools (Decision 346)', () => {
+    const LOGO = 'https://example.test/franchise-logo.png';
+    const branding = (schoolId: string, token: string) =>
+      http().get(`/v1/schools/${schoolId}/franchise-branding`).set('Authorization', `Bearer ${token}`);
+
+    it('both switches start off, so nothing is shown', async () => {
+      const { franchise } = await seedFranchise({ logoUrl: LOGO });
+      const { school, token } = await seedSchool({ franchiseId: franchise.id });
+      const res = await branding(school.id, token);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ franchiseAllows: false, schoolShows: false, name: null, logoUrl: null });
+    });
+
+    it('the Franchise Owner can turn their switch on, and it comes back on the Franchise', async () => {
+      const { franchise, token } = await seedFranchise();
+      const res = await http().patch(`/v1/franchises/${franchise.id}`).set('Authorization', `Bearer ${token}`).send({ shareBrandingWithMembers: true });
+      expect(res.status).toBe(200);
+      expect(res.body.shareBrandingWithMembers).toBe(true);
+      const get = await http().get(`/v1/franchises/${franchise.id}`).set('Authorization', `Bearer ${token}`);
+      expect(get.body.shareBrandingWithMembers).toBe(true);
+    });
+
+    it('only the Franchise allows it: nothing is shown', async () => {
+      const { franchise } = await seedFranchise({ logoUrl: LOGO, shareBrandingWithMembers: true });
+      const { school, token } = await seedSchool({ franchiseId: franchise.id });
+      const res = await branding(school.id, token);
+      expect(res.body).toEqual({ franchiseAllows: true, schoolShows: false, name: null, logoUrl: null });
+    });
+
+    it('only the School Owner turns it on: nothing is shown', async () => {
+      const { franchise } = await seedFranchise({ logoUrl: LOGO });
+      const { school, token } = await seedSchool({ franchiseId: franchise.id });
+      const patch = await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${token}`).send({ showFranchiseBranding: true });
+      expect(patch.status).toBe(200);
+      expect(patch.body.showFranchiseBranding).toBe(true);
+      const res = await branding(school.id, token);
+      expect(res.body).toEqual({ franchiseAllows: false, schoolShows: true, name: null, logoUrl: null });
+    });
+
+    it('both allow it: the name and logo are shown', async () => {
+      const { franchise } = await seedFranchise({ logoUrl: LOGO, shareBrandingWithMembers: true });
+      const { school, token } = await seedSchool({ franchiseId: franchise.id, showFranchiseBranding: true });
+      const res = await branding(school.id, token);
+      expect(res.body).toEqual({ franchiseAllows: true, schoolShows: true, name: 'Review Franchise', logoUrl: LOGO });
+    });
+
+    it('a closed Franchise is not shown', async () => {
+      const { franchise } = await seedFranchise({ logoUrl: LOGO, shareBrandingWithMembers: true, archivedAt: new Date() });
+      const { school, token } = await seedSchool({ franchiseId: franchise.id, showFranchiseBranding: true });
+      const res = await branding(school.id, token);
+      expect(res.body).toEqual({ franchiseAllows: false, schoolShows: true, name: null, logoUrl: null });
+    });
+
+    it('an independent School gets nothing', async () => {
+      const { school, token } = await seedSchool({ showFranchiseBranding: true });
+      const res = await branding(school.id, token);
+      expect(res.body).toEqual({ franchiseAllows: false, schoolShows: true, name: null, logoUrl: null });
+    });
+
+    it("another School's Owner can't read it", async () => {
+      const { franchise } = await seedFranchise({ shareBrandingWithMembers: true });
+      const { school } = await seedSchool({ franchiseId: franchise.id, showFranchiseBranding: true });
+      const other = await seedSchool();
+      const res = await branding(school.id, other.token);
+      expect(res.status).toBe(404);
+    });
+
+    it("leaving turns the School's switch off, and so does joining", async () => {
+      const first = await seedFranchise({ shareBrandingWithMembers: true });
+      const second = await seedFranchise({ shareBrandingWithMembers: true });
+      const { school, token } = await seedSchool({ franchiseId: first.franchise.id, showFranchiseBranding: true });
+
+      const leave = await http().post(`/v1/schools/${school.id}/leave-franchise`).set('Authorization', `Bearer ${token}`).send();
+      expect(leave.status).toBe(201);
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).showFranchiseBranding).toBe(false);
+
+      await superuser.school.update({ where: { id: school.id }, data: { showFranchiseBranding: true } });
+      const join = await http().post(`/v1/schools/${school.id}/join-franchise`).set('Authorization', `Bearer ${token}`).send({ franchiseId: second.franchise.id });
+      expect(join.status).toBe(201);
+      const after = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+      expect(after.franchiseId).toBe(second.franchise.id);
+      expect(after.showFranchiseBranding).toBe(false);
     });
   });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, Switch, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -45,6 +45,9 @@ export interface FranchiseFormValues {
    * (omitted from the request), not "clear it". */
   flatFeeAmount?: number;
   perHeadcountRate?: number;
+  /** Decision 346 — member Schools may show this Franchise's name and logo
+   * (each School Owner must also turn it on). */
+  shareBrandingWithMembers: boolean;
   /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */
   feeRateChangeStrategy?: (typeof FEE_RATE_CHANGE_STRATEGIES)[number];
 }
@@ -98,6 +101,7 @@ export function FranchiseFormModal({
     feeModel: (initial?.feeModel as (typeof FEE_MODELS)[number]) ?? 'FLAT',
     flatFeeAmount: centsToDollarsInput(initial?.flatFeeAmount),
     perHeadcountRate: centsToDollarsInput(initial?.perHeadcountRate),
+    shareBrandingWithMembers: initial?.shareBrandingWithMembers ?? false,
   });
   const [feeRateChangeStrategy, setFeeRateChangeStrategy] = useState<(typeof FEE_RATE_CHANGE_STRATEGIES)[number] | ''>('');
   const [initialAddress] = useState(() => (initial ? postalAddressFromRecord(initial, guessDefaultCountry()) : undefined));
@@ -157,6 +161,7 @@ export function FranchiseFormModal({
         feeModel: form.feeModel,
         flatFeeAmount: flatCents,
         perHeadcountRate: perHeadcountCents,
+        shareBrandingWithMembers: form.shareBrandingWithMembers,
         feeRateChangeStrategy: feeRateChangeDecisionRequired && feeRateChangeStrategy ? feeRateChangeStrategy : undefined,
       });
     } catch (err) {
@@ -227,6 +232,13 @@ export function FranchiseFormModal({
             }
           />
         </Field>
+        <Switch
+          id="franchise-share-branding"
+          label={t('franchises.form.shareBrandingLabel')}
+          description={t('franchises.form.shareBrandingHint')}
+          checked={form.shareBrandingWithMembers}
+          onChange={(shareBrandingWithMembers) => setForm((f) => ({ ...f, shareBrandingWithMembers }))}
+        />
         <Field label={t('franchises.form.bannerLabel')} htmlFor="franchise-banner">
           <PhotoUploadField
             value={form.bannerUrl}

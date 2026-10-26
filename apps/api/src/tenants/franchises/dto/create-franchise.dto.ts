@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, MaxLength, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { LANGUAGES } from '../../../settings/constants/languages';
 import { CURRENCIES } from '../../../settings/constants/currencies';
@@ -174,4 +174,12 @@ export class CreateFranchiseDto {
   @Min(0)
   @Max(POSTGRES_INTEGER_MAX)
   perHeadcountRate?: number;
+
+  /** Decision 346 — the Franchise Owner allows member Schools to show this
+   * Franchise's name and logo. A member School shows them only when its own
+   * School Owner also turns showFranchiseBranding on (both must allow it). */
+  @ApiPropertyOptional({ description: "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)." })
+  @IsOptional()
+  @IsBoolean()
+  shareBrandingWithMembers?: boolean;
 }

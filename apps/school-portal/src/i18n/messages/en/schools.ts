@@ -69,5 +69,10 @@ export const schools = {
     leaveConfirmTitle: 'Leave this Franchise?',
     leaveConfirmBody:
       "This School's franchise-fee billing stops, with a final bill for this month. Past fee charges stay on record. You can join again later with the Franchise ID.",
+    showBrandingLabel: "Show the Franchise's name and logo",
+    showBrandingHint: "Shown in this School's footer, only while the Franchise Owner also allows it.",
+    brandingNotAllowed:
+      "The Franchise Owner hasn't allowed member Schools to show the Franchise's name and logo. Your choice is kept and takes effect if they do.",
+    partOf: 'Shown as: Part of {name}',
   },
 };

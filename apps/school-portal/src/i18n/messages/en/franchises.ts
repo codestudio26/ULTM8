@@ -103,6 +103,8 @@ export const franchises = {
     perHeadcountHintEditing:
       'In US dollars, e.g. 2.00, for each active student per month. Used when Fee model is Per-headcount. Changing it once billing has started requires choosing how the change applies, below.',
     feeModelLocked: "Can't change while Schools are being billed.",
+    shareBrandingLabel: "Let member Schools show this Franchise's name and logo",
+    shareBrandingHint: 'Each School Owner also chooses whether to show them. Nothing shows until both of you turn it on.',
     flatFeeRequired: 'Enter a flat fee for the Flat fee model.',
     perHeadcountRequired: 'Enter a per-headcount rate for the Per-headcount fee model.',
     rateChangeLabel: 'This rate change affects already-billing Schools',
