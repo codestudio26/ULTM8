@@ -1781,7 +1781,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "n’est plus instructeur",
     awaitingFirstLogin: "Pas encore connecté",
     filters: {
-      search: "Recherche",
+      search: "Rechercher des instructeurs",
       searchPlaceholder: "Nom ou e-mail",
       branch: "Succursale",
       style: "Style",

@@ -1781,7 +1781,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "non è più istruttore",
     awaitingFirstLogin: "Non ha ancora effettuato l’accesso",
     filters: {
-      search: "Cerca",
+      search: "Cerca istruttori",
       searchPlaceholder: "Nome o email",
       branch: "Sede",
       style: "Stile",

@@ -1781,7 +1781,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "ya no es instructor",
     awaitingFirstLogin: "Aún no ha iniciado sesión",
     filters: {
-      search: "Buscar",
+      search: "Buscar instructores",
       searchPlaceholder: "Nombre o correo",
       branch: "Sede",
       style: "Estilo",

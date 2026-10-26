@@ -1725,7 +1725,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "已不再是教练",
     awaitingFirstLogin: "尚未登录",
     filters: {
-      search: "搜索",
+      search: "搜索教练员",
       searchPlaceholder: "姓名或邮箱",
       branch: "分校",
       style: "流派",

@@ -1854,7 +1854,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pickerRevoked: "больше не инструктор",
     awaitingFirstLogin: "Ещё не входил(а)",
     filters: {
-      search: "Поиск",
+      search: "Поиск инструкторов",
       searchPlaceholder: "Имя или email",
       branch: "Филиал",
       style: "Стиль",
