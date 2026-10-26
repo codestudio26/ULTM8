@@ -216,7 +216,8 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [x] An **invoice opened**, Mark Paid and Cancel (recording 26 Oct 2026)
 - [x] Bulk select and **Mass Payment Changes** (recording 26 Oct 2026)
 - [x] "Overdue (**Why?**)": a tooltip, "No card assigned to payment" (26 Oct 2026)
-- [ ] **Creating a one-off charge** (where it starts: member profile?), and a **refund**
+- [x] **Creating a one-off charge** from the member profile, and cancelling it (recordings 26 Oct 2026)
+- [ ] A **refund** (mark a charge paid first, then open it from Payments → Paid)
 - [ ] Accounting → **Product Revenue** and **Member Balances** sub-tabs
 - [ ] Optional: a discount and a payment form filled in, then saved
 
