@@ -2,19 +2,28 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
 
 export type MembershipPlanResponse = components['schemas']['MembershipPlanResponseDto'];
 export type CreateMembershipPlanInput = components['schemas']['CreateMembershipPlanDto'];
 export type UpdateMembershipPlanInput = components['schemas']['UpdateMembershipPlanDto'];
 
-/** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors/useClasses (see their own header
- * comments). */
+/** Every plan of the School, all pages. The API returns 20 a page by
+ * default, and this list used to stop there, so a School's 21st plan never
+ * showed (Memberships review M5, Decision 334). Same `{ items }` shape as one
+ * page, so callers are unchanged. */
 export function useMembershipPlans(schoolId: string | null) {
   return useQuery({
     queryKey: ['membershipPlans', schoolId],
-    queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/membership-plans', { params: { path: { schoolId: schoolId! } } })),
+    queryFn: async () => ({
+      items: await fetchAllPages((cursor) =>
+        unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/membership-plans', {
+            params: { path: { schoolId: schoolId! }, query: { cursor, limit: ALL_PAGES_LIMIT } },
+          }),
+        ),
+      ),
+    }),
     enabled: !!schoolId,
   });
 }
