@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
+import { Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { randomUUID } from 'crypto';
@@ -8,7 +9,8 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { cursorPaginate, CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
+import { applyCapacityChange, offerSeatsToWaitlist } from './class-seats';
 import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -51,6 +53,11 @@ export class ClassesService {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
     this.assertValidDateRange(startDate, endDate);
+    this.assertValidCutoffs(startDate, endDate, {
+      bookingEndAt: dto.bookingEndAt ? new Date(dto.bookingEndAt) : null,
+      qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : null,
+      refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : null,
+    });
 
     const classId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -98,31 +105,73 @@ export class ClassesService {
     activities?: string,
     search?: string,
     includeArchived?: boolean,
-    filter: { disciplineId?: string; startsFrom?: string; startsTo?: string } = {},
+    filter: {
+      disciplineId?: string;
+      startsFrom?: string;
+      startsTo?: string;
+      when?: 'upcoming' | 'past' | 'all';
+      instructorId?: string;
+    } = {},
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
-        (args) =>
-          tx.class.findMany({
-            ...args,
-            where: {
-              schoolId,
-              ...(activities ? { activities: { has: activities } } : {}),
-              // Decision 278 — `%`/`_` match themselves, not any text (escapeLike).
-              ...(search ? { title: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
-              ...(includeArchived ? {} : { archivedAt: null }),
-              // Class.styles is a JSON array of { disciplineId, classType }: jsonb @> finds the style.
-              ...(filter.disciplineId ? { styles: { array_contains: [{ disciplineId: filter.disciplineId }] } } : {}),
-              ...(filter.startsFrom || filter.startsTo
-                ? { startDate: { ...(filter.startsFrom ? { gte: new Date(filter.startsFrom) } : {}), ...(filter.startsTo ? { lte: new Date(filter.startsTo) } : {}) } }
-                : {}),
-            },
-          }),
-        cursor,
-        limit,
-      ),
+    const where: Prisma.ClassWhereInput = {
+      schoolId,
+      ...(activities ? { activities: { has: activities } } : {}),
+      // Decision 278 — `%`/`_` match themselves, not any text (escapeLike).
+      ...(search ? { title: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
+      ...(includeArchived ? {} : { archivedAt: null }),
+      // Class.styles is a JSON array of { disciplineId, classType }: jsonb @> finds the style.
+      ...(filter.disciplineId ? { styles: { array_contains: [{ disciplineId: filter.disciplineId }] } } : {}),
+      ...(filter.startsFrom || filter.startsTo
+        ? { startDate: { ...(filter.startsFrom ? { gte: new Date(filter.startsFrom) } : {}), ...(filter.startsTo ? { lte: new Date(filter.startsTo) } : {}) } }
+        : {}),
+      ...(filter.instructorId ? { instructorId: filter.instructorId } : {}),
+    };
+    if (!filter.when) {
+      return this.prismaApp.withTenantContext(callerId, (tx) =>
+        cursorPaginate((args) => tx.class.findMany({ ...args, where }), cursor, limit),
+      );
+    }
+    return this.findByDate(callerId, where, filter.when, cursor, limit);
+  }
+
+  /** Classes review C3: a date view, keyset-paginated on (startDate, id) so the
+   * order is by start time across pages, not only within one. Upcoming means
+   * not yet ended (a Class in progress still shows), soonest first; past and
+   * all are latest first. */
+  private async findByDate(
+    callerId: string,
+    base: Prisma.ClassWhereInput,
+    when: 'upcoming' | 'past' | 'all',
+    cursor?: string,
+    limit?: number,
+  ): Promise<CursorPage<{ id: string }>> {
+    const take = resolveLimit(limit);
+    const now = new Date();
+    const asc = when === 'upcoming';
+    const dir = asc ? 'gt' : 'lt';
+    let after: Prisma.ClassWhereInput = {};
+    if (cursor) {
+      let decoded: { sortValue: Date; id: string };
+      try {
+        decoded = decodeDescCursor(cursor);
+      } catch {
+        throw new BadRequestException('cursor is not valid for this view.');
+      }
+      if (Number.isNaN(decoded.sortValue.getTime())) {
+        throw new BadRequestException('cursor is not valid for this view.');
+      }
+      after = { OR: [{ startDate: { [dir]: decoded.sortValue } }, { startDate: decoded.sortValue, id: { [dir]: decoded.id } }] };
+    }
+    const range: Prisma.ClassWhereInput = when === 'upcoming' ? { endDate: { gt: now } } : when === 'past' ? { endDate: { lte: now } } : {};
+    const order = asc ? 'asc' : 'desc';
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.findMany({ where: { AND: [base, range, after] }, orderBy: [{ startDate: order }, { id: order }], take: take + 1 }),
     );
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    const last = items[items.length - 1];
+    return { items, nextCursor: hasMore && last ? encodeDescCursor(last.startDate, last.id) : null };
   }
 
   async findOne(callerId: string, classId: string) {
@@ -144,6 +193,10 @@ export class ClassesService {
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    // Classes review C11: an archived Class is read-only until unarchived.
+    if (existing.archivedAt) {
+      throw new ConflictException({ code: 'CLASS_ARCHIVED', message: 'This Class is archived. Unarchive it to edit it.' });
+    }
 
     // Resolved "as of after this patch" values — string|null throughout, no
     // undefined round-trip needed since existing.branchId is already string|null.
@@ -172,6 +225,19 @@ export class ClassesService {
     if (dto.startDate || dto.endDate) {
       this.assertValidDateRange(nextStartDate, nextEndDate);
     }
+    // null clears a cutoff, a value replaces it, omitted keeps it (C11).
+    const nextCutoff = (value: string | null | undefined, current: Date | null) =>
+      value === null ? null : value ? new Date(value) : current;
+    const cutoffs = {
+      bookingEndAt: nextCutoff(dto.bookingEndAt, existing.bookingEndAt),
+      qrAttendanceEndAt: nextCutoff(dto.qrAttendanceEndAt, existing.qrAttendanceEndAt),
+      refundFeeDate: nextCutoff(dto.refundFeeDate, existing.refundFeeDate),
+    };
+    // Checked only when the edit touches a time, so an older Class saved before
+    // these checks still takes an unrelated edit (its title, say).
+    if (dto.startDate || dto.endDate || dto.bookingEndAt || dto.qrAttendanceEndAt || dto.refundFeeDate) {
+      this.assertValidCutoffs(nextStartDate, nextEndDate, cutoffs);
+    }
 
     if ((dto as { styles?: unknown }).styles === null) {
       throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
@@ -179,29 +245,10 @@ export class ClassesService {
 
     let seatsToOffer = 0;
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      // Capacity can't drop below the seats already taken (product owner, 26 Oct
-      // 2026; the stress test cut a class of 8 bookings to 3 unchallenged). The row
-      // lock is the same one booking takes, so no booking slips in meanwhile.
-      if (dto.capacity !== undefined && dto.capacity !== null) {
-        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
-        const [bookings, guests] = await Promise.all([
-          tx.booking.count({ where: { classId, status: 'UPCOMING' } }),
-          tx.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
-        ]);
-        const taken = bookings + guests;
-        if (dto.capacity < taken) {
-          throw new ConflictException({
-            code: 'CAPACITY_BELOW_BOOKED',
-            message: `${taken} ${taken === 1 ? 'student is' : 'students are'} booked. Cancel some bookings first, or set the capacity to ${taken} or more.`,
-          });
-        }
-        // Seats a raise frees go to the waitlist first: with Students queued,
-        // nobody can book them directly (waitlist first), so offer them now.
-        const [waiting, notified] = await Promise.all([
-          tx.waitlistEntry.count({ where: { classId, status: 'WAITING' } }),
-          tx.waitlistEntry.count({ where: { classId, status: 'NOTIFIED' } }),
-        ]);
-        seatsToOffer = Math.max(0, Math.min(waiting, dto.capacity - taken - notified));
+      // Capacity can't drop below the seats already taken, and freed seats go to
+      // the waitlist first (class-seats.ts; also used by Timetable slot edits).
+      if (dto.capacity !== undefined) {
+        seatsToOffer = await applyCapacityChange(tx, classId, dto.capacity);
       }
       // Styles are replaced when sent and kept when omitted (Decision 170).
       const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
@@ -218,22 +265,16 @@ export class ClassesService {
           startDate: dto.startDate ? nextStartDate : undefined,
           endDate: dto.endDate ? nextEndDate : undefined,
           capacity: dto.capacity,
-          bookingEndAt: dto.bookingEndAt ? new Date(dto.bookingEndAt) : undefined,
-          qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : undefined,
-          refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
+          bookingEndAt: dto.bookingEndAt !== undefined ? cutoffs.bookingEndAt : undefined,
+          qrAttendanceEndAt: dto.qrAttendanceEndAt !== undefined ? cutoffs.qrAttendanceEndAt : undefined,
+          refundFeeDate: dto.refundFeeDate !== undefined ? cutoffs.refundFeeDate : undefined,
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired,
           membershipInclusion: dto.membershipInclusion,
         },
       });
     });
-    for (let i = 0; i < seatsToOffer; i++) {
-      try {
-        await this.waitlistCascadeQueue.add('seat-freed', { classId });
-      } catch (err) {
-        this.logger.warn(`Failed to enqueue waitlist-cascade-processing after raising Class ${classId}'s capacity: ${err}`);
-      }
-    }
+    await offerSeatsToWaitlist(this.waitlistCascadeQueue, classId, seatsToOffer, this.logger);
     return updated;
   }
 
@@ -320,6 +361,25 @@ export class ClassesService {
   private assertValidDateRange(startDate: Date, endDate: Date) {
     if (endDate <= startDate) {
       throw new BadRequestException('endDate must be after startDate');
+    }
+  }
+
+  /** Classes review C8: the extra times must fit the Class. A check-in window
+   * ending before the start made check-in impossible; a booking or refund
+   * cutoff after the end meant nothing. */
+  private assertValidCutoffs(
+    startDate: Date,
+    endDate: Date,
+    c: { bookingEndAt: Date | null; qrAttendanceEndAt: Date | null; refundFeeDate: Date | null },
+  ) {
+    if (c.qrAttendanceEndAt && c.qrAttendanceEndAt <= startDate) {
+      throw new BadRequestException({ code: 'QR_WINDOW_BEFORE_START', message: 'The check-in window must end after the class starts.' });
+    }
+    if (c.bookingEndAt && c.bookingEndAt > endDate) {
+      throw new BadRequestException({ code: 'BOOKING_CUTOFF_AFTER_END', message: 'The booking cutoff can\'t be after the class ends.' });
+    }
+    if (c.refundFeeDate && c.refundFeeDate > endDate) {
+      throw new BadRequestException({ code: 'REFUND_CUTOFF_AFTER_END', message: 'The refund cutoff can\'t be after the class ends.' });
     }
   }
 }

@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Bu dersin girişi henüz açılmadı. Açılış: {time}.",
     capacityBelowBooked: "Zaten rezervasyon yapmış öğrenci: {count}. Kapasiteyi {count} veya daha fazla olarak ayarlayın ya da önce bazı rezervasyonları iptal edin.",
     bookedClassesChoice: "Bu zaman diliminden yaklaşan bazı derslerde rezervasyon var. Taşımayı, iptal etmeyi veya olduğu gibi bırakmayı seçin.",
+    classArchived: "Bu ders arşivlendi. Düzenlemek için arşivden çıkarın.",
+    qrWindowBeforeStart: "Giriş (check-in) süresi dersin başlamasından sonra bitmelidir.",
+    bookingCutoffAfterEnd: "Rezervasyon kapanışı dersin bitişinden sonra olamaz.",
+    refundCutoffAfterEnd: "İade son tarihi dersin bitişinden sonra olamaz.",
+    guestNeedsFriendPass: "Misafir yalnızca Arkadaş kartı ile rezerve edilebilir. Üyeliğiniz misafirlerinizi değil, sizi kapsar.",
+    guestPassRepeated: "Her misafirin kendi Arkadaş kartı olmalı. Aynı kart birden fazla kez seçildi.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",

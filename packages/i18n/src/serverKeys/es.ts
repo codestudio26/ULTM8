@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "El check-in de esta clase aún no está abierto. Se abre: {time}.",
     capacityBelowBooked: "Alumnos con reserva: {count}. Establece la capacidad en {count} o más, o cancela antes algunas reservas.",
     bookedClassesChoice: "Algunas clases próximas de esta franja tienen reservas. Elige si quieres moverlas, cancelarlas o mantenerlas.",
+    classArchived: "Esta clase está archivada. Desarchívala para editarla.",
+    qrWindowBeforeStart: "El periodo de check-in debe terminar después de que empiece la clase.",
+    bookingCutoffAfterEnd: "El cierre de reservas no puede ser posterior al final de la clase.",
+    refundCutoffAfterEnd: "El límite de reembolso no puede ser posterior al final de la clase.",
+    guestNeedsFriendPass: "Un invitado solo se puede reservar con un Pase de invitado. Tu membresía te cubre a ti, no a tus invitados.",
+    guestPassRepeated: "Cada invitado necesita su propio Pase de invitado. Se eligió el mismo pase más de una vez.",
   },
   errors: {
     beltInHistoryDelete: "Este cinturón está en el historial de grados de los alumnos, así que no se puede eliminar.",

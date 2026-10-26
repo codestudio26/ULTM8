@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Il check-in per questo corso non è ancora aperto. Apertura: {time}.",
     capacityBelowBooked: "Allievi già prenotati: {count}. Imposta la capienza a {count} o più, oppure annulla prima alcune prenotazioni.",
     bookedClassesChoice: "Alcuni corsi in programma di questa fascia hanno prenotazioni. Scegli se spostarli, annullarli o lasciarli come sono.",
+    classArchived: "Questa lezione è archiviata. Ripristinala per modificarla.",
+    qrWindowBeforeStart: "La finestra di check-in deve terminare dopo l'inizio della lezione.",
+    bookingCutoffAfterEnd: "La chiusura delle prenotazioni non può essere dopo la fine della lezione.",
+    refundCutoffAfterEnd: "Il termine per il rimborso non può essere dopo la fine della lezione.",
+    guestNeedsFriendPass: "Un ospite si può prenotare solo con un Pass amico. Il tuo abbonamento copre te, non i tuoi ospiti.",
+    guestPassRepeated: "Ogni ospite ha bisogno del proprio Pass amico. Lo stesso pass è stato scelto più di una volta.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",

@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "Inchecken voor deze les is nog niet geopend. Opent: {time}.",
     capacityBelowBooked: "Al geboekte leerlingen: {count}. Stel de capaciteit in op {count} of meer, of annuleer eerst enkele boekingen.",
     bookedClassesChoice: "Sommige komende lessen uit dit tijdslot hebben boekingen. Kies of je ze wilt verplaatsen, annuleren of behouden.",
+    classArchived: "Deze les is gearchiveerd. Haal hem uit het archief om hem te bewerken.",
+    qrWindowBeforeStart: "Het inchecktijdvak moet eindigen nadat de les begint.",
+    bookingCutoffAfterEnd: "De boekingsdeadline mag niet na het einde van de les liggen.",
+    refundCutoffAfterEnd: "De terugbetalingsdeadline mag niet na het einde van de les liggen.",
+    guestNeedsFriendPass: "Een gast kan alleen met een Vriendenpas worden geboekt. Je eigen lidmaatschap geldt voor jou, niet voor je gasten.",
+    guestPassRepeated: "Elke gast heeft een eigen Vriendenpas nodig. Dezelfde pas is meer dan eens gekozen.",
   },
   errors: {
     beltInHistoryDelete: "Deze band staat in de graderingsgeschiedenis van leerlingen, dus hij kan niet worden verwijderd.",

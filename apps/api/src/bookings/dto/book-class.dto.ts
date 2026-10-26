@@ -29,7 +29,7 @@ export class BookClassDto {
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest\'s own valid Membership or School-gifted Friend Pass.',
+    description: 'One of the organizing Student\'s own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).',
   })
   @IsOptional()
   @IsArray()

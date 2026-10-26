@@ -26,6 +26,12 @@ export const server: PartialMessages<ServerKeys> = {
     checkInOpensAt: "このクラスのチェックインはまだ始まっていません。開始時刻：{time}",
     capacityBelowBooked: "すでに予約済みの生徒：{count}人。定員を {count} 以上に設定するか、先に一部の予約をキャンセルしてください。",
     bookedClassesChoice: "この時間枠の今後のクラスの一部に予約があります。移動、キャンセル、そのままのいずれかを選択してください。",
+    classArchived: "このクラスはアーカイブされています。編集するにはアーカイブを解除してください。",
+    qrWindowBeforeStart: "チェックインの受付終了はクラス開始後にしてください。",
+    bookingCutoffAfterEnd: "予約締切をクラス終了後に設定することはできません。",
+    refundCutoffAfterEnd: "返金締切をクラス終了後に設定することはできません。",
+    guestNeedsFriendPass: "ゲストはフレンドパスでのみ予約できます。ご自身の会員資格はご本人のみが対象です。",
+    guestPassRepeated: "ゲストごとに専用のフレンドパスが必要です。同じパスが複数回選ばれています。",
   },
   errors: {
     beltInHistoryDelete: "この帯は生徒の昇級履歴に含まれているため、削除できません。",

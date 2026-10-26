@@ -22,6 +22,8 @@ const COACH_NAV: NavItem[] = [
 const DISCIPLINES_NAV: NavItem = { label: 'layout.nav.disciplines', to: '/disciplines' };
 /** Read-only too: the lessons and their comments (Decision 326). */
 const CURRICULUM_NAV: NavItem = { label: 'layout.nav.curriculum', to: '/curriculum' };
+/** Read-only, to reach each Class's roll call and QR code (Classes review C4). */
+const CLASSES_NAV: NavItem = { label: 'layout.nav.classes', to: '/classes' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
@@ -62,7 +64,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={
