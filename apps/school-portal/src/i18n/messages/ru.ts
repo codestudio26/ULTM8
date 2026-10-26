@@ -537,6 +537,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Описание",
       waiverRequired: "Для записи нужен подписанный отказ от ответственности/условия",
       membershipInclusion: "Входит в общий доступ по абонементу (без отдельного билета)",
+      membershipInclusionHint: "Выключено: ученикам нужен билет на это занятие (пакет только для него). Включено: записаться можно по любой подписке, недельному абонементу или пакету занятий.",
     },
   },
   disciplines: {
@@ -2366,7 +2367,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL баннера",
       descriptionLabel: "Описание",
       waiverRequired: "Для записи нужен подписанный отказ от ответственности/условия",
-      membershipInclusion: "Входит в общий доступ по абонементу (без отдельного билета)",
     },
     booking: {
       title: "Запись — {title}",

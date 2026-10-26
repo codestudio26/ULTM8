@@ -32,6 +32,10 @@ export const server: PartialMessages<ServerKeys> = {
     refundCutoffAfterEnd: "İade son tarihi dersin bitişinden sonra olamaz.",
     guestNeedsFriendPass: "Misafir yalnızca Arkadaş kartı ile rezerve edilebilir. Üyeliğiniz misafirlerinizi değil, sizi kapsar.",
     guestPassRepeated: "Her misafirin kendi Arkadaş kartı olmalı. Aynı kart birden fazla kez seçildi.",
+    ticketRequired: "Bu tek seferlik ders kendi biletini gerektirir. Abonelik, haftalık kart veya genel ders paketi bu dersi kapsamaz.",
+    classBranchBooked: "Bu derse kayıtlı veya bekleyen öğrenciler var. Başka bir şubeye taşımadan önce rezervasyonlarını iptal et.",
+    classMovedToPast: "Bu derse kayıtlı veya bekleyen öğrenciler var, bu yüzden yalnızca henüz geçmemiş bir saate taşınabilir.",
+    classAlreadyEnded: "Bu ders zaten bitti. Gelecekte bir bitiş saati seç.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",

@@ -533,6 +533,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       descriptionLabel: "Description",
       waiverRequired: "Décharge/conditions signées requises pour réserver",
       membershipInclusion: "Inclus dans l'accès général de l'adhésion (sans billet séparé)",
+      membershipInclusionHint: "Désactivé : les élèves ont besoin d'un billet pour ce cours (un carnet limité à ce cours). Activé : tout abonnement, pass semaine ou carnet de cours permet de le réserver.",
     },
   },
   disciplines: {
@@ -2299,7 +2300,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       bannerUrlLabel: "URL de la bannière",
       descriptionLabel: "Description",
       waiverRequired: "Décharge/conditions signées requises pour réserver",
-      membershipInclusion: "Inclus dans l'accès général de l'adhésion (sans billet séparé)",
     },
     booking: {
       title: "Réserver — {title}",

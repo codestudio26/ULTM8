@@ -798,6 +798,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "已有其他人在候补此课程的名额。加入候补名单即可排队等候。",
       bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
       classBusy: "目前很多人正在预约此课程，请稍后再试。",
+      ticketRequired: "这节单次课程需要专属门票。订阅、周卡或通用课时包都不包含它。",
       checkInNotOpen: "此课程的签到尚未开放。",
       checkInNotOpenAt: "此课程的签到尚未开放，将于 {time} 开放。",
     },

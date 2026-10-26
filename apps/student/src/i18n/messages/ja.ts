@@ -799,6 +799,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "このクラスには、すでに空きを待っている人がいます。キャンセル待ちに登録して順番をお待ちください。",
       bookingClosed: "このクラスの予約受付は終了しました。スタッフに追加してもらうことはできます。",
       classBusy: "現在このクラスの予約が集中しています。少し待ってからもう一度お試しください。",
+      ticketRequired: "この単発クラスには専用のチケットが必要です。サブスクリプション、週間パス、一般の回数券では予約できません。",
       checkInNotOpen: "このクラスのチェックインはまだ始まっていません。",
       checkInNotOpenAt: "このクラスのチェックインはまだ始まっていません。{time}に開始します。",
     },

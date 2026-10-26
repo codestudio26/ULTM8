@@ -823,6 +823,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "D’autres personnes attendent déjà une place dans ce cours. Rejoignez la liste d’attente pour attendre votre tour.",
       bookingClosed: "Les réservations pour ce cours sont closes. Un membre du personnel peut encore vous ajouter.",
       classBusy: "Beaucoup de personnes réservent ce cours en ce moment. Veuillez réessayer dans un instant.",
+      ticketRequired: "Ce cours ponctuel nécessite son propre billet. Un abonnement, un pass semaine ou un carnet de cours général ne le couvre pas.",
       checkInNotOpen: "Le pointage pour ce cours n’est pas encore ouvert.",
       checkInNotOpenAt: "Le pointage pour ce cours n’est pas encore ouvert. Il ouvre {time}.",
     },

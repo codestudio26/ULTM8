@@ -5,6 +5,7 @@ export const lib = {
     waitlistFirst: 'Others are already waiting for a place in this class. Join the waitlist to take your turn.',
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
     classBusy: 'Lots of people are booking this class right now. Please try again in a moment.',
+    ticketRequired: "This one-off class needs its own ticket. A subscription, weekly pass or general class pack doesn't cover it.",
     checkInNotOpen: "Check-in for this class hasn't opened yet.",
     /** `{time}` is a formatted date and time. */
     checkInNotOpenAt: "Check-in for this class hasn't opened yet. It opens {time}.",
