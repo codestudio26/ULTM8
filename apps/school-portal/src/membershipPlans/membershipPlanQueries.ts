@@ -147,3 +147,75 @@ export function useUnarchiveMembershipPlan(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Decision NNN: owner actions on a Student's Memberships and the plan member
+// list.
+// ---------------------------------------------------------------------------
+
+export type PlanMemberResponse = components['schemas']['PlanMemberResponseDto'];
+export type StudentMembershipResponse = components['schemas']['StudentMembershipResponseDto'];
+
+/** Who holds a plan now, by name. Owner only. */
+export function usePlanMembers(planId: string | null) {
+  return useQuery({
+    queryKey: ['membershipPlan', planId, 'members'],
+    queryFn: () => unwrap(apiClient.GET('/v1/membership-plans/{id}/members', { params: { path: { id: planId! } } })),
+    enabled: !!planId,
+  });
+}
+
+/** A Student's Memberships at the School, newest first. Owner only. */
+export function useStudentMemberships(schoolId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['studentMemberships', schoolId, studentId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/memberships', {
+          params: { path: { schoolId: schoolId!, studentId: studentId! } },
+        }),
+      ),
+    enabled: !!schoolId && !!studentId,
+  });
+}
+
+/** After a desk action the Student's list, the plan counts and the member
+ * lists all change. */
+function invalidateMembershipViews(queryClient: ReturnType<typeof useQueryClient>, schoolId: string, studentId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['studentMemberships', schoolId, studentId] }),
+    queryClient.invalidateQueries({ queryKey: ['membershipPlan'] }),
+    queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+  ]);
+}
+
+export function useSellMembership(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { membershipPlanId: string; paymentMethod: 'CASH' | 'BANK_TRANSFER' }) =>
+      unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/memberships/sell', { params: { path: { schoolId, studentId } }, body }),
+      ),
+    onSuccess: () => invalidateMembershipViews(queryClient, schoolId, studentId),
+  });
+}
+
+export function useGiftFriendPass(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { membershipPlanId: string }) =>
+      unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/memberships/gift', { params: { path: { schoolId, studentId } }, body }),
+      ),
+    onSuccess: () => invalidateMembershipViews(queryClient, schoolId, studentId),
+  });
+}
+
+/** Cancel a Subscription at the end of its paid period. */
+export function useCancelMembership(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (membershipId: string) => unwrap(apiClient.POST('/v1/memberships/{id}/cancel', { params: { path: { id: membershipId } }, body: {} })),
+    onSuccess: () => invalidateMembershipViews(queryClient, schoolId, studentId),
+  });
+}
