@@ -255,13 +255,15 @@ export class WaitlistService {
         // Same PrismaJobsService fix as BookingsService.countOccupiedSeats — `tx`
         // (the claiming Student's own tenant context) can never see another
         // Student's Booking/BookingAttendee rows under Decision 89's RLS shape.
-        // Seats offered to other notified Students are held for them.
-        const [bookingCount, attendeeCount, otherHolds] = await Promise.all([
+        // Held seats keep direct bookers out (BookingsService.bookClass), not other
+        // notified Students: among those, the first to claim gets the seat. Counting
+        // other holds here could leave a seat nobody may claim when the cascade has
+        // offered it twice.
+        const [bookingCount, attendeeCount] = await Promise.all([
           this.prismaJobs.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
           this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
-          this.prismaJobs.waitlistEntry.count({ where: { classId: cls.id, status: 'NOTIFIED', id: { not: entryId } } }),
         ]);
-        if (bookingCount + attendeeCount + otherHolds + 1 > cls.capacity) {
+        if (bookingCount + attendeeCount + 1 > cls.capacity) {
           throw new ConflictException('This Class filled up again before the claim completed — please try the next opening.');
         }
       }
