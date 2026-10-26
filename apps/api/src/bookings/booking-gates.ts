@@ -27,7 +27,7 @@ export function assertClassBookable(
     throw new BadRequestException('This Class has already ended.');
   }
   if (!opts.byStaff && cls.bookingEndAt && now >= cls.bookingEndAt) {
-    throw new BadRequestException('Booking for this Class has closed. Ask a member of staff if you want to join.');
+    throw new BadRequestException({ code: 'BOOKING_CLOSED', message: 'Booking for this Class has closed. Ask a member of staff if you want to join.' });
   }
 }
 
@@ -128,7 +128,7 @@ export async function withSeatLockRetry<T>(run: () => Promise<T>): Promise<T> {
     } catch (err) {
       if (!(err instanceof SeatLockBusyError)) throw err;
       if (Date.now() >= deadline) {
-        throw new ConflictException('This Class is very busy right now. Please try again in a moment.');
+        throw new ConflictException({ code: 'CLASS_BUSY', message: 'This Class is very busy right now. Please try again in a moment.' });
       }
       const backoff = Math.min(200, 10 * 2 ** Math.min(attempt, 4));
       await new Promise((resolve) => setTimeout(resolve, backoff / 2 + Math.random() * backoff));

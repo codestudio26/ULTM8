@@ -4962,6 +4962,16 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        UpcomingImpactResponseDto: {
+            /** @description Upcoming, unarchived Classes generated from this slot. */
+            upcomingClasses: number;
+            /** @description Of those, how many have bookings or a waitlist. */
+            bookedClasses: number;
+            /** @description Students (and guests) booked across those Classes. */
+            bookedStudents: number;
+            /** @description The most seats taken in any one of those Classes. A capacity below this needs CANCEL or KEEP. */
+            mostTaken: number;
+        };
         UpdateTimetableSlotDto: {
             /** @enum {string} */
             weekday?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
@@ -9347,7 +9357,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
             };
         };
     };
@@ -9367,7 +9379,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                    "application/json": components["schemas"]["UpcomingImpactResponseDto"];
                 };
             };
         };

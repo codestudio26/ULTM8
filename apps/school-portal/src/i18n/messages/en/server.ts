@@ -21,6 +21,18 @@ export const server = {
     /** No answer from the server at all (@ultm8/api-client's NETWORK_ERROR). */
     network: 'Could not reach the server. Check your connection and try again.',
   },
+  /** Booking and schedule errors the API marks with a code (Decision 322), shown
+   * in every language, English included — see `../../server/codes.ts`. */
+  codes: {
+    classFull: 'This class is full. You can add the student to the waitlist instead.',
+    waitlistFirst: 'Students are already waiting for a place in this class. Join the waitlist to take your turn.',
+    bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
+    classBusy: 'Lots of people are booking this class right now. Please try again in a moment.',
+    checkInNotOpen: "Check-in for this class hasn't opened yet.",
+    checkInOpensAt: "Check-in for this class hasn't opened yet. It opens {time}.",
+    capacityBelowBooked: 'Students already booked: {count}. Set the capacity to {count} or more, or cancel some bookings first.',
+    bookedClassesChoice: 'Some upcoming classes from this slot have bookings. Choose whether to move, cancel or keep them.',
+  },
   errors: {
     slotHasBookings: {
       one: "This timetable slot can't be archived while it still has {count} upcoming booking against its classes.",

@@ -184,12 +184,13 @@ export class BookingsService {
         // can't book past the queue. Staff can still book a walk-in into a free seat.
         const queue = await this.countActiveWaitlist(classId);
         if (!isStaffAction && queue.waiting + queue.notified > 0) {
-          throw new ConflictException('Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).');
+          throw new ConflictException({ code: 'WAITLIST_FIRST', message: 'Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).' });
         }
         if (occupied + queue.notified + partySize > resolvedClass.capacity) {
-          throw new ConflictException(
-            'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
-          );
+          throw new ConflictException({
+            code: 'CLASS_FULL',
+            message: 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
+          });
         }
       }
 

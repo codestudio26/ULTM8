@@ -10,4 +10,7 @@ export class UpcomingImpactResponseDto {
 
   @ApiProperty({ description: 'Students (and guests) booked across those Classes.' })
   bookedStudents!: number;
+
+  @ApiProperty({ description: 'The most seats taken in any one of those Classes. A capacity below this needs CANCEL or KEEP.' })
+  mostTaken!: number;
 }

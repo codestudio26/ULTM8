@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Booking and schedule rules on screen** (Decision 322):
+  - **School page:** "Check-in opens (minutes before class)" and "Cancelling
+    after a class starts" (no refund once started — the default — refund
+    until the class ends, or always refund).
+  - **Timetable slot edits:** when a change moves classes that already have
+    bookings, switches the slot off, or cuts the capacity below the seats taken,
+    the owner chooses to move, cancel or keep those classes. Only the changed
+    fields are saved, so a change made to one class on its own survives.
+  - **Booking a full class:** the booking dialog offers "Add to waitlist".
+  - **Clearer messages** for a full class, a waitlist queue, booking closed,
+    check-in not open yet (with the opening time) and a very busy class, in
+    every language. The API now marks these errors with their own codes.
 - **Booking and schedule rules from the stress test** (Decision 322):
   - **Booking:** a class that has ended or is archived can't be booked, and a
     membership past its expiry date no longer pays for a class.
