@@ -646,6 +646,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "หมดอายุ {date}",
       empty: "ยังไม่มีสมาชิกภาพ",
       loadError: "ไม่สามารถโหลดสมาชิกภาพได้ โปรดลองอีกครั้ง",
+      cancelSubscription: "ยกเลิกการสมัคร",
+      keepSubscription: "ใช้ต่อ",
+      cancelConfirm: "คุณยังใช้การสมัครได้จนถึงสิ้นเดือนที่ชำระแล้ว จากนั้นจะสิ้นสุดและไม่มีการเรียกเก็บเงินอีก",
+      cancelError: "ยกเลิกการสมัครของคุณไม่ได้ โปรดลองอีกครั้ง",
+      cancelledEnds: "ยกเลิกแล้ว สิ้นสุด {date}",
     },
     planRow: {
       classesIncluded: { other: "{count} คลาส" },

@@ -677,6 +677,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Wygasa {date}",
       empty: "Brak członkostw.",
       loadError: "Nie udało się wczytać członkostw — spróbuj ponownie.",
+      cancelSubscription: "Anuluj subskrypcję",
+      keepSubscription: "Zachowaj",
+      cancelConfirm: "Zachowujesz subskrypcję do końca opłaconego miesiąca. Potem się kończy i nie są pobierane kolejne płatności.",
+      cancelError: "Nie udało się anulować subskrypcji — spróbuj ponownie.",
+      cancelledEnds: "Anulowany, kończy się {date}",
     },
     planRow: {
       classesIncluded: {

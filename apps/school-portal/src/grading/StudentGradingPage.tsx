@@ -38,6 +38,7 @@ import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal,
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
+import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { formatHours } from './hours';
 
 type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
@@ -170,6 +171,10 @@ export function StudentGradingPage() {
           )}
         </Card>
       </div>
+
+      {/* Decision 348: memberships, selling at the desk, Friend Pass and
+          cancelling a Subscription. Owner only, like the API. */}
+      {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
 
       {styles.length === 0 ? (
         <Card>

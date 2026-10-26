@@ -277,3 +277,4 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
     expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_1' });
   });
 });
+

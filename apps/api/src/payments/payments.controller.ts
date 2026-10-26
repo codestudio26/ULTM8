@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiExcludeEndpoint, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -133,6 +134,14 @@ export class PaymentsController {
    * otherwise surface as a confusing signature-mismatch error from deep inside the
    * Stripe SDK instead of a clear "this endpoint is misconfigured" one.
    */
+  // Not rate-limited: every request is verified by its Stripe signature, and all
+  // of Stripe's deliveries for every School arrive from a handful of Stripe IPs.
+  // Throttled, a busy hour (renewals across many Schools) got 429s, delaying each
+  // payment by Stripe's retry backoff (billing stress test, 26 Oct 2026: 5,142 of
+  // 6,142 deliveries refused at the 1,000-a-minute per-IP limit; the production
+  // default is 60 a minute). Both throttlers are named: a bare @SkipThrottle()
+  // only skips `default`, not `identity` (app.module.ts).
+  @SkipThrottle({ default: true, identity: true })
   @ApiExcludeEndpoint()
   @HttpCode(200)
   @Post('payments/webhooks/stripe')
