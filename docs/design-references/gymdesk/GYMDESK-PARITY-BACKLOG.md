@@ -267,7 +267,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
-| BL12 | **Hosted payment form** with the gym's branding: title, fixed amount **or "user can enter custom amount"**, rich-text description above the form, rich-text confirmation message after paying | ❌ | Not decided. A public pay link with no member account behind it; see BLQ2 |
+| BL12 | **Hosted payment form** with the gym's branding: title, fixed amount **or "user can enter custom amount"**, rich-text description above the form, rich-text confirmation message after paying | ⏭ | Later, after C1 (product owner, 26 Oct 2026). A public pay link with no member account behind it |
 
 ### Accounting
 
@@ -312,7 +312,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 
 **Questions (for the product owner, `[UNRESOLVED]` until answered):**
 - **BLQ1 Saved discounts and promo codes:** do Schools need reusable discounts (a sign-up discount, a public code like `20OFF`, use limit, expiry, only for some plans)? Or is a discount typed on each charge enough (Decision 303)? **Answered (26 Oct 2026): later.** C1 first, with discounts typed on each charge (Decision 303); saved discounts, public promo codes, sign-up discounts, use limits and expiry follow as the next billing feature (version not assigned).
-- **BLQ2 Payment forms:** a public pay link (fixed or "any amount", e.g. donations, seminar fees) for people who may have no ULTM8 account? Who receives the receipt, and is it tied to a member?
+- **BLQ2 Payment forms:** a public pay link (fixed or "any amount", e.g. donations, seminar fees) for people who may have no ULTM8 account? Who receives the receipt, and is it tied to a member? **Answered (26 Oct 2026): later**, after C1 (version not assigned).
 - **BLQ3 Revenue reports:** which do you want: Overview (scheduled / paid / overdue + chart), Accounting (revenue, tax, refunds, balances), Growth (year-to-date, projection, per member)? Owner only, or also staff with billing access?
 - **BLQ4 Invoice numbers:** should every charge and payment get a sequential number per School (`#0000001`)? Some countries require it on invoices (e.g. Brazil, EU), so this may need to be always on rather than a switch.
 - **BLQ5 Payment notifications:** which are on by default, and can the School switch each off? (Reminder N days before a scheduled payment; dispute notice to the member; owner told when a member removes their card.)
