@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEnum, IsNotEmpty, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
 
 /** The three audience scopes the product owner approved tonight — all
@@ -21,14 +22,21 @@ export enum BroadcastAudienceDto {
  * RoleGrantsService.create() already applies to its own
  * role/branchId-required-together check).
  */
+/** A title or message of only spaces would arrive blank on every student's
+ * phone; trimming first makes @IsNotEmpty refuse it, as the portal already
+ * does on its side. */
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
 export class BroadcastNotificationDto {
   @ApiProperty({ description: 'Notification title.' })
+  @Transform(trim)
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
   title!: string;
 
   @ApiProperty({ description: 'Notification body.' })
+  @Transform(trim)
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)

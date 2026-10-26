@@ -88,10 +88,27 @@ export class NotificationFanoutProcessor extends WorkerHost {
       return;
     }
 
-    await this.delivery.sendEmail(user.email, title, body);
+    // Push first, and only on the first attempt: it is caught (never fails the
+    // job), so a retry exists only to re-try EMAIL — re-sending push on it would
+    // buzz the same phone again. Before this ordering, push ran only after a
+    // successful email, so an email outage silently took push down with it.
+    if (!job.attemptsMade) {
+      await this.sendPush(notificationId, userId, title, body);
+    }
 
-    // See this class's own header comment for why push is caught here rather
-    // than allowed to propagate like the email send above.
+    // No email service configured at all (as on staging this testing round):
+    // nothing a retry can fix, so skip quietly instead of failing the job three
+    // times and logging a "permanently failed" alarm for every notification.
+    if (!this.delivery.isConfigured()) {
+      this.logger.debug(`notification-fanout: email not configured — Notification ${notificationId} delivered in-app only.`);
+      return;
+    }
+    await this.delivery.sendEmail(user.email, title, body);
+  }
+
+  /** Best-effort push — see this class's own header comment for why a push
+   * failure is logged, never propagated. */
+  private async sendPush(notificationId: string, userId: string, title: string, body: string): Promise<void> {
     try {
       const deviceTokens = await this.prismaJobs.deviceToken.findMany({ where: { userId }, select: { token: true } });
       if (deviceTokens.length > 0) {

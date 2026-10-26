@@ -103,6 +103,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "无法将此通知标记为已读，请重试。",
     delete: "删除",
     clearAllRead: "清除所有已读",
+    loadMore: "加载更多",
     deleteModal: {
       title: "删除此通知？",
       description: "“{title}”将从你的通知中移除。",

@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Impossible de marquer cette notification comme lue. Veuillez réessayer.",
     delete: "Supprimer",
     clearAllRead: "Effacer les notifications lues",
+    loadMore: "Afficher plus",
     deleteModal: {
       title: "Supprimer la notification ?",
       description: "« {title} » sera retirée de vos notifications.",

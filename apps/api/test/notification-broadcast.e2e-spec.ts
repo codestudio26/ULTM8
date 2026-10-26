@@ -335,6 +335,29 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
     expect(emptyAudience.body.recipientCount).toBe(0);
   });
 
+  it('refuses an archived Branch, an archived Class, and a title or message of only spaces', async () => {
+    const archivedBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Archived Branch', archivedAt: new Date() } });
+    branchIds.push(archivedBranch.id);
+    const past = new Date(Date.now() - 86_400_000);
+    const archivedClass = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Old Class', startDate: past, endDate: past, archivedAt: new Date() },
+    });
+    classIds.push(archivedClass.id);
+    const send = (body: Record<string, unknown>) =>
+      request(app.getHttpServer()).post(`/v1/schools/${school.id}/notifications/broadcast`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+
+    const toArchivedBranch = await send({ title: 'Hi', body: 'Body', audience: 'BRANCH', branchId: archivedBranch.id });
+    expect(toArchivedBranch.status).toBe(400);
+    expect(JSON.stringify(toArchivedBranch.body)).toMatch(/archived/);
+
+    const toArchivedClass = await send({ title: 'Hi', body: 'Body', audience: 'CLASS', classId: archivedClass.id });
+    expect(toArchivedClass.status).toBe(400);
+    expect(JSON.stringify(toArchivedClass.body)).toMatch(/archived/);
+
+    expect((await send({ title: '   ', body: 'Body', audience: 'ALL' })).status).toBe(400);
+    expect((await send({ title: 'Hi', body: ' \n ', audience: 'ALL' })).status).toBe(400);
+  });
+
   // ---------------------------------------------------------------------------
   // Direct service invocation — exact recipient identity per audience scope.
   // See this file's own header comment for why this does NOT call

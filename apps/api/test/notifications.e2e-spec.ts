@@ -314,6 +314,13 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   // backend backlog — Snooze, approved by the product owner).
   // ---------------------------------------------------------------------------
 
+  it('GET /notifications/me answers a cursor it never wrote with a 400, not a server error', async () => {
+    for (const cursor of ['garbage', Buffer.from('{"createdAt":"x","id":"y"}').toString('base64url'), Buffer.from('[]').toString('base64url')]) {
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me').query({ cursor }).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(400);
+    }
+  });
+
   describe('PATCH /notifications/:id/snooze', () => {
     it('hides the Notification from the unread count while snoozed; validates input; self-only', async () => {
       const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
@@ -338,6 +345,14 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
         .set('Authorization', `Bearer ${tokenStudentA}`)
         .send({ until: new Date(Date.now() - 60_000).toISOString() });
       expect(pastSnooze.status).toBe(400);
+
+      // Further than 7 days — `minutes` already stops there, and `until` now
+      // does too, rather than hiding a notification for years.
+      const tooLong = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ until: '3000-01-01T00:00:00.000Z' });
+      expect(tooLong.status).toBe(400);
 
       // Cross-caller snooze is RLS-blocked — indistinguishable from
       // not-found, same design as every other self-only resource.
@@ -612,7 +627,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     // being absent either — a real class here would make process() reject
     // with a config error today and silently change behavior the moment
     // someone sets those env vars locally).
-    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined), isConfigured: jest.fn().mockReturnValue(true) };
     // Same reasoning as fakeDelivery above, for push (Decision 223/264) — this
     // suite's scope is the Notification-row write/idempotency and the
     // email/push wiring itself, not live FCM delivery (no real credentials in
@@ -639,6 +654,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
     beforeEach(() => {
       fakePush.send.mockReset().mockResolvedValue({ sent: 0, staleTokens: [] });
+      fakeDelivery.sendEmail.mockReset().mockResolvedValue(undefined);
+      fakeDelivery.isConfigured.mockReset().mockReturnValue(true);
     });
 
     it("fans out to every active Student at the Waiver's own School only — not a revoked grant, not a different School", async () => {
@@ -660,7 +677,9 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(enqueuedUserIds).not.toContain(owner.id);
 
       const studentAJob = enqueued.find((job) => job.data.userId === studentA.id)!;
-      expect(studentAJob.data.body).toBe('Direct-Invocation Waiver has invited you to sign the following waiver.');
+      // Names the School as the sender and the waiver by its title (it used
+      // to put the waiver's title where the sender belongs).
+      expect(studentAJob.data.body).toBe('Notifications HTTP School has invited you to sign the waiver "Direct-Invocation Waiver".');
       expect(studentAJob.data.type).toBe('WAIVER_SIGNATURE_REQUEST');
       expect(studentAJob.data.notificationId).toBe(`waiver-${waiver.id}-${studentA.id}`);
 
@@ -739,6 +758,40 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Push test 3', 'push body 3');
 
       await superuser.deviceToken.delete({ where: { id: goodToken.id } });
+    });
+
+    it('push does not wait on email: no email service skips email quietly, a failing email still retries, and a retry never re-sends push', async () => {
+      const token = await superuser.deviceToken.create({
+        data: { id: randomUUID(), userId: studentA.id, platform: 'IOS', token: `order-${randomUUID()}` },
+      });
+
+      // No email service configured (staging this round): push goes out, the
+      // job succeeds, and email is not attempted at all.
+      fakeDelivery.isConfigured.mockReturnValue(false);
+      const idNoEmail = `order-no-email-${randomUUID()}`;
+      await expect(
+        fanoutProcessor.process({ id: 'order-1', data: { notificationId: idNoEmail, userId: studentA.id, title: 'T', body: 'B' } } as never),
+      ).resolves.toBeUndefined();
+      notificationIds.push(idNoEmail);
+      expect(fakePush.send).toHaveBeenCalledTimes(1);
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+
+      // Email configured but failing: push has already gone out, and the job
+      // still fails so BullMQ retries the email.
+      fakeDelivery.isConfigured.mockReturnValue(true);
+      fakeDelivery.sendEmail.mockRejectedValueOnce(new Error('Postmark down'));
+      const idEmailDown = `order-email-down-${randomUUID()}`;
+      const jobData = { notificationId: idEmailDown, userId: studentA.id, title: 'T2', body: 'B2' };
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 0 } as never)).rejects.toThrow('Postmark down');
+      notificationIds.push(idEmailDown);
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+
+      // The retry sends the email but not a second push.
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 1 } as never)).resolves.toBeUndefined();
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+      expect(fakeDelivery.sendEmail).toHaveBeenLastCalledWith(studentA.email, 'T2', 'B2');
+
+      await superuser.deviceToken.delete({ where: { id: token.id } });
     });
   });
 });

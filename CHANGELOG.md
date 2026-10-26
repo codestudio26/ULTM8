@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Notifications fixes from the 26 Oct review (Decision 333)** — the page
+  has **Load more**, so notifications past the newest 20 can be seen; the bell's
+  red dot follows the real Unread count (all pages, snoozed left out), as does
+  the coach dashboard's unread count; Snooze is greyed out on read
+  notifications; the broadcast "One class" picker lists upcoming classes
+  soonest first with their date, time and branch; push no longer waits on
+  email, and with no email service set up a notification is delivered in-app
+  without three failed retries; the waiver request names the School
+  ("Gracie Barra has invited you to sign the waiver …"); Class moved, Class
+  cancelled, Promotion to decide and Promotion fee are translated; broadcasts
+  refuse an archived branch or class and a blank title or message; a snooze
+  is capped at 7 days; a bad page link is a 400, not a server error.
 - **Timetable fixes from the 26 Oct review (Decision 332)** — archived slots,
   closed Schools and archived Branches no longer get classes back overnight;
   a new or unarchived slot is bookable straight away; raising a slot's capacity

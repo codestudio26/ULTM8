@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BroadcastNotificationInput, BroadcastResponse } from './notificationQueries';
@@ -39,6 +40,14 @@ export function BroadcastNotificationModal({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<BroadcastResponse | null>(null);
   const t = useT();
+  const branchNames = new Map(branches.map((b) => [b.id, b.name]));
+  // A weekly class repeats its title every week, so each option also carries
+  // its own date, time and branch to tell the occurrences apart.
+  const classLabel = (c: ClassResponse) => {
+    const when = new Date(c.startDate).toLocaleString(formatLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const branch = c.branchId ? branchNames.get(c.branchId) : undefined;
+    return [c.title, when, branch].filter(Boolean).join(' · ');
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -122,7 +131,7 @@ export function BroadcastNotificationModal({
               required
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
-              options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: classLabel(c) }))]}
             />
           </Field>
         ) : null}

@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Não foi possível marcar esta notificação como lida. Tente novamente.",
     delete: "Excluir",
     clearAllRead: "Limpar as lidas",
+    loadMore: "Carregar mais",
     deleteModal: {
       title: "Excluir notificação?",
       description: "“{title}” será removida das suas notificações.",

@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Deze melding kan niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
     delete: "Verwijderen",
     clearAllRead: "Alle gelezen wissen",
+    loadMore: "Meer laden",
     deleteModal: {
       title: "Melding verwijderen?",
       description: "‘{title}’ wordt uit je meldingen verwijderd.",

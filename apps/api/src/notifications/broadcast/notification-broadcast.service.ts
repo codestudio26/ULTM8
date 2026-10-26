@@ -134,6 +134,14 @@ export class NotificationBroadcastService {
         throw new BadRequestException('branchId is required when audience is BRANCH.');
       }
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+      // An archived Branch is gone from every picker (branchSelectOptions);
+      // refused here too, the same way Staff role grants refuse one.
+      const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.branch.findUnique({ where: { id: dto.branchId }, select: { archivedAt: true } }),
+      );
+      if (branch?.archivedAt) {
+        throw new BadRequestException('This branch is archived. Pick a live branch, or send to all students.');
+      }
       const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.roleGrant.findMany({
           where: {
@@ -154,10 +162,14 @@ export class NotificationBroadcastService {
       throw new BadRequestException('classId is required when audience is CLASS.');
     }
     const cls = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.findUnique({ where: { id: dto.classId }, select: { id: true, schoolId: true } }),
+      tx.class.findUnique({ where: { id: dto.classId }, select: { id: true, schoolId: true, archivedAt: true } }),
     );
     if (!cls || cls.schoolId !== schoolId) {
       throw new NotFoundException('Class not found');
+    }
+    // An archived Class has been cancelled or taken off the schedule.
+    if (cls.archivedAt) {
+      throw new BadRequestException('This class is archived. Pick an upcoming class.');
     }
     const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findMany({ where: { classId: dto.classId }, distinct: ['studentId'], select: { studentId: true } }),

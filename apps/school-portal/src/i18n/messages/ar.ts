@@ -108,6 +108,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "تعذّر تعليم هذا الإشعار كمقروء، يُرجى المحاولة مرة أخرى.",
     delete: "حذف",
     clearAllRead: "مسح المقروءة",
+    loadMore: "تحميل المزيد",
     deleteModal: {
       title: "حذف الإشعار؟",
       description: "ستتم إزالة «{title}» من إشعاراتك.",

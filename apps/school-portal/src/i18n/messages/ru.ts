@@ -106,6 +106,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Не удалось отметить уведомление как прочитанное. Попробуйте ещё раз.",
     delete: "Удалить",
     clearAllRead: "Очистить прочитанные",
+    loadMore: "Показать ещё",
     deleteModal: {
       title: "Удалить уведомление?",
       description: "«{title}» будет удалено из ваших уведомлений.",

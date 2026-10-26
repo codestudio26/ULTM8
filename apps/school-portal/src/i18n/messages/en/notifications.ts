@@ -20,6 +20,7 @@ export const notifications = {
   markReadFailed: 'Could not mark this notification as read — please try again.',
   delete: 'Delete',
   clearAllRead: 'Clear all read',
+  loadMore: 'Load more',
   deleteModal: {
     title: 'Delete notification?',
     description: '"{title}" will be removed from your notifications.',

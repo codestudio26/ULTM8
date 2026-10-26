@@ -103,6 +103,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "ไม่สามารถทำเครื่องหมายว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
     delete: "ลบ",
     clearAllRead: "ล้างที่อ่านแล้วทั้งหมด",
+    loadMore: "โหลดเพิ่มเติม",
     deleteModal: {
       title: "ลบการแจ้งเตือนนี้หรือไม่",
       description: "“{title}” จะถูกนำออกจากการแจ้งเตือนของคุณ",

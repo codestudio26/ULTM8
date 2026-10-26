@@ -106,6 +106,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Nie udało się oznaczyć powiadomienia jako przeczytanego. Spróbuj ponownie.",
     delete: "Usuń",
     clearAllRead: "Wyczyść przeczytane",
+    loadMore: "Wczytaj więcej",
     deleteModal: {
       title: "Usunąć powiadomienie?",
       description: "„{title}” zostanie usunięte z Twoich powiadomień.",

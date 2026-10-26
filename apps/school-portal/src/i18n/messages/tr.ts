@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Bu bildirim okundu olarak işaretlenemedi. Lütfen tekrar deneyin.",
     delete: "Sil",
     clearAllRead: "Okunanları temizle",
+    loadMore: "Daha fazla yükle",
     deleteModal: {
       title: "Bildirim silinsin mi?",
       description: "\"{title}\" bildirimlerinizden kaldırılacak.",

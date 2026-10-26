@@ -103,6 +103,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "이 알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
     delete: "삭제",
     clearAllRead: "읽은 알림 모두 지우기",
+    loadMore: "더 보기",
     deleteModal: {
       title: "알림을 삭제할까요?",
       description: "'{title}' 알림이 목록에서 삭제됩니다.",

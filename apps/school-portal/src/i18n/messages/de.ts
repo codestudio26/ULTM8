@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Diese Benachrichtigung konnte nicht als gelesen markiert werden. Bitte versuche es erneut.",
     delete: "Löschen",
     clearAllRead: "Alle gelesenen löschen",
+    loadMore: "Mehr laden",
     deleteModal: {
       title: "Benachrichtigung löschen?",
       description: "„{title}“ wird aus deinen Benachrichtigungen entfernt.",

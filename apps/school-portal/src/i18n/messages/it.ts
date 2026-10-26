@@ -104,6 +104,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     markReadFailed: "Impossibile segnare questa notifica come letta. Riprova.",
     delete: "Elimina",
     clearAllRead: "Cancella le lette",
+    loadMore: "Carica altre",
     deleteModal: {
       title: "Eliminare la notifica?",
       description: "«{title}» verrà rimossa dalle tue notifiche.",

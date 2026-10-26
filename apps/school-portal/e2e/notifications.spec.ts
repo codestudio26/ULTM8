@@ -13,6 +13,7 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
 let s: GradingSchool;
 const notificationIds: string[] = [];
 const branchIds: string[] = [];
+const classIds: string[] = [];
 
 test.beforeEach(async () => {
   s = await seedGradingSchool();
@@ -21,6 +22,8 @@ test.beforeEach(async () => {
 test.afterEach(async () => {
   await db.notification.deleteMany({ where: { id: { in: notificationIds } } });
   notificationIds.length = 0;
+  await db.class.deleteMany({ where: { id: { in: classIds } } });
+  classIds.length = 0;
   await db.studentHomeBranch.deleteMany({ where: { branchId: { in: branchIds } } });
   await db.branch.deleteMany({ where: { id: { in: branchIds } } });
   branchIds.length = 0;
@@ -151,4 +154,73 @@ test('Broadcast to Students — Branch audience reaches only that Branch', async
 
   // Only `newStudent` has a home Branch at Uptown — `student` does not.
   await expect(page.getByText('Sent to 1 Student')).toBeVisible();
+});
+
+test('Load more shows notifications past the newest 20, and the bell follows the Unread count', async ({ page }) => {
+  for (let i = 0; i < 25; i++) {
+    const n = await db.notification.create({
+      data: { id: randomUUID(), userId: s.ownerId, title: `Inbox item ${i}`, body: 'x', read: i < 24, createdAt: new Date(Date.now() - i * 60_000) },
+    });
+    notificationIds.push(n.id);
+  }
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  await expect(page.getByRole('row', { name: /Inbox item 0\b/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Inbox item \d+/ })).toHaveCount(20);
+
+  // The only unread one is the oldest, past the first page: the bell still
+  // shows it, because it reads the Unread count rather than the loaded rows.
+  const bell = page.locator('a[href="/notifications"][aria-label="Notifications"]');
+  await expect(bell.locator('span')).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Load more' }).click();
+  await expect(page.getByRole('row', { name: /Inbox item \d+/ })).toHaveCount(25);
+  await expect(page.getByRole('row', { name: /Inbox item 24\b/ }).getByText('New')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Load more' })).toHaveCount(0);
+
+  // Snooze is greyed out on a read notification.
+  await page.getByRole('button', { name: 'Actions for Inbox item 0' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Snooze' })).toBeDisabled();
+  await page.keyboard.press('Escape');
+
+  // Snoozing the one unread notification turns the bell's dot off.
+  await page.getByRole('button', { name: 'Actions for Inbox item 24' }).click();
+  await page.getByRole('menuitem', { name: 'Snooze' }).click();
+  await page.getByRole('button', { name: 'Snooze' }).click();
+  await expect(page.getByRole('row', { name: /Inbox item 24\b/ }).getByText('Snoozed')).toBeVisible();
+  await expect(bell.locator('span')).toHaveCount(0);
+});
+
+test('Broadcast to one class — the picker lists upcoming classes only, soonest first, with their date', async ({ page }) => {
+  const day = 86_400_000;
+  const mk = (title: string, offsetDays: number, archived = false) =>
+    db.class.create({
+      data: {
+        id: randomUUID(), schoolId: s.schoolId, title, startDate: new Date(Date.now() + offsetDays * day),
+        endDate: new Date(Date.now() + offsetDays * day + 3_600_000), archivedAt: archived ? new Date() : null,
+      },
+    });
+  const later = await mk('Kids BJJ', 9);
+  const sooner = await mk('Kids BJJ', 2);
+  const past = await mk('Past Class', -3);
+  const archived = await mk('Archived Class', 4, true);
+  classIds.push(later.id, sooner.id, past.id, archived.id);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  await page.getByRole('button', { name: 'Send a message to students' }).click();
+  await page.getByLabel('Send to').selectOption('CLASS');
+
+  const options = await page.getByLabel('Class').locator('option').allTextContents();
+  const kids = options.filter((o) => o.startsWith('Kids BJJ'));
+  expect(kids).toHaveLength(2);
+  // Each carries its own date, so the two "Kids BJJ" weeks can be told apart,
+  // and the sooner one comes first.
+  expect(kids[0]).not.toBe(kids[1]);
+  expect(options.indexOf(kids[0])).toBeLessThan(options.indexOf(kids[1]));
+  const values = await page.getByLabel('Class').locator('option').evaluateAll((els) => els.map((e) => (e as HTMLOptionElement).value));
+  expect(values.indexOf(sooner.id)).toBeLessThan(values.indexOf(later.id));
+  expect(options.some((o) => o.startsWith('Past Class'))).toBe(false);
+  expect(options.some((o) => o.startsWith('Archived Class'))).toBe(false);
 });

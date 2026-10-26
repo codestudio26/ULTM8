@@ -5011,3 +5011,32 @@ T7 (calendar from real Classes), a Timetable view for Branch Staff and coaches, 
 ### Recorded by
 
 User (Code), 26 Oct 2026, choosing "Build all 17, my way for T5/T6" on the Timetable fixes decision.
+
+---
+
+## Decision 333 — Notifications review fixes: Load more, bell count, push before email, named waiver sender, archived broadcast targets
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 204, 223, 264, 273, 277
+
+A review of the Notifications section (26 Oct 2026) found 14 bugs (N1–N14). The product owner asked for the fixes that need no further choice to be built (*"build it and ask me"*); N2 (a child's notifications reaching their parents), N9 (who a class broadcast reaches) and naming the student in the payment-restricted alert were put to them as separate questions and are not part of this decision. N7 (cancellation date in UTC) was already fixed by Decision 332 §13.
+
+### Decision
+
+1. **Every notification can be reached** (N1): the Notifications page loads the inbox one page at a time with a **Load more** button, instead of only the newest 20.
+2. **The bell and the coach dashboard use the real Unread count** (N3): `GET /notifications/me/counts`, which covers every page and leaves snoozed notifications out, the same number as the Unread tile.
+3. **Snooze is greyed out on a read notification** (N10): it is already out of the Unread count.
+4. **The broadcast class picker lists upcoming, live Classes** (N4): from now to 30 days ahead, soonest first, each labelled with its date, time and branch.
+5. **Push does not wait on email** (N5): notification-fanout sends push first, on the first attempt only (a retry exists only for email), and when no email service is configured at all it skips email instead of failing and retrying the job. A real email failure still retries.
+6. **The waiver request names the School as the sender** (N6): "{School} has invited you to sign the waiver "{title}"." Spec 55 §9's sample leaves the sender out ("...has invited you to sign the following waiver"); the earlier text put the waiver's title in the sender's place. Older rows keep translating.
+7. **Four more job-written notifications are translated** (N8): Class moved, Class cancelled, Promotion to decide and Promotion fee, in all 15 languages. The date inside the Class moved/cancelled text stays as the API writes it.
+8. **A broadcast refuses an archived Branch or Class** (N11) with a clear message, and **a title or message of only spaces** (N13), trimmed on the server as the portal already does.
+9. **A snooze is capped at 7 days whichever way it is set** (N14), matching the existing `minutes` ceiling.
+10. **A cursor the API did not write is a 400** (N12), not a server error.
+
+### What this does NOT resolve
+
+N2, N9, the payment-restricted alert's wording, a School label on each notification, Mark all read, click-through, a sent-broadcast history, notification settings and automatic clean-up are still open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, "build it and ask me" on the Notifications fix plan.
