@@ -121,6 +121,13 @@ describe('promotion fee', () => {
     expect(answer.mutate).toHaveBeenCalledWith({ id: 'fee1', answer: 'accept' }, expect.anything());
   });
 
+  it('opens the fee straight away when Home sent the person here to answer it', async () => {
+    mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [FEE] }));
+    const { getByText, queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: { openFeeId: 'fee1' } } as never} />);
+    expect(queryByText('See and answer')).toBeNull();
+    expect(getByText(/^Accept /)).toBeTruthy();
+  });
+
   it('Decline asks again, in red, before sending', async () => {
     mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [FEE] }));
     const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);

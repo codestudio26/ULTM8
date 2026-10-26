@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
 import { LegalFooter } from '../components/LegalFooter';
 import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
+import { useMyMinors } from '../guardians/guardianQueries';
+import { HomeFeeCards, type FeePerson } from '../grading/HomeFeeCards';
 import type { AppStackParamList } from './types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -19,14 +21,32 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
  * this doesn't replace the Student options, it adds to them. */
 export function HomeScreen({ navigation }: Props) {
   const t = useT();
-  const { logout } = useAuth();
+  const { logout, claims } = useAuth();
   const isGuardian = useIsGuardian();
   const isCoach = !!useCoachSchoolId();
   const isStudent = useEnrolledSchoolIds().length > 0;
+  const minors = useMyMinors(isGuardian);
+  // Promotion fees to answer: the student's own, and each of a guardian's children's.
+  const feePeople = useMemo<FeePerson[]>(
+    () => [
+      ...(isStudent && claims?.sub ? [{ studentId: claims.sub, childName: null }] : []),
+      ...(isGuardian ? (minors.data?.items ?? []).map((m) => ({ studentId: m.studentId, childName: m.firstName })) : []),
+    ],
+    [isStudent, isGuardian, claims?.sub, minors.data],
+  );
 
   return (
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
+      <HomeFeeCards
+        people={feePeople}
+        onAnswer={(person, request) =>
+          navigation.navigate(
+            'MyGrading',
+            person.childName ? { studentId: person.studentId, name: person.childName, openFeeId: request.id } : { openFeeId: request.id },
+          )
+        }
+      />
       {isCoach ? <Button title={t('home.coachDashboard')} onPress={() => navigation.navigate('CoachDashboard')} /> : null}
       <Button title={t('home.myProfile')} variant="secondary" onPress={() => navigation.navigate('Profile')} />
       <Button title={t('home.browseAcademies')} onPress={() => navigation.navigate('Academies')} />
