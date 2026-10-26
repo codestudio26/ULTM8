@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import React, { useEffect, useState } from 'react';
+import { Button, Card, EmptyState, ErrorBanner, Modal, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useMembershipPlans } from '../membershipPlans/membershipPlanQueries';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
-import { useTransactionReceiptUrl, useTransactions, type TransactionResponse } from './transactionQueries';
+import {
+  useSettleTransaction,
+  useTransactionReceiptUrl,
+  useTransactions,
+  useTransactionSummary,
+  type TransactionResponse,
+} from './transactionQueries';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 
 /** One "Receipt" cell — a drill-down from the table, not a bulk action, so it's
  * its own small component (one `useTransactionReceiptUrl()` call per row)
- * rather than a single mutation shared across the whole table. `null`
- * (CASH/BANK_TRANSFER, or Stripe simply has no receipt yet) shows an inline
- * message instead of silently doing nothing — a real, normal state, not an
- * error. Opens in a new tab (`window.open`) rather than navigating away from
+ * rather than a single mutation shared across the whole table. Only card rows
+ * get one (Decision 335, T7): Cash/Bank Transfer has no receipt to show. `null`
+ * (Stripe has no receipt yet) shows an inline message instead of silently doing
+ * nothing. Opens in a new tab (`window.open`) rather than navigating away from
  * the Transactions table. */
 function ReceiptCell({ transactionId }: { transactionId: string }) {
   const t = useT();
@@ -72,52 +77,101 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Read-only except for the "Receipt" drill-down column (`ReceiptCell` above) —
- * no refund/credit-restore endpoint exists yet this phase; see
- * transactionQueries.ts's own header comment for invoice-download, now built. */
+type SettleAction = 'confirm' | 'cancel';
+
+/** "Mark as paid" / "Cancel" for one Pending Cash/Bank Transfer payment
+ * (Decision 335, G1). Asks first, naming the Student, plan and amount, since
+ * marking it paid creates their Membership and neither can be undone here. */
+function SettleDialog({
+  row,
+  action,
+  schoolId,
+  onClose,
+}: {
+  row: TransactionResponse;
+  action: SettleAction;
+  schoolId: string;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const settle = useSettleTransaction(schoolId);
+  const [error, setError] = useState<string | null>(null);
+  const vars = { student: studentName(row), plan: row.membershipPlanTitle, amount: formatMoney(row.amount, row.currency) };
+
+  async function handleConfirm() {
+    setError(null);
+    try {
+      await settle.mutateAsync({ id: row.id, action });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('transactions.settleFailed'));
+    }
+  }
+
+  return (
+    <Modal title={t(action === 'confirm' ? 'transactions.markPaidTitle' : 'transactions.cancelTitle')} onClose={onClose}>
+      {error ? <ErrorBanner message={error} /> : null}
+      <p style={{ margin: '0 0 16px' }}>{t(action === 'confirm' ? 'transactions.markPaidBody' : 'transactions.cancelBody', vars)}</p>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <Button variant="secondary" onClick={onClose}>
+          {t('transactions.back')}
+        </Button>
+        <Button variant={action === 'cancel' ? 'danger' : 'primary'} loading={settle.isPending} onClick={handleConfirm}>
+          {t(action === 'confirm' ? 'transactions.markPaid' : 'transactions.cancelPayment')}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function studentName(row: TransactionResponse): string {
+  // studentFirstName/studentSurname are joined server-side (TransactionsService.findAllForSchool).
+  return row.studentFirstName || row.studentSurname ? `${row.studentFirstName} ${row.studentSurname}`.trim() : row.studentId.slice(0, 8);
+}
+
+/** The School's payment ledger, newest first, a page at a time (Decision 335).
+ * The tiles count the whole ledger on the server, not the page on screen.
+ * Pending Cash/Bank Transfer rows can be marked paid or cancelled. */
 export function TransactionsPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
-  const { data, isLoading, error } = useTransactions(schoolId);
-  // FOUND ON REVIEW: the table had no way to identify WHICH plan a charge
-  // was for — resolve it the same way every other list screen resolves a
-  // related entity's display name from an already-fetched list (see
-  // ClassesPage's own branch-name lookup for the precedent).
-  const { data: planData } = useMembershipPlans(schoolId);
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const { data, isLoading, error } = useTransactions(schoolId, cursorStack[pageIndex]);
+  const { data: summary } = useTransactionSummary(schoolId);
+  const [settling, setSettling] = useState<{ row: TransactionResponse; action: SettleAction } | null>(null);
+  // Back to page 1 when the owner switches School.
+  useEffect(() => {
+    setCursorStack([null]);
+    setPageIndex(0);
+  }, [schoolId]);
 
-  if (!schoolId) return null;
+  // Branch Staff and Instructors: the menu hides this page, but the address
+  // still works — say why it's empty rather than showing a blank page (T5).
+  if (!schoolId) return <EmptyState title={t('transactions.ownerOnlyTitle')} description={t('transactions.ownerOnlyDescription')} />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('transactions.loadFailed')} />;
 
   const transactions = data?.items ?? [];
-  const plans = planData?.items ?? [];
+  const revenueLabel = (summary?.revenue ?? []).map((r) => formatMoney(r.amount, r.currency ?? null)).join(' + ');
 
-  const successfulTx = transactions.filter((t) => t.status === 'SUCCESSFUL');
-  const failedOrDisputedCount = transactions.filter((t) => t.status === 'FAILED' || t.status === 'DISPUTED').length;
-  // Grouped by currency rather than summed flat: currency is per-Transaction, not a
-  // single School-wide constant (MembershipPlan.currency is nullable and School-chosen
-  // per plan, see MembershipPlanFormPage's own hint), so a School with plans in more
-  // than one currency shows one revenue figure per currency instead of a meaningless
-  // sum-of-different-units total.
-  const revenueByCurrency = new Map<string, number>();
-  for (const t of successfulTx) {
-    const key = t.currency ?? '';
-    revenueByCurrency.set(key, (revenueByCurrency.get(key) ?? 0) + t.amount);
+  function goToNextPage(nextCursor: string | null) {
+    setCursorStack((stack) => [...stack.slice(0, pageIndex + 1), nextCursor]);
+    setPageIndex((i) => i + 1);
   }
-  const revenueLabel = [...revenueByCurrency.entries()].map(([currency, amount]) => formatMoney(amount, currency || null)).join(' + ');
 
   return (
     <>
       <PageHeader title={t('transactions.title')} subtitle={t('transactions.subtitle')} />
 
-      {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): every tile here is
-          real and client-computed from the same `transactions` list rendered below —
-          Transaction already carries status and amount, so no new endpoint was needed. */}
+      {/* Stats ribbon — counted over the whole ledger by
+          GET /schools/:id/transactions/summary (Decision 335, T1). */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile label={t('transactions.statTotal')} value={transactions.length} />
-        <StatTile label={t('transactions.statSuccessful')} value={successfulTx.length} />
-        <StatTile label={t('transactions.statFailedOrDisputed')} value={failedOrDisputedCount} />
-        <StatTile label={t('transactions.statRevenue')} value={revenueLabel || formatMoney(0, null)} />
+        <StatTile label={t('transactions.statTotal')} value={summary?.total ?? '—'} />
+        <StatTile label={t('transactions.statSuccessful')} value={summary?.successful ?? '—'} />
+        <StatTile label={t('transactions.statPending')} value={summary?.pending ?? '—'} />
+        <StatTile label={t('transactions.statFailedOrDisputed')} value={summary?.failedOrDisputed ?? '—'} />
+        <StatTile label={t('transactions.statRevenue')} value={summary ? revenueLabel || formatMoney(0, null) : '—'} />
       </div>
 
       <Card>
@@ -127,31 +181,51 @@ export function TransactionsPage() {
           <Table<TransactionResponse>
             rows={transactions}
             columns={[
-              { key: 'billingDate', header: t('transactions.columnDate'), render: (t) => new Date(t.billingDate).toLocaleString(formatLocale()) },
-              {
-                key: 'plan',
-                header: t('transactions.columnPlan'),
-                render: (t) => plans.find((p) => p.id === t.membershipPlanId)?.title ?? t.membershipPlanId,
-              },
-              {
-                key: 'student',
-                header: t('transactions.columnStudent'),
-                // studentFirstName/studentSurname are joined server-side
-                // (TransactionsService.findAllForSchool). The identical
-                // "no name resolution" gap still exists in ClassDetailPage,
-                // InstructorFormModal, and StaffPage — not fixed here.
-                render: (t) => (t.studentFirstName || t.studentSurname ? `${t.studentFirstName} ${t.studentSurname}`.trim() : t.studentId.slice(0, 8)),
-              },
-              { key: 'amount', header: t('transactions.columnAmount'), render: (t) => formatMoney(t.amount, t.currency) },
-              { key: 'status', header: t('transactions.columnStatus'), render: (t) => paymentStatusBadge(t.status) },
+              { key: 'billingDate', header: t('transactions.columnDate'), render: (row) => new Date(row.billingDate).toLocaleString(formatLocale()) },
+              // The server sends the plan's name with each row (T6).
+              { key: 'plan', header: t('transactions.columnPlan'), render: (row) => row.membershipPlanTitle },
+              { key: 'student', header: t('transactions.columnStudent'), render: (row) => studentName(row) },
+              { key: 'amount', header: t('transactions.columnAmount'), render: (row) => formatMoney(row.amount, row.currency) },
+              { key: 'status', header: t('transactions.columnStatus'), render: (row) => paymentStatusBadge(row.status) },
               { key: 'paymentMethod', header: t('transactions.columnMethod'), render: (row) => (PAYMENT_METHOD_LABELS[row.paymentMethod] ? t(PAYMENT_METHOD_LABELS[row.paymentMethod]!) : row.paymentMethod) },
-              { key: 'refunded', header: t('transactions.columnRefunded'), render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
-              { key: 'disputed', header: t('transactions.columnDisputed'), render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },
-              { key: 'receipt', header: t('transactions.columnReceipt'), render: (t) => <ReceiptCell transactionId={t.id} /> },
+              { key: 'refunded', header: t('transactions.columnRefunded'), render: (row) => (row.refundedAmount ? formatMoney(row.refundedAmount, row.currency) : '—') },
+              { key: 'disputed', header: t('transactions.columnDisputed'), render: (row) => (row.disputedAmount ? formatMoney(row.disputedAmount, row.currency) : '—') },
+              { key: 'receipt', header: t('transactions.columnReceipt'), render: (row) => (row.paymentMethod === 'STRIPE' ? <ReceiptCell transactionId={row.id} /> : '—') },
+              {
+                key: 'actions',
+                header: t('transactions.columnActions'),
+                render: (row) =>
+                  row.status === 'PENDING' && row.paymentMethod !== 'STRIPE' ? (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Button variant="secondary" onClick={() => setSettling({ row, action: 'confirm' })}>
+                        {t('transactions.markPaid')}
+                      </Button>
+                      <Button variant="secondary" onClick={() => setSettling({ row, action: 'cancel' })}>
+                        {t('transactions.cancelPayment')}
+                      </Button>
+                    </div>
+                  ) : (
+                    '—'
+                  ),
+              },
             ]}
           />
         )}
       </Card>
+
+      {transactions.length > 0 || pageIndex > 0 ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+          <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
+            {t('transactions.prev')}
+          </Button>
+          <Button variant="secondary" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
+            {t('transactions.next')}
+          </Button>
+          <span className="ultm8-field__hint">{t('transactions.page', { page: pageIndex + 1 })}</span>
+        </div>
+      ) : null}
+
+      {settling ? <SettleDialog row={settling.row} action={settling.action} schoolId={schoolId} onClose={() => setSettling(null)} /> : null}
     </>
   );
 }

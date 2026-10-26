@@ -168,7 +168,7 @@ describeIfDb('TransactionsModule: GET /transactions/me — Student self-read, pa
     expect(resA.body.items.some((t: { id: string }) => t.id === txB.id)).toBe(false);
     const rowA = resA.body.items.find((t: { id: string }) => t.id === txA.id);
     expect(rowA.amount).toBe(5000);
-    expect(rowA.currency).toBe('gbp');
+    expect(rowA.currency).toBe('GBP'); // read back in capitals (Decision 335, T3)
     expect(rowA.status).toBe('SUCCESSFUL');
     expect(rowA.paymentMethod).toBe('BANK_TRANSFER');
     expect(rowA.membershipPlanTitle).toBe('5-Class Pack');

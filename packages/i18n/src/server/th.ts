@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "เลือกครูฝึกคนอื่นให้รับช่วงต่อ",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "บทบาทครูฝึกใช้ได้เฉพาะบางสาขา จึงตั้งโปรไฟล์เป็นทั้งโรงเรียนไม่ได้ เลือกสาขาของเขา",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "บทบาทครูฝึกไม่ครอบคลุมสาขานี้ ให้บทบาทที่สาขานั้นในหน้าพนักงานก่อน หรือเลือกสาขาของเขา",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "นักเรียนคนนี้ออกจากโรงเรียนแล้ว จึงยืนยันการชำระเงินนี้ไม่ได้ ให้ยกเลิกแทน",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "การชำระเงินด้วยบัตรดำเนินการโดย Stripe และยกเลิกที่นี่ไม่ได้",
+  "cursor is not valid": "ตัวชี้หน้าไม่ถูกต้อง",
 };

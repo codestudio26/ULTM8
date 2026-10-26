@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Devralması için başka bir eğitmen seçin.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Eğitmen rolü yalnızca belirli şubeler için, bu yüzden profili tüm okul için olamaz. Şubesini seçin.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Eğitmen rolü bu şubeyi kapsamıyor. Önce Personel sayfasında orada rol verin veya şubesini seçin.",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "Bu öğrenci okuldan ayrıldı, bu yüzden ödeme onaylanamaz. Bunun yerine iptal et.",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "Kartla ödemeler Stripe tarafından sonuçlandırılır ve burada iptal edilemez.",
+  "cursor is not valid": "Sayfa imleci geçersiz.",
 };

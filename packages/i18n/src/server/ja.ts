@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "引き継ぐ別のインストラクターを選んでください。",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "インストラクターの役割は一部の支店のみのため、プロフィールをスクール全体にはできません。支店を選んでください。",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "インストラクターの役割はこの支店を含みません。先にスタッフページでこの支店の役割を付与するか、正しい支店を選んでください。",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "この生徒はスクールを退会しているため、この支払いは確認できません。代わりに取り消してください。",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "カード払いはStripeが処理するため、ここでは取り消せません。",
+  "cursor is not valid": "ページのカーソルが無効です。",
 };

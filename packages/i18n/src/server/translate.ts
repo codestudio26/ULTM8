@@ -204,6 +204,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment dispute lost': 'disputeLostTitle',
   'Payment dispute resolved': 'disputeResolvedTitle',
   'Payment dispute opened': 'disputeOpenedTitle',
+  'Cash payment waiting': 'cashWaitingTitle',
+  'Payment confirmed': 'paymentConfirmedTitle',
+  'Payment cancelled': 'paymentCancelledTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -264,6 +267,26 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
         amount: formatAmount(m[2], m[3], locale),
         status: DISPUTE_STATUSES.has(m[4]) ? n(t, `disputeStatus.${m[4]}`) : m[4],
       }),
+  ],  // PaymentsService.notifyCashPayment — Cash/Bank Transfer payments (Decision 335, T11).
+  [
+    /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on the Transactions page once the money arrives\.$/s,
+    (m, { t, locale }) => n(t, 'cashWaitingBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  [
+    /^Your payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. Your membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'paymentConfirmedBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
+  [
+    /^(.+?)'s payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. The membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'childPaymentConfirmedBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  [
+    /^Your School cancelled your cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'paymentCancelledBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
+  [
+    /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
 ];
 

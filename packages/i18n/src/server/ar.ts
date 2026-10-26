@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "اختر مدرّبًا آخر ليتولّى المهمة.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "دوره كمدرّب لفروع معيّنة فقط، لذا لا يمكن أن يكون ملفه للمدرسة كلها. اختر فرعه.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "دوره كمدرّب لا يشمل هذا الفرع. امنحه الدور هناك أولًا في صفحة الموظفين، أو اختر فرعه.",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "غادر هذا الطالب المدرسة، لذا لا يمكن تأكيد هذه الدفعة. ألغِها بدلًا من ذلك.",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "تتم تسوية مدفوعات البطاقات عبر Stripe ولا يمكن إلغاؤها هنا.",
+  "cursor is not valid": "مؤشر الصفحة غير صالح.",
 };

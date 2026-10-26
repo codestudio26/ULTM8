@@ -1,11 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { StripeClientService } from '../payments/stripe-client.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -48,27 +49,55 @@ export class TransactionsService {
     t: T,
   ): Omit<T, 'membershipPlan'> & { membershipPlanTitle: string } {
     const { membershipPlan, ...rest } = t;
-    return { ...rest, membershipPlanTitle: membershipPlan.title };
+    // Currency codes in capitals (Decision 335, T3) — belt and braces on top of
+    // the write paths and the clean-up migration.
+    const currency = (rest as { currency?: string | null }).currency;
+    return { ...rest, ...(currency ? { currency: currency.toUpperCase() } : {}), membershipPlanTitle: membershipPlan.title };
+  }
+
+  /**
+   * Newest first by billing date (Decision 335, T2) — the plain id-ordered
+   * `cursorPaginate` sorted by random UUID, so a ledger's rows came back in no
+   * useful order and today's payment could sit on page 3. Same `(sortValue, id)
+   * DESC` keyset the curriculum lists use (`encodeDescCursor`).
+   */
+  private async pageNewestFirst(
+    tx: Prisma.TransactionClient,
+    where: Prisma.TransactionWhereInput,
+    cursor: string | undefined,
+    limit: number | undefined,
+  ) {
+    const take = resolveLimit(limit);
+    let decoded: { sortValue: Date; id: string } | null = null;
+    if (cursor) {
+      try {
+        decoded = decodeDescCursor(cursor);
+      } catch {
+        throw new BadRequestException('cursor is not valid');
+      }
+      if (Number.isNaN(decoded.sortValue.getTime())) throw new BadRequestException('cursor is not valid');
+    }
+    const rows = await tx.transaction.findMany({
+      where: decoded
+        ? { AND: [where, { OR: [{ billingDate: { lt: decoded.sortValue } }, { billingDate: decoded.sortValue, id: { lt: decoded.id } }] }] }
+        : where,
+      include: { membershipPlan: { select: { title: true } } },
+      orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
+      take: take + 1,
+    });
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    const last = items[items.length - 1];
+    return { items, nextCursor: hasMore ? encodeDescCursor(last.billingDate, last.id) : null };
   }
 
   // Return type is a structural narrowing of the real row shape below, not the
   // literal shape — the DTO layer (TransactionResponseDto) is authoritative
-  // for callers, this signature just satisfies cursorPaginate's generic.
+  // for callers.
   async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
-        (args) =>
-          tx.transaction.findMany({
-            ...args,
-            where: { schoolId },
-            include: { membershipPlan: { select: { title: true } } },
-          }),
-        cursor,
-        limit,
-      ),
-    );
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { schoolId }, cursor, limit));
     // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
     // Transaction.student — an RLS-scoped include can silently fail to resolve the
     // Student's own User row once their RoleGrant is revoked (e.g.
@@ -90,19 +119,39 @@ export class TransactionsService {
 
   /** GET /transactions/me — see this class's own header comment. */
   async findMyTransactions(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
-        (args) =>
-          tx.transaction.findMany({
-            ...args,
-            where: { studentId: callerId },
-            include: { membershipPlan: { select: { title: true } } },
-          }),
-        cursor,
-        limit,
-      ),
-    );
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { studentId: callerId }, cursor, limit));
     return { ...page, items: page.items.map((t) => this.withMembershipPlanTitle(t)) };
+  }
+
+  /**
+   * GET /schools/{id}/transactions/summary (Decision 335, T1) — the page's
+   * tiles, counted over the whole ledger on the server. The page used to add up
+   * whichever 20 rows it had loaded, so every tile was wrong once a School had
+   * more. Revenue is Successful rows only, one figure per currency (codes are
+   * compared in capitals: rows written before Decision 335 may be lower-case).
+   */
+  async summaryForSchool(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const groups = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.transaction.groupBy({ by: ['status', 'currency'], where: { schoolId }, _count: { _all: true }, _sum: { amount: true } }),
+    );
+    const count = (statuses: string[]) => groups.filter((g) => statuses.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
+    const revenue = new Map<string, number>();
+    for (const g of groups) {
+      if (g.status !== 'SUCCESSFUL') continue;
+      const key = (g.currency ?? '').toUpperCase();
+      revenue.set(key, (revenue.get(key) ?? 0) + (g._sum.amount ?? 0));
+    }
+    return {
+      total: groups.reduce((n, g) => n + g._count._all, 0),
+      successful: count(['SUCCESSFUL']),
+      pending: count(['PENDING']),
+      failedOrDisputed: count(['FAILED', 'DISPUTED']),
+      revenue: [...revenue.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency, amount]) => ({ currency: currency || null, amount })),
+    };
   }
 
   /**

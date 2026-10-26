@@ -347,7 +347,10 @@ export const SERVER_MESSAGES: string[] = [
  "studentId must be a valid UUID",
  "styles cannot be null; omit it to leave the styles unchanged.",
  "surname cannot be null.",
- "targetRungId is not a belt or stripe of this style."
+ "targetRungId is not a belt or stripe of this style.",
+ "This student has left the School, so this payment cannot be confirmed. Cancel it instead.",
+ "Card payments are settled by Stripe and cannot be cancelled here.",
+ "cursor is not valid",
 ];
 
 export const SERVER_PATTERNS: string[] = [

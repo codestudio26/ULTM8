@@ -644,7 +644,7 @@ export class MembershipsService {
               paymentAccountId: paymentAccount.id,
               membershipPlanId: plan.id,
               amount: plan.price,
-              currency,
+              currency: currency.toUpperCase(),
               status: 'PENDING',
               paymentMethod: 'STRIPE',
               stripePaymentIntentId: paymentIntentId,
@@ -684,7 +684,7 @@ export class MembershipsService {
             paymentAccountId: paymentAccount.id,
             membershipPlanId: plan.id,
             amount: plan.price,
-            currency,
+            currency: currency.toUpperCase(),
             status: 'PENDING',
             paymentMethod: 'STRIPE',
             stripePaymentIntentId: paymentIntentId,
@@ -699,22 +699,39 @@ export class MembershipsService {
     if (!CASH_BANK_ELIGIBLE_TYPES.includes(plan.type as (typeof CASH_BANK_ELIGIBLE_TYPES)[number])) {
       throw new BadRequestException(`${plan.type} is not Cash/Bank Transfer-eligible.`);
     }
-    const transactionId = randomUUID();
-    await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.transaction.create({
+    // Decision 335 (T10) — one open Cash/Bank payment per Student per plan: a
+    // second Buy (a double tap, or a retry because nothing seemed to happen)
+    // returns the one already waiting instead of writing another the Owner
+    // could confirm twice. The advisory lock serializes two concurrent taps.
+    const { transactionId, created } = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`cash-purchase:${studentId}:${plan.id}`}))`;
+      const open = await tx.transaction.findFirst({
+        where: { studentId, membershipPlanId: plan.id, status: 'PENDING', paymentMethod: { in: ['CASH', 'BANK_TRANSFER'] } },
+        select: { id: true },
+      });
+      if (open) return { transactionId: open.id, created: false };
+      const id = randomUUID();
+      await tx.transaction.create({
         data: {
-          id: transactionId,
+          id,
           schoolId: plan.schoolId,
           studentId,
           paymentAccountId: paymentAccount.id,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: paymentAccount.provider,
         },
-      }),
-    );
+      });
+      return { transactionId: id, created: true };
+    });
+    if (created) {
+      await this.paymentsService.notifyCashPayment(
+        { id: transactionId, schoolId: plan.schoolId, studentId, membershipPlanId: plan.id, amount: plan.price, currency },
+        'waiting',
+      );
+    }
     return { outcome: 'pending_confirmation' as const, transactionId };
   }
 
@@ -764,7 +781,7 @@ export class MembershipsService {
             paymentAccountId,
             membershipPlanId: plan.id,
             amount: plan.price,
-            currency,
+            currency: currency.toUpperCase(),
             status: 'FAILED',
             paymentMethod: 'STRIPE',
             stripePaymentIntentId: chargeResult.paymentIntentId || undefined,
@@ -783,7 +800,7 @@ export class MembershipsService {
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'SUCCESSFUL',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: chargeResult.paymentIntentId,
@@ -864,7 +881,7 @@ export class MembershipsService {
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: paymentIntentId,

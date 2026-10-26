@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "맡을 다른 강사를 선택하세요.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "강사 역할이 일부 지점에만 해당되어 프로필을 도장 전체로 설정할 수 없습니다. 지점을 선택하세요.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "강사 역할이 이 지점을 포함하지 않습니다. 먼저 직원 페이지에서 이 지점의 역할을 부여하거나 올바른 지점을 선택하세요.",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "이 학생은 학원을 떠났으므로 이 결제를 확인할 수 없습니다. 대신 취소하세요.",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "카드 결제는 Stripe에서 처리되므로 여기서 취소할 수 없습니다.",
+  "cursor is not valid": "페이지 커서가 올바르지 않습니다.",
 };

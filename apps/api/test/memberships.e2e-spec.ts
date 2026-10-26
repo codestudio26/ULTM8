@@ -148,6 +148,10 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   afterAll(async () => {
+    // Closed first so the notification workers stop before the cleanup below:
+    // cash purchases and confirms now send notices (Decision 335, T11).
+    await app.close();
+    await superuser.notification.deleteMany({ where: { user: { email: { contains: 'memberships-http-' } } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -158,7 +162,6 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
     await appDb.$disconnect();
-    await app.close();
   });
 
   // ---------------------------------------------------------------------------

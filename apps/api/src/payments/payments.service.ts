@@ -1,15 +1,18 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
-import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
  * payment method (or their Customer has no default one set) at this School —
@@ -30,6 +33,8 @@ export class PaymentsService {
     private readonly franchisesService: FranchisesService,
     private readonly stripeClient: StripeClientService,
     @InjectQueue(STRIPE_WEBHOOK_PROCESSING_QUEUE) private readonly webhookQueue: Queue,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -910,7 +915,11 @@ export class PaymentsService {
    */
   async confirmTransaction(callerId: string, transactionId: string) {
     try {
-      return await this.confirmTransactionInner(callerId, transactionId);
+      const result = await this.confirmTransactionInner(callerId, transactionId);
+      if (result.membershipCreated) {
+        await this.notifyCashPayment(result.transaction, 'confirmed');
+      }
+      return result;
     } catch (err) {
       // FOUND ON REVIEW: the two-simultaneous-Active-general-access-Membership
       // partial unique index (this phase's migration) can collide here exactly
@@ -949,6 +958,7 @@ export class PaymentsService {
       if (transaction.paymentMethod === 'STRIPE') {
         throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
       }
+      await this.assertCashPaymentCanBeSettled(tx, transaction);
 
       const updateResult = await tx.transaction.updateMany({
         where: { id: transactionId, status: 'PENDING' },
@@ -980,5 +990,138 @@ export class PaymentsService {
 
       return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
     });
+  }
+
+  /**
+   * Decision 335 (T8, T9) — checks shared by confirm and cancel. A closed School
+   * takes no new records (Decision 110; the cancelled-ULTM8-subscription state is
+   * deliberately NOT blocked here — the cash was taken before, see Decision 335).
+   * Confirm also needs the Student still at the School: a Membership for someone
+   * who has left makes no sense, and Cancel is the Owner's way out.
+   */
+  private async assertCashPaymentCanBeSettled(
+    tx: Prisma.TransactionClient,
+    transaction: { schoolId: string; studentId: string },
+    action: 'confirm' | 'cancel' = 'confirm',
+  ): Promise<void> {
+    const school = await tx.school.findUnique({ where: { id: transaction.schoolId }, select: { archivedAt: true } });
+    if (school?.archivedAt) {
+      throw new ForbiddenException('This School has been closed and no longer accepts new or updated records.');
+    }
+    if (action === 'cancel') return;
+    const enrolled = await tx.roleGrant.findFirst({
+      where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) {
+      throw new ConflictException('This student has left the School, so this payment cannot be confirmed. Cancel it instead.');
+    }
+  }
+
+  /**
+   * PATCH /transactions/{id}/cancel (Decision 335) — clears a Pending Cash/Bank
+   * Transfer payment that never arrived, marking it FAILED (the nearest of the
+   * five confirmed Transaction statuses; no Membership was ever created for it,
+   * Decision 6). School Owner/Manager only, same gate as confirm. Idempotent: a
+   * row that is no longer Pending is returned unchanged.
+   */
+  async cancelTransaction(callerId: string, transactionId: string) {
+    const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
+      if (!transaction) {
+        throw new NotFoundException('Transaction not found');
+      }
+      await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
+      if (transaction.status !== 'PENDING') {
+        return { transaction, cancelled: false };
+      }
+      if (transaction.paymentMethod === 'STRIPE') {
+        throw new BadRequestException('Card payments are settled by Stripe and cannot be cancelled here.');
+      }
+      await this.assertCashPaymentCanBeSettled(tx, transaction, 'cancel');
+      const updated = await tx.transaction.updateMany({ where: { id: transactionId, status: 'PENDING' }, data: { status: 'FAILED' } });
+      if (updated.count === 0) {
+        return { transaction, cancelled: false };
+      }
+      return { transaction: { ...transaction, status: 'FAILED' as const }, cancelled: true };
+    });
+    if (result.cancelled) {
+      await this.notifyCashPayment(result.transaction, 'cancelled');
+    }
+    return result;
+  }
+
+  /**
+   * Decision 335 (T11) — in-app notices around a Cash/Bank Transfer payment:
+   * `waiting` tells the School's Owners/Managers one has arrived to check;
+   * `confirmed`/`cancelled` tell the Student, or the Guardians of a linked minor
+   * (who never logs in). Read through the jobs connection, since the caller's own
+   * RLS context can see neither the School's other grants nor GuardianLink.
+   * Best-effort: a notice that fails to enqueue never undoes the payment change.
+   * The English shapes are matched in @ultm8/i18n's server/translate.ts.
+   */
+  async notifyCashPayment(
+    transaction: { id: string; schoolId: string; studentId: string; membershipPlanId: string; amount: number; currency: string | null },
+    event: 'waiting' | 'confirmed' | 'cancelled',
+  ): Promise<void> {
+    try {
+      const [plan, student] = await Promise.all([
+        this.prismaJobs.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { title: true } }),
+        this.prismaJobs.user.findUnique({ where: { id: transaction.studentId }, select: { firstName: true, surname: true } }),
+      ]);
+      const amount = `${(transaction.amount / 100).toFixed(2)} ${(transaction.currency ?? 'USD').toUpperCase()}`;
+      const planTitle = plan?.title ?? 'a membership';
+      const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
+      const notices: Array<{ userId: string; title: string; body: string }> = [];
+      if (event === 'waiting') {
+        const owners = await this.prismaJobs.roleGrant.findMany({
+          where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+          select: { userId: true },
+        });
+        for (const o of owners) {
+          notices.push({
+            userId: o.userId,
+            title: 'Cash payment waiting',
+            body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.`,
+          });
+        }
+      } else {
+        const guardians = await this.prismaJobs.guardianLink.findMany({
+          where: { studentId: transaction.studentId, revokedAt: null },
+          select: { guardianId: true },
+        });
+        const title = event === 'confirmed' ? 'Payment confirmed' : 'Payment cancelled';
+        if (guardians.length === 0) {
+          notices.push({
+            userId: transaction.studentId,
+            title,
+            body:
+              event === 'confirmed'
+                ? `Your payment of ${amount} for ${planTitle} was confirmed. Your membership is now active.`
+                : `Your School cancelled your cash or bank payment of ${amount} for ${planTitle}.`,
+          });
+        }
+        for (const g of guardians) {
+          notices.push({
+            userId: g.guardianId,
+            title,
+            body:
+              event === 'confirmed'
+                ? `${name}'s payment of ${amount} for ${planTitle} was confirmed. The membership is now active.`
+                : `The School cancelled ${name}'s cash or bank payment of ${amount} for ${planTitle}.`,
+          });
+        }
+      }
+      for (const notice of notices) {
+        const key = `cash-payment-${event}-${transaction.id}-${notice.userId}`;
+        await this.notificationFanoutQueue.add(
+          'notify',
+          { notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT' } satisfies NotificationFanoutJobData,
+          { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the ${event} cash-payment notices for Transaction ${transaction.id}: ${err}`);
+    }
   }
 }

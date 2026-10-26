@@ -384,4 +384,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a different instructor to take over.": "Elige otro instructor para que se haga cargo.",
   "Their Instructor role is for certain branches only, so their profile can't be for the whole School. Choose their branch.": "Su rol de instructor es solo para ciertas sedes, así que su perfil no puede ser para toda la escuela. Elige su sede.",
   "Their Instructor role doesn't cover this branch. Give them the role there on the Staff page first, or choose their branch.": "Su rol de instructor no cubre esta sede. Dale primero el rol allí en la página de Personal, o elige su sede.",
+  "This student has left the School, so this payment cannot be confirmed. Cancel it instead.": "Este alumno ya no está en la escuela, así que este pago no se puede confirmar. Cancélalo en su lugar.",
+  "Card payments are settled by Stripe and cannot be cancelled here.": "Los pagos con tarjeta los liquida Stripe y no se pueden cancelar aquí.",
+  "cursor is not valid": "El cursor de página no es válido.",
 };

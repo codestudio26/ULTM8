@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Transactions fixes from the 26 Oct review (Decision 335)** — the page now
+  shows every payment newest first with Prev/Next, and its tiles count the
+  whole ledger; revenue no longer splits "GBP" and "gbp"; Pending cash and
+  bank transfer payments get Mark as paid and Cancel buttons; owners are told
+  when a student picks cash, and students or their guardians when it is
+  confirmed or cancelled; choosing cash twice no longer makes two rows;
+  payments can't be confirmed for a student who left or at a closed School;
+  abandoned card checkouts turn Failed; Receipt shows on card payments only;
+  Branch Staff and coaches see a message instead of a blank page. **Needs a
+  database migration** (fixes stored currency codes).
+
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);
