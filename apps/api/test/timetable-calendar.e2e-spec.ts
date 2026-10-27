@@ -114,6 +114,7 @@ describeIfDb('Timetable calendar and class breaks (Decision 353)', () => {
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
+    await superuser.studentHomeBranch.deleteMany({ where: { schoolId: school.id } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
     await superuser.timetableSlot.deleteMany({ where: { schoolId: school.id } });
@@ -192,6 +193,40 @@ describeIfDb('Timetable calendar and class breaks (Decision 353)', () => {
     const narrowed = (await calendar(owner, from, to, `&branchId=${branchB.id}`)).body.classes.map((c: { id: string }) => c.id);
     expect(narrowed).toEqual(expect.arrayContaining([b.id, all.id]));
     expect(narrowed).not.toContain(a.id);
+  });
+
+  it('gives Branch Staff a read-only timetable they can book walk-ins from (Q4)', async () => {
+    const slotA = await mkSlot({ title: 'Desk A', branchId: branchA.id });
+    const slotB = await mkSlot({ title: 'Desk B', branchId: branchB.id });
+    const slotAll = await mkSlot({ title: 'Desk All' });
+
+    // The slot list RLS gives them: their Branch's and School-wide slots.
+    const list = await as(staffA).get(`/v1/schools/${school.id}/timetable?limit=100`);
+    expect(list.status).toBe(200);
+    const slotIds = list.body.items.map((s: { id: string }) => s.id);
+    expect(slotIds).toEqual(expect.arrayContaining([slotA, slotAll]));
+    expect(slotIds).not.toContain(slotB);
+
+    // Only the owner edits slots.
+    const auth = `Bearer ${staffA.token}`;
+    expect((await http().post(`/v1/schools/${school.id}/timetable`).set('Authorization', auth).send({ title: 'Nope', weekday: 'MONDAY', startTime: '10:00', endTime: '11:00', branchId: branchA.id })).status).toBe(403);
+    expect((await http().patch(`/v1/timetable/${slotA}`).set('Authorization', auth).send({ title: 'Renamed' })).status).toBe(403);
+    expect((await http().post(`/v1/timetable/${slotA}/archive`).set('Authorization', auth)).status).toBe(403);
+
+    // They pick from their Branch's students (home branch, Decision 139's rule);
+    // the owner still sees everyone.
+    await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: student2.id, branchId: branchA.id } });
+    const roster = await as(staffA).get(`/v1/schools/${school.id}/students`);
+    expect(roster.status).toBe(200);
+    expect(roster.body.items.map((i: { id: string }) => i.id)).toEqual([student2.id]);
+    const ownerRoster = (await as(owner).get(`/v1/schools/${school.id}/students`)).body.items.map((i: { id: string }) => i.id);
+    expect(ownerRoster).toEqual(expect.arrayContaining([student.id, student2.id]));
+
+    // Booking a walk-in onto their Branch's class works.
+    const cls = await firstClassOf(slotA);
+    const booked = await http().post(`/v1/classes/${cls.id}/book`).set('Authorization', auth).send({ studentId: student2.id });
+    expect(booked.status).toBe(201);
+    expect(booked.body.studentId).toBe(student2.id);
   });
 
   it('refuses a range over 62 days or backwards', async () => {

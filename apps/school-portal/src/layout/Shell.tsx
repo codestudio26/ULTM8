@@ -28,6 +28,8 @@ const CLASSES_NAV: NavItem = { label: 'layout.nav.classes', to: '/classes' };
 /** Staff at the desk check students in here (DESIGN.md → "Check-in and front-desk mode"). */
 const CHECK_IN_NAV: NavItem = { label: 'layout.nav.checkIn', to: '/check-in' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
+/** Decision 353 (Q4) — Branch Staff see their Branch's timetable and book from it. */
+const TIMETABLE_NAV: NavItem = { label: 'layout.nav.timetable', to: '/timetable' };
 /** Decision 291 — Branch Staff may give credit back on cancelled bookings. */
 const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/cancellations' };
 /** Instructors choose their own belt per style (Decision 188). */
@@ -74,7 +76,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, CHECK_IN_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [CANCELLATIONS_NAV] : []), ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, CHECK_IN_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [TIMETABLE_NAV, CANCELLATIONS_NAV] : []), ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

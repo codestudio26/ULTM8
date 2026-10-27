@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Decision 332 in the portal (Timetable review, 26 Oct 2026): Archive asks
@@ -45,6 +45,7 @@ test.afterEach(async () => {
   await db.class.deleteMany({ where });
   await db.timetableSlot.deleteMany({ where });
   await db.membership.deleteMany({ where });
+  await db.studentHomeBranch.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where: { id: planId } });
 });
 
@@ -297,4 +298,61 @@ test('the class details show its break (Decision 353, Q6)', async ({ page }) => 
   await signIn(page, s.ownerToken);
   await page.goto(`/classes/${classId}`);
   await expect(page.getByText(/Break /)).toBeVisible();
+});
+
+test('Branch Staff see their own branch on a read-only timetable and book walk-ins (Decision 353, Q4)', async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  const south = await addBranch(s, 'South');
+  const start = new Date(Date.now() + 10 * 60_000);
+  const oneOff = (title: string, branchId: string | null) =>
+    db.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: s.schoolId,
+        branchId,
+        title,
+        activities: ['BJJ'],
+        styles: [{ disciplineId: s.disciplineId, classType: null }],
+        startDate: start,
+        endDate: new Date(start.getTime() + 3_600_000),
+        capacity: 4,
+        membershipInclusion: true,
+      },
+    });
+  await oneOff('North Fundamentals', north.id);
+  await oneOff('South Fundamentals', south.id);
+  await oneOff('Open Mat', null);
+  // Branch Staff pick from their own branch's students (Decision 139's rule).
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
+  const staff = await addPerson('Nia', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  const key = dateKey(start);
+
+  await signIn(page, staff.token);
+  await page.goto('/coach');
+  await page.getByRole('navigation').getByRole('link', { name: 'Timetable' }).click();
+  await expect(page.getByRole('heading', { name: 'Timetable' })).toBeVisible();
+  await expect(page.getByText('North Fundamentals')).toBeVisible();
+  await expect(page.getByText('Open Mat')).toBeVisible();
+  await expect(page.getByText('South Fundamentals')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add slot' })).toHaveCount(0);
+  await expect(page.getByText('Show archived')).toHaveCount(0);
+
+  await page.getByRole('button', { name: `Actions for North Fundamentals on ${key}` }).click();
+  await expect(page.getByRole('menuitem', { name: 'Open class' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Edit slot' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Book' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Book — North Fundamentals' });
+  await expect(dialog.getByLabel('Student').locator('option')).toHaveText(['Select a Student…', 'Sam Lee']);
+  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(page.getByText('1 of 4 booked')).toBeVisible();
+});
+
+test('an Instructor still has no Timetable screen', async ({ page }) => {
+  const coach = await addPerson('Ian', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Timetable' })).toHaveCount(0);
+  await page.goto('/timetable');
+  await expect(page).not.toHaveURL(/\/timetable$/);
 });

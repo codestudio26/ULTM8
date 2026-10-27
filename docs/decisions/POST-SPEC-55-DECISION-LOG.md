@@ -5637,13 +5637,15 @@ The product owner answered the Timetable review's remaining questions with "all 
 ### Decision
 
 1. **The calendar shows the real Classes (Q5, T7).** Each date shows the Classes that actually exist on it: one-offs, classes kept at old times, moved and cancelled dates, with seats taken and the number waiting. A cancelled class stays on the calendar, marked Cancelled, without Book; a class that has ended shows without Book. An On slot's dates past the 4-week horizon show as "Opens for booking later", without Book. Off and archived slots still show on their weekday, dimmed, so the owner can find and change them. New API call: `GET /schools/:schoolId/timetable/calendar?from&to` (at most 62 days). A class the slot cancels is now also marked cancelled (`cancelledAt`), so it shows as a cancelled date.
-2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call already enforces this; the portal screen for Branch Staff follows in its own change.
+2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call enforces this. In the portal, Branch Staff get a Timetable item in their menu and the same calendar, read-only: Book and Open class, but no Add slot, Edit slot, Archive, Show archived or Off slots. Instructors still have no Timetable screen; Q4 named Branch Staff only.
+   - **The students they can book.** RoleGrant RLS only let the owner list a School's students, so Branch Staff and coaches at a School with branches saw an empty list when booking (here, and on the Class page's Add student, Decision 349). They now see the students whose home branch is one of theirs, Decision 139's grading rule (`staff_student_roster()`, a security-definer function like `grading_board_rows()`); in a School without branches, every student, as before. Students without a home branch show only to the owner.
 3. **The break is shown on the class details only (Q6).** It has no effect on bookings, check-in or anything else. Each Class carries its slot's break for that date (`Class.breakStartAt`/`breakEndAt`), which moves with the class's times; a class kept at other times keeps its own. It is shown on the portal's class page and booking dialog and on the student app's class card.
 4. **A class moved to a day this week that has already passed keeps today's behaviour (Q7):** removed if unbooked, cancelled with notice if booked (Decision 322 §5).
 5. **Decision 319 order (Q8):** closure dates first, then the week start day and the timetable filters. Google Calendar and the schedule embed come later.
 
 ### Still open
 
+- Which students Branch Staff can pick (2 above) was built on the recommended answer, their own branch's; the product owner was asked on 27 Oct 2026 whether it should instead be every student at the School, or their branch's plus a search for others.
 - Decision 319's closures can "freeze every membership" for the closed dates, using Decision 316's freeze. Membership freezing isn't built yet, so closures are built without that option until it is.
 
 ### Recorded by
@@ -5678,6 +5680,32 @@ A sent-broadcast history (next), notification settings and automatic clean-up (a
 ### Recorded by
 
 User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all read, click-through and the School label now.
+
+---
+
+## Decision 363 — Notifications: a history of sent broadcasts
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 333, 355
+
+Decision 355 recorded the product owner's choice (*"go with it"*, 27 Oct 2026) to build a sent-broadcast history next, as its own change. Before this a broadcast left nothing a School Owner could read back: its only record was the notification in each Student's own inbox, which is self-only under RLS.
+
+### Decision
+
+1. **Each broadcast is stored** as a `NotificationBroadcast` row, written by `POST /schools/:schoolId/notifications/broadcast` once its notifications are queued, so only broadcasts that actually went out are listed. Its `id` is the `broadcastId` the endpoint returns, which every fanned-out notification's id already starts with.
+2. **What it records:** the School; who sent it, with their name copied at send time; the title and message; the audience (ALL, BRANCH or CLASS); for a Branch its id and name; for a Class its id, title, start time and the groups ticked (Decision 333); how many Students it was queued for; and when it was sent. A broadcast that reached no one is listed too, with 0.
+3. **The names are copies.** A Branch or Class purged later (Decision 226) sets its id to null and keeps its name, so the history still reads correctly. The sender is a required link to their User, which is never deleted.
+4. **Owner only.** `GET /schools/:schoolId/notifications/broadcasts` lists them newest first, 20 per page with a cursor, under the same School Owner check as sending one. RLS on the table allows reads and inserts only to an active SCHOOL_OWNER_MANAGER of that School. Branch Staff and Instructors neither send nor see broadcasts.
+5. **Kept with the School.** The app can't edit or delete a row (SELECT and INSERT grants only). The rows go when the School is purged (ON DELETE CASCADE). No other clean-up applies; automatic clean-up waits until email and push are on (Decision 355).
+6. **Portal:** under the Owner's own notifications, a **Messages sent to students** list shows when and by whom, the title and message, who it went to, and how many it reached, with Load more. A class that still exists links to its page.
+7. **Migration** `20261204000000_notification_broadcast_history` creates the table, its RLS policy and grants.
+
+### What this does NOT resolve
+
+Broadcasts sent before this change were never stored, so they aren't listed. The list shows how many Students a broadcast was queued for, not how many read it: each Student's notification is self-only under RLS. Notification settings and automatic clean-up are still waiting for email and push (Decision 355).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build the broadcast history after Decision 355.
 
 ---
 

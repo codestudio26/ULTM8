@@ -20,7 +20,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise page lists Schools asking to join, with Accept and Decline. The
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
-  Needs migration `20261202000100_franchise_join_requests`.
+  Needs migration `20261204000100_franchise_join_requests`.
+- **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
+  Timetable item in the Branch Staff menu opens the calendar read-only, with
+  their branch's and School-wide classes, to book walk-ins; only the owner
+  edits slots. Branch Staff and coaches at a School with branches now see
+  their branch's students when booking (here and on the Class page's Add
+  student), instead of an empty list. Needs a database migration.
 - **Timetable shows the real classes (Decision 353)** — the calendar now shows
   each date's actual classes, one-offs included, with seats taken and the
   waitlist; cancelled and ended classes stay visible without Book, and dates
@@ -52,6 +58,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   editor no longer fails once a ranked student leaves the School; they show
   as "Former student". The last 17 untranslated Disciplines messages are
   translated.
+- **Notifications: sent-message history (Decision 363)** — under their own
+  notifications, a School Owner now sees **Messages sent to students**: every
+  message the School has sent, newest first, with when and by whom, the title
+  and message, who it went to (all students, a Branch, or a class and which
+  groups on its list) and how many students it reached. A class still on the
+  schedule links to its page. Needs a database migration
+  (`20261204000000_notification_broadcast_history`). Messages sent before it
+  aren't listed.
 - **Notifications: Mark all read, click to open, School label (Decision 355)**
   — a **Mark all read** button marks every unread notification read, on every
   page; clicking a notification opens what it is about (its class, the
