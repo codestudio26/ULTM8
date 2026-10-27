@@ -22,6 +22,7 @@ import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto'
 import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -166,11 +167,7 @@ export class BookingsService {
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       if (resolvedClass.termsWaiverRequired) {
-        const signed = await tx.waiverSignature.findFirst({
-          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
-          select: { id: true },
-        });
-        if (!signed) {
+        if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
         }
       }

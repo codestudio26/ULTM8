@@ -47,6 +47,7 @@ import { CancellationsPage } from './cancellations/CancellationsPage';
 import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
+import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
@@ -461,6 +462,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <WaiversPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/waivers/settings"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WaiverSettingsPage />
             </Shell>
           </RequireAuth>
         }
