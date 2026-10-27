@@ -420,14 +420,8 @@ export class GradingService {
   // Decisions 138, 139, 148, 168)
   // ---------------------------------------------------------------------------
 
-  private async isSchoolOwner(callerId: string, schoolId: string): Promise<boolean> {
-    try {
-      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-      return true;
-    } catch (err) {
-      if (err instanceof ForbiddenException) return false;
-      throw err;
-    }
+  private isSchoolOwner(callerId: string, schoolId: string): Promise<boolean> {
+    return this.tenantAuth.isSchoolOwner(callerId, schoolId);
   }
 
   /** Decision 138: the School owner always may grade. Anyone else must be
@@ -497,51 +491,17 @@ export class GradingService {
   /** Reads: the owner sees every student; other staff see the students of
    * their own branches, with or without grading permission (Decision 168). */
   private async assertStaffCanSeeStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
-    if (await this.isSchoolOwner(callerId, schoolId)) return;
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-    await this.assertBranchCoversStudent(await this.branchCoverage(callerId, schoolId), schoolId, studentId);
+    await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
 
-  /** Decision 168 (with 139 and 148):
-   * - A School with no branches is one branch: every staff member covers
-   *   every student.
-   * - In a School with branches, staff cover the students whose home branch
-   *   is one of the branches they are assigned to (one staff RoleGrant per
-   *   branch; a coach may hold several). A staff grant with no branch covers
-   *   no students there, and a student with no home branch yet is the
-   *   owner's alone until the owner assigns one. */
-  /** Which branches a staff member covers at a School (Decisions 168, 169):
-   * none needed when it has no branches; otherwise their staff grants'
-   * branches. Under the caller's context, Branch RLS shows a staff member at
-   * least their own branch, so any row means the School has branches. */
-  private async branchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const anyBranch = await tx.branch.findFirst({ where: { schoolId }, select: { id: true } });
-      if (!anyBranch) return { hasBranches: false, branchIds: new Set<string>() };
-      const grants = await tx.roleGrant.findMany({
-        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
-        select: { branchId: true },
-      });
-      return { hasBranches: true, branchIds: new Set(grants.map((g) => g.branchId as string)) };
-    });
+  /** Decision 168's branch rule, shared with the Students page (Decision 341):
+   * see TenantAuthorizationService.staffBranchCoverage. */
+  private branchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
+    return this.tenantAuth.staffBranchCoverage(callerId, schoolId);
   }
 
-  private async assertBranchCoversStudent(
-    coverage: { hasBranches: boolean; branchIds: Set<string> },
-    schoolId: string,
-    studentId: string,
-  ): Promise<void> {
-    if (!coverage.hasBranches) return;
-    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
-    const home = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branchId: true } }),
-    );
-    if (!home) {
-      throw new ForbiddenException('This student has no home branch yet. Only the School owner can see or grade them until one is assigned.');
-    }
-    if (!coverage.branchIds.has(home.branchId)) {
-      throw new ForbiddenException('This student belongs to a branch you are not assigned to.');
-    }
+  private assertBranchCoversStudent(coverage: { hasBranches: boolean; branchIds: Set<string> }, schoolId: string, studentId: string): Promise<void> {
+    return this.tenantAuth.assertBranchCoversStudent(coverage, schoolId, studentId);
   }
 
   /** Every grading WRITE (promote, downgrade, stripe award, skill sign-off)

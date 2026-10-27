@@ -47,6 +47,11 @@ const KID_MODE_TOKEN_TTL_SECONDS = Number(process.env.KID_MODE_TOKEN_TTL_SECONDS
  *    would otherwise block the Guardian from ever writing to the MINOR's own
  *    RoleGrant rows under the Guardian's own tenant context.
  */
+/** The placeholder email domain of a Guardian-managed minor's account
+ * (createMinor). Never a real inbox; the Students page shows "Managed by a
+ * Guardian" instead (Decision 341). */
+export const GUARDIAN_MANAGED_EMAIL_DOMAIN = 'guardian-managed.ultm8.internal';
+
 @Injectable()
 export class GuardiansService {
   private readonly logger = new Logger(GuardiansService.name);
@@ -77,7 +82,7 @@ export class GuardiansService {
    */
   async createMinor(guardianId: string, dto: CreateMinorDto) {
     const minorId = randomUUID();
-    const email = `minor+${minorId}@guardian-managed.ultm8.internal`;
+    const email = `minor+${minorId}@${GUARDIAN_MANAGED_EMAIL_DOMAIN}`;
     // E.164 numbers never start with a 0 after the '+' — this prefix is
     // guaranteed to never collide with a real phone number, same reasoning the
     // synthetic email domain uses. FOUND ON REVIEW: an earlier version sliced
@@ -306,6 +311,9 @@ export class GuardiansService {
         where: { userId: existing.studentId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
+      // Their home branches go with the enrolments (Decision 341, S13), as
+      // RoleGrantsService.revoke does.
+      await this.prismaJobs.studentHomeBranch.deleteMany({ where: { studentId: existing.studentId } });
       this.logger.log(
         `withdrawConsent (BASELINE): revoked ${cascadeResult.count} active RoleGrant(s) for Student ${existing.studentId}.`,
       );

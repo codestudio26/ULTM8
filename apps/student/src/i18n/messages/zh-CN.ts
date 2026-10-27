@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "验证手机",
       resetPasscode: "重置密码",
       newPasscode: "新密码",
+      choosePasscode: "设置密码",
     },
     app: {
       home: "ULTM8 学员",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "新密码",
       confirmNewPasscode: "确认新密码",
       submit: "设置新密码",
+    },
+    choosePasscode: {
+      title: "设置你的密码",
+      intro: "你的学校给了你一个临时密码。请设置你自己的 6 位密码以完成登录。",
+      submit: "保存并登录",
     },
     stepUp: {
       prompt: "请再次输入密码以确认。",

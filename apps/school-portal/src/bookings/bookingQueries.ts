@@ -41,6 +41,22 @@ export function useStudentBookings(studentId: string | null, schoolId: string | 
   });
 }
 
+/** The student page's "Upcoming booking": the soonest booking whose class
+ * hasn't started, and how many more (GET /students/{id}/bookings/next,
+ * Decision 341). */
+export function useNextStudentBooking(studentId: string | null, schoolId: string | null) {
+  return useQuery({
+    queryKey: ['studentBookings', studentId, schoolId, 'next'],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/students/{id}/bookings/next', {
+          params: { path: { id: studentId! }, query: { schoolId: schoolId! } },
+        }),
+      ),
+    enabled: !!studentId && !!schoolId,
+  });
+}
+
 /**
  * Timetable page redesign (click-to-book) — POST /classes/:id/book, the first real
  * caller of this endpoint anywhere in apps/school-portal (confirmed: no existing

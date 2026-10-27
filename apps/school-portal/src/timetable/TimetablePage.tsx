@@ -39,6 +39,7 @@ import { TimetableSlotFormModal } from './TimetableSlotFormModal';
 import { BookedClassesDialog, type BookedClassesMode } from './BookedClassesDialog';
 import { changedSlotFields, slotChangeMovesClasses, slotChangeTouchesBookingRules } from './slotChanges';
 import { TimetableBookingDialog } from './TimetableBookingDialog';
+import { ClosuresDialog } from './ClosuresDialog';
 import {
   addDays,
   colorForSlot,
@@ -137,6 +138,7 @@ export function TimetablePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const [anchor, setAnchor] = useState(() => new Date());
   const [booking, setBooking] = useState<BookingTarget | null>(null);
+  const [closuresOpen, setClosuresOpen] = useState(false);
   const [bookedMessage, setBookedMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   // Decision 226 — archived TimetableSlots are excluded by default (hidden
@@ -192,7 +194,7 @@ export function TimetablePage() {
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
   const students = studentData?.items ?? [];
-  const hasAnything = (canEdit ? slots.length > 0 : days.some((day) => day.entries.length > 0)) || (calendar.data?.classes.length ?? 0) > 0;
+  const hasAnything = (canEdit ? slots.length > 0 : days.some((day) => day.entries.length > 0)) || (calendar.data?.classes.length ?? 0) > 0 || (calendar.data?.closures.length ?? 0) > 0;
 
   function shiftAnchor(direction: 1 | -1) {
     if (rangeMode === 'day') setAnchor((a) => addDays(a, direction));
@@ -212,7 +214,16 @@ export function TimetablePage() {
       <PageHeader
         title={t('timetable.title')}
         subtitle={canEdit ? t('timetable.subtitle') : t('timetable.staffSubtitle')}
-        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button> : undefined}
+        actions={
+          canEdit ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={() => setClosuresOpen(true)}>
+                {t('timetable.closures.button')}
+              </Button>
+              <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>
+            </div>
+          ) : undefined
+        }
       />
 
       {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
@@ -287,6 +298,8 @@ export function TimetablePage() {
           onClose={() => setArchiving(null)}
         />
       ) : null}
+
+      {closuresOpen && canEdit ? <ClosuresDialog schoolId={schoolId} branches={branches} onClose={() => setClosuresOpen(false)} /> : null}
 
       {creating && canEdit ? (
         <TimetableSlotFormModal
@@ -440,6 +453,24 @@ function OccurrenceCard({
   );
 }
 
+/** "Closed — Christmas" on a closed date (Decision 353, Q8); a Branch closure
+ * names its Branch, since the School's other Branches stay open. */
+function ClosedBanner({ day, branches }: { day: DayOccurrences; branches: BranchResponse[] }) {
+  const t = useT();
+  if (day.closures.length === 0) return null;
+  return (
+    <>
+      {day.closures.map((c) => (
+        <p key={c.id} role="note" style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
+          {c.branchId
+            ? t('timetable.closures.closedBranch', { reason: c.reason, branch: branches.find((b) => b.id === c.branchId)?.name ?? '' })
+            : t('timetable.closures.closed', { reason: c.reason })}
+        </p>
+      ))}
+    </>
+  );
+}
+
 function entryKey(entry: CalendarEntry): string {
   return entry.kind === 'class' ? entry.cls.id : `${entry.kind}-${entry.slot.id}`;
 }
@@ -466,6 +497,7 @@ function DayAgendaCard({
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
         {dayHeading(day)}
       </h2>
+      <ClosedBanner day={day} branches={branches} />
       {day.entries.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('timetable.nothingScheduled')}</p>
       ) : (
@@ -496,6 +528,7 @@ function DayColumn({
         <h2 className="ultm8-page-header__title" style={{ fontSize: 14, marginBottom: 8 }}>
           {dayHeading(day)}
         </h2>
+        <ClosedBanner day={day} branches={branches} />
         {day.entries.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>—</p>
         ) : (
@@ -547,6 +580,11 @@ function MonthGrid({ days, onBook }: { days: DayOccurrences[]; onBook: (target: 
               }}
             >
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(`${day.date}T00:00:00`).getDate()}</span>
+              {day.closures.length > 0 ? (
+                <span role="note" title={day.closures.map((c) => c.reason).join(', ')} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
+                  {t('timetable.closures.closedShort')}
+                </span>
+              ) : null}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 {bookable.map((cls) => (
                   <button

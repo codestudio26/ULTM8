@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "電話番号の確認",
       resetPasscode: "パスコードの再設定",
       newPasscode: "新しいパスコード",
+      choosePasscode: "パスコード設定",
     },
     app: {
       home: "ULTM8 生徒",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "新しいパスコード",
       confirmNewPasscode: "新しいパスコード（確認）",
       submit: "新しいパスコードを設定",
+    },
+    choosePasscode: {
+      title: "パスコードを設定",
+      intro: "スクールから仮のパスコードが発行されています。ログインを完了するには、6桁のパスコードを自分で設定してください。",
+      submit: "保存してログイン",
     },
     stepUp: {
       prompt: "確認のため、パスコードをもう一度入力してください。",

@@ -209,6 +209,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} usunęła {school} z franczyzy. Opłaty franczyzowe zostały wstrzymane.",
     franchiseClosedTitle: "Franczyza zamknięta",
     franchiseClosedBody: "{franchise} została zamknięta. {school} pozostaje otwarta, a opłaty franczyzowe zostały wstrzymane.",
+    studentAddedTitle: "Dodano do szkoły",
+    studentAddedBody: "Dodano Cię do {school}.",
     toDecideBody: "Awans {name} na {rank} ({style}) czeka na twoją decyzję. Awansuj lub zdecyduj, że nie.",
     promotionFeeBody: "Twój awans na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
     childPromotionFeeBody: "Awans {name} na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",

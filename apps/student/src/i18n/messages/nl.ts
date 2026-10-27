@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Telefoon bevestigen",
       resetPasscode: "Toegangscode opnieuw instellen",
       newPasscode: "Nieuwe toegangscode",
+      choosePasscode: "Code kiezen",
     },
     app: {
       home: "ULTM8 Student",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nieuwe toegangscode",
       confirmNewPasscode: "Bevestig nieuwe toegangscode",
       submit: "Nieuwe toegangscode instellen",
+    },
+    choosePasscode: {
+      title: "Kies je toegangscode",
+      intro: "Je school heeft je een tijdelijke toegangscode gegeven. Kies je eigen 6-cijferige code om het inloggen af te ronden.",
+      submit: "Opslaan en inloggen",
     },
     stepUp: {
       prompt: "Voer je toegangscode opnieuw in om te bevestigen.",

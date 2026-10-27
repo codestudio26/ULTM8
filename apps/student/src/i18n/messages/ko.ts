@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "전화번호 인증",
       resetPasscode: "패스코드 재설정",
       newPasscode: "새 패스코드",
+      choosePasscode: "비밀번호 설정",
     },
     app: {
       home: "ULTM8 수련생",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "새 패스코드",
       confirmNewPasscode: "새 패스코드 확인",
       submit: "새 패스코드 설정",
+    },
+    choosePasscode: {
+      title: "비밀번호 설정",
+      intro: "학교에서 임시 비밀번호를 받았습니다. 로그인을 마치려면 6자리 비밀번호를 직접 정하세요.",
+      submit: "저장하고 로그인",
     },
     stepUp: {
       prompt: "확인하려면 패스코드를 다시 입력하세요.",

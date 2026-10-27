@@ -167,6 +167,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} が {school} をフランチャイズから削除しました。フランチャイズ料金は停止しました。",
     franchiseClosedTitle: "フランチャイズが閉鎖されました",
     franchiseClosedBody: "{franchise} は閉鎖されました。{school} は営業を続け、フランチャイズ料金は停止しました。",
+    studentAddedTitle: "スクールに追加されました",
+    studentAddedBody: "{school} に追加されました。",
     toDecideBody: "{name}さんの{rank}（{style}）への昇級があなたの判断を待っています。昇級させるか、見送るかを決めてください。",
     promotionFeeBody: "{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
     childPromotionFeeBody: "{name}さんの{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
