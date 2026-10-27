@@ -200,6 +200,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "Jeder Gürtel, jede Buchung, an einem Ort.",
       newSchool: "Neue Schule? {link}",
       forgotPasscode: "Zugangscode vergessen?",
+      phoneVerified: "Telefonnummer bestätigt. Du kannst dich jetzt anmelden.",
+      verifyPhoneLink: "Telefonnummer bestätigen",
     },
     forgot: {
       title: "Zugangscode zurücksetzen",
@@ -2749,6 +2751,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "Mein Profil",
     loadFailed: "Dein Profil konnte nicht geladen werden.",
     signInNote: "Du meldest dich mit deiner E-Mail-Adresse und Telefonnummer an, deshalb können sie hier nicht geändert werden.",
+    removePhoto: "Foto entfernen",
   },
   address: {
     legend: "Adresse",

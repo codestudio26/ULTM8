@@ -41,7 +41,7 @@ export function CreateSchoolPage() {
     timezone: '',
     description: '',
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
-    waitlistClaimWindowMinutes: 60,
+    waitlistClaimWindowMinutes: 60 as number | '',
   });
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +74,8 @@ export function CreateSchoolPage() {
         timezone: form.timezone || undefined,
         description: form.description || undefined,
         classCancellationPolicy: form.classCancellationPolicy,
-        waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
+        // A cleared box keeps the School's default instead of sending 0 (A12).
+        waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes === '' ? undefined : form.waitlistClaimWindowMinutes,
       });
       // SchoolsService.create() re-mints the caller's own token and returns it
       // (ultm8-nestjs-module §7's narrow, approved exception) — swap it in directly so
@@ -105,7 +106,17 @@ export function CreateSchoolPage() {
   }
 
   return (
-    <AuthCard title={t('schools.create.title')} subtitle={t('schools.create.subtitle')}>
+    <AuthCard
+      title={t('schools.create.title')}
+      subtitle={t('schools.create.subtitle')}
+      // This page has no app shell around it, so it carries its own way out:
+      // anyone without a School lands here after logging in (A5).
+      footer={
+        <Button type="button" variant="secondary" onClick={() => void logout()}>
+          {t('layout.logOut')}
+        </Button>
+      }
+    >
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('schools.form.schoolName')} htmlFor="school-name">
@@ -163,7 +174,7 @@ export function CreateSchoolPage() {
             type="number"
             min={1}
             value={form.waitlistClaimWindowMinutes}
-            onChange={(e) => set('waitlistClaimWindowMinutes', Number(e.target.value))}
+            onChange={(e) => set('waitlistClaimWindowMinutes', e.target.value === '' ? '' : Number(e.target.value))}
           />
         </Field>
         <Checkbox

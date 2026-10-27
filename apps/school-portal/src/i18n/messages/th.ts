@@ -197,6 +197,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "ทุกสายคาด ทุกการจอง ในที่เดียว",
       newSchool: "โรงเรียนใหม่ใช่ไหม {link}",
       forgotPasscode: "ลืมรหัสเข้าใช้ใช่ไหม",
+      phoneVerified: "ยืนยันหมายเลขโทรศัพท์แล้ว คุณเข้าสู่ระบบได้แล้ว",
+      verifyPhoneLink: "ยืนยันหมายเลขโทรศัพท์ของคุณ",
     },
     forgot: {
       title: "รีเซ็ตรหัสเข้าใช้",
@@ -2711,6 +2713,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "โปรไฟล์ของฉัน",
     loadFailed: "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
     signInNote: "คุณใช้อีเมลและหมายเลขโทรศัพท์ในการเข้าสู่ระบบ จึงไม่สามารถเปลี่ยนได้ที่นี่",
+    removePhoto: "ลบรูปภาพ",
   },
   address: {
     legend: "ที่อยู่",

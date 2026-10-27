@@ -13168,7 +13168,7 @@
           },
           "dateOfBirth": {
             "type": "string",
-            "description": "ISO 8601 date, no time component"
+            "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
           },
           "gender": {
             "type": "string"
@@ -14158,7 +14158,9 @@
             ]
           },
           "profilePhotoUrl": {
-            "type": "string"
+            "type": "string",
+            "description": "Null removes the photo.",
+            "nullable": true
           },
           "weightCategory": {
             "type": "string",
@@ -16561,7 +16563,9 @@
             ]
           },
           "profilePhotoUrl": {
-            "type": "string"
+            "type": "string",
+            "description": "Null removes the photo.",
+            "nullable": true
           },
           "weightCategory": {
             "type": "string",

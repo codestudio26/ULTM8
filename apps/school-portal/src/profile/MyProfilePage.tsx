@@ -32,6 +32,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
  *
  * Fields are the approved set, each one `UpdateUserDto` accepts: photo, first
  * name, surname, username, date of birth, language, currency and address.
+ * "Remove photo" saves the photo as null (sign-in review A11).
  * `UpdateUserDto` also accepts gender, nationality and the Decision 220/246
  * measurements; they're left off on purpose (not in the approved design).
  * Email and phone are shown read-only — the DTO deliberately excludes both
@@ -40,9 +41,8 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
  * Blank username/language/currency are sent as `null` (clears them, same
  * convention as SchoolPage). The address is the shared country-first
  * `AddressFields` (Decision 276), sent as `postalAddress` only when it
- * changed, and `null` when emptied; date of birth and photo can't be cleared
- * (the API rejects a null date of birth, and the DTO has no null for the
- * photo), so a blank one is simply left out. The photo uses the same
+ * changed, and `null` when emptied; date of birth can't be cleared (the API
+ * rejects a null date of birth), so a blank one is simply left out. The photo uses the same
  * `POST /uploads/public-photo-url` path as every other photo field, with
  * entityType USER and no entityId — the API's self-service case.
  *
@@ -106,7 +106,8 @@ export function MyProfilePage() {
     setAddressErrors({});
     try {
       await updateMe.mutateAsync({
-        profilePhotoUrl: form.profilePhotoUrl || undefined,
+        // A removed photo is sent as null, which clears it (A11).
+        profilePhotoUrl: form.profilePhotoUrl || (me?.profilePhotoUrl ? null : undefined),
         firstName: form.firstName,
         surname: form.surname,
         username: form.username || null,
@@ -144,6 +145,13 @@ export function MyProfilePage() {
                 })
               }
             />
+            {form.profilePhotoUrl ? (
+              <div style={{ marginTop: 8 }}>
+                <Button type="button" variant="secondary" onClick={() => set('profilePhotoUrl', '')}>
+                  {t('profile.removePhoto')}
+                </Button>
+              </div>
+            ) : null}
           </Field>
           <Field label={t('students.update.firstName')} htmlFor="profile-firstName">
             <TextField required maxLength={100} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
@@ -184,7 +192,7 @@ export function MyProfilePage() {
             <TextField readOnly value={me.email} />
           </Field>
           <Field label={t('auth.phoneLabel')} htmlFor="profile-phone" hint={t('profile.signInNote')}>
-            <TextField readOnly value={me.phone} />
+            <TextField readOnly value={me.phone ?? ''} />
           </Field>
           <div style={{ marginTop: 16 }}>
             <Button type="submit" loading={updateMe.isPending}>

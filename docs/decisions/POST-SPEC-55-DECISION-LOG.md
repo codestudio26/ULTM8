@@ -5813,3 +5813,32 @@ Nothing here is built yet. Tablet sign-ups are F5 in `docs/handover/FRONT-DESK-B
 ### Recorded by
 
 User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, then "agree" to the recommendation that staff can approve a rejected sign-up within the 30 days.
+
+---
+
+## Decision 366 — Sign-in and accounts review fixes
+
+**Date:** 27 Oct 2026 · **Status:** Bug fixes from the Sign-in and accounts review · **Builds on:** Decisions 72, 79, 230/237, 295 and 341
+
+The Sign-in and accounts review (login, sign-up, verify phone, forgot and reset passcode, first sign-in with a temporary passcode, Create your School, My profile) found 13 bugs, A1–A13. This fixes them. No business rule changes; nothing needs a migration.
+
+### Decision
+
+1. **Nothing is saved when text messages aren't set up (A1, A3).** Sign-up and Forgot passcode check Twilio first and answer every phone the same way: "Text messages are not configured yet, so we can't send a verification code. Please try again later." (503, code `SMS_NOT_CONFIGURED`). Before, sign-up saved the account and then failed with a 500, so the person could never sign up again or log in; Forgot passcode failed only for registered phones, which told anyone which numbers have accounts.
+2. **First sign-in with a temporary passcode keeps a real session (A2, A10).** The portal now stores the 30-day refresh token too, and drops anything an earlier session left in the tab. Before, the session died after 15 minutes, or picked up the earlier account's refresh token. It also returns to where Log in was going (the coach invite link) and sets the belts-to-verify notice like a normal login.
+3. **A new login starts clean (A4).** Logging in clears the previous session's cached data and School choice, as Log out already did.
+4. **Create your School has Log out (A5).** It is the home page for anyone without a School, and had no way out.
+5. **An unverified phone gets plain wording and a link (A6, A9).** "Your phone number isn't verified yet. Verify it to finish creating your account." (403, code `PHONE_NOT_VERIFIED`), with a "Verify your phone" link on Log in. After verifying, Log in says "Phone verified. You can log in now."
+6. **Sign-up checks names and date of birth (A7)**, as Decision 341 does for profile edits: names are trimmed and can't be blank; the date of birth must be a real date, not in the future and not more than 120 years ago.
+7. **Usernames ignore capitals and are checked across all accounts (A8).** "Taken" now matches "taken", and a username used at another School gets "This username is already taken." instead of a generic error. Only whether it is taken is read, never the other account.
+8. **My profile can remove the photo (A11).** `profilePhotoUrl: null` clears it. An account with no phone no longer shows a broken phone field.
+9. **Create your School: a cleared waitlist box keeps the default (A12).**
+10. **A Franchise owner who owns no School lands on Franchises (A13)**, not Create your School.
+
+### Still open
+
+The review's five questions (change passcode while signed in, clearing unfinished sign-ups, checking email, changing email or phone, a minimum age to create a School) wait for the product owner.
+
+### Recorded by
+
+Claude, from the Sign-in and accounts review, 27 Oct 2026.

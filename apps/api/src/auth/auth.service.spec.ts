@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 describe('AuthService', () => {
@@ -33,7 +33,7 @@ describe('AuthService', () => {
         }),
       ),
     };
-    twilio = { sendOtp: jest.fn(), checkOtp: jest.fn() };
+    twilio = { sendOtp: jest.fn(), checkOtp: jest.fn(), assertConfigured: jest.fn() };
     jwt = { sign: jest.fn().mockReturnValue('signed.jwt.token') };
     loginAttempts = { isLocked: jest.fn().mockReturnValue(false), recordFailure: jest.fn(), recordSuccess: jest.fn() };
 
@@ -65,6 +65,29 @@ describe('AuthService', () => {
       const result = await service.register(dto);
       expect(twilio.sendOtp).toHaveBeenCalledWith(dto.phone);
       expect(result.message).toMatch(/verification code sent/i);
+    });
+
+    it('saves nothing when text messages are not set up (sign-in review A1)', async () => {
+      twilio.assertConfigured.mockImplementation(() => {
+        throw new ServiceUnavailableException('not configured');
+      });
+      prismaAuth.user.findFirst.mockResolvedValue(null);
+      await expect(service.register(dto)).rejects.toThrow(ServiceUnavailableException);
+      expect(prismaApp.withTenantContext).not.toHaveBeenCalled();
+      expect(prismaAuth.user.findFirst).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('requestPasscodeReset', () => {
+    it('answers every phone the same when text messages are not set up (sign-in review A3)', async () => {
+      twilio.assertConfigured.mockImplementation(() => {
+        throw new ServiceUnavailableException('not configured');
+      });
+      prismaAuth.user.findUnique.mockResolvedValue(null);
+      await expect(service.requestPasscodeReset({ phone: '+15551234567' })).rejects.toThrow(ServiceUnavailableException);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1' });
+      await expect(service.requestPasscodeReset({ phone: '+15551234567' })).rejects.toThrow(ServiceUnavailableException);
+      expect(prismaAuth.user.findUnique).not.toHaveBeenCalled();
     });
   });
 

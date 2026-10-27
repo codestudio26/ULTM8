@@ -200,6 +200,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "Her kuşak, her rezervasyon, tek bir yerde.",
       newSchool: "Yeni okul mu? {link}",
       forgotPasscode: "Giriş kodunuzu mu unuttunuz?",
+      phoneVerified: "Telefon doğrulandı. Artık giriş yapabilirsin.",
+      verifyPhoneLink: "Telefonunu doğrula",
     },
     forgot: {
       title: "Giriş kodunuzu sıfırlayın",
@@ -2749,6 +2751,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "Profilim",
     loadFailed: "Profiliniz yüklenemedi.",
     signInNote: "Giriş yaparken e-posta adresinizi ve telefon numaranızı kullanırsınız, bu yüzden burada değiştirilemezler.",
+    removePhoto: "Fotoğrafı kaldır",
   },
   address: {
     legend: "Adres",

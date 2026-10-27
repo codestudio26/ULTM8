@@ -80,13 +80,17 @@ export class AuthService {
     if (dto.passcode !== dto.passcodeConfirm) {
       throw new BadRequestException('passcode and passcodeConfirm must match');
     }
+    // Before anything is saved: with Twilio unset the account used to be created
+    // and then the OTP send failed with a 500, leaving an account that could
+    // never be verified or registered again (sign-in review A1).
+    this.twilioVerify.assertConfigured();
 
     const existing = await this.prismaAuth.user.findFirst({
       where: {
         OR: [
           { email: dto.email },
           { phone: dto.phone },
-          ...(dto.username ? [{ username: dto.username }] : []),
+          ...(dto.username ? [{ username: { equals: dto.username, mode: 'insensitive' as const } }] : []),
         ],
       },
       select: { id: true },
@@ -206,7 +210,11 @@ export class AuthService {
     // This is the one documented exception — every other account still has a
     // phone and still must verify it.
     if (user.phone && !user.phoneVerifiedAt) {
-      throw new ForbiddenException('Phone not verified — complete registration via POST /auth/otp/verify');
+      // The portal links PHONE_NOT_VERIFIED to its Verify phone page (A6).
+      throw new ForbiddenException({
+        code: 'PHONE_NOT_VERIFIED',
+        message: "Your phone number isn't verified yet. Verify it to finish creating your account.",
+      });
     }
 
     this.loginAttempts.recordSuccess(dto.email);
@@ -556,6 +564,9 @@ export class AuthService {
    * account enumeration — standard security hygiene, not a new business rule.
    */
   async requestPasscodeReset(dto: RequestPasscodeResetDto) {
+    // Checked before the lookup, so every phone gets the same answer when text
+    // messages aren't set up; it used to 500 only for registered ones (A3).
+    this.twilioVerify.assertConfigured();
     const user = await this.prismaAuth.user.findUnique({
       where: { phone: dto.phone },
       select: { id: true },

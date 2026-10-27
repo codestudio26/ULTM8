@@ -6,6 +6,8 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Text messages are not configured yet, so we can't send a verification code. Please try again later.",
+ "Your phone number isn't verified yet. Verify it to finish creating your account.",
  "Only the School Owner/Manager or that branch's Branch Staff may do this.",
  "This class is already cancelled.",
  "This class has already finished.",
@@ -119,7 +121,6 @@ export const SERVER_MESSAGES: string[] = [
  "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.",
  "PaymentAccount has no owner",
  "PaymentAccount not found",
- "Phone not verified — complete registration via POST /auth/otp/verify",
  "Platform Admin authentication is not fully configured.",
  "Playlist not found",
  "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.",

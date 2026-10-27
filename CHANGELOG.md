@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sign-in and accounts fixes** (Decision 366) — sign-up and Forgot passcode
+  no longer half-save an account or fail with a server error when text
+  messages aren't set up; a first sign-in with a temporary passcode stays
+  signed in past 15 minutes; logging in clears the previous person's data;
+  Create your School has Log out; an unverified phone gets a plain message and
+  a Verify link; sign-up refuses blank names and impossible birth dates;
+  usernames ignore capitals; My profile can remove its photo; a Franchise
+  owner without a School lands on Franchises.
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,

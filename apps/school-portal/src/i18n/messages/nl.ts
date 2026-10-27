@@ -200,6 +200,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "Elke band, elke boeking, op één plek.",
       newSchool: "Nieuwe school? {link}",
       forgotPasscode: "Toegangscode vergeten?",
+      phoneVerified: "Telefoonnummer geverifieerd. Je kunt nu inloggen.",
+      verifyPhoneLink: "Verifieer je telefoonnummer",
     },
     forgot: {
       title: "Toegangscode opnieuw instellen",
@@ -2749,6 +2751,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "Mijn profiel",
     loadFailed: "Je profiel kon niet worden geladen.",
     signInNote: "Je logt in met je e-mailadres en telefoonnummer, daarom kunnen die hier niet worden gewijzigd.",
+    removePhoto: "Foto verwijderen",
   },
   address: {
     legend: "Adres",

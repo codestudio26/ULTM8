@@ -114,12 +114,13 @@ export class UpdateUserDto {
   @Type(() => PostalAddressDto)
   postalAddress?: PostalAddressDto | null;
 
-  @ApiPropertyOptional()
+  /** Null removes the photo (sign-in review A11). */
+  @ApiPropertyOptional({ description: 'Null removes the photo.', type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
   @IsUrl()
-  profilePhotoUrl?: string;
+  profilePhotoUrl?: string | null;
 
   /**
    * Decision 220/246 — Student Detail Measurements, approved for build as real

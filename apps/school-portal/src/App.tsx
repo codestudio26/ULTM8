@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
 import { CoachDashboardPage } from './coach/CoachDashboardPage';
 import { CoachInvitesPage } from './coach/CoachInvitesPage';
 import { MyBeltsPage } from './coach/MyBeltsPage';
@@ -54,13 +54,15 @@ import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
 /** Owners land on the Dashboard (Bookings This Week + KPIs); coaches on their own
- * dashboard (Decision 184, a different page — `/coach`); anyone else on creating a
- * School. The School profile itself (`/school`) is still reachable from the nav,
- * just no longer the landing page. */
+ * dashboard (Decision 184, a different page — `/coach`); a Franchise owner who owns
+ * no School on Franchises (sign-in review A13); anyone else on creating a School.
+ * The School profile itself (`/school`) is still reachable from the nav, just no
+ * longer the landing page. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
-  return <Navigate to={schoolId ? '/dashboard' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
+  const ownsFranchise = !!useAuth().claims?.grants.some((g) => g.role === 'FRANCHISE_OWNER');
+  return <Navigate to={schoolId ? '/dashboard' : coachSchoolId ? '/coach' : ownsFranchise ? '/franchises' : '/onboarding'} replace />;
 }
 
 export function App() {

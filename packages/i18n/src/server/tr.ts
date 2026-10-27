@@ -1,5 +1,7 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Kısa mesajlar henüz ayarlanmadı, bu yüzden doğrulama kodu gönderemiyoruz. Lütfen daha sonra tekrar dene.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Telefon numaran henüz doğrulanmadı. Hesabını oluşturmayı tamamlamak için doğrula.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Bunu yalnızca Okul Sahibi/Yöneticisi veya o şubenin Şube Personeli yapabilir.",
   "This class is already cancelled.": "Bu ders zaten iptal edilmiş.",
   "This class has already finished.": "Bu ders zaten bitti.",
@@ -112,7 +114,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Kayıtlı kartla ödeme, Stripe ile yapılandırılmış bir okul gerektirir — bu okul yalnızca nakit/banka havalesi kabul ediyor.",
   "PaymentAccount has no owner": "PaymentAccount'un sahibi yok",
   "PaymentAccount not found": "PaymentAccount bulunamadı",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Telefon doğrulanmadı — kaydı POST /auth/otp/verify ile tamamlayın",
   "Platform Admin authentication is not fully configured.": "Platform yöneticisi kimlik doğrulaması tam olarak yapılandırılmamış.",
   "Playlist not found": "Oynatma listesi bulunamadı",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "Terfi yalnızca yukarı doğru yapılır; daha yüksek bir kuşak veya şerit seçin. Aşağı indirmek için derece düşürmeyi kullanın.",

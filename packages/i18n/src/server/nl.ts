@@ -1,5 +1,7 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Sms is nog niet ingesteld, dus we kunnen geen verificatiecode sturen. Probeer het later opnieuw.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Je telefoonnummer is nog niet geverifieerd. Verifieer het om je account af te maken.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Alleen de Eigenaar/Manager van de School of de medewerkers van die vestiging mogen dit doen.",
   "This class is already cancelled.": "Deze les is al geannuleerd.",
   "This class has already finished.": "Deze les is al afgelopen.",
@@ -112,7 +114,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Betalen met een opgeslagen kaart vereist een school met Stripe. Deze school accepteert alleen contant geld of bankoverschrijving.",
   "PaymentAccount has no owner": "Het PaymentAccount heeft geen eigenaar",
   "PaymentAccount not found": "PaymentAccount niet gevonden",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Telefoonnummer niet geverifieerd. Rond de registratie af via POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "De aanmelding voor platformbeheerders is niet volledig ingesteld.",
   "Playlist not found": "Afspeellijst niet gevonden",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "Promoveren kan alleen omhoog: kies een hogere band of streep. Gebruik terugzetten om omlaag te gaan.",

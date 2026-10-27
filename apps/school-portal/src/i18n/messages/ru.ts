@@ -206,6 +206,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "Каждый пояс, каждая запись — в одном месте.",
       newSchool: "Новая школа? {link}",
       forgotPasscode: "Забыли код доступа?",
+      phoneVerified: "Телефон подтверждён. Теперь вы можете войти.",
+      verifyPhoneLink: "Подтвердите телефон",
     },
     forgot: {
       title: "Сброс кода доступа",
@@ -2822,6 +2824,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "Мой профиль",
     loadFailed: "Не удалось загрузить ваш профиль.",
     signInNote: "Вы входите по эл. почте и номеру телефона, поэтому их нельзя изменить здесь.",
+    removePhoto: "Удалить фото",
   },
   address: {
     legend: "Адрес",

@@ -1,5 +1,7 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "ยังไม่ได้ตั้งค่าข้อความ SMS จึงไม่สามารถส่งรหัสยืนยันได้ โปรดลองอีกครั้งภายหลัง",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "หมายเลขโทรศัพท์ของคุณยังไม่ได้รับการยืนยัน โปรดยืนยันเพื่อสร้างบัญชีให้เสร็จสมบูรณ์",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "เฉพาะเจ้าของ/ผู้จัดการโรงเรียน หรือเจ้าหน้าที่ของสาขานั้นเท่านั้นที่ทำได้",
   "This class is already cancelled.": "คลาสนี้ถูกยกเลิกไปแล้ว",
   "This class has already finished.": "คลาสนี้จบไปแล้ว",
@@ -112,7 +114,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "การชำระด้วยบัตรที่บันทึกไว้ต้องใช้โรงเรียนที่ตั้งค่า Stripe แล้ว — โรงเรียนนี้รับเฉพาะเงินสดหรือโอนเงินผ่านธนาคาร",
   "PaymentAccount has no owner": "บัญชีรับชำระเงินไม่มีเจ้าของ",
   "PaymentAccount not found": "ไม่พบบัญชีรับชำระเงิน",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "ยังไม่ได้ยืนยันหมายเลขโทรศัพท์ — โปรดลงทะเบียนให้เสร็จผ่าน POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "ยังตั้งค่าการยืนยันตัวตนของผู้ดูแลแพลตฟอร์มไม่สมบูรณ์",
   "Playlist not found": "ไม่พบเพลย์ลิสต์",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "การเลื่อนระดับทำได้เฉพาะขึ้นเท่านั้น โปรดเลือกสายคาดหรือแถบที่สูงกว่า หากต้องการลดลงให้ใช้การลดระดับ",

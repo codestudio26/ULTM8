@@ -120,10 +120,10 @@ describeIfDb('AuthController — /auth/login + per-user/per-IP throttling (Decis
   });
 
   it('the identity throttle is phone-keyed and Twilio-independent on /auth/forgot-password (Decision 12/17)', async () => {
-    // An unregistered phone never reaches TwilioVerifyService — AuthService.
-    // requestPasscodeReset only calls it once a matching User is found — so this is
-    // safe to throttle-test without a Twilio double. Same 5/60s identity-bucket shape
-    // as /auth/login's email bucket, just keyed by `phone` instead.
+    // No Twilio double needed: with Twilio unset every phone gets the same 503
+    // before any lookup (Decision 366), and the throttle runs before that. Same
+    // 5/60s identity-bucket shape as /auth/login's email bucket, just keyed by
+    // `phone` instead.
     const phone = randomPhone();
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++) {

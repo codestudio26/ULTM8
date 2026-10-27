@@ -4289,7 +4289,7 @@ export interface components {
             /** @description Exactly 6 digits — the account's sole login credential (Decision 72) */
             passcode: string;
             passcodeConfirm: string;
-            /** @description ISO 8601 date, no time component */
+            /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth: string;
             gender?: string;
             nationality?: string;
@@ -4610,7 +4610,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
@@ -5297,7 +5298,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
