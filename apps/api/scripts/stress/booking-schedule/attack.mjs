@@ -13,7 +13,7 @@ const subsOf = (s) => local(s).filter((x) => x.kind === 'sub');
 const packsOf = (s) => local(s).filter((x) => x.kind === 'pack');
 let k = 0;
 const mkClass = async (s, cap, extra = {}) => {
-  const r = await call('attack:mk-class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], instructorId: s.instructor.id, title: `Attack ${k++}`, styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 5 * 60e3).toISOString(), endDate: new Date(now + 65 * 60e3).toISOString(), ...(cap === null ? {} : { capacity: cap }), ...extra });
+  const r = await call('attack:mk-class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], instructorId: s.instructor.id, title: `Attack ${k++}`, styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 5 * 60e3).toISOString(), endDate: new Date(now + 65 * 60e3).toISOString(), membershipInclusion: true, ...(cap === null ? {} : { capacity: cap }), ...extra });
   if (r.status >= 300) throw new Error('mkClass ' + JSON.stringify(r.body));
   return r.body.id;
 };
@@ -141,7 +141,9 @@ const upcoming = (classId) => db.booking.count({ where: { classId, status: 'UPCO
   ok('A9b OFF + CANCEL removes every upcoming class and refunds the bookings', off.status === 200 && left.length === 0 && after.status >= 400 && cancelled === 1, `PATCH ${off.status}; ${left.length} upcoming classes left; booking one now: ${after.status}; refunded bookings ${cancelled}`);
   // Slot 1: move the start time with MOVE; bookings follow.
   let cls1 = await future(s.slots[1]);
-  await call('A9:book', 'POST', `/classes/${cls1[0].id}/book`, subsOf(s)[92].tok, {});
+  // Book a class from tomorrow on: moving to an earlier time can put today's class in the past, which is cancelled by design (H8a).
+  const tomorrowCls = cls1.find((c) => c.startDate.getTime() > now + 24 * 3600e3) ?? cls1[0];
+  await call('A9:book', 'POST', `/classes/${tomorrowCls.id}/book`, subsOf(s)[92].tok, {});
   const mv = await call('A9:move', 'PATCH', `/timetable/${s.slots[1]}`, s.owner.tok, { startTime: '06:30', endTime: '07:30', capacity: 30, bookedClasses: 'MOVE' });
   cls1 = await future(s.slots[1]);
   const times = new Set(cls1.map((c) => c.startDate.toISOString().slice(11, 16)));
@@ -190,7 +192,7 @@ const upcoming = (classId) => db.booking.count({ where: { classId, status: 'UPCO
 {
   const s = S[11]; const st = packsOf(s)[8];
   await db.membership.updateMany({ where: { studentId: st.id, schoolId: s.id }, data: { classesRemaining: 2 } });
-  const r = await call('A12:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Started', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now - 20 * 60e3).toISOString(), endDate: new Date(now + 40 * 60e3).toISOString(), capacity: 40 });
+  const r = await call('A12:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Started', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now - 20 * 60e3).toISOString(), endDate: new Date(now + 40 * 60e3).toISOString(), membershipInclusion: true, capacity: 40 });
   const b = await call('A12:book', 'POST', `/classes/${r.body.id}/book`, st.tok, {});
   const c = await call('A12:cancel', 'PATCH', `/bookings/${b.body.id}/cancel`, st.tok, {});
   const m = await db.membership.findFirst({ where: { studentId: st.id, schoolId: s.id } });

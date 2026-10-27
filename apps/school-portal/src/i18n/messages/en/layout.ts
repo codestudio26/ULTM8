@@ -43,6 +43,8 @@ export const layout = {
     timetable: 'Timetable',
     membershipPlans: 'Membership Plans',
     transactions: 'Transactions',
+    recordPayment: 'Record a payment',
+    cancellations: 'Cancellations',
     waivers: 'Waivers',
     franchises: 'Franchises',
     notifications: 'Notifications',
@@ -66,5 +68,6 @@ export const layout = {
     getTheApp: 'Get the app',
     comingSoonFor: 'Coming soon for{br}{platform}',
     copyright: '© {year} ULTM8. All rights reserved.',
+    partOfFranchise: 'Part of {name}',
   },
 };

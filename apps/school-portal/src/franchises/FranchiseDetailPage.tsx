@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { components } from '@ultm8/api-client';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import {
   useFranchise,
   useFranchiseFeeCharges,
+  useFranchisePaymentAccount,
   useFranchiseSchools,
   useRefundFeeCharge,
   type FranchiseFeeChargeResponse,
+  type FranchiseMemberSchool,
 } from './franchiseQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
@@ -22,7 +23,46 @@ import { formatLocale } from '../i18n/format';
 // in this phase's new code that broke the established "response types come
 // from components['schemas'][...], never re-declared by hand" convention
 // every other query/page in this codebase follows.
-type FranchiseSchool = components['schemas']['SchoolResponseDto'];
+//
+// Decision 337 (F2): the roster now has its own narrow response type
+// (FranchiseMemberSchoolResponseDto), no longer the whole School record.
+type FranchiseSchool = FranchiseMemberSchool;
+
+/** Decision 337 (F13) — copies the Franchise ID, falling back to selecting the
+ * text when the clipboard is unavailable. */
+function FranchiseIdLine({ id }: { id: string }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  const codeRef = React.useRef<HTMLElement>(null);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+    } catch {
+      const range = document.createRange();
+      if (codeRef.current) {
+        range.selectNodeContents(codeRef.current);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    }
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <strong>{t('franchises.detail.franchiseId')}</strong>
+        <code ref={codeRef} data-testid="franchise-id" style={{ overflowWrap: 'anywhere' }}>
+          {id}
+        </code>
+        <Button variant="secondary" onClick={copy}>
+          {copied ? t('franchises.detail.copied') : t('franchises.detail.copyId')}
+        </Button>
+      </div>
+      <span style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('franchises.detail.franchiseIdHint')}</span>
+    </div>
+  );
+}
 
 function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscriptionStatus'], t: TranslateFn) {
   if (status === 'ACTIVE') return <Badge variant="success">{t('franchises.detail.subscriptionActive')}</Badge>;
@@ -45,6 +85,7 @@ export function FranchiseDetailPage() {
   const { data: franchise, isLoading: franchiseLoading, error: franchiseError } = useFranchise(franchiseId);
   const { data: schoolData, isLoading: schoolsLoading, error: schoolsError } = useFranchiseSchools(franchiseId);
   const { data: chargeData, isLoading: chargesLoading, error: chargesError } = useFranchiseFeeCharges(franchiseId);
+  const { data: paymentAccount, isLoading: paymentAccountLoading } = useFranchisePaymentAccount(franchiseId);
   const refundCharge = useRefundFeeCharge(franchiseId ?? '');
   const [refunding, setRefunding] = useState<FranchiseFeeChargeResponse | null>(null);
 
@@ -62,6 +103,16 @@ export function FranchiseDetailPage() {
 
   const schools: FranchiseSchool[] = schoolData?.items ?? [];
   const charges = chargeData?.items ?? [];
+  // Decision 337 (F7) — say why member Schools stay "Not billing yet" instead of
+  // leaving it a mystery: no fee set for the chosen fee model, and/or no Stripe
+  // account to bill through (connecting one isn't in the portal yet).
+  const feeMissing = franchise
+    ? franchise.feeModel === 'PER_HEADCOUNT'
+      ? franchise.perHeadcountRate == null
+      : franchise.flatFeeAmount == null
+    : false;
+  const stripeMissing = !paymentAccountLoading && !(paymentAccount?.provider === 'STRIPE' && paymentAccount.stripeConnectedAccountId);
+  const showBillingNotice = !!franchise && !franchise.archivedAt && (feeMissing || stripeMissing);
 
   return (
     <>
@@ -71,6 +122,30 @@ export function FranchiseDetailPage() {
           feeModel: franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat'),
         })}
       />
+
+      <div style={{ marginBottom: 24 }}>
+        <Card>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {franchise?.archivedAt ? (
+              <div>
+                <Badge variant="danger">{t('franchises.list.closed')}</Badge>
+              </div>
+            ) : null}
+            <FranchiseIdLine id={franchiseId} />
+            {showBillingNotice ? (
+              <div role="status" data-testid="billing-notice">
+                <strong>{t('franchises.detail.billingNoticeTitle')}</strong>
+                <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+                  {feeMissing ? (
+                    <li>{franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.detail.billingNoticeNoRate') : t('franchises.detail.billingNoticeNoFlatFee')}</li>
+                  ) : null}
+                  {stripeMissing ? <li>{t('franchises.detail.billingNoticeNoStripe')}</li> : null}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      </div>
 
       <div style={{ marginBottom: 24 }}>
         <Card>
@@ -86,7 +161,17 @@ export function FranchiseDetailPage() {
             <Table<FranchiseSchool>
               rows={schools}
               columns={[
-                { key: 'name', header: t('franchises.detail.columnName'), render: (s) => s.name },
+                {
+                  key: 'name',
+                  header: t('franchises.detail.columnName'),
+                  // Decision 337 (F9) — a closed member School says so.
+                  render: (s) => (
+                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {s.name}
+                      {s.archivedAt ? <Badge variant="danger">{t('franchises.list.closed')}</Badge> : null}
+                    </span>
+                  ),
+                },
                 { key: 'type', header: t('franchises.detail.columnType'), render: (s) => s.businessType ?? '—' },
                 { key: 'billing', header: t('franchises.detail.columnFeeBilling'), render: (s) => subscriptionStatusBadge(s.franchiseFeeSubscriptionStatus, t) },
               ]}
@@ -116,7 +201,8 @@ export function FranchiseDetailPage() {
               {
                 key: 'school',
                 header: t('franchises.detail.columnSchool'),
-                render: (c) => schools.find((s) => s.id === c.schoolId)?.name ?? c.schoolId.slice(0, 8),
+                // Decision 337 (F14) — a School that has since left isn't in the roster.
+                render: (c) => schools.find((s) => s.id === c.schoolId)?.name ?? t('franchises.detail.formerMember'),
               },
               {
                 key: 'basis',

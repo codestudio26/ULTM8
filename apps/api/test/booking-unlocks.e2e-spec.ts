@@ -44,7 +44,7 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
   async function book(styles: Array<{ disciplineId: string; classType: string | null }>, overrideReason?: string, token = tokenStudent) {
     const future = new Date(Date.now() + 24 * 3_600_000);
     const cls = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Gated', activities: ['BJJ'], styles, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Gated', activities: ['BJJ'], styles, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     const res = await request(app.getHttpServer())
       .post(`/v1/classes/${cls.id}/book`)
@@ -190,7 +190,7 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
     const future = new Date(Date.now() + 24 * 3_600_000);
     const claim = async () => {
       const cls = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Waitlisted', activities: ['BJJ'], styles: bjjClass('Advanced'), startDate: future, endDate: new Date(future.getTime() + 3_600_000), capacity: 5 },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Waitlisted', activities: ['BJJ'], styles: bjjClass('Advanced'), startDate: future, endDate: new Date(future.getTime() + 3_600_000), capacity: 5 },
       });
       const entry = await superuser.waitlistEntry.create({
         data: { id: randomUUID(), studentId: student.id, classId: cls.id, schoolId: school.id, position: 1, status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: new Date(Date.now() + 3_600_000) },
@@ -218,7 +218,7 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
     const tokenTicket = jwt.sign({ sub: ticket.id, email: ticket.email, grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }] });
     const future = new Date(Date.now() + 48 * 3_600_000);
     const mkClass = (title: string) =>
-      superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title, activities: ['BJJ'], styles: bjjClass(null), startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
+      superuser.class.create({ data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title, activities: ['BJJ'], styles: bjjClass(null), startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
     const gradingDay = await mkClass('Grading day');
     const other = await mkClass('Ordinary class');
     // The School's own pass for its grading day: one credit, scoped to that class.

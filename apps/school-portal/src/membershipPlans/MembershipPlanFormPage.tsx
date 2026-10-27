@@ -9,6 +9,7 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useCurrencies } from '../settings/settingsQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
+import { MoneyField } from '../lib/MoneyField';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import {
   useCreateMembershipPlan,
@@ -17,6 +18,7 @@ import {
   useUpdateMembershipPlan,
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
+import { OwnerOnly } from './MembershipPlansPage';
 
 /** `label`/`caption` are translation keys, resolved at render time; `value`
  * is the enum value sent to the API, never translated. */
@@ -75,7 +77,7 @@ export function MembershipPlanFormPage() {
   const updatePlan = useUpdateMembershipPlan(schoolId ?? '', id ?? '');
   const t = useT();
 
-  if (!schoolId) return null;
+  if (!schoolId) return <OwnerOnly />;
   if (isEdit && planLoading) return <Spinner />;
   if (isEdit && planError) {
     return <ErrorBanner message={planError instanceof ApiError ? planError.message : t('membershipPlans.form.loadFailed')} />;
@@ -98,7 +100,11 @@ export function MembershipPlanFormPage() {
       classes={classData?.items ?? []}
       disciplines={disciplineData?.items ?? []}
       defaultCurrency={school?.defaultCurrency ?? undefined}
-      activeSubscriberCount={activeCountData?.activeCount ?? 0}
+      // Memberships review M9 (Decision 334): the migrate-or-keep prompt is
+      // about running subscriptions, the same count the API checks; active
+      // members (cash Weekly Passes etc.) only lock the type (M14).
+      activeSubscriberCount={activeCountData?.subscriberCount ?? 0}
+      activeMemberCount={activeCountData?.activeCount ?? 0}
       submitting={isEdit ? updatePlan.isPending : createPlan.isPending}
       onSubmit={async (values) => {
         if (isEdit) {
@@ -157,6 +163,7 @@ function MembershipPlanForm({
   disciplines,
   defaultCurrency,
   activeSubscriberCount,
+  activeMemberCount,
   submitting,
   onSubmit,
   onCancel,
@@ -170,6 +177,9 @@ function MembershipPlanForm({
    * plan currently has. Always 0 on Create (nothing to migrate/grandfather
    * for a plan that doesn't exist yet). */
   activeSubscriberCount: number;
+  /** Live members of this plan. While there are any, the API refuses a type
+   * change (Memberships review M14), so the Type picker is locked. */
+  activeMemberCount: number;
   submitting: boolean;
   onSubmit: (values: MembershipPlanFormValues) => Promise<void>;
   onCancel: () => void;
@@ -191,14 +201,18 @@ function MembershipPlanForm({
   const [form, setForm] = useState({
     type: (initial?.type as PlanType) ?? 'SUBSCRIPTION',
     title: initial?.title ?? '',
-    price: initial?.price?.toString() ?? '0',
+    // Hundredths, typed in normal units through MoneyField (Memberships
+    // review Q1, Decision 334): "12.50" used to have to be typed as 1250.
+    price: (initial?.price ?? 0) as number | null,
+    priceValid: true,
     currency: initial?.currency ?? normalizedDefaultCurrency ?? '',
     expiryDurationDays: initial?.expiryDurationDays?.toString() ?? '',
     classesIncluded: initial?.classesIncluded?.toString() ?? '',
     scopedClassId: initial?.scopedClassId ?? '',
     visible: initial?.visible ?? true,
     refundFeeDate: isoToLocalInput(initial?.refundFeeDate),
-    cancellationCharge: initial?.cancellationCharge?.toString() ?? '',
+    cancellationCharge: (initial?.cancellationCharge ?? null) as number | null,
+    cancellationValid: true,
     termsWaiverRequired: initial?.termsWaiverRequired ?? false,
     disciplineIds: initial?.disciplineIds ?? [],
     // Decision 259 — SUBSCRIPTION only.
@@ -217,7 +231,7 @@ function MembershipPlanForm({
   const [priceChangeStrategy, setPriceChangeStrategy] = useState<'MIGRATE' | 'GRANDFATHER' | ''>('');
   const t = useT();
 
-  const priced = form.type !== 'FRIEND_PASS' && Number(form.price) > 0;
+  const priced = form.type !== 'FRIEND_PASS' && (form.price ?? 0) > 0;
   const lessonsOn = includesLessons ?? priced;
 
   // Type-conditional visibility — a client-side guardrail only. The server
@@ -235,6 +249,7 @@ function MembershipPlanForm({
   // simply wrong and has been corrected to match.
   const showExpiryDuration = form.type !== 'SUBSCRIPTION';
   const priceLocked = form.type === 'FRIEND_PASS';
+  const typeLocked = mode === 'edit' && activeMemberCount > 0;
   const captionKey = PLAN_TYPES.find((p) => p.value === form.type)?.caption;
 
   // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
@@ -249,13 +264,16 @@ function MembershipPlanForm({
     mode === 'edit' &&
     initial?.type === 'SUBSCRIPTION' &&
     form.type === 'SUBSCRIPTION' &&
-    Number(form.price) !== initial?.price &&
+    form.price !== initial?.price &&
     activeSubscriberCount > 0;
 
   function handleTypeChange(nextType: PlanType) {
     setForm((f) => {
       const next = { ...f, type: nextType };
-      if (nextType === 'FRIEND_PASS') next.price = '0';
+      if (nextType === 'FRIEND_PASS') {
+        next.price = 0;
+        next.priceValid = true;
+      }
       if (nextType !== 'CLASS_PACK' && nextType !== 'FRIEND_PASS') {
         next.classesIncluded = '';
         next.scopedClassId = '';
@@ -286,9 +304,38 @@ function MembershipPlanForm({
       setError(t('membershipPlans.form.titleRequired'));
       return;
     }
-    if (!form.price.trim()) {
+    if (!form.priceValid) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.priceInvalid'));
+      return;
+    }
+    if (form.price === null) {
       setStepIndex(1);
       setError(t('membershipPlans.form.priceRequired'));
+      return;
+    }
+    // Memberships review M3/M4 (Decision 334): checked on Save from any step,
+    // not only while the Pricing step is on screen (the old max=30 only
+    // applied then). The API refuses the same.
+    const expiryDays = form.expiryDurationDays ? Number(form.expiryDurationDays) : null;
+    if (form.type === 'TRIAL_MEMBERSHIP' && (expiryDays === null || !Number.isInteger(expiryDays) || expiryDays < 1 || expiryDays > 30)) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.trialExpiryRequired'));
+      return;
+    }
+    if (form.type === 'WEEKLY_PASS' && (expiryDays === null || expiryDays < 1)) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.weeklyExpiryRequired'));
+      return;
+    }
+    if (form.type === 'CLASS_PACK' && !form.scopedClassId && !(Number(form.classesIncluded) >= 1)) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.classesIncludedRequired'));
+      return;
+    }
+    if (!form.cancellationValid) {
+      setStepIndex(2);
+      setError(t('membershipPlans.form.cancellationInvalid'));
       return;
     }
     // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
@@ -311,14 +358,17 @@ function MembershipPlanForm({
     try {
       await onSubmit({
         type: form.type,
-        title: form.title,
-        price: Number(form.price),
+        title: form.title.trim(),
+        price: form.price,
         currency: form.currency || null,
         expiryDurationDays: showExpiryDuration && form.expiryDurationDays ? Number(form.expiryDurationDays) : null,
         // classesIncluded cannot be null on update (rejected server-side) — omit
         // rather than clear when the selected type doesn't use it.
         classesIncluded: showClassesIncluded && form.classesIncluded ? Number(form.classesIncluded) : undefined,
-        scopedClassId: form.scopedClassId || null,
+        // Unchanged scopes are left out: the API re-checks a scope it is sent
+        // (the class must still be to come, M15), which would block editing
+        // anything else on a plan for a class that has since taken place.
+        scopedClassId: mode === 'edit' && (form.scopedClassId || null) === (initial?.scopedClassId ?? null) ? undefined : form.scopedClassId || null,
         // Decision 259 — SUBSCRIPTION only; omitted (not cleared) on every
         // other type, same reasoning showExpiryDuration's own comment gives
         // for expiryDurationDays above.
@@ -329,7 +379,7 @@ function MembershipPlanForm({
             : null,
         visible: form.visible,
         refundFeeDate: form.refundFeeDate ? (localInputToIso(form.refundFeeDate) ?? null) : null,
-        cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
+        cancellationCharge: form.cancellationCharge,
         termsWaiverRequired: form.termsWaiverRequired,
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
@@ -370,8 +420,20 @@ function MembershipPlanForm({
         {stepIndex === 0 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>{t('membershipPlans.form.steps.basics')}</SectionTitle>
-          <Field label={t('membershipPlans.form.typeLabel')} htmlFor="plan-type" hint={captionKey ? t(captionKey) : undefined}>
+          <Field
+            label={t('membershipPlans.form.typeLabel')}
+            htmlFor="plan-type"
+            hint={
+              typeLocked
+                ? t('membershipPlans.form.typeLockedHint', { count: activeMemberCount })
+                : captionKey
+                  ? t(captionKey)
+                  : undefined
+            }
+          >
             <SelectField
+              id="plan-type"
+              disabled={typeLocked}
               value={form.type}
               onChange={(e) => handleTypeChange(e.target.value as PlanType)}
               options={PLAN_TYPES.map((p) => ({ value: p.value, label: t(p.label) }))}
@@ -391,13 +453,12 @@ function MembershipPlanForm({
             htmlFor="plan-price"
             hint={priceLocked ? t('membershipPlans.form.priceHintLocked') : t('membershipPlans.form.priceHint')}
           >
-            <TextField
-              type="number"
-              min={0}
-              required
+            <MoneyField
+              id="plan-price"
               disabled={priceLocked}
               value={form.price}
-              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+              currency={form.currency || null}
+              onChange={(price, priceValid) => setForm((f) => ({ ...f, price, priceValid }))}
             />
           </Field>
           {priceChangeDecisionRequired ? (
@@ -534,7 +595,9 @@ function MembershipPlanForm({
               hint={
                 form.type === 'TRIAL_MEMBERSHIP'
                   ? t('membershipPlans.form.expiryTrialHint')
-                  : t('membershipPlans.form.expiryHint')
+                  : form.type === 'WEEKLY_PASS'
+                    ? t('membershipPlans.form.expiryWeeklyHint')
+                    : t('membershipPlans.form.expiryHint')
               }
             >
               <TextField
@@ -568,11 +631,11 @@ function MembershipPlanForm({
             htmlFor="plan-cancellationCharge"
             hint={t('membershipPlans.form.cancellationHint')}
           >
-            <TextField
-              type="number"
-              min={0}
+            <MoneyField
+              id="plan-cancellationCharge"
               value={form.cancellationCharge}
-              onChange={(e) => setForm((f) => ({ ...f, cancellationCharge: e.target.value }))}
+              currency={form.currency || null}
+              onChange={(cancellationCharge, cancellationValid) => setForm((f) => ({ ...f, cancellationCharge, cancellationValid }))}
             />
           </Field>
           <Checkbox

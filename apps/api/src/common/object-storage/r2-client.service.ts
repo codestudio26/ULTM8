@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -161,6 +161,21 @@ export class R2ClientService {
       }
       throw err;
     }
+  }
+
+  /** Whether R2 credentials are set; callers that only clean up can skip
+   * quietly when they are not (local development). */
+  isConfigured(): boolean {
+    return this.client !== null;
+  }
+
+  /** Deletes `key` from the private bucket. Deleting a key that is already
+   * gone succeeds, so a retry after a partial failure is safe. Used when a
+   * signature reaches the end of its retention (Waivers review: the drawn
+   * image used to outlive its record). */
+  async deleteObject(key: string): Promise<void> {
+    const client = this.assertConfigured();
+    await client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
   }
 
   /** A presigned PUT URL for `key` in the PUBLIC bucket (`R2_PUBLIC_BUCKET_NAME`),

@@ -871,6 +871,10 @@ saved-card reuse. Also unchanged: `AcademyMembershipPlanDto` still has no
 Stripe-backed plan still creates a real Transaction + Checkout Session before the
 client could ever pre-filter, same cost `requires_payment` already had.
 
+### Follow-up — cancel a Subscription (26 Oct 2026, Decision 348)
+
+My Memberships now offers "Cancel subscription" on a live Subscription, confirmed in an inline panel (not `Alert.alert`, a no-op on web). It calls `POST /memberships/:id/cancel`; the Subscription runs to the end of the paid month and the row then shows "Cancelled, ends …". Tested in `MyMembershipsScreen.test.tsx`. Guardians can cancel for a linked minor through the same endpoint (`studentId` in the body); no Guardian screen calls it yet.
+
 ## Slice 5 — Notifications — DONE, with a scope change from the original plan below
 
 `POST /notifications/device-tokens` (device token registration) and
@@ -1015,7 +1019,7 @@ The translations are first drafts: the native-speaker review from zero before la
 
 ### Not yet
 - **Paying the fee in the app**, and "Credit on your balance": paying an accepted fee belongs to staff-created charges (Decision 303), which aren't built; the app says to pay as the School asks.
-- The **Home** card and **Ask for a belt correction** (B8) from the design.
+- **Ask for a belt correction** (B8) from the design. The **Home** card is built (26 Oct 2026): one "Promotion fee" card per fee waiting for an answer, the student's own and each of a guardian's children's; **See and answer** opens My grading with that fee open.
 
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (9, 4 new) and the full suite (146, 26 files).

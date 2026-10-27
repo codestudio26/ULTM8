@@ -38,9 +38,10 @@ import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal,
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
+import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { formatHours } from './hours';
 
-type Lesson = { id: string; title: string; skillIds: string[] };
+type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
 
 /** A date the API stores as the start of a local day, shown as that day.
  * Uses the browser's time zone, like every date on the portal today (see
@@ -171,6 +172,10 @@ export function StudentGradingPage() {
           )}
         </Card>
       </div>
+
+      {/* Decision 348: memberships, selling at the desk, Friend Pass and
+          cancelling a Subscription. Owner only, like the API. */}
+      {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
 
       {styles.length === 0 ? (
         <Card>
@@ -823,7 +828,8 @@ function SkillsForNext({
         {ids.map((skillId) => {
           const skill = skills.find((s) => s.id === skillId);
           const status = statuses.find((s) => s.skillId === skillId)?.status ?? 'NOT_STARTED';
-          const linked = lessons.filter((l) => l.skillIds.includes(skillId));
+          // Archived lessons are hidden from students, so not offered here (C9).
+          const linked = lessons.filter((l) => l.skillIds.includes(skillId) && !l.archivedAt);
           const name = skill?.name ?? t('grading.student.skills.fallbackName');
           return (
             <li key={skillId} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

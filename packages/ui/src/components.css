@@ -564,6 +564,10 @@
   background: var(--bg-success);
   color: var(--text-success);
 }
+.ultm8-banner--warning {
+  background: var(--bg-warning);
+  color: var(--text-warning);
+}
 
 /* App shell */
 .ultm8-shell-wrapper {

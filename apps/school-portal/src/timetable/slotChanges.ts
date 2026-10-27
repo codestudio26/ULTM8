@@ -15,8 +15,8 @@ export function changedSlotFields(slot: TimetableSlotResponse, values: Timetable
     weekday: slot.weekday,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    breakStart: slot.breakStart ?? undefined,
-    breakEnd: slot.breakEnd ?? undefined,
+    breakStart: slot.breakStart ?? null,
+    breakEnd: slot.breakEnd ?? null,
     status: slot.status,
     title: slot.title,
     activities: slot.activities,
@@ -32,8 +32,6 @@ export function changedSlotFields(slot: TimetableSlotResponse, values: Timetable
     cancellationCharge: slot.cancellationCharge ?? null,
   };
   for (const [key, value] of Object.entries(values)) {
-    // An omitted break time can't be cleared through this form (see
-    // TimetableSlotFormValues.breakStart), so it is never a change.
     if (value === undefined) continue;
     const normalized = key === 'styles' ? (value as TimetableSlotFormValues['styles'])!.map((s) => ({ disciplineId: s.disciplineId, classType: s.classType ?? null })) : value;
     if (JSON.stringify(normalized) !== JSON.stringify(before[key])) changes[key] = value;
@@ -51,4 +49,22 @@ export function slotChangeMovesClasses(slot: TimetableSlotResponse, changes: Upd
     changes.branchId !== undefined ||
     (changes.status === 'OFF' && slot.status === 'ON')
   );
+}
+
+/** Slot fields that change a booking's rules or money. Booked upcoming Classes
+ * take them only when the owner says so (Decision 332, T6) — the same list as
+ * TimetableService's BOOKING_RULE_FIELDS. */
+const BOOKING_RULE_FIELDS = [
+  'termsWaiverRequired',
+  'membershipInclusion',
+  'bookingCutoffMinutesBeforeStart',
+  'qrAttendanceWindowMinutes',
+  'refundCutoffHoursBeforeStart',
+  'cancellationCharge',
+] as const;
+
+/** Whether a change touches the booking rules of the slot's Classes. `changes`
+ * holds only changed fields (changedSlotFields), so presence is enough. */
+export function slotChangeTouchesBookingRules(changes: UpdateTimetableSlotInput): boolean {
+  return BOOKING_RULE_FIELDS.some((key) => changes[key] !== undefined);
 }

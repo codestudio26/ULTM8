@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import type { UseMutationResult } from '@tanstack/react-query';
 import {
   Badge,
@@ -34,8 +35,8 @@ import {
   type UpdateTimetableSlotInput,
 } from './timetableQueries';
 import { TimetableSlotFormModal } from './TimetableSlotFormModal';
-import { BookedClassesDialog } from './BookedClassesDialog';
-import { changedSlotFields, slotChangeMovesClasses } from './slotChanges';
+import { BookedClassesDialog, type BookedClassesMode } from './BookedClassesDialog';
+import { changedSlotFields, slotChangeMovesClasses, slotChangeTouchesBookingRules } from './slotChanges';
 import { TimetableBookingDialog } from './TimetableBookingDialog';
 import {
   addDays,
@@ -49,6 +50,7 @@ import {
   type DayOccurrences,
 } from './timetableOccurrences';
 import { formatLocale } from '../i18n/format';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 
 type RangeMode = 'day' | 'week' | 'month';
 
@@ -128,6 +130,8 @@ export function TimetablePage() {
   // dots alike), same "excluded by default, visible via a filter"
   // convention this build applies to every one of the 7 entities.
   const [showArchived, setShowArchived] = useState(false);
+  // Decision 332 (T10) — archiving asks first, like Branches.
+  const [archiving, setArchiving] = useState<TimetableSlotResponse | null>(null);
 
   // Must run on every render regardless of loading/error state — a hook can never
   // sit after a conditional early return (Rules of Hooks); see this page's own
@@ -157,7 +161,9 @@ export function TimetablePage() {
   // derived value and stays up here with the rest, for the same reason.
   const days = useMemo(() => occurrencesForRange(slots, rangeStart, rangeEnd), [slots, rangeStart, rangeEnd]);
 
-  if (!schoolId) return null;
+  // Branch Staff and coaches have no Timetable screen yet (Decision 332, T11):
+  // send them home instead of a blank page, as the Staff page does.
+  if (!schoolId) return <Navigate to="/" replace />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('timetable.loadFailed')} />;
 
@@ -240,16 +246,27 @@ export function TimetablePage() {
       ) : viewMode === 'grid' ? (
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
           {days.map((day) => (
-            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} onArchive={setArchiving} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
           {days.map((day) => (
-            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} onArchive={setArchiving} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       )}
+
+      {archiving ? (
+        <ConfirmDeleteModal
+          title={t('timetable.occurrence.archiveConfirmTitle', { title: archiving.title })}
+          description={t('timetable.occurrence.archiveConfirmDescription')}
+          confirmLabel={t('timetable.occurrence.archive')}
+          genericErrorMessage={t('timetable.occurrence.archiveFailed')}
+          onConfirm={() => archiveSlot.mutateAsync(archiving.id)}
+          onClose={() => setArchiving(null)}
+        />
+      ) : null}
 
       {creating ? (
         <TimetableSlotFormModal
@@ -317,7 +334,7 @@ function OccurrenceCard({
   branches,
   onBook,
   onEdit,
-  archiveSlot,
+  onArchive,
   unarchiveSlot,
   setActionError,
 }: {
@@ -326,7 +343,7 @@ function OccurrenceCard({
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
-  archiveSlot: ArchiveMutation;
+  onArchive: (slot: TimetableSlotResponse) => void;
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
 }) {
@@ -359,7 +376,7 @@ function OccurrenceCard({
             // (409) by an upcoming Booking against a generated Class.
             isArchived
               ? { label: t('timetable.occurrence.unarchive'), onClick: () => { setActionError(null); unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
-              : { label: t('timetable.occurrence.archive'), onClick: () => { setActionError(null); archiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.archiveFailed')) }); } },
+              : { label: t('timetable.occurrence.archive'), onClick: () => { setActionError(null); onArchive(slot); } },
           ]}
         />
       </div>
@@ -384,7 +401,7 @@ function DayAgendaCard({
   branches,
   onBook,
   onEdit,
-  archiveSlot,
+  onArchive,
   unarchiveSlot,
   setActionError,
 }: {
@@ -392,7 +409,7 @@ function DayAgendaCard({
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
-  archiveSlot: ArchiveMutation;
+  onArchive: (slot: TimetableSlotResponse) => void;
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
 }) {
@@ -407,7 +424,7 @@ function DayAgendaCard({
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {day.slots.map((slot) => (
-            <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} onArchive={onArchive} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       )}
@@ -420,7 +437,7 @@ function DayColumn({
   branches,
   onBook,
   onEdit,
-  archiveSlot,
+  onArchive,
   unarchiveSlot,
   setActionError,
 }: {
@@ -428,7 +445,7 @@ function DayColumn({
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
-  archiveSlot: ArchiveMutation;
+  onArchive: (slot: TimetableSlotResponse) => void;
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
 }) {
@@ -443,7 +460,7 @@ function DayColumn({
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {day.slots.map((slot) => (
-              <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+              <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} onArchive={onArchive} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
             ))}
           </div>
         )}
@@ -472,7 +489,8 @@ function MonthGrid({ monthStart, days, onBook }: { monthStart: Date; days: DayOc
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
         {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`blank-${i}`} />)}
         {days.map((day) => {
-          const bookable = day.slots.filter((s) => s.status === 'ON');
+          // Archived slots have nothing to book either (Decision 332, T12).
+          const bookable = day.slots.filter((s) => s.status === 'ON' && !s.archivedAt);
           return (
             <div
               key={day.date}
@@ -532,12 +550,13 @@ function EditSlotModal({
 }) {
   const t = useT();
   const updateSlot = useUpdateTimetableSlot(schoolId, slot.id);
-  // Decision 322 — set when the edit affects upcoming Classes that already have
-  // bookings; the owner picks Move/Cancel/Keep before anything is saved.
+  // Decisions 322, 332 — set when the edit affects upcoming Classes that already
+  // have bookings, or cuts capacity below seats booked; the owner chooses before
+  // anything is saved.
   const [pending, setPending] = useState<{
     changes: UpdateTimetableSlotInput;
     impact: UpcomingImpactResponse;
-    allowMove: boolean;
+    mode: BookedClassesMode;
     capacityCut: boolean;
   } | null>(null);
   const [choiceError, setChoiceError] = useState<string | null>(null);
@@ -566,17 +585,20 @@ function EditSlotModal({
             return;
           }
           const moves = slotChangeMovesClasses(slot, changes);
+          const rules = slotChangeTouchesBookingRules(changes);
           const newCapacity = changes.capacity ?? null;
           const askIfBooked = async () => {
             const impact = await fetchUpcomingImpact(slot.id);
             const capacityCut = newCapacity !== null && impact.mostTaken > newCapacity;
-            if (!(moves && impact.bookedClasses > 0) && !capacityCut) return false;
+            const choose = (moves || rules) && impact.bookedClasses > 0;
+            if (!choose && !capacityCut) return false;
             const switchingOff = changes.status === 'OFF' && slot.status === 'ON';
+            const mode: BookedClassesMode = moves ? (switchingOff ? 'off' : 'move') : choose ? 'rules' : 'capacity';
             setChoiceError(null);
-            setPending({ changes, impact, allowMove: !switchingOff && !capacityCut, capacityCut });
+            setPending({ changes, impact, mode, capacityCut });
             return true;
           };
-          if ((moves || newCapacity !== null) && (await askIfBooked())) return;
+          if ((moves || rules || newCapacity !== null) && (await askIfBooked())) return;
           try {
             await save(changes);
           } catch (err) {
@@ -590,7 +612,7 @@ function EditSlotModal({
       {pending ? (
         <BookedClassesDialog
           impact={pending.impact}
-          allowMove={pending.allowMove}
+          mode={pending.mode}
           capacityCut={pending.capacityCut}
           submitting={updateSlot.isPending}
           error={choiceError}

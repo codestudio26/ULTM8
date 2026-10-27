@@ -54,7 +54,7 @@ export function MyGradingScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
       {feeItems.map((r) => (
-        <FeeCard key={r.id} request={r} studentId={studentId} childName={childName} />
+        <FeeCard key={r.id} request={r} studentId={studentId} childName={childName} initiallyOpen={r.id === route.params?.openFeeId} />
       ))}
       {items.length === 0 ? <Muted>{t('grading.myGrading.noRank')}</Muted> : null}
       {items.map((item) => (
@@ -230,10 +230,20 @@ function HoursTrained({ item }: { item: GradingStyle }) {
 /** A promotion fee to answer (Decisions 287, 300): the grade, the price and
  * Accept / Decline (Decline asks again). Accepting charges nothing by itself:
  * the School takes the payment, and the promotion goes through once it is paid. */
-function FeeCard({ request: r, studentId, childName }: { request: FeeRequest; studentId: string | null; childName: string | null }) {
+function FeeCard({
+  request: r,
+  studentId,
+  childName,
+  initiallyOpen = false,
+}: {
+  request: FeeRequest;
+  studentId: string | null;
+  childName: string | null;
+  initiallyOpen?: boolean;
+}) {
   const t = useT();
   const answer = useAnswerFee(studentId);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [confirmingDecline, setConfirmingDecline] = useState(false);
   const amount = formatMoney(r.amountMinor, r.currency);
   const graded = r.gradingDate ? formatDate(r.gradingDate) : formatDate(r.createdAt);

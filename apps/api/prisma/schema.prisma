@@ -67,6 +67,24 @@ enum ClassCancellationPolicy {
   AUTO_CREDIT
 }
 
+/// School.classCancellationPolicyWindow (Decision 291) — whether the policy above
+/// only applies to a cancellation made before the class's refund cutoff
+/// (BEFORE_CUTOFF, the default: after it the seat is kept, as before) or to every
+/// cancellation (ANY_TIME).
+enum ClassCancellationPolicyWindow {
+  BEFORE_CUTOFF
+  ANY_TIME
+}
+
+/// School.schoolCancelledClassResolution (Decision 291) — what every booked seat
+/// gets back when the School cancels a whole class. FOLLOW_POLICY applies the
+/// School's own policy above, ignoring the cutoff (the student didn't cancel).
+enum SchoolCancelledClassResolution {
+  REFUND_ALL
+  CREDIT_ALL
+  FOLLOW_POLICY
+}
+
 /// School.franchiseFeeSubscriptionStatus — synced from the Franchise-fee Stripe
 /// Subscription (domain-rules §2, Spec §6.1). Nullable on the model since it only
 /// applies to a School actually under a Franchise.
@@ -208,6 +226,10 @@ enum PaymentAccountProvider {
   STRIPE
   CASH
   BANK_TRANSFER
+  /// Desk payments only (Decision 348): a Pix transfer or a card on the
+  /// School's own terminal, recorded by the owner. Never a PaymentAccount provider.
+  PIX
+  CARD_TERMINAL
 }
 
 /// PaymentAccount.status — Phase 8. Confirmed field ("status (Active/De-active)"),
@@ -293,6 +315,16 @@ enum TransactionStatus {
   FAILED
   REFUNDED
   DISPUTED
+}
+
+/// What a Transaction row is for (Decision 346). MEMBERSHIP: a plan bought in
+/// the app or recorded at the desk. RENEWAL: a Subscription's later monthly
+/// charge, one row per Stripe Invoice. LATE_CANCEL_FEE: the fee charged to a
+/// saved card when a Booking is cancelled after the refund cut-off (Decision 234).
+enum TransactionKind {
+  MEMBERSHIP
+  RENEWAL
+  LATE_CANCEL_FEE
 }
 
 // Transaction.paymentMethod (Spec 55 §6.1, quoted: "payment method (Stripe/Cash/Bank
@@ -411,9 +443,11 @@ model User {
   lessonsAuthored                   Lesson[]                    @relation("LessonInstructor")
   memberships                       Membership[]                @relation("MembershipStudent")
   membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
+  membershipsCancelled              Membership[]                @relation("MembershipCancelledBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
   franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
+  transactionsRecorded              Transaction[]               @relation("TransactionRecordedBy")
   studentRanks                      StudentRank[]
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
   promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
@@ -705,6 +739,11 @@ model Franchise {
   flatFeeAmount    Int?
   perHeadcountRate Int?
 
+  /// Decision 350 — the Franchise Owner allows member Schools to show this
+  /// Franchise's name and logo. Shown only when the School's own
+  /// School.showFranchiseBranding is also on (both must allow it).
+  shareBrandingWithMembers Boolean @default(false)
+
   /// Phase 16b-ii — lazily created the first time this Franchise's own
   /// PER_HEADCOUNT metered billing is set up (franchise-fee-usage-reporting job),
   /// never at Franchise creation/update time. A Stripe Billing Meter is scoped to
@@ -850,6 +889,11 @@ model School {
   facilities        String[] @default([])
   ranksToggle       Boolean  @default(false)
 
+  /// Decision 350 — the School Owner chooses to show its Franchise's name and
+  /// logo. Shown only when Franchise.shareBrandingWithMembers is also on. Reset
+  /// when the School joins or leaves a Franchise.
+  showFranchiseBranding Boolean @default(false)
+
   /// "Open mat counts toward hours" (Grading → Settings; Decisions 301 item 6,
   /// 306): off by default. When off, check-ins and logged classes whose class
   /// type is open mat are recorded but not added to a student's hours trained.
@@ -917,11 +961,28 @@ model School {
   promotionFeeGradeBeforePaid Boolean @default(false)
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
+  /// Decision 291 — the rest of the owner's "Class cancellations" settings. See
+  /// ClassCancellationPolicyWindow/SchoolCancelledClassResolution above.
+  /// defaultRefundCutoffHours stands in for a class that has no refundFeeDate of
+  /// its own (null = no cutoff, the old behaviour). noShowFee is a minor-unit
+  /// amount charged to a no-show's saved card (null = off).
+  classCancellationPolicyWindow  ClassCancellationPolicyWindow   @default(BEFORE_CUTOFF)
+  chargeLateCancellationFee      Boolean                         @default(true)
+  schoolCancelledClassResolution SchoolCancelledClassResolution  @default(CREDIT_ALL)
+  defaultRefundCutoffHours       Int?
+  noShowFee                      Int?
+  /// Decision 292 — when the owner last saved the cancellation policy. Null
+  /// until they do: the portal asks them to choose until then.
+  cancellationPolicyChosenAt     DateTime?
   waitlistClaimWindowMinutes     Int                             @default(60)
   /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
   checkInOpensMinutesBeforeStart Int                             @default(30)
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
+  /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
+  /// bank transfer taken at the desk). Off by default; Spec 55 §8.2 amended for
+  /// this one action only.
+  branchStaffCanRecordPayments   Boolean                         @default(false)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -1033,6 +1094,19 @@ model Branch {
   logoUrl   String?
   bannerUrl String?
 
+  /// Decision 292 — a Branch may use its own "Class cancellations" settings
+  /// instead of its School's. Off (the default) = same as the School, and the
+  /// six columns below are ignored. On = they apply to every class held at this
+  /// Branch; a class with no Branch always follows the School. Same meanings
+  /// and defaults as School's identically-named columns (Decision 291).
+  cancellationSettingsOverride   Boolean                        @default(false)
+  classCancellationPolicy        ClassCancellationPolicy        @default(MANUAL)
+  classCancellationPolicyWindow  ClassCancellationPolicyWindow  @default(BEFORE_CUTOFF)
+  chargeLateCancellationFee      Boolean                        @default(true)
+  schoolCancelledClassResolution SchoolCancelledClassResolution @default(CREDIT_ALL)
+  defaultRefundCutoffHours       Int?
+  noShowFee                      Int?
+
   /// Decision 226 (POST-SPEC-55-DECISION-LOG.md) — entity-level tenant
   /// offboarding. Same full archivedAt/purgeAt/purgedAt trio and 90-day
   /// retention semantics as School/Franchise's own (Decision 110), but
@@ -1135,6 +1209,13 @@ model Class {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
+
+  // Decision 291 — set when the School cancels this class outright. A cancelled
+  // class can't be booked or waitlisted again; its bookings were resolved by
+  // School.schoolCancelledClassResolution at the time.
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancellationReason String?
 
   /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
   /// comment for the full shape). Blocked by ClassesService.archive() while
@@ -1911,6 +1992,13 @@ model Membership {
 
   stripeSubscriptionId String? @unique // see header comment; SUBSCRIPTION-type only
 
+  // Subscription only: when the Student or the owner asked to cancel, the
+  // date the paid period ends (Stripe's cancel_at). The Membership stays
+  // live until then; Stripe's customer.subscription.deleted expires it.
+  cancelAt      DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("MembershipCancelledBy", fields: [cancelledById], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1966,8 +2054,20 @@ model Transaction {
   paymentAccountId String
   paymentAccount   PaymentAccount @relation(fields: [paymentAccountId], references: [id])
 
-  membershipPlanId String
-  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+  // Null only for a LATE_CANCEL_FEE row, which belongs to a Booking, not a plan
+  // (Decision 346).
+  membershipPlanId String?
+  membershipPlan   MembershipPlan? @relation(fields: [membershipPlanId], references: [id], onDelete: Restrict)
+
+  kind TransactionKind @default(MEMBERSHIP)
+
+  /// LATE_CANCEL_FEE only: the cancelled Booking the fee was charged for.
+  bookingId String?  @unique
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  /// RENEWAL only: the Stripe Invoice this row records, so a retried or
+  /// redelivered invoice event updates the same row instead of adding another.
+  stripeInvoiceId String? @unique
 
   // Set once payment settles and the Membership is created (Spec 55 §6.1) — null
   // until then.
@@ -1980,6 +2080,11 @@ model Transaction {
 
   status        TransactionStatus
   paymentMethod PaymentAccountProvider
+
+  // Who recorded a payment taken at the desk (Decision 348); null for
+  // anything the Student paid themselves.
+  recordedById String?
+  recordedBy   User?   @relation("TransactionRecordedBy", fields: [recordedById], references: [id])
 
   // Only ever reachable for Stripe-paid Transactions (Decision 55) — Cash/Bank rows
   // have no Stripe charge id to match. No Phase 9 code path sets this (out of scope
@@ -2291,15 +2396,15 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[] @default([])
+  classTypesOffered     String[]  @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean  @default(false)
+  skillsRequiredToGrade Boolean   @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int      @default(33)
-  boardReadyToGrade     Int      @default(66)
+  boardGettingThere     Int       @default(33)
+  boardReadyToGrade     Int       @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
@@ -3155,6 +3260,11 @@ model Waiver {
   purgeAt    DateTime?
   purgedAt   DateTime?
 
+  /// Waivers review W3: goes up by one each time the title or text changes,
+  /// so a signature records which wording it was given, and a signer reading
+  /// an old copy is told to read it again.
+  version Int @default(1)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -3265,6 +3375,14 @@ model WaiverSignature {
   signedDate        DateTime?
   status            WaiverSignatureStatus @default(SIGNED)
 
+  // Waivers review W3: a copy of exactly what was signed, so a later edit of
+  // the Waiver never changes it. Null on Unsigned rows and on rows signed
+  // before this was kept.
+  signedWaiverTitle   String?
+  signedWaiverBody    String?
+  signedWaiverSha256  String?
+  signedWaiverVersion Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -3330,9 +3448,19 @@ enum CheckInMethod {
 /// refund/restore the spent credit) — REFUNDED/WITHHELD are exclusively the two
 /// outcomes of a Cancellation, chosen by comparing the cancellation time against
 /// the Class's refundFeeDate cutoff (kickoff prompt §1.c).
+///
+/// Decision 291 widens it. REFUNDED keeps its original meaning — the class credit
+/// went back to the Membership, no money moved (so existing rows stay correct).
+/// PENDING: waiting for staff (Manual policy, a refund Branch Staff can't
+/// authorize, or a Stripe refund that failed). MONEY_REFUNDED: money went back
+/// (Stripe, or a cash/bank refund staff marked paid). REFUND_OWED: a cash/bank
+/// refund staff still have to pay out by hand.
 enum RefundResolution {
   REFUNDED
   WITHHELD
+  PENDING
+  MONEY_REFUNDED
+  REFUND_OWED
 }
 
 /// Decision 234 (POST-SPEC-55-DECISION-LOG.md) — Booking.cancellationChargeOutcome's
@@ -3448,6 +3576,16 @@ model Booking {
   cancellationChargeAmount          Int?
   stripeCancellationPaymentIntentId String?
 
+  // Decision 291 — the money side of a refund (refundResolution MONEY_REFUNDED or
+  // REFUND_OWED, or PENDING when a refund is waiting), and the no-show fee, which
+  // reuses CancellationChargeOutcome's value set.
+  refundAmount                  Int?
+  stripeRefundId                String?
+  resolvedAt                    DateTime?
+  noShowFeeOutcome              CancellationChargeOutcome?
+  noShowFeeAmount               Int?
+  stripeNoShowPaymentIntentId   String?
+
   // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
   // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
   // the ordinary Guardian-on-behalf-of path alone) — needed so withdrawing a
@@ -3467,11 +3605,14 @@ model Booking {
   claimedFromEntry WaitlistEntry?    @relation("WaitlistEntryClaimedBooking")
   trainingLogs     TrainingLog[]
 
+  lateCancelFeeTransaction Transaction?
+
   // Composite indexes leading with the tenant column (Decision 30). The "one
   // active Booking per Student per Class" guard (status = 'UPCOMING') is a
   // partial unique index in the migration, same technique as Membership's
   // one-active-general-access-per-school guard (Phase 9) — a Cancelled/
   // Completed/No-Show Booking must never block a fresh re-booking.
+  @@index([schoolId, refundResolution])
   @@index([schoolId])
   @@index([schoolId, branchId])
   @@index([studentId])
@@ -3511,10 +3652,15 @@ model BookingAttendee {
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingAttendeeResolvedBy", fields: [resolvedById], references: [id])
+  // Decision 291 — same as Booking's own fields of the same names.
+  refundAmount     Int?
+  stripeRefundId   String?
+  resolvedAt       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([schoolId, refundResolution])
   @@index([schoolId])
   @@index([bookingId])
   @@index([membershipId])
