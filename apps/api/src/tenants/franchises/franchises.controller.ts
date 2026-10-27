@@ -6,9 +6,8 @@ import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { FranchisesService } from './franchises.service';
 import { CreateFranchiseDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
-import { FranchiseListResponseDto, FranchiseResponseDto } from './dto/franchise-response.dto';
+import { FranchiseListResponseDto, FranchiseMemberSchoolListResponseDto, FranchiseResponseDto } from './dto/franchise-response.dto';
 import { FranchisesQueryDto } from './dto/franchises-query.dto';
-import { SchoolListResponseDto } from '../schools/dto/school-response.dto';
 import { FranchiseBillingStatusResponseDto } from './dto/franchise-billing-status-response.dto';
 
 // Create / read / update only — no delete endpoint, same reasoning as SchoolsController
@@ -29,7 +28,7 @@ export class FranchisesController {
   @ApiOkResponse({ type: FranchiseListResponseDto })
   @Get()
   findAll(@CurrentUser() user: JwtPayload, @Query() query: FranchisesQueryDto) {
-    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit, query.feeModel, query.activity);
+    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit, query.feeModel, query.activity, query.search, query.excludeArchived);
   }
 
   @ApiOkResponse({ type: FranchiseResponseDto })
@@ -64,7 +63,7 @@ export class FranchisesController {
    * boundary (Date fields serialize to ISO strings automatically).
    *
    * Phase 47 — rejected outright for an active impersonation session, not merely
-   * scoped down. `schools_for_franchise()` (the SECURITY DEFINER function behind
+   * scoped down. `franchise_member_schools()` (the SECURITY DEFINER function behind
    * FranchisesService.findSchoolsForFranchise) is a purpose-built cross-tenant read,
    * deliberately NOT an RLS policy at all (see school_tenant_isolation's own Phase 1
    * comment) — the impersonation-scope RLS fix (migration
@@ -75,7 +74,7 @@ export class FranchisesController {
    * whole contract. Blocking it here is the same "narrower than a real login, not
    * silently equivalent to one" posture Decision 102 already established for writes.
    */
-  @ApiOkResponse({ type: SchoolListResponseDto })
+  @ApiOkResponse({ type: FranchiseMemberSchoolListResponseDto })
   @Get(':id/schools')
   async findSchools(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     if (user.impersonation) {

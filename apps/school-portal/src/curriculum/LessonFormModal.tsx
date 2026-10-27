@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import type { DisciplineSkillGroup } from './curriculumQueries';
 import type { LessonCategory, LessonResponse } from './curriculumQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -40,10 +40,11 @@ export function LessonFormModal({
     categoryId: string | null;
     /** Watchable by every student and guardian at the School (Decision 190). */
     free: boolean;
-    durationSeconds?: number;
-    description?: string;
+    /** null: empty. The edit form sends null so a cleared field is cleared (C1). */
+    durationSeconds: number | null;
+    description: string | null;
     format: 'PRERECORDED' | 'LIVE';
-    instructorId?: string;
+    instructorId: string | null;
     skillIds: string[];
   }) => Promise<void>;
   onClose: () => void;
@@ -52,7 +53,9 @@ export function LessonFormModal({
     title: initial?.title ?? '',
     categoryId: initial?.categoryId ?? '',
     free: initial?.free ?? false,
-    durationSeconds: initial?.durationSeconds?.toString() ?? '',
+    // Typed as minutes and seconds, saved as seconds (Decision 326).
+    durationMinutes: initial?.durationSeconds ? Math.floor(initial.durationSeconds / 60).toString() : '',
+    durationSecondsPart: initial?.durationSeconds ? (initial.durationSeconds % 60).toString() : '',
     description: initial?.description ?? '',
     format: initial?.format ?? 'PRERECORDED',
     instructorId: initial?.instructorId ?? '',
@@ -71,19 +74,30 @@ export function LessonFormModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!form.title.trim()) {
+      setError(t('curriculum.form.titleRequired'));
+      return;
+    }
     if (form.skillIds.length === 0) {
       setError(t('curriculum.form.skillRequired'));
       return;
     }
+    const minutes = form.durationMinutes ? Number(form.durationMinutes) : 0;
+    const seconds = form.durationSecondsPart ? Number(form.durationSecondsPart) : 0;
+    if (!Number.isInteger(minutes) || !Number.isInteger(seconds) || minutes < 0 || seconds < 0 || seconds > 59 || minutes * 60 + seconds > 86_400) {
+      setError(t('curriculum.form.durationInvalid'));
+      return;
+    }
+    const durationSeconds = minutes * 60 + seconds;
     try {
       await onSubmit({
-        title: form.title,
+        title: form.title.trim(),
         categoryId: form.categoryId || null,
         free: form.free,
-        durationSeconds: form.durationSeconds ? Number(form.durationSeconds) : undefined,
-        description: form.description || undefined,
+        durationSeconds: durationSeconds > 0 ? durationSeconds : null,
+        description: form.description.trim() ? form.description : null,
         format: form.format as 'PRERECORDED' | 'LIVE',
-        instructorId: form.instructorId || undefined,
+        instructorId: form.instructorId || null,
         skillIds: form.skillIds,
       });
     } catch (err) {
@@ -114,14 +128,14 @@ export function LessonFormModal({
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
           {t('curriculum.form.freeHint')}
         </p>
-        <Field label={t('curriculum.form.duration')} htmlFor="lesson-duration">
-          <TextField
-            type="number"
-            min={1}
-            value={form.durationSeconds}
-            onChange={(e) => setForm((f) => ({ ...f, durationSeconds: e.target.value }))}
-          />
-        </Field>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Field label={t('curriculum.form.durationMinutes')} htmlFor="lesson-duration-minutes">
+            <TextField type="number" min={0} max={1440} value={form.durationMinutes} onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))} />
+          </Field>
+          <Field label={t('curriculum.form.durationSeconds')} htmlFor="lesson-duration-seconds">
+            <TextField type="number" min={0} max={59} value={form.durationSecondsPart} onChange={(e) => setForm((f) => ({ ...f, durationSecondsPart: e.target.value }))} />
+          </Field>
+        </div>
         <Field label={t('curriculum.form.description')} htmlFor="lesson-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
@@ -141,7 +155,7 @@ export function LessonFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('curriculum.form.none') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() || i.userId })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>
@@ -153,14 +167,20 @@ export function LessonFormModal({
           <p className="ultm8-field__hint" style={{ marginBottom: 8 }}>
             {t('curriculum.form.skillsHint')}
           </p>
-          {skillGroups.length === 0 ? (
+          {!skillGroups.some((g) => !g.archived && g.skills.length > 0) && !initial?.skillIds?.length ? (
             <p className="ultm8-field__hint">{t('curriculum.form.noSkills')}</p>
           ) : (
-            skillGroups.map((group) =>
-              group.skills.length === 0 ? null : (
+            skillGroups.map((group) => {
+              // An archived style shows only the skills this lesson already
+              // has from it, so they can be unticked but not newly picked (C10).
+              const skills = group.archived ? group.skills.filter((s) => initial?.skillIds?.includes(s.id)) : group.skills;
+              return skills.length === 0 ? null : (
                 <div key={group.disciplineId} style={{ marginBottom: 10 }}>
-                  <strong style={{ fontSize: 13 }}>{group.disciplineName}</strong>
-                  {group.skills.map((skill) => (
+                  <strong style={{ fontSize: 13 }}>
+                    {group.disciplineName}
+                    {group.archived ? <span className="ultm8-field__hint"> {t('curriculum.form.archivedStyle')}</span> : null}
+                  </strong>
+                  {skills.map((skill) => (
                     <Checkbox
                       key={skill.id}
                       label={skill.name}
@@ -169,8 +189,8 @@ export function LessonFormModal({
                     />
                   ))}
                 </div>
-              ),
-            )
+              );
+            })
           )}
         </div>
 

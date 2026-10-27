@@ -3,6 +3,7 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, Tex
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { type Rung, startingClassesFor } from './ladder';
+import { RankPicker } from './RankPicker';
 import {
   useChangeHistoryNote,
   useHistoryNoteLog,
@@ -12,11 +13,13 @@ import {
   usePromote,
   useStripeAward,
   useLogClass,
+  useRecentStyleClasses,
   useVerifyRank,
   useVoidEntry,
 } from './gradingQueries';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { formatHours } from './hours';
 
 function errorText(err: unknown, t: TranslateFn): string {
   return err instanceof ApiError ? err.message : t('common.tryAgain');
@@ -66,6 +69,8 @@ export function GradeModal({
   ladder,
   current,
   eligibility,
+  title,
+  initialTargetId,
   onClose,
 }: {
   studentId: string;
@@ -73,6 +78,10 @@ export function GradeModal({
   ladder: Rung[];
   current: Rung | null;
   eligibility: Eligibility | null;
+  /** The board's "Promote {name}"; the Ranks tab names the style instead. */
+  title?: string;
+  /** Start on this rank, e.g. the planned rank of a promotion "to decide". */
+  initialTargetId?: string;
   onClose: () => void;
 }) {
   const promote = usePromote(studentId, discipline.id);
@@ -80,6 +89,7 @@ export function GradeModal({
   const t = useT();
   const options = ladder.filter((r) => !current || r.index > current.index);
   const [targetId, setTargetId] = useState(
+    (initialTargetId && options.some((r) => r.id === initialTargetId) ? initialTargetId : undefined) ??
     (eligibility?.hasNext && eligibility.nextRungId && options.some((r) => r.id === eligibility.nextRungId) ? eligibility.nextRungId : options[0]?.id) ?? '',
   );
   const [date, setDate] = useState('');
@@ -123,7 +133,7 @@ export function GradeModal({
 
   return (
     <Modal
-      title={current ? t('grading.modals.grade.title', { style: discipline.name }) : t('grading.modals.grade.firstRankTitle', { style: discipline.name })}
+      title={title ?? (current ? t('grading.modals.grade.title', { style: discipline.name }) : t('grading.modals.grade.firstRankTitle', { style: discipline.name }))}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
@@ -133,12 +143,7 @@ export function GradeModal({
         ) : (
           <>
             <Field label={t('grading.modals.newRankLabel')} htmlFor="grade-target" hint={current ? t('grading.modals.grade.now', { rank: current.name }) : undefined}>
-              <SelectField
-                id="grade-target"
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                options={options.map((r) => ({ value: r.id, label: r.name }))}
-              />
+              <RankPicker id="grade-target" value={targetId} onChange={setTargetId} options={options} />
             </Field>
             {skipped > 0 ? (
               <Warning>{t('grading.modals.grade.skips', { count: skipped })}</Warning>
@@ -244,12 +249,7 @@ export function DowngradeModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('grading.modals.newRankLabel')} htmlFor="downgrade-target" hint={t('grading.modals.downgrade.hint', { rank: current.name })}>
-          <SelectField
-            id="downgrade-target"
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
-            options={options.map((r) => ({ value: r.id, label: r.name }))}
-          />
+          <RankPicker id="downgrade-target" value={targetId} onChange={setTargetId} options={options} />
         </Field>
         <Field label={t('grading.modals.reasonLabel')} htmlFor="downgrade-reason" hint={t('grading.modals.downgrade.reasonHint')}>
           <TextArea id="downgrade-reason" required maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -396,7 +396,7 @@ export function VerifyRankModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('grading.modals.verify.rankLabel')} htmlFor="verify-target" hint={t('grading.modals.verify.hint', { rank: current.name })}>
-          <SelectField id="verify-target" value={targetId} onChange={(e) => setTargetId(e.target.value)} options={ladder.map((r) => ({ value: r.id, label: r.name }))} />
+          <RankPicker id="verify-target" value={targetId} onChange={setTargetId} options={ladder} />
         </Field>
         <Field label={t('grading.modals.noteLabel')} htmlFor="verify-note" hint={t('grading.modals.optional')}>
           <TextArea id="verify-note" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -407,37 +407,67 @@ export function VerifyRankModal({
   );
 }
 
-/** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
- * hand. The class type is one of the next rank's ticked types (required when
- * it ticks any; optional, from the style's types, when it ticks none). It
- * always counts, even past the weekly cap, and is recorded on the history. */
+/** "Log a class" (Decisions 176, 301 item 5): adds one class toward the next
+ * rank, and its time to hours trained (a record only, never the %). The
+ * coach picks a class of this style from the last week, whose length is
+ * logged, or "No class" and enters the minutes. */
 export function LogClassModal({
   studentId,
+  schoolId,
   discipline,
   ladder,
   current,
   onClose,
 }: {
   studentId: string;
+  schoolId: string;
   discipline: DisciplineResponse;
   ladder: Rung[];
   current: Rung;
   onClose: () => void;
 }) {
   const logClass = useLogClass(discipline.id);
+  const classes = useRecentStyleClasses(schoolId, discipline.id);
   const t = useT();
   const next = ladder[current.index + 1];
   const src = next && next.tier.timeOnly ? current : next;
   const ticked = src?.tier.eligibleClassTypes ?? [];
   const choices = ticked.length > 0 ? ticked : discipline.classTypesOffered;
   const [classType, setClassType] = useState(ticked.length > 0 ? ticked[0] : '');
+  const [mode, setMode] = useState<'class' | 'time'>('class');
+  const [classId, setClassId] = useState('');
+  const [minutes, setMinutes] = useState('60');
   const [error, setError] = useState<string | null>(null);
+  const list = classes.data ?? [];
+  // No class of this style in the last week: only "No class" is left.
+  const byTime = mode === 'time' || (!classes.isLoading && list.length === 0);
+  const picked = byTime ? null : list.find((c) => c.id === (classId || list[0]?.id)) ?? null;
+  const pickedMinutes = picked ? Math.max(0, Math.round((Date.parse(picked.endDate) - Date.parse(picked.startDate)) / 60_000)) : null;
+  const typedMinutes = Number(minutes);
+  const minutesOk = Number.isInteger(typedMinutes) && typedMinutes >= 1 && typedMinutes <= 600;
+  const loggedMinutes = picked ? pickedMinutes ?? 0 : minutesOk ? typedMinutes : null;
+
+  function pickClass(id: string) {
+    setClassId(id);
+    // The class's own type for this style, when it is one the next rank counts.
+    const type = list.find((c) => c.id === id)?.styles.find((st) => st.disciplineId === discipline.id)?.classType;
+    if (type && choices.includes(type)) setClassType(type);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (byTime && !minutesOk) {
+      setError(t('grading.modals.logClass.minutesInvalid'));
+      return;
+    }
     try {
-      await logClass.mutateAsync({ studentId, classType: classType || null });
+      await logClass.mutateAsync({
+        studentId,
+        classType: classType || null,
+        classId: picked?.id ?? null,
+        minutes: byTime ? typedMinutes : null,
+      });
       onClose();
     } catch (err) {
       setError(errorText(err, t));
@@ -448,6 +478,35 @@ export function LogClassModal({
     <Modal title={t('grading.modals.logClass.title', { style: discipline.name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
+        <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
+          <legend className="ultm8-field__label" style={{ marginBottom: 6 }}>
+            {t('grading.modals.logClass.whichLabel')}
+          </legend>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+            <input type="radio" name="log-class-mode" checked={!byTime} disabled={list.length === 0} onChange={() => setMode('class')} />
+            {t('grading.modals.logClass.aClass')}
+          </label>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="radio" name="log-class-mode" checked={byTime} onChange={() => setMode('time')} />
+            {t('grading.modals.logClass.noClass')}
+          </label>
+        </fieldset>
+        {!byTime ? (
+          <Field label={t('grading.modals.logClass.classLabel')} htmlFor="log-class-class" hint={t('grading.modals.logClass.classHint')}>
+            <SelectField
+              value={picked?.id ?? ''}
+              onChange={(e) => pickClass(e.target.value)}
+              options={list.map((c) => ({ value: c.id, label: classLabel(c, t) }))}
+            />
+          </Field>
+        ) : (
+          <>
+            {!classes.isLoading && list.length === 0 ? <p className="ultm8-field__hint">{t('grading.modals.logClass.noRecentClasses')}</p> : null}
+            <Field label={t('grading.modals.logClass.minutesLabel')} htmlFor="log-class-minutes">
+              <TextField type="number" step={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+            </Field>
+          </>
+        )}
         {choices.length > 0 ? (
           <Field
             label={t('grading.modals.logClass.typeLabel')}
@@ -461,11 +520,23 @@ export function LogClassModal({
             />
           </Field>
         ) : null}
-        <p className="ultm8-field__hint">{t('grading.modals.logClass.explanation')}</p>
+        <p className="ultm8-field__hint">
+          {loggedMinutes !== null
+            ? t('grading.modals.logClass.explanation', { hours: formatHours(loggedMinutes) })
+            : t('grading.modals.logClass.explanationNoTime')}
+        </p>
         <Actions submitting={logClass.isPending} label={t('grading.modals.logClass.submit')} onClose={onClose} />
       </form>
     </Modal>
   );
+}
+
+/** "Adult Fundamentals · Mon 18:00 · 90 min". */
+function classLabel(c: { title: string; startDate: string; endDate: string }, t: TranslateFn): string {
+  const start = new Date(c.startDate);
+  const when = new Intl.DateTimeFormat(formatLocale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(start);
+  const minutes = Math.max(0, Math.round((Date.parse(c.endDate) - start.getTime()) / 60_000));
+  return t('grading.modals.logClass.classOption', { title: c.title, when, minutes });
 }
 
 /** Edit a history entry's note (Decision 192). Every change is kept; the

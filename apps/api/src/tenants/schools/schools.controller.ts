@@ -7,7 +7,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { SchoolsService } from './schools.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import { SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
+import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
@@ -53,6 +53,13 @@ export class SchoolsController {
     return this.schoolsService.findTheme(user.sub, id);
   }
 
+  /** Decision 350 — see SchoolsService.findFranchiseBranding. */
+  @ApiOkResponse({ type: SchoolFranchiseBrandingResponseDto })
+  @Get(':id/franchise-branding')
+  findFranchiseBranding(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findFranchiseBranding(user.sub, id);
+  }
+
   @ApiOkResponse({ type: SchoolResponseDto })
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSchoolDto) {
@@ -65,7 +72,7 @@ export class SchoolsController {
   @ApiOkResponse({ type: StudentListResponseDto })
   @Get(':id/students')
   findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
-    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status);
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status, query.search);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch

@@ -5,12 +5,14 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, PhoneField, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPasscode'>;
 
 export function ForgotPasscodeScreen({ navigation }: Props) {
+  const t = useT();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +28,7 @@ export function ForgotPasscodeScreen({ navigation }: Props) {
       await unwrap(apiClient.POST('/v1/auth/forgot-password', { body: { phone } }));
       navigation.navigate('ResetPasscode', { phone });
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Something went wrong — please try again.'));
+      setError(getApiErrorMessage(err, t('auth.errors.generic')));
     } finally {
       setSubmitting(false);
     }
@@ -35,16 +37,16 @@ export function ForgotPasscodeScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>Reset your passcode</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>{t('auth.forgotPasscode.title')}</Text>
         <Text style={{ fontSize: 14, color: '#5F6368', marginBottom: 20 }}>
-          We'll text a verification code to your phone.
+          {t('auth.forgotPasscode.intro')}
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone">
+        <Field label={t('auth.fields.phone')}>
           <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Button title="Send code" onPress={handleSubmit} loading={submitting} />
-        <Button title="Back to log in" variant="secondary" onPress={() => navigation.navigate('Login')} />
+        <Button title={t('auth.forgotPasscode.sendCode')} onPress={handleSubmit} loading={submitting} />
+        <Button title={t('auth.forgotPasscode.backToLogin')} variant="secondary" onPress={() => navigation.navigate('Login')} />
       </Screen>
     </ScrollView>
   );

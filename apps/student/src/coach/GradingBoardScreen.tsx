@@ -8,13 +8,15 @@ import type { AppStackParamList } from '../navigation/types';
 import { useGradingBoard, useStyleRanks, type BoardColumn, type GradingBoardItem } from './coachQueries';
 import { flattenLadder } from './ladder';
 import { Muted, Section } from './parts';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'GradingBoard'>;
 
-const COLUMNS: Array<{ id: BoardColumn; title: string }> = [
-  { id: 'READY_TO_GRADE', title: 'Ready to Grade' },
-  { id: 'GETTING_THERE', title: 'Getting There' },
-  { id: 'JUST_STARTING', title: 'Just Starting' },
+const COLUMNS: Array<{ id: BoardColumn; title: TranslationKey }> = [
+  { id: 'READY_TO_GRADE', title: 'coach.board.readyToGrade' },
+  { id: 'GETTING_THERE', title: 'coach.board.gettingThere' },
+  { id: 'JUST_STARTING', title: 'coach.board.justStarting' },
 ];
 
 /**
@@ -26,6 +28,7 @@ const COLUMNS: Array<{ id: BoardColumn; title: string }> = [
  */
 export function GradingBoardScreen({ route, navigation }: Props) {
   const { schoolId, disciplineId, name } = route.params;
+  const t = useT();
   const [activeOnly, setActiveOnly] = useState(true);
   const [search, setSearch] = useState('');
   const board = useGradingBoard(schoolId, disciplineId, activeOnly);
@@ -37,22 +40,22 @@ export function GradingBoardScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }} keyboardShouldPersistTaps="handled">
-      <TextField placeholder="Search students" value={search} onChangeText={setSearch} accessibilityLabel="Search students" autoCorrect={false} />
+      <TextField placeholder={t('coach.board.searchStudents')} value={search} onChangeText={setSearch} accessibilityLabel={t('coach.board.searchStudents')} autoCorrect={false} />
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: spacing[3] }}>
-        <Text>Active students only</Text>
-        <Switch value={activeOnly} onValueChange={setActiveOnly} accessibilityLabel="Active students only" />
+        <Text>{t('coach.board.activeOnly')}</Text>
+        <Switch value={activeOnly} onValueChange={setActiveOnly} accessibilityLabel={t('coach.board.activeOnly')} />
       </View>
-      {activeOnly && (board.data?.hiddenInactive ?? 0) > 0 ? <Muted>{board.data!.hiddenInactive} inactive hidden</Muted> : null}
+      {activeOnly && (board.data?.hiddenInactive ?? 0) > 0 ? <Muted>{t('coach.board.inactiveHidden', { count: board.data!.hiddenInactive })}</Muted> : null}
       {board.isLoading ? (
         <ActivityIndicator />
       ) : board.error ? (
-        <InlineError message={getApiErrorMessage(board.error, 'Could not load the board.')} />
+        <InlineError message={getApiErrorMessage(board.error, t('coach.board.loadError'))} />
       ) : (
         COLUMNS.map((col) => {
           const inColumn = items.filter((i) => i.eligibility.boardColumn === col.id);
           return (
-            <Section key={col.id} title={`${col.title} (${inColumn.length})`}>
-              {inColumn.length === 0 ? <Muted>{q ? 'No match.' : 'Nobody here.'}</Muted> : null}
+            <Section key={col.id} title={t('coach.board.columnTitle', { title: t(col.title), count: inColumn.length })}>
+              {inColumn.length === 0 ? <Muted>{q ? t('coach.board.noMatch') : t('coach.board.nobodyHere')}</Muted> : null}
               {inColumn.map((item) => (
                 <StudentCard
                   key={item.studentId}
@@ -70,13 +73,16 @@ export function GradingBoardScreen({ route, navigation }: Props) {
 }
 
 function StudentCard({ item, rungName, onPress }: { item: GradingBoardItem; rungName: string; onPress: () => void }) {
+  const t = useT();
   const e = item.eligibility;
   const flags = [
-    item.verificationStatus === 'UNVERIFIED' ? 'Belt not verified' : null,
-    !item.active ? 'Inactive' : null,
-    (e.missingSkillIds?.length ?? 0) > 0 ? 'Skills not signed off' : null,
-    e.daysOk === false ? 'Too early' : null,
+    item.verificationStatus === 'UNVERIFIED' ? t('coach.board.flagBeltNotVerified') : null,
+    !item.active ? t('coach.board.flagInactive') : null,
+    (e.missingSkillIds?.length ?? 0) > 0 ? t('coach.board.flagSkillsNotSignedOff') : null,
+    e.daysOk === false ? t('coach.board.flagTooEarly') : null,
   ].filter(Boolean);
+  const percent = e.progressPercent ?? 0;
+  const progress = rungName ? t('coach.board.progressWithRung', { rung: rungName, percent }) : t('coach.board.progress', { percent });
   return (
     <Pressable
       accessibilityRole="button"
@@ -87,10 +93,7 @@ function StudentCard({ item, rungName, onPress }: { item: GradingBoardItem; rung
       <Text style={{ fontWeight: '600' }}>
         {item.firstName} {item.surname}
       </Text>
-      <Muted>
-        {rungName ? `${rungName} · ` : ''}
-        {e.progressPercent ?? 0}%{flags.length ? ` · ${flags.join(' · ')}` : ''}
-      </Muted>
+      <Muted>{flags.length ? t('coach.board.progressWithFlags', { progress, flags: flags.join(' · ') }) : progress}</Muted>
     </Pressable>
   );
 }

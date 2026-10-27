@@ -45,6 +45,13 @@ export class RankStripeTierResponseDto {
 
   @ApiProperty({ type: [String], description: 'Skills required to be promoted INTO this rung.' })
   requiredSkillIds!: string[];
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Promotion fee for this grade, minor units of the School\'s currency; null = free (Decision 300). Present only while the School\'s promotion fee is on (Decision 307).',
+  })
+  promotionFeeMinor?: number | null;
 }
 
 export class StripeSegmentResponseDto {

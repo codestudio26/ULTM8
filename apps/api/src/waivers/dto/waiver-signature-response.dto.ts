@@ -62,6 +62,21 @@ export class WaiverSignatureResponseDto {
   })
   studentName?: string | null;
 
+  @ApiPropertyOptional({ description: 'Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record.' })
+  formerStudent?: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Waiver title as it was when signed. Null when not signed, or signed before copies were kept.' })
+  signedWaiverTitle!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it.' })
+  signedWaiverBody?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'SHA-256 (hex) of signedWaiverBody.' })
+  signedWaiverSha256!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The Waiver version that was signed.' })
+  signedWaiverVersion!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 

@@ -7,7 +7,7 @@ import { GradingService } from './grading.service';
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
-import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
 import { Throttle } from '@nestjs/throttler';
 
@@ -220,6 +220,22 @@ export class GradingController {
   @Put('disciplines/:id/board-thresholds')
   setBoardThresholds(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: BoardThresholdsDto) {
     return this.gradingService.setBoardThresholds(user.sub, id, dto);
+  }
+
+  /** "Open mat counts toward hours" (Decisions 301 item 6, 306): the owner
+   * and the School's staff read it. */
+  @ApiOkResponse({ type: OpenMatHoursSettingDto })
+  @Get('schools/:schoolId/grading-settings/open-mat-hours')
+  getOpenMatHoursSetting(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.gradingService.getOpenMatHoursSetting(user.sub, schoolId);
+  }
+
+  /** Change it: the owner, or a coach with "Change board %" for any style at
+   * the School (handover B2). */
+  @ApiOkResponse({ type: OpenMatHoursSettingDto })
+  @Put('schools/:schoolId/grading-settings/open-mat-hours')
+  setOpenMatHoursSetting(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: OpenMatHoursSettingDto) {
+    return this.gradingService.setOpenMatHoursSetting(user.sub, schoolId, dto);
   }
 
   /** Drag on the Grading Board (Decision 128 item 13, Decision 174). */

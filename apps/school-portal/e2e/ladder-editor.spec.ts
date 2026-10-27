@@ -53,14 +53,12 @@ test('editing a rung: name, "each type" numbers and time in rank only', async ({
   const dialog = page.getByRole('dialog', { name: 'Edit White' });
 
   await dialog.getByRole('button', { name: 'Edit White 2' }).click();
-  await dialog.getByLabel('Stripe name').fill('White · 2 stripes');
+  await dialog.getByLabel('Name of this grade').fill('White · 2 stripes');
   await dialog.getByLabel('Which classes count').selectOption('EACH_TYPE');
   await dialog.getByLabel('Fundamentals').first().check();
   await dialog.getByLabel('Sparring').first().check();
   await dialog.getByLabel('Fundamentals classes').fill('20');
   await dialog.getByLabel('Sparring classes').fill('10');
-  await dialog.getByRole('button', { name: 'Close White · 2 stripes' }).click();
-
   await dialog.getByRole('button', { name: 'Edit White 0' }).click();
   await dialog.getByLabel(/Time in rank only/).check();
   await dialog.getByLabel('Min. years in rank').fill('2');
@@ -84,7 +82,9 @@ test('a rung nobody holds can be removed; a held one can\'t', async ({ page }) =
   await page.goto(`/disciplines/${s.disciplineId}`);
   await page.getByRole('button', { name: 'Edit White' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit White' });
+  await dialog.getByRole('button', { name: 'Edit White 1' }).click();
   await expect(dialog.getByRole('button', { name: "White 1 can't be removed: 1 student(s) on it" })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Edit White 2' }).click();
   await dialog.getByRole('button', { name: 'Remove White 2' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toBeHidden(); // nobody's place changed: no confirmation
@@ -96,6 +96,7 @@ test('reordering rungs names the students affected, and they keep their rung', a
   await page.goto(`/disciplines/${s.disciplineId}`);
   await page.getByRole('button', { name: 'Edit White' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit White' });
+  await dialog.getByRole('button', { name: 'Edit White 1' }).click();
   await dialog.getByRole('button', { name: 'Move White 1 down' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
 

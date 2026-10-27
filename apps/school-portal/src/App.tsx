@@ -31,6 +31,8 @@ import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
 import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
+import { GradingSettingsPage } from './grading/GradingSettingsPage';
+import { GradingSkillsPage } from './grading/GradingSkillsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -39,6 +41,8 @@ import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage';
+import { CancellationsPage } from './cancellations/CancellationsPage';
+import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -281,11 +285,31 @@ export function App() {
         }
       />
       <Route
-        path="/grading-permissions"
+        path="/grading/permissions"
         element={
           <RequireAuth>
             <Shell>
               <GradingPermissionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/settings"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSettingsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/skills"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSkillsPage />
             </Shell>
           </RequireAuth>
         }
@@ -371,6 +395,16 @@ export function App() {
         }
       />
       <Route
+        path="/membership-plans/:id/members"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlanMembersPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/membership-plans/:id/edit"
         element={
           <RequireAuth>
@@ -386,6 +420,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cancellations"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CancellationsPage />
             </Shell>
           </RequireAuth>
         }
@@ -431,6 +475,8 @@ export function App() {
         }
       />
 
+      {/* The Permissions page moved under Grading's tabs. */}
+      <Route path="/grading-permissions" element={<Navigate to="/grading/permissions" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

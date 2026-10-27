@@ -1,8 +1,10 @@
 # Grading — what's left, by team
 
-**Date:** 22 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
+**Date:** 22 Oct 2026, updated 23 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307, 313, 314, 321).
+
+**Handed to the backend team (23 Oct 2026).** B10 and B11 are built and on `master`; everything else below is yours, **C1 first** (it lets a promotion fee be paid). **Need information?** Ask the product owner.
 
 ---
 
@@ -30,10 +32,11 @@ The two related topics are answered too: **student charges and balances** (Decis
 | B5 | Saved belt colours per School | ✅ ready |
 | B8 | Students can ask for a belt correction (any rank, note required); owner or "Verify ranks" coaches approve or reject | ✅ ready |
 | B9 | Belt progress on the check-in screen (with the check-in rules, v1.3 §3.5) | ✅ ready |
-| B11 | Hours trained, logged only (grading unchanged); progress breakdown | ✅ ready |
-| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ ready (payment step after C1) |
-| C1 | Staff-created charges and member balances, paid in the app (Decision 303) | ✅ ready |
+| B11 | Hours trained, logged only (grading unchanged); progress breakdown | ✅ **built** (#292) |
+| B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ **built** (#293, #294); payment step comes with C1 |
+| C1 | Staff-created charges and member balances, paid in the app (Decision 303) — **do first** | ✅ ready |
 | C2 | Open mat sessions: scheduled and unplanned, walk-in bookings, credits, alerts (Decision 304) | ✅ ready |
+| B12 | Requirement tick boxes per style (Classes, Days in rank, Skills, Hours, Days attended, Minimum age); automatic promotion per style (manual / stripes / all ranks; waits for a fee; notices; coach can undo); auto-assign first belt on first check-in (Decision 321) | ✅ ready |
 
 ## Frontend team — School Portal (`apps/school-portal`)
 
@@ -41,23 +44,24 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 
 | Task | Needs backend |
 |---|---|
-| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — |
-| Grid / Rows views, sort by belt or name inside each stage | — |
-| Right-hand student panel (rank, progress, skills, history) and the Selection panel / pill | — |
-| Click a progress bar to promote | — |
-| Our own "Promote to" drop-down (single and bulk) | B3 for bulk |
+| 5-tab Grading menu: Board, Styles & Belts, Skills, Permissions, Settings | — · ✅ **built** (26 Oct 2026) |
+| Grid / Rows views, sort by belt or name inside each stage | — · ✅ **built** (26 Oct 2026) |
+| Right-hand student panel (rank, progress, skills, history) and the Selection panel / pill | — · ✅ **built** (26 Oct 2026; avatars are initials until B6) |
+| Click a progress bar to promote | — · ✅ **built** (26 Oct 2026) |
+| Our own "Promote to" drop-down (single and bulk) | B3 for bulk · **single built** (26 Oct 2026; also in Move down and Verify) |
 | Promote window and done list with belts; printable report with photos and belts | B6 |
 | Avatars on the board and panels | B6 |
 | Kids · Adult switch, "Adult program" in Promote to, "Ready for Adult program" tag | B1 |
-| Grading → Settings page | B2, B10, B11 |
-| Belt editor: price per grade, shown only while the fee is on | B10 |
-| Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 |
-| Student page: progress breakdown per requirement, and hours trained | B11 |
-| Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — |
+| Grading → Settings page | B2, B10, B11 · **built for what exists** (26 Oct 2026): board columns per style, promotion fee (owner), open mat hours; Ready for Adult age and Belts/Levels wait for B1/B4, and the right is still named "Change board %" until B2 renames it |
+| Belt editor: price per grade, shown only while the fee is on | B10 · ✅ **built** (26 Oct 2026) |
+| Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 · ✅ **built** (26 Oct 2026) |
+| Student page: progress breakdown per requirement, and hours trained | B11 · ✅ **built** (26 Oct 2026; also the new Log a class dialog and the fee box on the Ranks tab) |
+| Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — · ✅ **built** (26 Oct 2026) |
 | Colour wheel with saved colours | B5 |
 | Levels badge | B4 |
-| Two-tone belt picture (middle band) | — |
+| Two-tone belt picture (middle band) | — · ✅ **built** (26 Oct 2026) |
 | Belt correction requests (review list) | B8 |
+| Styles & Belts: requirement tick boxes per style (belt editor shows only ticked fields), Promotion setting, Auto-assign first belt; board/history show automatic promotions and Undo (Decision 321) | B12 |
 
 ## Frontend team — Student app (`apps/student`)
 
@@ -66,8 +70,8 @@ The coach screens' five web-only actions (skipping ranks, bulk promote, moving c
 | Task | Needs backend |
 |---|---|
 | Ask for a belt correction | B8 |
-| Accept or decline a promotion fee (Guardian for a child) | B10 |
-| Grading progress breakdown per requirement | B11 |
+| Accept or decline a promotion fee (Guardian for a child) | B10 · ✅ **built** (26 Oct 2026, on My grading; paying the fee in the app waits for staff-created charges, Decision 303) |
+| Grading progress breakdown per requirement | B11 · ✅ **built** (26 Oct 2026, with hours trained) |
 | Belt progress after check-in | B9 |
 | Levels badge, Kids/Adult program names | B4, B1 |
 | Translate the app (deferred by Decision 273) | — |

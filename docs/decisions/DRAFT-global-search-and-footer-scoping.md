@@ -3,7 +3,12 @@
 **§B (Marketing footer) is RESOLVED — see Decision 256** (`POST-SPEC-55-DECISION-LOG.md`,
 14 Oct 2026): standard B2B shape, all three apps, placeholder Terms/Privacy/
 Support links. Left here for its own historical context (options considered,
-tradeoffs) rather than deleted. §A (Global Search) is still open.
+tradeoffs) rather than deleted.
+
+**§A (Global Search) is RESOLVED — see Decision 278** (`POST-SPEC-55-DECISION-LOG.md`,
+21 Oct 2026): option (a), approach 2 (a `search` param on each existing list
+endpoint), case-insensitive substring on names, results mirror the sidebar,
+archived records excluded. Left here for the same historical reason as §B.
 
 **This file is a draft for the product owner to react to. It is not appended to
 `docs/decisions/POST-SPEC-55-DECISION-LOG.md` and carries no decision numbers
@@ -20,7 +25,7 @@ lay out real options with tradeoffs, do not pretend a call has been made).
 
 ---
 
-## A. Global Search
+## A. Global Search — RESOLVED (Decision 278, 21 Oct 2026)
 
 **The gap, as it actually exists in code today:** `apps/school-portal/src/layout/TopBar.tsx`
 already renders a search input in the app-shell header — disabled, with the

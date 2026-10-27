@@ -514,6 +514,15 @@
   background: var(--bg-danger);
   color: var(--text-danger);
 }
+.ultm8-badge--warning {
+  background: var(--bg-warning);
+  color: var(--text-warning);
+}
+/* Soft blue: "Promotion to decide", "Ready for Adult program" (DESIGN.md → Tags). */
+.ultm8-badge--info {
+  background: #e5ecf6;
+  color: #2b4f80;
+}
 
 /* Spinner */
 .ultm8-spinner {
@@ -554,6 +563,10 @@
 .ultm8-banner--success {
   background: var(--bg-success);
   color: var(--text-success);
+}
+.ultm8-banner--warning {
+  background: var(--bg-warning);
+  color: var(--text-warning);
 }
 
 /* App shell */
@@ -1023,6 +1036,73 @@
   max-height: calc(100vh - 2 * var(--space-6));
   overflow-y: auto;
 }
+/* A two-column editor (the belt editor): the form and its live preview. */
+.ultm8-modal--wide {
+  max-width: 920px;
+}
+/* Belt editor: the form, and its live preview on the right. */
+.ultm8-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: var(--space-5, 20px);
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .ultm8-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ultm8-editor-preview {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-4);
+  border-radius: 14px;
+  background: var(--color-neutral-100);
+}
+.ultm8-grade-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-footnote);
+  cursor: pointer;
+}
+.ultm8-grade-pill--on {
+  border-color: #3a7556;
+  background: #def2e2;
+}
+.ultm8-grade-pill__count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-neutral-200);
+  font-size: 11px;
+  text-align: center;
+}
+.ultm8-colour-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ultm8-colour-group--on {
+  border-color: var(--color-accent-500);
+}
+.ultm8-colour-group > input[type='radio'] {
+  align-self: center;
+}
 
 /* Responsive — DESIGN.md "Layout & spacing": phone (default) / tablet ≥768px /
    desktop ≥1024px, same components at every breakpoint, not separate designs. */
@@ -1066,6 +1146,265 @@
   }
 }
 
+/* Redesign form pattern "F" — numbered chapters + live preview (product owner,
+ * 20 Oct 2026). The feel and style for every form across the site. Values come
+ * from the --form-* tokens in tokens.css. Choices: 5 or fewer short options →
+ * .ultm8-pills (all visible, one tap); more than 5, or a list a School can grow →
+ * a drop-down (.ultm8-soft-input as a <select>). */
+
+/* A form is a stack of chapters, with an optional preview beside it */
+.ultm8-chapter-form {
+  display: flex;
+  gap: var(--space-10);
+  align-items: flex-start;
+  /* Soft fields are grey (--form-field-bg); the form always sits on white so
+     they never blend into a grey page background. */
+  background: var(--surface-1);
+}
+.ultm8-chapter-form__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Chapter: number, title and a one-line explanation on the left; fields on the right */
+.ultm8-chapter {
+  display: grid;
+  grid-template-columns: var(--form-chapter-label-width) minmax(0, 1fr);
+  gap: var(--space-8);
+  padding: var(--form-chapter-padding) 0;
+  border-top: 1px solid var(--border);
+}
+.ultm8-chapter__number {
+  font-size: var(--form-chapter-number-size);
+  font-weight: var(--font-weight-light, 300);
+  line-height: 1;
+  color: var(--form-chapter-number-color);
+  font-variant-numeric: tabular-nums;
+}
+.ultm8-chapter--done .ultm8-chapter__number {
+  color: var(--form-chapter-number-done);
+}
+.ultm8-chapter__title {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 21px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+}
+.ultm8-chapter__desc {
+  font-size: var(--font-size-footnote);
+  line-height: 1.5;
+  color: var(--text-description);
+}
+.ultm8-chapter__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) 20px;
+  align-content: start;
+}
+.ultm8-chapter__fields > .ultm8-soft-field--wide {
+  grid-column: 1 / -1;
+}
+
+/* Soft field: label above a borderless, softly filled control */
+.ultm8-soft-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ultm8-soft-field__label {
+  font-size: var(--form-label-size);
+  color: var(--form-label-color);
+}
+.ultm8-soft-field__required {
+  color: var(--text-danger);
+}
+.ultm8-soft-input {
+  min-height: var(--form-field-height);
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--form-field-radius);
+  background: var(--form-field-bg);
+  padding: 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-field);
+  color: var(--text-field-value);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.ultm8-soft-input::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+}
+.ultm8-soft-input:focus,
+.ultm8-soft-input:focus-visible {
+  outline: none;
+  background: var(--form-field-bg-focus);
+  box-shadow: 0 0 0 2px var(--form-field-focus-ring);
+}
+.ultm8-soft-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ultm8-soft-input[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px var(--text-danger);
+}
+.ultm8-soft-field__error {
+  font-size: var(--font-size-caption);
+  color: var(--text-danger);
+}
+/* Date of birth as three boxes: DD / MM / YYYY */
+.ultm8-soft-date {
+  display: flex;
+  gap: var(--space-2);
+}
+.ultm8-soft-date .ultm8-soft-input {
+  width: 64px;
+  padding: 0;
+  text-align: center;
+}
+.ultm8-soft-date .ultm8-soft-input:last-child {
+  width: 96px;
+}
+
+/* Pills: a short set of choices, all visible, one tap */
+.ultm8-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--form-pill-track);
+}
+.ultm8-pills__option {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-footnote);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ultm8-pills__option:not([aria-pressed='true']):hover {
+    color: var(--text-strong);
+  }
+}
+.ultm8-pills__option[aria-pressed='true'] {
+  background: var(--form-pill-on-bg);
+  color: var(--form-pill-on-text);
+}
+
+/* Option card: a bigger choice with a line of explanation (waivers, app access) */
+.ultm8-option-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.ultm8-option-card {
+  text-align: left;
+  min-height: 44px;
+  padding: var(--space-4) 18px;
+  border-radius: var(--form-field-radius);
+  border: 1.5px solid var(--form-option-border);
+  background: var(--surface-1);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-field);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.ultm8-option-card[aria-pressed='true'],
+.ultm8-option-card[aria-checked='true'] {
+  border-color: var(--form-option-selected-border);
+  background: var(--form-option-selected-bg);
+}
+.ultm8-option-card__desc {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-caption);
+  color: var(--text-description);
+}
+
+/* Live preview: shows what is being created, beside the form (in the inspector) */
+.ultm8-form-preview {
+  position: sticky;
+  top: var(--space-6);
+  width: var(--inspector-width);
+  flex: none;
+}
+.ultm8-preview-card {
+  border-radius: 20px;
+  background: var(--form-preview-bg);
+  color: var(--form-preview-text);
+  padding: 22px;
+  box-shadow: var(--shadow-md);
+}
+.ultm8-preview-card__muted {
+  color: var(--form-preview-muted);
+}
+.ultm8-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-footnote);
+}
+.ultm8-checklist__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+.ultm8-checklist__item::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+}
+.ultm8-checklist__item--done {
+  color: var(--text-strong);
+}
+.ultm8-checklist__item--done::before {
+  border: 0;
+  background: var(--color-success)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 12 4 4 8-9'/%3E%3C/svg%3E")
+    center / 12px no-repeat;
+}
+
+/* Phones and narrow screens: chapters stack, the preview drops below the form */
+@media (max-width: 1023px) {
+  .ultm8-chapter-form {
+    flex-direction: column;
+  }
+  .ultm8-form-preview {
+    position: static;
+    width: 100%;
+  }
+}
+@media (max-width: 767px) {
+  .ultm8-chapter {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-8) 0;
+  }
+  .ultm8-chapter__number {
+    font-size: 36px;
+  }
+  .ultm8-chapter__fields,
+  .ultm8-option-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---------------------------------------------------------------- Address (Decision 276) */
 /* A fieldset of ordinary .ultm8-field rows; city/region/postal code share one
    row on wide screens and stack on narrow ones. */
@@ -1083,4 +1422,346 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   column-gap: var(--space-3);
+}
+
+/* Grading (DESIGN.md → "Grading screens"). ------------------------------------ */
+
+/* Rank picker: our own drop-down of ranks with belt pictures ("Drop-downs"). */
+.ultm8-rank-picker {
+  position: relative;
+}
+.ultm8-rank-picker__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--form-field-bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-footnote);
+  text-align: left;
+  cursor: pointer;
+}
+.ultm8-rank-picker__field:focus-visible,
+.ultm8-rank-picker__field--open {
+  outline: none;
+  border-color: var(--color-accent-500);
+}
+.ultm8-rank-picker__value {
+  flex: 1;
+  min-width: 0;
+}
+.ultm8-rank-picker__chevron {
+  color: var(--text-secondary);
+}
+/* Opens under the field and pushes the content down, so a dialog never clips it. */
+.ultm8-rank-picker__list {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  list-style: none;
+  max-height: 264px;
+  overflow-y: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+}
+.ultm8-rank-picker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: 10px;
+  font-size: var(--font-size-footnote);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.ultm8-rank-picker__option--active {
+  background: var(--color-neutral-100);
+}
+.ultm8-rank-picker__option--selected {
+  background: #def2e2;
+  color: var(--text-primary);
+}
+.ultm8-rank-picker__option--selected > span[aria-hidden='true'] {
+  color: #3a7556;
+}
+
+/* Board: columns are soft grey trays with white cards. */
+.ultm8-board-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+  margin-top: var(--space-4);
+}
+.ultm8-board-layout--with-panel {
+  grid-template-columns: minmax(0, 1fr) var(--inspector-width);
+}
+.ultm8-board-panel {
+  position: sticky;
+  top: var(--space-4);
+}
+.ultm8-board-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+.ultm8-board-tray {
+  background: var(--color-neutral-100);
+  border-radius: 14px;
+  padding: var(--space-3);
+}
+.ultm8-board-group {
+  background: var(--color-neutral-100);
+  border-radius: 14px;
+  padding: var(--space-3);
+  border-left: 4px solid var(--color-neutral-300);
+  margin-bottom: var(--space-4);
+}
+.ultm8-board-group--ready {
+  border-left-color: #9fd3b2;
+}
+.ultm8-board-group--getting-there {
+  border-left-color: #a8c5ea;
+}
+.ultm8-board-group--just-starting {
+  border-left-color: #f4c7a1;
+}
+.ultm8-board-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--space-3);
+  cursor: pointer;
+}
+.ultm8-board-card--open {
+  box-shadow: 0 0 0 2px var(--color-accent-500);
+}
+.ultm8-board-card--ticked {
+  background: #f4faf6;
+}
+.ultm8-board-row {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1.2fr) minmax(160px, 1fr) minmax(120px, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .ultm8-board-layout--with-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ultm8-board-panel {
+    position: static;
+  }
+  .ultm8-board-row {
+    grid-template-columns: auto minmax(0, 1fr) minmax(80px, 0.6fr);
+  }
+  .ultm8-board-row__belt,
+  .ultm8-board-row__actions {
+    display: none;
+  }
+}
+/* A progress bar is a button that opens the promote dialog. */
+.ultm8-progress-button {
+  display: block;
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.ultm8-progress-button:hover,
+.ultm8-progress-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #def2e2;
+}
+.ultm8-progress-button[disabled] {
+  cursor: default;
+  box-shadow: none;
+}
+.ultm8-progress-track {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: #e1e3e5;
+  overflow: hidden;
+}
+.ultm8-progress-fill {
+  display: block;
+  height: 100%;
+}
+.ultm8-progress-fill--just-starting {
+  background: #f4c7a1;
+}
+.ultm8-progress-fill--getting-there {
+  background: #a8c5ea;
+}
+.ultm8-progress-fill--ready {
+  background: #9fd3b2;
+}
+/* The minimised Selection panel: a floating pill at the bottom right. */
+.ultm8-selection-pill {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.ultm8-board--pill-space {
+  padding-bottom: 96px;
+}
+.ultm8-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #d3d9df;
+  color: var(--color-neutral-700);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.ultm8-round-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+.ultm8-tabs {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.ultm8-tabs__tab {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium, 500);
+}
+.ultm8-tabs__tab--active {
+  color: var(--text-primary);
+  border-bottom-color: var(--color-success);
+}
+
+/* Switch: an on/off setting. */
+.ultm8-switch-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+.ultm8-switch-row__text {
+  min-width: 0;
+}
+.ultm8-switch-row__label {
+  font-weight: var(--font-weight-medium, 500);
+}
+.ultm8-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-neutral-300);
+  cursor: pointer;
+  padding: 0;
+}
+.ultm8-switch--on {
+  background: #9fd3b2;
+}
+.ultm8-switch[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+.ultm8-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--switch-knob);
+  box-shadow: var(--switch-knob-ring);
+  transition: transform 0.15s;
+}
+.ultm8-switch--on .ultm8-switch__knob {
+  transform: translateX(18px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ultm8-switch__knob {
+    transition: none;
+  }
+}
+
+/* Settings pages: sections on the left, "About this setting" on the right,
+   and a Discard / Save changes bar while something has changed. */
+.ultm8-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--inspector-width);
+  gap: var(--space-4);
+  align-items: start;
+  padding-bottom: 96px;
+}
+@media (max-width: 900px) {
+  .ultm8-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ultm8-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.ultm8-settings-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-footnote);
+}
+.ultm8-settings-inline input {
+  width: 84px;
+}
+.ultm8-about-button {
+  min-width: 36px;
+  padding-inline: var(--space-2);
+}
+.ultm8-save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
 }

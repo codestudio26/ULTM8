@@ -9,13 +9,14 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsNotEmpty,
   IsUUID,
   ValidateNested,
   Matches,
   Min,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ClassStyleInputDto } from '../../classes/dto/class-style.dto';
 
 /**
@@ -97,8 +98,11 @@ export class CreateTimetableSlotDto {
 
   // --- Template fields — MUST mirror CreateClassDto's constraints exactly. ---
 
+  // Trimmed, and never blank (Decision 332), same as CreateClassDto.
   @ApiProperty()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty({ message: 'Give the slot a title.' })
   @MaxLength(100)
   title!: string;
 

@@ -536,6 +536,7 @@ export class RanksService {
     if (dto.stripeTiers.some((t) => t.id !== undefined)) {
       throw new BadRequestException('A new belt has only new stripes; stripe ids are for updating a belt.');
     }
+    const showPrices = await this.assertPricesAllowed(callerId, discipline.schoolId, dto.stripeTiers);
 
     await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
     const rankName = dto.name ?? `Belt ${dto.order + 1}`;
@@ -589,7 +590,7 @@ export class RanksService {
         where: { id: rankId },
         include: RANK_INCLUDE,
       });
-      return this.shapeRankResponse(full);
+      return this.shapeRankResponse(full, showPrices);
     });
   }
 
@@ -606,7 +607,8 @@ export class RanksService {
         include: RANK_INCLUDE,
       }),
     );
-    return ranks.map((r) => this.shapeRankResponse(r));
+    const showPrices = await this.pricesVisible(callerId, discipline.schoolId, discipline.id);
+    return ranks.map((r) => this.shapeRankResponse(r, showPrices));
   }
 
   async findOneRank(callerId: string, rankId: string) {
@@ -619,7 +621,7 @@ export class RanksService {
     if (!found) {
       throw new NotFoundException('Rank not found');
     }
-    return this.shapeRankResponse(found);
+    return this.shapeRankResponse(found, await this.promotionFeeOn(callerId, found.schoolId));
   }
 
   async updateRank(callerId: string, rankId: string, dto: UpdateRankDto) {
@@ -650,6 +652,7 @@ export class RanksService {
     if (dto.stripeTiers) {
       await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
     }
+    const showPrices = await this.assertPricesAllowed(callerId, existing.schoolId, dto.stripeTiers ?? []);
 
     // See createRank's own comment on why this is one flat withTenantContext
     // call (already one transaction), not a nested tx.$transaction — the same
@@ -776,7 +779,7 @@ export class RanksService {
         where: { id: rankId },
         include: RANK_INCLUDE,
       });
-      return this.shapeRankResponse(full);
+      return this.shapeRankResponse(full, showPrices);
     });
   }
 
@@ -790,6 +793,7 @@ export class RanksService {
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertDisciplineActive(discipline);
 
+    const showPrices = await this.promotionFeeOn(callerId, discipline.schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await lockLadder(tx, disciplineId);
       const ranks = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
@@ -805,7 +809,7 @@ export class RanksService {
         await tx.rank.update({ where: { id }, data: { order: i } });
       }
       const full = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
-      return full.map((r) => this.shapeRankResponse(r));
+      return full.map((r) => this.shapeRankResponse(r, showPrices));
     });
   }
 
@@ -1085,15 +1089,57 @@ export class RanksService {
    */
   private shapeRankResponse(
     rank: Prisma.RankGetPayload<{ include: typeof RANK_INCLUDE }>,
+    // Promotion fee prices (Decision 307): returned only while the School's
+    // promotion fee is on; with it off they are left out of every response.
+    showPrices: boolean,
   ) {
     const { stripeTiers, ...rest } = rank;
     return {
       ...rest,
-      stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, ...tier }) => ({
+      stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, promotionFeeMinor, ...tier }) => ({
         ...tier,
+        ...(showPrices ? { promotionFeeMinor } : {}),
         requiredSkillIds: tierSkills.map((s) => s.skillId),
       })),
     };
+  }
+
+  /** Whether the School's promotion fee is on (Decisions 287, 307). */
+  /** Who sees prices on the ladder (Decision 314 item 1): while the fee is on,
+   * the School owner and anyone with grading permission for this style. Other
+   * staff, students and guardians get the ladder without prices. */
+  private async pricesVisible(callerId: string, schoolId: string, disciplineId: string): Promise<boolean> {
+    if (!(await this.promotionFeeOn(callerId, schoolId))) return false;
+    try {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+      return true;
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+    }
+    const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } }, select: { schoolId: true } }),
+    );
+    return permission?.schoolId === schoolId;
+  }
+
+  private async promotionFeeOn(callerId: string, schoolId: string): Promise<boolean> {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true } }),
+    );
+    return school?.promotionFeeEnabled ?? false;
+  }
+
+  /** Prices per grade (Decisions 300, 307) are set by the owner (the rank
+   * endpoints are owner-only already) and only while the promotion fee is on:
+   * with it off the belt editor has no price field, so a price sent then is
+   * refused with a 400 rather than stored out of sight. Returns whether
+   * prices are shown in the response. */
+  private async assertPricesAllowed(callerId: string, schoolId: string, tiers: RankStripeTierInputDto[]): Promise<boolean> {
+    const on = await this.promotionFeeOn(callerId, schoolId);
+    if (!on && tiers.some((t) => t.promotionFeeMinor !== undefined)) {
+      throw new BadRequestException('The promotion fee is off for this School, so grades have no price. The owner can turn it on in Grading settings.');
+    }
+    return on;
   }
 
   // ---------------------------------------------------------------------------
@@ -1214,6 +1260,9 @@ export class RanksService {
       weeklyClassCountCap: tier.weeklyClassCountCap,
       timeOnly: tier.timeOnly ?? previous?.timeOnly ?? false,
       bookingUnlocksClassTypes: [...new Set(tier.bookingUnlocksClassTypes ?? previous?.bookingUnlocksClassTypes ?? [])],
+      // Promotion fee (Decision 300): null clears it (free); omitted keeps it
+      // on an existing rung and leaves a new one free.
+      ...(tier.promotionFeeMinor !== undefined ? { promotionFeeMinor: tier.promotionFeeMinor } : {}),
     };
   }
 

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
-import { ClassCancellationPolicyDto } from './create-school.dto';
+import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from './create-school.dto';
 import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /**
@@ -42,6 +42,11 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
 
   @ApiProperty()
   ranksToggle!: boolean;
+
+  /** Decision 350 — the School Owner's half of the both-must-allow switch for
+   * showing the Franchise's name and logo. Reset on joining or leaving. */
+  @ApiProperty()
+  showFranchiseBranding!: boolean;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   defaultLanguage!: string | null;
@@ -102,6 +107,33 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   waitlistClaimWindowMinutes!: number;
 
+  @ApiProperty({ enum: ClassCancellationPolicyWindowDto })
+  classCancellationPolicyWindow!: ClassCancellationPolicyWindowDto;
+
+  @ApiProperty()
+  chargeLateCancellationFee!: boolean;
+
+  @ApiProperty({ enum: SchoolCancelledClassResolutionDto })
+  schoolCancelledClassResolution!: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  defaultRefundCutoffHours!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  noShowFee!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to.' })
+  cancellationPolicyChosenAt!: string | null;
+
+  @ApiProperty({ description: 'Minutes before a Class starts that check-in opens.' })
+  checkInOpensMinutesBeforeStart!: number;
+
+  @ApiProperty({ enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'] })
+  lateCancelRefundPolicy!: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+
+  @ApiProperty({ description: 'Branch Staff may record desk payments (Decision 347).' })
+  branchStaffCanRecordPayments!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
 
@@ -151,6 +183,23 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
  * (SchoolsService.findTheme) exists purely to narrow that.
  */
 export class SchoolThemeResponseDto extends PickType(SchoolResponseDto, ['id', 'accentColor', 'logoUrl'] as const) {}
+
+/** Decision 350 — the Franchise's name and logo for a member School, given only
+ * when both the Franchise Owner (shareBrandingWithMembers) and the School Owner
+ * (showFranchiseBranding) allow it, and the Franchise isn't closed. */
+export class SchoolFranchiseBrandingResponseDto {
+  @ApiProperty({ description: 'The School belongs to a Franchise whose Owner allows member Schools to show its name and logo.' })
+  franchiseAllows!: boolean;
+
+  @ApiProperty({ description: "The School Owner's own switch (School.showFranchiseBranding)." })
+  schoolShows!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set only when both allow it.' })
+  name!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set only when both allow it.' })
+  logoUrl!: string | null;
+}
 
 export class SchoolListResponseDto {
   @ApiProperty({ type: [SchoolResponseDto] })

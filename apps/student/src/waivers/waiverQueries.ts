@@ -119,17 +119,21 @@ export function useSignWaiver() {
       signerFullName,
       signatureText,
       signatureImage,
+      waiverVersion,
     }: {
       waiverId: string;
       signerFullName: string;
       signatureText: string;
       signatureImage: string | null;
+      /** The version the Student read; the API refuses the signature (409) if
+       * the School changed the text since. */
+      waiverVersion?: number;
     }) => {
       const signatureImageKey = signatureImage ? await uploadDrawnSignature(waiverId, signatureImage) : undefined;
       return unwrap(
         apiClient.POST('/v1/waivers/{id}/sign', {
           params: { path: { id: waiverId } },
-          body: { signerFullName, signatureText, signatureImageKey },
+          body: { signerFullName, signatureText, signatureImageKey, waiverVersion },
         }),
       );
     },

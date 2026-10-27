@@ -148,6 +148,10 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   afterAll(async () => {
+    // Closed first so the notification workers stop before the cleanup below:
+    // cash purchases and confirms now send notices (Decision 339, T11).
+    await app.close();
+    await superuser.notification.deleteMany({ where: { user: { email: { contains: 'memberships-http-' } } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -158,7 +162,6 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
     await appDb.$disconnect();
-    await app.close();
   });
 
   // ---------------------------------------------------------------------------
@@ -237,8 +240,10 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
         schoolId: school.id,
         title: 'Clearable-field Fixture Class',
         activities: ['Jiu Jitsu'],
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 3600_000),
+        // Still to come: a plan for a class that has already started is
+        // refused (Decision 334, M15).
+        startDate: new Date(Date.now() + 86_400_000),
+        endDate: new Date(Date.now() + 86_400_000 + 3600_000),
       },
     });
 
@@ -257,7 +262,8 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       });
     expect(createRes.status).toBe(201);
     membershipPlanIds.push(createRes.body.id);
-    expect(createRes.body.currency).toBe('gbp');
+    // Stored upper-case (Decision 334, M11).
+    expect(createRes.body.currency).toBe('GBP');
     expect(createRes.body.expiryDurationDays).toBe(30);
     expect(createRes.body.scopedClassId).toBe(cls.id);
     expect(createRes.body.cancellationCharge).toBe(500);
@@ -335,7 +341,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Free Trial', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Free Trial', price: 0, expiryDurationDays: 7 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
 
@@ -359,9 +365,18 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Second Free Trial', price: 0 });
+      .send({ type: 'WEEKLY_PASS', title: 'Free Weekly Pass', price: 0, expiryDurationDays: 7 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
+
+    // The live Trial from the test above is not general access (Decision
+    // 333, M20), so the first Weekly Pass goes through.
+    const firstRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({});
+    expect(firstRes.status).toBe(201);
+    membershipIds.push(firstRes.body.membership.id);
 
     const purchaseRes = await request(app.getHttpServer())
       .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
@@ -391,7 +406,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Outsider-Blocked Trial', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Outsider-Blocked Trial', price: 0, expiryDurationDays: 7 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
 
@@ -415,7 +430,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Guardian Free Trial', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Guardian Free Trial', price: 0, expiryDurationDays: 7 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
 
@@ -471,7 +486,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Unlinked Guardian Attempt', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Unlinked Guardian Attempt', price: 0, expiryDurationDays: 7 });
     membershipPlanIds.push(planRes.body.id);
 
     // studentA stands in for "some other real Student" — the Guardian holds
@@ -562,7 +577,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     // tokenOwner has no grant at stripeSchool — seed the Plan directly instead of
     // going through the create endpoint.
     const stripePlan = await superuser.membershipPlan.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Stripe Pack', price: 3000, classesIncluded: 3 },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Stripe Pack', price: 3000, currency: 'GBP', classesIncluded: 3 },
     });
 
     const rejectedRes = await request(app.getHttpServer())
@@ -619,7 +634,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: stripeSchool.id } });
     const tokenStudentAAtStripeSchool = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
     const stripePlan = await superuser.membershipPlan.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Saved-Card Pack', price: 3000, classesIncluded: 3 },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Saved-Card Pack', price: 3000, currency: 'GBP', classesIncluded: 3 },
     });
 
     const noTokenRes = await request(app.getHttpServer())
@@ -665,7 +680,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
     const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
     const subscriptionPlan = await superuser.membershipPlan.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000, currency: 'GBP' },
     });
 
     // No X-Step-Up-Token header at all — if this still 403'd on STEP_UP_REQUIRED
@@ -755,7 +770,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
     const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
     const subscriptionPlan = await superuser.membershipPlan.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited (hosted checkout)', price: 5000 },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited (hosted checkout)', price: 5000, currency: 'GBP' },
     });
 
     const res = await request(app.getHttpServer())
@@ -790,7 +805,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'WEEKLY_PASS', title: 'Weekly', price: 2000, currency: 'gbp' });
+      .send({ type: 'WEEKLY_PASS', title: 'Weekly', price: 2000, currency: 'gbp', expiryDurationDays: 7 });
     membershipPlanIds.push(planRes.body.id);
     const purchaseRes = await request(app.getHttpServer())
       .post(`/v1/membership-plans/${planRes.body.id}/purchase`)

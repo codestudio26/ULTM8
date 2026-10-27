@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
-import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import { useJoinFranchise, useLeaveFranchise, useSchool, useSchoolFranchiseBranding, useUpdateSchool, type SchoolResponse } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
+import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload } from '../cancellations/CancellationSettingsFields';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
@@ -33,8 +34,10 @@ export function SchoolPage() {
     defaultCurrency: string;
     timezone: string;
     description: string;
-    classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
     waitlistClaimWindowMinutes: number;
+    checkInOpensMinutesBeforeStart: number;
+    lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+    branchStaffCanRecordPayments: boolean;
   } | null>(null);
   const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
@@ -58,8 +61,10 @@ export function SchoolPage() {
       defaultCurrency: school.defaultCurrency ?? '',
       timezone: school.timezone ?? '',
       description: school.description ?? '',
-      classCancellationPolicy: school.classCancellationPolicy,
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
+      checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
+      lateCancelRefundPolicy: school.lateCancelRefundPolicy,
+      branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
     });
   }, [school]);
 
@@ -97,8 +102,10 @@ export function SchoolPage() {
         defaultCurrency: form.defaultCurrency || null,
         timezone: form.timezone || null,
         description: form.description || null,
-        classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
+        checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
+        lateCancelRefundPolicy: form.lateCancelRefundPolicy,
+        branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
       });
       setSaved(true);
     } catch (err) {
@@ -161,17 +168,6 @@ export function SchoolPage() {
           <Field label={t('schools.form.description')} htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
           </Field>
-          <Field label={t('schools.form.cancellationPolicy')} htmlFor="edit-policy">
-            <SelectField
-              value={form.classCancellationPolicy}
-              onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
-              options={[
-                { value: 'MANUAL', label: t('schools.form.policyManual') },
-                { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
-                { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
-              ]}
-            />
-          </Field>
           <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
             <TextField
               type="number"
@@ -180,10 +176,37 @@ export function SchoolPage() {
               onChange={(e) => set('waitlistClaimWindowMinutes', Number(e.target.value))}
             />
           </Field>
+          <Field label={t('schools.form.checkInOpens')} htmlFor="edit-checkin-opens" hint={t('schools.form.checkInOpensHint')}>
+            <TextField
+              type="number"
+              min={0}
+              max={1440}
+              required
+              value={form.checkInOpensMinutesBeforeStart}
+              onChange={(e) => set('checkInOpensMinutesBeforeStart', Number(e.target.value))}
+            />
+          </Field>
+          <Field label={t('schools.form.lateCancel')} htmlFor="edit-late-cancel" hint={t('schools.form.lateCancelHint')}>
+            <SelectField
+              value={form.lateCancelRefundPolicy}
+              onChange={(e) => set('lateCancelRefundPolicy', e.target.value as typeof form.lateCancelRefundPolicy)}
+              options={[
+                { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
+                { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
+                { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
+              ]}
+            />
+          </Field>
           <Checkbox
             label={t('schools.form.ranksToggle')}
             checked={form.ranksToggle}
             onChange={(e) => set('ranksToggle', e.target.checked)}
+          />
+          {/* Decision 347: off by default; Branch Staff still never see the ledger. */}
+          <Checkbox
+            label={t('schools.form.branchStaffPayments')}
+            checked={form.branchStaffCanRecordPayments}
+            onChange={(e) => set('branchStaffCanRecordPayments', e.target.checked)}
           />
           <div style={{ marginTop: 16 }}>
             <Button type="submit" loading={updateSchool.isPending}>
@@ -192,9 +215,63 @@ export function SchoolPage() {
           </div>
         </form>
       </Card>
+      {schoolId && school ? <CancellationSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
     </>
+  );
+}
+
+/**
+ * Decision 291 — the owner's "Class cancellations" settings: what a cancelled
+ * booking gets back, when that applies, the late and no-show fees, and what
+ * happens when the School cancels a whole class. Its own Card and save, same
+ * pattern as FooterSettingsCard below, so saving the main form never
+ * overwrites these. Two rules are fixed and only explained here: a Friend Pass
+ * always gets its credit back, and only an Owner/Manager can send money back.
+ * Decision 292 — each Branch can override these on its own settings page.
+ */
+function CancellationSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
+  const update = useUpdateSchool(schoolId);
+  const [form, setForm] = useState(() => cancellationSettingsForm(school));
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    try {
+      await update.mutateAsync(cancellationSettingsPayload(form));
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <form id="cancellations" onSubmit={handleSubmit}>
+        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('schools.cancellations.title')}</h2>
+        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('schools.cancellations.subtitle')}</p>
+        {/* Decision 292 — until the owner saves a policy, ask them to. */}
+        {!school.cancellationPolicyChosenAt && !saved ? (
+          <div className="ultm8-banner ultm8-banner--warning" role="status">
+            <strong>{t('schools.cancellations.chooseTitle')}</strong> {t('schools.cancellations.chooseBody')}
+          </div>
+        ) : null}
+        {error ? <ErrorBanner message={error} /> : null}
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <CancellationSettingsFields form={form} onChange={setForm} />
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.branchHint')}</p>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={update.isPending}>
+            {t('schools.profile.saveChanges')}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }
 
@@ -308,8 +385,13 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   const t = useT();
   const joinFranchise = useJoinFranchise(schoolId);
   const leaveFranchise = useLeaveFranchise(schoolId);
+  // Decision 350 — the Franchise's name and logo show only when both owners allow it.
+  const updateSchool = useUpdateSchool(schoolId);
+  const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -322,8 +404,18 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
     }
   }
 
+  async function handleShowBranding(showFranchiseBranding: boolean) {
+    setError(null);
+    try {
+      await updateSchool.mutateAsync({ showFranchiseBranding });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
   async function handleLeave() {
     setError(null);
+    setConfirmingLeave(false);
     try {
       await leaveFranchise.mutateAsync();
     } catch (err) {
@@ -345,9 +437,44 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.leaveExplanation')}
           </p>
-          <Button variant="danger" onClick={handleLeave} loading={leaveFranchise.isPending}>
+          {branding ? (
+            <div style={{ marginBottom: 16 }}>
+              <Switch
+                id="school-show-franchise-branding"
+                label={t('schools.franchise.showBrandingLabel')}
+                description={t('schools.franchise.showBrandingHint')}
+                checked={branding.schoolShows}
+                disabled={updateSchool.isPending}
+                onChange={handleShowBranding}
+              />
+              {!branding.franchiseAllows ? (
+                <p className="ultm8-field__hint" data-testid="franchise-branding-not-allowed">
+                  {t('schools.franchise.brandingNotAllowed')}
+                </p>
+              ) : branding.name ? (
+                <p style={{ display: 'flex', alignItems: 'center', gap: 8 }} data-testid="franchise-branding-preview">
+                  {branding.logoUrl ? <img src={branding.logoUrl} alt="" width={24} height={24} style={{ objectFit: 'contain' }} /> : null}
+                  {t('schools.franchise.partOf', { name: branding.name })}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <Button variant="danger" onClick={() => setConfirmingLeave(true)} loading={leaveFranchise.isPending}>
             {t('schools.franchise.leave')}
           </Button>
+          {confirmingLeave ? (
+            <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
+              <p>{t('schools.franchise.leaveConfirmBody')}</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <Button variant="danger" onClick={handleLeave}>
+                  {t('schools.franchise.leave')}
+                </Button>
+                <Button variant="secondary" onClick={() => setConfirmingLeave(false)}>
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </Modal>
+          ) : null}
         </>
       ) : (
         <>

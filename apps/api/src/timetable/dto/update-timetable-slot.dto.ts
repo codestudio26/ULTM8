@@ -1,9 +1,11 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, IsUrl, Min, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, IsUrl, Matches, Min, MaxLength } from 'class-validator';
 import { CreateTimetableSlotDto } from './create-timetable-slot.dto';
 
 const NULLABLE_ON_UPDATE = [
   'branchId',
+  'breakStart',
+  'breakEnd',
   'instructorId',
   'capacity',
   'description',
@@ -27,15 +29,22 @@ const NULLABLE_ON_UPDATE = [
  * fields, and CreateClassDto/UpdateClassDto's own comment documents for Class.
  *
  * Deliberately NOT widened here: `weekday`/`startTime`/`endTime`/`title`/
- * `activities` (required — nothing to "clear", only to replace), or
- * `breakStart`/`breakEnd` (TimetableService.update() converts these via
- * `dto.X ? parseHHmm(dto.X) : undefined` — a falsy check that would swallow an
- * explicit `null` the same as an omitted field, so there is currently NO way to
- * remove an already-set break window via PATCH, not even by widening this DTO;
- * that's a separate, real, flagged gap in the service itself, not something a
- * DTO-only change can fix — left alone rather than silently half-fixed).
+ * `activities` (required — nothing to "clear", only to replace).
+ * `breakStart`/`breakEnd` take null to remove the break (Decision 332, T9).
  */
 export class UpdateTimetableSlotDto extends PartialType(OmitType(CreateTimetableSlotDto, NULLABLE_ON_UPDATE)) {
+  @ApiPropertyOptional({
+    enum: ['MOVE', 'CANCEL', 'KEEP'],
+    description:
+      'Decisions 322, 332. What to do with this slot\'s upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). ' +
+      'MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. ' +
+      'KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. ' +
+      'Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change.',
+  })
+  @IsOptional()
+  @IsIn(['MOVE', 'CANCEL', 'KEEP'])
+  bookedClasses?: 'MOVE' | 'CANCEL' | 'KEEP';
+
   @ApiPropertyOptional({ description: 'Branch to scope this slot to. Pass null to clear (make it School-wide).', type: String, nullable: true })
   @IsOptional()
   @IsUUID()
@@ -45,6 +54,16 @@ export class UpdateTimetableSlotDto extends PartialType(OmitType(CreateTimetable
   @IsOptional()
   @IsUUID()
   instructorId?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break.' })
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'breakStart must be HH:mm, 24-hour clock' })
+  breakStart?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break.' })
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'breakEnd must be HH:mm, 24-hour clock' })
+  breakEnd?: string | null;
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Pass null to clear (unlimited).', minimum: 1 })
   @IsOptional()

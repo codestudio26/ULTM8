@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -7,6 +7,7 @@ export type FranchiseResponse = components['schemas']['FranchiseResponseDto'];
 export type CreateFranchiseInput = components['schemas']['CreateFranchiseDto'];
 export type UpdateFranchiseInput = components['schemas']['UpdateFranchiseDto'];
 export type FranchiseFeeChargeResponse = components['schemas']['FranchiseFeeChargeResponseDto'];
+export type FranchiseMemberSchool = components['schemas']['FranchiseMemberSchoolResponseDto'];
 export type FeeModel = components['schemas']['FranchiseResponseDto']['feeModel'];
 
 export interface FranchisesFilter {
@@ -114,5 +115,23 @@ export function useRefundFeeCharge(franchiseId: string) {
         }),
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['franchise-fee-charges', franchiseId] }),
+  });
+}
+
+/** Decision 337 (F7) — whether the Franchise has a Stripe account franchise-fee
+ * billing can run on. `null` when it has none yet (the API answers 404); the
+ * Franchise page uses this to explain why member Schools stay "Not billing yet". */
+export function useFranchisePaymentAccount(franchiseId: string | null) {
+  return useQuery({
+    queryKey: ['franchise-payment-account', franchiseId],
+    queryFn: async () => {
+      try {
+        return await unwrap(apiClient.GET('/v1/franchises/{franchiseId}/payment-account', { params: { path: { franchiseId: franchiseId! } } }));
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!franchiseId,
   });
 }

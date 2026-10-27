@@ -86,6 +86,9 @@ export class RoleGrantsService {
    */
   async create(callerId: string, targetUserId: string, dto: CreateRoleGrantDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, dto.schoolId);
+    // Decision 110 — a closed School accepts no further writes; Add Manually
+    // below already checked this, this path didn't (Decision 296).
+    await this.tenantAuth.assertSchoolNotArchived(callerId, dto.schoolId);
 
     // The verification gate from "we verify the accounts" (Decision 80) applies to the
     // GRANTOR, not the grantee — corrected by Decision 81 after the product owner was
@@ -153,10 +156,14 @@ export class RoleGrantsService {
     let branchName: string | null = null;
     if (dto.branchId) {
       const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true, name: true } }),
+        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true, name: true, archivedAt: true } }),
       );
       if (!branch || branch.schoolId !== dto.schoolId) {
         throw new BadRequestException('branchId must reference a Branch belonging to schoolId');
+      }
+      // Decision 296: nobody new joins a Branch that is waiting to be purged.
+      if (branch.archivedAt) {
+        throw new BadRequestException('This branch has been archived. Choose another branch.');
       }
       branchName = branch.name;
     }
@@ -275,6 +282,13 @@ export class RoleGrantsService {
     // already makes branchId required at the validation layer; this just checks it
     // actually belongs to this School, same as create()'s own branchId check below.
     await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+    // Decision 296: nobody new joins a Branch that is waiting to be purged.
+    const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.findUnique({ where: { id: dto.branchId }, select: { archivedAt: true } }),
+    );
+    if (branch?.archivedAt) {
+      throw new BadRequestException('This branch has been archived. Choose another branch.');
+    }
 
     // Decision 116's existing-email check, same PrismaAuthService pre-tenant-context
     // lookup InstructorsService.createManually()/create() below/AuthService.register()

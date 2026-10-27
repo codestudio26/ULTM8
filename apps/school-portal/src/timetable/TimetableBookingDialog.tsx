@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { StudentSummary } from '../students/studentQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { useBookClass } from '../bookings/bookingQueries';
+import { useJoinWaitlist } from '../waitlist/waitlistQueries';
 import { useTimetableOccurrence } from './timetableQueries';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
@@ -35,6 +36,7 @@ export function TimetableBookingDialog({
   instructors,
   onClose,
   onBooked,
+  onWaitlisted,
 }: {
   slotId: string;
   slotTitle: string;
@@ -43,12 +45,17 @@ export function TimetableBookingDialog({
   instructors: InstructorResponse[];
   onClose: () => void;
   onBooked: () => void;
+  onWaitlisted: (position: number) => void;
 }) {
   const t = useT();
   const occurrence = useTimetableOccurrence(slotId, date);
   const bookClass = useBookClass();
+  const joinWaitlist = useJoinWaitlist();
   const [studentId, setStudentId] = useState('');
   const [bookError, setBookError] = useState<string | null>(null);
+  // Set when the API says the Class is full (or Students are already queued):
+  // the next step is the waitlist, not another Confirm (Decision 322).
+  const [full, setFull] = useState(false);
 
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString(formatLocale(), {
     weekday: 'long',
@@ -85,6 +92,25 @@ export function TimetableBookingDialog({
         <ErrorBanner
           message={occurrence.error instanceof ApiError ? occurrence.error.message : t('timetable.booking.loadFailed')}
         />
+      ) : occurrence.data && (occurrence.data.cancelledAt || occurrence.data.archivedAt || new Date(occurrence.data.endDate) < new Date()) ? (
+        // Decision 332, T13 — a cancelled or finished Class can't take a booking;
+        // say so instead of offering a Confirm the API would refuse. Decision 291:
+        // one the School cancelled outright says so, with its reason.
+        <>
+          {occurrence.data.cancelledAt ? (
+            <p>
+              <strong>{t('classes.detail.cancelledBadge')}</strong>
+              {occurrence.data.cancellationReason ? ` — ${t('classes.detail.cancelledReason', { reason: occurrence.data.cancellationReason })}` : null}
+            </p>
+          ) : (
+            <p>{t(occurrence.data.archivedAt ? 'timetable.booking.cancelled' : 'timetable.booking.ended')}</p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <Button variant="secondary" onClick={onClose}>
+              {t('timetable.booking.close')}
+            </Button>
+          </div>
+        </>
       ) : occurrence.data ? (
         <BookingForm
           occurrence={occurrence.data}
@@ -92,9 +118,14 @@ export function TimetableBookingDialog({
           students={students}
           instructors={instructors}
           studentId={studentId}
-          setStudentId={setStudentId}
+          setStudentId={(id) => {
+            setStudentId(id);
+            setFull(false);
+            setBookError(null);
+          }}
           bookError={bookError}
-          submitting={bookClass.isPending}
+          full={full}
+          submitting={bookClass.isPending || joinWaitlist.isPending}
           onClose={onClose}
           onConfirm={async () => {
             setBookError(null);
@@ -102,7 +133,17 @@ export function TimetableBookingDialog({
               await bookClass.mutateAsync({ classId: occurrence.data!.id, body: { studentId } });
               onBooked();
             } catch (err) {
+              if (err instanceof ApiError && (err.code === 'CLASS_FULL' || err.code === 'WAITLIST_FIRST')) setFull(true);
               setBookError(err instanceof ApiError ? err.message : t('timetable.booking.bookFailed'));
+            }
+          }}
+          onJoinWaitlist={async () => {
+            setBookError(null);
+            try {
+              const entry = await joinWaitlist.mutateAsync({ classId: occurrence.data!.id, studentId });
+              onWaitlisted(entry.position);
+            } catch (err) {
+              setBookError(err instanceof ApiError ? err.message : t('timetable.booking.waitlistFailed'));
             }
           }}
         />
@@ -119,9 +160,11 @@ function BookingForm({
   studentId,
   setStudentId,
   bookError,
+  full,
   submitting,
   onClose,
   onConfirm,
+  onJoinWaitlist,
 }: {
   occurrence: { id: string; title: string; instructorId?: string | null; startDate: string; endDate: string };
   dateLabel: string;
@@ -130,9 +173,11 @@ function BookingForm({
   studentId: string;
   setStudentId: (id: string) => void;
   bookError: string | null;
+  full: boolean;
   submitting: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onJoinWaitlist: () => void;
 }) {
   const t = useT();
   const instructor = instructors.find((i) => i.userId === occurrence.instructorId);
@@ -182,9 +227,15 @@ function BookingForm({
         <Button variant="secondary" onClick={onClose} disabled={submitting}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={onConfirm} disabled={!studentId} loading={submitting}>
-          {t('timetable.booking.confirm')}
-        </Button>
+        {full ? (
+          <Button onClick={onJoinWaitlist} disabled={!studentId} loading={submitting}>
+            {t('timetable.booking.addToWaitlist')}
+          </Button>
+        ) : (
+          <Button onClick={onConfirm} disabled={!studentId} loading={submitting}>
+            {t('timetable.booking.confirm')}
+          </Button>
+        )}
       </div>
     </>
   );
