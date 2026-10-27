@@ -15,6 +15,22 @@ function dateKey(d: Date): string {
 }
 
 const todayKey = dateKey(new Date());
+
+/**
+ * A class time still ahead of us but on today's date. A fixed `now + 2h`
+ * spills into tomorrow after 22:00, where the today cell never shows it.
+ */
+function laterToday(): { occurrenceDate: Date; startDate: Date; endDate: Date } {
+  const now = new Date();
+  const lastStart = new Date(now);
+  lastStart.setHours(23, 50, 0, 0);
+  const start = Math.min(now.getTime() + 2 * 3_600_000, Math.max(now.getTime() + 60_000, lastStart.getTime()));
+  return {
+    occurrenceDate: new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())),
+    startDate: new Date(start),
+    endDate: new Date(start + 3_600_000),
+  };
+}
 const slotTitle = 'Rules Spec BJJ';
 
 let s: GradingSchool;
@@ -158,13 +174,7 @@ test('a slot edit that only changes unbooked classes saves without asking', asyn
 });
 
 test('a full class offers "Add to waitlist" and adds the Student', async ({ page }) => {
-  const now = new Date();
-  const { classId } = await slotWithClass({
-    occurrenceDate: new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())),
-    startDate: new Date(now.getTime() + 2 * 3_600_000),
-    endDate: new Date(now.getTime() + 3 * 3_600_000),
-    capacity: 1,
-  });
+  const { classId } = await slotWithClass({ ...laterToday(), capacity: 1 });
   await bookDirectly(classId, s.newStudent.id);
 
   await signIn(page, s.ownerToken);
@@ -183,12 +193,7 @@ test('a full class offers "Add to waitlist" and adds the Student', async ({ page
 });
 
 test("a coded booking error is shown in the portal's own words", async ({ page }) => {
-  const now = new Date();
-  await slotWithClass({
-    occurrenceDate: new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())),
-    startDate: new Date(now.getTime() + 2 * 3_600_000),
-    endDate: new Date(now.getTime() + 3 * 3_600_000),
-  });
+  await slotWithClass(laterToday());
   await page.route('**/v1/classes/*/book', (route) =>
     route.fulfill({
       status: 409,

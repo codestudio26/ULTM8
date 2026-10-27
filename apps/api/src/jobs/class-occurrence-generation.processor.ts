@@ -3,7 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { CLASS_OCCURRENCE_GENERATION_QUEUE } from './queue.constants';
-import { buildSlotOccurrences } from '../timetable/slot-occurrences';
+import { buildSlotOccurrences, withoutClosedDates } from '../timetable/slot-occurrences';
 
 /** How far ahead the job generates occurrences, and how often it runs — Spec 55 says
  * only "on a rolling schedule", no number. This default is a Developer-level choice,
@@ -124,6 +124,13 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
       include: { branch: { select: { timezone: true } }, school: { select: { timezone: true } } },
     });
 
+    // Closed dates are skipped (Decision 319 §3, Decision 353 Q8). Only closures
+    // that haven't ended matter; a day's slack covers every zone.
+    const closures = await this.prismaJobs.closure.findMany({
+      where: { endDate: { gte: new Date(Date.now() - 86_400_000) } },
+      select: { schoolId: true, branchId: true, startDate: true, endDate: true },
+    });
+
     let created = 0;
     let skippedExisting = 0;
 
@@ -132,7 +139,11 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
       const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
       // Shared with slot edits (Decision 322): timetable/slot-occurrences.ts.
       const { branch: _branch, school: _school, ...slotRow } = slot;
-      const occurrences = buildSlotOccurrences(slotRow, timezone);
+      const occurrences = withoutClosedDates(
+        buildSlotOccurrences(slotRow, timezone),
+        closures.filter((c) => c.schoolId === slot.schoolId),
+        slot.branchId,
+      );
 
       try {
         const result = await this.prismaJobs.class.createMany({ data: occurrences, skipDuplicates: true });

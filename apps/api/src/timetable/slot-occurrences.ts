@@ -89,3 +89,21 @@ export function buildSlotOccurrences(slot: TimetableSlot, timezone: string, nowI
   }
   return occurrences;
 }
+
+/** A closure's dates and reach, as the generator and calendar need them
+ * (Decision 353, Q8). branchId null closes the whole School. */
+export type ClosureRange = { branchId: string | null; startDate: Date; endDate: Date };
+
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Whether a local date (YYYY-MM-DD) is closed for a class at this Branch
+ * (null: a School-wide class, closed only by a School-wide closure). */
+export function isClosedOn(closures: ClosureRange[], branchId: string | null, date: string): boolean {
+  return closures.some((c) => (c.branchId === null || c.branchId === branchId) && isoDay(c.startDate) <= date && date <= isoDay(c.endDate));
+}
+
+/** Drops the occurrences that fall on a closed date (Decision 319 §3). */
+export function withoutClosedDates(occurrences: Prisma.ClassCreateManyInput[], closures: ClosureRange[], branchId: string | null): Prisma.ClassCreateManyInput[] {
+  if (closures.length === 0) return occurrences;
+  return occurrences.filter((o) => !isClosedOn(closures, branchId, isoDay(o.occurrenceDate as Date)));
+}

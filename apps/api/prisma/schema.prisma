@@ -453,6 +453,7 @@ model User {
   grantsIssued                      RoleGrant[]                 @relation("RoleGrantGrantedBy")
   classesTaught                     Class[]                     @relation("ClassInstructor")
   timetableSlotsTaught              TimetableSlot[]             @relation("TimetableSlotInstructor")
+  closuresCreated                   Closure[]                   @relation("ClosureCreatedBy")
   instructorProfiles                Instructor[]
   lessonsAuthored                   Lesson[]                    @relation("LessonInstructor")
   memberships                       Membership[]                @relation("MembershipStudent")
@@ -1063,6 +1064,7 @@ model School {
   roleGrants            RoleGrant[]
   classes               Class[]
   timetableSlots        TimetableSlot[]
+  closures              Closure[]
   instructors           Instructor[]
   paymentAccount        PaymentAccount?
   studentPaymentMethods StudentPaymentMethod[]
@@ -1166,6 +1168,7 @@ model Branch {
   roleGrants     RoleGrant[]
   classes        Class[]
   timetableSlots TimetableSlot[]
+  closures       Closure[]
   instructors    Instructor[]
   homeStudents   StudentHomeBranch[]
   coachInvites   CoachInvite[]
@@ -1340,6 +1343,35 @@ model Class {
 ///     anything on a recurring template. These are durations instead; the job resolves
 ///     each into a real datetime relative to that specific occurrence's startDate.
 ///   - cancellationCharge copies straight across unchanged (already a plain amount).
+/// Decision 319 §3 / Decision 353 (Q8) — a closure: dates the School, or one of
+/// its Branches, is closed (e.g. Christmas). Creating one cancels the classes
+/// on those dates under the School's normal cancellation rule
+/// (CancellationService.cancelClass), and the nightly generation skips them.
+/// A School-wide closure (branchId null) covers every Branch. Dates are the
+/// local calendar dates of each class (its Branch's zone, else the School's).
+model Closure {
+  id String @id @default(uuid())
+
+  schoolId String
+  // Cascade: a closure means nothing without its School or Branch, and must
+  // never block their purge (Decisions 110, 226).
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  reason    String
+
+  createdById String?
+  createdBy   User?   @relation("ClosureCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, startDate])
+}
+
 model TimetableSlot {
   id String @id @default(uuid())
 
