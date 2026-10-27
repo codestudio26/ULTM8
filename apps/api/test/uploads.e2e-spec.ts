@@ -94,7 +94,6 @@ describeIfDb('UploadsModule — HTTP-level authorization gates for POST /uploads
   let tokenOwnerB: string;
   let tokenFranchiseOwner: string;
   let tokenStudentA: string;
-  let tokenStudentOutsider: string;
   let tokenPlainOutsider: string;
 
   function signAccessToken(user: { id: string; email: string }, grants: Array<Record<string, unknown>>) {
@@ -169,7 +168,6 @@ describeIfDb('UploadsModule — HTTP-level authorization gates for POST /uploads
     tokenOwnerB = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null }]);
     tokenFranchiseOwner = signAccessToken(franchiseOwner, [{ role: 'FRANCHISE_OWNER', franchiseId, schoolId: null, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: schoolA.id, branchId: null }]);
-    tokenStudentOutsider = signAccessToken(studentOutsider, []);
     tokenPlainOutsider = signAccessToken(plainOutsider, []);
   });
 
