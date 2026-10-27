@@ -4686,6 +4686,37 @@ The same review found five gaps. Other class-booking and martial-arts apps deact
 
 User, 22 Oct 2026, after the Disciplines section review.
 
+## Decision 310 — Disciplines: archived styles where they're already used, enrolled counts, and students who left
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 152, 308, 309
+
+A second pass over the Disciplines section after PR #286 found seven leftovers in how Decision 309's archive works in the rest of the app, plus a ladder editor failure that was already on `master`. The product owner asked for all of them to be fixed.
+
+### Decision
+
+1. **A student's rank in an archived style stays visible, read-only.**
+   - On the portal's student grading page, the style shows with an Archived badge and a note. There is no grading, progress, ready-to-grade or skills for the next rank.
+   - Voiding and notes on past history still work, as Decision 309 already allowed.
+   - The student app shows the belt and history with "No longer taught at this School", and no progress or skills. The API marks the style `archived` and sends no skills for it.
+2. **Archived styles are kept where they're already used, and refused anywhere new.** This covers class and timetable slot style pickers, membership plans, instructor specialisations and coach grading permissions.
+   - The portal lists an archived style only on a record that already has it, labelled "(archived)".
+   - The API refuses an archived style on a new plan or a new coach permission, but accepts it on a plan or permission that already had it. Classes and slots already refused it (Decision 309).
+3. **Student counts per style count only students still enrolled** (an active Student role at the School). This applies to the Disciplines list, the style's page and its students list. The rung-holder list marks each student `enrolled`.
+4. **Students who left still hold their rung.** Row security (by design) hides the account of someone with no active role at the School, so their name can't be shown.
+   - The ladder editor shows them as "Former student".
+   - Their rank still blocks removing the rung, and the message names them as "a former student".
+   - Before this, the rung-holder list and that check joined the hidden account and failed with a server error.
+5. **Clearer "still in use" messages** give the counts (upcoming classes, timetable slots, rungs on the ladder). The 17 Disciplines messages that weren't translated are now translated in all 14 languages.
+
+### What this does NOT resolve
+
+- Whether Branch Staff can be allowed to manage disciplines (proposed, waiting on the product owner).
+- Permanently deleting an archived style nobody uses (proposed, waiting on the product owner).
+
+### Recorded by
+
+User, 23 Oct 2026, after the second Disciplines review.
+
 ---
 
 ## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)
@@ -5441,6 +5472,55 @@ User (Code), 26 Oct 2026, choosing "Both must allow it" on the Q7 decision card.
 
 ---
 
+## Decision 346 — Transactions: renewals and late-cancel fees as rows, filters and CSV export, Record a payment at the desk
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 234, 339, 348 · **Migration:** `20261201000200_transactions_renewals_fees_desk`
+
+The Transactions review (26 Oct 2026, Decision 339) left gaps G3, G4, G5 and G7 for the owner. The owner answered: renewals and late-cancel fees should **both** become Transactions rows (Q3, *"Both"*), the page should get **filters and CSV export** (Q6), and front-desk cash payments should be the School owner's call (Q5: the School owner should decide this for their own School).
+
+### Decision
+
+1. **Every paid or failed Subscription renewal is its own row** (G4, kind `RENEWAL`). The Stripe webhook job writes one row per invoice (`invoice.paid` → Successful, `invoice.payment_failed` → Failed), keyed by the invoice id so a redelivered or retried event never makes a second row. A failed invoice that is later paid turns its row Successful; a Successful row never goes back to Failed. The first invoice of a Subscription is skipped, because the purchase already wrote that row. A renewal never creates a membership.
+2. **Every late-cancellation fee is its own row** (G5, kind `LATE_CANCEL_FEE`). When a fee is charged (Decision 234) the row is Successful; when the card is declined it is Failed. When there is no saved card nothing was charged and no row is written. The row names the Booking's class instead of a plan, so `Transaction.membershipPlanId` is now optional. Fees already charged before this change get their row from the migration.
+3. **Filters and CSV export** (G3). The list and the tiles can be narrowed by status, method, type, plan and a date range (both dates included). Export CSV downloads every row the filters pick out, not only the page on screen, with amounts as plain numbers and the currency in its own column. Cells that start with `=`, `+`, `-` or `@` are prefixed so a spreadsheet does not run them as formulas.
+4. **Record a payment** (G7, first part). From the Transactions page, the School owner can record a payment already received at the desk (cash, bank transfer, Pix or the School's own card terminal) for a current Student and a one-time plan (Class Pack, Weekly Pass, Trial; not Subscriptions, Friend Passes or archived plans). It starts the membership at once with a Successful row, which shows "at desk", and the Student is told. `POST schools/:schoolId/desk-payments` checks who may record it, then calls `MembershipsService.recordDeskSale()`, the one desk-sale path from Decision 348. So it runs the same checks as selling from the Student's page: waiver, one live general access, the trial allowance, a one-class plan whose class hasn't started. The person who recorded it is kept on the row (`Transaction.recordedById`, from Decision 348's migration).
+
+### What this does NOT resolve
+
+- **Branch Staff recording payments** is Decision 347.
+- Record a payment does not apply the Decision 67 date-of-birth checks, the same as Decision 348's desk sale.
+- Refunds and refund-owed (G2, PR #273) and Stripe-dashboard refunds (G6) are unchanged.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, answering the Transactions questions Q3, Q5 and Q6.
+
+---
+
+## Decision 347 — Branch Staff may record desk payments when the School owner switches it on (amends Spec 55 §8.2 for this one action)
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 168, 169, 177, 346 · **Amends:** Spec 55 §8.2 · **Migration:** `20261201000300_branch_staff_record_payments`
+
+Spec 55 §8.2 keeps every money action with the School Owner/Manager. The product owner decided that each School owner should choose this for their own School (Q5), and then confirmed, on a card that named the spec rule it changes, *"Yes, add the switch"*. As with grading (Decision 124), this is the product owner's explicit override of the spec, and it applies only through this decision.
+
+### Decision
+
+1. **A per-School switch, off by default.** `School.branchStaffCanRecordPayments` is set by the School owner on the School page ("Let Branch Staff record payments taken at the desk"). Only the owner can change it.
+2. **What it allows: Record a payment (Decision 346) and nothing else.** With the switch on, Branch Staff can record a payment already received at the desk and start the membership. The rules are the same as the owner's, all applied by `recordDeskSale()`: one-time plans only, the School not closed, the ULTM8 subscription not degraded. The row keeps who recorded it, and the student is notified as usual.
+3. **Their own branch's students only.** This uses the grading board's visibility rule (Decisions 168, 169, 177). In a School with branches, Branch Staff can record payments for the students whose home branch is one of theirs; in a School without branches, for every enrolled student. A new `desk_payment_students()` database function applies the rule, and `GET schools/:schoolId/desk-payments/options` returns those students together with the plans that can be paid this way.
+4. **Everything else in §8.2 stays.** Branch Staff still can't see the Transactions list or tiles, confirm or cancel Pending payments, refund, or change plans or prices. Instructors can never record payments.
+5. **In the portal**, Branch Staff whose School has the switch on get a "Record a payment" menu item. It opens a page with only the form, not the ledger. With the switch off, the page says that only the School owner can see transactions.
+
+### What this does NOT resolve
+
+The Staff page's planned per-person access switches (Staff build plan, Q7) are separate work. This is one School-wide switch for all Branch Staff, not a per-person permission.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Yes, add the switch" on the Transactions Q5 follow-up card.
+
+---
+
 ## Decision 349 — Add student and Cancel booking on the Class page
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner request ("start Add student and Cancel booking on the Class page") · **Follows:** Decisions 291, 345
@@ -5482,6 +5562,206 @@ Nothing here is built yet. The kiosk is `docs/v1.3-backend-backlog.md` §3.21.
 ### Recorded by
 
 User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website for the next version. We will work on front desk and that is it for this version", then "agree" to the five Front Desk recommendations.
+
+---
+
+## Decision 352 — Joining a Franchise needs the Owner's approval; the Owner can remove a School and close their own Franchise; paying fees by card and connecting Stripe move to v1.3
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 98, 110, 232, 236, 337 · **Answers:** Decision 337's Q1, Q2, Q4, Q5 and Q6
+
+Decision 337 left five Franchise questions open. The product owner answered *"all recommended"*.
+
+### Decision
+
+1. **Joining is a request (Q1).** A School Owner enters the Franchise ID and asks to join. Nothing changes until the Franchise Owner accepts. New table `FranchiseJoinRequest` (status Pending, Accepted, Declined or Cancelled), with the School's name copied in so the Franchise Owner never needs to read the School's own row.
+   - The School page shows "Waiting for Franchise … to accept", with **Cancel request**. A declined request says so, and the School can ask again.
+   - One open request per School at a time (a database rule). Asking while already in a Franchise is still refused: leave first.
+   - The Franchise page lists **Schools asking to join** with **Accept** and **Decline**. Accepting joins the School only if it is still independent and open; if it joined somewhere else meanwhile, or was closed, the accept is refused and the request stays open. Accepting resets the School's "show the Franchise's name" switch, as joining always has (Decision 350).
+   - Open requests lapse (Cancelled) when the Franchise or the School is closed.
+   - Only that School's Owner/Manager and that Franchise's Owner can see a request (RLS).
+2. **The Franchise Owner can remove a member School (Q2)** after an "are you sure?" step. It has the same effect as the School leaving (Decision 232): fee billing stops with a final bill for the month, past fee charges stay, and the School's branding switch resets. Not available on a closed Franchise or during impersonation.
+3. **The Franchise Owner can close their own Franchise (Q6)** by typing its name exactly and re-entering their passcode (the step-up check from Decision 236). It is the same close as a Platform Admin's (Decision 110): 90 days, then deleted; until then only a Platform Admin can reopen it. Per Q8 (Decision 337) every member School's fee subscription is cancelled. The member Schools themselves stay open and keep running. Not available during impersonation.
+4. **Q4 and Q5 move to v1.3.** A School pays its franchise fees by a card the School Owner adds (Q4), built together with the screen for a Franchise Owner to connect their Stripe account (Q5). See `docs/v1.3-backend-backlog.md` §3.22.
+
+### Correction to the question
+
+Q6 assumed School Owners can already close their own School. They can't: only a Full Platform Admin can close a School or a Franchise (`TenantLifecycleService`). The Franchise Owner's close is built as approved anyway. Whether School Owners should be able to close their own School is a separate question, not decided here.
+
+### What this does NOT resolve
+
+- The Franchise Owner isn't notified of a new join request, and the School Owner isn't notified of the answer; both see it on their page.
+- A Franchise Owner's own close isn't written to the Platform Admin audit log (that log needs an admin user), so only the close date is recorded, not who closed it.
+- `apps/student` has no Franchise screens, so nothing changes there.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "all recommended" on the five Franchise questions (joining approval, removing a School, closing a Franchise, connecting Stripe, how a School pays).
+
+---
+
+## Decision 340 — Waivers review fixes
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner (Waivers fix plan, deep dive)
+**Resolves:** Waivers review findings W1, W3 (first half), W4–W6, W8–W15, W17 (W7 is Decision 333), and the read-then-sign race found in the deep dive. Database change: `20261130000000_waiver_signed_copy`.
+
+### Decision
+
+1. **The Signatures panel keeps working after a student leaves** (W1). Names are read separately, so a leaver no longer fails the whole list. A leaver's unsigned entry drops out of the list and the "X of Y signed" count; their signature stays, shown under "Former students" with the name they typed.
+2. **A signature keeps a copy of what was signed** (W3, first half): the waiver's title, text, a SHA-256 of the text, and the waiver's version. Waivers get a `version` that goes up only when the title or text actually changes. The signer's app sends the version it showed (`waiverVersion`); an out-of-date one is refused (409) and the signer reads it again. Callers that send no version are still accepted. The Signatures list leaves the text out (a waiver can be 20,000 characters); `GET /schools/:schoolId/waivers/:id/signatures/:signatureId` returns it, owner only, with the same leaver rule as the list. Signatures made before this change show that no copy was kept; nothing is reconstructed for them.
+3. **Blank values are refused** (W4, W5): waiver title and text, signer name and signature text are trimmed and must not be empty.
+4. **An archived waiver is out of use** (W6): it is not assigned to new members and can't be signed. Unarchiving assigns it to current students who have no entry. Signatures made before archiving still count for bookings (Decision 216 unchanged).
+5. **The request notification names the School** (W7): done by Decision 333 ("[School] has invited you to sign the waiver …"), so not repeated here.
+6. **Portal** (W8, W9, W12, W14): every waiver and every signature loads (no 20 cap); All / Signed / Not signed tabs, names A to Z; opening a signed row shows the signature and the text as signed, and says when the waiver changed since; Archive asks first; waivers newest first, a new one opens straight away; a user with no owned School is sent home instead of a blank page.
+7. **Signing at a closed School is refused** (W10), the same check Add and Edit use.
+8. **`includeArchived=false` means false** (W11) on Waivers, Classes, Timetable, Branches and Instructors lists (Franchises already did this).
+9. **Clear signing errors** (W13): no date of birth, and under 18 (a parent or guardian signs from their Guardian account). No internal wording.
+10. **Waitlist join needs a signed waiver** when the Class requires one (W15), the same as booking; the claim-time check stays.
+11. **A purged signature takes its drawn image with it** (W17). The image is deleted first; if that fails, the record stays and the next nightly run tries both again. `R2ClientService.deleteObject` is new.
+
+### What this does NOT resolve
+
+Waiting on the product owner: when Archive is allowed (W2, Decision 252), whether editing a signed waiver asks everyone to sign again (W3, second half), and keeping a Guardian-signed waiver while the student is still enrolled (W16, Decision 269). Questions Q4–Q9 in the Waivers review stay open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
+
+---
+
+## Decision 353 — Timetable follow-ups: the calendar shows real classes, Branch Staff get their branch's timetable, the break is shown only, closures come first
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Answers:** the Timetable review's open questions Q4–Q8 (`/mnt/project-files/notes/timetable-section-guide.html`) · **Builds on:** Decisions 319, 322, 332
+
+The product owner answered the Timetable review's remaining questions with "all recommended" (27 Oct 2026).
+
+### Decision
+
+1. **The calendar shows the real Classes (Q5, T7).** Each date shows the Classes that actually exist on it: one-offs, classes kept at old times, moved and cancelled dates, with seats taken and the number waiting. A cancelled class stays on the calendar, marked Cancelled, without Book; a class that has ended shows without Book. An On slot's dates past the 4-week horizon show as "Opens for booking later", without Book. Off and archived slots still show on their weekday, dimmed, so the owner can find and change them. New API call: `GET /schools/:schoolId/timetable/calendar?from&to` (at most 62 days). A class the slot cancels is now also marked cancelled (`cancelledAt`), so it shows as a cancelled date.
+2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call enforces this. In the portal, Branch Staff get a Timetable item in their menu and the same calendar, read-only: Book and Open class, but no Add slot, Edit slot, Archive, Show archived or Off slots. Instructors still have no Timetable screen; Q4 named Branch Staff only.
+   - **The students they can book.** RoleGrant RLS only let the owner list a School's students, so Branch Staff and coaches at a School with branches saw an empty list when booking (here, and on the Class page's Add student, Decision 349). They now see the students whose home branch is one of theirs, Decision 139's grading rule (`staff_student_roster()`, a security-definer function like `grading_board_rows()`); in a School without branches, every student, as before. Students without a home branch show only to the owner.
+3. **The break is shown on the class details only (Q6).** It has no effect on bookings, check-in or anything else. Each Class carries its slot's break for that date (`Class.breakStartAt`/`breakEndAt`), which moves with the class's times; a class kept at other times keeps its own. It is shown on the portal's class page and booking dialog and on the student app's class card.
+4. **A class moved to a day this week that has already passed keeps today's behaviour (Q7):** removed if unbooked, cancelled with notice if booked (Decision 322 §5).
+5. **Decision 319 order (Q8):** closure dates first, then the week start day and the timetable filters. Google Calendar and the schedule embed come later.
+
+### Still open
+
+- Which students Branch Staff can pick (2 above) was built on the recommended answer, their own branch's; the product owner was asked on 27 Oct 2026 whether it should instead be every student at the School, or their branch's plus a search for others.
+- Decision 319's closures can "freeze every membership" for the closed dates, using Decision 316's freeze. Membership freezing isn't built yet, so closures are built without that option until it is.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, answering the Timetable questions: *"all recommended"*.
+
+---
+
+## Decision 355 — Notifications: Mark all read, click to open, and a School label
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 277, 333
+
+After Decision 333, six Notifications gaps were left: a School label, Mark all read, click-through, a sent-broadcast history, notification settings and automatic clean-up. The product owner chose (*"go with it"*, 27 Oct 2026) to build the first three now, the broadcast history next as its own change, and to leave settings and clean-up until email and push are switched on.
+
+### Decision
+
+1. **Mark all read.** `POST /notifications/me/read-all` marks every unread, not-deleted notification the caller has as read, across every page and snoozed ones included, setting `readAt` to now (an unread row has never been read). It returns `{ updated }`. The portal's Notifications page has a **Mark all read** button, greyed out when nothing is unread, and the student app shows one above its list.
+2. **Clicking a notification opens what it is about, and marks it read.** Each notification may carry a `targetType` (CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING) and, for CLASS and WAIVER, a `targetId`. The senders set them:
+   - CLASS: class moved, class cancelled, a waitlist spot opening, and a broadcast to one class.
+   - WAIVER: a waiver signature request.
+   - PAYMENT: a payment dispute on a Membership payment, the payment-restricted alert, and a cash payment confirmed or cancelled.
+   - CANCELLATIONS: cancellations to resolve.
+   - GRADING: ready to grade, promotion to decide, a promotion fee, and a rank change.
+   The portal opens `/classes/:id`, `/waivers`, `/transactions`, `/cancellations` or `/grading`. The student app opens My bookings, Waivers, Payment history or My grading, and shows nothing to open for CANCELLATIONS, a staff page. A franchise fee dispute and a broadcast to everyone or a Branch open nothing.
+3. **Each notification shows the School it came from.** The sender passes the School, and notification-fanout copies its name onto the row (`schoolId`, `schoolName`) when it writes it. The name is copied because the reader can't always see the School under RLS: a parent reading their child's notice, or a Student whose enrolment has ended. There is no foreign key, so the label outlives a School's purge. An Owner of more than one of a payment-restricted Student's Schools gets one alert, labelled with the first. A parent's copy of a child's notification (Decision 333) keeps the label and the target.
+4. **Migration** `20261202000000_notification_school_and_target` adds the four nullable columns. Grants are unchanged: ultm8_app and ultm8_jobs already hold table-level grants on `Notification`. Notifications sent before it have no label and open nothing.
+
+### What this does NOT resolve
+
+A sent-broadcast history (next), notification settings and automatic clean-up (after email and push are switched on). The student app has no single-class screen, so a CLASS notification opens My bookings there.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all read, click-through and the School label now.
+
+---
+
+## Decision 364 — A School Owner can close their own School; every close stops billing; Franchise join notices
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 110, 348, 352, 355
+
+Decision 352's Q6 assumed a School Owner could already close their own School. They couldn't: only a Platform Admin could (Decision 110). Join requests (Decision 352) also told nobody. The product owner asked what was "right and best" and approved the recommendation ("go", 27 Oct 2026).
+
+### Decision
+
+1. **A School Owner closes their own School** from the School page: `POST /schools/:id/close` with the School's exact name and an `x-step-up-token` from the passcode check, the same as a Franchise Owner closing a Franchise (Decision 352). Only a SCHOOL_OWNER_MANAGER of that School; not during impersonation (Decision 39). It is the same close a Platform Admin does: read-only, purged after 90 days, and only ULTM8 support can reopen it. Open join requests lapse and franchise fees stop (as for an admin close).
+2. **Every School close stops billing**, whether the Owner or a Platform Admin closes it. Each ACTIVE Subscription Membership at the School is cancelled the way Spec 55 §10.2 confirms for any cancellation: Stripe `cancel_at_period_end`, no proration, no immediate cutoff. The Membership gets the same `cancelAt` its own Cancel button writes (Decision 348), with `cancelledById` set to the Owner, or null for an admin close. The School's own ULTM8 platform subscription is cancelled at period end too. Closing a Franchise (by its Owner or an admin) also cancels the Franchise's platform subscription. All of this runs after the close has committed and is best-effort: a Stripe failure is logged, never a reason to undo the close. This is a behaviour change for the admin close, which used to leave Students' subscriptions running.
+3. **The confirm step says so:** the Close School card explains that the ULTM8 subscription and every student's membership subscription end at the end of the period already paid for, and that refunds aren't automatic.
+4. **In-app notices** (email and push follow once those go live, Decision 355):
+   - a School asks to join → the Franchise's Owners, opening the Franchise page;
+   - accepted, declined, removed, or the Franchise closed → the School's Owners, opening the School page.
+   Notification `targetType` gains FRANCHISE and SCHOOL. Owners are read on the jobs connection, since neither side can see the other's RoleGrants. Each notice is best-effort and has a deterministic id, so a retry never doubles it.
+
+### What this does NOT resolve
+
+Reopening a School does not restore cancelled subscriptions; Students would buy again. Any School Owner/Manager can close the School; once a "main owner" exists (Staff thread), closing may be limited to them. An Owner's own close isn't in the admin audit log. Refunds stay manual.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go" on the recommendation to let School Owners close their own School and to send join-request notices.
+
+---
+
+## Decision 363 — Notifications: a history of sent broadcasts
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 333, 355
+
+Decision 355 recorded the product owner's choice (*"go with it"*, 27 Oct 2026) to build a sent-broadcast history next, as its own change. Before this a broadcast left nothing a School Owner could read back: its only record was the notification in each Student's own inbox, which is self-only under RLS.
+
+### Decision
+
+1. **Each broadcast is stored** as a `NotificationBroadcast` row, written by `POST /schools/:schoolId/notifications/broadcast` once its notifications are queued, so only broadcasts that actually went out are listed. Its `id` is the `broadcastId` the endpoint returns, which every fanned-out notification's id already starts with.
+2. **What it records:** the School; who sent it, with their name copied at send time; the title and message; the audience (ALL, BRANCH or CLASS); for a Branch its id and name; for a Class its id, title, start time and the groups ticked (Decision 333); how many Students it was queued for; and when it was sent. A broadcast that reached no one is listed too, with 0.
+3. **The names are copies.** A Branch or Class purged later (Decision 226) sets its id to null and keeps its name, so the history still reads correctly. The sender is a required link to their User, which is never deleted.
+4. **Owner only.** `GET /schools/:schoolId/notifications/broadcasts` lists them newest first, 20 per page with a cursor, under the same School Owner check as sending one. RLS on the table allows reads and inserts only to an active SCHOOL_OWNER_MANAGER of that School. Branch Staff and Instructors neither send nor see broadcasts.
+5. **Kept with the School.** The app can't edit or delete a row (SELECT and INSERT grants only). The rows go when the School is purged (ON DELETE CASCADE). No other clean-up applies; automatic clean-up waits until email and push are on (Decision 355).
+6. **Portal:** under the Owner's own notifications, a **Messages sent to students** list shows when and by whom, the title and message, who it went to, and how many it reached, with Load more. A class that still exists links to its page.
+7. **Migration** `20261204000000_notification_broadcast_history` creates the table, its RLS policy and grants.
+
+### What this does NOT resolve
+
+Broadcasts sent before this change were never stored, so they aren't listed. The list shows how many Students a broadcast was queued for, not how many read it: each Student's notification is self-only under RLS. Notification settings and automatic clean-up are still waiting for email and push (Decision 355).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build the broadcast history after Decision 355.
+
+---
+
+## Decision 362 — Front desk: a tablet sign-up staff reject, and what Find me asks for
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5 "Rejected" and F6
+
+### Decision
+
+When staff reject a sign-up made on the front-desk tablet:
+
+1. **The person gets a polite email** saying their sign-up wasn't accepted and asking them to talk to the front desk. **No reason is given**, and staff don't type one.
+2. **What they typed is kept for 30 days, then deleted.** During those 30 days staff can still see the rejected sign-up, in case it was a mistake. After that, nothing about it remains.
+
+**Find me** on the tablet (Decision 351 item 1):
+
+3. **It asks for full name and date of birth.** Both must match a member of the School. That way someone at the tablet can't find out who trains there just by typing names. The answer is still only "you're already a member" or "we couldn't find you".
+
+### Not decided here
+
+- Whether staff can undo a rejection within the 30 days. Ask the product owner before building one.
+- Whether website sign-ups (Decision 318) follow the same rule. This decision covers the tablet only.
+
+### Not built
+
+Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend handover.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "Agreed" to the recommendation (a polite email with no reason given, and keep the details 30 days, then delete them), then "1 a1, B2, 2": the same two answers, plus option 2 for Find me (name and date of birth).
 
 ---
 

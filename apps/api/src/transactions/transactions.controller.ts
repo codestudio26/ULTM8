@@ -5,6 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TransactionsService } from './transactions.service';
+import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { TransactionListResponseDto, TransactionReceiptUrlResponseDto, TransactionSummaryResponseDto } from './dto/transaction-response.dto';
 
 // Staff-facing School ledger + the Student's own self-read. No route-ordering
@@ -27,16 +28,17 @@ export class TransactionsController {
   findAllForSchool(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: TransactionListQueryDto,
   ) {
-    return this.transactionsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+    return this.transactionsService.findAllForSchool(user.sub, schoolId, query);
   }
 
-  /** The page's tiles, counted over the whole ledger (Decision 339). */
+  /** The page's tiles, counted over the whole ledger (Decision 339), or over
+   * the rows the page's filters pick out (Decision 346). */
   @ApiOkResponse({ type: TransactionSummaryResponseDto })
   @Get('schools/:schoolId/transactions/summary')
-  summaryForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
-    return this.transactionsService.summaryForSchool(user.sub, schoolId);
+  summaryForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() filter: TransactionFilterDto) {
+    return this.transactionsService.summaryForSchool(user.sub, schoolId, filter);
   }
 
   /** Student-scoped transaction history / receipt viewing — closes the

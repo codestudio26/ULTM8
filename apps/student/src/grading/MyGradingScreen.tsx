@@ -111,7 +111,11 @@ function StyleCard({ item, onHistory }: { item: GradingStyle; onHistory: () => v
       {item.verificationStatus === 'UNVERIFIED' ? <Muted>{t('grading.myGrading.unverified')}</Muted> : null}
 
       <View style={{ marginTop: spacing[3] }}>
-        {!e.hasNext ? (
+        {item.archived ? (
+          // The School no longer teaches this style (Decisions 309, 310): the
+          // belt and history stay, with nothing left to work toward.
+          <Muted>{t('grading.myGrading.noLongerTaught')}</Muted>
+        ) : !e.hasNext ? (
           <Muted>{t('grading.myGrading.topOfLadder')}</Muted>
         ) : (
           <>

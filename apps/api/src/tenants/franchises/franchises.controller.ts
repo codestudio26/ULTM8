@@ -1,5 +1,5 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
@@ -9,6 +9,8 @@ import { UpdateFranchiseDto } from './dto/update-franchise.dto';
 import { FranchiseListResponseDto, FranchiseMemberSchoolListResponseDto, FranchiseResponseDto } from './dto/franchise-response.dto';
 import { FranchisesQueryDto } from './dto/franchises-query.dto';
 import { FranchiseBillingStatusResponseDto } from './dto/franchise-billing-status-response.dto';
+import { CloseOwnFranchiseDto, FranchiseJoinRequestListResponseDto, FranchiseJoinRequestResponseDto } from './dto/franchise-join-request.dto';
+import { RemoveFranchiseSchoolResponseDto } from './dto/remove-franchise-school-response.dto';
 
 // Create / read / update only — no delete endpoint, same reasoning as SchoolsController
 // (general tenant offboarding is [UNRESOLVED], ultm8-app-publishing §4).
@@ -84,5 +86,58 @@ export class FranchisesController {
     }
     const items = await this.franchisesService.findSchoolsForFranchise(user.sub, id);
     return { items, nextCursor: null };
+  }
+
+  /** Decision 352 — Schools asking to join; Franchise Owner only. */
+  @ApiOkResponse({ type: FranchiseJoinRequestListResponseDto })
+  @Get(':id/join-requests')
+  listJoinRequests(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.franchisesService.listJoinRequests(user.sub, id);
+  }
+
+  /** Decision 352 — accept: the School joins this Franchise. */
+  @ApiOkResponse({ type: FranchiseJoinRequestResponseDto })
+  @HttpCode(200)
+  @Post(':id/join-requests/:requestId/accept')
+  acceptJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('requestId', ParseUUIDPipe) requestId: string) {
+    return this.franchisesService.decideJoinRequest(user.sub, id, requestId, true);
+  }
+
+  /** Decision 352 — decline: the School stays independent and can ask again. */
+  @ApiOkResponse({ type: FranchiseJoinRequestResponseDto })
+  @HttpCode(200)
+  @Post(':id/join-requests/:requestId/decline')
+  declineJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('requestId', ParseUUIDPipe) requestId: string) {
+    return this.franchisesService.decideJoinRequest(user.sub, id, requestId, false);
+  }
+
+  /** Decision 352 — the Franchise Owner removes a member School (the same
+   * result as the School leaving). Not during impersonation. */
+  @ApiOkResponse({ type: RemoveFranchiseSchoolResponseDto })
+  @HttpCode(200)
+  @Post(':id/schools/:schoolId/remove')
+  removeSchool(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    if (user.impersonation) {
+      throw new ForbiddenException('Removing a School is not available during an impersonation session (Decision 39).');
+    }
+    return this.franchisesService.removeSchool(user.sub, id, schoolId);
+  }
+
+  /** Decision 352 — the Franchise Owner closes their own Franchise, with its
+   * name re-typed and a passcode check. Not during impersonation. */
+  @ApiOkResponse({ type: FranchiseResponseDto })
+  @ApiHeader({ name: 'x-step-up-token', required: true, description: 'From POST /auth/step-up/verify (passcode check).' })
+  @HttpCode(200)
+  @Post(':id/close')
+  closeOwnFranchise(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: CloseOwnFranchiseDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    if (user.impersonation) {
+      throw new ForbiddenException('Closing a Franchise is not available during an impersonation session (Decision 39).');
+    }
+    return this.franchisesService.closeOwnFranchise(user.sub, id, dto, stepUpToken);
   }
 }

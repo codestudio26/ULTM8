@@ -308,6 +308,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/franchise-join-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_findFranchiseJoinRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/franchise-join-request/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_cancelFranchiseJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/leave-franchise": {
         parameters: {
             query?: never;
@@ -318,6 +350,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SchoolsController_leaveFranchise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_closeOwnSchool"];
         delete?: never;
         options?: never;
         head?: never;
@@ -558,6 +606,86 @@ export interface paths {
         get: operations["FranchisesController_findSchools"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_listJoinRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests/{requestId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_acceptJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests/{requestId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_declineJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/schools/{schoolId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_removeSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_closeOwnFranchise"];
         delete?: never;
         options?: never;
         head?: never;
@@ -878,6 +1006,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["NotificationsController_clearRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/me/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_markAllRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1534,6 +1678,22 @@ export interface paths {
         get: operations["TimetableController_findAll"];
         put?: never;
         post: operations["TimetableController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/timetable/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_calendar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2238,6 +2398,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["MembershipsController_giftFriendPass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/desk-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_recordDeskPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/desk-payments/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_deskPaymentOptions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3236,6 +3428,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_findSignature"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -3502,6 +3710,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["NotificationBroadcastController_broadcast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/notifications/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationBroadcastController_findSent"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4155,6 +4379,8 @@ export interface components {
              * @enum {string}
              */
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
+            branchStaffCanRecordPayments?: boolean;
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4210,6 +4436,8 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @enum {string} */
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Branch Staff may record desk payments (Decision 347). */
+            branchStaffCanRecordPayments: boolean;
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4276,6 +4504,8 @@ export interface components {
              * @enum {string}
              */
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
+            /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
+            branchStaffCanRecordPayments?: boolean;
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -4415,6 +4645,36 @@ export interface components {
         };
         JoinFranchiseDto: {
             franchiseId: string;
+        };
+        FranchiseJoinRequestResponseDto: {
+            id: string;
+            franchiseId: string;
+            schoolId: string;
+            /** @description The School's name when it asked. */
+            schoolName: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        SchoolFranchiseJoinRequestResponseDto: {
+            request?: components["schemas"]["FranchiseJoinRequestResponseDto"] | null;
+        };
+        CloseOwnSchoolDto: {
+            /** @description Must exactly match the School's current name. */
+            confirmName: string;
+        };
+        CloseOwnSchoolResponseDto: {
+            id: string;
+            /** Format: date-time */
+            archivedAt: string;
+            /**
+             * Format: date-time
+             * @description When the School is deleted for good (90 days after closing).
+             */
+            purgeAt: string;
         };
         CreateBranchDto: {
             name: string;
@@ -4791,6 +5051,16 @@ export interface components {
             items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
             nextCursor?: string | null;
         };
+        FranchiseJoinRequestListResponseDto: {
+            items: components["schemas"]["FranchiseJoinRequestResponseDto"][];
+        };
+        RemoveFranchiseSchoolResponseDto: {
+            schoolId: string;
+        };
+        CloseOwnFranchiseDto: {
+            /** @description Must exactly match the Franchise's current name. */
+            confirmName: string;
+        };
         CreateCoachInviteDto: {
             email: string;
             /** @description Required when the School has branches; the branch they will coach at. */
@@ -4955,6 +5225,17 @@ export interface components {
             snoozedUntil?: string | null;
             /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
             readAt?: string | null;
+            /** @description The School this notification came from (Decision 355), or null. */
+            schoolId?: string | null;
+            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 355). */
+            schoolName?: string | null;
+            /**
+             * @description What clicking the notification opens (Decision 355), or null for nothing.
+             * @enum {string|null}
+             */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | null;
+            /** @description The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364). */
+            targetId?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -4976,6 +5257,10 @@ export interface components {
         ClearReadNotificationsResponseDto: {
             /** @description How many read Notifications were cleared (hidden; the records are kept). */
             cleared: number;
+        };
+        MarkAllReadResponseDto: {
+            /** @description How many unread Notifications were marked read. */
+            updated: number;
         };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both. */
@@ -5077,6 +5362,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
             bookingEndAt?: string | null;
@@ -5375,6 +5663,44 @@ export interface components {
             items: components["schemas"]["TimetableSlotResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        TimetableCalendarClassDto: {
+            id: string;
+            timetableSlotId: string | null;
+            title: string;
+            branchId: string | null;
+            instructorId: string | null;
+            activities: string[];
+            styles: components["schemas"]["ClassStyleResponseDto"][];
+            /** @description Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC. */
+            date: string;
+            /** @description Local start time, HH:mm. */
+            startTime: string;
+            /** @description Local end time, HH:mm. */
+            endTime: string;
+            /** @description Local break start, HH:mm (Decision 353, Q6). */
+            breakStart: string | null;
+            /** @description Local break end, HH:mm. */
+            breakEnd: string | null;
+            startDate: string;
+            endDate: string;
+            capacity: number | null;
+            /** @description Seats taken: bookings that are not cancelled, plus their guests. */
+            seatsTaken: number;
+            /** @description Students waiting or offered a seat. */
+            waiting: number;
+            cancelledAt: string | null;
+            archivedAt: string | null;
+        };
+        TimetableCalendarLaterDto: {
+            slotId: string;
+            /** @description YYYY-MM-DD. */
+            date: string;
+        };
+        TimetableCalendarResponseDto: {
+            classes: components["schemas"]["TimetableCalendarClassDto"][];
+            /** @description Dates On slots reach that have no class yet because they are past the 4-week horizon. */
+            later: components["schemas"]["TimetableCalendarLaterDto"][];
         };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
@@ -6021,6 +6347,35 @@ export interface components {
         GiftFriendPassDto: {
             membershipPlanId: string;
         };
+        RecordDeskPaymentDto: {
+            studentId: string;
+            membershipPlanId: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+        };
+        RecordDeskPaymentResponseDto: {
+            /** @description Null for a free plan, which has no Transaction. */
+            transactionId: string | null;
+            membershipId: string;
+        };
+        DeskPaymentStudentDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+        };
+        DeskPaymentPlanDto: {
+            id: string;
+            title: string;
+            /** @enum {string} */
+            type: "CLASS_PACK" | "WEEKLY_PASS" | "TRIAL_MEMBERSHIP";
+            /** @description In hundredths of the currency. */
+            price: number;
+            currency: string | null;
+        };
+        DeskPaymentOptionsDto: {
+            students: components["schemas"]["DeskPaymentStudentDto"][];
+            plans: components["schemas"]["DeskPaymentPlanDto"][];
+        };
         MembershipListResponseDto: {
             items: components["schemas"]["MembershipResponseDto"][];
             nextCursor?: string | null;
@@ -6036,8 +6391,13 @@ export interface components {
             studentFirstName: string;
             studentSurname: string;
             paymentAccountId: string;
-            membershipPlanId: string;
-            membershipPlanTitle: string;
+            membershipPlanId?: string | null;
+            membershipPlanTitle?: string | null;
+            /** @enum {string} */
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+            bookingId?: string | null;
+            bookingClassTitle?: string | null;
+            recordedById?: string | null;
             membershipId?: string | null;
             billingDate: string;
             amount: number;
@@ -6250,6 +6610,8 @@ export interface components {
             studentId: string;
             firstName: string;
             surname: string;
+            /** @description Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310). */
+            enrolled: boolean;
         };
         RungHoldersDto: {
             /** @description The rung (stripe tier id). */
@@ -6470,6 +6832,8 @@ export interface components {
             schoolName: string;
             disciplineId: string;
             disciplineName: string;
+            /** @description The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress). */
+            archived: boolean;
             currentStripeId?: string | null;
             /** Format: date-time */
             dateOfCurrentRank: string;
@@ -6956,6 +7320,8 @@ export interface components {
             purgeAt?: string | null;
             /** @description Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities. */
             purgedAt?: string | null;
+            /** @description Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion. */
+            version: number;
             createdAt: string;
             updatedAt: string;
         };
@@ -6982,6 +7348,16 @@ export interface components {
             status: string;
             /** @description The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column. */
             studentName?: string | null;
+            /** @description Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record. */
+            formerStudent?: boolean;
+            /** @description The Waiver title as it was when signed. Null when not signed, or signed before copies were kept. */
+            signedWaiverTitle?: string | null;
+            /** @description The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it. */
+            signedWaiverBody?: string | null;
+            /** @description SHA-256 (hex) of signedWaiverBody. */
+            signedWaiverSha256?: string | null;
+            /** @description The Waiver version that was signed. */
+            signedWaiverVersion?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -7010,6 +7386,8 @@ export interface components {
             signatureText: string;
             /** @description R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment. */
             signatureImageKey?: string;
+            /** @description The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again. */
+            waiverVersion?: number;
         };
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */
@@ -7083,6 +7461,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
         };
@@ -7151,6 +7532,33 @@ export interface components {
             audience: "ALL" | "BRANCH" | "CLASS";
             /** @description How many distinct Students this broadcast was enqueued for. */
             recipientCount: number;
+        };
+        SentBroadcastResponseDto: {
+            /** @description The broadcastId POST .../broadcast returned. */
+            id: string;
+            schoolId: string;
+            sentById: string;
+            /** @description The sender's name when it was sent. */
+            sentByName: string;
+            title: string;
+            body: string;
+            /** @enum {string} */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            branchId?: string | null;
+            branchName?: string | null;
+            classId?: string | null;
+            classTitle?: string | null;
+            classStartDate?: string | null;
+            /** @description CLASS only: who on the class list it went to. Empty otherwise. */
+            classAudience: ("BOOKED" | "WAITLIST" | "CANCELLED")[];
+            /** @description How many distinct Students it was queued for. */
+            recipientCount: number;
+            createdAt: string;
+        };
+        SentBroadcastListResponseDto: {
+            items: components["schemas"]["SentBroadcastResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
         };
         FranchiseFeeChargeResponseDto: {
             id: string;
@@ -7913,7 +8321,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchoolResponseDto"];
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_findFranchiseJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolFranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_cancelFranchiseJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
                 };
             };
         };
@@ -7935,6 +8385,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_closeOwnSchool: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify (passcode check). */
+                "x-step-up-token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOwnSchoolDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloseOwnSchoolResponseDto"];
                 };
             };
         };
@@ -8421,6 +8899,121 @@ export interface operations {
             };
         };
     };
+    FranchisesController_listJoinRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_acceptJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_declineJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_removeSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveFranchiseSchoolResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_closeOwnFranchise: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify (passcode check). */
+                "x-step-up-token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOwnFranchiseDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
     CoachInvitesController_list: {
         parameters: {
             query?: never;
@@ -8889,6 +9482,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClearReadNotificationsResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponseDto"];
                 };
             };
         };
@@ -9961,6 +10573,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_calendar: {
+        parameters: {
+            query: {
+                /** @description First date shown, YYYY-MM-DD. */
+                from: string;
+                /** @description Last date shown, YYYY-MM-DD. */
+                to: string;
+                /** @description Only this Branch, plus School-wide classes. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableCalendarResponseDto"];
                 };
             };
         };
@@ -11150,6 +11790,52 @@ export interface operations {
             };
         };
     };
+    MembershipsController_recordDeskPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordDeskPaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordDeskPaymentResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_deskPaymentOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskPaymentOptionsDto"];
+                };
+            };
+        };
+    };
     MembershipsController_findMyMemberships: {
         parameters: {
             query?: {
@@ -11202,6 +11888,14 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                membershipPlanId?: string;
+                /** @description First day included, YYYY-MM-DD (UTC). */
+                from?: string;
+                /** @description Last day included, YYYY-MM-DD (UTC). */
+                to?: string;
             };
             header?: never;
             path: {
@@ -11223,7 +11917,16 @@ export interface operations {
     };
     TransactionsController_summaryForSchool: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                membershipPlanId?: string;
+                /** @description First day included, YYYY-MM-DD (UTC). */
+                from?: string;
+                /** @description Last day included, YYYY-MM-DD (UTC). */
+                to?: string;
+            };
             header?: never;
             path: {
                 schoolId: string;
@@ -12898,6 +13601,29 @@ export interface operations {
             };
         };
     };
+    WaiversController_findSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+                signatureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSignatureResponseDto"];
+                };
+            };
+        };
+    };
     WaiversController_findMySignatures: {
         parameters: {
             query?: {
@@ -13307,6 +14033,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BroadcastResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_findSent: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentBroadcastListResponseDto"];
                 };
             };
         };

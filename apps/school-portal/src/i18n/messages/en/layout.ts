@@ -29,6 +29,7 @@ export const layout = {
   },
   nav: {
     dashboard: 'Dashboard',
+    checkIn: 'Check-in',
     school: 'School',
     branches: 'Branches',
     staff: 'Staff',
@@ -43,6 +44,7 @@ export const layout = {
     timetable: 'Timetable',
     membershipPlans: 'Membership Plans',
     transactions: 'Transactions',
+    recordPayment: 'Record a payment',
     cancellations: 'Cancellations',
     waivers: 'Waivers',
     franchises: 'Franchises',

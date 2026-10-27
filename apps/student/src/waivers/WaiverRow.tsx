@@ -45,7 +45,7 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
 
   function handleSubmit() {
     if (signWaiver.isPending) return;
-    signWaiver.mutate({ waiverId: waiver.id, signerFullName, signatureText, signatureImage: drawnSignature });
+    signWaiver.mutate({ waiverId: waiver.id, signerFullName, signatureText, signatureImage: drawnSignature, waiverVersion: waiver.version });
   }
 
   function handleClearSignature() {

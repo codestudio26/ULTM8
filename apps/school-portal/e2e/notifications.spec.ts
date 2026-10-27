@@ -258,3 +258,88 @@ test('Broadcast to one class — the Owner ticks who on the class list gets it (
   await expect(page.getByText('Sent to 1 Student')).toBeVisible();
   expect(sent).toMatchObject({ audience: 'CLASS', classId: cls.id, classAudience: ['WAITLIST', 'CANCELLED'] });
 });
+
+test('Mark all read, the School label, and clicking a notification opens its class (Decision 355)', async ({ page }) => {
+  const cls = await db.class.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, title: 'Open Mat', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+  });
+  classIds.push(cls.id);
+  const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId }, select: { name: true } });
+  const opens = await db.notification.create({
+    data: { id: randomUUID(), userId: s.ownerId, title: 'Class moved', body: 'Open Mat has moved.', schoolId: s.schoolId, schoolName: school.name, targetType: 'CLASS', targetId: cls.id },
+  });
+  const plain = await db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Just news', body: 'Nothing to open.' } });
+  notificationIds.push(opens.id, plain.id);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  // The School it came from sits under the title; a notification with nothing
+  // to open has a plain title.
+  await expect(page.getByRole('cell', { name: `Class moved ${school.name}` })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Just news' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Class moved' }).click();
+  await expect(page).toHaveURL(new RegExp(`/classes/${cls.id}$`));
+  await expect.poll(async () => (await db.notification.findUniqueOrThrow({ where: { id: opens.id } })).read).toBe(true);
+
+  await page.goto('/notifications');
+  const markAll = page.getByRole('button', { name: 'Mark all read' });
+  await expect(markAll).toBeEnabled();
+  await markAll.click();
+  await expect(markAll).toBeDisabled();
+  expect((await db.notification.findUniqueOrThrow({ where: { id: plain.id } })).read).toBe(true);
+});
+
+test('Sent broadcasts — the Owner sees what was sent, by whom, to whom and how many (Decision 363)', async ({ page }) => {
+  const cls = await db.class.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, title: 'Kids BJJ', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+  });
+  classIds.push(cls.id);
+  const owner = await db.user.findUniqueOrThrow({ where: { id: s.ownerId }, select: { firstName: true, surname: true } });
+  // An older broadcast to one class, sent before the one below.
+  await db.notificationBroadcast.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      sentById: s.ownerId,
+      sentByName: 'Earlier Owner',
+      title: 'Bring your belt',
+      body: 'Grading on Friday.',
+      audience: 'CLASS',
+      classId: cls.id,
+      classTitle: 'Kids BJJ',
+      classStartDate: cls.startDate,
+      classAudience: ['BOOKED', 'WAITLIST'],
+      recipientCount: 1,
+      createdAt: new Date(Date.now() - 3_600_000),
+    },
+  });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  await expect(page.getByRole('heading', { name: 'Messages sent to students' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Send a message to students' }).click();
+  await page.getByLabel('Title').fill('Closed Monday');
+  await page.getByLabel('Message', { exact: true }).fill('No classes on the holiday.');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Sent to 2 Students')).toBeVisible();
+  await page.getByRole('button', { name: 'Done' }).click();
+
+  const history = page.getByRole('region', { name: 'Messages sent to students' });
+  const rows = history.getByRole('row');
+  // Header, then newest first.
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(1)).toContainText('Closed Monday');
+  await expect(rows.nth(1)).toContainText('No classes on the holiday.');
+  await expect(rows.nth(1)).toContainText(`by ${owner.firstName} ${owner.surname}`);
+  await expect(rows.nth(1)).toContainText('All Students');
+  await expect(rows.nth(1)).toContainText('2 Students');
+  await expect(rows.nth(2)).toContainText('Bring your belt');
+  await expect(rows.nth(2)).toContainText('by Earlier Owner');
+  await expect(rows.nth(2)).toContainText('Booked, On the waitlist');
+  await expect(rows.nth(2)).toContainText('1 Student');
+
+  await history.getByRole('link', { name: /Class: Kids BJJ/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/classes/${cls.id}$`));
+});

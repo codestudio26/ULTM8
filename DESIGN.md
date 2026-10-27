@@ -301,6 +301,57 @@ On a phone the Dashboard shows the number cards and lists first and **Needs atte
 ### Check-in: nothing shown twice, cards first on a phone (product owner, 23 Oct 2026)
 On a phone Check-in shows Today's classes and the keypad first and **Recent check-ins** below them. The panel shares nothing with the page. A check-in updates both sides together: the student goes to the top of Recent check-ins and their class's "checked in" count goes up by one. The line under the keypad says only **Checked in ✓** (product owner, 23 Oct 2026): who checked in, and to which class, is in Recent check-ins. It clears on the next key press.
 
+### Check-in and front-desk mode: "Calm split" (product owner, 27 Oct 2026)
+Chosen from five ideas (Front Desk Ideas page, version 1, with version 4's camera and "You're in" screen and version 2's step-by-step sign-up). It replaces the Gymdesk-style three columns on a dark band. The rules behind it are Decisions 315, 317, 320 and 351; the build item is `docs/v1.3-backend-backlog.md` §3.21. New Portal boards: **5** (staff Check-in tab), **5b** tablet sideways, **5b** tablet upright, **Phone · 5b**.
+
+**Staff Check-in tab** (Students → Check-in)
+- **Left, a calm grey column (#eef1f3):** "Today at {Branch}". Each class is a white card with its time and end time, name, coach, "N checked in · N places left" and a mint places bar. The class on next has a 2px mint ring. **+ Open mat session** sits at the foot.
+- **Centre, a white card:** the **Scan · Code · Name** switch (the grey track with the chosen one white, as everywhere).
+  - **Code:** 4 dots and round white keys, with a mint ✓.
+  - **Scan:** a soft grey square with mint corner marks.
+  - **Name:** a search field and results as rows.
+- **After a code, a scan or a name, a welcome card replaces the switch:**
+  - avatar, name and rank;
+  - membership and waiver tags;
+  - belt progress;
+  - today's classes to tick (Kids classes greyed for adults);
+  - **Not this student** and **Check in to N classes**.
+  - A refusal shows its reason instead of the classes.
+- **The line under it still says only "Checked in ✓"** (the rule above).
+- **Right panel:** Recent check-ins, as before.
+- **Front-desk mode** is a white outlined button at the top right of the page header.
+
+**Front-desk mode** (the locked tablet, for members)
+- **Start (staff):** pick the Branch the device is at, then **Start on this tablet**. Leaving needs a staff member's own code (Decision 320).
+- **Home:**
+  - **Left grey column:** School and Branch, a large light clock (72px, weight 300), the date, and today's classes at that Branch.
+  - **Right:** the Scan · Code · Name switch, **New here? Sign up** (pale green) and **Exit** (outlined, with a lock).
+  - **Bottom strip:** "Checked in today" chips with first name and last-name initial. Only today, at most the last 10 (Decision 351).
+- **Scan is the main way in.** If the device has no front camera, the Scan tab isn't shown. Code (4 digits by default) and Name are the backups.
+- **Name results:** first name, last-name initial, photo and a Member or Visitor tag (Visitor in soft blue). A child's photo shows only while the Guardian's camera consent is active.
+- **Welcome:** a white card over the page, with the same content as the staff welcome card. **Not me** and **Check in to N classes** share the row 1:2.
+- **The two problem cases each have their own card, with a soft-coloured dot and plain words:**
+  - **Pack used up:** a peach dot. "Buy the same pack and you're checked in as soon as it's paid."
+  - **Not allowed:** a sky dot. It says why and what to do, for example "Sign the waiver before your first class".
+- **You're in:** a large mint tick, "You're in, {first name}", and the class and time. **Done** returns to check-in; it also goes back by itself after a few seconds.
+- **Sign-up:**
+  - three steps (About you · How to reach you · Emergency contact), with the current step as a pale-green pill and Visitor or Member as a switch;
+  - the last step says staff will approve the sign-up;
+  - the screen after sending shows nothing about the person.
+- **Find me:** only "You're already a member here", plus **Go to check-in**. It never shows or fills in stored details.
+- **Pop-ups:** white, 28px corners, on a pale grey veil (#eef1f3 at about 94%).
+
+**Sizes.** One design, laid out for three screens:
+| | Tablet sideways (1180×820) | Tablet upright (820×1180) | Phone (390×844) |
+|---|---|---|---|
+| Grey column | 380px on the left | A band on top; classes in 2 columns | A short header: School, clock (34px) and **Next: {class}**; no class list |
+| Keys | 84px | 88px | 64px |
+| Camera square | 340px | 360px | 250px |
+| "Checked in today" chips | 5 | 4 | 2 |
+| Pop-ups | 700px wide | 700px wide | Full width less 12px each side; they scroll inside |
+| Sign-up fields | 2–3 columns | 2–3 columns | 1 column |
+| Sign up button | "New here? Sign up" | "New here? Sign up" | "Sign up" |
+
 ### Settings: nothing shown twice, settings first on a phone (product owner, 23 Oct 2026)
 On a phone Settings shows the category menu and the settings first, and the student preview and **About this setting** below them.
 - **About this setting** names the setting and explains it. It has no "On/Off" or "Set to: …" chip: the switch or drop-down on the page already shows the value.

@@ -204,7 +204,7 @@ describeIfDb('Ladder editor (Decisions 152, 180)', () => {
   it('the owner sees who holds each rung; staff can\'t', async () => {
     const res = await http().get(`/v1/styles/${bjj.id}/rung-holders`).set('Authorization', `Bearer ${ownerToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.items).toEqual([{ rungId: rung['Blue held'], students: [{ studentId: sam.id, firstName: 'Sam', surname: 'Ladder' }] }]);
+    expect(res.body.items).toEqual([{ rungId: rung['Blue held'], students: [{ studentId: sam.id, firstName: 'Sam', surname: 'Ladder', enrolled: true }] }]);
     const coach = await http().get(`/v1/styles/${bjj.id}/rung-holders`).set('Authorization', `Bearer ${coachToken}`);
     expect(coach.status).toBe(403);
   });

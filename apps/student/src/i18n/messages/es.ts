@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Descanso {start} – {end}",
       bookError: "No se pudo reservar esta clase — inténtalo de nuevo.",
       joinWaitlistError: "No se pudo entrar en la lista de espera — inténtalo de nuevo.",
       leaveWaitlistError: "No se pudo salir de la lista de espera — inténtalo de nuevo.",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Desde {date}",
       unverified: "Pendiente de que la Escuela verifique este cinturón.",
       topOfLadder: "Lo más alto de la escalera.",
+      noLongerTaught: "Ya no se enseña en esta escuela. Tu cinturón y tu historial se conservan.",
       next: "Siguiente: {rank}",
       progress: "{percent}% del camino",
       readyToGrade: "Listo para examen",
@@ -689,6 +691,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Aún no hay notificaciones.",
+      markAllRead: "Marcar todas como leídas",
+      markAllReadFailed: "No se pudieron marcar tus notificaciones como leídas. Inténtalo de nuevo.",
       loadFailed: "No se pudieron cargar las notificaciones — inténtalo de nuevo.",
     },
     row: {
@@ -696,6 +700,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, sin leer",
       unread: "Sin leer",
       markAsRead: "Marcar como leída",
+      open: "Abrir",
       markReadFailed: "No se pudo marcar como leída — inténtalo de nuevo.",
     },
   },
@@ -780,6 +785,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Ver recibo",
       noReceipt: "No hay recibo disponible para este pago.",
       receiptFailed: "No se pudo cargar el recibo — inténtalo de nuevo.",
+      renewal: "Renovación: {plan}",
+      lateCancelFee: "Cargo por cancelación tardía: {class}",
+      lateCancelFeeNoClass: "Cargo por cancelación tardía",
     },
     status: {
       successful: "CORRECTO",

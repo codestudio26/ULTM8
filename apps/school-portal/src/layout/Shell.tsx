@@ -2,6 +2,7 @@ import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
+import { useSchool } from '../schools/schoolQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
 import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
@@ -24,11 +25,17 @@ const DISCIPLINES_NAV: NavItem = { label: 'layout.nav.disciplines', to: '/discip
 const CURRICULUM_NAV: NavItem = { label: 'layout.nav.curriculum', to: '/curriculum' };
 /** Read-only, to reach each Class's roll call and QR code (Classes review C4). */
 const CLASSES_NAV: NavItem = { label: 'layout.nav.classes', to: '/classes' };
+/** Staff at the desk check students in here (DESIGN.md → "Check-in and front-desk mode"). */
+const CHECK_IN_NAV: NavItem = { label: 'layout.nav.checkIn', to: '/check-in' };
 const INVITE_NAV: NavItem = { label: 'layout.nav.inviteCoaches', to: '/coach-invites' };
+/** Decision 353 (Q4) — Branch Staff see their Branch's timetable and book from it. */
+const TIMETABLE_NAV: NavItem = { label: 'layout.nav.timetable', to: '/timetable' };
 /** Decision 291 — Branch Staff may give credit back on cancelled bookings. */
 const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/cancellations' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
+/** Branch Staff whose owner lets them take desk payments (Decision 347). */
+const RECORD_PAYMENT_NAV: NavItem = { label: 'layout.nav.recordPayment', to: '/transactions' };
 /** Decision 1/217/237 — self-service completion of the fields "Add
  * Manually" leaves blank; not a blocking gate, so it's an ordinary nav item,
  * not a forced redirect. */
@@ -63,12 +70,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
+  const mayRecordPayments = useSchool(isCoachOnly && isBranchStaff ? coachSchoolId : null).data?.branchStaffCanRecordPayments ?? false;
   return (
     <AppShell
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [CANCELLATIONS_NAV] : []), COACH_NAV[2]]
+        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, CHECK_IN_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [TIMETABLE_NAV, CANCELLATIONS_NAV] : []), ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []), COACH_NAV[2]]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

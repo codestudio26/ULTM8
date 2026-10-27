@@ -8,7 +8,8 @@ import { cleanup, db, signIn } from './fixtures';
  * while Schools are billed (F1), Closed labels (F8, F9), the Franchise ID with
  * a Copy button (F13), the "billing can't start yet" notice, charges from a
  * School that has left (F14), and the Franchise Owner's switch for showing
- * its name and logo on member Schools (Decision 350). Leave's confirmation (F6) is in
+ * its name and logo on member Schools (Decision 350), and Decision 352: join
+ * requests, removing a member School, and closing the Franchise. Leave's confirmation (F6) is in
  * franchise-affiliation.spec.ts. Against the real API and Postgres.
  */
 function base64url(input: Buffer | string): string {
@@ -82,6 +83,9 @@ test.afterEach(async () => {
   await db.school.deleteMany({ where: { id: { in: schoolIds } } });
   await db.paymentAccount.deleteMany({ where: { franchiseId: { in: ids } } });
   await db.franchise.deleteMany({ where: { id: { in: ids } } });
+  // Decision 364 — accepting, declining and removing send notices; let the worker finish first.
+  await new Promise((r) => setTimeout(r, 1500));
+  await db.notification.deleteMany({ where: { userId: { in: userIds } } });
   await db.user.deleteMany({ where: { id: { in: userIds } } });
   extraFranchiseIds.length = 0;
   schoolIds.length = 0;
@@ -220,4 +224,71 @@ test('Decision 350 — the Franchise Owner lets member Schools show the name and
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toHaveCount(0);
   expect((await db.franchise.findUniqueOrThrow({ where: { id: franchiseId } })).shareBrandingWithMembers).toBe(true);
+});
+
+/** bcrypt of PASSCODE, so the Franchise Owner can pass the passcode check. */
+const PASSCODE = '246810';
+const PASSCODE_HASH = '$2a$04$QgvRMStkWKUF3MhKA6PCqOyLa9KyeaFbUN70R/Q3Hdw0o0DANsmIy';
+
+test('Decision 352 — the Franchise Owner accepts and declines Schools asking to join', async ({ page }) => {
+  const asking = await seedMemberSchool('Asking Dojo', { franchiseId: null });
+  const declined = await seedMemberSchool('Declined Dojo', { franchiseId: null });
+  const requestedById = (await db.roleGrant.findFirstOrThrow({ where: { schoolId: asking.id } })).userId;
+  for (const school of [asking, declined]) {
+    await db.franchiseJoinRequest.create({ data: { id: randomUUID(), franchiseId, schoolId: school.id, schoolName: school.name, requestedById } });
+  }
+
+  await page.goto(`/franchises/${franchiseId}`);
+  const card = page.getByTestId('join-requests');
+  await expect(card.getByRole('heading', { name: 'Schools asking to join' })).toBeVisible();
+  await card.getByRole('button', { name: 'Accept Asking Dojo' }).click();
+  await expect(page.getByRole('row', { name: /Asking Dojo/ })).toBeVisible();
+  await card.getByRole('button', { name: 'Decline Declined Dojo' }).click();
+  await expect(card).toContainText('No Schools are asking to join right now.');
+
+  expect((await db.school.findUniqueOrThrow({ where: { id: asking.id } })).franchiseId).toBe(franchiseId);
+  expect((await db.school.findUniqueOrThrow({ where: { id: declined.id } })).franchiseId).toBeNull();
+  await expect(page.getByRole('row', { name: /Declined Dojo/ })).toHaveCount(0);
+});
+
+test('Decision 352 — the Franchise Owner removes a member School after confirming', async ({ page }) => {
+  const member = await seedMemberSchool('Removable Dojo');
+  await page.goto(`/franchises/${franchiseId}`);
+  await page.getByRole('button', { name: 'Remove Removable Dojo' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Remove Removable Dojo?' });
+  await expect(confirm).toContainText('the same as if it left itself');
+  await confirm.getByRole('button', { name: 'Cancel' }).click();
+  await expect(confirm).toHaveCount(0);
+  expect((await db.school.findUniqueOrThrow({ where: { id: member.id } })).franchiseId).toBe(franchiseId);
+
+  await page.getByRole('button', { name: 'Remove Removable Dojo' }).click();
+  await page.getByRole('dialog', { name: 'Remove Removable Dojo?' }).getByRole('button', { name: 'Remove' }).click();
+  await expect(page.getByRole('row', { name: /Removable Dojo/ })).toHaveCount(0);
+  expect((await db.school.findUniqueOrThrow({ where: { id: member.id } })).franchiseId).toBeNull();
+});
+
+test('Decision 352 — the Franchise Owner closes the Franchise with its name and their passcode', async ({ page }) => {
+  await db.user.update({ where: { id: ownerId }, data: { passcodeHash: PASSCODE_HASH } });
+  const name = (await db.franchise.findUniqueOrThrow({ where: { id: franchiseId } })).name;
+  await page.goto(`/franchises/${franchiseId}`);
+  await page.getByRole('button', { name: 'Close Franchise' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Close this Franchise?' });
+  const submit = dialog.getByRole('button', { name: 'Close Franchise' });
+
+  await dialog.getByLabel(`Type "${name}" to confirm`).fill('not the name');
+  await expect(submit).toBeDisabled();
+  await dialog.getByLabel(`Type "${name}" to confirm`).fill(name);
+  await dialog.getByLabel('Your 6-digit passcode').fill('111111');
+  await submit.click();
+  await expect(dialog).toContainText('Incorrect passcode.');
+  expect((await db.franchise.findUniqueOrThrow({ where: { id: franchiseId } })).archivedAt).toBeNull();
+
+  await dialog.getByLabel('Your 6-digit passcode').fill(PASSCODE);
+  await submit.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText('Closed', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close Franchise' })).toHaveCount(0);
+  const after = await db.franchise.findUniqueOrThrow({ where: { id: franchiseId } });
+  expect(after.archivedAt).not.toBeNull();
+  expect(after.purgeAt).not.toBeNull();
 });

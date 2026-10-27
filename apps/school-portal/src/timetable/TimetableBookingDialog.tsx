@@ -5,9 +5,8 @@ import type { StudentSummary } from '../students/studentQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { useBookClass } from '../bookings/bookingQueries';
 import { useJoinWaitlist } from '../waitlist/waitlistQueries';
-import { useTimetableOccurrence } from './timetableQueries';
+import { useClass } from '../classes/classQueries';
 import { useT } from '../i18n/I18nProvider';
-import { Trans } from '../i18n/Trans';
 import { formatLocale } from '../i18n/format';
 
 /**
@@ -29,8 +28,8 @@ import { formatLocale } from '../i18n/format';
  * mockup is reachable this session (see TimetablePage.tsx's own header comment).
  */
 export function TimetableBookingDialog({
-  slotId,
-  slotTitle,
+  classId,
+  title,
   date,
   students,
   instructors,
@@ -38,8 +37,9 @@ export function TimetableBookingDialog({
   onBooked,
   onWaitlisted,
 }: {
-  slotId: string;
-  slotTitle: string;
+  /** The real Class picked on the calendar (Decision 353, T7). */
+  classId: string;
+  title: string;
   date: string;
   students: StudentSummary[];
   instructors: InstructorResponse[];
@@ -48,7 +48,7 @@ export function TimetableBookingDialog({
   onWaitlisted: (position: number) => void;
 }) {
   const t = useT();
-  const occurrence = useTimetableOccurrence(slotId, date);
+  const occurrence = useClass(classId);
   const bookClass = useBookClass();
   const joinWaitlist = useJoinWaitlist();
   const [studentId, setStudentId] = useState('');
@@ -65,29 +65,9 @@ export function TimetableBookingDialog({
   });
 
   return (
-    <Modal title={t('timetable.booking.title', { title: slotTitle })} onClose={onClose}>
+    <Modal title={t('timetable.booking.title', { title })} onClose={onClose}>
       {occurrence.isLoading ? (
         <Spinner />
-      ) : occurrence.error instanceof ApiError && occurrence.error.status === 404 ? (
-        // The disclosed, expected gap — never silently hidden, never created on
-        // demand. See TimetableService.findOccurrence's own header comment for why
-        // this is the correct behavior, not a bug: a Class is materialized ahead of
-        // time (4-week horizon) or created as an independent one-off, never on the
-        // fly from a booking click.
-        <>
-          <p>
-            <Trans
-              k="timetable.booking.notBookable"
-              vars={{ date: dateLabel }}
-              nodes={{ notBookableTitle: <strong>{t('timetable.booking.notBookableTitle')}</strong> }}
-            />
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <Button variant="secondary" onClick={onClose}>
-              {t('timetable.booking.close')}
-            </Button>
-          </div>
-        </>
       ) : occurrence.error ? (
         <ErrorBanner
           message={occurrence.error instanceof ApiError ? occurrence.error.message : t('timetable.booking.loadFailed')}
@@ -166,7 +146,7 @@ function BookingForm({
   onConfirm,
   onJoinWaitlist,
 }: {
-  occurrence: { id: string; title: string; instructorId?: string | null; startDate: string; endDate: string };
+  occurrence: { id: string; title: string; instructorId?: string | null; startDate: string; endDate: string; breakStartAt?: string | null; breakEndAt?: string | null };
   dateLabel: string;
   students: StudentSummary[];
   instructors: InstructorResponse[];
@@ -184,6 +164,9 @@ function BookingForm({
   const timings = `${new Date(occurrence.startDate).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })} – ${new Date(
     occurrence.endDate,
   ).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })}`;
+  // Decision 353 (Q6): the break is shown with the class details only.
+  const timeOf = (iso: string) => new Date(iso).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' });
+  const breakLine = occurrence.breakStartAt && occurrence.breakEndAt ? t('timetable.booking.breakLine', { start: timeOf(occurrence.breakStartAt), end: timeOf(occurrence.breakEndAt) }) : null;
 
   return (
     <>
@@ -216,6 +199,7 @@ function BookingForm({
       <div className="ultm8-field">
         <span className="ultm8-field__label">{t('timetable.booking.timingsLabel')}</span>
         <p style={{ margin: '4px 0 0' }}>{timings}</p>
+        {breakLine ? <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)' }}>{breakLine}</p> : null}
       </div>
 
       <div className="ultm8-field">

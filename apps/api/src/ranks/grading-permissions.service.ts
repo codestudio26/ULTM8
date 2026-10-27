@@ -85,9 +85,15 @@ export class GradingPermissionsService {
         throw new BadRequestException('Grading permission can only be given to an Instructor or Branch Staff member of this School.');
       }
       if (disciplineIds.length) {
-        const found = await tx.discipline.count({ where: { id: { in: disciplineIds }, schoolId } });
-        if (found !== disciplineIds.length) {
+        const found = await tx.discipline.findMany({ where: { id: { in: disciplineIds }, schoolId }, select: { id: true, name: true, archivedAt: true } });
+        if (found.length !== disciplineIds.length) {
           throw new BadRequestException('disciplineIds must all reference disciplines (styles) of this School.');
+        }
+        // An archived style can't be granted; one already granted stays (Decision 310).
+        const held = (await tx.gradingPermission.findMany({ where: { schoolId, userId }, select: { disciplineId: true } })).map((p) => p.disciplineId);
+        const archived = found.find((d) => d.archivedAt && !held.includes(d.id));
+        if (archived) {
+          throw new BadRequestException(`"${archived.name}" is archived, so it can't be picked. Unarchive it on the Disciplines page first.`);
         }
       }
       await tx.gradingPermission.deleteMany({ where: { schoolId, userId } });

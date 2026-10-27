@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pauze {start} – {end}",
       bookError: "Deze les kon niet worden geboekt — probeer het opnieuw.",
       joinWaitlistError: "Je kon niet op de wachtlijst worden gezet — probeer het opnieuw.",
       leaveWaitlistError: "Je kon de wachtlijst niet verlaten — probeer het opnieuw.",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Sinds {date}",
       unverified: "Wacht tot de school deze band verifieert.",
       topOfLadder: "Top van de ladder.",
+      noLongerTaught: "Wordt niet meer gegeven op deze school. Je band en geschiedenis blijven bewaard.",
       next: "Volgende: {rank}",
       progress: "{percent}% van de weg",
       readyToGrade: "Klaar voor examen",
@@ -678,6 +680,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Nog geen meldingen.",
+      markAllRead: "Alles markeren als gelezen",
+      markAllReadFailed: "Je meldingen kunnen niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
       loadFailed: "Meldingen konden niet worden geladen — probeer het opnieuw.",
     },
     row: {
@@ -685,6 +689,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ongelezen",
       unread: "Ongelezen",
       markAsRead: "Markeren als gelezen",
+      open: "Openen",
       markReadFailed: "Dit kon niet als gelezen worden gemarkeerd — probeer het opnieuw.",
     },
   },
@@ -769,6 +774,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Bon bekijken",
       noReceipt: "Er is geen bon beschikbaar voor deze betaling.",
       receiptFailed: "De bon kon niet worden geladen — probeer het opnieuw.",
+      renewal: "Verlenging: {plan}",
+      lateCancelFee: "Kosten voor late annulering: {class}",
+      lateCancelFeeNoClass: "Kosten voor late annulering",
     },
     status: {
       successful: "GESLAAGD",
