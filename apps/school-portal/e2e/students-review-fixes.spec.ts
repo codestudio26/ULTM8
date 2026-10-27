@@ -163,3 +163,101 @@ test('Revoke lists what is still live, then cancels their bookings and waitlist 
     await db.class.deleteMany({ where: { id: { in: [booked.id, full.id] } } });
   }
 });
+
+/** An account the API made (Add manually): not one the fixtures track. */
+async function removeAccount(email: string) {
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) return;
+  await db.notification.deleteMany({ where: { userId: user.id } });
+  await db.waiverSignature.deleteMany({ where: { studentId: user.id } });
+  await db.studentHomeBranch.deleteMany({ where: { studentId: user.id } });
+  await db.roleGrant.deleteMany({ where: { userId: user.id } });
+  await db.user.delete({ where: { id: user.id } });
+}
+
+test('Add manually makes an adult\'s account and enrols them; the list finds them by search and branch (Decision 366)', async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  const email = `add-manually-${randomUUID()}@example.test`;
+  try {
+    await page.goto('/students');
+    await page.getByRole('button', { name: 'Add manually' }).click();
+    await expect(page).toHaveURL(/\/students\/add$/);
+    await page.getByLabel('First name').fill('Ada');
+    await page.getByLabel('Surname').fill('Lovelace');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Date of birth').fill('2012-05-01');
+    await page.getByLabel('Home branch').selectOption(north.id);
+    await page.getByRole('button', { name: 'Add Student' }).click();
+    await expect(page.getByText("Add manually is for adults (18 or over). A child joins through their Guardian's app.")).toBeVisible();
+
+    await page.getByLabel('Date of birth').fill('1990-05-01');
+    await page.getByRole('button', { name: 'Add Student' }).click();
+    await expect(page.getByText('Ada Lovelace has been added.')).toBeVisible();
+    const user = await db.user.findUniqueOrThrow({ where: { email } });
+    expect(user.mustChangePasscode).toBe(true);
+    expect((await db.studentHomeBranch.findFirstOrThrow({ where: { studentId: user.id, schoolId: s.schoolId } })).branchId).toBe(north.id);
+    // Without working email (as in most test setups) the owner is shown the
+    // temporary passcode once, to hand over.
+    const passcode = page.getByTestId('temporary-passcode');
+    if (await passcode.count()) await expect(passcode).toHaveText(/^\d{6}$/);
+
+    await page.getByRole('button', { name: 'Back to Students' }).click();
+    await expect(page.getByRole('row', { name: /Ada Lovelace/ }).getByText('North')).toBeVisible();
+    await page.locator('#students-search').fill('lovel');
+    await expect(page.getByRole('row', { name: /Ada Lovelace/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Sam Lee/ })).toHaveCount(0);
+    await page.locator('#students-search').fill('');
+    await page.locator('#students-branch-filter').selectOption({ label: 'No home branch' });
+    await expect(page.getByRole('row', { name: /Sam Lee/ })).toBeVisible();
+    await expect(page.getByRole('row', { name: /Ada Lovelace/ })).toHaveCount(0);
+  } finally {
+    await removeAccount(email);
+  }
+});
+
+test('the list pages at 25 students', async ({ page }) => {
+  for (let i = 0; i < 25; i++) await addPerson(`Pupil${String(i).padStart(2, '0')}`, 'Paged', [{ role: 'STUDENT', schoolId: s.schoolId }]);
+  await page.goto('/students');
+  await expect(page.getByText('Page 1 of 2')).toBeVisible();
+  const firstPage = await page.locator('tbody tr').count();
+  expect(firstPage).toBe(25);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Page 2 of 2')).toBeVisible();
+  expect(await page.locator('tbody tr').count()).toBeGreaterThan(0);
+  expect(await page.locator('tbody tr').count()).toBeLessThan(25);
+});
+
+test('the owner re-enrols a former student from their page, and a child\'s page names their Guardian (Decision 366)', async ({ page }) => {
+  await db.roleGrant.updateMany({ where: { userId: s.student.id, schoolId: s.schoolId, role: 'STUDENT' }, data: { revokedAt: new Date() } });
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Re-enrol' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Re-enrol' }).click();
+  await expect(page.getByRole('button', { name: 'Revoke enrollment' })).toBeVisible();
+  await expect(page.getByText('Inactive', { exact: true })).toHaveCount(0);
+  expect(await db.roleGrant.count({ where: { userId: s.student.id, schoolId: s.schoolId, role: 'STUDENT', revokedAt: null } })).toBe(1);
+
+  const guardian = await addPerson('Gail', 'Guard');
+  await db.guardianLink.create({ data: { guardianId: guardian.id, studentId: s.newStudent.id } });
+  try {
+    await page.goto(`/students/${s.newStudent.id}`);
+    await expect(page.getByTestId('student-guardians')).toHaveText('Guardian: Gail Guard');
+  } finally {
+    await db.guardianLink.deleteMany({ where: { studentId: s.newStudent.id } });
+  }
+});
+
+test('the Revoke dialog says a cancelled Subscription ends on its date', async ({ page }) => {
+  const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: 'Monthly', price: 5000 } });
+  const cancelAt = new Date(Date.now() + 10 * 86_400_000);
+  const membership = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'RECURRING', stripeSubscriptionId: `sub_e2e_${randomUUID()}`, cancelAt },
+  });
+  try {
+    await page.goto(`/students/${s.student.id}`);
+    await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+    await expect(page.getByRole('dialog').getByText(/^Monthly: already cancelled, ends /)).toBeVisible();
+  } finally {
+    await db.membership.delete({ where: { id: membership.id } });
+    await db.membershipPlan.delete({ where: { id: plan.id } });
+  }
+});

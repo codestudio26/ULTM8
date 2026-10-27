@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Telefonu doğrula",
       resetPasscode: "Giriş kodunu sıfırla",
       newPasscode: "Yeni giriş kodu",
+      choosePasscode: "Kod seç",
     },
     app: {
       home: "ULTM8 Öğrenci",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Yeni giriş kodu",
       confirmNewPasscode: "Yeni giriş kodunu onayla",
       submit: "Yeni giriş kodunu kaydet",
+    },
+    choosePasscode: {
+      title: "Erişim kodunu seç",
+      intro: "Okulun sana geçici bir erişim kodu verdi. Girişi tamamlamak için kendi 6 haneli kodunu seç.",
+      submit: "Kaydet ve giriş yap",
     },
     stepUp: {
       prompt: "Onaylamak için giriş kodunuzu yeniden girin.",

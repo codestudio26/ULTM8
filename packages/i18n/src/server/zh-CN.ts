@@ -454,4 +454,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a currency from the list.": "请从列表中选择货币。",
   "This branch has been archived. Choose another branch.": "该分校已归档。请选择其他分校。",
   "Only the School owner can change a birth date that makes someone an adult or a child.": "只有学校负责人可以修改会让某人变成成年人或未成年人的出生日期。",
+  "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe 未能停止该学员的订阅，因此未将其移除。请稍后再试。",
+  "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "手动添加仅适用于成年人（18 岁及以上）。儿童通过其监护人的应用加入。",
+  "An account with this email already exists — use \"Invite\" instead.": "已有使用此邮箱的账户——请改用“邀请”。",
 };

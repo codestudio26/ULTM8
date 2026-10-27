@@ -38,6 +38,10 @@ interface PendingSchoolPick {
   name: string;
 }
 
+/** What login() leaves to do: nothing (signed in), or choose a passcode
+ * first (the account has a temporary one). */
+export type LoginOutcome = { passcodeChangeToken: string } | null;
+
 interface AuthContextValue {
   /** True while EITHER the stored token (SecureStore) or the pending
    * School-pick intent (AsyncStorage, Decision 266) is still being read at
@@ -50,7 +54,10 @@ interface AuthContextValue {
   claims: JwtClaims | null;
   /** Login is email + passcode only — Decision 72, the passcode is the sole
    * credential, not a step-up factor alongside OTP. */
-  login: (email: string, passcode: string) => Promise<void>;
+  login: (email: string, passcode: string) => Promise<LoginOutcome>;
+  /** First sign-in with a temporary passcode the School sent (a student the
+   * owner added by hand, Decision 366): choose one's own, then signed in. */
+  completeFirstLogin: (passcodeChangeToken: string, newPasscode: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Swap in a fresh access token the API handed back, e.g. after joining a
    * School, whose new STUDENT grant only exists in a newly minted token. */
@@ -165,15 +172,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
-      // Decision 1/230 — login() can also resolve to a mustChangePasscode
-      // response (a server-generated temp passcode pending a change), but
-      // that's an Instructor "Add Manually" concern — school-portal's own
-      // sign-in, not this Student/Guardian app's. Surfaced as a clear error
-      // rather than silently assumed away. LoginResponseDto's own header
-      // comment confirms accessToken/refreshToken are always present or absent
-      // TOGETHER, so this one check covers both before either is used below.
+      // A temporary passcode (Decisions 1/230; a student the owner added by
+      // hand, Decision 366): the caller asks for a new one, then calls
+      // completeFirstLogin. LoginResponseDto's own header comment confirms
+      // accessToken/refreshToken are always present or absent TOGETHER.
+      if (result.mustChangePasscode && result.passcodeChangeToken) {
+        return { passcodeChangeToken: result.passcodeChangeToken };
+      }
       if (!result.accessToken || !result.refreshToken) {
-        throw new Error('This account requires a passcode change — sign in on the School Portal first.');
+        throw new Error('POST /auth/login returned no token pair');
       }
       // Refresh token first, then the access token — applyToken is what flips
       // `accessToken` state and sends the app from AuthNavigator to AppNavigator, so
@@ -182,6 +189,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await secureTokenStore.setRefreshToken(result.refreshToken);
       await applyToken(result.accessToken);
       // Fire-and-forget — see pushRegistration.ts's own header comment.
+      void registerForPushNotificationsAsync();
+      return null;
+    },
+    [applyToken],
+  );
+
+  const completeFirstLogin = useCallback(
+    async (passcodeChangeToken: string, newPasscode: string) => {
+      // The change token is the only credential this endpoint takes
+      // (JwtStrategy's PASSCODE_CHANGE_ALLOWED_PATH), sent as the bearer.
+      const result = await unwrap(
+        authClient.POST('/v1/auth/passcode-change/first-login', {
+          body: { newPasscode },
+          headers: { Authorization: `Bearer ${passcodeChangeToken}` },
+        }),
+      );
+      if (!result.accessToken || !result.refreshToken) {
+        throw new Error('POST /auth/passcode-change/first-login returned no token pair');
+      }
+      await secureTokenStore.setRefreshToken(result.refreshToken);
+      await applyToken(result.accessToken);
       void registerForPushNotificationsAsync();
     },
     [applyToken],
@@ -321,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken,
       claims,
       login,
+      completeFirstLogin,
       logout,
       applyAccessToken: applyToken,
       activeCoachSchoolId,
@@ -334,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken,
       claims,
       login,
+      completeFirstLogin,
       logout,
       applyToken,
       activeCoachSchoolId,

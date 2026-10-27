@@ -47,6 +47,15 @@ export class StudentSummaryResponseDto {
    * only a request-side filter value (StudentRosterStatusDto), not a row status. */
   @ApiProperty({ enum: StudentStatusDto, enumName: 'StudentStatus' })
   status!: StudentStatusDto;
+
+  /** The student's home branch at this School (Decision 366, Students Q2).
+   * Null at a School with no branches, for a former student, or for a row the
+   * caller can't see the home branch of. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  homeBranchId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  homeBranchName!: string | null;
 }
 
 export class StudentListResponseDto {

@@ -454,4 +454,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a currency from the list.": "Выберите валюту из списка.",
   "This branch has been archived. Choose another branch.": "Этот филиал заархивирован. Выберите другой филиал.",
   "Only the School owner can change a birth date that makes someone an adult or a child.": "Только владелец школы может изменить дату рождения так, что человек станет совершеннолетним или несовершеннолетним.",
+  "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe не смог остановить подписку этого ученика, поэтому он не удалён. Попробуйте ещё раз через минуту.",
+  "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "Ручное добавление — только для взрослых (от 18 лет). Ребёнок присоединяется через приложение своего опекуна.",
+  "An account with this email already exists — use \"Invite\" instead.": "Аккаунт с этим адресом уже существует — используйте «Пригласить».",
 };

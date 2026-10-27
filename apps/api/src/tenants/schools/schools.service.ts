@@ -33,6 +33,7 @@ import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
 import { stopSchoolBilling } from '../stop-tenant-billing';
 import { sendFranchiseNotice } from '../franchises/franchise-notifications';
+import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
@@ -281,7 +282,7 @@ export class SchoolsService {
    * roles enum would be a second, divergent creation path for the exact
    * same role, not a fix.
    */
-  async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
+  async join(callerId: string, schoolId: string, dto?: JoinSchoolDto, opts: { notify?: boolean } = {}) {
     const studentId = dto?.studentId ?? callerId;
     const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
     let isGuardianAction = false;
@@ -392,6 +393,12 @@ export class SchoolsService {
 
       return created;
     });
+
+    // Decision 366 — the owner added this student: tell them (Add manually
+    // passes notify: false, since its email already says so).
+    if (isStaffAction && opts.notify !== false) {
+      await sendStudentAddedNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, { roleGrantId, schoolId, studentId });
+    }
 
     if (isGuardianAction || isStaffAction) {
       // No access token to mint — the caller (Guardian or Staff) isn't the
@@ -759,10 +766,10 @@ export class SchoolsService {
       );
       const seen = new Set(items.map((i) => i.id));
       items.push(...covered.filter((c) => !seen.has(c.id)));
+      const matched = items.filter((g) => !search || matchesPersonName(g.firstName, g.surname, search));
+      const homes = await this.homeBranchesOf(callerId, schoolId, matched.map((g) => g.id));
       return {
-        items: items
-          .filter((g) => !search || matchesPersonName(g.firstName, g.surname, search))
-          .map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE })),
+        items: matched.map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id) })),
       };
     }
 
@@ -824,7 +831,24 @@ export class SchoolsService {
     }
     rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
 
-    return { items: rows.map(rosterRow) };
+    const homes = await this.homeBranchesOf(callerId, schoolId, rows.map((r) => r.id));
+    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id) })) };
+  }
+
+  /** Decision 366 (Students Q2) — each student's home branch, for the list's
+   * Branch column and filter. Read as the caller under StudentHomeBranch RLS:
+   * the owner sees every row, Branch Staff and coaches their own branches'
+   * (student_home_branch_staff_read), which are the only students they list.
+   * A former student has none (revoke removes it, Decision 341, S13). */
+  private async homeBranchesOf(callerId: string, schoolId: string, studentIds: string[]) {
+    if (studentIds.length === 0) return new Map<string, { id: string; name: string }>();
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentHomeBranch.findMany({
+        where: { schoolId, studentId: { in: studentIds } },
+        select: { studentId: true, branch: { select: { id: true, name: true } } },
+      }),
+    );
+    return new Map(rows.map((r) => [r.studentId, r.branch]));
   }
 
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
@@ -967,6 +991,25 @@ export class SchoolsService {
     return this.usersService.getProfileFor(callerId, studentId);
   }
 
+  /** Decision 366 (Students Q4) — the names of a student's active Guardians,
+   * for the student's page. Gated like the profile read (staff who cover this
+   * enrolled student). The caller can't see the student's Guardian links or a
+   * Guardian's User row under RLS, so the links are read on the jobs
+   * connection and the names through resolveUserNames, after that check;
+   * nothing but the names leaves. */
+  async getStudentGuardians(callerId: string, schoolId: string, studentId: string) {
+    await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    const links = await this.prismaJobs.guardianLink.findMany({
+      where: { studentId, revokedAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: { guardianId: true },
+    });
+    const names = await resolveUserNames(this.prismaAuth, links.map((l) => l.guardianId));
+    return {
+      items: links.map((l) => ({ id: l.guardianId, firstName: names.get(l.guardianId)?.firstName ?? '', surname: names.get(l.guardianId)?.surname ?? '' })),
+    };
+  }
+
   /** What Revoke will end for this student, and the memberships it leaves
    * running, for the owner's Revoke dialog (Decision 343, S2). Owner only,
    * like Revoke itself. A membership counts while it is in effect: the same
@@ -990,7 +1033,7 @@ export class SchoolsService {
               { OR: [{ classesRemaining: null }, { classesRemaining: { gt: 0 } }] },
             ],
           },
-          select: { id: true, classesRemaining: true, expiryDate: true, stripeSubscriptionId: true, membershipPlan: { select: { title: true, type: true } } },
+          select: { id: true, classesRemaining: true, expiryDate: true, stripeSubscriptionId: true, cancelAt: true, membershipPlan: { select: { title: true, type: true } } },
           orderBy: { startDate: 'asc' },
         }),
       ]);
@@ -1003,7 +1046,8 @@ export class SchoolsService {
           type: m.membershipPlan.type,
           classesRemaining: m.classesRemaining,
           expiryDate: m.expiryDate,
-          renews: m.membershipPlan.type === 'SUBSCRIPTION' && m.stripeSubscriptionId !== null,
+          renews: m.membershipPlan.type === 'SUBSCRIPTION' && m.stripeSubscriptionId !== null && m.cancelAt === null,
+          cancelAt: m.cancelAt,
         })),
       };
     });
@@ -1029,6 +1073,11 @@ export class SchoolsService {
     }
     await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
+}
+
+function homeBranchOf(homes: Map<string, { id: string; name: string }>, studentId: string) {
+  const home = homes.get(studentId);
+  return { homeBranchId: home?.id ?? null, homeBranchName: home?.name ?? null };
 }
 
 /** A roster row as the Students page shows it. A Guardian-managed child's

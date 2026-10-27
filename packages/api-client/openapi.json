@@ -755,6 +755,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}/guardians": {
+      "get": {
+        "operationId": "SchoolsController_getStudentGuardians",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentGuardiansResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students/{studentId}/leaving-summary": {
       "get": {
         "operationId": "SchoolsController_getStudentLeavingSummary",
@@ -1597,6 +1640,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateStaffManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/add-manually": {
+      "post": {
+        "operationId": "RoleGrantsController_createStudentManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStudentManuallyResponseDto"
                 }
               }
             }
@@ -13920,6 +14008,14 @@
           },
           "status": {
             "$ref": "#/components/schemas/StudentStatus"
+          },
+          "homeBranchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -14107,6 +14203,39 @@
           "updatedAt"
         ]
       },
+      "StudentGuardianDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname"
+        ]
+      },
+      "StudentGuardiansResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentGuardianDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "LeavingStudentMembershipDto": {
         "type": "object",
         "properties": {
@@ -14137,6 +14266,11 @@
           },
           "renews": {
             "type": "boolean"
+          },
+          "cancelAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -15247,6 +15381,65 @@
           "grantedAt",
           "createdAt",
           "updatedAt",
+          "email",
+          "emailSent"
+        ]
+      },
+      "CreateStudentManuallyDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The student must be 18 or over."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has open branches: the home branch."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email",
+          "dateOfBirth"
+        ]
+      },
+      "CreateStudentManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean"
+          },
+          "temporaryPasscode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
           "email",
           "emailSent"
         ]

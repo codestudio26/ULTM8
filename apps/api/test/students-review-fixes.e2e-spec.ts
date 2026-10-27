@@ -12,6 +12,12 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { isAdultOn, isBirthDate } from '../src/common/decorators/is-birth-date.decorator';
+import { StripeClientService } from '../src/payments/stripe-client.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import * as bcrypt from 'bcryptjs';
+import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
+import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -66,6 +72,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
   let north: string;
   let south: string;
   let shut: string;
+  let noticeAdd: jest.SpyInstance;
 
   async function person(label: string, grants: Array<{ role: Role; schoolId: string; branchId?: string }>, opts: { email?: string; home?: { schoolId: string; branchId: string } } = {}) {
     const u = await superuser.user.create({
@@ -109,6 +116,8 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
+    // Notices are checked as enqueued, not delivered (no fanout worker here).
+    noticeAdd = jest.spyOn(moduleRef.get<Queue>(getQueueToken(NOTIFICATION_FANOUT_QUEUE)), 'add').mockResolvedValue(undefined as never);
 
     schoolId = (await superuser.school.create({ data: { id: randomUUID(), name: 'Students Fixes Dojo' } })).id;
     branchless = (await superuser.school.create({ data: { id: randomUUID(), name: 'Students Fixes Branchless Dojo' } })).id;
@@ -131,6 +140,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
 
   afterAll(async () => {
     await superuser.waitlistEntry.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.paymentAccount.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.booking.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.class.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schoolIds } } });
@@ -288,8 +298,15 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(revoked.status).toBe(200);
       expect(await superuser.studentHomeBranch.count({ where: { studentId: id.leaver, schoolId } })).toBe(0);
 
+      noticeAdd.mockClear();
       const back = await join('owner', schoolId, { studentId: id.leaver, branchId: south });
       expect(back.status).toBe(201);
+      // Decision 366 (Q5): re-enrolling tells the student, no accept step.
+      expect(noticeAdd).toHaveBeenCalledWith(
+        'notify',
+        expect.objectContaining({ userId: id.leaver, title: 'Added to a School', body: "You've been added to Students Fixes Dojo.", schoolId }),
+        expect.objectContaining({ jobId: `student-added-${back.body.id}` }),
+      );
       expect((await superuser.studentHomeBranch.findFirstOrThrow({ where: { studentId: id.leaver, schoolId } })).branchId).toBe(south);
     });
   });
@@ -319,7 +336,12 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
     });
   });
   describe('S2: revoking ends upcoming bookings and waitlist places (Decision 343)', () => {
-    it('the Revoke dialog summary lists what is live; revoke cancels bookings under the credit rule and leaves memberships', async () => {
+    it('the Revoke dialog summary lists what is live; revoke cancels bookings under the credit rule and stops the Subscription at period end', async () => {
+      const periodEnd = new Date(Date.now() + 20 * 86_400_000);
+      const stripeUpdate = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
+      // Every StripeClientService instance (TenantsModule registers its own).
+      const spy = jest.spyOn(StripeClientService.prototype, 'scopedClient').mockReturnValue({ subscriptions: { update: stripeUpdate } } as never);
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' } });
       await person('quitter', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
       await person('stayer', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
       const at = (hours: number) => new Date(Date.now() + hours * 3_600_000);
@@ -358,7 +380,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(summary.body.memberships).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: pack.id, planTitle: 'Ten pack', type: 'CLASS_PACK', classesRemaining: 5, renews: false }),
-          expect.objectContaining({ id: sub.id, planTitle: 'Monthly', type: 'SUBSCRIPTION', classesRemaining: null, renews: true }),
+          expect.objectContaining({ id: sub.id, planTitle: 'Monthly', type: 'SUBSCRIPTION', classesRemaining: null, renews: true, cancelAt: null }),
         ]),
       );
       // Owner only, like Revoke.
@@ -376,11 +398,115 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(6);
       expect((await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: waiting.id } })).status).toBe('CANCELLED');
       expect((await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: notified.id } })).status).toBe('CANCELLED');
-      // Memberships are left alone: no refund, and the Subscription isn't stopped here.
-      expect((await superuser.membership.findUniqueOrThrow({ where: { id: sub.id } })).status).toBe('ACTIVE');
+      // No refund. The Subscription runs to the end of the paid period, then stops.
+      const stopped = await superuser.membership.findUniqueOrThrow({ where: { id: sub.id } });
+      expect(stopped).toMatchObject({ status: 'ACTIVE', cancelledById: id.owner });
+      expect(stopped.cancelAt?.getTime()).toBe(Math.floor(periodEnd.getTime() / 1000) * 1000);
+      expect(stripeUpdate).toHaveBeenCalledTimes(1);
+      expect(stripeUpdate).toHaveBeenCalledWith(sub.stripeSubscriptionId, { cancel_at_period_end: true });
+      // The stayer's (non-Stripe) membership is untouched.
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: stayerPlan.id } })).cancelAt).toBeNull();
+      spy.mockRestore();
+    });
+
+    it('if Stripe refuses to stop the Subscription, nothing is revoked and the owner is told', async () => {
+      const spy = jest.spyOn(StripeClientService.prototype, 'scopedClient').mockReturnValue({ subscriptions: { update: jest.fn().mockRejectedValue(new Error('stripe down')) } } as never);
+      await person('stuck', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
+      const plan = await superuser.membershipPlan.findFirstOrThrow({ where: { schoolId, title: 'Monthly' } });
+      await superuser.membership.create({
+        data: { id: randomUUID(), studentId: id.stuck, membershipPlanId: plan.id, schoolId, status: 'ACTIVE', frequency: 'RECURRING', stripeSubscriptionId: `sub_test_${randomUUID()}` },
+      });
+      const grant = await superuser.roleGrant.findFirstOrThrow({ where: { userId: id.stuck, schoolId, role: 'STUDENT' } });
+      const res = await http().delete(`/v1/users/${id.stuck}/role-grants/${grant.id}`).set(as('owner'));
+      expect(res.status).toBe(503);
+      expect(res.body.error.message).toBe("Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.");
+      expect((await superuser.roleGrant.findUniqueOrThrow({ where: { id: grant.id } })).revokedAt).toBeNull();
+      spy.mockRestore();
 
       const after = await http().get(`/v1/schools/${schoolId}/students/${id.quitter}/leaving-summary`).set(as('owner'));
       expect(after.body).toMatchObject({ upcomingBookings: 0, waitlistPlaces: 0 });
+    });
+  });
+  describe('Decision 366: Add manually, home branch on the list, Guardian names', () => {
+    const addManually = (label: string, body: Record<string, unknown>) => http().post(`/v1/schools/${schoolId}/students/add-manually`).set(as(label)).send(body);
+    const adult = () => ({ firstName: ' Ada ', surname: 'Lovelace', email: `Add-Manually-${randomUUID()}@Example.test`, dateOfBirth: '1990-05-01', branchId: north });
+
+    it('the owner adds an adult: a new account that must change its passcode, enrolled at the branch, emailed a temporary passcode', async () => {
+      const send = jest.spyOn(NotificationDeliveryService.prototype, 'sendEmail').mockResolvedValue(undefined);
+      noticeAdd.mockClear();
+      const body = adult();
+      const res = await addManually('owner', body);
+      expect(res.status).toBe(201);
+      userIds.push(res.body.id);
+      expect(res.body).toMatchObject({ firstName: 'Ada', surname: 'Lovelace', email: body.email.toLowerCase(), emailSent: true, temporaryPasscode: null });
+
+      const user = await superuser.user.findUniqueOrThrow({ where: { id: res.body.id } });
+      expect(user.mustChangePasscode).toBe(true);
+      expect(await superuser.roleGrant.count({ where: { userId: user.id, schoolId, role: 'STUDENT', revokedAt: null } })).toBe(1);
+      expect((await superuser.studentHomeBranch.findFirstOrThrow({ where: { studentId: user.id, schoolId } })).branchId).toBe(north);
+
+      expect(send).toHaveBeenCalledTimes(1);
+      const [to, subject, text] = send.mock.calls[0];
+      expect(to).toBe(user.email);
+      expect(subject).toBe("You've been added to Students Fixes Dojo on ULTM8");
+      const temp = /Temporary passcode: (\d{6})/.exec(text)![1];
+      expect(await bcrypt.compare(temp, user.passcodeHash)).toBe(true);
+      // The email already says it: no second, in-app "added" notice.
+      expect(noticeAdd).not.toHaveBeenCalled();
+      send.mockRestore();
+
+      // No email: the owner is given the passcode to hand over.
+      const failing = jest.spyOn(NotificationDeliveryService.prototype, 'sendEmail').mockRejectedValue(new Error('not configured'));
+      const offline = await addManually('owner', adult());
+      expect(offline.status).toBe(201);
+      userIds.push(offline.body.id);
+      expect(offline.body.emailSent).toBe(false);
+      const offlineUser = await superuser.user.findUniqueOrThrow({ where: { id: offline.body.id } });
+      expect(await bcrypt.compare(offline.body.temporaryPasscode, offlineUser.passcodeHash)).toBe(true);
+      failing.mockRestore();
+
+      const again = await addManually('owner', { ...adult(), email: body.email });
+      expect(again.status).toBe(409);
+      expect(again.body.error.message).toBe('An account with this email already exists — use "Invite" instead.');
+    });
+
+    it('is owner only, adults only, and needs a branch at a School with branches', async () => {
+      const send = jest.spyOn(NotificationDeliveryService.prototype, 'sendEmail').mockResolvedValue(undefined);
+      expect((await addManually('northStaff', adult())).status).toBe(403);
+      const child = await addManually('owner', { ...adult(), dateOfBirth: '2015-01-01' });
+      expect(child.status).toBe(400);
+      expect(child.body.error.message).toBe("Add manually is for adults (18 or over). A child joins through their Guardian's app.");
+      const noBranch = await addManually('owner', { ...adult(), branchId: undefined });
+      expect(noBranch.status).toBe(400);
+      expect(noBranch.body.error.message).toBe('This School has branches: choose your home branch (branchId).');
+      expect(send).not.toHaveBeenCalled();
+      send.mockRestore();
+    });
+
+    it('roster rows carry the home branch; staff see their own branch\'s', async () => {
+      const owner = await roster('owner');
+      const row = (res: request.Response, name: string) => (res.body.items as Array<{ firstName: string; homeBranchId: string | null; homeBranchName: string | null }>).find((r) => r.firstName === name);
+      expect(row(owner, 'sam')).toMatchObject({ homeBranchId: south, homeBranchName: 'South' });
+      expect(row(owner, 'homeless')).toMatchObject({ homeBranchId: null, homeBranchName: null });
+      const staff = await roster('northStaff');
+      expect(row(staff, 'nora')).toMatchObject({ homeBranchId: north, homeBranchName: 'North' });
+    });
+
+    it('a child\'s page names their active Guardians, for staff who can read the child', async () => {
+      await person('parent', []);
+      await person('formerParent', []);
+      await superuser.guardianLink.create({ data: { guardianId: id.parent, studentId: id.kid } });
+      await superuser.guardianLink.create({ data: { guardianId: id.formerParent, studentId: id.kid, revokedAt: new Date() } });
+      try {
+        const res = await http().get(`/v1/schools/${schoolId}/students/${id.kid}/guardians`).set(as('northStaff'));
+        expect(res.status).toBe(200);
+        expect(res.body.items).toEqual([{ id: id.parent, firstName: 'parent', surname: 'Tester' }]);
+        // South's student isn't North staff's to read.
+        expect((await http().get(`/v1/schools/${schoolId}/students/${id.sam}/guardians`).set(as('northStaff'))).status).toBe(403);
+        expect((await http().get(`/v1/schools/${schoolId}/students/${id.sam}/guardians`).set(as('owner'))).body.items).toEqual([]);
+      } finally {
+        await superuser.guardianLink.deleteMany({ where: { studentId: id.kid } });
+      }
     });
   });
 });

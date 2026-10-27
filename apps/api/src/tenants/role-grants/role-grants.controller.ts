@@ -13,6 +13,8 @@ import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-que
 import { InviteCandidateResponseDto } from './dto/invite-candidate-response.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStaffManuallyResponseDto } from './dto/create-staff-manually-response.dto';
+import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
+import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-response.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * InstructorsController's own add-manually throttle (ADD_MANUALLY_THROTTLE). */
@@ -87,5 +89,18 @@ export class RoleGrantsController {
     @Body() dto: CreateStaffManuallyDto,
   ) {
     return this.roleGrantsService.createStaffManually(user.sub, schoolId, dto);
+  }
+
+  // Decision 366 — Students "Add manually": an adult with no account yet. See
+  // RoleGrantsService.createStudentManually. Same throttle tier as Staff's.
+  @ApiCreatedResponse({ type: CreateStudentManuallyResponseDto })
+  @Throttle(ADD_MANUALLY_THROTTLE)
+  @Post('schools/:schoolId/students/add-manually')
+  createStudentManually(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Body() dto: CreateStudentManuallyDto,
+  ) {
+    return this.roleGrantsService.createStudentManually(user.sub, schoolId, dto);
   }
 }

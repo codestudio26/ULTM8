@@ -56,6 +56,12 @@ export const auth = {
     confirmNewPasscode: 'Confirm new passcode',
     submit: 'Set new passcode',
   },
+  /** First sign-in with a temporary passcode from the School (Decision 366). */
+  choosePasscode: {
+    title: "Choose your passcode",
+    intro: "Your School gave you a temporary passcode. Choose your own 6-digit passcode to finish signing in.",
+    submit: "Save and sign in",
+  },
   /** Re-entering one's passcode to confirm a sensitive action. */
   stepUp: {
     prompt: 'Re-enter your passcode to confirm.',

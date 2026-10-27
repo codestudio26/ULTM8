@@ -276,6 +276,22 @@ export interface paths {
         patch: operations["SchoolsController_updateStudentProfile"];
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}/guardians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_getStudentGuardians"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students/{studentId}/leaving-summary": {
         parameters: {
             query?: never;
@@ -526,6 +542,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["RoleGrantsController_createStaffManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/add-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_createStudentManually"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4544,6 +4576,8 @@ export interface components {
             profilePhotoUrl?: string | null;
             enrolledAt: string;
             status: components["schemas"]["StudentStatus"];
+            homeBranchId?: string | null;
+            homeBranchName?: string | null;
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -4594,6 +4628,14 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        StudentGuardianDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+        };
+        StudentGuardiansResponseDto: {
+            items: components["schemas"]["StudentGuardianDto"][];
+        };
         LeavingStudentMembershipDto: {
             id: string;
             planTitle: string;
@@ -4603,6 +4645,8 @@ export interface components {
             /** Format: date-time */
             expiryDate?: string | null;
             renews: boolean;
+            /** Format: date-time */
+            cancelAt?: string | null;
         };
         StudentLeavingSummaryResponseDto: {
             upcomingBookings: number;
@@ -4912,6 +4956,23 @@ export interface components {
             email: string;
             /** @description False if the temp-passcode email could not be sent — the Staff account was still created. */
             emailSent: boolean;
+        };
+        CreateStudentManuallyDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description YYYY-MM-DD. The student must be 18 or over. */
+            dateOfBirth: string;
+            /** @description Required when the School has open branches: the home branch. */
+            branchId?: string;
+        };
+        CreateStudentManuallyResponseDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            emailSent: boolean;
+            temporaryPasscode?: string | null;
         };
         CreateFranchiseDto: {
             name: string;
@@ -8283,6 +8344,28 @@ export interface operations {
             };
         };
     };
+    SchoolsController_getStudentGuardians: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentGuardiansResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_getStudentLeavingSummary: {
         parameters: {
             query?: never;
@@ -8733,6 +8816,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateStaffManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_createStudentManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStudentManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateStudentManuallyResponseDto"];
                 };
             };
         };

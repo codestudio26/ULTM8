@@ -29,6 +29,7 @@ import { StudentsPage } from './students/StudentsPage';
 import { CheckInPage } from './frontdesk/CheckInPage';
 import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { InviteStudentPage } from './students/InviteStudentPage';
+import { AddStudentManuallyPage } from './students/AddStudentManuallyPage';
 import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
@@ -268,6 +269,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <InviteStudentPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students/add"
+        element={
+          <RequireAuth>
+            <Shell>
+              <AddStudentManuallyPage />
             </Shell>
           </RequireAuth>
         }

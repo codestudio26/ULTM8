@@ -22,10 +22,9 @@ import { useT } from '../i18n/I18nProvider';
  * Deliberately scoped to someone who ALREADY has a ULTM8 account — the
  * earlier "Enroll a Student" mockup's from-scratch account-creation form was
  * removed per direct product feedback (v1.2 backend backlog, "Invite a
- * Student", 28 Sep update) in favor of this narrower shape. See this PR's
- * own description for the open question that leaves: whether a from-scratch
- * "add a brand-new person" path (the Instructor page's own "Add manually",
- * mirrored) should still exist here too.
+ * Student", 28 Sep update) in favor of this narrower shape. A brand-new
+ * adult is added from scratch on the owner's Add manually page instead
+ * (AddStudentManuallyPage, Decision 366).
  */
 export function InviteStudentPage() {
   const t = useT();

@@ -454,4 +454,7 @@ export const serverMessages: Record<string, string> = {
   "Choose a currency from the list.": "목록에서 통화를 선택하세요.",
   "This branch has been archived. Choose another branch.": "이 지점은 보관 처리되었습니다. 다른 지점을 선택하세요.",
   "Only the School owner can change a birth date that makes someone an adult or a child.": "성인 여부가 바뀌는 생년월일 변경은 도장 원장만 할 수 있습니다.",
+  "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe에서 이 학생의 구독을 중지하지 못해 학생이 제거되지 않았습니다. 잠시 후 다시 시도하세요.",
+  "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "직접 추가는 성인(만 18세 이상)만 가능합니다. 어린이는 보호자의 앱을 통해 가입합니다.",
+  "An account with this email already exists — use \"Invite\" instead.": "이 이메일을 사용하는 계정이 이미 있습니다. 대신 '초대'를 사용하세요.",
 };

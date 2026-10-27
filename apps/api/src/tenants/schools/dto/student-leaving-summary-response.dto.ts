@@ -18,9 +18,14 @@ export class LeavingStudentMembershipDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   expiryDate!: Date | null;
 
-  /** A Stripe Subscription that keeps charging until it is cancelled. */
+  /** A Stripe Subscription still renewing: Revoke stops it at the end of the
+   * paid period (Decision 343). */
   @ApiProperty()
   renews!: boolean;
+
+  /** When an already-cancelled Subscription ends; null otherwise. */
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  cancelAt!: Date | null;
 }
 
 /** What is still live for a student at this School, shown in the Revoke
@@ -34,7 +39,8 @@ export class StudentLeavingSummaryResponseDto {
   @ApiProperty()
   waitlistPlaces!: number;
 
-  /** Memberships still in effect. Revoke doesn't refund them. */
+  /** Memberships still in effect. Revoke refunds none of them and stops a
+   * renewing Subscription at the end of its paid period. */
   @ApiProperty({ type: [LeavingStudentMembershipDto] })
   memberships!: LeavingStudentMembershipDto[];
 }

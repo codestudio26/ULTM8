@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
+import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
+import { ReEnrolModal } from '../students/ReEnrolModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
@@ -96,6 +97,11 @@ export function StudentGradingPage() {
   const roleGrants = useUserRoleGrants(studentId);
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+  const [reEnrolling, setReEnrolling] = useState(false);
+  const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
+  // Decision 366 (Q4): who the student's Guardians are. Read for a current
+  // student only (the API's own rule, like the profile read).
+  const guardians = useStudentGuardians(schoolId, studentId, enrolled);
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -155,6 +161,9 @@ export function StudentGradingPage() {
                 {t('grading.student.editProfile')}
               </Button>
             ) : null}
+            {my.isOwner && inactive ? (
+              <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button>
+            ) : null}
             {my.isOwner && activeStudentGrant ? (
               <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
                 {t('grading.student.revokeEnrollment')}
@@ -163,6 +172,15 @@ export function StudentGradingPage() {
           </>
         }
       />
+
+      {guardians.data && guardians.data.items.length > 0 ? (
+        <p data-testid="student-guardians" style={{ margin: '0 0 16px' }}>
+          {t('students.guardians', {
+            count: guardians.data.items.length,
+            names: guardians.data.items.map((g) => `${g.firstName} ${g.surname}`.trim()).join(', '),
+          })}
+        </p>
+      ) : null}
 
       <div style={{ marginBottom: 24 }}>
         <Card>
@@ -214,6 +232,8 @@ export function StudentGradingPage() {
         ))
       )}
       <Checkbox label={t('grading.student.showVoided')} checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+
+      {reEnrolling ? <ReEnrolModal schoolId={schoolId} studentId={studentId} studentName={studentName} onClose={() => setReEnrolling(false)} /> : null}
 
       {confirmingRevoke && activeStudentGrant ? (
         <ConfirmDeleteModal
@@ -272,7 +292,8 @@ function RevokeLiveItems({ schoolId, studentId }: { schoolId: string; studentId:
 }
 
 function membershipLine(t: ReturnType<typeof useT>, m: StudentLeavingSummary['memberships'][number]): string {
-  if (m.renews) return t('grading.student.revokeSubscriptionRenews', { plan: m.planTitle });
+  if (m.renews) return t('grading.student.revokeSubscriptionStops', { plan: m.planTitle });
+  if (m.cancelAt) return t('grading.student.revokeSubscriptionEnds', { plan: m.planTitle, date: formatDay(m.cancelAt) });
   if (m.classesRemaining != null) return t('grading.student.revokeMembershipClasses', { plan: m.planTitle, count: m.classesRemaining });
   if (m.expiryDate) {
     return t('grading.student.revokeMembershipUntil', { plan: m.planTitle, date: formatDay(m.expiryDate) });

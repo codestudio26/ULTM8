@@ -1149,6 +1149,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     } finally {
       await superuser.roleGrant.deleteMany({ where: { userId: existingPerson.id } });
       await superuser.studentHomeBranch.deleteMany({ where: { studentId: existingPerson.id } });
+      await superuser.notification.deleteMany({ where: { userId: existingPerson.id } });
       await superuser.user.delete({ where: { id: existingPerson.id } });
     }
   });

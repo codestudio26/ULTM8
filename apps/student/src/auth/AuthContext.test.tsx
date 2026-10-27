@@ -225,3 +225,42 @@ describe('AuthProvider — pendingSchoolPick (Decision 266)', () => {
     expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('ultm8.pendingSchoolPick');
   });
 });
+
+describe('AuthProvider — first sign-in with a temporary passcode (Decision 366)', () => {
+  beforeEach(() => {
+    secureTokenStore.get.mockReset().mockResolvedValue(null);
+    authClient.POST.mockReset();
+  });
+
+  afterEach(() => {
+    activeQueryClient?.clear();
+    activeQueryClient = undefined;
+  });
+
+  it('login hands back the change token without signing in; completeFirstLogin sets the new passcode and signs in', async () => {
+    const token = fakeToken(Math.floor(Date.now() / 1000) + 15 * 60);
+    authClient.POST.mockImplementation((path: string) => {
+      if (path === '/v1/auth/login') return okResponse({ mustChangePasscode: true, passcodeChangeToken: 'change-token' });
+      if (path === '/v1/auth/passcode-change/first-login') return okResponse({ accessToken: token, refreshToken: 'new-refresh-token' });
+      throw new Error(`unexpected call: ${path}`);
+    });
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.login('ada@example.test', '123456');
+    });
+    expect(outcome).toEqual({ passcodeChangeToken: 'change-token' });
+    expect(result.current.accessToken).toBeNull();
+
+    await act(async () => {
+      await result.current.completeFirstLogin('change-token', '654321');
+    });
+    expect(authClient.POST).toHaveBeenCalledWith(
+      '/v1/auth/passcode-change/first-login',
+      expect.objectContaining({ body: { newPasscode: '654321' }, headers: { Authorization: 'Bearer change-token' } }),
+    );
+    expect(result.current.accessToken).toBe(token);
+  });
+});

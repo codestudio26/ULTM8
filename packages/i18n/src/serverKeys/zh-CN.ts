@@ -157,6 +157,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} 已将 {school} 移出加盟体系。加盟费已停止。",
     franchiseClosedTitle: "加盟体系已关闭",
     franchiseClosedBody: "{franchise} 已关闭。{school} 继续运营，加盟费已停止。",
+    studentAddedTitle: "已加入学校",
+    studentAddedBody: "你已被加入 {school}。",
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",

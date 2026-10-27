@@ -19,6 +19,7 @@ import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branc
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
 import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
+import { StudentGuardiansResponseDto } from './dto/student-guardians-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -101,6 +102,18 @@ export class SchoolsController {
     @Param('studentId', ParseUUIDPipe) studentId: string,
   ) {
     return this.schoolsService.getStudentProfile(user.sub, id, studentId);
+  }
+
+  /** The student's Guardians, by name, for the student's page (Decision 366).
+   * Same staff who can read the student's profile. */
+  @ApiOkResponse({ type: StudentGuardiansResponseDto })
+  @Get(':id/students/:studentId/guardians')
+  getStudentGuardians(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentGuardians(user.sub, id, studentId);
   }
 
   /** What revoking this Student's enrolment will cancel, and the memberships

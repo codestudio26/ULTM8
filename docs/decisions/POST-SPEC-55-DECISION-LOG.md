@@ -5823,7 +5823,7 @@ When a student's last STUDENT grant at a School is revoked:
 1. **Upcoming bookings are cancelled.** That means every booking still Upcoming whose class hasn't ended. A booking whose class has already ended is left to attendance and the no-show sweep. Each booking is cancelled under the same credit rule as a cancellation by staff: the class credit comes back before the class's refund cut-off, and once the class has started, the School's late-cancel setting decides. The disputed-payment freeze applies (Decisions 55, 111). No late-cancellation fee is charged. Guest seats on the student's own bookings go with them under the same rule. The freed seats are offered to the waitlist.
 2. **Waitlist places are removed** (Waiting or Notified). A Notified place's held offer goes to the next person.
 3. **Memberships get no automatic refund.** Class packs and passes stay as they are. The owner refunds by hand if they choose to.
-4. **A Subscription stops at the end of the paid period.** This part is **not built yet**: nothing in the code can cancel a Subscription so far. The Memberships follow-up adds a shared "cancel at period end" method, and Revoke will call it once that merges. Until then the dialog says the subscription keeps renewing and tells the owner to cancel it in Stripe.
+4. **A Subscription stops at the end of the paid period.** Revoke calls the shared "cancel at period end" method from the Memberships follow-up (Decision 348, merged 26 Oct) before it revokes anything. If Stripe can't be reached, nothing is revoked and the owner is asked to try again (a retry is safe: a Subscription already stopping is skipped). The dialog says the subscription stops renewing, or, for one already cancelled, the date it ends. *(Updated 27 Oct 2026: when this decision was first recorded, the method didn't exist yet and the dialog told the owner to cancel in Stripe.)*
 5. **The Revoke dialog lists what is still live before the owner confirms:** the upcoming bookings and waitlist places Revoke will end, and each membership still in effect (credits left, end date, or "keeps renewing"). The list comes from `GET /schools/:id/students/:studentId/leaving-summary`, which is owner only, like Revoke.
 
 ### What this does NOT resolve
@@ -5834,3 +5834,28 @@ When a student's last STUDENT grant at a School is revoked:
 ### Recorded by
 
 User (Code), 26 Oct 2026. The Students thread first put the options on a card (S2), and the user asked *"what do you suggest as an acadmy/school owner"*. The Memberships thread then listed S2 with the recommended option among its own questions, and the user answered *"all recommended"*. That option: the subscription stops at period end, upcoming bookings are cancelled, waitlist places are removed, packs and passes get no automatic refund, and the Revoke dialog lists what is live.
+
+## Decision 366 — Students: Add manually for adults, list search, branch and paging, Re-enrol, Guardian names, and the "added" notice
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision (Students review, follow-up questions) · **Related:** Decisions 341, 343; Decisions 1/230 (temporary passcode, first-login change)
+
+### Background
+
+After the Students review fixes, five questions were left: whether the owner can create a student from scratch (Invite only finds someone who already has a ULTM8 account), how the list copes with a large School, how a former student comes back, whether a child's page shows who their Guardian is, and whether an invited student must accept.
+
+### Decision
+
+1. **Add manually (owner only, adults only).** `POST /schools/:schoolId/students/add-manually` takes first name, surname, email, date of birth and (at a School with open branches) a home branch. It creates the account with a temporary 6-digit passcode, enrols them like Invite does, and emails the passcode. The student must choose their own passcode on first sign-in (`mustChangePasscode`, the same first-login flow as Decisions 1/230); the student app now has that screen. A date of birth under 18 is refused: a child joins through their Guardian's app. An email that already has an account is refused with "use Invite instead". If the email can't be sent, the response gives the owner the temporary passcode once, so they can hand it over in person, rather than leaving an account nobody can sign in to. *(The handing-over fallback was not part of the question; it was added because email isn't live yet on the deployed site.)*
+2. **Students list: search, branch, paging.** Each roster row now carries the student's home branch (`homeBranchId`, `homeBranchName`), read under StudentHomeBranch RLS as the caller (the owner sees every branch, Branch Staff and coaches their own). The list has a name/email search, a Branch column and filter (including "No home branch") at a School with branches, and pages of 25. The roster is still fetched whole; paging is in the browser.
+3. **Re-enrol.** The owner has a Re-enrol button on a former student's page. It uses the same `POST /schools/:id/join` as Invite, with a new home branch where the School has branches (revoking removed the old one, Decision 341, S13).
+4. **Guardian names.** `GET /schools/:id/students/:studentId/guardians` lists a student's active Guardians by name only. It is gated like the profile read (staff who can read this enrolled student). The links and names are read on the jobs and auth connections after that check, because the caller can't see them under RLS.
+5. **"You've been added to [School]."** When the owner enrols someone (Invite or Re-enrol), the student gets an in-app notice, and a child's Guardians get the usual "For [child]: …" copy. There is no accept step. Add manually sends no separate notice, since its email says the same.
+
+### What this does NOT resolve
+
+- A temporary passcode can't be resent, and Add manually can't be undone from the portal: an account made with a wrong email stays (the owner can revoke the enrolment).
+- Adding a child by hand stays out of scope (a Guardian adds a child).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students questions listed in the status report (add manually for adults only with a sign-in code, list search/branch filter/paging, a Re-enrol button, the Guardian's name on a child's page, and a "You've been added" notice with no accept step).

@@ -305,11 +305,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     Class credits come back under the usual cancellation rules, with no
     late-cancellation fee. The Revoke dialog first lists what they still
     have: bookings, waitlist places and memberships. Memberships aren't
-    refunded, and a Subscription isn't stopped yet (cancel it in Stripe).
+    refunded. A Subscription stops renewing and ends when the period already
+    paid for runs out; if Stripe can't be reached, nothing is revoked and the
+    owner is asked to try again.
   - **"Upcoming Booking" shows the real next class**, however many bookings
     the student has.
   - **Coaches opening /students or /students/invite** go to their home screen
     instead of a blank page.
+  - **Add manually** (Decision 366): the owner can add an adult (18 or over)
+    who has no ULTM8 account yet. They're emailed a temporary passcode and
+    choose their own the first time they sign in to the app. If the email
+    can't be sent, the owner is shown the passcode once to hand over.
+  - **The Students list has a search box, a Branch column and filter, and
+    pages of 25.**
+  - **Re-enrol**: a former student's page has a Re-enrol button for the owner.
+  - **A child's page names their Guardians.**
+  - **"You've been added to [School]"**: a student added by Invite or
+    Re-enrol gets an in-app notice (a child's Guardians get a copy). There is
+    nothing to accept.
 - **Instructors search box is labelled "Search instructors"** — it was
   just "Search", the same name as the header search, so screen readers
   announced two identical boxes on the page. It now matches "Search classes"

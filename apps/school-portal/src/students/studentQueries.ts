@@ -112,3 +112,34 @@ export function useUpdateStudentProfile(schoolId: string | null) {
     },
   });
 }
+
+export type AddStudentManuallyInput = components['schemas']['CreateStudentManuallyDto'];
+
+/** Add manually (Decision 366, Students Q1): the owner creates an adult's
+ * account and enrols them; they're emailed a temporary passcode
+ * (POST /schools/{schoolId}/students/add-manually). */
+export function useAddStudentManually(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AddStudentManuallyInput) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/add-manually', { params: { path: { schoolId: schoolId! } }, body })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students', schoolId] });
+    },
+  });
+}
+
+/** A student's active Guardians, by name, for the student's page
+ * (GET /schools/{id}/students/{studentId}/guardians, Decision 366). */
+export function useStudentGuardians(schoolId: string | null, studentId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['studentGuardians', schoolId, studentId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{id}/students/{studentId}/guardians', {
+          params: { path: { id: schoolId!, studentId: studentId! } },
+        }),
+      ),
+    enabled: enabled && !!schoolId && !!studentId,
+  });
+}
