@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors: resend passcode, self-edit, safer revoke, private details**
+  (Decision 331) — the owner can send a new temporary passcode to an
+  instructor who hasn't signed in yet; instructors can change their own
+  photo, bio and the phone number the School sees on Complete your profile;
+  an Instructor role can't be revoked while they still teach upcoming classes
+  or weekly slots (the page offers "Hand over classes" instead); and an
+  instructor's address and certification are shown only to the School owner
+  and to the instructor, not to colleagues.
 - **Staff page: staff list, Remove from School, "Give role", instant access
   changes (Decisions 360, 361)** — the Staff page now lists everyone with an
   owner, coach or Branch Staff role, filterable by role, branch, name and

@@ -3,7 +3,7 @@ import { Button, ErrorBanner, Field, Modal, SelectField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
-import { instructorName, instructorSelectOptions, useInstructors, useReassignInstructor, type InstructorResponse } from './instructorQueries';
+import { instructorName, instructorSelectOptions, useInstructors, useReassignInstructor, useResendInstructorPasscode, type InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
 
 /**
@@ -128,6 +128,78 @@ export function GiveRoleBackModal({
           {t('instructors.detail.giveRoleBackConfirm')}
         </Button>
       </form>
+    </Modal>
+  );
+}
+
+/**
+ * "Resend passcode" (Decision 331) for someone added manually who hasn't
+ * signed in yet: a new temporary passcode is emailed and the old one stops
+ * working (POST /instructors/{id}/resend-passcode).
+ */
+export function ResendPasscodeModal({
+  instructor,
+  onDone,
+  onClose,
+}: {
+  instructor: InstructorResponse;
+  onDone: (message: string) => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const resend = useResendInstructorPasscode(instructor.id);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSend() {
+    setError(null);
+    try {
+      const { emailSent } = await resend.mutateAsync();
+      onDone(emailSent ? t('instructors.detail.resendDone', { email: instructor.email }) : t('instructors.detail.resendEmailFailed'));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('instructors.detail.resendFailed'));
+    }
+  }
+
+  return (
+    <Modal title={t('instructors.detail.resendTitle', { name: instructorName(instructor) })} onClose={onClose}>
+      {error ? <ErrorBanner message={error} /> : null}
+      <p style={{ marginTop: 0 }}>{t('instructors.detail.resendDescription', { email: instructor.email })}</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button onClick={handleSend} loading={resend.isPending}>
+          {t('instructors.detail.resendConfirm')}
+        </Button>
+        <Button variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * Shown instead of the revoke confirmation while the instructor still
+ * teaches upcoming classes or weekly slots (Decision 331): the API refuses
+ * that revoke, so this points straight to "Hand over classes".
+ */
+export function RevokeBlockedModal({
+  instructor,
+  onHandOver,
+  onClose,
+}: {
+  instructor: InstructorResponse;
+  onHandOver: () => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  return (
+    <Modal title={t('instructors.detail.revokeBlockedTitle', { name: instructorName(instructor) })} onClose={onClose}>
+      <p style={{ marginTop: 0 }}>{t('instructors.detail.revokeBlockedDescription')}</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button onClick={onHandOver}>{t('instructors.detail.handOver')}</Button>
+        <Button variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+      </div>
     </Modal>
   );
 }

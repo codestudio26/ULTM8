@@ -114,12 +114,14 @@ test('the detail page splits upcoming and past classes, and Revoke warns about u
   expect(upcomingText).not.toContain('Last week');
   await expect(page.getByText('Archived one')).toHaveCount(0);
 
+  // Decision 331: revoking is refused while they still teach; the owner is
+  // sent to "Hand over classes" instead.
   await page.getByRole('button', { name: 'Revoke enrollment' }).click();
-  const dialog = page.getByRole('dialog', { name: "Revoke Dee Detail's enrollment?" });
-  await expect(dialog.getByText(/They still teach 2 upcoming classes/)).toBeVisible();
-  await dialog.getByRole('button', { name: 'Revoke' }).click();
-  await expect(page).toHaveURL(/\/instructors$/);
-  await expect(page.getByRole('row', { name: /Dee Detail/ }).getByText('Revoked', { exact: true })).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Dee Detail still teaches classes' });
+  await expect(dialog.getByText(/Hand them over to another instructor first/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Hand over classes' }).click();
+  await expect(page.getByRole('dialog', { name: "Hand over Dee Detail's classes" })).toBeVisible();
+  expect((await db.roleGrant.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } })).revokedAt).toBeNull();
 });
 
 test('a coach who opens the Instructors page goes to their own start page', async ({ page }) => {

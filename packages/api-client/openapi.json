@@ -6343,6 +6343,41 @@
         ]
       }
     },
+    "/v1/instructors/{id}/resend-passcode": {
+      "post": {
+        "operationId": "InstructorsController_resendPasscode",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendPasscodeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/instructors/me/certification-upload-url": {
       "post": {
         "operationId": "InstructorsController_requestCertificationUploadUrl",
@@ -19846,9 +19881,34 @@
           "emailSent"
         ]
       },
+      "ResendPasscodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the new passcode was set but the email could not be sent."
+          }
+        },
+        "required": [
+          "emailSent"
+        ]
+      },
       "CompleteInstructorProfileDto": {
         "type": "object",
         "properties": {
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "School-facing contact number, E.164 — not the login phone."
+          },
           "address": {
             "type": "string"
           },
