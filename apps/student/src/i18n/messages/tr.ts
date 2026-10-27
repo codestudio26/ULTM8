@@ -772,6 +772,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Makbuzu gör",
       noReceipt: "Bu ödeme için makbuz yok.",
       receiptFailed: "Makbuz yüklenemedi — lütfen tekrar deneyin.",
+      renewal: "Yenileme: {plan}",
+      lateCancelFee: "Geç iptal ücreti: {class}",
+      lateCancelFeeNoClass: "Geç iptal ücreti",
     },
     status: {
       successful: "BAŞARILI",

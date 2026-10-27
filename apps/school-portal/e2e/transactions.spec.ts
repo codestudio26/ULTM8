@@ -42,6 +42,7 @@ async function addTransaction(opts: {
   amount?: number;
   currency?: string;
   daysAgo: number;
+  kind?: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE';
 }) {
   return db.transaction.create({
     data: {
@@ -49,7 +50,8 @@ async function addTransaction(opts: {
       schoolId: s.schoolId,
       studentId: opts.studentId ?? s.student.id,
       paymentAccountId: accountId,
-      membershipPlanId: planId,
+      membershipPlanId: opts.kind === 'LATE_CANCEL_FEE' ? null : planId,
+      kind: opts.kind ?? 'MEMBERSHIP',
       amount: opts.amount ?? 15000,
       currency: opts.currency ?? 'GBP',
       status: opts.status,
@@ -159,4 +161,115 @@ test('Branch Staff see a message instead of a blank page', async ({ page }) => {
   await signIn(page, staff.token);
   await page.goto('/transactions');
   await expect(page.getByText('Only the School owner can see transactions')).toBeVisible();
+});
+
+/** Decision 346: renewals and late-cancel fees as their own rows, filters that
+ * narrow the rows and the tiles, a CSV of everything filtered, and Record a
+ * payment for cash taken at the desk. */
+test('renewal and late-cancel fee rows are labelled, and the filters narrow rows and tiles', async ({ page }) => {
+  await addTransaction({ status: 'SUCCESSFUL', method: 'STRIPE', daysAgo: 1, kind: 'RENEWAL' });
+  await addTransaction({ status: 'FAILED', method: 'STRIPE', amount: 500, daysAgo: 2, kind: 'LATE_CANCEL_FEE' });
+  await addTransaction({ status: 'SUCCESSFUL', daysAgo: 40 });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/transactions');
+  const rows = page.locator('tbody tr');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText('Renewal: 10-Class Pack');
+  await expect(rows.nth(1)).toContainText('Late-cancellation fee');
+
+  await page.getByLabel('Type').selectOption('LATE_CANCEL_FEE');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('5.00');
+  await expect(page.getByText(/^Total transactions\s*1$/)).toBeVisible();
+  await expect(page.getByText(/^Failed \/ disputed\s*1$/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(rows).toHaveCount(3);
+  // The last 30 days only: the 40-day-old payment drops out.
+  const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  await page.getByLabel('From').fill(since);
+  await expect(rows).toHaveCount(2);
+  await expect(page.getByText(/^Total transactions\s*2$/)).toBeVisible();
+
+  await page.getByLabel('Status').selectOption('PENDING');
+  await expect(page.getByText('No Transactions match these filters')).toBeVisible();
+});
+
+test('Export CSV downloads every filtered row', async ({ page }) => {
+  await addTransaction({ status: 'SUCCESSFUL', daysAgo: 1 });
+  await addTransaction({ status: 'FAILED', method: 'STRIPE', amount: 500, daysAgo: 2, kind: 'LATE_CANCEL_FEE' });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/transactions');
+  await expect(page.locator('tbody tr')).toHaveCount(2);
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export CSV' }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^transactions-\d{4}-\d{2}-\d{2}\.csv$/);
+  const text = (await import('fs')).readFileSync((await file.path())!, 'utf8').replace(/^\uFEFF/, '');
+  const lines = text.trim().split('\r\n');
+  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Currency,Status,Method,Refunded,Disputed,Transaction ID');
+  expect(lines).toHaveLength(3);
+  expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,GBP,Successful');
+  expect(lines[2]).toContain('Late-cancellation fee,5.00,GBP,Failed');
+});
+
+test('Record a payment starts the membership and shows the row as taken at the desk', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/transactions');
+  await page.getByRole('button', { name: 'Record a payment' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Record payment' })).toBeDisabled();
+  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await dialog.getByLabel('Plan').selectOption(planId);
+  await dialog.getByLabel('Method').selectOption('BANK_TRANSFER');
+  await dialog.getByRole('button', { name: /^Record .*150\.00/ }).click();
+  await expect(dialog).toHaveCount(0);
+
+  const row = page.locator('tbody tr').first();
+  await expect(row).toContainText('Successful');
+  await expect(row).toContainText('at desk');
+  const saved = await db.transaction.findFirstOrThrow({ where: { schoolId: s.schoolId } });
+  expect(saved).toMatchObject({ studentId: s.student.id, status: 'SUCCESSFUL', paymentMethod: 'BANK_TRANSFER', recordedById: s.ownerId });
+  expect(saved.membershipId).not.toBeNull();
+});
+
+/** Decision 347: the owner's switch on the School page lets Branch Staff use
+ * Record a payment, for their own branch's students only, without the ledger. */
+test('the owner can let Branch Staff record desk payments from the School page', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/school');
+  const box = page.getByLabel('Let Branch Staff record payments taken at the desk');
+  await expect(box).not.toBeChecked();
+  await box.check();
+  await page.getByRole('button', { name: 'Save changes' }).first().click();
+  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).branchStaffCanRecordPayments).toBe(true);
+});
+
+test('Branch Staff with the switch on record a payment for a student of their branch', async ({ page }) => {
+  await db.school.update({ where: { id: s.schoolId }, data: { branchStaffCanRecordPayments: true } });
+  const branch = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: branch.id } });
+  const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: branch.id }]);
+
+  await signIn(page, staff.token);
+  await page.goto('/coach');
+  await page.getByRole('link', { name: 'Record a payment' }).click();
+  await expect(page).toHaveURL(/\/transactions$/);
+  await expect(page.locator('table')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Record a payment' }).click();
+  const dialog = page.getByRole('dialog');
+  const studentPicker = dialog.getByLabel('Student');
+  // Nia Park has no home branch, so she isn't this branch's to record for.
+  await expect(studentPicker.locator('option')).toHaveText(['Choose…', 'Sam Lee']);
+  await studentPicker.selectOption({ label: 'Sam Lee' });
+  await dialog.getByLabel('Plan').selectOption(planId);
+  await dialog.getByRole('button', { name: /^Record .*150\.00/ }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText('Payment recorded. The membership has started.')).toBeVisible();
+
+  const saved = await db.transaction.findFirstOrThrow({ where: { schoolId: s.schoolId } });
+  expect(saved).toMatchObject({ studentId: s.student.id, status: 'SUCCESSFUL', paymentMethod: 'CASH', recordedById: staff.id });
 });

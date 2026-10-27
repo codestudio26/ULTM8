@@ -35,7 +35,8 @@ export function WaiverFormModal({
     e.preventDefault();
     setError(null);
     try {
-      await onSubmit({ title: form.title, body: form.body });
+      // Waivers review W4: spaces alone are not a title or a text.
+      await onSubmit({ title: form.title.trim(), body: form.body.trim() });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
@@ -57,7 +58,7 @@ export function WaiverFormModal({
           />
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
+          <Button type="submit" loading={submitting} disabled={!form.title.trim() || !form.body.trim()}>
             {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>

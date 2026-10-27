@@ -790,6 +790,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Voir le reçu",
       noReceipt: "Aucun reçu n’est disponible pour ce paiement.",
       receiptFailed: "Impossible de charger le reçu — veuillez réessayer.",
+      renewal: "Renouvellement : {plan}",
+      lateCancelFee: "Frais d'annulation tardive : {class}",
+      lateCancelFeeNoClass: "Frais d'annulation tardive",
     },
     status: {
       successful: "RÉUSSI",

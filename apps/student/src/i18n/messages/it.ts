@@ -790,6 +790,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Vedi ricevuta",
       noReceipt: "Nessuna ricevuta disponibile per questo pagamento.",
       receiptFailed: "Impossibile caricare la ricevuta — riprova.",
+      renewal: "Rinnovo: {plan}",
+      lateCancelFee: "Penale per cancellazione tardiva: {class}",
+      lateCancelFeeNoClass: "Penale per cancellazione tardiva",
     },
     status: {
       successful: "RIUSCITO",

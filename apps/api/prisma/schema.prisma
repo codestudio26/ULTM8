@@ -317,6 +317,16 @@ enum TransactionStatus {
   DISPUTED
 }
 
+/// What a Transaction row is for (Decision 346). MEMBERSHIP: a plan bought in
+/// the app or recorded at the desk. RENEWAL: a Subscription's later monthly
+/// charge, one row per Stripe Invoice. LATE_CANCEL_FEE: the fee charged to a
+/// saved card when a Booking is cancelled after the refund cut-off (Decision 234).
+enum TransactionKind {
+  MEMBERSHIP
+  RENEWAL
+  LATE_CANCEL_FEE
+}
+
 // Transaction.paymentMethod (Spec 55 §6.1, quoted: "payment method (Stripe/Cash/Bank
 // Transfer — GoCardless appeared in the designs but is excluded per Section 1.2"))
 // reuses PaymentAccountProvider directly, below — identical STRIPE/CASH/BANK_TRANSFER
@@ -969,6 +979,10 @@ model School {
   checkInOpensMinutesBeforeStart Int                             @default(30)
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
+  /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
+  /// bank transfer taken at the desk). Off by default; Spec 55 §8.2 amended for
+  /// this one action only.
+  branchStaffCanRecordPayments   Boolean                         @default(false)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -2040,8 +2054,20 @@ model Transaction {
   paymentAccountId String
   paymentAccount   PaymentAccount @relation(fields: [paymentAccountId], references: [id])
 
-  membershipPlanId String
-  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+  // Null only for a LATE_CANCEL_FEE row, which belongs to a Booking, not a plan
+  // (Decision 346).
+  membershipPlanId String?
+  membershipPlan   MembershipPlan? @relation(fields: [membershipPlanId], references: [id], onDelete: Restrict)
+
+  kind TransactionKind @default(MEMBERSHIP)
+
+  /// LATE_CANCEL_FEE only: the cancelled Booking the fee was charged for.
+  bookingId String?  @unique
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  /// RENEWAL only: the Stripe Invoice this row records, so a retried or
+  /// redelivered invoice event updates the same row instead of adding another.
+  stripeInvoiceId String? @unique
 
   // Set once payment settles and the Membership is created (Spec 55 §6.1) — null
   // until then.
@@ -2370,15 +2396,15 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[] @default([])
+  classTypesOffered     String[]  @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean  @default(false)
+  skillsRequiredToGrade Boolean   @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int      @default(33)
-  boardReadyToGrade     Int      @default(66)
+  boardGettingThere     Int       @default(33)
+  boardReadyToGrade     Int       @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
@@ -3234,6 +3260,11 @@ model Waiver {
   purgeAt    DateTime?
   purgedAt   DateTime?
 
+  /// Waivers review W3: goes up by one each time the title or text changes,
+  /// so a signature records which wording it was given, and a signer reading
+  /// an old copy is told to read it again.
+  version Int @default(1)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -3343,6 +3374,14 @@ model WaiverSignature {
   signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
   signedDate        DateTime?
   status            WaiverSignatureStatus @default(SIGNED)
+
+  // Waivers review W3: a copy of exactly what was signed, so a later edit of
+  // the Waiver never changes it. Null on Unsigned rows and on rows signed
+  // before this was kept.
+  signedWaiverTitle   String?
+  signedWaiverBody    String?
+  signedWaiverSha256  String?
+  signedWaiverVersion Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3565,6 +3604,8 @@ model Booking {
   attendees        BookingAttendee[]
   claimedFromEntry WaitlistEntry?    @relation("WaitlistEntryClaimedBooking")
   trainingLogs     TrainingLog[]
+
+  lateCancelFeeTransaction Transaction?
 
   // Composite indexes leading with the tenant column (Decision 30). The "one
   // active Booking per Student per Class" guard (status = 'UPCOMING') is a

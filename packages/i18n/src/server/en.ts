@@ -30,6 +30,7 @@ export const SERVER_MESSAGES: string[] = [
  "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt (Decision 180).",
  "A style is listed twice in specializationStyleIds.",
  "Academy not found",
+ "Add your date of birth to your profile before signing a waiver.",
  "AdminUser not found",
  "An AdminUser with this email or ssoSubject already exists.",
  "An account with this email already exists — use \"Invite staff\" instead.",
@@ -219,6 +220,7 @@ export const SERVER_MESSAGES: string[] = [
  "This Student is already enrolled at this School.",
  "This Student must hold a Signed Waiver for this School before booking a Class that requires one.",
  "This Student must hold a Signed Waiver for this School before claiming this Booking.",
+ "This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.",
  "This Student's current belt and stripe can't be found on the ladder; correct their rank first.",
  "This Student's progress was changed at the same time — please retry.",
  "This Student's rank was changed at the same time — please retry.",
@@ -278,6 +280,8 @@ export const SERVER_MESSAGES: string[] = [
  "This user already has an Instructor profile at this School.",
  "This user already holds an active grant of this role at this scope.",
  "This username is already taken.",
+ "This waiver is no longer in use, so it can no longer be signed.",
+ "This waiver was changed while you were reading it. Please read it again before signing.",
  "TimetableSlot not found",
  "To correct the belt, send both rankId and stripeTierId.",
  "To correct the rank, send both rankId and stripeTierId.",
@@ -296,6 +300,7 @@ export const SERVER_MESSAGES: string[] = [
  "You may not declare a belt for this Student.",
  "You may not view this Student's grading.",
  "You may not watch this Lesson (Decisions 154, 190, 195).",
+ "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
  "Your account must complete phone verification (POST /auth/otp/verify) before you can grant roles.",
  "Your account must complete phone verification (POST /auth/otp/verify) before you can invite coaches.",
  "Your saved card was declined — try a different payment method.",
@@ -370,6 +375,10 @@ export const SERVER_MESSAGES: string[] = [
  "activities/facilities cannot be null — send an empty list to clear them.",
  "defaultLanguage must be one of the supported language codes.",
  "defaultCurrency must be one of the supported currency codes.",
+ "This person is not a student at this School.",
+ "This payment is not for a membership plan.",
+ "The start date must be on or before the end date.",
+ "The School owner has not let Branch Staff record payments.",
 ];
 
 export const SERVER_PATTERNS: string[] = [

@@ -765,6 +765,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "ดูใบเสร็จ",
       noReceipt: "ไม่มีใบเสร็จสำหรับการชำระเงินนี้",
       receiptFailed: "ไม่สามารถโหลดใบเสร็จได้ โปรดลองอีกครั้ง",
+      renewal: "ต่ออายุ: {plan}",
+      lateCancelFee: "ค่าธรรมเนียมยกเลิกล่าช้า: {class}",
+      lateCancelFeeNoClass: "ค่าธรรมเนียมยกเลิกล่าช้า",
     },
     status: {
       successful: "สำเร็จ",

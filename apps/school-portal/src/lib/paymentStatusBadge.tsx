@@ -3,7 +3,7 @@ import { Badge } from '@ultm8/ui';
 import { titleCase } from './text';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
-const STATUS_LABELS: Record<string, TranslationKey> = {
+export const PAYMENT_STATUS_LABELS: Record<string, TranslationKey> = {
   SUCCESSFUL: 'lib.paymentStatus.successful',
   PENDING: 'lib.paymentStatus.pending',
   FAILED: 'lib.paymentStatus.failed',
@@ -16,7 +16,7 @@ const STATUS_LABELS: Record<string, TranslationKey> = {
  * plain-function shape for every existing caller's table `render`. */
 function PaymentStatusBadge({ status }: { status: string }) {
   const t = useT();
-  const key = STATUS_LABELS[status];
+  const key = PAYMENT_STATUS_LABELS[status];
   const label = key ? t(key) : titleCase(status);
   if (status === 'SUCCESSFUL') return <Badge variant="success">{label}</Badge>;
   if (status === 'DISPUTED') return <Badge variant="danger">{label}</Badge>;
