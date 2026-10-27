@@ -434,7 +434,21 @@ export class RoleGrantsService {
         throw err;
       }
     });
-    await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
+    try {
+      await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
+    } catch (err) {
+      // join() runs its own transaction, so a failure there (a timeout under
+      // load, a branch archived meanwhile) left an account with no enrolment
+      // and no passcode email, and retrying the same email got "use Invite".
+      // Remove the account just made, then rethrow. Only if it holds no
+      // grant at all: if the enrolment did commit, the account stays.
+      await this.prismaApp
+        .withTenantContext(userId, (tx) => tx.user.deleteMany({ where: { id: userId, roleGrants: { none: {} } } }))
+        .catch((cleanupErr) =>
+          this.logger.error(`Student ${userId}: enrolment failed and the new account could not be removed — ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`),
+        );
+      throw err;
+    }
 
     let emailSent = true;
     try {
