@@ -11,7 +11,7 @@ import { escapeLike } from '../../common/search/name-search';
 import { AuthService } from '../../auth/auth.service';
 import { CreateFranchiseDto, CURRENCY_CODES, FeeModelDto, LANGUAGE_CODES } from './dto/create-franchise.dto';
 import { FranchiseFeeRateChangeStrategyDto, UpdateFranchiseDto } from './dto/update-franchise.dto';
-import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE } from '../../jobs/queue.constants';
+import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE, NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { FranchiseFeeRateMigrationJobData } from '../../jobs/franchise-fee-rate-migration.types';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
@@ -20,6 +20,8 @@ import { StepUpService } from '../../auth/step-up.service';
 import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { cancelOpenJoinRequests, stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
 import { CloseOwnFranchiseDto } from './dto/franchise-join-request.dto';
+import { stopPlatformSubscription } from '../stop-tenant-billing';
+import { memberSchoolsOf, sendFranchiseNotice } from './franchise-notifications';
 
 /** Decision 352 — the columns a join request is shown with, to either side. */
 export const JOIN_REQUEST_SELECT = {
@@ -121,6 +123,7 @@ export class FranchisesService {
     private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
     private readonly stripeClient: StripeClientService,
     private readonly stepUp: StepUpService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   private readonly logger = new Logger(FranchisesService.name);
@@ -152,7 +155,7 @@ export class FranchisesService {
       await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
     }
     const request = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.franchiseJoinRequest.findFirst({ where: { id: requestId, franchiseId }, select: { status: true, schoolId: true } }),
+      tx.franchiseJoinRequest.findFirst({ where: { id: requestId, franchiseId }, select: { status: true, schoolId: true, schoolName: true } }),
     );
     if (!request) {
       throw new NotFoundException('Join request not found');
@@ -189,6 +192,15 @@ export class FranchisesService {
         }
       });
     }
+    // Decision 364 — the School's Owners hear the answer.
+    const franchise = await this.prismaJobs.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: { name: true } });
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: accept ? 'ACCEPTED' : 'DECLINED',
+      requestId,
+      franchiseName: franchise.name,
+      schoolId: request.schoolId,
+      schoolName: request.schoolName,
+    });
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.franchiseJoinRequest.findUniqueOrThrow({ where: { id: requestId }, select: JOIN_REQUEST_SELECT }),
     );
@@ -208,7 +220,7 @@ export class FranchisesService {
     await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
     const school = await this.prismaJobs.school.findUnique({
       where: { id: schoolId },
-      select: { franchiseId: true, stripeFranchiseFeeSubscriptionId: true },
+      select: { name: true, franchiseId: true, stripeFranchiseFeeSubscriptionId: true },
     });
     if (!school || school.franchiseId !== franchiseId) {
       throw new NotFoundException('This School is not a member of this Franchise.');
@@ -235,6 +247,15 @@ export class FranchisesService {
         );
       }
     }
+    // Decision 364 — the School's Owners are told.
+    const franchise = await this.prismaJobs.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: { name: true } });
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: 'REMOVED',
+      franchiseId,
+      franchiseName: franchise.name,
+      schoolId,
+      schoolName: school.name,
+    });
     return { schoolId };
   }
 
@@ -263,6 +284,7 @@ export class FranchisesService {
     if (dto.confirmName !== franchise.name) {
       throw new BadRequestException("Type the Franchise's name exactly as it is to close it.");
     }
+    const members = await memberSchoolsOf(this.prismaJobs, franchiseId);
     const now = new Date();
     const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
     const { count } = await this.prismaPlatformAdmin.franchise.updateMany({
@@ -274,6 +296,18 @@ export class FranchisesService {
     }
     await stopFranchiseFeeBilling(this.prismaJobs, this.stripeClient, this.logger, { franchiseId });
     await cancelOpenJoinRequests(this.prismaJobs, franchiseId);
+    // Decision 364 — the Franchise's own ULTM8 subscription ends with its paid
+    // period, and each member School's Owners are told.
+    await stopPlatformSubscription(this.prismaJobs, this.stripeClient, this.logger, { franchiseId });
+    for (const member of members) {
+      await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+        kind: 'FRANCHISE_CLOSED',
+        franchiseId,
+        franchiseName: franchise.name,
+        schoolId: member.id,
+        schoolName: member.name,
+      });
+    }
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: FRANCHISE_PUBLIC_SELECT }),
     );

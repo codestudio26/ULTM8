@@ -375,6 +375,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "Anuluj prośbę",
       requestDeclined: "Franczyza {id} odrzuciła Twoją prośbę o dołączenie. Możesz poprosić ponownie.",
     },
+    close: {
+      title: "Zamknij tę szkołę",
+      explanation: "Zamknięcie kończy subskrypcję ULTM8 tej szkoły i subskrypcję członkowską każdego ucznia z końcem już opłaconego okresu oraz wstrzymuje opłaty franczyzowe. Szkoła staje się tylko do odczytu i zostanie trwale usunięta po 90 dniach; do tego czasu tylko pomoc techniczna ULTM8 może ją ponownie otworzyć. Zwroty nie są automatyczne: wykonaj je w Transakcjach przed zamknięciem.",
+      button: "Zamknij szkołę",
+      confirmTitle: "Zamknąć tę szkołę?",
+      confirmBody: "Nie możesz tego cofnąć samodzielnie. Wpisz nazwę szkoły i swój kod dostępu, aby potwierdzić.",
+      nameLabel: "Wpisz „{name}”, aby potwierdzić",
+      passcodeLabel: "Twój 6-cyfrowy kod dostępu",
+      closedTitle: "Ta szkoła jest zamknięta",
+      closedBody: "Zostanie trwale usunięta {date}. Do tego czasu tylko pomoc techniczna ULTM8 może ją ponownie otworzyć.",
+    },
   },
   branches: {
     cancellations: {

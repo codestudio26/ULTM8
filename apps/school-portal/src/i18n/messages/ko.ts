@@ -366,6 +366,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "요청 취소",
       requestDeclined: "프랜차이즈 {id}이(가) 가입 요청을 거절했습니다. 다시 요청할 수 있습니다.",
     },
+    close: {
+      title: "이 학교 폐쇄",
+      explanation: "폐쇄하면 이 학교의 ULTM8 구독과 모든 학생의 회원권 구독이 이미 결제한 기간이 끝날 때 종료되고, 프랜차이즈 수수료도 중단됩니다. 학교는 읽기 전용이 되며 90일 후 영구 삭제되고, 그 전까지는 ULTM8 지원팀만 다시 열 수 있습니다. 환불은 자동으로 되지 않으니 폐쇄 전에 거래 내역에서 처리하세요.",
+      button: "학교 폐쇄",
+      confirmTitle: "이 학교를 폐쇄할까요?",
+      confirmBody: "직접 되돌릴 수 없습니다. 확인하려면 학교 이름과 패스코드를 입력하세요.",
+      nameLabel: "확인하려면 \"{name}\"을(를) 입력하세요",
+      passcodeLabel: "6자리 패스코드",
+      closedTitle: "이 학교는 폐쇄되었습니다",
+      closedBody: "{date}에 영구 삭제됩니다. 그 전까지는 ULTM8 지원팀만 다시 열 수 있습니다.",
+    },
   },
   branches: {
     cancellations: {
