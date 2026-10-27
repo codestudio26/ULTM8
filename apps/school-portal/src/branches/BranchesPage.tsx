@@ -4,9 +4,9 @@ import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
+import { useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
-import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
+import { CloseBranchModal } from './CloseBranchModal';
 import { useT } from '../i18n/I18nProvider';
 import { countryDisplayName, formatLocale } from '../i18n/format';
 
@@ -62,7 +62,6 @@ export function BranchesPage() {
   const allBranchesQuery = useBranches(schoolId);
   const { data, isLoading, error } = useBranches(schoolId, { q: search.trim() || undefined, city: cityFilter || undefined, country: countryFilter || undefined });
   const createBranch = useCreateBranch(schoolId ?? '');
-  const archiveBranch = useArchiveBranch(schoolId ?? '');
   const unarchiveBranch = useUnarchiveBranch(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -72,8 +71,8 @@ export function BranchesPage() {
   // archived) is always fetched (useBranches passes includeArchived: true)
   // so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
-  // Decision 293 — archiving asks first; a refusal (what still belongs to
-  // the Branch) shows inside the dialog rather than as a page banner.
+  // Decision 330 — "Close branch" opens a window that shows what is still in
+  // use and where it goes (CloseBranchModal), instead of a bare confirmation.
   const [archiving, setArchiving] = useState<BranchListItem | null>(null);
 
   if (!schoolId) return null;
@@ -203,15 +202,8 @@ export function BranchesPage() {
         </Card>
       )}
 
-      {archiving ? (
-        <ConfirmDeleteModal
-          title={t('branches.archiveConfirmTitle', { name: archiving.name })}
-          description={t('branches.archiveConfirmDescription')}
-          confirmLabel={t('branches.archive')}
-          genericErrorMessage={t('branches.archiveFailed')}
-          onConfirm={() => archiveBranch.mutateAsync(archiving.id)}
-          onClose={() => setArchiving(null)}
-        />
+      {archiving && schoolId ? (
+        <CloseBranchModal branch={archiving} schoolBranches={allBranchesQuery.data?.items ?? []} schoolId={schoolId} onClose={() => setArchiving(null)} />
       ) : null}
 
       {creating ? (

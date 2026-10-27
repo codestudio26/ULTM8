@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "インストラクターがこの帯を申告しているため、削除できません。",
     beltDeclaredArchive: "インストラクターがこの帯を申告しているため、アーカイブできません。",
     classHasDependents: "このクラスにはまだ次のものがあるため、アーカイブできません：{items}。",
-    branchHasDependents: "この支店にはまだ次のものがあるため、アーカイブできません：{items}。先に移動または削除してください。",
+    branchHasDependents: "この支店にはまだ次のものがあるため、閉鎖できません：{items}。移動先を選ぶか、先に移動してください。",
     instructorHasDependents: "このインストラクターは次のものに割り当てられているため、アーカイブできません：{items}。先に別の担当者に割り当ててください。",
     schoolHasSubscription: "このスクールにはすでに有効なプラットフォームのサブスクリプションがあります。プラン変更にはまだ対応していません。",
     franchiseHasSubscription: "このフランチャイズにはすでに有効なプラットフォームのサブスクリプションがあります。プラン変更にはまだ対応していません。",
@@ -92,6 +92,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "有効な時間枠{count}件",
+      },
+      weeklySlots: {
+        other: "週間の時間枠{count}件",
       },
     },
   },
