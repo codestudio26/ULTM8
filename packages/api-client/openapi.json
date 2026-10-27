@@ -1255,6 +1255,86 @@
         ]
       }
     },
+    "/v1/branches/{id}/close-preview": {
+      "get": {
+        "operationId": "BranchesController_closePreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchClosePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/branches/{id}/close": {
+      "post": {
+        "operationId": "BranchesController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/branches/{id}/unarchive": {
       "post": {
         "operationId": "BranchesController_unarchive",
@@ -14991,6 +15071,69 @@
             "type": "number",
             "nullable": true,
             "description": "Minor-unit amount. null = off."
+          }
+        }
+      },
+      "BranchClosePreviewDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Classes that have not ended yet, not counting archived ones."
+          },
+          "timetableSlots": {
+            "type": "number",
+            "description": "Weekly timetable slots, not counting archived ones."
+          },
+          "instructors": {
+            "type": "number",
+            "description": "Instructor profiles, not counting archived ones."
+          },
+          "students": {
+            "type": "number",
+            "description": "Students with this as their home Branch."
+          },
+          "staffRoles": {
+            "type": "number",
+            "description": "Active Branch Staff and coach roles scoped to this Branch."
+          },
+          "pendingCoachInvites": {
+            "type": "number",
+            "description": "Coach invites to this Branch not yet accepted, cancelled or expired. Closing cancels them."
+          },
+          "hasHistory": {
+            "type": "boolean",
+            "description": "Whether the Branch has a past (classes, slots, Instructor profiles or roles). If so it is kept after closing, never removed."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "timetableSlots",
+          "instructors",
+          "students",
+          "staffRoles",
+          "pendingCoachInvites",
+          "hasHistory"
+        ]
+      },
+      "CloseBranchDto": {
+        "type": "object",
+        "properties": {
+          "classesTo": {
+            "type": "string",
+            "description": "Where upcoming Classes and weekly timetable slots go: a Branch id, or \"WHOLE_SCHOOL\"."
+          },
+          "studentsTo": {
+            "type": "string",
+            "description": "New home Branch for Students: a Branch id, or \"WHOLE_SCHOOL\" for no home Branch."
+          },
+          "instructorsTo": {
+            "type": "string",
+            "description": "Where Instructor profiles go: a Branch id, or \"WHOLE_SCHOOL\"."
+          },
+          "staffTo": {
+            "type": "string",
+            "description": "Where active Branch Staff and coach roles go: a Branch id only. A Branch role never becomes School-wide; remove access on the Staff page instead."
           }
         }
       },
