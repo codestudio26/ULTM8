@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff page: staff list, Remove from School, "Give role", instant access
+  changes (Decisions 360, 361)** — the Staff page now lists everyone with an
+  owner, coach or Branch Staff role, filterable by role, branch, name and
+  status (removed staff are hidden until "Removed" is picked), replacing the
+  look-up by User ID. "Remove from School" ends all of someone's coach and
+  staff roles at once and keeps their student account. "Send invite" is now
+  "Give role", since it works straight away. A removed or changed role now
+  applies on the person's next click, even if they are signed in, instead of
+  up to 15 minutes later. Names made only of spaces are refused on Add staff
+  manually. Needs the migration `20261211000000_user_roles_changed_at`.
 - **Waivers: guests sign by a shared link** (Decision 366) — members can
   bring guests on a booking with their Friend Passes in the app, and each
   guest gets a link to sign the School's waivers on a web page, without an

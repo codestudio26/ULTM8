@@ -548,6 +548,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_listStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_removeFromSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -5099,6 +5131,41 @@ export interface components {
             /** @description False if the temp-passcode email could not be sent — the Staff account was still created. */
             emailSent: boolean;
         };
+        StaffRoleDto: {
+            /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
+            grantId: string;
+            /** @enum {string} */
+            role: "SCHOOL_OWNER_MANAGER" | "INSTRUCTOR" | "BRANCH_STAFF";
+            branchId?: string | null;
+            branchName?: string | null;
+            grantedAt: string;
+            grantedByName?: string | null;
+            revokedAt?: string | null;
+        };
+        StaffMemberDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            phone?: string | null;
+            profilePhotoUrl?: string | null;
+            /** @description Holds at least one active staff, coach or owner role here. */
+            active: boolean;
+            /** @description When they were first given a staff role here. */
+            addedAt: string;
+            /** @description When their last staff role here ended, for removed staff. */
+            removedAt?: string | null;
+            canInviteCoaches: boolean;
+            /** @description Active roles first, then ended ones, newest first. */
+            roles: components["schemas"]["StaffRoleDto"][];
+        };
+        StaffListResponseDto: {
+            items: components["schemas"]["StaffMemberDto"][];
+        };
+        RemoveFromSchoolResponseDto: {
+            /** @description How many roles were ended. */
+            removedRoles: number;
+        };
         CreateFranchiseDto: {
             name: string;
             mobileNumber?: string;
@@ -9089,6 +9156,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateStaffManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_listStaff: {
+        parameters: {
+            query?: {
+                /** @description Default active. "removed" = had a staff role here, holds none now. */
+                status?: "active" | "removed" | "all";
+                role?: "SCHOOL_OWNER_MANAGER" | "INSTRUCTOR" | "BRANCH_STAFF";
+                branchId?: string;
+                /** @description Part of a name or email, any capitals. */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffListResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_removeFromSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
             };
         };
