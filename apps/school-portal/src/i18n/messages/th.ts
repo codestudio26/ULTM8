@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "ทำเครื่องหมายว่าอ่านแล้ว",
     snooze: "เลื่อนการแจ้งเตือน",
     markReadFailed: "ไม่สามารถทำเครื่องหมายว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
+    markAllRead: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+    markAllReadFailed: "ไม่สามารถทำเครื่องหมายการแจ้งเตือนว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
     delete: "ลบ",
     clearAllRead: "ล้างที่อ่านแล้วทั้งหมด",
     loadMore: "โหลดเพิ่มเติม",

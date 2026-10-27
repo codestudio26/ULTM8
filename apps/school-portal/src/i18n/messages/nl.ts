@@ -105,6 +105,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Markeren als gelezen",
     snooze: "Uitstellen",
     markReadFailed: "Deze melding kan niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
+    markAllRead: "Alles markeren als gelezen",
+    markAllReadFailed: "Je meldingen kunnen niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
     delete: "Verwijderen",
     clearAllRead: "Alle gelezen wissen",
     loadMore: "Meer laden",

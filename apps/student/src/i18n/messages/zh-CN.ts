@@ -673,6 +673,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "还没有通知。",
+      markAllRead: "全部标为已读",
+      markAllReadFailed: "无法将通知标为已读，请重试。",
       loadFailed: "无法加载通知，请重试。",
     },
     row: {
@@ -680,6 +682,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}，未读",
       unread: "未读",
       markAsRead: "标为已读",
+      open: "打开",
       markReadFailed: "无法标为已读，请重试。",
     },
   },

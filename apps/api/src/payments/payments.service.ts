@@ -1168,7 +1168,9 @@ export class PaymentsService {
         const key = `cash-payment-${event}-${transaction.id}-${notice.userId}`;
         await this.notificationFanoutQueue.add(
           'notify',
-          { notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT' } satisfies NotificationFanoutJobData,
+          {
+            notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT', schoolId: transaction.schoolId, targetType: 'PAYMENT',
+          } satisfies NotificationFanoutJobData,
           { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
         );
       }

@@ -2443,6 +2443,32 @@
         ]
       }
     },
+    "/v1/notifications/me/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -15470,6 +15496,33 @@
             "type": "string",
             "nullable": true,
             "description": "Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment."
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School this notification came from (Decision 355), or null."
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true,
+            "description": "That School's name as it was when the notification was sent, shown as a label (Decision 355)."
+          },
+          "targetType": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "CLASS",
+              "WAIVER",
+              "PAYMENT",
+              "CANCELLATIONS",
+              "GRADING"
+            ],
+            "description": "What clicking the notification opens (Decision 355), or null for nothing."
+          },
+          "targetId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Class or Waiver id, for CLASS and WAIVER targets (Decision 355)."
           }
         },
         "required": [
@@ -15543,6 +15596,18 @@
         },
         "required": [
           "cleared"
+        ]
+      },
+      "MarkAllReadResponseDto": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "number",
+            "description": "How many unread Notifications were marked read."
+          }
+        },
+        "required": [
+          "updated"
         ]
       },
       "SnoozeNotificationDto": {

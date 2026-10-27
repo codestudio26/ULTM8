@@ -5562,6 +5562,9 @@ Nothing here is built yet. The kiosk is `docs/v1.3-backend-backlog.md` §3.21.
 ### Recorded by
 
 User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website for the next version. We will work on front desk and that is it for this version", then "agree" to the five Front Desk recommendations.
+
+---
+
 ## Decision 340 — Waivers review fixes
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (Waivers fix plan, deep dive)
@@ -5588,3 +5591,32 @@ Waiting on the product owner: when Archive is allowed (W2, Decision 252), whethe
 ### Recorded by
 
 User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
+
+---
+
+## Decision 355 — Notifications: Mark all read, click to open, and a School label
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 277, 333
+
+After Decision 333, six Notifications gaps were left: a School label, Mark all read, click-through, a sent-broadcast history, notification settings and automatic clean-up. The product owner chose (*"go with it"*, 27 Oct 2026) to build the first three now, the broadcast history next as its own change, and to leave settings and clean-up until email and push are switched on.
+
+### Decision
+
+1. **Mark all read.** `POST /notifications/me/read-all` marks every unread, not-deleted notification the caller has as read, across every page and snoozed ones included, setting `readAt` to now (an unread row has never been read). It returns `{ updated }`. The portal's Notifications page has a **Mark all read** button, greyed out when nothing is unread, and the student app shows one above its list.
+2. **Clicking a notification opens what it is about, and marks it read.** Each notification may carry a `targetType` (CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING) and, for CLASS and WAIVER, a `targetId`. The senders set them:
+   - CLASS: class moved, class cancelled, a waitlist spot opening, and a broadcast to one class.
+   - WAIVER: a waiver signature request.
+   - PAYMENT: a payment dispute on a Membership payment, the payment-restricted alert, and a cash payment confirmed or cancelled.
+   - CANCELLATIONS: cancellations to resolve.
+   - GRADING: ready to grade, promotion to decide, a promotion fee, and a rank change.
+   The portal opens `/classes/:id`, `/waivers`, `/transactions`, `/cancellations` or `/grading`. The student app opens My bookings, Waivers, Payment history or My grading, and shows nothing to open for CANCELLATIONS, a staff page. A franchise fee dispute and a broadcast to everyone or a Branch open nothing.
+3. **Each notification shows the School it came from.** The sender passes the School, and notification-fanout copies its name onto the row (`schoolId`, `schoolName`) when it writes it. The name is copied because the reader can't always see the School under RLS: a parent reading their child's notice, or a Student whose enrolment has ended. There is no foreign key, so the label outlives a School's purge. An Owner of more than one of a payment-restricted Student's Schools gets one alert, labelled with the first. A parent's copy of a child's notification (Decision 333) keeps the label and the target.
+4. **Migration** `20261202000000_notification_school_and_target` adds the four nullable columns. Grants are unchanged: ultm8_app and ultm8_jobs already hold table-level grants on `Notification`. Notifications sent before it have no label and open nothing.
+
+### What this does NOT resolve
+
+A sent-broadcast history (next), notification settings and automatic clean-up (after email and push are switched on). The student app has no single-class screen, so a CLASS notification opens My bookings there.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all read, click-through and the School label now.

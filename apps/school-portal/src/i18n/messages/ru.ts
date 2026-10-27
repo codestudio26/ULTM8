@@ -107,6 +107,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Отметить как прочитанное",
     snooze: "Отложить",
     markReadFailed: "Не удалось отметить уведомление как прочитанное. Попробуйте ещё раз.",
+    markAllRead: "Отметить все как прочитанные",
+    markAllReadFailed: "Не удалось отметить уведомления как прочитанные. Попробуйте ещё раз.",
     delete: "Удалить",
     clearAllRead: "Очистить прочитанные",
     loadMore: "Показать ещё",

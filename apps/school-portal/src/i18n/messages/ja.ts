@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "既読にする",
     snooze: "スヌーズ",
     markReadFailed: "この通知を既読にできませんでした。もう一度お試しください。",
+    markAllRead: "すべて既読にする",
+    markAllReadFailed: "通知を既読にできませんでした。もう一度お試しください。",
     delete: "削除",
     clearAllRead: "既読をすべて消去",
     loadMore: "さらに読み込む",

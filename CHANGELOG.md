@@ -24,6 +24,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   editor no longer fails once a ranked student leaves the School; they show
   as "Former student". The last 17 untranslated Disciplines messages are
   translated.
+- **Notifications: Mark all read, click to open, School label (Decision 355)**
+  — a **Mark all read** button marks every unread notification read, on every
+  page; clicking a notification opens what it is about (its class, the
+  waivers, payments, cancellations to resolve, or grading) and marks it read,
+  in the portal and the student app; and each notification shows the School it
+  came from. Needs a database migration
+  (`20261202000000_notification_school_and_target`). Notifications sent before
+  it have no label and open nothing.
 - **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
   breaks after a student leaves (their signature shows under "Former
   students"); each signature keeps a copy of the exact text signed, viewable
