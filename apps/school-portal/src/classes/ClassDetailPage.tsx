@@ -11,12 +11,53 @@ import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useCancelClass } from '../cancellations/cancellationQueries';
+import { useClassGuestWaivers, type BookingGuests } from '../waivers/guestWaiverQueries';
 
 /** Decision 291 — the School cancels this whole class: every booking is
  * resolved by the School's "When the school cancels a whole class" setting,
  * the waitlist is closed, and everyone booked or waiting is notified with the
  * reason. Owner/Manager or Branch Staff (the API re-checks, and refuses
  * Instructors). */
+/** A booking's guests (Waivers Q9): how many, and when the class asks for a
+ * waiver, whether each has signed by their link, with the link to copy for
+ * staff who may share it. */
+function GuestsCell({ count, guests }: { count: number; guests: BookingGuests | undefined }) {
+  const t = useT();
+  const [copied, setCopied] = useState<string | null>(null);
+  if (count === 0) return <>—</>;
+  if (!guests || !guests.waiverRequired) return <>{count}</>;
+  return (
+    <div style={{ display: 'grid', gap: 4 }}>
+      {guests.guests.map((g) => (
+        <div key={g.attendeeId} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          {g.waiverStatus === 'SIGNED' ? (
+            <Badge variant="success">{t('classes.detail.guestSigned', { name: g.guestFullName ?? '' })}</Badge>
+          ) : g.waiverStatus === 'UNSIGNED' ? (
+            <Badge variant="warning">{t('classes.detail.guestUnsigned')}</Badge>
+          ) : (
+            <Badge>{t('classes.detail.guest')}</Badge>
+          )}
+          {g.link && g.waiverStatus === 'UNSIGNED' ? (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(g.link!);
+                  setCopied(g.attendeeId);
+                } catch {
+                  window.prompt(t('classes.detail.guestCopyLink'), g.link!);
+                }
+              }}
+            >
+              {copied === g.attendeeId ? t('classes.detail.guestLinkCopied') : t('classes.detail.guestCopyLink')}
+            </Button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CancelClassButton({ classId }: { classId: string }) {
   const t = useT();
   const cancelClass = useCancelClass(classId);
@@ -231,6 +272,7 @@ export function ClassDetailPage() {
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
   const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
   const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
+  const guestWaivers = useClassGuestWaivers(classId ?? undefined);
   const mayCancel = !!useOwnedSchoolId() || !!useCoachSchoolId();
   const [adding, setAdding] = useState(false);
   const [cancelling, setCancelling] = useState<BookingResponse | null>(null);
@@ -249,6 +291,10 @@ export function ClassDetailPage() {
   }
 
   const bookings = bookingData?.items ?? [];
+  const guestsByBooking = new Map((guestWaivers.data?.bookings ?? []).map((g) => [g.bookingId, g]));
+  const unsignedGuests = guestWaivers.data?.waiverRequired
+    ? (guestWaivers.data.bookings ?? []).reduce((n, b) => n + b.guests.filter((g) => g.waiverStatus === 'UNSIGNED').length, 0)
+    : 0;
   const waitlist = waitlistData?.items ?? [];
   // Bookings change only while the class is still open: not cancelled,
   // archived or over (the API refuses the rest anyway).
@@ -303,6 +349,11 @@ export function ClassDetailPage() {
               </Button>
             ) : null}
           </div>
+          {unsignedGuests > 0 ? (
+            <div className="ultm8-banner ultm8-banner--warning" role="status">
+              {t('classes.detail.guestsUnsigned', { count: unsignedGuests })}
+            </div>
+          ) : null}
           {bookings.length === 0 ? (
             <EmptyState title={t('classes.detail.bookingsEmptyTitle')} description={t('classes.detail.bookingsEmptyDescription')} />
           ) : (
@@ -311,7 +362,7 @@ export function ClassDetailPage() {
               columns={[
                 { key: 'student', header: t('classes.detail.columnStudent'), render: (b) => fullName(b) },
                 { key: 'status', header: t('classes.detail.columnStatus'), render: (b) => bookingStatusBadge(b.status, t) },
-                { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => b.attendees.length || '—' },
+                { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => <GuestsCell count={b.attendees.length} guests={guestsByBooking.get(b.id)} /> },
                 { key: 'override', header: t('classes.detail.columnOverrideReason'), render: (b) => b.overrideReason ?? '—' },
                 { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => new Date(b.createdAt).toLocaleString(formatLocale()) },
                 ...(open

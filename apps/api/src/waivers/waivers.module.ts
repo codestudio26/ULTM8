@@ -4,6 +4,8 @@ import { QueueModule } from '../jobs/queue.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { WaiversController } from './waivers.controller';
 import { WaiversService } from './waivers.service';
+import { GuestWaiverLinksController, GuestWaiversController } from './guest-waivers.controller';
+import { GuestWaiversService } from './guest-waivers.service';
 import { WaiverAssignmentModule } from './waiver-assignment.module';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 
@@ -24,10 +26,12 @@ import { R2ClientService } from '../common/object-storage/r2-client.service';
  * Student already active at the School — see WaiverAssignmentService's own
  * header comment for why this one small piece lives in its own module instead
  * of as a method here.
+ *
+ * GuestWaiversService (Waivers Q9): guests on a booking sign by a shared link.
  */
 @Module({
   imports: [TenantsModule, QueueModule, GuardiansModule, WaiverAssignmentModule],
-  controllers: [WaiversController],
-  providers: [WaiversService, R2ClientService],
+  controllers: [WaiversController, GuestWaiversController, GuestWaiverLinksController],
+  providers: [WaiversService, GuestWaiversService, R2ClientService],
 })
 export class WaiversModule {}
