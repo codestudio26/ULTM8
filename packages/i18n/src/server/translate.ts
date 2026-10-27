@@ -198,6 +198,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Ready to grade': 'readyToGradeTitle',
   'Student payment-restricted': 'paymentRestrictedTitle',
   'Waiver signature requested': 'waiverRequestTitle',
+  'Waiver reminder': 'waiverReminderTitle',
+  'Waiver updated': 'waiverUpdatedTitle',
+  'Waiver renewal': 'waiverRenewalTitle',
   'New stripe!': 'newStripeTitle',
   'Promoted!': 'promotedTitle',
   'Rank updated': 'rankUpdatedTitle',
@@ -272,6 +275,17 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
   [/^(.+) has invited you to sign the waiver "(.+)"\.$/s, (m, { t }) => n(t, 'waiverRequestFromSchoolBody', { school: m[1], waiver: m[2] })],
+  // Decision 354 — apps/api/src/jobs/waiver-signature-requests.processor.ts waiverNotice().
+  [/^(.+) reminds you to sign the waiver "(.+)"\.$/s, (m, { t }) => n(t, 'waiverReminderBody', { school: m[1], waiver: m[2] })],
+  [
+    /^(.+) has updated the waiver "(.+)"\. Please read it and sign it again\.$/s,
+    (m, { t }) => n(t, 'waiverUpdatedBody', { school: m[1], waiver: m[2] }),
+  ],
+  [
+    /^Your signature on the waiver "(.+)" at (.+) has run out\. Please sign it again\.$/s,
+    (m, { t }) => n(t, 'waiverRenewalBody', { waiver: m[1], school: m[2] }),
+  ],
+  [/^You're now 18, so (.+) asks you to sign the waiver "(.+)" yourself\.$/s, (m, { t }) => n(t, 'waiverAdultBody', { school: m[1], waiver: m[2] })],
   // Older rows, written before the School was named (the waiver's title sat
   // where the sender belongs).
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],

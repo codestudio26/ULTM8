@@ -183,3 +183,66 @@ test('archiving a waiver asks first; Cancel leaves it as it was', async ({ page 
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect((await db.waiver.findUniqueOrThrow({ where: { id: waiver.id } })).archivedAt).not.toBeNull();
 });
+
+/** Decision 354: Waiver settings, "everyone signs again", reminders and paper signatures. */
+test('the owner changes a waiver setting; each setting says what most schools choose', async ({ page }) => {
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Waiver settings' })).toBeVisible();
+  await expect(page.getByText('Most schools collect a waiver once.', { exact: false })).toBeVisible();
+
+  await page.getByRole('switch', { name: 'Members sign again after a set time' }).click();
+  await expect(page.getByLabel('Months')).toHaveValue('12');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Waiver settings saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).waiverRenewalMonths).toBe(12);
+  await db.school.update({ where: { id: s.schoolId }, data: { waiverRenewalMonths: null } });
+});
+
+test('changing the wording of a signed waiver asks whether everyone signs again; "New terms" expires the signatures', async ({ page }) => {
+  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Terms Waiver', body: 'Old terms' } });
+  waiverIds.push(waiver.id);
+  const signed = await db.waiverSignature.create({
+    data: {
+      id: randomUUID(), waiverId: waiver.id, studentId: s.student.id, signedById: s.student.id, schoolId: s.schoolId,
+      signerFullName: 'Sam Lee', signatureText: 'Sam Lee', status: 'SIGNED', signedDate: new Date(),
+    },
+  });
+
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Terms Waiver' }).click();
+  await expect(page.getByText('1 of 1 signed')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByLabel('Waiver text').fill('New terms');
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  const prompt = page.getByRole('dialog', { name: 'Do members need to sign again?' });
+  await expect(prompt.getByText('Signed so far: 1.', { exact: false })).toBeVisible();
+  await prompt.getByRole('button', { name: 'New terms: everyone signs again' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  expect((await db.waiverSignature.findUniqueOrThrow({ where: { id: signed.id } })).status).toBe('EXPIRED');
+  expect(await db.waiverSignature.count({ where: { waiverId: waiver.id, studentId: s.student.id, status: 'UNSIGNED' } })).toBe(1);
+});
+
+test('"Remind everyone" reminds the students who have not signed; an unsigned entry can be recorded as signed on paper', async ({ page }) => {
+  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Remind Waiver', body: 'text' } });
+  waiverIds.push(waiver.id);
+  await db.waiverSignature.create({
+    data: { id: randomUUID(), waiverId: waiver.id, studentId: s.newStudent.id, schoolId: s.schoolId, status: 'UNSIGNED' },
+  });
+
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Remind Waiver' }).click();
+  const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
+  await panel.getByRole('button', { name: "Remind everyone who hasn't signed" }).click();
+  await expect(panel.getByText('Reminders sent: 1.')).toBeVisible();
+  await panel.getByRole('button', { name: "Remind everyone who hasn't signed" }).click();
+  await expect(panel.getByText("Everyone who hasn't signed was already reminded in the last day.")).toBeVisible();
+
+  await panel.getByRole('button', { name: `Record paper signature: ${s.newStudent.name}` }).click();
+  const dialog = page.getByRole('dialog', { name: `Paper signature: ${s.newStudent.name}` });
+  await expect(dialog.getByLabel('Name written on the paper')).toHaveValue(s.newStudent.name);
+  await expect(dialog.getByLabel('Photo of the signed paper')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Save signature' })).toBeDisabled();
+});
