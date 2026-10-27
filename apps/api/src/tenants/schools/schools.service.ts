@@ -13,6 +13,10 @@ import { StripeClientService } from '../../payments/stripe-client.service';
 import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { UsersService } from '../../users/users.service';
 import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../../jobs/queue.constants';
+import type { WaiverSignatureRequestJobData } from '../../jobs/waiver-signature-requests.processor';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
@@ -36,6 +40,7 @@ export class SchoolsService {
     private readonly stripeClient: StripeClientService,
     private readonly usersService: UsersService,
     private readonly waiverAssignment: WaiverAssignmentService,
+    @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
   ) {}
 
   /**
@@ -280,6 +285,7 @@ export class SchoolsService {
 
     const roleGrantId = randomUUID();
 
+    let joinWaiverIds: string[] = [];
     const roleGrant = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const [{ school_exists: schoolExists }] = await tx.$queryRaw<[{ school_exists: boolean }]>`
         SELECT school_exists(${schoolId})
@@ -345,9 +351,30 @@ export class SchoolsService {
         waivers.map((w) => w.id),
         [studentId],
       );
+      // Decision 354 (Q8): tell the new member which waivers to sign, unless
+      // the School turned that off. Only waivers still unsigned (a returning
+      // member's earlier signature still stands).
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverNoticeOnJoin: true } });
+      const toSign = school?.waiverNoticeOnJoin
+        ? await tx.waiverSignature.findMany({
+            where: { schoolId, studentId, waiverId: { in: waivers.map((w) => w.id) }, status: { in: ['UNSIGNED', 'PENDING'] } },
+            select: { waiverId: true },
+          })
+        : [];
+      joinWaiverIds = toSign.map((r) => r.waiverId);
 
       return created;
     });
+
+    for (const waiverId of joinWaiverIds) {
+      const data: WaiverSignatureRequestJobData = { waiverId, schoolId, studentIds: [studentId], reason: 'assigned', batchId: roleGrant.id };
+      try {
+        await this.waiverSignatureRequestsQueue.add('notify', data, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+      } catch (err) {
+        // The member has joined; a missed notice must not undo that.
+        this.logger.error(`Joining School ${schoolId}: the waiver notice for Waiver ${waiverId} could not be queued.`, err instanceof Error ? err.stack : String(err));
+      }
+    }
 
     if (isGuardianAction || isStaffAction) {
       // No access token to mint — the caller (Guardian or Staff) isn't the

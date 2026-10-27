@@ -24,6 +24,8 @@ import { CloudflareStreamService } from '../common/video/cloudflare-stream.servi
 import { TranscribeService } from '../common/video/transcribe.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migration.processor';
+import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiver-renewal-sweep.processor';
+import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -162,7 +164,7 @@ import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migrati
  * QueueModule, imported above.
  */
 @Module({
-  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
+  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
   providers: [
     OtpDeliveryProcessor,
     ClassOccurrenceGenerationProcessor,
@@ -194,6 +196,8 @@ import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migrati
     TranscribeService,
     R2ClientService,
     FranchiseFeeRateMigrationProcessor,
+    WaiverRenewalSweepProcessor,
+    WaiverRenewalSweepScheduler,
   ],
 })
 export class JobsModule {}

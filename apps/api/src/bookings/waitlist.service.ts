@@ -13,6 +13,7 @@ import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -105,11 +106,7 @@ export class WaitlistService {
       // Waivers review W15: the claim step needs a signed Waiver, so a
       // student without one would hold an offered seat they can never take.
       if (resolvedClass.termsWaiverRequired) {
-        const signed = await tx.waiverSignature.findFirst({
-          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
-          select: { id: true },
-        });
-        if (!signed) {
+        if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
         }
       }
@@ -259,11 +256,7 @@ export class WaitlistService {
       assertClassBookable(cls, { byStaff: true });
 
       if (cls.termsWaiverRequired) {
-        const signed = await tx.waiverSignature.findFirst({
-          where: { studentId, schoolId: cls.schoolId, status: 'SIGNED' },
-          select: { id: true },
-        });
-        if (!signed) {
+        if (!(await hasCountingWaiverSignature(tx, studentId, cls.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before claiming this Booking.');
         }
       }
