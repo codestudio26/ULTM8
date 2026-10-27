@@ -19,6 +19,7 @@ import {
   ENTITY_OFFBOARDING_PURGE_QUEUE,
   VIDEO_PROCESSING_POLL_QUEUE,
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
+  WAIVER_RENEWAL_SWEEP_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -77,6 +78,7 @@ export {
   ENTITY_OFFBOARDING_PURGE_QUEUE,
   VIDEO_PROCESSING_POLL_QUEUE,
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
+  WAIVER_RENEWAL_SWEEP_QUEUE,
 };
 
 @Module({
@@ -100,6 +102,7 @@ export {
       { name: ENTITY_OFFBOARDING_PURGE_QUEUE },
       { name: VIDEO_PROCESSING_POLL_QUEUE },
       { name: FRANCHISE_FEE_RATE_MIGRATION_QUEUE },
+      { name: WAIVER_RENEWAL_SWEEP_QUEUE },
     ),
   ],
   exports: [BullModule],

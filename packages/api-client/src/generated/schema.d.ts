@@ -3428,6 +3428,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/waiver-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_getWaiverSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["WaiversController_updateWaiverSettings"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/waivers/{id}/remind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_remind"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}/paper-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_requestPaperUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}/paper": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_recordPaperSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -7315,6 +7379,17 @@ export interface components {
             signedWaiverSha256?: string | null;
             /** @description The Waiver version that was signed. */
             signedWaiverVersion?: number | null;
+            /**
+             * @description ONLINE: signed in the app. PAPER: signed on paper and recorded by the Owner or a Manager (Decision 354).
+             * @enum {string}
+             */
+            method: "ONLINE" | "PAPER";
+            /** @description PAPER only: the staff member who recorded it. */
+            recordedById?: string | null;
+            /** @description Read one signature only: the name of the staff member who recorded a paper signature. */
+            recordedByName?: string | null;
+            /** @description When this member was last reminded to sign. */
+            lastRemindedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -7330,10 +7405,61 @@ export interface components {
             nextCursor?: string | null;
             summary?: components["schemas"]["WaiverSignatureSummaryDto"];
         };
+        WaiverSettingsDto: {
+            /** @description A signature on an archived waiver still counts for classes and plans that need a waiver. Default on. */
+            waiverArchivedSignaturesCount: boolean;
+            /** @description Members sign again every this many months. Null (the default): a signature never runs out. */
+            waiverRenewalMonths: number | null;
+            /** @description A waiver a Guardian signed for a child stops counting when the child turns 18, and they sign it themselves. Default on. */
+            waiverMinorsSignAgainAt18: boolean;
+            /** @description The Owner and Managers can record a waiver signed on paper. Default on. */
+            waiverPaperSignaturesAllowed: boolean;
+            /** @description A new member is told which waivers to sign when they join. Default on. */
+            waiverNoticeOnJoin: boolean;
+            /** @description Remind members who have not signed every this many days. Null (the default): no repeat reminders. */
+            waiverReminderDays: number | null;
+        };
+        UpdateWaiverSettingsDto: {
+            waiverArchivedSignaturesCount?: boolean;
+            /** @description 1 to 120 months, or null for never. */
+            waiverRenewalMonths?: number | null;
+            waiverMinorsSignAgainAt18?: boolean;
+            waiverPaperSignaturesAllowed?: boolean;
+            waiverNoticeOnJoin?: boolean;
+            /** @description 1 to 90 days, or null for off. */
+            waiverReminderDays?: number | null;
+        };
+        RemindResponseDto: {
+            /** @description How many members were reminded. */
+            reminded: number;
+        };
+        PaperSignatureUploadUrlDto: {
+            /**
+             * @description The photo or scan of the signed paper.
+             * @enum {string}
+             */
+            contentType: "image/jpeg" | "image/png";
+        };
+        SignatureUploadUrlResponseDto: {
+            /** @description Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here. */
+            uploadUrl: string;
+            /** @description Pass this back as signatureImageKey when calling POST /waivers/{id}/sign. */
+            objectKey: string;
+        };
+        RecordPaperSignatureDto: {
+            /** @description The name written on the paper: the student, or for a child the parent or guardian who signed. */
+            signerFullName: string;
+            /** @description The date written on the paper (YYYY-MM-DD). Not in the future. */
+            signedDate: string;
+            /** @description objectKey from paper-upload-url, after the photo was uploaded. */
+            imageKey: string;
+        };
         UpdateWaiverDto: {
             title?: string;
             /** @description The waiver document body text. */
             body?: string;
+            /** @description When the wording changes: true asks everyone to sign again (their signatures expire); false keeps the signatures (a small fix). */
+            resign?: boolean;
         };
         SignWaiverDto: {
             /** @description Guardian-only: sign on behalf of this linked minor Student instead of the caller. */
@@ -7349,12 +7475,6 @@ export interface components {
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */
             studentId?: string;
-        };
-        SignatureUploadUrlResponseDto: {
-            /** @description Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here. */
-            uploadUrl: string;
-            /** @description Pass this back as signatureImageKey when calling POST /waivers/{id}/sign. */
-            objectKey: string;
         };
         ScanAttendanceDto: {
             classId: string;
@@ -13543,6 +13663,128 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSignatureResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_getWaiverSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSettingsDto"];
+                };
+            };
+        };
+    };
+    WaiversController_updateWaiverSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWaiverSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSettingsDto"];
+                };
+            };
+        };
+    };
+    WaiversController_remind: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemindResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_requestPaperUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+                signatureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaperSignatureUploadUrlDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_recordPaperSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+                signatureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordPaperSignatureDto"];
+            };
+        };
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
