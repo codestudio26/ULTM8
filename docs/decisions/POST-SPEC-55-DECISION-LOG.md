@@ -5791,3 +5791,25 @@ Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend 
 ### Recorded by
 
 User (Code), 27 Oct 2026: "Agreed" to the recommendation (a polite email with no reason given, and keep the details 30 days, then delete them), then "1 a1, B2, 2": the same two answers, plus option 2 for Find me (name and date of birth).
+
+---
+
+## Decision 365 — Rejected sign-ups: website sign-ups too, and staff can still approve within 30 days
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Extends:** Decision 362 (answers both points it left open) · **Builds on:** Decision 318 (website sign-up forms)
+
+### Decision
+
+1. **Website sign-ups follow Decision 362 too.** When staff reject a sign-up made through a website sign-up form (Decision 318), the person gets the same polite email with no reason, and what they typed is kept for 30 days, then deleted.
+2. **Staff can approve a rejected sign-up within those 30 days**, from the tablet or the website. Rejected sign-ups stay in their own list for that time.
+   - Approving it makes the person a member straight away, as a normal approval does, and they get the normal welcome email. It doesn't go back to "waiting".
+   - The record keeps who rejected it and who approved it later.
+   - After 30 days the details are deleted, so there's nothing left to approve; the person signs up again.
+
+### Not built
+
+Nothing here is built yet. Tablet sign-ups are F5 in `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`; website sign-up forms are Decision 318.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, then "agree" to the recommendation that staff can approve a rejected sign-up within the 30 days.
