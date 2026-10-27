@@ -293,6 +293,19 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
       expect((await rowsFor(waiver.id, st.id)).map((r) => r.status)).toEqual(['SIGNED']);
       await superuser.roleGrant.updateMany({ where: { userId: st.id }, data: { revokedAt: new Date() } });
     });
+
+    it('"Remind everyone" pressed several times at once reminds each student once, without failing', async () => {
+      const students = await Promise.all(Array.from({ length: 10 }, (_, i) => mkUser(`race-remind-${i}`, school.id, 'STUDENT')));
+      const waiver = await mkWaiver('Remind burst');
+      notices = [];
+      const res = await Promise.all(Array.from({ length: 8 }, () => http().post(`/v1/schools/${school.id}/waivers/${waiver.id}/remind`).set(auth(owner))));
+      expect(res.map((r) => r.status)).toEqual(Array(8).fill(201));
+      const reminded = notices.flatMap((n) => n.studentIds);
+      expect(reminded.length).toBe(new Set(reminded).size);
+      expect(res.reduce((sum, r) => sum + r.body.reminded, 0)).toBe(reminded.length);
+      for (const st of students) expect(reminded).toContain(st.id);
+      await superuser.roleGrant.updateMany({ where: { userId: { in: students.map((st) => st.id) } }, data: { revokedAt: new Date() } });
+    });
   });
 
   it('Q8: a new member is told which waivers to sign when they join, unless the School turned that off', async () => {

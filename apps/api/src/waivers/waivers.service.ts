@@ -427,20 +427,29 @@ export class WaiversService {
       throw new ConflictException('This waiver is archived, so no one can be reminded to sign it.');
     }
     const now = new Date();
+    // lastRemindedAt is a UTC timestamp without time zone; ::timestamp keeps
+    // the ISO string's UTC wall time.
+    const at = now.toISOString();
+    const cutoff = new Date(now.getTime() - REMIND_AGAIN_AFTER_MS).toISOString();
     const studentIds = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const active = await this.activeStudentIds(tx, schoolId);
-      const due = await tx.waiverSignature.findMany({
-        where: {
-          waiverId,
-          schoolId,
-          status: { in: ['UNSIGNED', 'PENDING'] },
-          studentId: { in: active },
-          OR: [{ lastRemindedAt: null }, { lastRemindedAt: { lt: new Date(now.getTime() - REMIND_AGAIN_AFTER_MS) } }],
-        },
-        select: { id: true, studentId: true },
-      });
-      await tx.waiverSignature.updateMany({ where: { id: { in: due.map((d) => d.id) } }, data: { lastRemindedAt: now } });
-      return [...new Set(due.map((d) => d.studentId))];
+      // Claimed in one statement, rows locked in id order: presses at the same
+      // moment queue on the rows and the later ones find them already
+      // reminded, so each student is reminded once (at most once a day,
+      // Decision 354 §5) and two presses can't deadlock (stress test round 3).
+      const claimed = await tx.$queryRaw<{ studentId: string }[]>`
+        UPDATE "WaiverSignature" SET "lastRemindedAt" = ${at}::timestamp
+        WHERE id IN (
+          SELECT id FROM "WaiverSignature"
+          WHERE "waiverId" = ${waiverId} AND "schoolId" = ${schoolId}
+            AND status IN ('UNSIGNED', 'PENDING') AND "studentId" = ANY(${active})
+            AND ("lastRemindedAt" IS NULL OR "lastRemindedAt" < ${cutoff}::timestamp)
+          ORDER BY id
+          FOR UPDATE
+        )
+        AND ("lastRemindedAt" IS NULL OR "lastRemindedAt" < ${cutoff}::timestamp)
+        RETURNING "studentId"`;
+      return [...new Set(claimed.map((d) => d.studentId))];
     });
     if (studentIds.length > 0) {
       await this.enqueueNotice({ waiverId, schoolId, studentIds, reason: 'reminder', batchId: String(now.getTime()) });
