@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "Ein Ausbilder hat diesen Gürtel angegeben, daher kann er nicht gelöscht werden.",
     beltDeclaredArchive: "Ein Ausbilder hat diesen Gürtel angegeben, daher kann er nicht archiviert werden.",
     classHasDependents: "Dieser Kurs kann nicht archiviert werden, solange noch Folgendes daran hängt: {items}.",
-    branchHasDependents: "Diese Filiale kann nicht archiviert werden, solange noch Folgendes daran hängt: {items}. Verschiebe oder entferne das zuerst.",
+    branchHasDependents: "Diese Filiale kann nicht geschlossen werden, solange noch Folgendes daran hängt: {items}. Wähle, wohin das kommt, oder verschiebe es zuerst.",
     instructorHasDependents: "Dieser Ausbilder kann nicht archiviert werden, solange ihm noch Folgendes zugewiesen ist: {items}. Weise das zuerst jemand anderem zu.",
     schoolHasSubscription: "Diese Schule hat bereits ein aktives Plattform-Abo – Tarifwechsel werden noch nicht unterstützt.",
     franchiseHasSubscription: "Dieses Franchise hat bereits ein aktives Plattform-Abo – Tarifwechsel werden noch nicht unterstützt.",
@@ -105,6 +105,10 @@ export const server: PartialMessages<ServerKeys> = {
       activeSlots: {
         one: "{count} aktives Zeitfenster im Stundenplan",
         other: "{count} aktive Zeitfenster im Stundenplan",
+      },
+      weeklySlots: {
+        one: "{count} wöchentliches Zeitfenster im Stundenplan",
+        other: "{count} wöchentliche Zeitfenster im Stundenplan",
       },
     },
   },

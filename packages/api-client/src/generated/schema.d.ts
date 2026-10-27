@@ -436,6 +436,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/branches/{id}/close-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BranchesController_closePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/branches/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BranchesController_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/branches/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -4883,6 +4915,32 @@ export interface components {
             /** @description Minor-unit amount. null = off. */
             noShowFee?: number | null;
         };
+        BranchClosePreviewDto: {
+            /** @description Classes that have not ended yet, not counting archived ones. */
+            upcomingClasses: number;
+            /** @description Weekly timetable slots, not counting archived ones. */
+            timetableSlots: number;
+            /** @description Instructor profiles, not counting archived ones. */
+            instructors: number;
+            /** @description Students with this as their home Branch. */
+            students: number;
+            /** @description Active Branch Staff and coach roles scoped to this Branch. */
+            staffRoles: number;
+            /** @description Coach invites to this Branch not yet accepted, cancelled or expired. Closing cancels them. */
+            pendingCoachInvites: number;
+            /** @description Whether the Branch has a past (classes, slots, Instructor profiles or roles). If so it is kept after closing, never removed. */
+            hasHistory: boolean;
+        };
+        CloseBranchDto: {
+            /** @description Where upcoming Classes and weekly timetable slots go: a Branch id, or "WHOLE_SCHOOL". */
+            classesTo?: string;
+            /** @description New home Branch for Students: a Branch id, or "WHOLE_SCHOOL" for no home Branch. */
+            studentsTo?: string;
+            /** @description Where Instructor profiles go: a Branch id, or "WHOLE_SCHOOL". */
+            instructorsTo?: string;
+            /** @description Where active Branch Staff and coach roles go: a Branch id only. A Branch role never becomes School-wide; remove access on the Staff page instead. */
+            staffTo?: string;
+        };
         CreateRoleGrantDto: {
             /** @enum {string} */
             role: "INSTRUCTOR" | "BRANCH_STAFF" | "SCHOOL_OWNER_MANAGER";
@@ -8680,6 +8738,52 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponseDto"];
+                };
+            };
+        };
+    };
+    BranchesController_closePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchClosePreviewDto"];
+                };
+            };
+        };
+    };
+    BranchesController_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseBranchDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {

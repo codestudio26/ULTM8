@@ -15,11 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Closures (Decision 353, Q8)** — the owner can close the School or one
-  branch for some dates from the Timetable's Closures button; classes on those
-  dates are cancelled under the normal cancellation rule and students are told,
-  new classes skip them, and the calendar shows "Closed". Needs a database
-  migration.
+- **Close branch** (Decision 330) replaces Archive on the Branches page. Only
+  what is still in use stops a Branch closing (upcoming classes, weekly slots,
+  Instructor profiles, home-branch Students, staff and coach roles); past
+  classes no longer do. The window asks where each group goes (another Branch,
+  or the whole School where that makes sense), moves it all and closes the
+  Branch in one step, and cancels open coach invites there. Nobody is charged
+  or emailed. A closed Branch with history is kept for good; an empty one is
+  removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
+  archive words, in all 15 languages. **Needs a database migration.**
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,
@@ -42,6 +46,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261204000100_franchise_join_requests`.
+- **Closures (Decision 353, Q8)** — the owner can close the School or one
+  branch for some dates from the Timetable's Closures button; classes on those
+  dates are cancelled under the normal cancellation rule and students are told,
+  new classes skip them, and the calendar shows "Closed". Needs a database
+  migration.
 - **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
   Timetable item in the Branch Staff menu opens the calendar read-only, with
   their branch's and School-wide classes, to book walk-ins; only the owner
