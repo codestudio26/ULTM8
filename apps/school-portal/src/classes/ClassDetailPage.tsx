@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from './classQueries';
-import { useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
-import { useClassWaitlist, type WaitlistEntryResponse } from '../waitlist/waitlistQueries';
+import { useBookClass, useCancelBooking, useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
+import { useClassWaitlist, useJoinWaitlist, type WaitlistEntryResponse } from '../waitlist/waitlistQueries';
+import { useStudents } from '../students/studentQueries';
 import { titleCase } from '../lib/text';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -59,6 +60,144 @@ function CancelClassButton({ classId }: { classId: string }) {
   );
 }
 
+const fullName = (p: { studentFirstName?: string | null; studentSurname?: string | null; studentId: string }) =>
+  p.studentFirstName || p.studentSurname ? `${p.studentFirstName ?? ''} ${p.studentSurname ?? ''}`.trim() : p.studentId.slice(0, 8);
+
+/** Staff book a Student into this class (POST /classes/:id/book with
+ * `studentId`), paid from the Student's own membership exactly as if they had
+ * booked it themselves. When the class is full, or students are already
+ * waiting, the next step is the waitlist instead (Decision 322). */
+function AddStudentDialog({
+  classId,
+  schoolId,
+  bookedIds,
+  onClose,
+  onDone,
+}: {
+  classId: string;
+  schoolId: string;
+  bookedIds: Set<string>;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const t = useT();
+  const { data: studentData, isLoading } = useStudents(schoolId);
+  const bookClass = useBookClass();
+  const joinWaitlist = useJoinWaitlist();
+  const [studentId, setStudentId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [full, setFull] = useState(false);
+  const students = (studentData?.items ?? []).filter((s) => !bookedIds.has(s.id));
+  const name = (() => {
+    const s = students.find((x) => x.id === studentId);
+    return s ? `${s.firstName} ${s.surname}`.trim() : '';
+  })();
+
+  async function book() {
+    setError(null);
+    try {
+      await bookClass.mutateAsync({ classId, body: { studentId } });
+      onDone(t('classes.detail.addStudentBooked', { name }));
+    } catch (err) {
+      if (err instanceof ApiError && (err.code === 'CLASS_FULL' || err.code === 'WAITLIST_FIRST')) setFull(true);
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  async function waitlist() {
+    setError(null);
+    try {
+      const entry = await joinWaitlist.mutateAsync({ classId, studentId });
+      onDone(t('classes.detail.addStudentWaitlisted', { name, position: entry.position }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Modal title={t('classes.detail.addStudentTitle')} onClose={onClose}>
+      <p style={{ marginTop: 0 }}>{t('classes.detail.addStudentBody')}</p>
+      {error ? <ErrorBanner message={error} /> : null}
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <Field label={t('classes.detail.addStudentLabel')} htmlFor="add-student">
+          <SelectField
+            id="add-student"
+            value={studentId}
+            onChange={(e) => {
+              setStudentId(e.target.value);
+              setFull(false);
+              setError(null);
+            }}
+            options={[
+              { value: '', label: t('classes.detail.addStudentSelect') },
+              ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
+            ]}
+          />
+        </Field>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <Button variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+        {full ? (
+          <Button onClick={waitlist} disabled={!studentId} loading={joinWaitlist.isPending}>
+            {t('classes.detail.addStudentWaitlist')}
+          </Button>
+        ) : (
+          <Button onClick={book} disabled={!studentId} loading={bookClass.isPending}>
+            {t('classes.detail.addStudentConfirm')}
+          </Button>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/** Staff cancel one Booking (PATCH /bookings/:id/cancel). What goes back is
+ * the School's (or Branch's) cancellation settings, decided server-side; a
+ * refund by anyone but an Owner/Manager waits on the Cancellations page. */
+function CancelBookingDialog({
+  booking,
+  onClose,
+  onDone,
+}: {
+  booking: BookingResponse;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const t = useT();
+  const cancelBooking = useCancelBooking(booking.classId);
+  const [error, setError] = useState<string | null>(null);
+  const name = fullName(booking);
+
+  async function confirm() {
+    setError(null);
+    try {
+      await cancelBooking.mutateAsync(booking.id);
+      onDone(t('classes.detail.cancelBookingDone', { name }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Modal title={t('classes.detail.cancelBookingTitle', { name })} onClose={onClose}>
+      <p style={{ marginTop: 0 }}>{t('classes.detail.cancelBookingBody')}</p>
+      {error ? <ErrorBanner message={error} /> : null}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <Button variant="secondary" onClick={onClose}>
+          {t('classes.detail.cancelBookingBack')}
+        </Button>
+        <Button variant="danger" loading={cancelBooking.isPending} onClick={confirm}>
+          {t('classes.detail.cancelBookingConfirm')}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 function bookingStatusBadge(status: string, t: TranslateFn) {
   if (status === 'UPCOMING') return <Badge variant="success">{t('classes.detail.bookingUpcoming')}</Badge>;
   if (status === 'CANCELLED') return <Badge>{t('classes.detail.bookingCancelled')}</Badge>;
@@ -82,10 +221,9 @@ function waitlistStatusBadge(status: string, t: TranslateFn) {
  * phase — see their own service methods' header comments for why they never
  * existed before despite the RLS policies already anticipating them. Student
  * names resolve via studentFirstName/studentSurname (Decision 114, same
- * pattern as TransactionsPage). No write actions here yet (cancel/override-
- * reason/withdraw already exist as Student/self-service or override
- * endpoints — this phase is visibility only, matching TransactionsPage's own
- * "read-only first" scoping). */
+ * pattern as TransactionsPage). Staff can Add student and Cancel booking
+ * while the class is still open (not cancelled, archived or ended); the API
+ * re-checks every rule. */
 export function ClassDetailPage() {
   const t = useT();
   const { id } = useParams<{ id: string }>();
@@ -94,6 +232,9 @@ export function ClassDetailPage() {
   const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
   const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
   const mayCancel = !!useOwnedSchoolId() || !!useCoachSchoolId();
+  const [adding, setAdding] = useState(false);
+  const [cancelling, setCancelling] = useState<BookingResponse | null>(null);
+  const [done, setDone] = useState<string | null>(null);
 
   if (!classId) return null;
   if (classLoading || bookingsLoading || waitlistLoading) return <Spinner />;
@@ -109,6 +250,15 @@ export function ClassDetailPage() {
 
   const bookings = bookingData?.items ?? [];
   const waitlist = waitlistData?.items ?? [];
+  // Bookings change only while the class is still open: not cancelled,
+  // archived or over (the API refuses the rest anyway).
+  const open = !!cls && mayCancel && !cls.cancelledAt && !cls.archivedAt && new Date(cls.endDate) > new Date();
+  const booked = new Set(bookings.filter((b) => b.status === 'UPCOMING').map((b) => b.studentId));
+  const finish = (message: string) => {
+    setAdding(false);
+    setCancelling(null);
+    setDone(message);
+  };
 
   return (
     <>
@@ -117,6 +267,7 @@ export function ClassDetailPage() {
         subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
         actions={cls && mayCancel && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
       />
+      {done ? <SuccessBanner message={done} /> : null}
       {cls?.cancelledAt ? (
         <div style={{ marginBottom: 16 }}>
           <Badge variant="danger">{t('classes.detail.cancelledBadge')}</Badge>
@@ -126,20 +277,53 @@ export function ClassDetailPage() {
 
       <div style={{ marginBottom: 24 }}>
         <Card>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-            {t('classes.detail.bookingsHeading')}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+            <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
+              {t('classes.detail.bookingsHeading')}
+            </h2>
+            {open ? (
+              <Button
+                onClick={() => {
+                  setDone(null);
+                  setAdding(true);
+                }}
+              >
+                {t('classes.detail.addStudent')}
+              </Button>
+            ) : null}
+          </div>
           {bookings.length === 0 ? (
             <EmptyState title={t('classes.detail.bookingsEmptyTitle')} description={t('classes.detail.bookingsEmptyDescription')} />
           ) : (
             <Table<BookingResponse>
               rows={bookings}
               columns={[
-                { key: 'student', header: t('classes.detail.columnStudent'), render: (b) => (b.studentFirstName || b.studentSurname ? `${b.studentFirstName} ${b.studentSurname}`.trim() : b.studentId.slice(0, 8)) },
+                { key: 'student', header: t('classes.detail.columnStudent'), render: (b) => fullName(b) },
                 { key: 'status', header: t('classes.detail.columnStatus'), render: (b) => bookingStatusBadge(b.status, t) },
                 { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => b.attendees.length || '—' },
                 { key: 'override', header: t('classes.detail.columnOverrideReason'), render: (b) => b.overrideReason ?? '—' },
                 { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => new Date(b.createdAt).toLocaleString(formatLocale()) },
+                ...(open
+                  ? [
+                      {
+                        key: 'actions',
+                        header: t('classes.detail.columnActions'),
+                        render: (b: BookingResponse) =>
+                          b.status === 'UPCOMING' ? (
+                            <Button
+                              variant="secondary"
+                              aria-label={t('classes.detail.cancelBookingFor', { name: fullName(b) })}
+                              onClick={() => {
+                                setDone(null);
+                                setCancelling(b);
+                              }}
+                            >
+                              {t('classes.detail.cancelBooking')}
+                            </Button>
+                          ) : null,
+                      },
+                    ]
+                  : []),
               ]}
             />
           )}
@@ -165,6 +349,11 @@ export function ClassDetailPage() {
           />
         )}
       </Card>
+
+      {adding && cls ? (
+        <AddStudentDialog classId={cls.id} schoolId={cls.schoolId} bookedIds={booked} onClose={() => setAdding(false)} onDone={finish} />
+      ) : null}
+      {cancelling ? <CancelBookingDialog booking={cancelling} onClose={() => setCancelling(null)} onDone={finish} /> : null}
     </>
   );
 }
