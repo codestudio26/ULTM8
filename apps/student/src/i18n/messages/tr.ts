@@ -486,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date} tarihinden beri",
       unverified: "Okulun bu kuşağı doğrulaması bekleniyor.",
       topOfLadder: "Merdivenin en üstündesiniz.",
+      noLongerTaught: "Bu okulda artık öğretilmiyor. Kuşağın ve geçmişin korunur.",
       next: "Sonraki: {rank}",
       progress: "Yolun %{percent} kadarı",
       readyToGrade: "Sınava hazır",
@@ -679,6 +680,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Henüz bildirim yok.",
+      markAllRead: "Tümünü okundu olarak işaretle",
+      markAllReadFailed: "Bildirimleriniz okundu olarak işaretlenemedi. Lütfen tekrar deneyin.",
       loadFailed: "Bildirimler yüklenemedi — lütfen tekrar deneyin.",
     },
     row: {
@@ -686,6 +689,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, okunmadı",
       unread: "Okunmamış",
       markAsRead: "Okundu olarak işaretle",
+      open: "Aç",
       markReadFailed: "Okundu olarak işaretlenemedi — lütfen tekrar deneyin.",
     },
   },

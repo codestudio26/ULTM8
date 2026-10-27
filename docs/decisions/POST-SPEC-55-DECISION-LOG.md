@@ -4686,6 +4686,37 @@ The same review found five gaps. Other class-booking and martial-arts apps deact
 
 User, 22 Oct 2026, after the Disciplines section review.
 
+## Decision 310 — Disciplines: archived styles where they're already used, enrolled counts, and students who left
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 152, 308, 309
+
+A second pass over the Disciplines section after PR #286 found seven leftovers in how Decision 309's archive works in the rest of the app, plus a ladder editor failure that was already on `master`. The product owner asked for all of them to be fixed.
+
+### Decision
+
+1. **A student's rank in an archived style stays visible, read-only.**
+   - On the portal's student grading page, the style shows with an Archived badge and a note. There is no grading, progress, ready-to-grade or skills for the next rank.
+   - Voiding and notes on past history still work, as Decision 309 already allowed.
+   - The student app shows the belt and history with "No longer taught at this School", and no progress or skills. The API marks the style `archived` and sends no skills for it.
+2. **Archived styles are kept where they're already used, and refused anywhere new.** This covers class and timetable slot style pickers, membership plans, instructor specialisations and coach grading permissions.
+   - The portal lists an archived style only on a record that already has it, labelled "(archived)".
+   - The API refuses an archived style on a new plan or a new coach permission, but accepts it on a plan or permission that already had it. Classes and slots already refused it (Decision 309).
+3. **Student counts per style count only students still enrolled** (an active Student role at the School). This applies to the Disciplines list, the style's page and its students list. The rung-holder list marks each student `enrolled`.
+4. **Students who left still hold their rung.** Row security (by design) hides the account of someone with no active role at the School, so their name can't be shown.
+   - The ladder editor shows them as "Former student".
+   - Their rank still blocks removing the rung, and the message names them as "a former student".
+   - Before this, the rung-holder list and that check joined the hidden account and failed with a server error.
+5. **Clearer "still in use" messages** give the counts (upcoming classes, timetable slots, rungs on the ladder). The 17 Disciplines messages that weren't translated are now translated in all 14 languages.
+
+### What this does NOT resolve
+
+- Whether Branch Staff can be allowed to manage disciplines (proposed, waiting on the product owner).
+- Permanently deleting an archived style nobody uses (proposed, waiting on the product owner).
+
+### Recorded by
+
+User, 23 Oct 2026, after the second Disciplines review.
+
 ---
 
 ## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)
@@ -5531,6 +5562,9 @@ Nothing here is built yet. The kiosk is `docs/v1.3-backend-backlog.md` §3.21.
 ### Recorded by
 
 User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website for the next version. We will work on front desk and that is it for this version", then "agree" to the five Front Desk recommendations.
+
+---
+
 ## Decision 340 — Waivers review fixes
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (Waivers fix plan, deep dive)
@@ -5581,3 +5615,62 @@ The product owner answered the Timetable review's remaining questions with "all 
 ### Recorded by
 
 User (Code), 27 Oct 2026, answering the Timetable questions: *"all recommended"*.
+
+---
+
+## Decision 355 — Notifications: Mark all read, click to open, and a School label
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 277, 333
+
+After Decision 333, six Notifications gaps were left: a School label, Mark all read, click-through, a sent-broadcast history, notification settings and automatic clean-up. The product owner chose (*"go with it"*, 27 Oct 2026) to build the first three now, the broadcast history next as its own change, and to leave settings and clean-up until email and push are switched on.
+
+### Decision
+
+1. **Mark all read.** `POST /notifications/me/read-all` marks every unread, not-deleted notification the caller has as read, across every page and snoozed ones included, setting `readAt` to now (an unread row has never been read). It returns `{ updated }`. The portal's Notifications page has a **Mark all read** button, greyed out when nothing is unread, and the student app shows one above its list.
+2. **Clicking a notification opens what it is about, and marks it read.** Each notification may carry a `targetType` (CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING) and, for CLASS and WAIVER, a `targetId`. The senders set them:
+   - CLASS: class moved, class cancelled, a waitlist spot opening, and a broadcast to one class.
+   - WAIVER: a waiver signature request.
+   - PAYMENT: a payment dispute on a Membership payment, the payment-restricted alert, and a cash payment confirmed or cancelled.
+   - CANCELLATIONS: cancellations to resolve.
+   - GRADING: ready to grade, promotion to decide, a promotion fee, and a rank change.
+   The portal opens `/classes/:id`, `/waivers`, `/transactions`, `/cancellations` or `/grading`. The student app opens My bookings, Waivers, Payment history or My grading, and shows nothing to open for CANCELLATIONS, a staff page. A franchise fee dispute and a broadcast to everyone or a Branch open nothing.
+3. **Each notification shows the School it came from.** The sender passes the School, and notification-fanout copies its name onto the row (`schoolId`, `schoolName`) when it writes it. The name is copied because the reader can't always see the School under RLS: a parent reading their child's notice, or a Student whose enrolment has ended. There is no foreign key, so the label outlives a School's purge. An Owner of more than one of a payment-restricted Student's Schools gets one alert, labelled with the first. A parent's copy of a child's notification (Decision 333) keeps the label and the target.
+4. **Migration** `20261202000000_notification_school_and_target` adds the four nullable columns. Grants are unchanged: ultm8_app and ultm8_jobs already hold table-level grants on `Notification`. Notifications sent before it have no label and open nothing.
+
+### What this does NOT resolve
+
+A sent-broadcast history (next), notification settings and automatic clean-up (after email and push are switched on). The student app has no single-class screen, so a CLASS notification opens My bookings there.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all read, click-through and the School label now.
+
+---
+
+## Decision 362 — Front desk: a tablet sign-up staff reject, and what Find me asks for
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5 "Rejected" and F6
+
+### Decision
+
+When staff reject a sign-up made on the front-desk tablet:
+
+1. **The person gets a polite email** saying their sign-up wasn't accepted and asking them to talk to the front desk. **No reason is given**, and staff don't type one.
+2. **What they typed is kept for 30 days, then deleted.** During those 30 days staff can still see the rejected sign-up, in case it was a mistake. After that, nothing about it remains.
+
+**Find me** on the tablet (Decision 351 item 1):
+
+3. **It asks for full name and date of birth.** Both must match a member of the School. That way someone at the tablet can't find out who trains there just by typing names. The answer is still only "you're already a member" or "we couldn't find you".
+
+### Not decided here
+
+- Whether staff can undo a rejection within the 30 days. Ask the product owner before building one.
+- Whether website sign-ups (Decision 318) follow the same rule. This decision covers the tablet only.
+
+### Not built
+
+Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend handover.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "Agreed" to the recommendation (a polite email with no reason given, and keep the details 30 days, then delete them), then "1 a1, B2, 2": the same two answers, plus option 2 for Find me (name and date of birth).

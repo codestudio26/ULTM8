@@ -21,6 +21,39 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   past four weeks say "Opens for booking later". A slot's break is copied onto
   its classes and shown on the class page, the booking dialog and the student
   app's class card. Needs a database migration.
+
+- **Check-in and front-desk mode (School Portal)** — a new **Check-in** page
+  (a tab next to Students for owners, a menu item for coaches and Branch
+  Staff) shows today's classes, checks a student in by scanning the QR in their
+  app or by name, books the place first when they aren't booked, and lists
+  recent check-ins. **Front-desk mode** turns a tablet or phone into a
+  full-screen check-in desk for one branch, with short names ("Lucas M.").
+  Not yet available, shown as "Soon" until the backend is built:
+  - personal check-in codes;
+  - locking the device and leaving it with a staff code;
+  - signing up and "Find me" on the tablet;
+  - waiver status on the welcome card;
+  - starting an open mat.
+  Until the device can be locked, front-desk mode runs in the staff member's
+  own login and says so. Backend handover: `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`.
+
+- **Disciplines follow-ups** (Decision 310) — a student's rank in an
+  archived style now shows on their grading page, read-only, and in the
+  student app as "No longer taught at this School". Classes, timetable slots,
+  plans and instructors that already use an archived style can still be
+  edited, but it can't be picked for anything new (the API refuses it too).
+  Student counts per style leave out students who have left. The ladder
+  editor no longer fails once a ranked student leaves the School; they show
+  as "Former student". The last 17 untranslated Disciplines messages are
+  translated.
+- **Notifications: Mark all read, click to open, School label (Decision 355)**
+  — a **Mark all read** button marks every unread notification read, on every
+  page; clicking a notification opens what it is about (its class, the
+  waivers, payments, cancellations to resolve, or grading) and marks it read,
+  in the portal and the student app; and each notification shows the School it
+  came from. Needs a database migration
+  (`20261202000000_notification_school_and_target`). Notifications sent before
+  it have no label and open nothing.
 - **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
   breaks after a student leaves (their signature shows under "Former
   students"); each signature keeps a copy of the exact text signed, viewable

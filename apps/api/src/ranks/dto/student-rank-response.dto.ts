@@ -315,6 +315,9 @@ export class StudentGradingStyleDto {
   @ApiProperty()
   disciplineName!: string;
 
+  @ApiProperty({ description: 'The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress).' })
+  archived!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   currentStripeId?: string | null;
 

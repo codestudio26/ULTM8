@@ -852,6 +852,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_markAllRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -4958,6 +4974,17 @@ export interface components {
             snoozedUntil?: string | null;
             /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
             readAt?: string | null;
+            /** @description The School this notification came from (Decision 355), or null. */
+            schoolId?: string | null;
+            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 355). */
+            schoolName?: string | null;
+            /**
+             * @description What clicking the notification opens (Decision 355), or null for nothing.
+             * @enum {string|null}
+             */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | null;
+            /** @description The Class or Waiver id, for CLASS and WAIVER targets (Decision 355). */
+            targetId?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -4979,6 +5006,10 @@ export interface components {
         ClearReadNotificationsResponseDto: {
             /** @description How many read Notifications were cleared (hidden; the records are kept). */
             cleared: number;
+        };
+        MarkAllReadResponseDto: {
+            /** @description How many unread Notifications were marked read. */
+            updated: number;
         };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both. */
@@ -6328,6 +6359,8 @@ export interface components {
             studentId: string;
             firstName: string;
             surname: string;
+            /** @description Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310). */
+            enrolled: boolean;
         };
         RungHoldersDto: {
             /** @description The rung (stripe tier id). */
@@ -6548,6 +6581,8 @@ export interface components {
             schoolName: string;
             disciplineId: string;
             disciplineName: string;
+            /** @description The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress). */
+            archived: boolean;
             currentStripeId?: string | null;
             /** Format: date-time */
             dateOfCurrentRank: string;
@@ -8934,6 +8969,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClearReadNotificationsResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponseDto"];
                 };
             };
         };

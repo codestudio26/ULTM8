@@ -494,6 +494,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Depuis le {date}",
       unverified: "En attente de la vérification de cette ceinture par l’école.",
       topOfLadder: "Sommet de la progression.",
+      noLongerTaught: "N'est plus enseigné dans cette école. Ta ceinture et ton historique sont conservés.",
       next: "Suivant : {rank}",
       progress: "{percent} % du chemin parcouru",
       readyToGrade: "Prêt pour le passage",
@@ -696,6 +697,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Aucune notification pour le moment.",
+      markAllRead: "Tout marquer comme lu",
+      markAllReadFailed: "Impossible de marquer vos notifications comme lues. Veuillez réessayer.",
       loadFailed: "Impossible de charger les notifications — veuillez réessayer.",
     },
     row: {
@@ -703,6 +706,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, non lue",
       unread: "Non lue",
       markAsRead: "Marquer comme lue",
+      open: "Ouvrir",
       markReadFailed: "Impossible de marquer comme lue — veuillez réessayer.",
     },
   },

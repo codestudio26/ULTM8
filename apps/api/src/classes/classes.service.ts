@@ -336,7 +336,10 @@ export class ClassesService {
     const body = `${cls.title} has moved to ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
     for (const userId of new Set(studentIds)) {
       try {
-        await this.notificationFanoutQueue.add('notify', { notificationId: `${key}-${userId}`, userId, title: 'Class moved', body, type: 'CLASS_MOVED' } satisfies NotificationFanoutJobData, {
+        const data: NotificationFanoutJobData = {
+          notificationId: `${key}-${userId}`, userId, title: 'Class moved', body, type: 'CLASS_MOVED', schoolId: cls.schoolId, targetType: 'CLASS', targetId: cls.id,
+        };
+        await this.notificationFanoutQueue.add('notify', data, {
           jobId: `${key}-${userId}`,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },

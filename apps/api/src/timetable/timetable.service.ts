@@ -612,7 +612,8 @@ export class TimetableService {
       if (booked && 'startDate' in data && cls.startDate.getTime() !== fields.startDate.getTime()) {
         // Waiting Students are told too (Decision 332, T18).
         await this.tell([...bookings.map((b) => b.studentId), ...waitingStudentIds], `class-moved-${cls.id}-${fields.startDate.getTime()}`, 'Class moved',
-          `${slot.title} has moved to ${DateTime.fromJSDate(fields.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${bookings.length > 0 ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`, 'CLASS_MOVED');
+          `${slot.title} has moved to ${DateTime.fromJSDate(fields.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${bookings.length > 0 ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`, 'CLASS_MOVED',
+          { schoolId: slot.schoolId, classId: cls.id });
       }
     }
 
@@ -658,7 +659,7 @@ export class TimetableService {
    * Students told. Unlinking frees the date, so switching the slot back on makes
    * that date again (Decision 332, T15); the cancelled Class and its booking
    * history stay. */
-  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date }, bookings: Array<{ id: string; studentId: string }>, zone: string): Promise<void> {
+  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date; schoolId: string }, bookings: Array<{ id: string; studentId: string }>, zone: string): Promise<void> {
     // The waitlist closes first, so the seats the cancellations free aren't
     // offered to anyone.
     const waiting = await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -677,7 +678,8 @@ export class TimetableService {
     });
     // The date in the slot's own zone, not UTC (Decision 332, T16).
     await this.tell([...bookings.map((b) => b.studentId), ...waiting], `class-cancelled-${cls.id}`, 'Class cancelled',
-      `${cls.title} on ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED');
+      `${cls.title} on ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED',
+      { schoolId: cls.schoolId, classId: cls.id });
   }
 
   /** An unbooked Class leaves the schedule: deleted when nothing points at it,
@@ -693,10 +695,11 @@ export class TimetableService {
     });
   }
 
-  private async tell(userIds: string[], key: string, title: string, body: string, type: string): Promise<void> {
+  private async tell(userIds: string[], key: string, title: string, body: string, type: string, about: { schoolId: string; classId: string }): Promise<void> {
     for (const userId of new Set(userIds)) {
       try {
-        await this.notificationFanoutQueue.add('notify', { notificationId: `${key}-${userId}`, userId, title, body, type } satisfies NotificationFanoutJobData, {
+        const data: NotificationFanoutJobData = { notificationId: `${key}-${userId}`, userId, title, body, type, schoolId: about.schoolId, targetType: 'CLASS', targetId: about.classId };
+        await this.notificationFanoutQueue.add('notify', data, {
           jobId: `${key}-${userId}`,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },

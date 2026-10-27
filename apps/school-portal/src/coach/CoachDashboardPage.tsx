@@ -8,7 +8,7 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useRanks } from '../ranks/rankQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useTimetableSlots, type TimetableSlotResponse } from '../timetable/timetableQueries';
-import { useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
+import { notificationLink, useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
 import { useGradingBoard, useMyGrading, useStudentEligibility, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
 import { BeltChip } from '../grading/BeltChip';
@@ -207,7 +207,8 @@ function NotificationsSection() {
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {items.map((n) => (
             <li key={n.id} style={{ fontWeight: n.read ? 400 : 700 }}>
-              {n.title}
+              {/* Decision 355: opens what the notification is about. */}
+              {notificationLink(n) ? <Link to={notificationLink(n)!}>{n.title}</Link> : n.title}
               <div className="ultm8-field__hint" style={{ fontWeight: 400 }}>
                 {n.body}
               </div>

@@ -6,6 +6,7 @@ export const ranks = {
   edit: 'Edit',
   back: 'Back',
   reorderAffected: 'These students stay on their stripe, but its place in the ladder changes, so their next rank may change ({count}):',
+  formerStudent: 'Former student',
   ladder: {
     duplicate: 'Duplicate',
     duplicateAria: 'Duplicate {name}',
