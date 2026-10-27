@@ -39,14 +39,32 @@ export class TransactionResponseDto {
   @ApiProperty()
   paymentAccountId!: string;
 
-  @ApiProperty()
-  membershipPlanId!: string;
+  /** Null only for a late-cancellation fee (Decision 346). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  membershipPlanId!: string | null;
 
   /** What this charge was for — added for the Student-facing self-read
    * (GET /transactions/me): the raw membershipPlanId alone doesn't tell a
-   * Student what they paid for. */
-  @ApiProperty()
-  membershipPlanTitle!: string;
+   * Student what they paid for. Null for a late-cancellation fee, which names
+   * its class in bookingClassTitle instead. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  membershipPlanTitle!: string | null;
+
+  /** MEMBERSHIP (a plan bought or recorded at the desk), RENEWAL (a later
+   * Subscription charge) or LATE_CANCEL_FEE (Decision 346). */
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE';
+
+  /** LATE_CANCEL_FEE only: the cancelled Booking and its class's title. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  bookingId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  bookingClassTitle!: string | null;
+
+  /** Set when School staff recorded this payment at the desk (Decision 346). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  recordedById!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   membershipId!: string | null;
@@ -93,4 +111,31 @@ export class TransactionListResponseDto {
 export class TransactionReceiptUrlResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Stripe\'s own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet.' })
   receiptUrl!: string | null;
+}
+
+export class TransactionRevenueDto {
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currency!: string | null;
+
+  @ApiProperty({ description: 'Minor units.' })
+  amount!: number;
+}
+
+/** GET /schools/{id}/transactions/summary (Decision 339) — the Transactions
+ * page's tiles, counted over the whole ledger. */
+export class TransactionSummaryResponseDto {
+  @ApiProperty()
+  total!: number;
+
+  @ApiProperty()
+  successful!: number;
+
+  @ApiProperty()
+  pending!: number;
+
+  @ApiProperty()
+  failedOrDisputed!: number;
+
+  @ApiProperty({ type: [TransactionRevenueDto], description: 'Successful rows only, one entry per currency.' })
+  revenue!: TransactionRevenueDto[];
 }

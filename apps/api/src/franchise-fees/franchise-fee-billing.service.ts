@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Franchise, PaymentAccount, School } from '@prisma/client';
 import Stripe from 'stripe';
+import { DateTime } from 'luxon';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 
@@ -88,7 +89,13 @@ export class FranchiseFeeBillingService {
     // key instead of creating a SECOND standing Subscription for the same School.
     // Stripe's own idempotency-key mechanism (any `.create()` call's second
     // params argument), not a bespoke one.
-    const idempotencyKey = `franchise-fee-sub-${school.id}`;
+    // Decision 337 (F15) — the Franchise and the School row's updatedAt are part
+    // of the key. With the School id alone, a School that left and rejoined within
+    // Stripe's 24-hour key window would get the old request's answer (or a
+    // parameter-mismatch error) instead of a new subscription. Leaving and joining
+    // both write the School row, so a rejoin always gets a new key, while a retry
+    // after a crash or a second concurrent run reads the same row and the same key.
+    const idempotencyKey = `franchise-fee-sub-${school.id}-${franchise.id}-${school.updatedAt.getTime()}`;
 
     let subscription: Stripe.Subscription;
     if (franchise.feeModel === 'FLAT') {
@@ -115,6 +122,13 @@ export class FranchiseFeeBillingService {
         {
           customer: customer.id,
           items: [{ price: priceId }], // metered — no `quantity`, Stripe derives it from reported usage
+          // Decision 337 (F18) — billing months run midnight to midnight UTC on the
+          // 1st. Otherwise each month would end at the second this subscription was
+          // created (about 03:00 on the 1st, when the monthly job runs), and next
+          // month's 03:00 usage report could land a few seconds before that and be
+          // billed in the old month. Metered, so there is nothing to prorate.
+          billing_cycle_anchor: Math.floor(DateTime.utc().startOf('month').plus({ months: 1 }).toSeconds()),
+          proration_behavior: 'none',
         },
         { idempotencyKey },
       );

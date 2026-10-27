@@ -123,6 +123,13 @@ export class BranchesService {
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
+          cancellationSettingsOverride: dto.cancellationSettingsOverride,
+          classCancellationPolicy: dto.classCancellationPolicy,
+          classCancellationPolicyWindow: dto.classCancellationPolicyWindow,
+          chargeLateCancellationFee: dto.chargeLateCancellationFee,
+          schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
+          defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
+          noShowFee: dto.noShowFee,
         },
       }),
     );

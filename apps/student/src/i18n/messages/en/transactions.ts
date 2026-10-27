@@ -9,6 +9,9 @@ export const transactions = {
     viewReceipt: 'View receipt',
     noReceipt: 'No receipt is available for this payment.',
     receiptFailed: 'Could not load the receipt — please try again.',
+    renewal: 'Renewal: {plan}',
+    lateCancelFee: 'Late-cancellation fee: {class}',
+    lateCancelFeeNoClass: 'Late-cancellation fee',
   },
   /** A payment's status, shown in capitals on each row. */
   status: {

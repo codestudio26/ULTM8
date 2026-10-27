@@ -40,7 +40,7 @@ const REPEATABLE_JOB_ID = 'video-processing-poll-sweep';
  *   PROCESSING — set the instant an upload URL is issued
  *                (requestVideoUploadUrl). Every cycle, for each such Lesson:
  *     1. Ask Cloudflare Stream if the video itself has finished transcoding
- *        (`isVideoReady`). Not yet → skip, try again next cycle.
+ *        (`videoState`; failed or upload link expired → FAILED, C5). Not yet → skip, try again next cycle.
  *     2. Once ready, ask AWS Transcribe for a completed subtitle URL
  *        (`getCompletedSubtitleUrl`, keyed by this Lesson's own id as the
  *        Transcribe job name — TranscribeService's own established
@@ -166,8 +166,13 @@ export class VideoProcessingPollProcessor extends WorkerHost {
       return 'waiting';
     }
 
-    const videoReady = await this.cloudflareStream.isVideoReady(videoRef);
-    if (!videoReady) {
+    const videoState = await this.cloudflareStream.videoState(videoRef);
+    if (videoState === 'failed') {
+      // Caught by process() above, which marks the lesson FAILED, so staff
+      // get the Upload video button back (C5).
+      throw new Error(`video-processing-poll: lesson ${lesson.id} video failed, or its upload link expired with no file.`);
+    }
+    if (videoState === 'waiting') {
       this.logger.debug(`video-processing-poll: lesson ${lesson.id} video is still transcoding — will check again next cycle.`);
       return 'waiting';
     }

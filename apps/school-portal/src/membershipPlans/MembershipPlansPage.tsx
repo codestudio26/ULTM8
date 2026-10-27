@@ -72,6 +72,20 @@ function StatTile({
   );
 }
 
+/** Shown instead of the page to anyone who doesn't own a School: the API
+ * only lets the owner manage plans. */
+export function OwnerOnly() {
+  const t = useT();
+  return (
+    <>
+      <PageHeader title={t('membershipPlans.list.title')} />
+      <Card>
+        <EmptyState title={t('membershipPlans.list.ownerOnlyTitle')} description={t('membershipPlans.list.ownerOnlyDescription')} />
+      </Card>
+    </>
+  );
+}
+
 export function MembershipPlansPage() {
   const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
@@ -87,7 +101,9 @@ export function MembershipPlansPage() {
   const activeMembers = useActiveMemberTotal((data?.items ?? []).map((p) => p.id));
   const t = useT();
 
-  if (!schoolId) return null;
+  // Memberships review M10 (Decision 334): Branch Staff and coaches reach
+  // this page from the menu too; they used to get a blank page.
+  if (!schoolId) return <OwnerOnly />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('membershipPlans.list.loadFailed')} />;
 
@@ -207,6 +223,8 @@ export function MembershipPlansPage() {
                     <RowActionsMenu
                       label={t('membershipPlans.list.rowActionsAria', { title: p.title })}
                       actions={[
+                        // Decision 348: who is on this plan now.
+                        { label: t('membershipPlans.list.members'), onClick: () => navigate(`/membership-plans/${p.id}/members`) },
                         {
                           label: t('membershipPlans.list.duplicate'),
                           onClick: () =>

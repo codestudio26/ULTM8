@@ -5,6 +5,7 @@ import { auth } from './en/auth';
 import { schools } from './en/schools';
 import { branches } from './en/branches';
 import { transactions } from './en/transactions';
+import { cancellations } from './en/cancellations';
 import { lib } from './en/lib';
 import { dashboard } from './en/dashboard';
 import { students } from './en/students';
@@ -26,6 +27,7 @@ import { ui } from './en/ui';
 import { serverKeys as server } from '@ultm8/i18n';
 import { profile } from './en/profile';
 import { address } from './en/address';
+import { frontDesk } from './en/frontDesk';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -44,6 +46,7 @@ export const messages = {
   schools,
   branches,
   transactions,
+  cancellations,
   lib,
   dashboard,
   students,
@@ -65,6 +68,7 @@ export const messages = {
   server,
   profile,
   address,
+  frontDesk,
 };
 
 export type EnglishMessages = typeof messages;

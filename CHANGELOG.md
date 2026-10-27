@@ -24,6 +24,250 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   or emailed. A closed Branch with history is kept for good; an empty one is
   removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
   archive words, in all 15 languages. **Needs a database migration.**
+- **School Owners can close their own School** (Decision 364) — from the
+  School page, after typing its name and their passcode: the same 90-day close
+  a Platform Admin does. Closing a School, by anyone, now also ends every
+  student's membership subscription and the School's ULTM8 subscription at the
+  end of the paid period. Franchise join requests, answers, removals and a
+  Franchise closing now send in-app notifications. No migration.
+- **Joining a Franchise needs the Franchise Owner's approval** (Decision 352) —
+  a School asks to join with the Franchise ID and can cancel the request; the
+  Franchise page lists Schools asking to join, with Accept and Decline. The
+  Franchise Owner can also remove a member School (same as the School leaving)
+  and close their own Franchise after typing its name and their passcode.
+  Needs migration `20261204000100_franchise_join_requests`.
+- **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
+  Timetable item in the Branch Staff menu opens the calendar read-only, with
+  their branch's and School-wide classes, to book walk-ins; only the owner
+  edits slots. Branch Staff and coaches at a School with branches now see
+  their branch's students when booking (here and on the Class page's Add
+  student), instead of an empty list. Needs a database migration.
+- **Timetable shows the real classes (Decision 353)** — the calendar now shows
+  each date's actual classes, one-offs included, with seats taken and the
+  waitlist; cancelled and ended classes stay visible without Book, and dates
+  past four weeks say "Opens for booking later". A slot's break is copied onto
+  its classes and shown on the class page, the booking dialog and the student
+  app's class card. Needs a database migration.
+
+- **Check-in and front-desk mode (School Portal)** — a new **Check-in** page
+  (a tab next to Students for owners, a menu item for coaches and Branch
+  Staff) shows today's classes, checks a student in by scanning the QR in their
+  app or by name, books the place first when they aren't booked, and lists
+  recent check-ins. **Front-desk mode** turns a tablet or phone into a
+  full-screen check-in desk for one branch, with short names ("Lucas M.").
+  Not yet available, shown as "Soon" until the backend is built:
+  - personal check-in codes;
+  - locking the device and leaving it with a staff code;
+  - signing up and "Find me" on the tablet;
+  - waiver status on the welcome card;
+  - starting an open mat.
+  Until the device can be locked, front-desk mode runs in the staff member's
+  own login and says so. Backend handover: `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`.
+
+- **Disciplines follow-ups** (Decision 310) — a student's rank in an
+  archived style now shows on their grading page, read-only, and in the
+  student app as "No longer taught at this School". Classes, timetable slots,
+  plans and instructors that already use an archived style can still be
+  edited, but it can't be picked for anything new (the API refuses it too).
+  Student counts per style leave out students who have left. The ladder
+  editor no longer fails once a ranked student leaves the School; they show
+  as "Former student". The last 17 untranslated Disciplines messages are
+  translated.
+- **Notifications: sent-message history (Decision 363)** — under their own
+  notifications, a School Owner now sees **Messages sent to students**: every
+  message the School has sent, newest first, with when and by whom, the title
+  and message, who it went to (all students, a Branch, or a class and which
+  groups on its list) and how many students it reached. A class still on the
+  schedule links to its page. Needs a database migration
+  (`20261204000000_notification_broadcast_history`). Messages sent before it
+  aren't listed.
+- **Notifications: Mark all read, click to open, School label (Decision 355)**
+  — a **Mark all read** button marks every unread notification read, on every
+  page; clicking a notification opens what it is about (its class, the
+  waivers, payments, cancellations to resolve, or grading) and marks it read,
+  in the portal and the student app; and each notification shows the School it
+  came from. Needs a database migration
+  (`20261202000000_notification_school_and_target`). Notifications sent before
+  it have no label and open nothing.
+- **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
+  breaks after a student leaves (their signature shows under "Former
+  students"); each signature keeps a copy of the exact text signed, viewable
+  by opening it, and signing an out-of-date version asks the student to read
+  it again; blank waivers and blank signatures are refused; archived waivers
+  are no longer assigned or signable, and Archive asks first; every waiver and signature loads, with
+  All / Signed / Not signed tabs sorted A to Z; clearer signing errors;
+  waitlists need a signed waiver when the class does; "include archived =
+  false" now works on Waivers, Classes, Timetable, Branches and Instructors;
+  drawn signature images are deleted with their signature. Needs migration
+  `20261130000000_waiver_signed_copy`.
+- **Add student and Cancel booking on a class's page** (Decision 349) — staff
+  can book a student into a class from the class itself (paid from the
+  student's own membership; offered the waitlist when the class is full), and
+  cancel one student's booking, with the school's cancellation settings
+  deciding what goes back.
+- **A member School can show its Franchise's name and logo (Decision 350)** —
+  only when both the Franchise Owner (a new switch on the Franchise form) and the
+  School Owner (a new switch on the School page) turn it on. It shows as "Part of
+  {Franchise}" in the School Portal footer. Both start off, and the School's
+  switch resets when it joins or leaves a Franchise. Needs a migration.
+- **Franchises fixes from the 26 Oct review (Decision 337)** — fees are typed
+  in US dollars (not cents) and a Franchise needs a fee for its fee model; the
+  fee model is locked while Schools are being billed; the "Schools already
+  billing" check now works for real Schools, so the rate-change prompt shows;
+  closed Franchises and Schools are labelled and a closed Franchise can't be
+  joined or edited; the detail page shows the Franchise ID with a Copy button
+  and says why billing can't start yet; Leave Franchise asks first and bills the
+  month the School leaves in; closing a School or Franchise stops its fee
+  billing; the member list no longer sends join codes or Stripe ids; the
+  Activity filter ignores capitals; several franchise-fee billing timing fixes.
+  Needs a database migration on deploy.
+- **Memberships: sell at the desk, Friend Pass, cancel a subscription, member
+  list (Decision 348)** — on a Student's page the owner now sees their
+  memberships, can record a plan sold at the desk (cash, bank transfer, Pix or card
+  terminal), give
+  a Friend Pass, and cancel a Subscription; each plan's menu has a Members list
+  showing who is on it with their dates. A cancelled Subscription runs to the
+  end of the paid month. Needs the migration `20261201000000_membership_cancel_at_period_end`.
+- **Billing stress-test fixes** (`docs/handover/BILLING-STRESS-TEST.md`) —
+  confirming cash payments no longer fails with "busy" when several are
+  confirmed at once (5,917 of 6,071 failed in the test); a card payment that
+  fails once and then succeeds now gives the membership instead of staying
+  Failed with the money taken; and Stripe's payment notices are no longer
+  rate-limited, so card purchases settle at once in a busy hour instead of
+  waiting on Stripe's retries.
+- **Billing stress-test follow-ups (B1, B2)** — marking a cash payment as paid
+  after it was cancelled or failed now says it can't be done (it used to
+  answer "OK" and change nothing); and clicking Subscribe or Buy several times
+  in a row now makes one card order and one Stripe subscription or Checkout
+  page, not one per click (Stripe idempotency keys per student and plan).
+
+- **Classes: second batch of fixes** (Decision 345, needs a migration) — a
+  one-off class now needs its own ticket unless "Included in membership" is
+  ticked (existing one-off classes were ticked so nothing changes for them;
+  Timetable classes are always included and lose the switch); moving a booked
+  class to a new time tells booked and waiting students and can't move it into
+  the past; a booked class can't move to another branch; a class that has
+  already ended can't be created.
+- **Memberships fixes from the 26 Oct review (Decision 334)** — a Student
+  whose Weekly Pass or Trial has run out can buy again (it used to be refused
+  as if the old one were still live); a live Trial no longer blocks buying a
+  Weekly Pass or Subscription; changing a plan's type clears the fields the new
+  type doesn't use, and is locked while the plan has active members; a Trial
+  lasts 1-30 days, with at most 30 trial days per Student per School in 12
+  months; a Class Pack needs its class count and a Weekly Pass its expiry;
+  prices and cancellation charges are typed in pounds and pence (12.50), not
+  pence; every plan is listed (not just the first 20); Branch Staff see who
+  manages plans instead of a blank page; a purchase is charged in the plan's
+  currency or the School's default, never US dollars by default; plans that
+  require a waiver, hidden plans, closed Schools, classes that have already
+  taken place, staff who aren't Students, and removed Students are all refused
+  at purchase; a second cash order for the same plan returns the first; the
+  Active members count leaves out removed Students. **Needs a database
+  migration.**
+- **Notifications fixes from the 26 Oct review (Decision 333)** — the page
+  has **Load more**, so notifications past the newest 20 can be seen; the bell's
+  red dot follows the real Unread count (all pages, snoozed left out), as does
+  the coach dashboard's unread count; Snooze is greyed out on read
+  notifications; the broadcast "One class" picker lists upcoming classes
+  soonest first with their date, time and branch; push no longer waits on
+  email, and with no email service set up a notification is delivered in-app
+  without three failed retries; the waiver request names the School
+  ("Gracie Barra has invited you to sign the waiver …"); Class moved, Class
+  cancelled, Promotion to decide and Promotion fee are translated; broadcasts
+  refuse an archived branch or class and a blank title or message; a snooze
+  is capped at 7 days; a bad page link is a 400, not a server error. A
+  child's notifications now also reach their linked parents ("For Mia: …");
+  when sending to one class, the Owner ticks who gets it (booked, waitlist,
+  cancelled; booked by default); and the payment-restricted alert names the
+  student.
+- **Branch Staff can record desk payments when the owner allows it
+  (Decision 347)** — a new School setting, off by default, lets Branch Staff
+  record payments taken at the desk for their own branch's students. They
+  still can't see the Transactions list. **Needs a database migration.**
+
+- **Transactions: renewals, late-cancel fees, filters, CSV export and Record a
+  payment (Decision 346)** — each Subscription renewal and each late-cancellation
+  fee now shows as its own row, in the portal and in the student app; the page
+  can be filtered by status, method, type, plan and dates, and the tiles follow
+  the filters; Export CSV downloads every filtered row; the School owner can
+  record a payment taken at the desk (cash, bank transfer, Pix or card
+  terminal), which starts the membership at once. **Needs a database migration** (adds the new columns and
+  writes rows for late-cancel fees already charged).
+- **Class cancellations, chosen by each academy** (Decision 291) — the
+  School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
+  actually applies, in its own "Class cancellations" section with new
+  settings: whether it applies only before a class's cutoff or any time, a
+  default cutoff for classes without one, whether the late fee is charged, an
+  optional no-show fee, and what students get when the school cancels a whole
+  class. New **Cancel class** button on a class's page (with a reason sent to
+  students), and a new **Cancellations** page where staff resolve cancelled
+  bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
+  Pass always gets its credit back, and only an Owner or Manager can send money
+  back.
+- **Cancellation settings per branch** (Decision 292) — on a branch's
+  settings page, the owner can keep "Same as the school" (the default) or give
+  that branch its own cancellation settings. Existing schools keep giving the
+  class credit back, as before, and the dashboard and School page ask the
+  owner to choose a policy until they save one.
+
+- **Transactions fixes from the 26 Oct review (Decision 339)** — the page now
+  shows every payment newest first with Prev/Next, and its tiles count the
+  whole ledger; revenue no longer splits "GBP" and "gbp"; Pending cash and
+  bank transfer payments get Mark as paid and Cancel buttons; owners are told
+  when a student picks cash, and students or their guardians when it is
+  confirmed or cancelled; choosing cash twice no longer makes two rows;
+  payments can't be confirmed for a student who left or at a closed School;
+  abandoned card checkouts turn Failed; Receipt shows on card payments only;
+  Branch Staff and coaches see a message instead of a blank page. **Needs a
+  database migration** (fixes stored currency codes).
+
+- **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
+  clear its description, duration and instructor; archived lessons are hidden
+  from students everywhere (direct links, favourites, playlists, skill lists);
+  Upload video is greyed out with a plain reason while video isn't set up, and
+  a stuck upload turns "Video failed" so it can be tried again ("Upload
+  again"); blank lesson titles, comments and playlist names are refused; a
+  playlist no longer breaks when the student has left one of its Schools;
+  adding a lesson to a playlist twice no longer errors; a closed School takes
+  no new comments; duration is capped at 24 hours; the grading page's lesson
+  links skip archived lessons; a skill from an archived style can be unticked;
+  and the delete warning says what students lose.
+
+- **Curriculum: the owner's answers** (Decision 326) — coaches and Branch
+  Staff now have the Curriculum page, read-only (lessons, categories and
+  comments), and only the School owner can add, edit, reorder or upload; the
+  owner can delete a category, its lessons moving to "No category"; duration
+  is typed in minutes and seconds and listed as e.g. 4:30; each lesson has a
+  Comments (n) button opening its students' comments, which only the owner
+  (or the comment's author) can remove. **Needs a database migration.**
+
+- **Timetable fixes from the 26 Oct review (Decision 332)** — archived slots,
+  closed Schools and archived Branches no longer get classes back overnight;
+  a new or unarchived slot is bookable straight away; raising a slot's capacity
+  offers the seats to the waitlist; a capacity cut asks to confirm and leaves
+  fuller classes their size; changing waiver, membership or cut-off rules asks
+  whether booked classes take them too; break times are checked and can be
+  cleared; Archive asks first; every slot shows (not just the first 20); a
+  cancelled or finished class says so in the booking dialog; cancellation
+  notices show local time; waitlisted students hear when a class moves.
+
+- **Classes review fixes, first batch** (Decision 335; no database change):
+  - The Classes list opens on **Upcoming** (soonest first), with **Past** and
+    **All**; Timetable-made Classes carry a "Timetable" tag; a School with
+    styles filters by a style dropdown.
+  - The Class page and **roll call show every booked student** (not the first
+    20); the roll call lists who still needs checking in first, by name.
+  - **Coaches and Branch Staff** get a read-only Classes page, and the coach
+    dashboard's "Coming up" shows their next Classes with Roll call and Show QR.
+  - The Class form uses the **Branch's time zone** (else the School's), takes
+    the cancellation charge as a normal amount ("7.50", not cents), refuses a
+    blank title, and lets cut-off dates be cleared.
+  - Archiving asks first; an archived Class can't be edited until unarchived.
+  - The API refuses a QR window that closes before the start and cut-offs
+    after the end; making a full Class unlimited offers seats to its waitlist;
+    a guest needs a Friend Pass (one per guest); a closed School takes no new
+    bookings or waitlist entries.
+
 - **Forms brought in line with the shared address, currency and translation
   work** — My profile now uses the same country-first address fields as every
   other form (and no longer wipes a structured address on save); the address

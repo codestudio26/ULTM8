@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Mola {start} – {end}",
       bookError: "Bu ders rezerve edilemedi — lütfen tekrar deneyin.",
       joinWaitlistError: "Bekleme listesine katılınamadı — lütfen tekrar deneyin.",
       leaveWaitlistError: "Bekleme listesinden çıkılamadı — lütfen tekrar deneyin.",
@@ -405,7 +406,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Ücretsiz",
       live: "Canlı",
       prerecorded: "Önceden kaydedilmiş",
-      durationMinutes: "{minutes} dk",
       locked: "Kilitli — mevcut üyeliğinize dahil değil.",
       favoritedLabel: "Favorilerde",
     },
@@ -470,6 +470,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       moveDown: "↓ Aşağı",
       remove: "Kaldır",
       removeError: "Bu öğe kaldırılamadı.",
+      unavailable: "Artık kullanılamıyor",
       deleteConfirm: "Bu oynatma listesi silinsin mi? Bu işlem geri alınamaz.",
       keep: "Oynatma listesini koru",
       delete: "Oynatma listesini sil",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date} tarihinden beri",
       unverified: "Okulun bu kuşağı doğrulaması bekleniyor.",
       topOfLadder: "Merdivenin en üstündesiniz.",
+      noLongerTaught: "Bu okulda artık öğretilmiyor. Kuşağın ve geçmişin korunur.",
       next: "Sonraki: {rank}",
       progress: "Yolun %{percent} kadarı",
       readyToGrade: "Sınava hazır",
@@ -652,6 +654,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Bitiş: {date}",
       empty: "Henüz üyelik yok.",
       loadError: "Üyelikler yüklenemedi — lütfen tekrar deneyin.",
+      cancelSubscription: "Aboneliği iptal et",
+      keepSubscription: "Devam et",
+      cancelConfirm: "Ödediğin ayın sonuna kadar aboneliğini kullanmaya devam edersin. Sonra abonelik biter ve başka ödeme alınmaz.",
+      cancelError: "Aboneliğin iptal edilemedi — lütfen tekrar dene.",
+      cancelledEnds: "İptal edildi, {date} tarihinde bitiyor",
     },
     planRow: {
       classesIncluded: { one: "{count} ders", other: "{count} ders" },
@@ -673,6 +680,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Henüz bildirim yok.",
+      markAllRead: "Tümünü okundu olarak işaretle",
+      markAllReadFailed: "Bildirimleriniz okundu olarak işaretlenemedi. Lütfen tekrar deneyin.",
       loadFailed: "Bildirimler yüklenemedi — lütfen tekrar deneyin.",
     },
     row: {
@@ -680,6 +689,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, okunmadı",
       unread: "Okunmamış",
       markAsRead: "Okundu olarak işaretle",
+      open: "Aç",
       markReadFailed: "Okundu olarak işaretlenemedi — lütfen tekrar deneyin.",
     },
   },
@@ -764,6 +774,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Makbuzu gör",
       noReceipt: "Bu ödeme için makbuz yok.",
       receiptFailed: "Makbuz yüklenemedi — lütfen tekrar deneyin.",
+      renewal: "Yenileme: {plan}",
+      lateCancelFee: "Geç iptal ücreti: {class}",
+      lateCancelFeeNoClass: "Geç iptal ücreti",
     },
     status: {
       successful: "BAŞARILI",
@@ -800,6 +813,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Bu derste yer için bekleyen başkaları zaten var. Sıranızı almak için bekleme listesine katılın.",
       bookingClosed: "Bu dersin rezervasyonu kapandı. Bir personel sizi yine de ekleyebilir.",
       classBusy: "Şu anda bu derse çok sayıda kişi rezervasyon yapıyor. Lütfen birazdan tekrar deneyin.",
+      ticketRequired: "Bu tek seferlik ders kendi biletini gerektirir. Abonelik, haftalık kart veya genel ders paketi bu dersi kapsamaz.",
       checkInNotOpen: "Bu ders için giriş henüz açılmadı.",
       checkInNotOpenAt: "Bu ders için giriş henüz açılmadı. Açılış: {time}.",
     },

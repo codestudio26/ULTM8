@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Create/Update Membership Plan, rebuilt as a dedicated full page (first of
@@ -30,8 +30,10 @@ test.beforeEach(async ({ page }) => {
       schoolId: s.schoolId,
       title: 'Open Mat',
       activities: ['BJJ'],
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 3600_000),
+      // Tomorrow: a plan for a class that has already started is refused
+      // (Decision 334, M15).
+      startDate: new Date(Date.now() + 86_400_000),
+      endDate: new Date(Date.now() + 86_400_000 + 3600_000),
     },
   });
   classId = cls.id;
@@ -63,7 +65,8 @@ test('add a Subscription plan across steps (classesIncluded/scopedClass stay hid
   await expect(page.getByLabel('Price')).toBeVisible();
   await expect(page.getByLabel('Classes included')).toHaveCount(0);
   await expect(page.getByLabel('Scoped to Class')).toHaveCount(0);
-  await page.getByLabel('Price').fill('5000');
+  // Typed in pounds, stored in pence (Decision 334).
+  await page.getByLabel('Price').fill('50');
 
   // Jump straight to the last step via its pill, skipping Policies/Disciplines.
   await page.getByRole('button', { name: '5. Visibility' }).click();
@@ -100,7 +103,7 @@ test('a SUBSCRIPTION plan can switch to Prorate to a shared renewal day and back
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Title').fill('Shared Cycle Plan');
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
-  await page.getByLabel('Price').fill('5000');
+  await page.getByLabel('Price').fill('50');
 
   // Fresh cycle is the default — no renewal-day field yet.
   await expect(page.getByRole('button', { name: 'Fresh cycle from signup day' })).toBeVisible();
@@ -161,7 +164,7 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
   // Class locks Classes included to 1 immediately (a one-off Class has only
   // one occurrence; the server rejects anything higher) — asserted here too,
   // since this is exactly the bug the stress test found and fixed.
-  await page.getByLabel('Price').fill('2000');
+  await page.getByLabel('Price').fill('20');
   await page.getByLabel('Scoped to Class').selectOption({ label: 'Open Mat' });
   await expect(page.getByLabel(/Classes included/)).toHaveValue('1');
 
@@ -318,7 +321,7 @@ test('editing a SUBSCRIPTION plan price with an active subscriber shows the requ
     // No prompt yet — the price hasn't changed.
     await expect(page.getByText('This price change affects existing subscribers')).toHaveCount(0);
 
-    await page.getByLabel('Price').fill('6000');
+    await page.getByLabel('Price').fill('60');
     await expect(page.getByText('This price change affects existing subscribers')).toBeVisible();
     await expect(page.getByText('1 active subscriber currently billing at the old price.')).toBeVisible();
 
@@ -346,4 +349,119 @@ test('editing a SUBSCRIPTION plan price with an active subscriber shows the requ
   } finally {
     await db.membership.delete({ where: { id: membership.id } });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Decision 334 — the Memberships review of 26 Oct 2026.
+// ---------------------------------------------------------------------------
+
+test('a Trial must last 1-30 days, checked on Save from any step (M3)', async ({ page }) => {
+  await page.goto('/membership-plans');
+  await page.getByRole('button', { name: 'Add plan' }).click();
+  await page.getByLabel('Type').selectOption('TRIAL_MEMBERSHIP');
+  await page.getByLabel('Title').fill('Free trial');
+  // Straight to Save without ever opening the Pricing step.
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('A Trial must last between 1 and 30 days.')).toBeVisible();
+  // The error opens the step that needs fixing.
+  await page.getByLabel('Expiry duration (days)').fill('45');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('A Trial must last between 1 and 30 days.')).toBeVisible();
+
+  await page.getByLabel('Expiry duration (days)').fill('14');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page).toHaveURL(/\/membership-plans$/);
+  const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Free trial' } });
+  planIds.push(created.id);
+  expect(created.expiryDurationDays).toBe(14);
+});
+
+test('a Class Pack needs its class count and a Weekly Pass its expiry (M4)', async ({ page }) => {
+  await page.goto('/membership-plans');
+  await page.getByRole('button', { name: 'Add plan' }).click();
+  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await page.getByLabel('Title').fill('Pack without count');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('A Class Pack needs the number of classes it includes.')).toBeVisible();
+
+  await page.getByRole('button', { name: '1. Basics' }).click();
+  await page.getByLabel('Type').selectOption('WEEKLY_PASS');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText(/A Weekly Pass needs an expiry/)).toBeVisible();
+});
+
+test('prices are typed in pounds and pence; text that is not an amount is refused (Q1)', async ({ page }) => {
+  await page.goto('/membership-plans');
+  await page.getByRole('button', { name: 'Add plan' }).click();
+  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await page.getByLabel('Title').fill('Pounds pack');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel(/Classes included/).fill('5');
+  await page.getByLabel('Price').fill('12.345');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText(/Enter the price as an amount/)).toBeVisible();
+
+  await page.getByLabel('Price').fill('12.50');
+  await page.getByRole('button', { name: '3. Policies' }).click();
+  await page.getByLabel('Cancellation charge').fill('5');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page).toHaveURL(/\/membership-plans$/);
+  const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Pounds pack' } });
+  planIds.push(created.id);
+  expect(created.price).toBe(1250);
+  expect(created.cancellationCharge).toBe(500);
+
+  // Shown back in pounds on Edit.
+  await page.getByRole('row', { name: /Pounds pack/ }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+  await expect(page.getByLabel('Price')).toHaveValue('12.50');
+});
+
+test('the Type is locked while the plan has live members (M14)', async ({ page }) => {
+  const plan = await db.membershipPlan.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Locked Pack', price: 1000, currency: 'GBP', classesIncluded: 5 },
+  });
+  planIds.push(plan.id);
+  const live = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 3 },
+  });
+  try {
+    await page.goto(`/membership-plans/${plan.id}/edit`);
+    await expect(page.getByLabel('Type')).toBeDisabled();
+    await expect(page.getByText(/1 active member is on this plan, so its type can't change/)).toBeVisible();
+  } finally {
+    await db.membership.delete({ where: { id: live.id } });
+  }
+});
+
+test('every plan is listed, not just the first 20 (M5)', async ({ page }) => {
+  const created = await Promise.all(
+    Array.from({ length: 25 }, (_, i) =>
+      db.membershipPlan.create({
+        data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: `Bulk plan ${String(i + 1).padStart(2, '0')}`, price: 100, classesIncluded: 1 },
+      }),
+    ),
+  );
+  planIds.push(...created.map((p) => p.id));
+  await page.goto('/membership-plans');
+  await expect(page.getByTestId('stat-tile-Total plans').locator('span').nth(1)).toHaveText('25');
+  for (const p of created) {
+    await expect(page.getByRole('cell', { name: p.title, exact: true })).toBeVisible();
+  }
+});
+
+test('Branch Staff see who manages plans instead of a blank page (M10)', async ({ page }) => {
+  const staff = await addPerson('Bea', 'Staff', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId }]);
+  await signIn(page, staff.token);
+  await page.goto('/membership-plans');
+  await expect(page.getByText('Only the School owner manages membership plans')).toBeVisible();
+  await page.goto('/membership-plans/new');
+  await expect(page.getByText('Only the School owner manages membership plans')).toBeVisible();
 });

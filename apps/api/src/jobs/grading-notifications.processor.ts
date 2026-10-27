@@ -196,6 +196,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
             title: 'Ready to grade',
             body: `${name} is ready for ${nextRung?.name ?? 'their next rank'} (${discipline?.name ?? 'grading'}).`,
             type: 'GRADING_READY',
+            schoolId: sr.schoolId,
+            targetType: 'GRADING',
           } satisfies NotificationFanoutJobData,
           { jobId: id, ...FANOUT_OPTIONS },
         );
@@ -281,6 +283,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
             title: 'Promotion to decide',
             body: `${name}'s promotion to ${request.toRungName} (${discipline?.name ?? 'grading'}) is waiting for your decision. Promote them, or decide not to.`,
             type: 'GRADING_TO_DECIDE',
+            schoolId: request.schoolId,
+            targetType: 'GRADING',
           } satisfies NotificationFanoutJobData,
           { jobId: id, ...FANOUT_OPTIONS },
         );
@@ -331,7 +335,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
       select: { guardianId: true },
     });
     const amount = formatFee(data.amountMinor, data.currency);
-    const base = { title: 'Promotion fee', type: 'GRADING_PROMOTION_FEE' };
+    const request = await this.prismaJobs.promotionFeeRequest.findUnique({ where: { id: data.feeRequestId }, select: { schoolId: true } });
+    const base = { title: 'Promotion fee', type: 'GRADING_PROMOTION_FEE', ...(request ? { schoolId: request.schoolId } : {}), targetType: 'GRADING' as const };
     if (guardians.length === 0) {
       const id = `grading-fee-${data.feeRequestId}`;
       await this.fanoutQueue.add(
@@ -359,7 +364,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
       select: { guardianId: true },
     });
     const title = data.kind === 'STRIPE' ? 'New stripe!' : data.kind === 'PROMOTED' ? 'Promoted!' : 'Rank updated';
-    const base = { title, type: 'GRADING_RANK_CHANGE' };
+    const event = await this.prismaJobs.promotionEvent.findUnique({ where: { id: data.promotionEventId }, select: { schoolId: true } });
+    const base = { title, type: 'GRADING_RANK_CHANGE', ...(event ? { schoolId: event.schoolId } : {}), targetType: 'GRADING' as const };
 
     if (guardians.length === 0) {
       const body =

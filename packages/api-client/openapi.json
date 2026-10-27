@@ -515,6 +515,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/franchise-branding": {
+      "get": {
+        "operationId": "SchoolsController_findFranchiseBranding",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolFranchiseBrandingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students": {
       "get": {
         "operationId": "SchoolsController_findStudents",
@@ -753,7 +788,77 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolResponseDto"
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-join-request": {
+      "get": {
+        "operationId": "SchoolsController_findFranchiseJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolFranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-join-request/cancel": {
+      "post": {
+        "operationId": "SchoolsController_cancelFranchiseJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
                 }
               }
             }
@@ -789,6 +894,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/close": {
+      "post": {
+        "operationId": "SchoolsController_closeOwnSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify (passcode check).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseOwnSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloseOwnSchoolResponseDto"
                 }
               }
             }
@@ -1523,7 +1682,7 @@
             "name": "activity",
             "required": false,
             "in": "query",
-            "description": "Exact match against one element of Franchise.activities.",
+            "description": "Matches one element of Franchise.activities, ignoring capitals.",
             "schema": {
               "type": "string"
             }
@@ -1702,7 +1861,225 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolListResponseDto"
+                  "$ref": "#/components/schemas/FranchiseMemberSchoolListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests": {
+      "get": {
+        "operationId": "FranchisesController_listJoinRequests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests/{requestId}/accept": {
+      "post": {
+        "operationId": "FranchisesController_acceptJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests/{requestId}/decline": {
+      "post": {
+        "operationId": "FranchisesController_declineJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/schools/{schoolId}/remove": {
+      "post": {
+        "operationId": "FranchisesController_removeSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFranchiseSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/close": {
+      "post": {
+        "operationId": "FranchisesController_closeOwnFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify (passcode check).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseOwnFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseResponseDto"
                 }
               }
             }
@@ -2488,6 +2865,32 @@
         ]
       }
     },
+    "/v1/notifications/me/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -2846,6 +3249,29 @@
             "required": false,
             "in": "query",
             "description": "ISO 8601 date-time: only Classes starting at or before it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "when",
+            "required": false,
+            "in": "query",
+            "description": "Date view, sorted by start time. Omit for the unsorted list.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this User.",
             "schema": {
               "type": "string"
             }
@@ -4192,6 +4618,34 @@
         ]
       }
     },
+    "/v1/transactions/{id}/cancel": {
+      "patch": {
+        "operationId": "PaymentsController_cancelTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/timetable": {
       "post": {
         "operationId": "TimetableController_create",
@@ -4285,6 +4739,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TimetableSlotListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/timetable/calendar": {
+      "get": {
+        "operationId": "TimetableController_calendar",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "First date shown, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Last date shown, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this Branch, plus School-wide classes.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableCalendarResponseDto"
                 }
               }
             }
@@ -4862,6 +5378,134 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingsSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/cancel": {
+      "post": {
+        "operationId": "BookingsController_cancelClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/cancellations": {
+      "get": {
+        "operationId": "BookingsController_listOpenCancellations",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpenCancellationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/resolution": {
+      "patch": {
+        "operationId": "BookingsController_resolveCancellation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCancellationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
                 }
               }
             }
@@ -5902,6 +6546,41 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/members": {
+      "get": {
+        "operationId": "MembershipsController_findPlanMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanMemberListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/membership-plans/{id}/archive": {
       "post": {
         "operationId": "MembershipsController_archivePlan",
@@ -6061,6 +6740,280 @@
         ]
       }
     },
+    "/v1/memberships/{id}/cancel": {
+      "post": {
+        "operationId": "MembershipsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelMembershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships": {
+      "get": {
+        "operationId": "MembershipsController_findStudentMemberships",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentMembershipListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/sell": {
+      "post": {
+        "operationId": "MembershipsController_sellAtDesk",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellMembershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
+      "post": {
+        "operationId": "MembershipsController_giftFriendPass",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiftFriendPassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/desk-payments": {
+      "post": {
+        "operationId": "MembershipsController_recordDeskPayment",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordDeskPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordDeskPaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/desk-payments/options": {
+      "get": {
+        "operationId": "MembershipsController_deskPaymentOptions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskPaymentOptionsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/memberships/me": {
       "get": {
         "operationId": "MembershipsController_findMyMemberships",
@@ -6182,6 +7135,75 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SUCCESSFUL",
+                "PENDING",
+                "FAILED",
+                "REFUNDED",
+                "DISPUTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMethod",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "STRIPE",
+                "CASH",
+                "BANK_TRANSFER",
+                "PIX",
+                "CARD_TERMINAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "MEMBERSHIP",
+                "RENEWAL",
+                "LATE_CANCEL_FEE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "membershipPlanId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6191,6 +7213,110 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TransactionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/transactions/summary": {
+      "get": {
+        "operationId": "TransactionsController_summaryForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SUCCESSFUL",
+                "PENDING",
+                "FAILED",
+                "REFUNDED",
+                "DISPUTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMethod",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "STRIPE",
+                "CASH",
+                "BANK_TRANSFER",
+                "PIX",
+                "CARD_TERMINAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "MEMBERSHIP",
+                "RENEWAL",
+                "LATE_CANCEL_FEE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "membershipPlanId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionSummaryResponseDto"
                 }
               }
             }
@@ -9219,6 +10345,57 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}": {
+      "get": {
+        "operationId": "WaiversController_findSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -9946,6 +11123,61 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/notifications/broadcasts": {
+      "get": {
+        "operationId": "NotificationBroadcastController_findSent",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentBroadcastListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/fee-charges": {
       "get": {
         "operationId": "FranchiseFeesController_findAllForFranchise",
@@ -10543,6 +11775,32 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. Owner only."
           }
         },
         "tags": [
@@ -11382,6 +12640,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/curriculum/video-uploads": {
+      "get": {
+        "operationId": "CurriculumController_videoUploadStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url": {
       "post": {
         "operationId": "CurriculumController_requestVideoUploadUrl",
@@ -12009,6 +13302,37 @@
             "type": "number",
             "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ],
+            "description": "Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME)."
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean",
+            "description": "Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true."
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ],
+            "description": "What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL."
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default)."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
+          },
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
@@ -12021,6 +13345,10 @@
               "ALWAYS_REFUND"
             ],
             "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
+          },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
           }
         },
         "required": [
@@ -12091,6 +13419,9 @@
             }
           },
           "ranksToggle": {
+            "type": "boolean"
+          },
+          "showFranchiseBranding": {
             "type": "boolean"
           },
           "defaultLanguage": {
@@ -12170,6 +13501,37 @@
           "waitlistClaimWindowMinutes": {
             "type": "number"
           },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
+          "cancellationPolicyChosenAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 292 — when the owner last saved the cancellation policy. Null until they choose one; the portal asks them to."
+          },
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
@@ -12181,6 +13543,10 @@
               "REFUND_UNTIL_END",
               "ALWAYS_REFUND"
             ]
+          },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Branch Staff may record desk payments (Decision 347)."
           },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
@@ -12219,11 +13585,16 @@
           "activities",
           "facilities",
           "ranksToggle",
+          "showFranchiseBranding",
           "joinCode",
           "classCancellationPolicy",
           "waitlistClaimWindowMinutes",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
           "lateCancelRefundPolicy",
+          "branchStaffCanRecordPayments",
           "createdAt",
           "updatedAt"
         ]
@@ -12265,6 +13636,33 @@
         },
         "required": [
           "id"
+        ]
+      },
+      "SchoolFranchiseBrandingResponseDto": {
+        "type": "object",
+        "properties": {
+          "franchiseAllows": {
+            "type": "boolean",
+            "description": "The School belongs to a Franchise whose Owner allows member Schools to show its name and logo."
+          },
+          "schoolShows": {
+            "type": "boolean",
+            "description": "The School Owner's own switch (School.showFranchiseBranding)."
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only when both allow it."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only when both allow it."
+          }
+        },
+        "required": [
+          "franchiseAllows",
+          "schoolShows"
         ]
       },
       "UpdateSchoolDto": {
@@ -12309,6 +13707,37 @@
             "type": "number",
             "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ],
+            "description": "Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME)."
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean",
+            "description": "Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true."
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ],
+            "description": "What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL."
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default)."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
+          },
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
@@ -12321,6 +13750,10 @@
               "ALWAYS_REFUND"
             ],
             "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
+          },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
           },
           "mobileNumber": {
             "type": "string",
@@ -12399,6 +13832,10 @@
             "type": "string",
             "nullable": true,
             "description": "X (formerly Twitter)."
+          },
+          "showFranchiseBranding": {
+            "type": "boolean",
+            "description": "Show this School's Franchise name and logo (the Franchise Owner must also allow it)."
           }
         }
       },
@@ -12785,6 +14222,97 @@
           "franchiseId"
         ]
       },
+      "FranchiseJoinRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string",
+            "description": "The School's name when it asked."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "DECLINED",
+              "CANCELLED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "franchiseId",
+          "schoolId",
+          "schoolName",
+          "status",
+          "createdAt"
+        ]
+      },
+      "SchoolFranchiseJoinRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+              }
+            ]
+          }
+        }
+      },
+      "CloseOwnSchoolDto": {
+        "type": "object",
+        "properties": {
+          "confirmName": {
+            "type": "string",
+            "description": "Must exactly match the School's current name."
+          }
+        },
+        "required": [
+          "confirmName"
+        ]
+      },
+      "CloseOwnSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "purgeAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the School is deleted for good (90 days after closing)."
+          }
+        },
+        "required": [
+          "id",
+          "archivedAt",
+          "purgeAt"
+        ]
+      },
       "CreateBranchDto": {
         "type": "object",
         "properties": {
@@ -12932,6 +14460,44 @@
             "type": "string",
             "nullable": true
           },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "Decision 292 — true when this Branch uses its own cancellation settings below instead of its School's."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -12960,6 +14526,11 @@
           "name",
           "activities",
           "facilities",
+          "cancellationSettingsOverride",
+          "classCancellationPolicy",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
           "createdAt",
           "updatedAt"
         ]
@@ -13051,6 +14622,44 @@
             "type": "string",
             "nullable": true
           },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "Decision 292 — true when this Branch uses its own cancellation settings below instead of its School's."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -13087,6 +14696,11 @@
           "name",
           "activities",
           "facilities",
+          "cancellationSettingsOverride",
+          "classCancellationPolicy",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
           "createdAt",
           "updatedAt",
           "studentCount",
@@ -13174,6 +14788,46 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "cancellationSettingsOverride": {
+            "type": "boolean",
+            "description": "true = this Branch uses the six settings below instead of its School's. Defaults to false (same as the School)."
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start. null = no cutoff."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount. null = off."
           }
         }
       },
@@ -13615,6 +15269,10 @@
           "perHeadcountRate": {
             "type": "number",
             "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
+          },
+          "shareBrandingWithMembers": {
+            "type": "boolean",
+            "description": "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)."
           }
         },
         "required": [
@@ -13715,6 +15373,9 @@
             "type": "number",
             "nullable": true
           },
+          "shareBrandingWithMembers": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string"
           },
@@ -13743,6 +15404,7 @@
           "activities",
           "facilities",
           "feeModel",
+          "shareBrandingWithMembers",
           "createdAt",
           "updatedAt"
         ]
@@ -13808,6 +15470,10 @@
             "type": "number",
             "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
           },
+          "shareBrandingWithMembers": {
+            "type": "boolean",
+            "description": "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)."
+          },
           "mobileNumber": {
             "type": "string",
             "nullable": true
@@ -13861,6 +15527,104 @@
         },
         "required": [
           "schoolsAlreadyBillingCount"
+        ]
+      },
+      "FranchiseMemberSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseFeeSubscriptionStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ],
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the School has been closed."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt"
+        ]
+      },
+      "FranchiseMemberSchoolListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseMemberSchoolResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FranchiseJoinRequestListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RemoveFranchiseSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId"
+        ]
+      },
+      "CloseOwnFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "confirmName": {
+            "type": "string",
+            "description": "Must exactly match the Franchise's current name."
+          }
+        },
+        "required": [
+          "confirmName"
         ]
       },
       "CreateCoachInviteDto": {
@@ -14462,6 +16226,35 @@
             "type": "string",
             "nullable": true,
             "description": "Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment."
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School this notification came from (Decision 355), or null."
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true,
+            "description": "That School's name as it was when the notification was sent, shown as a label (Decision 355)."
+          },
+          "targetType": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "CLASS",
+              "WAIVER",
+              "PAYMENT",
+              "CANCELLATIONS",
+              "GRADING",
+              "FRANCHISE",
+              "SCHOOL"
+            ],
+            "description": "What clicking the notification opens (Decision 355), or null for nothing."
+          },
+          "targetId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364)."
           }
         },
         "required": [
@@ -14537,12 +16330,24 @@
           "cleared"
         ]
       },
+      "MarkAllReadResponseDto": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "number",
+            "description": "How many unread Notifications were marked read."
+          }
+        },
+        "required": [
+          "updated"
+        ]
+      },
       "SnoozeNotificationDto": {
         "type": "object",
         "properties": {
           "until": {
             "type": "string",
-            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both."
+            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both."
           },
           "minutes": {
             "type": "number",
@@ -14833,6 +16638,15 @@
           "endDate": {
             "type": "string"
           },
+          "breakStartAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Break start, if its timetable slot has a break. Shown only; no effect on bookings."
+          },
+          "breakEndAt": {
+            "type": "string",
+            "nullable": true
+          },
           "capacity": {
             "type": "number",
             "nullable": true,
@@ -14860,6 +16674,20 @@
           },
           "membershipInclusion": {
             "type": "boolean"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 291 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted."
+          },
+          "cancellationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class."
           },
           "archivedAt": {
             "type": "string",
@@ -14944,18 +16772,6 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "bookingEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — booking cutoff."
-          },
-          "qrAttendanceEndAt": {
-            "type": "string",
-            "description": "ISO 8601 date-time — end of the QR check-in window."
-          },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
@@ -14992,6 +16808,21 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — booking cutoff. Pass null to clear."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — end of the QR check-in window. Pass null to clear (the Class end applies)."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit. Pass null to clear."
           }
         }
       },
@@ -15783,6 +17614,148 @@
           "items"
         ]
       },
+      "TimetableCalendarClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "styles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleResponseDto"
+            }
+          },
+          "date": {
+            "type": "string",
+            "description": "Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC."
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Local start time, HH:mm."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Local end time, HH:mm."
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local break start, HH:mm (Decision 353, Q6)."
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local break end, HH:mm."
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true
+          },
+          "seatsTaken": {
+            "type": "number",
+            "description": "Seats taken: bookings that are not cancelled, plus their guests."
+          },
+          "waiting": {
+            "type": "number",
+            "description": "Students waiting or offered a seat."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "timetableSlotId",
+          "title",
+          "branchId",
+          "instructorId",
+          "activities",
+          "styles",
+          "date",
+          "startTime",
+          "endTime",
+          "breakStart",
+          "breakEnd",
+          "startDate",
+          "endDate",
+          "capacity",
+          "seatsTaken",
+          "waiting",
+          "cancelledAt",
+          "archivedAt"
+        ]
+      },
+      "TimetableCalendarLaterDto": {
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD."
+          }
+        },
+        "required": [
+          "slotId",
+          "date"
+        ]
+      },
+      "TimetableCalendarResponseDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableCalendarClassDto"
+            }
+          },
+          "later": {
+            "description": "Dates On slots reach that have no class yet because they are past the 4-week horizon.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableCalendarLaterDto"
+            }
+          }
+        },
+        "required": [
+          "classes",
+          "later"
+        ]
+      },
       "UpcomingImpactResponseDto": {
         "type": "object",
         "properties": {
@@ -15835,14 +17808,6 @@
             "description": "24-hour clock, HH:mm.",
             "example": "19:00"
           },
-          "breakStart": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
-          },
-          "breakEnd": {
-            "type": "string",
-            "description": "24-hour clock, HH:mm."
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -15883,7 +17848,7 @@
               "CANCEL",
               "KEEP"
             ],
-            "description": "Decision 322. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch) or switches the slot off. MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they stay as they are. Required when such Classes exist; without it the update is refused with 409. Unbooked upcoming Classes always follow the change."
+            "description": "Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change."
           },
           "branchId": {
             "type": "string",
@@ -15894,6 +17859,16 @@
             "type": "string",
             "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
             "nullable": true
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakEnd null) to remove the break."
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "24-hour clock, HH:mm. Pass null (with breakStart null) to remove the break."
           },
           "capacity": {
             "type": "number",
@@ -15939,7 +17914,7 @@
             "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
           },
           "attendeeMembershipIds": {
-            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
+            "description": "One of the organizing Student's own Friend Passes per guest beyond the Student themselves (whoJoinYou). Their Subscription or Class Pack covers only them (SKILL.md §10).",
             "type": "array",
             "items": {
               "type": "string"
@@ -15966,6 +17941,15 @@
           },
           "resolvedById": {
             "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           }
         },
@@ -16039,6 +18023,23 @@
           },
           "stripeCancellationPaymentIntentId": {
             "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "noShowFeeOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "noShowFeeAmount": {
+            "type": "number",
             "nullable": true
           },
           "attendees": {
@@ -16279,6 +18280,116 @@
           "totalBookings",
           "upcomingBookings",
           "days"
+        ]
+      },
+      "CancelClassDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Shown to every booked or waitlisted student, e.g. \"Coach is ill\"."
+          }
+        }
+      },
+      "OpenCancellationResponseDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "attendeeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "classStartDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "classCancelledBySchool": {
+            "type": "boolean"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REFUND_OWED"
+            ]
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "planTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "planType": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "bookingId",
+          "studentId",
+          "classId",
+          "classCancelledBySchool",
+          "resolution",
+          "cancelledAt"
+        ]
+      },
+      "ResolveCancellationDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "REFUND",
+              "CREDIT",
+              "KEEP",
+              "MARK_PAID"
+            ],
+            "description": "REFUND and MARK_PAID are School Owner/Manager only."
+          },
+          "attendeeId": {
+            "type": "string",
+            "description": "A guest seat on this booking; omit for the Student's own seat."
+          }
+        },
+        "required": [
+          "action"
         ]
       },
       "JoinWaitlistDto": {
@@ -17353,10 +19464,73 @@
         "properties": {
           "activeCount": {
             "type": "number"
+          },
+          "subscriberCount": {
+            "type": "number",
+            "description": "Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334)."
           }
         },
         "required": [
-          "activeCount"
+          "activeCount",
+          "subscriberCount"
+        ]
+      },
+      "PlanMemberResponseDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "gifted": {
+            "type": "boolean",
+            "description": "True when the owner gave it (a Friend Pass)."
+          }
+        },
+        "required": [
+          "membershipId",
+          "studentId",
+          "firstName",
+          "surname",
+          "startDate",
+          "gifted"
+        ]
+      },
+      "PlanMemberListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanMemberResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "MembershipPlanPriceChangeResponseDto": {
@@ -17507,6 +19681,15 @@
             "type": "string",
             "nullable": true
           },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
@@ -17561,6 +19744,274 @@
         },
         "required": [
           "outcome"
+        ]
+      },
+      "CancelMembershipDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: the linked minor whose Subscription this is."
+          }
+        }
+      },
+      "StudentMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "giftedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string"
+          },
+          "live": {
+            "type": "boolean",
+            "description": "In effect now: Active, not past its expiry date, and not a used-up pack."
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "membershipPlanId",
+          "schoolId",
+          "status",
+          "startDate",
+          "frequency",
+          "createdAt",
+          "updatedAt",
+          "planTitle",
+          "planType",
+          "live"
+        ]
+      },
+      "StudentMembershipListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentMembershipResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SellMembershipDto": {
+        "type": "object",
+        "properties": {
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK_TRANSFER",
+              "PIX",
+              "CARD_TERMINAL"
+            ]
+          }
+        },
+        "required": [
+          "membershipPlanId",
+          "paymentMethod"
+        ]
+      },
+      "DeskMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "membership": {
+            "$ref": "#/components/schemas/MembershipResponseDto"
+          },
+          "transactionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass."
+          }
+        },
+        "required": [
+          "membership"
+        ]
+      },
+      "GiftFriendPassDto": {
+        "type": "object",
+        "properties": {
+          "membershipPlanId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "membershipPlanId"
+        ]
+      },
+      "RecordDeskPaymentDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK_TRANSFER",
+              "PIX",
+              "CARD_TERMINAL"
+            ]
+          }
+        },
+        "required": [
+          "studentId",
+          "membershipPlanId",
+          "paymentMethod"
+        ]
+      },
+      "RecordDeskPaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a free plan, which has no Transaction."
+          },
+          "membershipId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "membershipId"
+        ]
+      },
+      "DeskPaymentStudentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname"
+        ]
+      },
+      "DeskPaymentPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "description": "In hundredths of the currency."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "price",
+          "currency"
+        ]
+      },
+      "DeskPaymentOptionsDto": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskPaymentStudentDto"
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskPaymentPlanDto"
+            }
+          }
+        },
+        "required": [
+          "students",
+          "plans"
         ]
       },
       "MembershipListResponseDto": {
@@ -17619,10 +20070,32 @@
             "type": "string"
           },
           "membershipPlanId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "membershipPlanTitle": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEMBERSHIP",
+              "RENEWAL",
+              "LATE_CANCEL_FEE"
+            ]
+          },
+          "bookingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "bookingClassTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordedById": {
+            "type": "string",
+            "nullable": true
           },
           "membershipId": {
             "type": "string",
@@ -17666,8 +20139,7 @@
           "studentFirstName",
           "studentSurname",
           "paymentAccountId",
-          "membershipPlanId",
-          "membershipPlanTitle",
+          "kind",
           "billingDate",
           "amount",
           "status",
@@ -17692,6 +20164,53 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "TransactionRevenueDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          }
+        },
+        "required": [
+          "amount"
+        ]
+      },
+      "TransactionSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "successful": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
+          },
+          "failedOrDisputed": {
+            "type": "number"
+          },
+          "revenue": {
+            "description": "Successful rows only, one entry per currency.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionRevenueDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "successful",
+          "pending",
+          "failedOrDisputed",
+          "revenue"
         ]
       },
       "TransactionReceiptUrlResponseDto": {
@@ -18298,12 +20817,17 @@
           },
           "surname": {
             "type": "string"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "description": "Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310)."
           }
         },
         "required": [
           "studentId",
           "firstName",
-          "surname"
+          "surname",
+          "enrolled"
         ]
       },
       "RungHoldersDto": {
@@ -19025,6 +21549,10 @@
           "disciplineName": {
             "type": "string"
           },
+          "archived": {
+            "type": "boolean",
+            "description": "The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress)."
+          },
           "currentStripeId": {
             "type": "string",
             "nullable": true
@@ -19074,6 +21602,7 @@
           "schoolName",
           "disciplineId",
           "disciplineName",
+          "archived",
           "dateOfCurrentRank",
           "verificationStatus",
           "ladder",
@@ -20569,6 +23098,10 @@
             "nullable": true,
             "description": "Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities."
           },
+          "version": {
+            "type": "number",
+            "description": "Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -20581,6 +23114,7 @@
           "schoolId",
           "title",
           "body",
+          "version",
           "createdAt",
           "updatedAt"
         ]
@@ -20651,6 +23185,30 @@
             "type": "string",
             "nullable": true,
             "description": "The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column."
+          },
+          "formerStudent": {
+            "type": "boolean",
+            "description": "Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record."
+          },
+          "signedWaiverTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver title as it was when signed. Null when not signed, or signed before copies were kept."
+          },
+          "signedWaiverBody": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it."
+          },
+          "signedWaiverSha256": {
+            "type": "string",
+            "nullable": true,
+            "description": "SHA-256 (hex) of signedWaiverBody."
+          },
+          "signedWaiverVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "The Waiver version that was signed."
           },
           "createdAt": {
             "type": "string"
@@ -20746,6 +23304,10 @@
           "signatureImageKey": {
             "type": "string",
             "description": "R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment."
+          },
+          "waiverVersion": {
+            "type": "number",
+            "description": "The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again."
           }
         },
         "required": [
@@ -21010,6 +23572,15 @@
           "endDate": {
             "type": "string"
           },
+          "breakStartAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Break start, if its timetable slot has a break. Shown only; no effect on bookings."
+          },
+          "breakEndAt": {
+            "type": "string",
+            "nullable": true
+          },
           "capacity": {
             "type": "number",
             "nullable": true,
@@ -21227,6 +23798,18 @@
           "classId": {
             "type": "string",
             "description": "Required when audience is CLASS — must be a Class of this School."
+          },
+          "classAudience": {
+            "type": "array",
+            "description": "Audience CLASS only: which people on the class list receive it. Defaults to BOOKED.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BOOKED",
+                "WAITLIST",
+                "CANCELLED"
+              ]
+            }
           }
         },
         "required": [
@@ -21259,6 +23842,109 @@
           "broadcastId",
           "audience",
           "recipientCount"
+        ]
+      },
+      "SentBroadcastResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The broadcastId POST .../broadcast returned."
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "sentById": {
+            "type": "string"
+          },
+          "sentByName": {
+            "type": "string",
+            "description": "The sender's name when it was sent."
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "BRANCH",
+              "CLASS"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "classId": {
+            "type": "string",
+            "nullable": true
+          },
+          "classTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "classStartDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "classAudience": {
+            "type": "array",
+            "description": "CLASS only: who on the class list it went to. Empty otherwise.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BOOKED",
+                "WAITLIST",
+                "CANCELLED"
+              ]
+            }
+          },
+          "recipientCount": {
+            "type": "number",
+            "description": "How many distinct Students it was queued for."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "sentById",
+          "sentByName",
+          "title",
+          "body",
+          "audience",
+          "classAudience",
+          "recipientCount",
+          "createdAt"
+        ]
+      },
+      "SentBroadcastListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SentBroadcastResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "FranchiseFeeChargeResponseDto": {
@@ -21496,6 +24182,10 @@
             "nullable": true,
             "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
           },
+          "commentCount": {
+            "type": "number",
+            "description": "Comments on this lesson the caller can read (Decision 326)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -21533,6 +24223,7 @@
           "locked",
           "format",
           "captionStatus",
+          "commentCount",
           "skillIds",
           "createdAt",
           "updatedAt"
@@ -21564,10 +24255,14 @@
             "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
-            "type": "number"
+            "type": "number",
+            "nullable": true,
+            "description": "null clears it."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null clears it."
           },
           "format": {
             "type": "string",
@@ -21577,7 +24272,9 @@
             ]
           },
           "instructorId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "null: no instructor."
           },
           "skillIds": {
             "minItems": 1,
@@ -21874,6 +24571,10 @@
           "createdAt": {
             "type": "string"
           },
+          "available": {
+            "type": "boolean",
+            "description": "False when the caller can no longer see this Lesson (it was archived, or they left its School); lessonTitle is then empty and the item can only be removed."
+          },
           "lessonTitle": {
             "type": "string"
           },
@@ -21888,6 +24589,7 @@
           "lessonId",
           "order",
           "createdAt",
+          "available",
           "lessonTitle",
           "locked"
         ]
@@ -21994,6 +24696,17 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "VideoUploadStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "VideoUploadUrlResponseDto": {

@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { MembershipsService } from './memberships.service';
+import { MembershipsService, stripePurchaseKey } from './memberships.service';
 import { NoSavedPaymentMethodError } from '../payments/payments.service';
 
 /**
@@ -15,9 +15,15 @@ import { NoSavedPaymentMethodError } from '../payments/payments.service';
  * attempted: a clean success, and the collision-triggers-a-refund case.
  */
 describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
-  function makeTx(overrides: { membershipCreate?: jest.Mock; transactionCreate?: jest.Mock; transactionUpdate?: jest.Mock } = {}) {
+  function makeTx(overrides: { membershipCreate?: jest.Mock; membershipFindMany?: jest.Mock; transactionCreate?: jest.Mock; transactionUpdate?: jest.Mock } = {}) {
     return {
-      membership: { create: overrides.membershipCreate ?? jest.fn().mockResolvedValue({ id: 'membership-1' }) },
+      // Decision 334's assertCanCreateMembership(): the advisory lock and the
+      // live-membership read.
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      membership: {
+        create: overrides.membershipCreate ?? jest.fn().mockResolvedValue({ id: 'membership-1' }),
+        findMany: overrides.membershipFindMany ?? jest.fn().mockResolvedValue([]),
+      },
       transaction: {
         create: overrides.transactionCreate ?? jest.fn().mockResolvedValue({ id: 'transaction-1' }),
         update: overrides.transactionUpdate ?? jest.fn().mockResolvedValue({}),
@@ -51,6 +57,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       // never for a dependency this test's code path never touches"
       // convention every other argument here already follows.
       null as never,
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, prismaApp, paymentsService, stepUpService };
   }
@@ -77,7 +84,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     title: 'Pack',
   };
 
-  function callPurchaseWithSavedCard(service: MembershipsService, stepUpToken?: string) {
+  function callPurchaseWithSavedCard(service: MembershipsService, stepUpToken?: string, fixturePlan: FixturePlan = plan) {
     return (
       service as unknown as {
         purchaseWithSavedCard: (
@@ -89,7 +96,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
           stepUpToken?: string,
         ) => Promise<unknown>;
       }
-    ).purchaseWithSavedCard('student-1', 'student-1', plan, 'account-1', 'usd', stepUpToken);
+    ).purchaseWithSavedCard('student-1', 'student-1', fixturePlan, 'account-1', 'usd', stepUpToken);
   }
 
   it('checks step-up BEFORE ever calling chargeOffSession', async () => {
@@ -142,10 +149,13 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
   it('refunds the already-captured charge and marks the Transaction REFUNDED when Membership creation loses the two-simultaneous-Active race', async () => {
     const chargeOffSession = jest.fn().mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_collision' });
     const refundOffSessionCharge = jest.fn().mockResolvedValue(undefined);
-    const tx = makeTx({ membershipCreate: jest.fn().mockRejectedValue({ code: 'P2002' }) });
+    // A live Weekly Pass, created between purchase()'s pre-check and here.
+    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]) });
     const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge });
+    const weeklyPass: FixturePlan = { ...plan, type: 'WEEKLY_PASS', classesIncluded: null, expiryDurationDays: 7 };
 
-    await expect(callPurchaseWithSavedCard(service, 'valid-token')).rejects.toBeInstanceOf(ConflictException);
+    await expect(callPurchaseWithSavedCard(service, 'valid-token', weeklyPass)).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.membership.create).not.toHaveBeenCalled();
 
     expect(paymentsService.refundOffSessionCharge).toHaveBeenCalledWith('student-1', 'school-1', 'pi_collision');
     const createdTransactionId = tx.transaction.create.mock.calls[0][0].data.id;
@@ -192,6 +202,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
       null as never,
       null as never,
       null as never,
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, prismaApp, paymentsService };
   }
@@ -220,7 +231,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
 
     const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
 
-    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack');
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/));
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
     expect(typeof result.transactionId).toBe('string');
@@ -233,7 +244,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
           paymentAccountId: 'account-1',
           membershipPlanId: 'plan-1',
           amount: 3000,
-          currency: 'usd',
+          currency: 'USD', // stored in capitals (Decision 339, T3)
           status: 'PENDING',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: 'pi_checkout_1',
@@ -266,8 +277,14 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       paymentAccount: { findUnique: jest.fn().mockResolvedValue(opts.paymentAccount) },
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue(opts.student ?? { email: 'minor@example.test', paymentRestrictedAt: null }) },
       transaction: { create: jest.fn().mockResolvedValue({ id: 'transaction-1' }) },
+      // Decision 334's purchase checks: a current Student, and the pre-charge
+      // assertCanCreateMembership().
+      roleGrant: { findFirst: jest.fn().mockResolvedValue({ id: 'grant-1' }) },
+      membership: { findMany: jest.fn().mockResolvedValue([]) },
+      $executeRaw: jest.fn().mockResolvedValue(1),
     };
     const prismaApp = { withTenantContext: jest.fn((_userId: string, cb: (tx: unknown) => unknown) => cb(tx)) };
+    const tenantAuth = { assertSchoolNotArchived: jest.fn().mockResolvedValue(undefined) };
     const paymentsService = {
       createPurchaseCheckoutSession:
         opts.createPurchaseCheckoutSession ??
@@ -277,18 +294,19 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     const subscriptionGate = { assertNotDegraded: jest.fn().mockResolvedValue(undefined) };
     const service = new MembershipsService(
       prismaApp as never,
-      null as never,
+      tenantAuth as never,
       null as never,
       paymentsService as never,
       guardiansService as never,
       subscriptionGate as never,
       null as never,
       null as never,
+      null as never, // StripeClientService (Decision 348 cancel)
     );
     return { service, tx, paymentsService, guardiansService };
   }
 
-  const scopePlan = { id: 'plan-1', schoolId: 'school-1', type: 'CLASS_PACK', price: 3000, title: 'Pack', currency: 'usd' };
+  const scopePlan = { id: 'plan-1', schoolId: 'school-1', type: 'CLASS_PACK', price: 3000, title: 'Pack', currency: 'usd', visible: true, expiryDurationDays: null };
   const stripeAccount = { id: 'account-1', provider: 'STRIPE' };
   const cashBankAccount = { id: 'account-1', provider: 'CASH_BANK_TRANSFER' };
 
@@ -303,7 +321,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
-    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'usd', 'Pack');
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/));
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
     );
@@ -330,5 +348,16 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
 
     await expect(service.purchase('student-1', 'plan-1', { useHostedCheckout: true })).rejects.toBeInstanceOf(BadRequestException);
     expect(paymentsService.createPurchaseCheckoutSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('stripePurchaseKey (billing stress test, B2)', () => {
+  it('is the same for a repeat click, and changes with the plan, the student or what is sent', () => {
+    const key = stripePurchaseKey('student-1', 'plan-1', 'checkout', [3000, 'usd', 'Pack']);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'checkout', [3000, 'usd', 'Pack'])).toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'checkout', [3500, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-2', 'checkout', [3000, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-2', 'plan-1', 'checkout', [3000, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'card', [3000, 'usd', 'Pack'])).not.toBe(key);
   });
 });

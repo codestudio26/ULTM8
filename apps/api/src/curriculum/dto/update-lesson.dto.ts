@@ -1,12 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { LessonFormat } from '@prisma/client';
 
 /**
- * All fields optional (undefined = unchanged) — same simpler convention as
- * UpdateSkillDto/UpdateDisciplineDto, not School/Branch/Class's null-means-clear
- * convention (Lesson is closer to that catalog/content family than to a profile
- * form with genuinely clearable fields).
+ * All fields optional (undefined = unchanged). `durationSeconds`,
+ * `description` and `instructorId` also take null to clear them — the edit
+ * form needs that, or emptying one of them silently kept the old value (C1).
  *
  * `skillIds`, when provided, REPLACES the full set (same REPLACE semantics as
  * UpdateRankDto's own requiredSkillIds) — still requires at least one, same
@@ -18,7 +18,9 @@ import { LessonFormat } from '@prisma/client';
 export class UpdateLessonDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(200)
   title?: string;
 
@@ -27,27 +29,28 @@ export class UpdateLessonDto {
   @IsUUID()
   categoryId?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'null clears it.' })
   @IsOptional()
   @IsInt()
   @Min(1)
-  durationSeconds?: number;
+  @Max(86_400)
+  durationSeconds?: number | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'null clears it.' })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  description?: string;
+  description?: string | null;
 
   @ApiPropertyOptional({ enum: LessonFormat })
   @IsOptional()
   @IsEnum(LessonFormat)
   format?: LessonFormat;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'null: no instructor.' })
   @IsOptional()
   @IsUUID('4')
-  instructorId?: string;
+  instructorId?: string | null;
 
   @ApiPropertyOptional({ type: [String], minItems: 1 })
   @IsOptional()

@@ -41,7 +41,8 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
 import { NotificationBroadcastService } from '../src/notifications/broadcast/notification-broadcast.service';
-import { BroadcastAudienceDto } from '../src/notifications/broadcast/dto/broadcast-notification.dto';
+import { PrismaAppService } from '../src/common/prisma/prisma-app.service';
+import { BroadcastAudienceDto, BroadcastClassAudienceDto } from '../src/notifications/broadcast/dto/broadcast-notification.dto';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -214,6 +215,15 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
     });
     bookingIds.push(bookingCancelled.id);
 
+    // Decision 333's class audience: studentBranchY waits for a place;
+    // studentBranchX's place expired, so it is never on the list.
+    await superuser.waitlistEntry.createMany({
+      data: [
+        { id: randomUUID(), studentId: studentBranchY.id, classId: classInBranchX.id, schoolId: school.id, branchId: branchX.id, position: 1, status: 'WAITING' },
+        { id: randomUUID(), studentId: studentBranchX.id, classId: classInBranchX.id, schoolId: school.id, branchId: branchX.id, position: 2, status: 'EXPIRED' },
+      ],
+    });
+
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOtherSchoolOwner = signAccessToken(otherSchoolOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchX.id }]);
@@ -227,6 +237,10 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
     // fixture Students. Those must go before the Users they reference, same
     // FK-ordering notifications.e2e-spec.ts's own cleanup already follows.
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
+    // Decision 363 — every broadcast below also wrote a history row, which
+    // holds its sender (User, ON DELETE RESTRICT).
+    await superuser.notificationBroadcast.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.waitlistEntry.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.booking.deleteMany({ where: { id: { in: bookingIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -309,7 +323,20 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       .set('Authorization', `Bearer ${tokenOwner}`)
       .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id });
     expect(cls.status).toBe(201);
-    expect(cls.body.recipientCount).toBe(2); // studentClassBooker + studentCancelledBooker.
+    expect(cls.body.recipientCount).toBe(1); // Booked only by default: studentClassBooker.
+
+    const ticked = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/notifications/broadcast`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id, classAudience: ['BOOKED', 'WAITLIST', 'CANCELLED'] });
+    expect(ticked.status).toBe(201);
+    expect(ticked.body.recipientCount).toBe(3);
+
+    const badGroup = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/notifications/broadcast`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Class roster', body: 'Body', audience: 'CLASS', classId: classInBranchX.id, classAudience: ['EVERYONE'] });
+    expect(badGroup.status).toBe(400);
   });
 
   it('BRANCH/CLASS audiences require their matching id; an empty-audience broadcast is a no-op (0 recipients, still 201)', async () => {
@@ -333,6 +360,118 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       .send({ title: 'Hi', body: 'Body', audience: 'BRANCH', branchId: branchEmpty.id });
     expect(emptyAudience.status).toBe(201);
     expect(emptyAudience.body.recipientCount).toBe(0);
+  });
+
+  it('refuses an archived Branch, an archived Class, and a title or message of only spaces', async () => {
+    const archivedBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Archived Branch', archivedAt: new Date() } });
+    branchIds.push(archivedBranch.id);
+    const past = new Date(Date.now() - 86_400_000);
+    const archivedClass = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Old Class', startDate: past, endDate: past, archivedAt: new Date() },
+    });
+    classIds.push(archivedClass.id);
+    const send = (body: Record<string, unknown>) =>
+      request(app.getHttpServer()).post(`/v1/schools/${school.id}/notifications/broadcast`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+
+    const toArchivedBranch = await send({ title: 'Hi', body: 'Body', audience: 'BRANCH', branchId: archivedBranch.id });
+    expect(toArchivedBranch.status).toBe(400);
+    expect(JSON.stringify(toArchivedBranch.body)).toMatch(/archived/);
+
+    const toArchivedClass = await send({ title: 'Hi', body: 'Body', audience: 'CLASS', classId: archivedClass.id });
+    expect(toArchivedClass.status).toBe(400);
+    expect(JSON.stringify(toArchivedClass.body)).toMatch(/archived/);
+
+    expect((await send({ title: '   ', body: 'Body', audience: 'ALL' })).status).toBe(400);
+    expect((await send({ title: 'Hi', body: ' \n ', audience: 'ALL' })).status).toBe(400);
+  });
+
+  describe('GET /schools/:schoolId/notifications/broadcasts — the sent-broadcast history (Decision 363)', () => {
+    const list = (token: string | null, schoolId: string, query = '') => {
+      const req = request(app.getHttpServer()).get(`/v1/schools/${schoolId}/notifications/broadcasts${query}`);
+      return token ? req.set('Authorization', `Bearer ${token}`) : req;
+    };
+
+    it('lists what the Owner sent, newest first, with who sent it, to whom, and how many', async () => {
+      const send = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).post(`/v1/schools/${school.id}/notifications/broadcast`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+      const toAll = await send({ title: 'History all', body: 'Everyone', audience: 'ALL' });
+      const toBranch = await send({ title: 'History branch', body: 'Branch X', audience: 'BRANCH', branchId: branchX.id });
+      const toClass = await send({ title: 'History class', body: 'The class', audience: 'CLASS', classId: classInBranchX.id, classAudience: ['BOOKED', 'WAITLIST'] });
+      expect([toAll.status, toBranch.status, toClass.status]).toEqual([201, 201, 201]);
+
+      const res = await list(tokenOwner, school.id);
+      expect(res.status).toBe(200);
+      const ids = res.body.items.map((b: { id: string }) => b.id);
+      // Newest first: the class one, then the branch one, then everyone.
+      const positions = [toClass.body.broadcastId, toBranch.body.broadcastId, toAll.body.broadcastId].map((id) => ids.indexOf(id));
+      expect(positions.every((p) => p >= 0)).toBe(true);
+      expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+
+      const byId = (id: string) => res.body.items.find((b: { id: string }) => b.id === id);
+      expect(byId(toAll.body.broadcastId)).toMatchObject({
+        schoolId: school.id,
+        sentById: owner.id,
+        sentByName: 'owner Tenant',
+        title: 'History all',
+        body: 'Everyone',
+        audience: 'ALL',
+        branchId: null,
+        classId: null,
+        classAudience: [],
+        recipientCount: 5,
+      });
+      expect(byId(toBranch.body.broadcastId)).toMatchObject({ audience: 'BRANCH', branchId: branchX.id, branchName: 'Branch X', recipientCount: 1 });
+      expect(byId(toClass.body.broadcastId)).toMatchObject({
+        audience: 'CLASS',
+        classId: classInBranchX.id,
+        classTitle: 'Kids Fundamentals',
+        classAudience: ['BOOKED', 'WAITLIST'],
+        recipientCount: 2,
+      });
+      expect(new Date(byId(toClass.body.broadcastId).classStartDate).getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('pages with a cursor and refuses a bad one', async () => {
+      const first = await list(tokenOwner, school.id, '?limit=2');
+      expect(first.status).toBe(200);
+      expect(first.body.items).toHaveLength(2);
+      expect(first.body.nextCursor).toEqual(expect.any(String));
+      const second = await list(tokenOwner, school.id, `?limit=2&cursor=${first.body.nextCursor}`);
+      expect(second.status).toBe(200);
+      const firstIds = first.body.items.map((b: { id: string }) => b.id);
+      for (const b of second.body.items) expect(firstIds).not.toContain(b.id);
+      expect(new Date(second.body.items[0].createdAt).getTime()).toBeLessThanOrEqual(new Date(first.body.items[1].createdAt).getTime());
+
+      expect((await list(tokenOwner, school.id, '?cursor=not-a-cursor')).status).toBe(400);
+    });
+
+    it('is the Owner\'s only: Branch Staff 403, another School\'s Owner 404, no token 401', async () => {
+      expect((await list(tokenBranchStaff, school.id)).status).toBe(403);
+      expect((await list(tokenOtherSchoolOwner, school.id)).status).toBe(404);
+      expect((await list(null, school.id)).status).toBe(401);
+      // The other Owner's own School has sent nothing.
+      const own = await list(tokenOtherSchoolOwner, otherSchool.id);
+      expect(own.status).toBe(200);
+      expect(own.body.items).toEqual([]);
+    });
+
+    it('RLS: nobody but that School\'s Owner can read or add a history row', async () => {
+      const prismaApp = app.get(PrismaAppService);
+      const seen = (userId: string) =>
+        prismaApp.withTenantContext(userId, (tx) => tx.notificationBroadcast.count({ where: { schoolId: school.id } }));
+      expect(await seen(owner.id)).toBeGreaterThan(0);
+      expect(await seen(otherSchoolOwner.id)).toBe(0);
+      expect(await seen(branchStaff.id)).toBe(0);
+      expect(await seen(studentPlain.id)).toBe(0);
+
+      await expect(
+        prismaApp.withTenantContext(otherSchoolOwner.id, (tx) =>
+          tx.notificationBroadcast.create({
+            data: { id: randomUUID(), schoolId: school.id, sentById: otherSchoolOwner.id, sentByName: 'x', title: 't', body: 'b', audience: 'ALL', recipientCount: 0 },
+          }),
+        ),
+      ).rejects.toThrow();
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -402,19 +541,45 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       expect(recipients).not.toContain(studentPlain.id);
     });
 
-    it('audience CLASS — every distinct Student with a Booking for that Class, reusing the same shape BookingsService.findAllForClass already uses (any Booking status, including Cancelled)', async () => {
+    it('audience CLASS — booked Students only by default (not cancelled, not the waitlist)', async () => {
       const result = await broadcastService.broadcast(owner.id, school.id, {
         title: 'Class roster',
         body: 'Body',
         audience: BroadcastAudienceDto.CLASS,
         classId: classInBranchX.id,
       });
-      expect(result.recipientCount).toBe(2);
+      expect(result.recipientCount).toBe(1);
+      expect(recipientIdsFromLastCall()).toEqual([studentClassBooker.id]);
+      // Decision 355: labelled with the School, and opens the Class.
+      const job = fakeQueue.addBulk.mock.calls[0][0][0];
+      expect(job.data).toMatchObject({ schoolId: school.id, targetType: 'CLASS', targetId: classInBranchX.id });
+    });
 
-      const recipients = recipientIdsFromLastCall();
-      expect(recipients.sort()).toEqual([studentCancelledBooker.id, studentClassBooker.id].sort());
-      expect(recipients).not.toContain(studentPlain.id);
-      expect(recipients).not.toContain(studentBranchX.id);
+    it('audience CLASS — the Owner ticks which groups get it (Decision 333)', async () => {
+      const send = (classAudience: BroadcastClassAudienceDto[]) => {
+        fakeQueue.addBulk.mockClear();
+        return broadcastService.broadcast(owner.id, school.id, { title: 'Class roster', body: 'Body', audience: BroadcastAudienceDto.CLASS, classId: classInBranchX.id, classAudience });
+      };
+
+      await send([BroadcastClassAudienceDto.WAITLIST]);
+      // Only the open waitlist place; the expired one is not on the list.
+      expect(recipientIdsFromLastCall()).toEqual([studentBranchY.id]);
+
+      await send([BroadcastClassAudienceDto.CANCELLED]);
+      expect(recipientIdsFromLastCall()).toEqual([studentCancelledBooker.id]);
+
+      const all = await send([BroadcastClassAudienceDto.BOOKED, BroadcastClassAudienceDto.WAITLIST, BroadcastClassAudienceDto.CANCELLED]);
+      expect(all.recipientCount).toBe(3);
+      expect(recipientIdsFromLastCall().sort()).toEqual([studentClassBooker.id, studentBranchY.id, studentCancelledBooker.id].sort());
+      expect(recipientIdsFromLastCall()).not.toContain(studentBranchX.id);
+    });
+
+    it('writes the history row with the same id the fanned-out notifications use (Decision 363)', async () => {
+      const result = await broadcastService.broadcast(owner.id, school.id, { title: 'Stored', body: 'Body', audience: BroadcastAudienceDto.BRANCH, branchId: branchY.id });
+      const row = await superuser.notificationBroadcast.findUnique({ where: { id: result.broadcastId } });
+      expect(row).toMatchObject({ schoolId: school.id, sentById: owner.id, audience: 'BRANCH', branchId: branchY.id, branchName: 'Branch Y', recipientCount: 1 });
+      const job = fakeQueue.addBulk.mock.calls[0][0][0];
+      expect(job.data.notificationId.startsWith(`broadcast-${row!.id}-`)).toBe(true);
     });
 
     it('a per-recipient notificationId/jobId is derived from this one broadcastId — dedup-safe the same way WaiverSignatureRequestsProcessor already established', async () => {

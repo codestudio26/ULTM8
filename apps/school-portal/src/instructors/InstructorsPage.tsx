@@ -55,7 +55,8 @@ export function InstructorsPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
-  const { data: disciplineData } = useDisciplines(schoolId);
+  // Archived styles too: the forms show one a record already has (Decision 310).
+  const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
   const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
   const createInstructorManually = useCreateInstructorManually(schoolId ?? '');

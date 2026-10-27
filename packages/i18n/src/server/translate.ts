@@ -205,6 +205,20 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment dispute lost': 'disputeLostTitle',
   'Payment dispute resolved': 'disputeResolvedTitle',
   'Payment dispute opened': 'disputeOpenedTitle',
+  'Cancellations to resolve': 'cancellationsTitle',
+  'Cash payment waiting': 'cashWaitingTitle',
+  'Payment confirmed': 'paymentConfirmedTitle',
+  'Payment cancelled': 'paymentCancelledTitle',
+  'Class moved': 'classMovedTitle',
+  'Class cancelled': 'classCancelledTitle',
+  'Promotion to decide': 'toDecideTitle',
+  'Promotion fee': 'promotionFeeTitle',
+  // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
+  'School asking to join': 'joinAskedTitle',
+  'Joined the Franchise': 'joinAcceptedTitle',
+  'Request to join declined': 'joinDeclinedTitle',
+  'Removed from the Franchise': 'removedFromFranchiseTitle',
+  'Franchise closed': 'franchiseClosedTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -226,6 +240,20 @@ const body = (source: string) => new RegExp(source, 's');
 
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
+  // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
+  [
+    /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,
+    (m, { t }) => n(t, 'classCancelledBySchoolBodyWithReason', { class: m[1], when: m[2], reason: m[3] }),
+  ],
+  [/^(.+) on (.+?) has been cancelled by the school\.$/s, (m, { t }) => n(t, 'classCancelledBySchoolBody', { class: m[1], when: m[2] })],
+  [
+    /^A cancelled booking needs a refund decision or a cash refund paid\. See Cancellations to resolve\.$/,
+    (_m, { t }) => n(t, 'cancellationReviewBody'),
+  ],
+  [
+    /^Bookings from the cancelled class (.+) need a refund decision or a cash refund paid \((\d+)\)\. See Cancellations to resolve\.$/s,
+    (m, { t }) => n(t, 'cancellationClassReviewBody', { class: m[1], count: Number(m[2]) }),
+  ],
   [
     /^A spot opened up in (.+)\. Claim it soon — it goes to the next person on the waitlist if you don't\.$/s,
     (m, { t }) => n(t, 'spotOpenedBody', { class: m[1] }),
@@ -236,10 +264,50 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   [body(String.raw`^(.+) is ready for (.+) \(${STYLE}\)\.$`), (m, { t }) => n(t, 'readyToGradeBody', { name: m[1], rank: m[2], style: m[3] })],
   [
+    /^(.+), a Student at your School, has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/s,
+    (m, { t }) => n(t, 'paymentRestrictedNamedBody', { name: m[1] }),
+  ],
+  // Older rows, written before the Student was named.
+  [
     /^A Student at your School has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/,
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
+  [/^(.+) has invited you to sign the waiver "(.+)"\.$/s, (m, { t }) => n(t, 'waiverRequestFromSchoolBody', { school: m[1], waiver: m[2] })],
+  // Older rows, written before the School was named (the waiver's title sat
+  // where the sender belongs).
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
+  // apps/api/src/timetable/timetable.service.ts — "Your booking moved with it." is
+  // the wording before the waitlist was told too.
+  [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t }) => n(t, 'classMovedBody', { class: m[1], when: m[2] })],
+  [/^(.+) has moved to (.+)\. Your waitlist place moved with it\.$/s, (m, { t }) => n(t, 'classMovedWaitlistBody', { class: m[1], when: m[2] })],
+  [
+    /^(.+) on (.+) was cancelled by your School\. Any class credit you used has been given back\.$/s,
+    (m, { t }) => n(t, 'classCancelledBody', { class: m[1], when: m[2] }),
+  ],
+  // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
+  [/^(.+) has asked to join (.+)\.$/s, (m, { t }) => n(t, 'joinAskedBody', { school: m[1], franchise: m[2] })],
+  [/^(.+) accepted (.+)'s request to join\.$/s, (m, { t }) => n(t, 'joinAcceptedBody', { franchise: m[1], school: m[2] })],
+  [/^(.+) declined (.+)'s request to join\. You can ask again\.$/s, (m, { t }) => n(t, 'joinDeclinedBody', { franchise: m[1], school: m[2] })],
+  [
+    /^(.+) removed (.+) from the Franchise\. Its franchise fees have stopped\.$/s,
+    (m, { t }) => n(t, 'removedFromFranchiseBody', { franchise: m[1], school: m[2] }),
+  ],
+  [
+    /^(.+) has been closed\. (.+) stays open, and its franchise fees have stopped\.$/s,
+    (m, { t }) => n(t, 'franchiseClosedBody', { franchise: m[1], school: m[2] }),
+  ],
+  [
+    body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),
+    (m, { t }) => n(t, 'toDecideBody', { name: m[1], rank: m[2], style: m[3] }),
+  ],
+  [
+    body(String.raw`^Your promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
+    (m, { t }) => n(t, 'promotionFeeBody', { rank: m[1], style: m[2], amount: m[3] }),
+  ],
+  [
+    body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
+    (m, { t }) => n(t, 'childPromotionFeeBody', { name: m[1], rank: m[2], style: m[3], amount: m[4] }),
+  ],
   [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
   [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
   [body(String.raw`^Your rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],
@@ -265,6 +333,26 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
         amount: formatAmount(m[2], m[3], locale),
         status: DISPUTE_STATUSES.has(m[4]) ? n(t, `disputeStatus.${m[4]}`) : m[4],
       }),
+  ],  // PaymentsService.notifyCashPayment — Cash/Bank Transfer payments (Decision 339, T11).
+  [
+    /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on the Transactions page once the money arrives\.$/s,
+    (m, { t, locale }) => n(t, 'cashWaitingBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  [
+    /^Your payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. Your membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'paymentConfirmedBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
+  [
+    /^(.+?)'s payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. The membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'childPaymentConfirmedBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  [
+    /^Your School cancelled your cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'paymentCancelledBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
+  [
+    /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
 ];
 
@@ -333,12 +421,17 @@ export function createServerTextTranslator(
       return known(compile(messages), message) ?? t(`server.generic.${genericKey(status)}`);
     },
     notification({ title, body, type }) {
+      // A parent's copy of their child's notification (NotificationFanoutProcessor):
+      // the child's message, translated as usual, behind "For {name}: ".
+      const forChild = body.match(/^For ([^:]+): (.*)$/s);
+      const inner = forChild ? forChild[2] : body;
+      const wrap = (text: string) => (forChild ? n(t, 'forChild', { name: forChild[1], body: text }) : text);
       // A broadcast's text is the School's own words, never a template.
-      if (type === 'SCHOOL_BROADCAST') return { title, body };
+      if (type === 'SCHOOL_BROADCAST') return { title, body: wrap(inner) };
       const titleKey = NOTIFICATION_TITLES[title];
       return {
         title: titleKey ? n(t, titleKey) : title,
-        body: applyRules(BODY_RULES, body, ctx) ?? body,
+        body: wrap(applyRules(BODY_RULES, inner, ctx) ?? inner),
       };
     },
   };

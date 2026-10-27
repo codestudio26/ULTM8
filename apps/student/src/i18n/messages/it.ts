@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pausa {start} – {end}",
       bookError: "Impossibile prenotare questo corso — riprova.",
       joinWaitlistError: "Impossibile entrare in lista d’attesa — riprova.",
       leaveWaitlistError: "Impossibile uscire dalla lista d’attesa — riprova.",
@@ -413,7 +414,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Gratuita",
       live: "In diretta",
       prerecorded: "Preregistrata",
-      durationMinutes: "{minutes} min",
       locked: "Bloccata — non inclusa nella tua iscrizione attuale.",
       favoritedLabel: "Nei preferiti",
     },
@@ -478,6 +478,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       moveDown: "↓ Giù",
       remove: "Rimuovi",
       removeError: "Impossibile rimuovere questo elemento.",
+      unavailable: "Non più disponibile",
       deleteConfirm: "Eliminare questa playlist? L’operazione non può essere annullata.",
       keep: "Mantieni la playlist",
       delete: "Elimina playlist",
@@ -493,6 +494,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Dal {date}",
       unverified: "In attesa che la scuola verifichi questa cintura.",
       topOfLadder: "In cima alla scala.",
+      noLongerTaught: "Non più insegnato in questa scuola. La tua cintura e la tua storia restano.",
       next: "Prossimo: {rank}",
       progress: "{percent}% del percorso",
       readyToGrade: "Pronto per l’esame",
@@ -669,6 +671,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Scade il {date}",
       empty: "Ancora nessuna iscrizione.",
       loadError: "Impossibile caricare le iscrizioni — riprova.",
+      cancelSubscription: "Disdici abbonamento",
+      keepSubscription: "Mantienilo",
+      cancelConfirm: "Mantieni il tuo abbonamento fino alla fine del mese pagato. Poi termina e non vengono addebitati altri pagamenti.",
+      cancelError: "Impossibile disdire il tuo abbonamento — riprova.",
+      cancelledEnds: "Disdetto, termina il {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
@@ -690,6 +697,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Ancora nessuna notifica.",
+      markAllRead: "Segna tutte come lette",
+      markAllReadFailed: "Impossibile segnare le notifiche come lette. Riprova.",
       loadFailed: "Impossibile caricare le notifiche — riprova.",
     },
     row: {
@@ -697,6 +706,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, da leggere",
       unread: "Da leggere",
       markAsRead: "Segna come letta",
+      open: "Apri",
       markReadFailed: "Impossibile segnare come letta — riprova.",
     },
   },
@@ -782,6 +792,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Vedi ricevuta",
       noReceipt: "Nessuna ricevuta disponibile per questo pagamento.",
       receiptFailed: "Impossibile caricare la ricevuta — riprova.",
+      renewal: "Rinnovo: {plan}",
+      lateCancelFee: "Penale per cancellazione tardiva: {class}",
+      lateCancelFeeNoClass: "Penale per cancellazione tardiva",
     },
     status: {
       successful: "RIUSCITO",
@@ -818,6 +831,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Altre persone sono già in attesa di un posto in questo corso. Entra in lista d’attesa per aspettare il tuo turno.",
       bookingClosed: "Le prenotazioni per questo corso sono chiuse. Un membro dello staff può ancora aggiungerti.",
       classBusy: "Molte persone stanno prenotando questo corso in questo momento. Riprova tra poco.",
+      ticketRequired: "Questa lezione singola richiede un biglietto dedicato. Un abbonamento, un pass settimanale o un carnet generico non la coprono.",
       checkInNotOpen: "Il check-in per questo corso non è ancora aperto.",
       checkInNotOpenAt: "Il check-in per questo corso non è ancora aperto. Apre {time}.",
     },

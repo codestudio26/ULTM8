@@ -42,6 +42,18 @@ const STATUS_LABEL: Record<string, TranslationKey> = {
  * `receiptUrl` (CASH/BANK_TRANSFER, or Stripe simply has no receipt yet) shows an
  * inline message instead of silently doing nothing — a real, normal state, not
  * treated as an error. */
+/** What the payment was for: the plan, a later renewal of it, or a
+ * late-cancellation fee naming its class (Decision 346). */
+function rowTitle(transaction: Transaction, t: ReturnType<typeof useT>): string {
+  if (transaction.kind === 'LATE_CANCEL_FEE') {
+    return transaction.bookingClassTitle
+      ? t('transactions.row.lateCancelFee', { class: transaction.bookingClassTitle })
+      : t('transactions.row.lateCancelFeeNoClass');
+  }
+  const plan = transaction.membershipPlanTitle ?? '';
+  return transaction.kind === 'RENEWAL' ? t('transactions.row.renewal', { plan }) : plan;
+}
+
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   const t = useT();
   const statusColor = STATUS_COLOR[transaction.status] ?? '#5F6368';
@@ -66,7 +78,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 }}>{transaction.membershipPlanTitle}</Text>
+        <Text style={{ fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 }}>{rowTitle(transaction, t)}</Text>
         <Text style={{ fontSize: 15, fontWeight: '600' }}>{formatMoney(transaction.amount, transaction.currency)}</Text>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>

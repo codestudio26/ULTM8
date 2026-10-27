@@ -46,7 +46,7 @@ export function RollCallPage() {
     return <ErrorBanner message={bookingsError instanceof ApiError ? bookingsError.message : t('attendance.rollCall.bookingsLoadFailed')} />;
   }
 
-  const bookings = bookingData?.items ?? [];
+  const bookings = sortForRollCall(bookingData?.items ?? []);
 
   function handleManualConfirm(studentId: string) {
     setRowError(null);
@@ -89,6 +89,17 @@ export function RollCallPage() {
         />
       ) : null}
     </>
+  );
+}
+
+/** Students still to check in first, then those already present, then
+ * cancelled/no-show; alphabetical within each group (C2: the API returns
+ * bookings in id order, which reads as random on a long roll call). */
+const ROLL_CALL_ORDER: Record<string, number> = { UPCOMING: 0, COMPLETED: 1 };
+function sortForRollCall(bookings: BookingResponse[]): BookingResponse[] {
+  const name = (b: BookingResponse) => `${b.studentFirstName} ${b.studentSurname}`.trim().toLocaleLowerCase();
+  return [...bookings].sort(
+    (a, b) => (ROLL_CALL_ORDER[a.status] ?? 2) - (ROLL_CALL_ORDER[b.status] ?? 2) || name(a).localeCompare(name(b)),
   );
 }
 

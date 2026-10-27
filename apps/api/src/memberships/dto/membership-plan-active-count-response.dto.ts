@@ -9,4 +9,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class MembershipPlanActiveCountResponseDto {
   @ApiProperty()
   activeCount!: number;
+
+  @ApiProperty({ description: 'Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334).' })
+  subscriberCount!: number;
 }

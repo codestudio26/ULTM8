@@ -63,7 +63,7 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
   async process(job: Job<{ waiverId: string; schoolId: string }>): Promise<void> {
     const { waiverId, schoolId } = job.data;
 
-    const waiver = await this.prismaJobs.waiver.findUnique({ where: { id: waiverId }, select: { title: true } });
+    const waiver = await this.prismaJobs.waiver.findUnique({ where: { id: waiverId }, select: { title: true, school: { select: { name: true } } } });
     if (!waiver) {
       // A genuine race (the Waiver was deleted between enqueue and processing) —
       // nothing to notify students about. Waivers has no delete endpoint today,
@@ -86,9 +86,16 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
             notificationId: `waiver-${waiverId}-${grant.userId}`,
             userId: grant.userId,
             title: 'Waiver signature requested',
-            // Spec 55 §9's own confirmed sample text, verbatim.
-            body: `${waiver.title} has invited you to sign the following waiver.`,
+            // Spec 55 §9's sample is "...has invited you to sign the following
+            // waiver", with the sender left out. The Waiver belongs to the
+            // School, so the School is named as the sender and the waiver by its
+            // title; an earlier version put the waiver's title in the sender's
+            // place ("Adult Waiver has invited you...").
+            body: `${waiver.school.name} has invited you to sign the waiver "${waiver.title}".`,
             type: 'WAIVER_SIGNATURE_REQUEST',
+            schoolId,
+            targetType: 'WAIVER',
+            targetId: waiverId,
           } satisfies NotificationFanoutJobData,
           opts: {
             jobId: `waiver-${waiverId}-${grant.userId}`,

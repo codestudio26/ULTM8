@@ -16,6 +16,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { EntityOffboardingPurgeProcessor } from '../src/jobs/entity-offboarding-purge.processor';
+import { R2ClientService } from '../src/common/object-storage/r2-client.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -35,6 +36,8 @@ if (!hasDb) {
 describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   let processor: EntityOffboardingPurgeProcessor;
+  // Stands in for R2: the purge deletes a signature's drawn image first.
+  const r2 = { isConfigured: () => true, deleteObject: jest.fn(async (_key: string) => undefined) };
 
   let school: { id: string };
   const branchIds: string[] = [];
@@ -52,7 +55,9 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
   const studentRankIds: string[] = [];
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ providers: [EntityOffboardingPurgeProcessor, PrismaJobsService] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      providers: [EntityOffboardingPurgeProcessor, PrismaJobsService, { provide: R2ClientService, useValue: r2 }],
+    }).compile();
     processor = moduleRef.get(EntityOffboardingPurgeProcessor);
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Entity Offboarding Purge Job School' } });
@@ -414,7 +419,7 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     return user;
   }
 
-  async function mkWaiverAndSignature(opts: { signedById: string; studentId: string }) {
+  async function mkWaiverAndSignature(opts: { signedById: string; studentId: string; signatureImageKey?: string }) {
     const waiver = await superuser.waiver.create({
       data: { id: randomUUID(), schoolId: school.id, title: `Purge Signature Test Waiver ${randomUUID()}`, body: 'Terms.' },
     });
@@ -430,6 +435,7 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
         signatureText: 'Purge Test Signer',
         signedDate: new Date(),
         status: 'SIGNED',
+        signatureImageKey: opts.signatureImageKey,
       },
     });
     return signature;
@@ -444,6 +450,23 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
 
     await processor.process(fakeJob());
 
+    expect(await superuser.waiverSignature.findUnique({ where: { id: signature.id } })).toBeNull();
+  });
+
+  it('a purged signature takes its drawn image with it; if the image delete fails, the row waits for the next run', async () => {
+    const student = await mkSigner('AdultDepartedImage', new Date('1990-01-01'));
+    const key = `${school.id}/image-${randomUUID()}.png`;
+    const signature = await mkWaiverAndSignature({ signedById: student.id, studentId: student.id, signatureImageKey: key });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: student.id, schoolId: school.id, revokedAt: yearsAgo(8) },
+    });
+
+    r2.deleteObject.mockRejectedValueOnce(new Error('R2 down'));
+    await processor.process(fakeJob());
+    expect(await superuser.waiverSignature.findUnique({ where: { id: signature.id } })).not.toBeNull();
+
+    await processor.process(fakeJob());
+    expect(r2.deleteObject).toHaveBeenLastCalledWith(key);
     expect(await superuser.waiverSignature.findUnique({ where: { id: signature.id } })).toBeNull();
   });
 

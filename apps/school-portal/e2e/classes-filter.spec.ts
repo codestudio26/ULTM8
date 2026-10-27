@@ -12,21 +12,26 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
 let s: GradingSchool;
 const classIds: string[] = [];
 
-function classRow(title: string, activities: string[]) {
+// Relative dates: the list now shows upcoming Classes by default (C3).
+const inDays = (d: number) => new Date(Date.now() + d * 86_400_000);
+
+function classRow(title: string, activities: string[], disciplineId?: string) {
   return {
     id: randomUUID(),
     schoolId: s.schoolId,
     title,
     activities,
-    startDate: new Date('2026-11-01T10:00:00.000Z'),
-    endDate: new Date('2026-11-01T11:00:00.000Z'),
+    ...(disciplineId ? { styles: [{ disciplineId, classType: null }] } : {}),
+    startDate: inDays(6),
+    endDate: new Date(inDays(6).getTime() + 3_600_000),
   };
 }
 
 test.beforeEach(async () => {
   s = await seedGradingSchool();
-  const judo = await db.class.create({ data: classRow('Adult Judo Fundamentals', ['Judo']) });
-  const bjj = await db.class.create({ data: classRow('Kids BJJ', ['BJJ']) });
+  const judoStyle = await db.discipline.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Judo', classTypesOffered: [] } });
+  const judo = await db.class.create({ data: classRow('Adult Judo Fundamentals', ['Judo'], judoStyle.id) });
+  const bjj = await db.class.create({ data: classRow('Kids BJJ', ['BJJ'], s.disciplineId) });
   classIds.push(judo.id, bjj.id);
 });
 
@@ -51,11 +56,12 @@ test('Discipline and Search filters narrow the Classes list server-side', async 
   await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
 
-  await page.getByLabel('Discipline').fill('Judo');
+  // The School has styles, so Discipline is a dropdown of them (C9).
+  await page.getByLabel('Discipline').selectOption({ label: 'Judo' });
   await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toHaveCount(0);
 
-  await page.getByLabel('Discipline').fill('');
+  await page.getByLabel('Discipline').selectOption({ label: 'All disciplines' });
   await page.getByLabel('Search classes').fill('kids');
   await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toHaveCount(0);
@@ -72,7 +78,7 @@ test('Prev/Next pages through Classes, and Prev returns to the first page', asyn
 
   await signIn(page, s.ownerToken);
   await page.goto('/classes');
-  await page.getByLabel('Discipline').fill('PagerFixture');
+  await page.getByLabel('Search classes').fill('Pager Class');
 
   await expect(page.getByText('Page 1')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Prev' })).toBeDisabled();

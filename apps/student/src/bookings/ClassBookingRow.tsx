@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
-import { formatDate } from '../lib/formatDate';
+import { formatDate, formatTime } from '../lib/formatDate';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
@@ -13,6 +13,9 @@ interface ClassSummary {
   title: string;
   startDate: string;
   endDate: string;
+  /** Decision 353 (Q6): the slot's break, shown only; no effect on booking. */
+  breakStartAt?: string | null;
+  breakEndAt?: string | null;
 }
 
 /** Substantive progress only — kept separate from `actionError` (below) so a failed
@@ -97,6 +100,11 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
         {t('bookings.classRow.dateRange', { start: formatDate(classItem.startDate), end: formatDate(classItem.endDate) })}
       </Text>
+      {classItem.breakStartAt && classItem.breakEndAt ? (
+        <Text style={{ color: '#5F6368', fontSize: 12 }}>
+          {t('bookings.classRow.breakLine', { start: formatTime(classItem.breakStartAt), end: formatTime(classItem.breakEndAt) })}
+        </Text>
+      ) : null}
 
       {actionError ? <InlineError message={actionError} /> : null}
 
