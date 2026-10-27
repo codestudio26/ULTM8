@@ -18,6 +18,8 @@ export const notifications = {
   markRead: 'Mark read',
   snooze: 'Snooze',
   markReadFailed: 'Could not mark this notification as read — please try again.',
+  markAllRead: 'Mark all read',
+  markAllReadFailed: 'Could not mark your notifications as read — please try again.',
   delete: 'Delete',
   clearAllRead: 'Clear all read',
   loadMore: 'Load more',

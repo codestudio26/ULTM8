@@ -2443,6 +2443,32 @@
         ]
       }
     },
+    "/v1/notifications/me/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -4291,6 +4317,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TimetableSlotListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/timetable/calendar": {
+      "get": {
+        "operationId": "TimetableController_calendar",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "First date shown, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Last date shown, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this Branch, plus School-wide classes.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableCalendarResponseDto"
                 }
               }
             }
@@ -15713,6 +15801,33 @@
             "type": "string",
             "nullable": true,
             "description": "Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment."
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School this notification came from (Decision 355), or null."
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true,
+            "description": "That School's name as it was when the notification was sent, shown as a label (Decision 355)."
+          },
+          "targetType": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "CLASS",
+              "WAIVER",
+              "PAYMENT",
+              "CANCELLATIONS",
+              "GRADING"
+            ],
+            "description": "What clicking the notification opens (Decision 355), or null for nothing."
+          },
+          "targetId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Class or Waiver id, for CLASS and WAIVER targets (Decision 355)."
           }
         },
         "required": [
@@ -15786,6 +15901,18 @@
         },
         "required": [
           "cleared"
+        ]
+      },
+      "MarkAllReadResponseDto": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "number",
+            "description": "How many unread Notifications were marked read."
+          }
+        },
+        "required": [
+          "updated"
         ]
       },
       "SnoozeNotificationDto": {
@@ -16083,6 +16210,15 @@
           },
           "endDate": {
             "type": "string"
+          },
+          "breakStartAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Break start, if its timetable slot has a break. Shown only; no effect on bookings."
+          },
+          "breakEndAt": {
+            "type": "string",
+            "nullable": true
           },
           "capacity": {
             "type": "number",
@@ -17049,6 +17185,148 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "TimetableCalendarClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timetableSlotId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "styles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleResponseDto"
+            }
+          },
+          "date": {
+            "type": "string",
+            "description": "Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC."
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Local start time, HH:mm."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Local end time, HH:mm."
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local break start, HH:mm (Decision 353, Q6)."
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local break end, HH:mm."
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true
+          },
+          "seatsTaken": {
+            "type": "number",
+            "description": "Seats taken: bookings that are not cancelled, plus their guests."
+          },
+          "waiting": {
+            "type": "number",
+            "description": "Students waiting or offered a seat."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "timetableSlotId",
+          "title",
+          "branchId",
+          "instructorId",
+          "activities",
+          "styles",
+          "date",
+          "startTime",
+          "endTime",
+          "breakStart",
+          "breakEnd",
+          "startDate",
+          "endDate",
+          "capacity",
+          "seatsTaken",
+          "waiting",
+          "cancelledAt",
+          "archivedAt"
+        ]
+      },
+      "TimetableCalendarLaterDto": {
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD."
+          }
+        },
+        "required": [
+          "slotId",
+          "date"
+        ]
+      },
+      "TimetableCalendarResponseDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableCalendarClassDto"
+            }
+          },
+          "later": {
+            "description": "Dates On slots reach that have no class yet because they are past the 4-week horizon.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableCalendarLaterDto"
+            }
+          }
+        },
+        "required": [
+          "classes",
+          "later"
         ]
       },
       "UpcomingImpactResponseDto": {
@@ -20112,12 +20390,17 @@
           },
           "surname": {
             "type": "string"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "description": "Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310)."
           }
         },
         "required": [
           "studentId",
           "firstName",
-          "surname"
+          "surname",
+          "enrolled"
         ]
       },
       "RungHoldersDto": {
@@ -20839,6 +21122,10 @@
           "disciplineName": {
             "type": "string"
           },
+          "archived": {
+            "type": "boolean",
+            "description": "The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress)."
+          },
           "currentStripeId": {
             "type": "string",
             "nullable": true
@@ -20888,6 +21175,7 @@
           "schoolName",
           "disciplineId",
           "disciplineName",
+          "archived",
           "dateOfCurrentRank",
           "verificationStatus",
           "ladder",
@@ -23000,6 +23288,15 @@
           },
           "endDate": {
             "type": "string"
+          },
+          "breakStartAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Break start, if its timetable slot has a break. Shown only; no effect on bookings."
+          },
+          "breakEndAt": {
+            "type": "string",
+            "nullable": true
           },
           "capacity": {
             "type": "number",

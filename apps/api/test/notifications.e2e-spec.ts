@@ -566,6 +566,47 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     });
   });
 
+  describe('POST /notifications/me/read-all (Decision 355)', () => {
+    it("marks every unread Notification the caller has read, on every page, snoozed ones too; leaves other callers' alone", async () => {
+      const rows = await Promise.all(
+        Array.from({ length: 25 }, (_, i) =>
+          superuser.notification.create({ data: { id: randomUUID(), userId: studentA.id, title: `Unread ${i}`, body: 'b', ...(i === 0 ? { snoozedUntil: new Date(Date.now() + 3_600_000) } : {}) } }),
+        ),
+      );
+      const deleted = await superuser.notification.create({ data: { id: randomUUID(), userId: studentA.id, title: 'Deleted', body: 'b', deletedAt: new Date() } });
+      const others = await superuser.notification.create({ data: { id: randomUUID(), userId: studentB.id, title: "B's unread", body: 'b' } });
+      notificationIds.push(...rows.map((r) => r.id), deleted.id, others.id);
+
+      const res = await request(app.getHttpServer()).post('/v1/notifications/me/read-all').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(200);
+      expect(res.body.updated).toBeGreaterThanOrEqual(25);
+
+      expect(await superuser.notification.count({ where: { userId: studentA.id, read: false, deletedAt: null } })).toBe(0);
+      const marked = await superuser.notification.findUnique({ where: { id: rows[0].id } });
+      expect(marked!.readAt).not.toBeNull();
+      // A hidden (deleted) row is left as it was.
+      expect((await superuser.notification.findUnique({ where: { id: deleted.id } }))!.read).toBe(false);
+      expect((await superuser.notification.findUnique({ where: { id: others.id } }))!.read).toBe(false);
+      const counts = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(counts.body.unread).toBe(0);
+
+      // Nothing unread left: a plain zero.
+      const again = await request(app.getHttpServer()).post('/v1/notifications/me/read-all').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(again.body.updated).toBe(0);
+      expect((await request(app.getHttpServer()).post('/v1/notifications/me/read-all')).status).toBe(401);
+    });
+
+    it('GET /notifications/me returns the School label and what the notification opens', async () => {
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Labelled', body: 'b', schoolId: school.id, schoolName: 'Old School Name', targetType: 'CLASS', targetId: 'class-1' },
+      });
+      notificationIds.push(n.id);
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me').set('Authorization', `Bearer ${tokenStudentA}`);
+      const row = res.body.items.find((i: { id: string }) => i.id === n.id);
+      expect(row).toMatchObject({ schoolId: school.id, schoolName: 'Old School Name', targetType: 'CLASS', targetId: 'class-1' });
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------
@@ -692,6 +733,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(created).not.toBeNull();
       expect(created!.userId).toBe(studentA.id);
       expect(created!.title).toBe('Waiver signature requested');
+      // Decision 355: labelled with its School, and it opens that waiver.
+      expect(created!).toMatchObject({ schoolId: school.id, schoolName: 'Notifications HTTP School', targetType: 'WAIVER', targetId: waiver.id });
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Waiver signature requested', studentAJob.data.body);
       notificationIds.push(created!.id);
 
@@ -835,6 +878,9 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
         body: 'For Mia: Kids Judo was cancelled.',
         type: undefined,
         guardianCopyOf: minor.id,
+        schoolId: undefined,
+        targetType: undefined,
+        targetId: undefined,
       });
       expect(copies[0].opts.jobId).toBe(copies[0].data.notificationId);
 

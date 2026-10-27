@@ -258,3 +258,34 @@ test('Broadcast to one class — the Owner ticks who on the class list gets it (
   await expect(page.getByText('Sent to 1 Student')).toBeVisible();
   expect(sent).toMatchObject({ audience: 'CLASS', classId: cls.id, classAudience: ['WAITLIST', 'CANCELLED'] });
 });
+
+test('Mark all read, the School label, and clicking a notification opens its class (Decision 355)', async ({ page }) => {
+  const cls = await db.class.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, title: 'Open Mat', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+  });
+  classIds.push(cls.id);
+  const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId }, select: { name: true } });
+  const opens = await db.notification.create({
+    data: { id: randomUUID(), userId: s.ownerId, title: 'Class moved', body: 'Open Mat has moved.', schoolId: s.schoolId, schoolName: school.name, targetType: 'CLASS', targetId: cls.id },
+  });
+  const plain = await db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Just news', body: 'Nothing to open.' } });
+  notificationIds.push(opens.id, plain.id);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  // The School it came from sits under the title; a notification with nothing
+  // to open has a plain title.
+  await expect(page.getByRole('cell', { name: `Class moved ${school.name}` })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Just news' })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Class moved' }).click();
+  await expect(page).toHaveURL(new RegExp(`/classes/${cls.id}$`));
+  await expect.poll(async () => (await db.notification.findUniqueOrThrow({ where: { id: opens.id } })).read).toBe(true);
+
+  await page.goto('/notifications');
+  const markAll = page.getByRole('button', { name: 'Mark all read' });
+  await expect(markAll).toBeEnabled();
+  await markAll.click();
+  await expect(markAll).toBeDisabled();
+  expect((await db.notification.findUniqueOrThrow({ where: { id: plain.id } })).read).toBe(true);
+});

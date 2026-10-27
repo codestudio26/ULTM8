@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "휴식 {start} – {end}",
       bookError: "이 수업을 예약하지 못했습니다. 다시 시도해 주세요.",
       joinWaitlistError: "대기자 명단에 등록하지 못했습니다. 다시 시도해 주세요.",
       leaveWaitlistError: "대기자 명단에서 나가지 못했습니다. 다시 시도해 주세요.",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date}부터",
       unverified: "도장에서 이 띠를 확인하기를 기다리는 중입니다.",
       topOfLadder: "단계표 최상위입니다.",
+      noLongerTaught: "이 도장에서는 더 이상 가르치지 않습니다. 띠와 기록은 그대로 남습니다.",
       next: "다음: {rank}",
       progress: "{percent}% 진행",
       readyToGrade: "승급 준비 완료",
@@ -673,6 +675,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "아직 알림이 없습니다.",
+      markAllRead: "모두 읽음으로 표시",
+      markAllReadFailed: "알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
       loadFailed: "알림을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     row: {
@@ -680,6 +684,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, 읽지 않음",
       unread: "읽지 않음",
       markAsRead: "읽음으로 표시",
+      open: "열기",
       markReadFailed: "읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
     },
   },

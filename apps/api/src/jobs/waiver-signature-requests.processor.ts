@@ -124,7 +124,7 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
           const id = batchId ? `waiver-${reason}-${batchId}-${waiverId}-${grant.userId}` : `waiver-${waiverId}-${grant.userId}`;
           return {
             name: 'notify',
-            data: { notificationId: id, userId: grant.userId, title, body, type: 'WAIVER_SIGNATURE_REQUEST' } satisfies NotificationFanoutJobData,
+            data: { notificationId: id, userId: grant.userId, title, body, type: 'WAIVER_SIGNATURE_REQUEST', schoolId, targetType: 'WAIVER', targetId: waiverId } satisfies NotificationFanoutJobData,
             opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
           };
         }),

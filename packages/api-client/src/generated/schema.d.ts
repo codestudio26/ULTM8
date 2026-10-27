@@ -852,6 +852,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_markAllRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -1502,6 +1518,22 @@ export interface paths {
         get: operations["TimetableController_findAll"];
         put?: never;
         post: operations["TimetableController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/timetable/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_calendar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5006,6 +5038,17 @@ export interface components {
             snoozedUntil?: string | null;
             /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
             readAt?: string | null;
+            /** @description The School this notification came from (Decision 355), or null. */
+            schoolId?: string | null;
+            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 355). */
+            schoolName?: string | null;
+            /**
+             * @description What clicking the notification opens (Decision 355), or null for nothing.
+             * @enum {string|null}
+             */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | null;
+            /** @description The Class or Waiver id, for CLASS and WAIVER targets (Decision 355). */
+            targetId?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -5027,6 +5070,10 @@ export interface components {
         ClearReadNotificationsResponseDto: {
             /** @description How many read Notifications were cleared (hidden; the records are kept). */
             cleared: number;
+        };
+        MarkAllReadResponseDto: {
+            /** @description How many unread Notifications were marked read. */
+            updated: number;
         };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both. */
@@ -5128,6 +5175,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
             bookingEndAt?: string | null;
@@ -5426,6 +5476,44 @@ export interface components {
             items: components["schemas"]["TimetableSlotResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        TimetableCalendarClassDto: {
+            id: string;
+            timetableSlotId: string | null;
+            title: string;
+            branchId: string | null;
+            instructorId: string | null;
+            activities: string[];
+            styles: components["schemas"]["ClassStyleResponseDto"][];
+            /** @description Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC. */
+            date: string;
+            /** @description Local start time, HH:mm. */
+            startTime: string;
+            /** @description Local end time, HH:mm. */
+            endTime: string;
+            /** @description Local break start, HH:mm (Decision 353, Q6). */
+            breakStart: string | null;
+            /** @description Local break end, HH:mm. */
+            breakEnd: string | null;
+            startDate: string;
+            endDate: string;
+            capacity: number | null;
+            /** @description Seats taken: bookings that are not cancelled, plus their guests. */
+            seatsTaken: number;
+            /** @description Students waiting or offered a seat. */
+            waiting: number;
+            cancelledAt: string | null;
+            archivedAt: string | null;
+        };
+        TimetableCalendarLaterDto: {
+            slotId: string;
+            /** @description YYYY-MM-DD. */
+            date: string;
+        };
+        TimetableCalendarResponseDto: {
+            classes: components["schemas"]["TimetableCalendarClassDto"][];
+            /** @description Dates On slots reach that have no class yet because they are past the 4-week horizon. */
+            later: components["schemas"]["TimetableCalendarLaterDto"][];
         };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
@@ -6335,6 +6423,8 @@ export interface components {
             studentId: string;
             firstName: string;
             surname: string;
+            /** @description Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310). */
+            enrolled: boolean;
         };
         RungHoldersDto: {
             /** @description The rung (stripe tier id). */
@@ -6555,6 +6645,8 @@ export interface components {
             schoolName: string;
             disciplineId: string;
             disciplineName: string;
+            /** @description The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress). */
+            archived: boolean;
             currentStripeId?: string | null;
             /** Format: date-time */
             dateOfCurrentRank: string;
@@ -7238,6 +7330,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
         };
@@ -8998,6 +9093,25 @@ export interface operations {
             };
         };
     };
+    NotificationsController_markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponseDto"];
+                };
+            };
+        };
+    };
     NotificationsController_markRead: {
         parameters: {
             query?: never;
@@ -10066,6 +10180,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_calendar: {
+        parameters: {
+            query: {
+                /** @description First date shown, YYYY-MM-DD. */
+                from: string;
+                /** @description Last date shown, YYYY-MM-DD. */
+                to: string;
+                /** @description Only this Branch, plus School-wide classes. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableCalendarResponseDto"];
                 };
             };
         };

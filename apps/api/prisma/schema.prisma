@@ -1211,6 +1211,11 @@ model Class {
   startDate DateTime
   endDate   DateTime
 
+  /// Decision 353 (Q6) — the slot's break on this date, copied like the start
+  /// and end. Shown on the class details only; it has no effect on bookings.
+  breakStartAt DateTime?
+  breakEndAt   DateTime?
+
   capacity Int? // nullable = unlimited (confirmed)
 
   bookingEndAt      DateTime?
@@ -3955,6 +3960,23 @@ model Notification {
   /// Never cleared once set, and no hard delete exists (ultm8_app has no
   /// DELETE grant on this table).
   deletedAt DateTime?
+
+  /// Developer-level addition (Decision 355), same treatment as the fields
+  /// above. The School this notification came from, shown as a label.
+  /// `schoolName` is copied in by notification-fanout when the row is
+  /// written — the reader can't always see the School row under RLS (a
+  /// parent reading their child's notice, an ended enrolment) — and no
+  /// foreign key, so the label outlives a School's purge. Null for a
+  /// notification with no School (or one written before this column).
+  schoolId   String?
+  schoolName String?
+
+  /// Developer-level addition (Decision 355): what clicking the notification
+  /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING
+  /// (a free string, like `type`), `targetId` the Class/Waiver id where the
+  /// app has a page for one item. Each app maps these to its own screens.
+  targetType String?
+  targetId   String?
 
   createdAt DateTime @default(now())
 

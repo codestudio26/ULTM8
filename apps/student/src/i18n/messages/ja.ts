@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "休憩 {start} – {end}",
       bookError: "このクラスを予約できませんでした。もう一度お試しください。",
       joinWaitlistError: "キャンセル待ちに登録できませんでした。もう一度お試しください。",
       leaveWaitlistError: "キャンセル待ちを取り消せませんでした。もう一度お試しください。",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date}から",
       unverified: "スクールによるこの帯の確認を待っています。",
       topOfLadder: "ラダーの最上位です。",
+      noLongerTaught: "このスクールでは現在指導されていません。帯と履歴はそのまま残ります。",
       next: "次：{rank}",
       progress: "{percent}% 達成",
       readyToGrade: "昇級準備完了",
@@ -673,6 +675,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "通知はまだありません。",
+      markAllRead: "すべて既読にする",
+      markAllReadFailed: "通知を既読にできませんでした。もう一度お試しください。",
       loadFailed: "通知を読み込めませんでした。もう一度お試しください。",
     },
     row: {
@@ -680,6 +684,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}、未読",
       unread: "未読",
       markAsRead: "既読にする",
+      open: "開く",
       markReadFailed: "既読にできませんでした。もう一度お試しください。",
     },
   },

@@ -26,6 +26,8 @@ import { InstructorsPage } from './instructors/InstructorsPage';
 import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
+import { CheckInPage } from './frontdesk/CheckInPage';
+import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { InviteStudentPage } from './students/InviteStudentPage';
 import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
@@ -239,6 +241,25 @@ export function App() {
             <Shell>
               <StudentsPage />
             </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/check-in"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CheckInPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Front-desk mode is full screen: no menu (DESIGN.md → "Check-in and front-desk mode"). */}
+      <Route
+        path="/front-desk"
+        element={
+          <RequireAuth>
+            <FrontDeskModePage />
           </RequireAuth>
         }
       />

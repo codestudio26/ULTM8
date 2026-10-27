@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Перерыв {start} – {end}",
       bookError: "Не удалось записаться на это занятие — попробуйте ещё раз.",
       joinWaitlistError: "Не удалось встать в лист ожидания — попробуйте ещё раз.",
       leaveWaitlistError: "Не удалось выйти из листа ожидания — попробуйте ещё раз.",
@@ -498,6 +499,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "С {date}",
       unverified: "Ждёт подтверждения этого пояса Школой.",
       topOfLadder: "Вершина лестницы.",
+      noLongerTaught: "Больше не преподаётся в этой школе. Ваш пояс и история сохраняются.",
       next: "Следующий: {rank}",
       progress: "Пройдено {percent}%",
       readyToGrade: "Готов к аттестации",
@@ -713,6 +715,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Уведомлений пока нет.",
+      markAllRead: "Отметить все как прочитанные",
+      markAllReadFailed: "Не удалось отметить уведомления как прочитанные. Попробуйте ещё раз.",
       loadFailed: "Не удалось загрузить уведомления — попробуйте ещё раз.",
     },
     row: {
@@ -720,6 +724,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, не прочитано",
       unread: "Не прочитано",
       markAsRead: "Отметить как прочитанное",
+      open: "Открыть",
       markReadFailed: "Не удалось отметить как прочитанное — попробуйте ещё раз.",
     },
   },

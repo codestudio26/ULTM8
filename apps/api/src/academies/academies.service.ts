@@ -46,6 +46,9 @@ const CLASS_DISCOVERY_SELECT = {
   description: true,
   startDate: true,
   endDate: true,
+  // Decision 353 (Q6): the break is shown on the class card.
+  breakStartAt: true,
+  breakEndAt: true,
   capacity: true,
 } as const;
 
