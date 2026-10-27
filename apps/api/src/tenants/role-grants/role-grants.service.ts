@@ -10,7 +10,7 @@ import {
 import { randomInt, randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';

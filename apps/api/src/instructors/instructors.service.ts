@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
