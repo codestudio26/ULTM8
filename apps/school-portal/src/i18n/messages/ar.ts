@@ -108,6 +108,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "تعليم كمقروء",
     snooze: "تأجيل",
     markReadFailed: "تعذّر تعليم هذا الإشعار كمقروء، يُرجى المحاولة مرة أخرى.",
+    markAllRead: "تعليم الكل كمقروء",
+    markAllReadFailed: "تعذّر تعليم إشعاراتك كمقروءة، يُرجى المحاولة مرة أخرى.",
     delete: "حذف",
     clearAllRead: "مسح المقروءة",
     loadMore: "تحميل المزيد",

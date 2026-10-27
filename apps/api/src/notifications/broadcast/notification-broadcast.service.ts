@@ -79,6 +79,9 @@ export class NotificationBroadcastService {
             title: dto.title,
             body: dto.body,
             type: 'SCHOOL_BROADCAST',
+            schoolId,
+            // A one-class broadcast opens that Class (Decision 352).
+            ...(dto.audience === BroadcastAudienceDto.CLASS && dto.classId ? { targetType: 'CLASS' as const, targetId: dto.classId } : {}),
           } satisfies NotificationFanoutJobData,
           opts: {
             jobId: `broadcast-${broadcastId}-${studentId}`,

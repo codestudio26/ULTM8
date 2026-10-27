@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Marcar como leída",
     snooze: "Posponer",
     markReadFailed: "No se pudo marcar esta notificación como leída. Inténtalo de nuevo.",
+    markAllRead: "Marcar todas como leídas",
+    markAllReadFailed: "No se pudieron marcar tus notificaciones como leídas. Inténtalo de nuevo.",
     delete: "Eliminar",
     clearAllRead: "Borrar las leídas",
     loadMore: "Cargar más",

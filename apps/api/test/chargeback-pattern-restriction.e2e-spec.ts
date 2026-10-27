@@ -164,7 +164,9 @@ describeIfDb('chargeback-pattern-restriction job (Decision 68/112)', () => {
     expect(updated.paymentRestrictedAt).not.toBeNull();
 
     expect(fakeNotificationFanoutQueue.addBulk).toHaveBeenCalledTimes(1);
-    const jobs = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0] as Array<{ data: { userId: string; body: string } }>;
+    const jobs = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0] as Array<{ data: { userId: string; body: string; schoolId?: string; targetType?: string } }>;
+    // Decision 352: labelled with the School and opens its payments.
+    expect(jobs[0].data).toMatchObject({ schoolId: fixture.school.id, targetType: 'PAYMENT' });
     expect(jobs.map((j) => j.data.userId)).toEqual([fixture.owner.id]);
     // Names the Student (Decision 333).
     expect(jobs[0].data.body).toBe(

@@ -1096,7 +1096,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       distinct: ['userId'],
     });
     return {
-      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment')),
+      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment', transaction.schoolId)),
       subscriptionCancellations,
       // Decision 112 — only on a NEWLY-recorded loss (never on a redelivery of an
       // already-lost dispute, since disputeLostAt is set unconditionally above
@@ -1175,6 +1175,9 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     outcome: { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean },
     stripeEventId: string,
     chargeLabel: string,
+    /** A Membership payment's School (Decision 352: labelled, and opens
+     * Transactions); a franchise fee charge has none. */
+    schoolId?: string,
   ): NotificationFanoutJobData {
     const amount = this.formatDisputeAmount(dispute);
     const title = outcome.lost ? 'Payment dispute lost' : dispute.status === 'won' ? 'Payment dispute resolved' : 'Payment dispute opened';
@@ -1189,6 +1192,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       title,
       body,
       type: 'PAYMENT_DISPUTE',
+      ...(schoolId ? { schoolId, targetType: 'PAYMENT' as const } : {}),
     };
   }
 

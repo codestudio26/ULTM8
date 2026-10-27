@@ -103,6 +103,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "标记为已读",
     snooze: "稍后提醒",
     markReadFailed: "无法将此通知标记为已读，请重试。",
+    markAllRead: "全部标记为已读",
+    markAllReadFailed: "无法将通知标记为已读，请重试。",
     delete: "删除",
     clearAllRead: "清除所有已读",
     loadMore: "加载更多",

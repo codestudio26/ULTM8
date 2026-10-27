@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -7,7 +8,9 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import {
   useBroadcastNotification,
   useClearReadNotifications,
+  notificationLink,
   useDeleteNotification,
+  useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotificationCounts,
   useNotificationPages,
@@ -86,6 +89,8 @@ export function NotificationsPage() {
   // on one page — the exact gap this endpoint exists to close.
   const counts = useNotificationCounts();
   const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const navigate = useNavigate();
   const snooze = useSnoozeNotification();
   const deleteNotification = useDeleteNotification();
   const clearRead = useClearReadNotifications();
@@ -119,6 +124,21 @@ export function NotificationsPage() {
     }
   }
 
+  async function handleMarkAllRead() {
+    setActionError(null);
+    try {
+      await markAllRead.mutateAsync();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : t('notifications.markAllReadFailed'));
+    }
+  }
+
+  /** Decision 352 — opening a notification also marks it read. */
+  function handleOpen(n: NotificationResponse, to: string) {
+    if (!n.read) markRead.mutate(n.id);
+    navigate(to);
+  }
+
   async function handleSnooze(minutes: number) {
     if (!snoozing) return;
     await snooze.mutateAsync({ id: snoozing.id, body: { minutes } });
@@ -132,6 +152,15 @@ export function NotificationsPage() {
         subtitle={t('notifications.subtitle')}
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {/* Decision 352 — every unread notification, on every page. */}
+            <Button
+              variant="secondary"
+              onClick={handleMarkAllRead}
+              loading={markAllRead.isPending}
+              disabled={!counts.data || counts.data.unread === 0}
+            >
+              {t('notifications.markAllRead')}
+            </Button>
             {/* Decision 277 — every User can clear their own read
                 notifications. Disabled when Total equals Unread, from the
                 counts endpoint rather than the loaded page (a snoozed unread
@@ -200,7 +229,33 @@ export function NotificationsPage() {
                     <Badge variant="accent">{t('notifications.statusNew')}</Badge>
                   ),
               },
-              { key: 'title', header: t('notifications.columnTitle'), render: (n) => n.title },
+              {
+                key: 'title',
+                header: t('notifications.columnTitle'),
+                // Decision 352: the title opens what the notification is about,
+                // and the School it came from sits under it.
+                render: (n) => {
+                  const to = notificationLink(n);
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {to ? (
+                        <a
+                          href={to}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleOpen(n, to);
+                          }}
+                        >
+                          {n.title}
+                        </a>
+                      ) : (
+                        n.title
+                      )}
+                      {n.schoolName ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n.schoolName}</span> : null}
+                    </div>
+                  );
+                },
+              },
               { key: 'body', header: t('notifications.columnMessage'), render: (n) => n.body },
               { key: 'createdAt', header: t('notifications.columnReceived'), render: (n) => new Date(n.createdAt).toLocaleString(formatLocale()) },
               {

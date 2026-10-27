@@ -678,6 +678,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Nog geen meldingen.",
+      markAllRead: "Alles markeren als gelezen",
+      markAllReadFailed: "Je meldingen kunnen niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
       loadFailed: "Meldingen konden niet worden geladen — probeer het opnieuw.",
     },
     row: {
@@ -685,6 +687,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ongelezen",
       unread: "Ongelezen",
       markAsRead: "Markeren als gelezen",
+      open: "Openen",
       markReadFailed: "Dit kon niet als gelezen worden gemarkeerd — probeer het opnieuw.",
     },
   },

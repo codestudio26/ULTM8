@@ -94,7 +94,7 @@ export class ChargebackPatternRestrictionProcessor extends WorkerHost {
 
     const ownerGrants = await this.prismaJobs.roleGrant.findMany({
       where: { schoolId: { in: schoolIds }, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
-      select: { userId: true },
+      select: { userId: true, schoolId: true },
       distinct: ['userId'],
     });
     if (ownerGrants.length === 0) {
@@ -116,6 +116,10 @@ export class ChargebackPatternRestrictionProcessor extends WorkerHost {
           title: 'Student payment-restricted',
           body,
           type: 'CHARGEBACK_PATTERN_RESTRICTION',
+          // An Owner of more than one of the Student's Schools gets one notice,
+          // labelled with the first (Decision 352).
+          ...(grant.schoolId ? { schoolId: grant.schoolId } : {}),
+          targetType: 'PAYMENT',
         } satisfies NotificationFanoutJobData,
         opts: {
           jobId: `chargeback-restriction-${studentId}-${grant.userId}`,

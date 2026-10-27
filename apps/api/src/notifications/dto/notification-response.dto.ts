@@ -38,6 +38,23 @@ export class NotificationResponseDto {
     description: 'Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment.',
   })
   readAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The School this notification came from (Decision 352), or null.' })
+  schoolId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "That School's name as it was when the notification was sent, shown as a label (Decision 352)." })
+  schoolName!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    enum: ['CLASS', 'WAIVER', 'PAYMENT', 'CANCELLATIONS', 'GRADING'],
+    description: 'What clicking the notification opens (Decision 352), or null for nothing.',
+  })
+  targetType!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Class or Waiver id, for CLASS and WAIVER targets (Decision 352).' })
+  targetId!: string | null;
 }
 
 export class NotificationListResponseDto {

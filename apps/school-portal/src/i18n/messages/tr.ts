@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Okundu olarak işaretle",
     snooze: "Ertele",
     markReadFailed: "Bu bildirim okundu olarak işaretlenemedi. Lütfen tekrar deneyin.",
+    markAllRead: "Tümünü okundu olarak işaretle",
+    markAllReadFailed: "Bildirimleriniz okundu olarak işaretlenemedi. Lütfen tekrar deneyin.",
     delete: "Sil",
     clearAllRead: "Okunanları temizle",
     loadMore: "Daha fazla yükle",

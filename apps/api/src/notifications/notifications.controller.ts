@@ -7,6 +7,7 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { NotificationsService } from './notifications.service';
 import { NotificationListResponseDto, NotificationResponseDto } from './dto/notification-response.dto';
 import { NotificationCountsResponseDto } from './dto/notification-counts-response.dto';
+import { MarkAllReadResponseDto } from './dto/mark-all-read-response.dto';
 import { ClearReadNotificationsResponseDto } from './dto/clear-read-notifications-response.dto';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
 import { DeviceTokenResponseDto } from './dto/device-token-response.dto';
@@ -59,6 +60,15 @@ export class NotificationsController {
   @Post('me/clear-read')
   clearRead(@CurrentUser() user: JwtPayload) {
     return this.notificationsService.clearRead(user.sub);
+  }
+
+  /** Decision 352 — "Mark all read". Static segment before the `:id` routes,
+   * same convention as `me/clear-read` above. */
+  @ApiOkResponse({ type: MarkAllReadResponseDto })
+  @HttpCode(200)
+  @Post('me/read-all')
+  markAllRead(@CurrentUser() user: JwtPayload) {
+    return this.notificationsService.markAllRead(user.sub);
   }
 
   @ApiOkResponse({ type: NotificationResponseDto })

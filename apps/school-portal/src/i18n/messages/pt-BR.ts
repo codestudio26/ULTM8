@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Marcar como lida",
     snooze: "Adiar",
     markReadFailed: "Não foi possível marcar esta notificação como lida. Tente novamente.",
+    markAllRead: "Marcar todas como lidas",
+    markAllReadFailed: "Não foi possível marcar suas notificações como lidas. Tente novamente.",
     delete: "Excluir",
     clearAllRead: "Limpar as lidas",
     loadMore: "Carregar mais",

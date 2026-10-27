@@ -51,6 +51,38 @@ export function useMarkNotificationRead() {
   });
 }
 
+/** Decision 352 — "Mark all read": every unread notification the caller has,
+ * on every page. Same list + counts invalidation as useMarkNotificationRead. */
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/notifications/me/read-all', {})),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'counts'] });
+    },
+  });
+}
+
+/** Decision 352 — the portal page a notification opens when clicked, or null
+ * when it has nothing to open. */
+export function notificationLink(n: Pick<NotificationResponse, 'targetType' | 'targetId'>): string | null {
+  switch (n.targetType) {
+    case 'CLASS':
+      return n.targetId ? `/classes/${n.targetId}` : null;
+    case 'WAIVER':
+      return '/waivers';
+    case 'PAYMENT':
+      return '/transactions';
+    case 'CANCELLATIONS':
+      return '/cancellations';
+    case 'GRADING':
+      return '/grading';
+    default:
+      return null;
+  }
+}
+
 /** v1.2 backend backlog ("Notifications page", Decision 204's Concept 5
  * finding) — a true, caller-wide total/unread count from a dedicated
  * endpoint (`GET /notifications/me/counts`), not derived from whatever page

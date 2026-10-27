@@ -106,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Oznacz jako przeczytane",
     snooze: "Odłóż",
     markReadFailed: "Nie udało się oznaczyć powiadomienia jako przeczytanego. Spróbuj ponownie.",
+    markAllRead: "Oznacz wszystkie jako przeczytane",
+    markAllReadFailed: "Nie udało się oznaczyć powiadomień jako przeczytanych. Spróbuj ponownie.",
     delete: "Usuń",
     clearAllRead: "Wyczyść przeczytane",
     loadMore: "Wczytaj więcej",

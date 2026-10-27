@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Segna come letta",
     snooze: "Posticipa",
     markReadFailed: "Impossibile segnare questa notifica come letta. Riprova.",
+    markAllRead: "Segna tutte come lette",
+    markAllReadFailed: "Impossibile segnare le notifiche come lette. Riprova.",
     delete: "Elimina",
     clearAllRead: "Cancella le lette",
     loadMore: "Carica altre",
