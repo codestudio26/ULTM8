@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "休息 {start} – {end}",
       bookError: "无法预约此课程，请重试。",
       joinWaitlistError: "无法加入候补名单，请重试。",
       leaveWaitlistError: "无法退出候补名单，请重试。",

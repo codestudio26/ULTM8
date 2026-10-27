@@ -11,6 +11,8 @@ export type UpcomingImpactResponse = components['schemas']['UpcomingImpactRespon
  * (see TimetableService.findOccurrence's own comment for why this reuses
  * ClassResponseDto rather than a new, narrower DTO). */
 export type TimetableOccurrenceResponse = components['schemas']['ClassResponseDto'];
+export type TimetableCalendarResponse = components['schemas']['TimetableCalendarResponseDto'];
+export type TimetableCalendarClass = components['schemas']['TimetableCalendarClassDto'];
 
 /** Loads every page (100 at a time), like useInstructors: the list used to
  * stop at the API's default page of 20, so a School with more slots lost the
@@ -34,6 +36,19 @@ export function useTimetableSlots(schoolId: string | null) {
       } while (cursor);
       return { items, nextCursor: null };
     },
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 353 (T7) — the real Classes on the dates shown (`YYYY-MM-DD`,
+ * at most 62 days), with seats taken, and the dates On slots reach past the
+ * 4-week horizon. Under the ['timetable', schoolId] key, so slot changes and
+ * bookings refresh it. */
+export function useTimetableCalendar(schoolId: string | null, from: string, to: string, branchId?: string) {
+  return useQuery({
+    queryKey: ['timetable', schoolId, 'calendar', from, to, branchId ?? null],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable/calendar', { params: { path: { schoolId: schoolId! }, query: { from, to, branchId } } })),
     enabled: !!schoolId,
   });
 }

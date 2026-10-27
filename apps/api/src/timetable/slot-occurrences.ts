@@ -43,6 +43,9 @@ export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
     description: slot.description,
     startDate,
     endDate,
+    // Decision 353 (Q6): shown on the class details only, no effect on bookings.
+    breakStartAt: slot.breakStart && slot.breakEnd ? combineDateAndTime(localDate, slot.breakStart) : null,
+    breakEndAt: slot.breakStart && slot.breakEnd ? combineDateAndTime(localDate, slot.breakEnd) : null,
     capacity: slot.capacity,
     bookingEndAt: slot.bookingCutoffMinutesBeforeStart != null ? new Date(startDate.getTime() - slot.bookingCutoffMinutesBeforeStart * 60_000) : null,
     qrAttendanceEndAt: slot.qrAttendanceWindowMinutes != null ? new Date(startDate.getTime() + slot.qrAttendanceWindowMinutes * 60_000) : null,
@@ -80,6 +83,8 @@ export function buildSlotOccurrences(slot: TimetableSlot, timezone: string, nowI
       bookingEndAt: fields.bookingEndAt ?? undefined,
       qrAttendanceEndAt: fields.qrAttendanceEndAt ?? undefined,
       refundFeeDate: fields.refundFeeDate ?? undefined,
+      breakStartAt: fields.breakStartAt ?? undefined,
+      breakEndAt: fields.breakEndAt ?? undefined,
     });
   }
   return occurrences;

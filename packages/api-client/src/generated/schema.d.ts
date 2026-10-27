@@ -1524,6 +1524,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/timetable/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_calendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/timetable/{id}": {
         parameters: {
             query?: never;
@@ -5095,6 +5111,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
             bookingEndAt?: string | null;
@@ -5393,6 +5412,44 @@ export interface components {
             items: components["schemas"]["TimetableSlotResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        TimetableCalendarClassDto: {
+            id: string;
+            timetableSlotId: string | null;
+            title: string;
+            branchId: string | null;
+            instructorId: string | null;
+            activities: string[];
+            styles: components["schemas"]["ClassStyleResponseDto"][];
+            /** @description Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC. */
+            date: string;
+            /** @description Local start time, HH:mm. */
+            startTime: string;
+            /** @description Local end time, HH:mm. */
+            endTime: string;
+            /** @description Local break start, HH:mm (Decision 353, Q6). */
+            breakStart: string | null;
+            /** @description Local break end, HH:mm. */
+            breakEnd: string | null;
+            startDate: string;
+            endDate: string;
+            capacity: number | null;
+            /** @description Seats taken: bookings that are not cancelled, plus their guests. */
+            seatsTaken: number;
+            /** @description Students waiting or offered a seat. */
+            waiting: number;
+            cancelledAt: string | null;
+            archivedAt: string | null;
+        };
+        TimetableCalendarLaterDto: {
+            slotId: string;
+            /** @description YYYY-MM-DD. */
+            date: string;
+        };
+        TimetableCalendarResponseDto: {
+            classes: components["schemas"]["TimetableCalendarClassDto"][];
+            /** @description Dates On slots reach that have no class yet because they are past the 4-week horizon. */
+            later: components["schemas"]["TimetableCalendarLaterDto"][];
         };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
@@ -7153,6 +7210,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
         };
@@ -10000,6 +10060,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_calendar: {
+        parameters: {
+            query: {
+                /** @description First date shown, YYYY-MM-DD. */
+                from: string;
+                /** @description Last date shown, YYYY-MM-DD. */
+                to: string;
+                /** @description Only this Branch, plus School-wide classes. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableCalendarResponseDto"];
                 };
             };
         };

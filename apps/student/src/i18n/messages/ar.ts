@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "استراحة {start} – {end}",
       bookError: "تعذّر حجز هذه الحصة، يُرجى المحاولة مرة أخرى.",
       joinWaitlistError: "تعذّر الانضمام إلى قائمة الانتظار، يُرجى المحاولة مرة أخرى.",
       leaveWaitlistError: "تعذّر مغادرة قائمة الانتظار، يُرجى المحاولة مرة أخرى.",
