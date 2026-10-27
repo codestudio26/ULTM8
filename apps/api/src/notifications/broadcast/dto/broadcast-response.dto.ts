@@ -2,11 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BroadcastAudienceDto } from './broadcast-notification.dto';
 
 /**
- * There is no stored `Broadcast` entity (not in schema.prisma, not asked for
- * by the approved scope — a broadcast's only durable trace is the
- * Notification rows it fans out, exactly like every other
- * notification-fanout trigger) — this is this endpoint's own synthesized
- * response, not a serialized row.
+ * This endpoint's own synthesized response, not a serialized row. Since
+ * Decision 363 each broadcast is also stored as a NotificationBroadcast row
+ * (the sent-broadcast history, SentBroadcastResponseDto) whose id is this
+ * broadcastId.
  */
 export class BroadcastResponseDto {
   @ApiProperty({ description: 'Correlates every Notification this call fanned out — used as the shared prefix of each one\'s notificationId/jobId.' })

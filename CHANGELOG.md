@@ -46,6 +46,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   editor no longer fails once a ranked student leaves the School; they show
   as "Former student". The last 17 untranslated Disciplines messages are
   translated.
+- **Notifications: sent-message history (Decision 363)** — under their own
+  notifications, a School Owner now sees **Messages sent to students**: every
+  message the School has sent, newest first, with when and by whom, the title
+  and message, who it went to (all students, a Branch, or a class and which
+  groups on its list) and how many students it reached. A class still on the
+  schedule links to its page. Needs a database migration
+  (`20261204000000_notification_broadcast_history`). Messages sent before it
+  aren't listed.
 - **Notifications: Mark all read, click to open, School label (Decision 355)**
   — a **Mark all read** button marks every unread notification read, on every
   page; clicking a notification opens what it is about (its class, the
