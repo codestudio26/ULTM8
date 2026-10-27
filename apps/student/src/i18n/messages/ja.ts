@@ -763,6 +763,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "領収書を表示",
       noReceipt: "この支払いの領収書はありません。",
       receiptFailed: "領収書を読み込めませんでした。もう一度お試しください。",
+      renewal: "更新：{plan}",
+      lateCancelFee: "直前キャンセル料：{class}",
+      lateCancelFeeNoClass: "直前キャンセル料",
     },
     status: {
       successful: "成功",

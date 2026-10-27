@@ -407,4 +407,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage moet een van de ondersteunde taalcodes zijn.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency moet een van de ondersteunde valutacodes zijn.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "Deze franchise heeft {v1} school/scholen die al worden gefactureerd, dus het vergoedingsmodel kan niet worden gewijzigd. Het bedrag kan wel worden gewijzigd.",
+  "This person is not a student at this School.": "Deze persoon is geen leerling van deze school.",
+  "This payment is not for a membership plan.": "Deze betaling hoort niet bij een lidmaatschapsplan.",
+  "The start date must be on or before the end date.": "De startdatum moet op of vóór de einddatum liggen.",
+  "The School owner has not let Branch Staff record payments.": "De schooleigenaar heeft vestigingsmedewerkers niet toegestaan betalingen vast te leggen.",
 };

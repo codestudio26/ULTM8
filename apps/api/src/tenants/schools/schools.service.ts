@@ -146,6 +146,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       });
 
@@ -797,6 +798,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       }),
     );

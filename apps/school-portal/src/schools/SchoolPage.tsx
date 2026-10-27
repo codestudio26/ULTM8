@@ -37,6 +37,7 @@ export function SchoolPage() {
     waitlistClaimWindowMinutes: number;
     checkInOpensMinutesBeforeStart: number;
     lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+    branchStaffCanRecordPayments: boolean;
   } | null>(null);
   const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
@@ -63,6 +64,7 @@ export function SchoolPage() {
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
       checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
       lateCancelRefundPolicy: school.lateCancelRefundPolicy,
+      branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
     });
   }, [school]);
 
@@ -103,6 +105,7 @@ export function SchoolPage() {
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
         checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
         lateCancelRefundPolicy: form.lateCancelRefundPolicy,
+        branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
       });
       setSaved(true);
     } catch (err) {
@@ -198,6 +201,12 @@ export function SchoolPage() {
             label={t('schools.form.ranksToggle')}
             checked={form.ranksToggle}
             onChange={(e) => set('ranksToggle', e.target.checked)}
+          />
+          {/* Decision 347: off by default; Branch Staff still never see the ledger. */}
+          <Checkbox
+            label={t('schools.form.branchStaffPayments')}
+            checked={form.branchStaffCanRecordPayments}
+            onChange={(e) => set('branchStaffCanRecordPayments', e.target.checked)}
           />
           <div style={{ marginTop: 16 }}>
             <Button type="submit" loading={updateSchool.isPending}>

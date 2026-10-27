@@ -407,4 +407,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "يجب أن يكون defaultLanguage أحد رموز اللغات المدعومة.",
   "defaultCurrency must be one of the supported currency codes.": "يجب أن يكون defaultCurrency أحد رموز العملات المدعومة.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "لدى هذا الامتياز {v1} مدرسة تتم فوترتها بالفعل، لذا لا يمكن تغيير نموذج الرسوم. لا يزال بالإمكان تغيير مبلغ الرسوم.",
+  "This person is not a student at this School.": "هذا الشخص ليس طالبًا في هذه المدرسة.",
+  "This payment is not for a membership plan.": "هذه الدفعة ليست لخطة عضوية.",
+  "The start date must be on or before the end date.": "يجب أن يكون تاريخ البدء في تاريخ الانتهاء أو قبله.",
+  "The School owner has not let Branch Staff record payments.": "لم يسمح مالك المدرسة لموظفي الفروع بتسجيل الدفعات.",
 };

@@ -407,4 +407,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage ต้องเป็นรหัสภาษาที่รองรับ",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency ต้องเป็นรหัสสกุลเงินที่รองรับ",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "แฟรนไชส์นี้มีโรงเรียน {v1} แห่งที่กำลังถูกเรียกเก็บเงินอยู่ จึงเปลี่ยนรูปแบบค่าธรรมเนียมไม่ได้ แต่ยังเปลี่ยนจำนวนเงินได้",
+  "This person is not a student at this School.": "บุคคลนี้ไม่ใช่นักเรียนของโรงเรียนนี้",
+  "This payment is not for a membership plan.": "การชำระเงินนี้ไม่ใช่สำหรับแผนสมาชิก",
+  "The start date must be on or before the end date.": "วันที่เริ่มต้นต้องเป็นวันเดียวกับหรือก่อนวันที่สิ้นสุด",
+  "The School owner has not let Branch Staff record payments.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้พนักงานสาขาบันทึกการชำระเงิน",
 };

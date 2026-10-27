@@ -7,6 +7,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
+import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -45,14 +46,35 @@ export class TransactionsService {
    * (see TransactionResponseDto's own header comment for why a plain Prisma
    * `include` is safe here, unlike the User-relation join these two methods
    * each handle separately via resolveUserNames/not-at-all). */
-  private withMembershipPlanTitle<T extends { membershipPlan: { title: string } }>(
+  private withMembershipPlanTitle<T extends { membershipPlan: { title: string } | null; booking?: { class: { title: string } } | null }>(
     t: T,
-  ): Omit<T, 'membershipPlan'> & { membershipPlanTitle: string } {
-    const { membershipPlan, ...rest } = t;
+  ): Omit<T, 'membershipPlan' | 'booking'> & { membershipPlanTitle: string | null; bookingClassTitle: string | null } {
+    const { membershipPlan, booking, ...rest } = t;
     // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
-    return { ...rest, ...(currency ? { currency: currency.toUpperCase() } : {}), membershipPlanTitle: membershipPlan.title };
+    return {
+      ...rest,
+      ...(currency ? { currency: currency.toUpperCase() } : {}),
+      membershipPlanTitle: membershipPlan?.title ?? null,
+      // A late-cancellation fee (Decision 346) names the class it was for.
+      bookingClassTitle: booking?.class.title ?? null,
+    };
+  }
+
+  /** The Transactions page's filters (Decision 346, G3) as a Prisma filter. */
+  private filterWhere(schoolId: string, f: TransactionFilterDto): Prisma.TransactionWhereInput {
+    const billingDate: Prisma.DateTimeFilter = {};
+    if (f.from) billingDate.gte = new Date(`${f.from}T00:00:00.000Z`);
+    if (f.to) billingDate.lt = new Date(new Date(`${f.to}T00:00:00.000Z`).getTime() + 86_400_000);
+    return {
+      schoolId,
+      ...(f.status ? { status: f.status } : {}),
+      ...(f.paymentMethod ? { paymentMethod: f.paymentMethod } : {}),
+      ...(f.kind ? { kind: f.kind } : {}),
+      ...(f.membershipPlanId ? { membershipPlanId: f.membershipPlanId } : {}),
+      ...(f.from || f.to ? { billingDate } : {}),
+    };
   }
 
   /**
@@ -81,7 +103,7 @@ export class TransactionsService {
       where: decoded
         ? { AND: [where, { OR: [{ billingDate: { lt: decoded.sortValue } }, { billingDate: decoded.sortValue, id: { lt: decoded.id } }] }] }
         : where,
-      include: { membershipPlan: { select: { title: true } } },
+      include: { membershipPlan: { select: { title: true } }, booking: { select: { class: { select: { title: true } } } } },
       orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
       take: take + 1,
     });
@@ -94,10 +116,12 @@ export class TransactionsService {
   // Return type is a structural narrowing of the real row shape below, not the
   // literal shape — the DTO layer (TransactionResponseDto) is authoritative
   // for callers.
-  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+  async findAllForSchool(callerId: string, schoolId: string, query: TransactionListQueryDto = {}): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { schoolId }, cursor, limit));
+    this.assertDateRange(query);
+    const where = this.filterWhere(schoolId, query);
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, where, query.cursor, query.limit));
     // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
     // Transaction.student — an RLS-scoped include can silently fail to resolve the
     // Student's own User row once their RoleGrant is revoked (e.g.
@@ -130,11 +154,13 @@ export class TransactionsService {
    * more. Revenue is Successful rows only, one figure per currency (codes are
    * compared in capitals: rows written before Decision 339 may be lower-case).
    */
-  async summaryForSchool(callerId: string, schoolId: string) {
+  async summaryForSchool(callerId: string, schoolId: string, filter: TransactionFilterDto = {}) {
     await this.schoolsService.findOne(callerId, schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    this.assertDateRange(filter);
+    const where = this.filterWhere(schoolId, filter);
     const groups = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.transaction.groupBy({ by: ['status', 'currency'], where: { schoolId }, _count: { _all: true }, _sum: { amount: true } }),
+      tx.transaction.groupBy({ by: ['status', 'currency'], where, _count: { _all: true }, _sum: { amount: true } }),
     );
     const count = (statuses: string[]) => groups.filter((g) => statuses.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
     const revenue = new Map<string, number>();
@@ -152,6 +178,12 @@ export class TransactionsService {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([currency, amount]) => ({ currency: currency || null, amount })),
     };
+  }
+
+  private assertDateRange(f: TransactionFilterDto) {
+    if (f.from && f.to && f.from > f.to) {
+      throw new BadRequestException('The start date must be on or before the end date.');
+    }
   }
 
   /**

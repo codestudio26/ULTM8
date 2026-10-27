@@ -407,4 +407,8 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage는 지원되는 언어 코드 중 하나여야 합니다.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency는 지원되는 통화 코드 중 하나여야 합니다.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "이 프랜차이즈에는 이미 청구 중인 학교가 {v1}곳 있어 수수료 모델을 변경할 수 없습니다. 수수료 금액은 변경할 수 있습니다.",
+  "This person is not a student at this School.": "이 사람은 이 학교의 학생이 아닙니다.",
+  "This payment is not for a membership plan.": "이 결제는 멤버십 플랜에 대한 것이 아닙니다.",
+  "The start date must be on or before the end date.": "시작일은 종료일과 같거나 그 이전이어야 합니다.",
+  "The School owner has not let Branch Staff record payments.": "학교 소유자가 지점 직원의 결제 기록을 허용하지 않았습니다.",
 };

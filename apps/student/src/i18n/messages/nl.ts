@@ -769,6 +769,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Bon bekijken",
       noReceipt: "Er is geen bon beschikbaar voor deze betaling.",
       receiptFailed: "De bon kon niet worden geladen — probeer het opnieuw.",
+      renewal: "Verlenging: {plan}",
+      lateCancelFee: "Kosten voor late annulering: {class}",
+      lateCancelFeeNoClass: "Kosten voor late annulering",
     },
     status: {
       successful: "GESLAAGD",
