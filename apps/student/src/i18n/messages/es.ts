@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Descanso {start} – {end}",
       bookError: "No se pudo reservar esta clase — inténtalo de nuevo.",
       joinWaitlistError: "No se pudo entrar en la lista de espera — inténtalo de nuevo.",
       leaveWaitlistError: "No se pudo salir de la lista de espera — inténtalo de nuevo.",
@@ -405,7 +406,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Gratis",
       live: "En directo",
       prerecorded: "Grabada",
-      durationMinutes: "{minutes} min",
       locked: "Bloqueada — no está incluida en tu membresía actual.",
       favoritedLabel: "En favoritos",
     },
@@ -470,6 +470,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       moveDown: "↓ Bajar",
       remove: "Quitar",
       removeError: "No se pudo quitar este elemento.",
+      unavailable: "Ya no está disponible",
       deleteConfirm: "¿Eliminar esta lista? No se puede deshacer.",
       keep: "Mantener lista",
       delete: "Eliminar lista",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Desde {date}",
       unverified: "Pendiente de que la Escuela verifique este cinturón.",
       topOfLadder: "Lo más alto de la escalera.",
+      noLongerTaught: "Ya no se enseña en esta escuela. Tu cinturón y tu historial se conservan.",
       next: "Siguiente: {rank}",
       progress: "{percent}% del camino",
       readyToGrade: "Listo para examen",
@@ -648,6 +650,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Otras personas ya están esperando una plaza en esta clase. Entra en la lista de espera para esperar tu turno.",
       bookingClosed: "Las reservas para esta clase se han cerrado. Alguien del personal todavía puede añadirte.",
       classBusy: "Mucha gente está reservando esta clase ahora mismo. Inténtalo de nuevo en un momento.",
+      ticketRequired: "Esta clase única necesita su propia entrada. Una suscripción, un pase semanal o un bono de clases general no la cubren.",
       checkInNotOpen: "El check-in de esta clase aún no está abierto.",
       checkInNotOpenAt: "El check-in de esta clase aún no está abierto. Se abre el {time}.",
     },
@@ -662,6 +665,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Caduca el {date}",
       empty: "Aún no hay membresías.",
       loadError: "No se pudieron cargar las membresías — inténtalo de nuevo.",
+      cancelSubscription: "Cancelar suscripción",
+      keepSubscription: "Mantenerla",
+      cancelConfirm: "Conservas tu suscripción hasta el final del mes que has pagado. Después termina y no se cobran más pagos.",
+      cancelError: "No se pudo cancelar tu suscripción. Inténtalo de nuevo.",
+      cancelledEnds: "Cancelado, termina el {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} clase", other: "{count} clases" },
@@ -683,6 +691,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Aún no hay notificaciones.",
+      markAllRead: "Marcar todas como leídas",
+      markAllReadFailed: "No se pudieron marcar tus notificaciones como leídas. Inténtalo de nuevo.",
       loadFailed: "No se pudieron cargar las notificaciones — inténtalo de nuevo.",
     },
     row: {
@@ -690,6 +700,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, sin leer",
       unread: "Sin leer",
       markAsRead: "Marcar como leída",
+      open: "Abrir",
       markReadFailed: "No se pudo marcar como leída — inténtalo de nuevo.",
     },
   },
@@ -774,6 +785,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Ver recibo",
       noReceipt: "No hay recibo disponible para este pago.",
       receiptFailed: "No se pudo cargar el recibo — inténtalo de nuevo.",
+      renewal: "Renovación: {plan}",
+      lateCancelFee: "Cargo por cancelación tardía: {class}",
+      lateCancelFeeNoClass: "Cargo por cancelación tardía",
     },
     status: {
       successful: "CORRECTO",

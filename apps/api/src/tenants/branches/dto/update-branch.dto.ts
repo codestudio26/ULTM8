@@ -1,5 +1,6 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from '../../schools/dto/create-school.dto';
 import { CreateBranchDto } from './create-branch.dto';
 
 const NULLABLE_ON_UPDATE = [
@@ -96,4 +97,44 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string | null;
+
+  // Decision 292 — this Branch's own "Class cancellations" settings. Same
+  // meanings and limits as School's (UpdateSchoolDto); they only apply while
+  // cancellationSettingsOverride is true.
+  @ApiPropertyOptional({ description: 'true = this Branch uses the six settings below instead of its School\'s. Defaults to false (same as the School).' })
+  @IsOptional()
+  @IsBoolean()
+  cancellationSettingsOverride?: boolean;
+
+  @ApiPropertyOptional({ enum: ClassCancellationPolicyDto })
+  @IsOptional()
+  @IsEnum(ClassCancellationPolicyDto)
+  classCancellationPolicy?: ClassCancellationPolicyDto;
+
+  @ApiPropertyOptional({ enum: ClassCancellationPolicyWindowDto })
+  @IsOptional()
+  @IsEnum(ClassCancellationPolicyWindowDto)
+  classCancellationPolicyWindow?: ClassCancellationPolicyWindowDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  chargeLateCancellationFee?: boolean;
+
+  @ApiPropertyOptional({ enum: SchoolCancelledClassResolutionDto })
+  @IsOptional()
+  @IsEnum(SchoolCancelledClassResolutionDto)
+  schoolCancelledClassResolution?: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Hours before start. null = no cutoff.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  defaultRefundCutoffHours?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Minor-unit amount. null = off.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  noShowFee?: number | null;
 }

@@ -10,6 +10,8 @@ export const lib = {
     stripe: 'Card (Stripe)',
     cash: 'Cash',
     bankTransfer: 'Bank transfer',
+    pix: 'Pix',
+    cardTerminal: 'Card terminal',
   },
   roles: {
     student: 'Student',

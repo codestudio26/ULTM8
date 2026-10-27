@@ -116,8 +116,11 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
   }
 
   async process(_job: Job): Promise<void> {
+    // Only slots that are On, not archived, at a School that isn't closed and not on
+    // an archived Branch (Decision 332, T1, T2): archiving a slot took its Classes
+    // off the schedule, and this run used to put them back every night.
     const activeSlots = await this.prismaJobs.timetableSlot.findMany({
-      where: { status: 'ON' },
+      where: { status: 'ON', archivedAt: null, school: { archivedAt: null }, OR: [{ branchId: null }, { branch: { archivedAt: null } }] },
       include: { branch: { select: { timezone: true } }, school: { select: { timezone: true } } },
     });
 

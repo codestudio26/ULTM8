@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "พัก {start} – {end}",
       bookError: "ไม่สามารถจองคลาสนี้ได้ โปรดลองอีกครั้ง",
       joinWaitlistError: "ไม่สามารถเข้ารายชื่อรอได้ โปรดลองอีกครั้ง",
       leaveWaitlistError: "ไม่สามารถออกจากรายชื่อรอได้ โปรดลองอีกครั้ง",
@@ -401,7 +402,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "ฟรี",
       live: "สด",
       prerecorded: "บันทึกไว้ล่วงหน้า",
-      durationMinutes: "{minutes} นาที",
       locked: "ล็อกอยู่ — ไม่รวมอยู่ในสมาชิกภาพปัจจุบันของคุณ",
       favoritedLabel: "รายการโปรด",
     },
@@ -466,6 +466,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       moveDown: "↓ ลง",
       remove: "นำออก",
       removeError: "ไม่สามารถนำรายการนี้ออกได้",
+      unavailable: "ไม่พร้อมใช้งานแล้ว",
       deleteConfirm: "ลบเพลย์ลิสต์นี้หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้",
       keep: "เก็บเพลย์ลิสต์ไว้",
       delete: "ลบเพลย์ลิสต์",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "ตั้งแต่ {date}",
       unverified: "รอโรงเรียนยืนยันสายคาดนี้",
       topOfLadder: "อยู่ขั้นสูงสุดของลำดับขั้นแล้ว",
+      noLongerTaught: "สถาบันนี้ไม่ได้สอนประเภทกีฬานี้แล้ว สายและประวัติของคุณยังคงอยู่",
       next: "ถัดไป: {rank}",
       progress: "ผ่านไปแล้ว {percent}%",
       readyToGrade: "พร้อมเลื่อนระดับ",
@@ -646,6 +648,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "หมดอายุ {date}",
       empty: "ยังไม่มีสมาชิกภาพ",
       loadError: "ไม่สามารถโหลดสมาชิกภาพได้ โปรดลองอีกครั้ง",
+      cancelSubscription: "ยกเลิกการสมัคร",
+      keepSubscription: "ใช้ต่อ",
+      cancelConfirm: "คุณยังใช้การสมัครได้จนถึงสิ้นเดือนที่ชำระแล้ว จากนั้นจะสิ้นสุดและไม่มีการเรียกเก็บเงินอีก",
+      cancelError: "ยกเลิกการสมัครของคุณไม่ได้ โปรดลองอีกครั้ง",
+      cancelledEnds: "ยกเลิกแล้ว สิ้นสุด {date}",
     },
     planRow: {
       classesIncluded: { other: "{count} คลาส" },
@@ -667,6 +674,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "ยังไม่มีการแจ้งเตือน",
+      markAllRead: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+      markAllReadFailed: "ไม่สามารถทำเครื่องหมายการแจ้งเตือนว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
       loadFailed: "ไม่สามารถโหลดการแจ้งเตือนได้ โปรดลองอีกครั้ง",
     },
     row: {
@@ -674,6 +683,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ยังไม่อ่าน",
       unread: "ยังไม่อ่าน",
       markAsRead: "ทำเครื่องหมายว่าอ่านแล้ว",
+      open: "เปิด",
       markReadFailed: "ไม่สามารถทำเครื่องหมายว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
     },
   },
@@ -757,6 +767,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "ดูใบเสร็จ",
       noReceipt: "ไม่มีใบเสร็จสำหรับการชำระเงินนี้",
       receiptFailed: "ไม่สามารถโหลดใบเสร็จได้ โปรดลองอีกครั้ง",
+      renewal: "ต่ออายุ: {plan}",
+      lateCancelFee: "ค่าธรรมเนียมยกเลิกล่าช้า: {class}",
+      lateCancelFeeNoClass: "ค่าธรรมเนียมยกเลิกล่าช้า",
     },
     status: {
       successful: "สำเร็จ",
@@ -793,6 +806,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "มีคนอื่นรอที่นั่งในคลาสนี้อยู่แล้ว เข้ารายชื่อรอเพื่อรอคิวของคุณ",
       bookingClosed: "ปิดรับการจองคลาสนี้แล้ว พนักงานยังสามารถเพิ่มคุณได้",
       classBusy: "ขณะนี้มีคนจองคลาสนี้จำนวนมาก โปรดลองอีกครั้งในอีกสักครู่",
+      ticketRequired: "คลาสครั้งเดียวนี้ต้องใช้ตั๋วของตัวเอง สมาชิกรายเดือน บัตรรายสัปดาห์ หรือแพ็กคลาสทั่วไปใช้จองไม่ได้",
       checkInNotOpen: "ยังไม่เปิดเช็กอินสำหรับคลาสนี้",
       checkInNotOpenAt: "ยังไม่เปิดเช็กอินสำหรับคลาสนี้ จะเปิดเมื่อ {time}",
     },

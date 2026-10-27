@@ -62,6 +62,18 @@ export class WaiversController {
     return this.waiversService.findSignaturesForWaiver(user.sub, schoolId, id, query.cursor, query.limit);
   }
 
+  /** One signature with the text as it was signed (Waivers review W3). */
+  @ApiOkResponse({ type: WaiverSignatureResponseDto })
+  @Get('schools/:schoolId/waivers/:id/signatures/:signatureId')
+  findSignature(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('id') id: string,
+    @Param('signatureId') signatureId: string,
+  ) {
+    return this.waiversService.findSignatureForWaiver(user.sub, schoolId, id, signatureId);
+  }
+
   // NOTE ordering: 'waivers/me' MUST be registered before 'waivers/:id' — both
   // share the same path prefix, and NestJS/Express resolves routes in
   // registration order, so a static segment declared after a param route would

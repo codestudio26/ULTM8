@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
 import { PushNotificationService } from '../notifications/push-notification.service';
@@ -51,7 +51,20 @@ import { NotificationFanoutJobData } from './notification-fanout.types';
  * succeeded. Push errors (including "not configured") are caught and logged
  * here instead; the in-app Notification row and email delivery are both
  * unaffected by push's outcome either way.
+ *
+ * Parents (Decision 333, chosen by the product owner 26 Oct 2026): a
+ * notification for a Student with live GuardianLinks is also copied to each
+ * linked guardian, as "For {firstName}: {body}", one job per guardian with a
+ * deterministic id. A minor created by a guardian has no login, and its
+ * email is GuardiansService.createMinor's placeholder, so for them only the
+ * in-app row is written — no push or email to that address. (Told apart by
+ * the placeholder's domain: ultm8_jobs is not granted `phoneVerifiedAt`.) The grading producers already
+ * address guardians directly and never the minor itself, so nothing is
+ * doubled; a copy (`guardianCopyOf` set) is never copied on again.
  */
+/** GuardiansService.createMinor's placeholder email domain. */
+const MINOR_PLACEHOLDER_EMAIL_DOMAIN = '@guardian-managed.ultm8.internal';
+
 @Processor(NOTIFICATION_FANOUT_QUEUE)
 export class NotificationFanoutProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationFanoutProcessor.name);
@@ -60,12 +73,18 @@ export class NotificationFanoutProcessor extends WorkerHost {
     private readonly prismaJobs: PrismaJobsService,
     private readonly delivery: NotificationDeliveryService,
     private readonly push: PushNotificationService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
   ) {
     super();
   }
 
   async process(job: Job<NotificationFanoutJobData>): Promise<void> {
-    const { notificationId, userId, title, body, type } = job.data;
+    const { notificationId, userId, title, body, type, guardianCopyOf, schoolId, targetType, targetId } = job.data;
+
+    // Decision 355: the School's name is copied onto the row now, since the
+    // reader can't always see the School itself (see the Notification model).
+    const school = schoolId ? await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true } }) : null;
+    const extra = { schoolId: schoolId ?? null, schoolName: school?.name ?? null, targetType: targetType ?? null, targetId: targetId ?? null };
 
     // Idempotent by design — see this class's own header comment. Runs before
     // the email attempt below so a retry never re-sends an email for a
@@ -73,11 +92,14 @@ export class NotificationFanoutProcessor extends WorkerHost {
     // one that already delivered.
     await this.prismaJobs.notification.upsert({
       where: { id: notificationId },
-      create: { id: notificationId, userId, title, body, type },
-      update: { title, body, type },
+      create: { id: notificationId, userId, title, body, type, ...extra },
+      update: { title, body, type, ...extra },
     });
 
-    const user = await this.prismaJobs.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const user = await this.prismaJobs.user.findUnique({
+      where: { id: userId },
+      select: { email: true, firstName: true },
+    });
     if (!user) {
       // The target User row is gone (a genuine race — deleted between enqueue and
       // processing) — the Notification row above still exists for consistency's
@@ -88,10 +110,55 @@ export class NotificationFanoutProcessor extends WorkerHost {
       return;
     }
 
-    await this.delivery.sendEmail(user.email, title, body);
+    if (!guardianCopyOf) {
+      const guardians = await this.prismaJobs.guardianLink.findMany({
+        where: { studentId: userId, revokedAt: null },
+        select: { guardianId: true },
+      });
+      if (guardians.length > 0) {
+        await this.fanoutQueue.addBulk(
+          guardians.map(({ guardianId }) => {
+            const id = `${notificationId}-guardian-${guardianId}`;
+            const data: NotificationFanoutJobData = {
+              notificationId: id,
+              userId: guardianId,
+              title,
+              body: `For ${user.firstName}: ${body}`,
+              type,
+              guardianCopyOf: userId,
+              schoolId,
+              targetType,
+              targetId,
+            };
+            return { name: 'notify', data, opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } } };
+          }),
+        );
+        // A child with no login of their own: the in-app row above is enough.
+        if (user.email.endsWith(MINOR_PLACEHOLDER_EMAIL_DOMAIN)) return;
+      }
+    }
 
-    // See this class's own header comment for why push is caught here rather
-    // than allowed to propagate like the email send above.
+    // Push first, and only on the first attempt: it is caught (never fails the
+    // job), so a retry exists only to re-try EMAIL — re-sending push on it would
+    // buzz the same phone again. Before this ordering, push ran only after a
+    // successful email, so an email outage silently took push down with it.
+    if (!job.attemptsMade) {
+      await this.sendPush(notificationId, userId, title, body);
+    }
+
+    // No email service configured at all (as on staging this testing round):
+    // nothing a retry can fix, so skip quietly instead of failing the job three
+    // times and logging a "permanently failed" alarm for every notification.
+    if (!this.delivery.isConfigured()) {
+      this.logger.debug(`notification-fanout: email not configured — Notification ${notificationId} delivered in-app only.`);
+      return;
+    }
+    await this.delivery.sendEmail(user.email, title, body);
+  }
+
+  /** Best-effort push — see this class's own header comment for why a push
+   * failure is logged, never propagated. */
+  private async sendPush(notificationId: string, userId: string, title: string, body: string): Promise<void> {
     try {
       const deviceTokens = await this.prismaJobs.deviceToken.findMany({ where: { userId }, select: { token: true } });
       if (deviceTokens.length > 0) {

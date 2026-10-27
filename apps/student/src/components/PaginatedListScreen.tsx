@@ -37,12 +37,15 @@ export function PaginatedListScreen<T extends { id: string }>({
   emptyMessage,
   errorFallbackMessage,
   keyExtractor = (item) => item.id,
+  header,
 }: {
   query: InfiniteListQuery<T>;
   renderItem: (item: T) => ReactElement;
   emptyMessage: string;
   errorFallbackMessage: string;
   keyExtractor?: (item: T) => string;
+  /** Shown above the list, e.g. a list-wide action. */
+  header?: ReactElement;
 }) {
   if (query.isLoading) {
     return (
@@ -71,6 +74,7 @@ export function PaginatedListScreen<T extends { id: string }>({
           if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
+        ListHeaderComponent={header}
         ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
         ListEmptyComponent={<Text style={{ color: '#5F6368' }}>{emptyMessage}</Text>}
         renderItem={({ item }) => renderItem(item)}

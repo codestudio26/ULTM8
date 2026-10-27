@@ -23,6 +23,9 @@ export class WaiverResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities.' })
   purgedAt!: string | null;
 
+  @ApiProperty({ description: 'Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion.' })
+  version!: number;
+
   @ApiProperty()
   createdAt!: string;
 

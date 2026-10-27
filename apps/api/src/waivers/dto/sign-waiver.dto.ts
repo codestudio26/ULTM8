@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsInt, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength } from 'class-validator';
+
+// Waivers review W5: a name made of spaces is not a signature.
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 /**
  * POST /waivers/{id}/sign body. Confirmed e-signature mechanism (skills/
@@ -34,12 +38,14 @@ export class SignWaiverDto {
   studentId?: string;
 
   @ApiProperty()
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(200)
   signerFullName!: string;
 
   @ApiProperty({ description: 'Typed signature text (the confirmed baseline mechanism — see WaiverSignature\'s own schema comment).' })
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(200)
@@ -56,4 +62,10 @@ export class SignWaiverDto {
   @MaxLength(512)
   @Matches(/^[A-Za-z0-9/_.-]+$/, { message: 'signatureImageKey may only contain letters, digits, and / _ . -' })
   signatureImageKey?: string;
+
+  @ApiPropertyOptional({ description: 'The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  waiverVersion?: number;
 }

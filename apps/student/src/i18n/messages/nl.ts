@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pauze {start} – {end}",
       bookError: "Deze les kon niet worden geboekt — probeer het opnieuw.",
       joinWaitlistError: "Je kon niet op de wachtlijst worden gezet — probeer het opnieuw.",
       leaveWaitlistError: "Je kon de wachtlijst niet verlaten — probeer het opnieuw.",
@@ -405,7 +406,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       free: "Gratis",
       live: "Live",
       prerecorded: "Opgenomen",
-      durationMinutes: "{minutes} min",
       locked: "Vergrendeld — niet inbegrepen in je huidige lidmaatschap.",
       favoritedLabel: "Favoriet",
     },
@@ -470,6 +470,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       moveDown: "↓ Omlaag",
       remove: "Verwijderen",
       removeError: "Dit onderdeel kon niet worden verwijderd.",
+      unavailable: "Niet meer beschikbaar",
       deleteConfirm: "Deze afspeellijst verwijderen? Dit kan niet ongedaan worden gemaakt.",
       keep: "Afspeellijst houden",
       delete: "Afspeellijst verwijderen",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Sinds {date}",
       unverified: "Wacht tot de school deze band verifieert.",
       topOfLadder: "Top van de ladder.",
+      noLongerTaught: "Wordt niet meer gegeven op deze school. Je band en geschiedenis blijven bewaard.",
       next: "Volgende: {rank}",
       progress: "{percent}% van de weg",
       readyToGrade: "Klaar voor examen",
@@ -652,6 +654,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Verloopt op {date}",
       empty: "Nog geen lidmaatschappen.",
       loadError: "Lidmaatschappen konden niet worden geladen — probeer het opnieuw.",
+      cancelSubscription: "Abonnement opzeggen",
+      keepSubscription: "Behouden",
+      cancelConfirm: "Je houdt je abonnement tot het einde van de betaalde maand. Daarna stopt het en worden er geen betalingen meer afgeschreven.",
+      cancelError: "Je abonnement kon niet worden opgezegd — probeer het opnieuw.",
+      cancelledEnds: "Opgezegd, eindigt op {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} les", other: "{count} lessen" },
@@ -673,6 +680,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Nog geen meldingen.",
+      markAllRead: "Alles markeren als gelezen",
+      markAllReadFailed: "Je meldingen kunnen niet als gelezen worden gemarkeerd. Probeer het opnieuw.",
       loadFailed: "Meldingen konden niet worden geladen — probeer het opnieuw.",
     },
     row: {
@@ -680,6 +689,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ongelezen",
       unread: "Ongelezen",
       markAsRead: "Markeren als gelezen",
+      open: "Openen",
       markReadFailed: "Dit kon niet als gelezen worden gemarkeerd — probeer het opnieuw.",
     },
   },
@@ -764,6 +774,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Bon bekijken",
       noReceipt: "Er is geen bon beschikbaar voor deze betaling.",
       receiptFailed: "De bon kon niet worden geladen — probeer het opnieuw.",
+      renewal: "Verlenging: {plan}",
+      lateCancelFee: "Kosten voor late annulering: {class}",
+      lateCancelFeeNoClass: "Kosten voor late annulering",
     },
     status: {
       successful: "GESLAAGD",
@@ -800,6 +813,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Anderen wachten al op een plek in deze les. Zet je op de wachtlijst om je beurt af te wachten.",
       bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
       classBusy: "Er boeken nu veel mensen deze les. Probeer het zo meteen opnieuw.",
+      ticketRequired: "Voor deze losse les heb je een eigen ticket nodig. Een abonnement, weekpas of algemene strippenkaart dekt hem niet.",
       checkInNotOpen: "Inchecken voor deze les is nog niet geopend.",
       checkInNotOpenAt: "Inchecken voor deze les is nog niet geopend. Het opent: {time}.",
     },

@@ -107,8 +107,10 @@ test('editing a slot with booked classes asks Move, Cancel or Keep, and Move kee
   await bookDirectly(classId, s.student.id);
 
   await signIn(page, s.ownerToken);
+  // The class is a week ahead: the calendar shows real Classes (Decision 353).
   await page.goto('/timetable');
-  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${dateKey(next)}` }).click();
   await page.getByRole('menuitem', { name: 'Edit slot' }).click();
   const form = page.getByRole('dialog', { name: 'Edit timetable slot' });
   await form.getByLabel('Start time').fill('17:00');
@@ -140,8 +142,10 @@ test('a slot edit that only changes unbooked classes saves without asking', asyn
   });
 
   await signIn(page, s.ownerToken);
+  // The class is a week ahead: the calendar shows real Classes (Decision 353).
   await page.goto('/timetable');
-  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${dateKey(next)}` }).click();
   await page.getByRole('menuitem', { name: 'Edit slot' }).click();
   const form = page.getByRole('dialog', { name: 'Edit timetable slot' });
   await form.getByLabel('Start time').fill('17:30');

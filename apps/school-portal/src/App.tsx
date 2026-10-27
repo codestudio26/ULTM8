@@ -26,6 +26,8 @@ import { InstructorsPage } from './instructors/InstructorsPage';
 import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
+import { CheckInPage } from './frontdesk/CheckInPage';
+import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { InviteStudentPage } from './students/InviteStudentPage';
 import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
@@ -41,6 +43,8 @@ import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage';
+import { CancellationsPage } from './cancellations/CancellationsPage';
+import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -240,6 +244,25 @@ export function App() {
         }
       />
       <Route
+        path="/check-in"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CheckInPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Front-desk mode is full screen: no menu (DESIGN.md → "Check-in and front-desk mode"). */}
+      <Route
+        path="/front-desk"
+        element={
+          <RequireAuth>
+            <FrontDeskModePage />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/students/invite"
         element={
           <RequireAuth>
@@ -393,6 +416,16 @@ export function App() {
         }
       />
       <Route
+        path="/membership-plans/:id/members"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlanMembersPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/membership-plans/:id/edit"
         element={
           <RequireAuth>
@@ -408,6 +441,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cancellations"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CancellationsPage />
             </Shell>
           </RequireAuth>
         }

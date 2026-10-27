@@ -21,6 +21,7 @@ import { PlatformAdminTenantLifecycleController } from './tenant-lifecycle.contr
 import { TenantLifecycleService } from './tenant-lifecycle.service';
 import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
+import { QueueModule } from '../jobs/queue.module';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -154,6 +155,7 @@ import { AuthModule } from '../auth/auth.module';
     PassportModule,
     PaymentsModule, // for StripeClientService — see Slice 7's own header comment
     AuthModule, // for AuthService.issueImpersonationToken() — see Slice 8's own header comment
+    QueueModule, // Decision 364 — notification-fanout, to tell member Schools a Franchise closed
     JwtModule.register({
       secret: process.env.PLATFORM_ADMIN_JWT_SECRET,
       // Shorter than the tenant realm's 15-minute default (JWT_ACCESS_TTL, itself

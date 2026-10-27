@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { trimSearch } from '../../common/search/name-search';
 
@@ -40,7 +40,8 @@ export class ClassesQueryDto extends PaginationQueryDto {
   /** Decision 226 — archived Classes are excluded by default. */
   @ApiPropertyOptional({ default: false, description: 'Include archived Classes too (excluded by default).' })
   @IsOptional()
-  @Type(() => Boolean)
+  // "false" is a non-empty string, which @Type(() => Boolean) read as true (Waivers review W11).
+  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : value))
   @IsBoolean()
   includeArchived?: boolean;
 
@@ -60,4 +61,18 @@ export class ClassesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsISO8601()
   startsTo?: string;
+
+  /** Classes review C3: `upcoming` (not yet ended, soonest first), `past`
+   * (ended, latest first) or `all` (latest first). Omitted keeps the old
+   * id order, for callers that read the whole list (e.g. plan scoping). */
+  @ApiPropertyOptional({ enum: ['upcoming', 'past', 'all'], description: 'Date view, sorted by start time. Omit for the unsorted list.' })
+  @IsOptional()
+  @IsIn(['upcoming', 'past', 'all'])
+  when?: 'upcoming' | 'past' | 'all';
+
+  /** Classes review C17: only Classes this User teaches (coach dashboard). */
+  @ApiPropertyOptional({ description: 'Only Classes taught by this User.' })
+  @IsOptional()
+  @IsUUID()
+  instructorId?: string;
 }

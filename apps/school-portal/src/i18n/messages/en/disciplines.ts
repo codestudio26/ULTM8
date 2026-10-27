@@ -111,6 +111,7 @@ export const disciplines = {
   },
   stylePicker: {
     style: 'Style',
+    archivedName: '{name} (archived)',
     styleNumbered: 'Style {number}',
     selectStyle: 'Select a style…',
     classType: 'Class type',

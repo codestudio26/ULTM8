@@ -2,6 +2,8 @@
 
 **Run:** 26 Oct 2026, against `master` at `1c992b0`. **Fixes:** branch `test/stress-booking-schedule` (this PR). **Rules decided:** Decision 322. **Scripts:** `apps/api/scripts/stress/booking-schedule/` (see its README to rerun).
 
+> **Round 2 (26 Oct 2026, evening):** rerun with billing added, see `BILLING-STRESS-TEST.md`. These results still hold; H2 and H4 are still open.
+
 ## Summary
 
 30 Schools and 12,213 students went through the real API: belt declarations, three bookings each, check-in, and a promotion each. Then 20 attacks tried to break booking, the waitlist, schedule edits, check-in and grading.
