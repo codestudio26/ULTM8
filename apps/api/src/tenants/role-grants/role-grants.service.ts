@@ -21,6 +21,7 @@ import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole } from './dto/staff-list.dto';
+import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 import type { Prisma } from '@prisma/client';
 
@@ -67,6 +68,7 @@ export class RoleGrantsService {
     private readonly schoolsService: SchoolsService,
     private readonly delivery: NotificationDeliveryService,
     private readonly rolesChanged: RolesChangedService,
+    private readonly stepUp: StepUpService,
   ) {}
 
   /** Same convention as CoachInvitesService/InstructorsService's own
@@ -432,8 +434,11 @@ export class RoleGrantsService {
     if (!grant || grant.userId !== targetUserId) {
       throw new NotFoundException('RoleGrant not found');
     }
-    if (!REVOCABLE_ROLES.includes(grant.role as (typeof REVOCABLE_ROLES)[number])) {
-      throw new ForbiddenException('This endpoint may only revoke INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.');
+    // Decision 370: owners are equal co-owners and may remove each other,
+    // except the main owner, whom only a Platform Admin can remove.
+    const isOwnerGrant = grant.role === 'SCHOOL_OWNER_MANAGER';
+    if (!isOwnerGrant && !REVOCABLE_ROLES.includes(grant.role as (typeof REVOCABLE_ROLES)[number])) {
+      throw new ForbiddenException('This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.');
     }
     if (!grant.schoolId) {
       throw new ForbiddenException('This endpoint may only revoke School-scoped grants.');
@@ -446,6 +451,12 @@ export class RoleGrantsService {
 
     const schoolId = grant.schoolId;
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (isOwnerGrant && (await mainOwnerGrant(tx, schoolId))?.id === grant.id) {
+        throw new ForbiddenException({
+          code: 'MAIN_OWNER',
+          message: "The main owner can't be removed here. To change the main owner, contact ULTM8 support.",
+        });
+      }
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
       await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
       return row;
@@ -488,12 +499,13 @@ export class RoleGrantsService {
   async listStaff(callerId: string, schoolId: string, query: StaffListQueryDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
-    const { grants, branches, inviters } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+    const { grants, branches, inviters, main } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       grants: await tx.roleGrant.findMany({
         where: { schoolId, role: { in: [...STAFF_ROLES] } },
         select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, grantedById: true, revokedAt: true },
         orderBy: { grantedAt: 'desc' },
       }),
+      main: await mainOwnerGrant(tx, schoolId),
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       inviters: await tx.staffPermission.findMany({ where: { schoolId, canInviteCoaches: true }, select: { userId: true } }),
     }));
@@ -540,6 +552,7 @@ export class RoleGrantsService {
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
         canInviteCoaches: mayInvite.has(userId),
+        mainOwner: main?.userId === userId,
         roles: roles.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -586,4 +599,51 @@ export class RoleGrantsService {
     this.rolesChanged.forget(userId);
     return { removedRoles };
   }
+
+  /**
+   * POST /schools/{schoolId}/main-owner (Decision 370) — the main owner hands
+   * the main role to one of the School's co-owners, after re-entering their
+   * passcode (the X-Step-Up-Token from POST /auth/step-up/verify). They stay
+   * an owner, now a co-owner.
+   */
+  async handOverMainOwner(callerId: string, schoolId: string, targetUserId: string, stepUpToken: string | undefined) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    this.stepUp.assertVerified(callerId, stepUpToken);
+
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const main = await mainOwnerGrant(tx, schoolId);
+      if (main?.userId !== callerId) {
+        throw new ForbiddenException({ code: 'NOT_MAIN_OWNER', message: 'Only the main owner can hand over the main owner role.' });
+      }
+      if (targetUserId === callerId) {
+        throw new BadRequestException('You are already the main owner.');
+      }
+      const target = await tx.roleGrant.findFirst({
+        where: { schoolId, userId: targetUserId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+        orderBy: [{ grantedAt: 'asc' }, { id: 'asc' }],
+        select: { id: true },
+      });
+      if (!target) {
+        throw new NotFoundException('This person is not a co-owner of this School.');
+      }
+      await tx.roleGrant.updateMany({ where: { schoolId, isMainOwner: true, revokedAt: null }, data: { isMainOwner: false } });
+      await tx.roleGrant.update({ where: { id: target.id }, data: { isMainOwner: true } });
+    });
+    return { mainOwnerUserId: targetUserId };
+  }
+}
+
+/**
+ * Decision 370 — a School's main owner: the live owner grant flagged
+ * isMainOwner, or, where none is flagged (a School whose main owner's account
+ * was deleted, or rows written before the flag existed), the earliest live
+ * owner grant, the rule the product owner chose for existing Schools.
+ */
+export function mainOwnerGrant(tx: Prisma.TransactionClient, schoolId: string) {
+  return tx.roleGrant.findFirst({
+    where: { schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+    orderBy: [{ isMainOwner: 'desc' }, { grantedAt: 'asc' }, { id: 'asc' }],
+    select: { id: true, userId: true },
+  });
 }

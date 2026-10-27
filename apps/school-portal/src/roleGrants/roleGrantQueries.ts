@@ -91,6 +91,25 @@ export function useRemoveFromSchool(schoolId: string) {
   });
 }
 
+/** Decision 370 — the main owner hands the main owner role to a co-owner:
+ * re-checks their passcode first (POST /auth/step-up/verify), then hands over
+ * with that proof. */
+export function useHandOverMainOwner(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, passcode }: { userId: string; passcode: string }) => {
+      const { stepUpToken } = await unwrap(apiClient.POST('/v1/auth/step-up/verify', { body: { passcode } }));
+      return unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/main-owner', {
+          params: { path: { schoolId }, header: { 'x-step-up-token': stepUpToken } },
+          body: { userId },
+        }),
+      );
+    },
+    onSuccess: () => invalidateStaffLists(queryClient),
+  });
+}
+
 export function useInviteStaff() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -5923,3 +5923,29 @@ Owners and co-owners, display name and work phone, access switches, Pause, "must
 ### Recorded by
 
 User (Code), 27 Oct 2026, Staff thread.
+
+---
+
+## Decision 370 — Main owner and co-owners
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 3), Decision 270 (an owner may make another person an owner of their own School)
+**Numbering:** 367–369 are in use on other open branches; this takes 370.
+
+### Decision
+
+1. **One main owner per School.** `RoleGrant.isMainOwner` marks it, with a database rule that a School has at most one live, flagged owner grant. Whoever creates a School is its main owner. Existing Schools: the migration flags the earliest live owner grant (the product owner's rule). Where no live grant is flagged (the main owner's account was deleted, or rows written outside the API), the earliest live owner grant counts as the main owner, so a School with owners always has one.
+2. **Co-owners.** Every other owner is a co-owner, with the same powers as the main owner except the two below. "Give role" on the Staff page can now give the owner role ("Co-owner"); the API already allowed it (Decision 270).
+3. **Removing owners.** Any owner can remove a co-owner, including themselves, through the existing revoke (`DELETE /users/:userId/role-grants/:id`). Nobody in the School can remove the main owner: that answers `403` with code `MAIN_OWNER` and tells them to contact ULTM8 support. "Remove from School" still ends coach and Branch Staff roles only.
+4. **Handing over.** `POST /schools/:schoolId/main-owner` `{ userId }`: only the main owner, only to a current co-owner, and only with a passcode check (the existing step-up token, `x-step-up-token`, from `POST /auth/step-up/verify`). The former main owner stays an owner, as a co-owner.
+5. **ULTM8 support.** `GET /platform-admin/schools/:id/owners` (any admin tier, audit-logged `VIEW_SCHOOL_OWNERS`) lists the owners. `POST /platform-admin/schools/:id/main-owner` `{ userId, removeFormerMainOwner? }` moves the main owner role to a current co-owner and can end the former main owner's owner role in the same step (Full Admin only, like closing a School; audit-logged `CHANGE_SCHOOL_MAIN_OWNER` with who it moved from and to). Shown as an Owners card on the Platform Admin School page.
+6. **No forced sign-in refresh.** Which owner is main doesn't change anyone's access, and access tokens don't carry it, so Decision 361's trigger skips an update that changes only `isMainOwner` (and Prisma's `updatedAt`).
+
+### Choices made here, not by the product owner
+
+- The support action is Full Admin only, matching the other School-level account changes (close and reactivate).
+- Support can move the main owner role only to someone who is already a co-owner. A School whose only owner has lost their account has no co-owner to move it to, and support can't add an owner here. That case is **[UNRESOLVED]**: not built, for the product owner to decide.
+
+### Recorded by
+
+User (Code), 26–27 Oct 2026, Staff thread (Decision 360 item 3).
+

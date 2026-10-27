@@ -175,6 +175,7 @@ export class SchoolsService {
           userId: callerId,
           schoolId: created.id,
           grantedById: callerId, // self-granted at creation time — there is no prior grantor
+          isMainOwner: true, // Decision 370: whoever creates the School is its main owner
         },
       });
 

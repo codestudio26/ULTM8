@@ -25,9 +25,10 @@ import { Trans } from '../i18n/Trans';
 /**
  * Invite / revoke Instructor or Branch Staff — the one confirmed RoleGrant authority
  * case (Decision 80/81: School Owner/Manager granting INSTRUCTOR or BRANCH_STAFF
- * within their own School only). No UI here implies broader granting authority (no
- * option to grant School Owner/Manager, Franchise Owner, Student, or Guardian) because
- * apps/api rejects all of those from this endpoint.
+ * within their own School only), plus co-owners (Decision 270: an owner may make
+ * another person an owner of their own School; Decision 370 calls them co-owners).
+ * No option to grant Franchise Owner, Student, or Guardian: apps/api rejects those
+ * from this endpoint.
  *
  * The invite target has no RoleGrant at this School yet, so there's no shared-grant
  * path to look them up by — the form finds them by an exact email or phone match
@@ -58,7 +59,7 @@ export function StaffPage() {
   const [candidate, setCandidate] = useState<InviteCandidateResponse | null>(null);
   const [findError, setFindError] = useState<string | null>(null);
   const [findLoading, setFindLoading] = useState(false);
-  const [role, setRole] = useState<'INSTRUCTOR' | 'BRANCH_STAFF'>('INSTRUCTOR');
+  const [role, setRole] = useState<'INSTRUCTOR' | 'BRANCH_STAFF' | 'SCHOOL_OWNER_MANAGER'>('INSTRUCTOR');
   const [branchId, setBranchId] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
   // Non-blocking emailSent flag (same treatment AddInstructorManuallyModal/
@@ -80,7 +81,10 @@ export function StaffPage() {
   // Branch Staff always need a branch. An Instructor needs one whenever the
   // School has branches; with none, the School itself is the branch
   // (Decisions 168, 169).
-  const needsBranch = role === 'BRANCH_STAFF' || branches.length > 0;
+  // A co-owner is School-wide: never a branch (Decision 370).
+  const needsBranch = role === 'BRANCH_STAFF' || (role === 'INSTRUCTOR' && branches.length > 0);
+  const roleName = (r: typeof role) =>
+    r === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : r === 'SCHOOL_OWNER_MANAGER' ? t('roleGrants.staff.roleCoOwner') : t('roleGrants.staff.roleInstructor');
 
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();
@@ -132,7 +136,7 @@ export function StaffPage() {
       });
       const given = {
         name: `${candidate!.firstName} ${candidate!.surname}`.trim(),
-        role: role === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : t('roleGrants.staff.roleInstructor'),
+        role: roleName(role),
       };
       setInviteNotice(
         granted.emailSent
@@ -211,9 +215,11 @@ export function StaffPage() {
                 options={[
                   { value: 'INSTRUCTOR', label: t('roleGrants.staff.roleInstructor') },
                   { value: 'BRANCH_STAFF', label: t('roleGrants.staff.roleBranchStaff') },
+                  { value: 'SCHOOL_OWNER_MANAGER', label: t('roleGrants.staff.roleCoOwner') },
                 ]}
               />
             </Field>
+            {role === 'SCHOOL_OWNER_MANAGER' ? <p className="ultm8-field">{t('roleGrants.staff.coOwnerHint')}</p> : null}
             {needsBranch ? (
               <Field
                 label={t('roleGrants.staff.branchLabel')}
@@ -242,7 +248,16 @@ export function StaffPage() {
 
       <CoachInvitesSection schoolId={schoolId} />
 
-      {confirmingRevoke ? (
+      {confirmingRevoke?.role.role === 'SCHOOL_OWNER_MANAGER' ? (
+        <ConfirmDeleteModal
+          title={t('roleGrants.staff.removeCoOwnerTitle', { name: `${confirmingRevoke.person.firstName} ${confirmingRevoke.person.surname}`.trim() })}
+          description={t('roleGrants.staff.removeCoOwnerDescription')}
+          confirmLabel={t('roleGrants.list.removeCoOwner')}
+          genericErrorMessage={t('roleGrants.staff.revokeFailed')}
+          onConfirm={() => handleRevoke(confirmingRevoke)}
+          onClose={() => setConfirmingRevoke(null)}
+        />
+      ) : confirmingRevoke ? (
         <ConfirmDeleteModal
           title={t('roleGrants.staff.revokeTitle', {
             role: ROLE_LABELS[confirmingRevoke.role.role] ? t(ROLE_LABELS[confirmingRevoke.role.role]!) : confirmingRevoke.role.role,

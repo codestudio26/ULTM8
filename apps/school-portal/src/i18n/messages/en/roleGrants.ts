@@ -20,6 +20,8 @@ export const roleGrants = {
     roleLabel: 'Role',
     roleInstructor: 'Instructor',
     roleBranchStaff: 'Branch Staff',
+    roleCoOwner: 'Co-owner',
+    coOwnerHint: 'A co-owner runs the School with you and can do everything an owner can, except remove or replace the main owner.',
     branchLabel: 'Branch',
     branchHint: 'For an instructor who teaches at several branches, give the role once per branch.',
     selectBranch: 'Select a Branch…',
@@ -31,6 +33,9 @@ export const roleGrants = {
     revokeTitle: 'Remove the {role} role from {name}?',
     revokeDescription:
       'They lose this role ({branch}) straight away, even if they are signed in. If it was their last coach or staff role here, their grading permissions and "Can invite coaches" are cleared too, so giving the role back starts them fresh.',
+    removeCoOwnerTitle: 'Remove {name} as co-owner?',
+    removeCoOwnerDescription:
+      'They lose owner access to this School straight away, even if they are signed in. Their account stays, and so do any other roles they hold here.',
     addedEmailed: '{name} was added — a temporary passcode was emailed to {email}.',
     addedNoEmail: "{name} was added, but the email couldn't be sent. They'll need the temporary passcode another way.",
   },
@@ -64,6 +69,15 @@ export const roleGrants = {
     removeDescription:
       'This ends all their coach and staff roles here ({roles}) straight away, even if they are signed in. Their grading permissions and "Can invite coaches" are cleared. Their account stays, and so does any student membership. They will show under "Removed".',
     removeFailed: 'Could not remove them.',
+    mainOwner: 'Main owner',
+    coOwner: 'Co-owner',
+    removeCoOwner: 'Remove as co-owner',
+    makeMainOwner: 'Make main owner',
+    handOverTitle: 'Make {name} the main owner?',
+    handOverBody:
+      'You stay an owner, as a co-owner. Only the main owner can hand this role over, and nobody in the School can remove the main owner. Enter your passcode to confirm.',
+    passcodeLabel: 'Your passcode',
+    handOverDone: '{name} is now the main owner.',
   },
   addManually: {
     title: 'Add staff manually',
