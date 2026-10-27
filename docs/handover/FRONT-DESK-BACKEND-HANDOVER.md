@@ -83,7 +83,7 @@ The School Portal has both front-desk screens, built on the API that already exi
 
 ### F6. Find me `findMe` (Decision 351)
 - **`POST /front-desk/find-me`** returns only `{ alreadyMember: boolean }`. It never returns or fills in stored details.
-- **Proposal, needs the product owner's OK:** the screen asks for **full name and date of birth**, so nobody can probe who is a member by typing names. If they'd rather it take the name only, drop the date field in `FrontDeskModePage.tsx` → `FindMeScreen`.
+- **Request:** `{ fullName, dateOfBirth }`. Both must match a member of the School (Decision 362), so nobody can find out who is a member by typing names. The screen already asks for both.
 
 ### F7. One check-in call for several classes (recommended)
 **Today:** the screen loops per ticked class. For each one it calls `POST /classes/{id}/book` (if not booked), then `POST /classes/{id}/attendance-scan`. If the second class fails, the first is already done, and the card shows the error.
@@ -114,7 +114,7 @@ The **+ Open mat session** button on the staff tab is shown switched off. It nee
 
 ## Notes for whoever picks this up
 
-- **The rules are decided** (Decisions 315, 317, 320, 351, 362), except the items marked `[UNRESOLVED]` or "proposal" above. Ask the product owner before building those.
+- **The rules are decided** (Decisions 315, 317, 320, 351, 362), except the open points under F5 (undoing a rejection, website sign-ups). Ask the product owner before building those.
 - **The tablet's privacy rules are server-side once F1 exists.** Today the staff token returns full names and the screen shortens them. With a kiosk token, the API must return only the short form.
 - **Branch filter:** `GET /schools/{id}/classes` has no Branch filter, so the screen filters on `branchId`. Adding `branchId` to that query would save the client work.
 - **Check-in time:** a booking's `updatedAt` is its check-in time (schema comment on Booking). A real `checkedInAt` column would make "Recent check-ins" exact.

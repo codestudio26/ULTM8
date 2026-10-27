@@ -5623,9 +5623,9 @@ User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all r
 
 ---
 
-## Decision 362 — Front desk: a tablet sign-up staff reject
+## Decision 362 — Front desk: a tablet sign-up staff reject, and what Find me asks for
 
-**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5, "Rejected"
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5 "Rejected" and F6
 
 ### Decision
 
@@ -5633,6 +5633,10 @@ When staff reject a sign-up made on the front-desk tablet:
 
 1. **The person gets a polite email** saying their sign-up wasn't accepted and asking them to talk to the front desk. **No reason is given**, and staff don't type one.
 2. **What they typed is kept for 30 days, then deleted.** During those 30 days staff can still see the rejected sign-up, in case it was a mistake. After that, nothing about it remains.
+
+**Find me** on the tablet (Decision 351 item 1):
+
+3. **It asks for full name and date of birth.** Both must match a member of the School. That way someone at the tablet can't find out who trains there just by typing names. The answer is still only "you're already a member" or "we couldn't find you".
 
 ### Not decided here
 
@@ -5645,4 +5649,4 @@ Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend 
 
 ### Recorded by
 
-User (Code), 27 Oct 2026: "Agreed" to the recommendation: a polite email with no reason given, and keep the details 30 days, then delete them.
+User (Code), 27 Oct 2026: "Agreed" to the recommendation (a polite email with no reason given, and keep the details 30 days, then delete them), then "1 a1, B2, 2": the same two answers, plus option 2 for Find me (name and date of birth).
