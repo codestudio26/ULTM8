@@ -5123,6 +5123,31 @@ User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.
 
 ---
 
+## Decision 331 — Instructors: resend the temporary passcode, self-edit bio/photo/phone, no revoke while teaching, private address and certification
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 217, 226, 230, 311, 312
+
+The Instructors review (23 Oct 2026) left six product questions open. The product owner chose the recommended answer to each: *"Go with the suggestions"*.
+
+### Decision
+
+1. **The owner can resend the temporary passcode.** New `POST /instructors/:id/resend-passcode`, School Owner/Manager only, for someone "Add manually" created who still has the temporary passcode (`User.mustChangePasscode`) and still holds the Instructor role at this School. A new 6-digit passcode replaces the old one (which stops working) and is emailed the same way as at creation. Refused (409) once they have chosen their own passcode ("Forgot passcode" is theirs to use) or lost the role. Same per-account limit as "Add manually" (20 an hour). The detail page shows "Resend passcode" while they haven't signed in yet.
+2. **Instructors edit their own bio, photo and phone.** `PATCH /instructors/me/profile` also takes `bio`, `photoUrl` and `phone` (same limits as the owner's edit; null clears). `phone` here is `Instructor.phone`, the number the School sees, not the login phone, which this endpoint still never changes. An instructor may request a photo upload link for their own profile. The Complete Profile page has Photo, Bio and Phone.
+3. **Specializations and activities stay separate.** Specializations are the School's styles, set by the owner; activities are the instructor's own words (Decision 312 item 4). No change.
+4. **No revoking an Instructor role while it leaves classes without an instructor.** Revoking an INSTRUCTOR grant is refused (409) while the person still teaches an upcoming class (not ended, not archived) or an active weekly slot (ON, not archived) at this School that no other active Instructor role of theirs covers (the branch rule of `assertValidInstructor`). So removing one branch of several only blocks on that branch's classes. The message points to "Hand over classes" (Decision 312 item 6), and the detail page opens a box with that button instead of the revoke confirmation. Other roles are not affected. This replaces Decision 311 I5's warning.
+5. **Address and certification are private.** Instructor responses (`GET /schools/:id/instructors`, `GET /instructors/:id`) return the address fields, `certificationKey` and `certificationConsentedAt` only to the School Owner/Manager or to the instructor themselves; for anyone else (colleagues, Branch Staff) they are null. The owner-only endpoints are unchanged.
+6. **Archiving an instructor keeps their role.** Archiving hides the profile and stops new classes (Decision 226, 311 I2); the Instructor role stays until revoked. No change.
+
+### What this does NOT resolve
+
+The temporary passcode still has no expiry of its own (Decision 230). An instructor at more than one School still edits one set of profile fields for all of them (Decision 217).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"Go with the suggestions"*, answering the six open questions from the Instructors review.
+
+---
+
 ## Decision 332 — Timetable review fixes: archived slots stay off, new slots bookable at once, capacity cuts and booking-rule changes on booked classes
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 322 §5 and §6 · **Builds on:** Decisions 172, 226
@@ -5846,3 +5871,82 @@ Migration `20261205000000_branch_close`: the School owner may delete a home-bran
 ### Recorded by
 
 User, 26 Oct 2026, choosing on the Branches review's decision cards: fix 5 "Only live things block", fix 6 "Build Close branch", fix 7 "Keep it if it has history".
+
+---
+
+## Decision 366 — Guests on a booking sign the waiver by a shared link
+
+**Date:** 27 Oct 2026 · **Status:** Approved by product owner (two Waivers decision cards: "Guests sign by shared link", then "Build guest booking + link together")
+**Resolves:** Waivers review question Q9, left open by Decision 354. Database change: `20261210000000_guest_waivers`.
+
+### Background
+
+A guest on a booking is a seat paid for with one of the booker's Friend Passes (SKILL.md §10). A guest has no account, name or login, so "guests must sign" had no one to apply to. Checking the plan against the code also showed that the API could put guests on a booking but no screen could, and that a booking is checked in as a whole, not guest by guest.
+
+### Decision
+
+1. **Members can bring guests in the Student app.** A class row shows how many of the member's own Friend Passes can pay for a guest in that class (a pass for this class only is used before a general one) and lets them add guests up to that number. The API is unchanged: each guest is one Friend Pass in `attendeeMembershipIds`. New `GET /schools/:schoolId/friend-passes/me` lists the caller's usable passes.
+2. **Each guest seat gets its own signing link**, `PORTAL_BASE_URL/guest-waiver/<token>`. The token is an HMAC of the seat id keyed by `JWT_ACCESS_SECRET`, so the booker can share the same link again; only its SHA-256 is stored (`BookingAttendee.guestTokenHash`), as coach invites do. The booker shares it from the class row after booking and from My Bookings. The School Owner/Manager and Branch Staff can copy it from the class page; Instructors see only whether the guest signed.
+3. **The guest signs on a public web page with no account.** They read the School's current waivers (not archived) and sign them all at once: full name, date of birth, a typed signature and "I agree". A guest under 18 (by the date of birth given) is signed for by a parent or guardian, whose name must be given and differ from the guest's. A waiver changed while the guest was reading is refused (version check), as for members. The link works while the booking is Upcoming, the class hasn't ended and the School is open. A waiver added later is asked for on the same link.
+4. **The booking is not blocked.** When a class asks for a waiver, the class page shows each guest as "Waiver signed: name" or "Guest hasn't signed the waiver", with a note counting unsigned guests. Check-in is unchanged, since a booking is checked in as a whole.
+5. **Each guest signature is its own record** (`GuestWaiverSignature`): guest name and date of birth, signer, whether a parent signed, a copy of the wording signed with its SHA-256 and version, and the class title and start. It outlives the seat, booking and class. The Owner/Manager sees guest signatures on the Waivers page, with the wording each signed. Read access follows `WaiverSignature`'s narrow shape (Owner/Manager and the booker). Branch Staff and Instructors get only signed or not, read by the API through `ultm8_jobs` after checking they are staff for the class. The signing page reaches its seat only through the token (SECURITY DEFINER read functions and token-holder RLS policies).
+6. **Retention** follows Decision 354's rule for a student who has left: a guest signature is purged 7 years after the class, and for a guest under 18, not before they turn 24 (18 + 6), whichever is later.
+7. The signing page is limited to 30 reads and 10 signs a minute per IP. Every new text is translated into all 15 languages.
+
+### What this does NOT resolve
+
+- A drawn signature for guests: the guest page uses the typed signature only (drawn capture stays optional, Decision 74).
+- Guests on a booking a Guardian makes for a child, or through Kid Mode: not offered in the app.
+- Changing `JWT_ACCESS_SECRET` changes every guest link. Links are only useful until the class ends.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: chose "Guests sign by shared link" on the Q9 card, then "Build guest booking + link together" on the follow-up card.
+
+---
+
+## Decision 360 — Staff page: what to build next (the eight build-plan answers)
+
+**Date:** 26–27 Oct 2026 · **Status:** Product-owner answers to the Staff build plan's eight questions · **Follows:** Decisions 183, 295, 296
+**Resolves:** the Staff review's "still not built" list: no staff list, no Remove from School, no co-owner rules, no edit, revoked access lasting up to 15 minutes.
+
+### Decision
+
+1. **Wording and acceptance.** The Staff page's "Send invite" (which grants at once, it never invited anyone) becomes **Give role**. An owner setting **New staff must accept first** follows, off by default; when on, a role given this way waits for the person to accept.
+2. **Access changes are instant.** Any change to someone's roles (given, removed, Remove from School) takes effect on their next request, even if they are signed in; the apps quietly fetch a fresh session. No 15-minute wait.
+3. **Owners.** Every School has one **main owner**; other owners are equal **co-owners**. Nobody inside the School can remove the main owner; only a Platform Admin can, through support. The main owner can hand the main role to a co-owner after re-entering their passcode. For existing Schools, the main owner is the owner with the earliest owner grant.
+4. **Staff list.** The Staff page lists everyone with an owner, coach or Branch Staff role, with a **Removed** filter that is hidden by default.
+5. **Editing staff details.** Hybrid: the owner sets a School-only **display name** and **work phone**; the person's own account (real name, login email, personal phone) stays theirs alone.
+6. **Remove and Pause.** **Remove from School** is built first; **Pause** follows as the very next piece of work.
+7. **Access switches.** Six switches per staff member (classes and timetable; bookings and check-in; students; credit for cancelled classes; see the staff list; invite coaches) with two presets, **Front desk** and **Branch manager**. Money and School settings stay owner-only.
+8. **Activity log.** A log of who changed what on the Staff page comes right after the access switches.
+
+### Order of work
+
+One pull request at a time: (a) Decision 361 below; (b) owners and co-owners; (c) display name and work phone; (d) access switches and presets; (e) Pause; (f) the "must accept first" setting; (g) the activity log. Each records its own decision before it is built.
+
+### Recorded by
+
+User (Code), 26 Oct 2026 in the Staff thread (Q1 "option B", Q3 the main-owner model, Q4 "go with recommendation", Q7 "yes"), and 27 Oct 2026 "all recommended" for the rest (Q2 D, Q3 hand-over and earliest owner, Q5 hybrid, Q6 Remove now and Pause next, Q8 after the switches).
+
+---
+
+## Decision 361 — Staff list, Remove from School, "Give role", and instant access changes
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (items 1, 2, 4, 6)
+
+### Decision
+
+1. **Instant access changes.** `User.rolesChangedAt` is stamped by a database trigger whenever a `RoleGrant` row for that user is inserted, updated or deleted, so every path is covered, not only the Staff page. Access tokens carry the stamp they were made with (`rca`). If the user's stamp is newer, the API answers `401` with code `ROLES_CHANGED`; the portal and Student app already refresh on any 401 and retry, and the refreshed token carries the current roles. The stamp is read through a 5-second in-process cache, cleared at once by the API's own role changes, so a change made through the Staff page applies on the very next request and any other change (another server instance, raw SQL) within 5 seconds. If the stamp can't be read, the request is refused rather than let through. Tokens without `rca` (Kid Mode, impersonation, tokens made before this change) are not checked; they still expire within 15 minutes.
+2. **Staff list.** `GET /schools/:schoolId/staff` (owner only) lists one row per person who holds or held an owner, Instructor or Branch Staff role at the School: name, email, phone, photo, roles with branch names, who gave each, "Can invite coaches", added and removed dates. Filters: status (active by default, removed, all), role, branch, and a name/email search that ignores capitals. It replaces looking people up by User ID.
+3. **Remove from School.** `POST /schools/:schoolId/staff/:userId/remove` (owner only) ends every Instructor and Branch Staff role the person holds at the School in one step, clears their grading permissions and "Can invite coaches", and cancels open coach invites they sent. Owner roles are never touched here (Decision 360 item 3 decides who may remove an owner). Student roles and memberships are kept. The person appears under "Removed".
+4. **"Give role".** The Staff page's grant button and messages say "Give role" and that it works straight away; the coach-invite card keeps "Send invite", since that one really does send an invite.
+5. **Blank names.** Add staff manually trims first name and surname, so a name of only spaces is refused (Add Instructor already did).
+
+### Not built here
+
+Owners and co-owners, display name and work phone, access switches, Pause, "must accept first" and the activity log (Decision 360's order of work).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, Staff thread.

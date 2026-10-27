@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { RequestContext } from '../../common/request-context';
+import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 
 const READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -46,7 +47,9 @@ const PASSCODE_CHANGE_ALLOWED_PATH = /^\/v1\/auth\/passcode-change\/first-login$
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  private readonly rolesChanged: RolesChangedService;
+
+  constructor(rolesChanged: RolesChangedService) {
     const secret = process.env.JWT_ACCESS_SECRET;
     if (!secret) {
       // Fail loudly at boot rather than silently signing/verifying with an undefined
@@ -59,6 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: secret,
       passReqToCallback: true,
     });
+    this.rolesChanged = rolesChanged;
   }
 
   async validate(req: Request, payload: JwtPayload): Promise<JwtPayload> {
@@ -97,6 +101,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new ForbiddenException(
           'This token only confirms a forced passcode change — it cannot be used for anything else.',
         );
+      }
+    }
+    // Decision 361 — a token built before the user's roles last changed is
+    // refused, so a removed staff member loses access on their next request
+    // instead of up to 15 minutes later. The apps treat any 401 by refreshing,
+    // and the refreshed token carries the current roles, so nobody is signed
+    // out. If the stamp can't be read, stampFor() throws and the request is
+    // refused: never let a possibly-removed person through.
+    if (typeof payload.rca === 'number') {
+      const current = await this.rolesChanged.stampFor(payload.sub);
+      if (current > payload.rca) {
+        throw new UnauthorizedException({ code: 'ROLES_CHANGED', message: 'Your roles have changed. Please refresh your session.' });
       }
     }
     return payload;

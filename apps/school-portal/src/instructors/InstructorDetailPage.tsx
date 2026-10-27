@@ -16,7 +16,7 @@ import {
   useInstructorClasses,
   type InstructorClassResponse,
 } from './instructorQueries';
-import { GiveRoleBackModal, HandOverClassesModal } from './InstructorDetailActions';
+import { GiveRoleBackModal, HandOverClassesModal, ResendPasscodeModal, RevokeBlockedModal } from './InstructorDetailActions';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -39,6 +39,11 @@ function formatDate(iso: string): string {
  * activities, certification), their branch and weekly timetable slots, and
  * the two follow-ups to a revoke: handing their classes to someone else, and
  * giving the role back.
+ *
+ * Decision 331: the owner can resend the temporary passcode to someone who
+ * hasn't signed in yet; revoking is refused while they still teach upcoming
+ * classes or weekly slots (hand them over first); and address and
+ * certification come back from the API only for the owner or the instructor.
  */
 export function InstructorDetailPage() {
   const t = useT();
@@ -57,6 +62,7 @@ export function InstructorDetailPage() {
   const [showAllPast, setShowAllPast] = useState(false);
   const [handingOver, setHandingOver] = useState(false);
   const [givingRoleBack, setGivingRoleBack] = useState(false);
+  const [resending, setResending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [certError, setCertError] = useState<string | null>(null);
 
@@ -72,9 +78,10 @@ export function InstructorDetailPage() {
   const allClasses = classesData?.items ?? [];
   const upcoming = allClasses.filter((c) => new Date(c.endDate).getTime() >= now).sort((a, b) => a.startDate.localeCompare(b.startDate));
   const past = allClasses.filter((c) => new Date(c.endDate).getTime() < now).sort((a, b) => b.startDate.localeCompare(a.startDate));
-  const activeGrant = (roleGrants.data?.items ?? []).find(
+  const activeGrants = (roleGrants.data?.items ?? []).filter(
     (g) => g.schoolId === schoolId && g.role === 'INSTRUCTOR' && !g.revokedAt,
   );
+  const activeGrant = activeGrants[0];
   // The ones that keep making classes for them, Monday first.
   const mySlots = (slots ?? [])
     .filter((s) => s.instructorId === instructor.userId && s.status === 'ON' && !s.archivedAt)
@@ -83,6 +90,10 @@ export function InstructorDetailPage() {
     ? branchData?.items.find((b) => b.id === instructor.branchId)?.name ?? instructor.branchId
     : t('instructors.allBranches');
   const name = `${instructor.firstName} ${instructor.surname}`.trim();
+  // Their only Instructor role here and work still on their plate: the API
+  // would refuse the revoke, so offer "Hand over classes" instead. With more
+  // than one role, the API decides branch by branch.
+  const revokeBlocked = activeGrants.length === 1 && (upcoming.length > 0 || mySlots.length > 0);
 
   async function openCertification() {
     setCertError(null);
@@ -111,6 +122,11 @@ export function InstructorDetailPage() {
             {schoolId && (upcoming.length > 0 || mySlots.length > 0) ? (
               <Button variant="secondary" onClick={() => setHandingOver(true)}>
                 {t('instructors.detail.handOver')}
+              </Button>
+            ) : null}
+            {schoolId && instructor.awaitingFirstLogin && instructor.status === 'ACTIVE' ? (
+              <Button variant="secondary" onClick={() => setResending(true)}>
+                {t('instructors.detail.resendPasscode')}
               </Button>
             ) : null}
             {activeGrant ? (
@@ -252,15 +268,21 @@ export function InstructorDetailPage() {
         </div>
       ) : null}
 
-      {confirmingRevoke && activeGrant ? (
+      {confirmingRevoke && activeGrant && revokeBlocked ? (
+        <RevokeBlockedModal
+          instructor={instructor}
+          onHandOver={() => {
+            setConfirmingRevoke(false);
+            setHandingOver(true);
+          }}
+          onClose={() => setConfirmingRevoke(false)}
+        />
+      ) : null}
+
+      {confirmingRevoke && activeGrant && !revokeBlocked ? (
         <ConfirmDeleteModal
           title={t('instructors.detail.revokeTitle', { name: `${instructor.firstName} ${instructor.surname}` })}
-          description={
-            // Revoking doesn't move their classes (Decision 311, I5): say so first.
-            upcoming.length > 0
-              ? `${t('instructors.detail.revokeDescription')} ${t('instructors.detail.revokeUpcomingWarning', { count: upcoming.length })}`
-              : t('instructors.detail.revokeDescription')
-          }
+          description={t('instructors.detail.revokeDescription')}
           confirmLabel={t('instructors.detail.revokeConfirm')}
           genericErrorMessage={t('instructors.detail.revokeFailed')}
           onConfirm={async () => {
@@ -283,6 +305,17 @@ export function InstructorDetailPage() {
             setNotice(message);
           }}
           onClose={() => setHandingOver(false)}
+        />
+      ) : null}
+
+      {resending ? (
+        <ResendPasscodeModal
+          instructor={instructor}
+          onDone={(message) => {
+            setResending(false);
+            setNotice(message);
+          }}
+          onClose={() => setResending(false)}
         />
       ) : null}
 

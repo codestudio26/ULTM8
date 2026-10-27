@@ -12,6 +12,7 @@ import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
 import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePage';
 import { CoachInvitePage } from './auth/CoachInvitePage';
+import { GuestWaiverPage } from './waivers/GuestWaiverPage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { MyProfilePage } from './profile/MyProfilePage';
@@ -73,6 +74,7 @@ export function App() {
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
       <Route path="/first-login-passcode-change" element={<FirstLoginPasscodeChangePage />} />
       <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
+      <Route path="/guest-waiver/:token" element={<GuestWaiverPage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route

@@ -100,11 +100,17 @@ export const instructors = {
     revokeDescription:
       "They lose their Instructor role at this School immediately. This can't be undone from here — they would need to be re-invited.",
     revokeConfirm: 'Revoke',
-    revokeUpcomingWarning: {
-      one: 'They still teach {count} upcoming class. It keeps them as its instructor until you change it on the Classes page.',
-      other: 'They still teach {count} upcoming classes. They keep them as their instructor until you change it on the Classes page.',
-    },
+    revokeBlockedTitle: "{name} still teaches classes",
+    revokeBlockedDescription:
+      'They still teach upcoming classes or weekly timetable slots here. Hand them over to another instructor first, then revoke the role.',
     revokeFailed: 'Could not revoke this enrollment. Please try again.',
+    resendPasscode: 'Resend passcode',
+    resendTitle: 'Send {name} a new temporary passcode?',
+    resendDescription: "A new temporary passcode is emailed to {email}. The old one stops working. They choose their own passcode when they sign in.",
+    resendConfirm: 'Send new passcode',
+    resendDone: 'A new temporary passcode was emailed to {email}.',
+    resendEmailFailed: "A new temporary passcode was set, but the email couldn't be sent. Try again later.",
+    resendFailed: 'Could not send a new passcode. Please try again.',
   },
   belts: {
     heading: "Instructors' belts",
@@ -172,6 +178,7 @@ export const instructors = {
     certificationHint: 'PDF, PNG, or JPEG',
     consent: 'I consent to holding a certification record on file',
     certificationOnFile: 'You already have a certification on file. Upload a file only to replace it.',
+    phoneHint: 'The number your School can reach you on. It does not change the number you sign in with.',
   },
   form: {
     user: 'User',
