@@ -15,6 +15,7 @@ export const SERVER_MESSAGES: string[] = [
  "A refund is already owed on this booking — mark it paid once the money has gone back.",
  "There is no cash refund owed on this booking yet.",
  "Someone else has already resolved this booking.",
+ "This payment was cancelled, failed or refunded, so it can't be marked as paid.",
  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.",
  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.",
  "This class has been cancelled by the school.",

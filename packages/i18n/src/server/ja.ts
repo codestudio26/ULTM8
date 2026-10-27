@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "この予約にはすでに未払いの返金があります。返金が済んだら返金済みにしてください。",
   "There is no cash refund owed on this booking yet.": "この予約にはまだ未払いの現金返金はありません。",
   "Someone else has already resolved this booking.": "この予約はすでに別の人が対応しました。",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "この支払いはキャンセル、失敗、または返金済みのため、支払い済みにできません。",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "この予約は自動で返金できません（支払いが異議申し立て中、返金済み、または支払い済みの回数券がありません）。代わりに受講回数を戻すか、そのままにしてください。",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe でこの返金を処理できませんでした。一覧に残っています。もう一度お試しいただくか、代わりに受講回数を戻してください。",
   "This class has been cancelled by the school.": "このクラスはスクールによりキャンセルされました。",

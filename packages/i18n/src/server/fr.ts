@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "Un remboursement est déjà dû pour cette réservation — marquez-le comme versé une fois l'argent rendu.",
   "There is no cash refund owed on this booking yet.": "Aucun remboursement en espèces n'est encore dû pour cette réservation.",
   "Someone else has already resolved this booking.": "Quelqu'un a déjà traité cette réservation.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Ce paiement a été annulé, a échoué ou a été remboursé : il ne peut pas être marqué comme payé.",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Cette réservation ne peut pas être remboursée automatiquement (paiement contesté, déjà remboursé, ou aucune Carte de cours payée). Rendez le crédit ou conservez-le.",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe n'a pas pu traiter ce remboursement. Il reste dans la liste — réessayez, ou rendez le crédit.",
   "This class has been cancelled by the school.": "Ce cours a été annulé par l'école.",

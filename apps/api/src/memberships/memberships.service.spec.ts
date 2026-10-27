@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { MembershipsService } from './memberships.service';
+import { MembershipsService, stripePurchaseKey } from './memberships.service';
 import { NoSavedPaymentMethodError } from '../payments/payments.service';
 
 /**
@@ -231,7 +231,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
 
     const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
 
-    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack');
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/));
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
     expect(typeof result.transactionId).toBe('string');
@@ -321,7 +321,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
-    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack');
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/));
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
     );
@@ -348,5 +348,16 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
 
     await expect(service.purchase('student-1', 'plan-1', { useHostedCheckout: true })).rejects.toBeInstanceOf(BadRequestException);
     expect(paymentsService.createPurchaseCheckoutSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('stripePurchaseKey (billing stress test, B2)', () => {
+  it('is the same for a repeat click, and changes with the plan, the student or what is sent', () => {
+    const key = stripePurchaseKey('student-1', 'plan-1', 'checkout', [3000, 'usd', 'Pack']);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'checkout', [3000, 'usd', 'Pack'])).toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'checkout', [3500, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-2', 'checkout', [3000, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-2', 'plan-1', 'checkout', [3000, 'usd', 'Pack'])).not.toBe(key);
+    expect(stripePurchaseKey('student-1', 'plan-1', 'card', [3000, 'usd', 'Pack'])).not.toBe(key);
   });
 });

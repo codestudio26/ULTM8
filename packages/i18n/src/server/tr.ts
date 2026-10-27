@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "Bu rezervasyonda zaten iade borcu var — para geri ödendiğinde ödendi olarak işaretleyin.",
   "There is no cash refund owed on this booking yet.": "Bu rezervasyonda henüz ödenecek bir nakit iade yok.",
   "Someone else has already resolved this booking.": "Bu rezervasyonu başka biri zaten çözdü.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Bu ödeme iptal edildi, başarısız oldu veya iade edildi; bu yüzden ödendi olarak işaretlenemez.",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Bu rezervasyon otomatik olarak iade edilemez (ödeme itiraz altında, zaten iade edilmiş ya da ödenmiş bir Ders Paketi yok). Bunun yerine ders hakkını geri verin veya tutun.",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe bu iadeyi işleyemedi. Hâlâ listede bekliyor — tekrar deneyin ya da bunun yerine ders hakkını geri verin.",
   "This class has been cancelled by the school.": "Bu ders okul tarafından iptal edildi.",

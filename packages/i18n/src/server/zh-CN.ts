@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "此预约已有待付退款——退还款项后请标记为已付。",
   "There is no cash refund owed on this booking yet.": "此预约目前还没有待付的现金退款。",
   "Someone else has already resolved this booking.": "已有其他人处理了此预约。",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "此付款已取消、失败或已退款，无法标记为已付款。",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "此预约无法自动退款（付款处于争议中、已退款，或没有已付款的课程包）。请改为退回课时或保留。",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe 无法处理此退款。它仍在列表中——请重试，或改为退回课时。",
   "This class has been cancelled by the school.": "这节课已被学校取消。",

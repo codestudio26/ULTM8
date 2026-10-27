@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "이 예약에는 이미 지급할 환불이 있습니다. 돈을 돌려준 뒤 환불 완료로 표시하세요.",
   "There is no cash refund owed on this booking yet.": "이 예약에는 아직 지급할 현금 환불이 없습니다.",
   "Someone else has already resolved this booking.": "다른 사람이 이미 이 예약을 처리했습니다.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "이 결제는 취소되었거나 실패했거나 환불되어 결제 완료로 표시할 수 없습니다.",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "이 예약은 자동으로 환불할 수 없습니다(결제가 분쟁 중이거나, 이미 환불되었거나, 결제된 수업권 패키지가 없음). 대신 수업 횟수를 돌려주거나 유지하세요.",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe에서 이 환불을 처리하지 못했습니다. 목록에 그대로 남아 있습니다. 다시 시도하거나 대신 수업 횟수를 돌려주세요.",
   "This class has been cancelled by the school.": "이 수업은 학교에 의해 취소되었습니다.",

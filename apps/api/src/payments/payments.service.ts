@@ -23,6 +23,31 @@ import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceEr
  * already established for a signal-not-a-generic-failure error in this codebase. */
 export class NoSavedPaymentMethodError extends Error {}
 
+/**
+ * Runs a Stripe create call made with an idempotency key, retrying while
+ * Stripe reports the same key still in use by a request in flight (409): two
+ * clicks at once both get the first request's result instead of an error.
+ */
+async function withIdempotencyRetry<T>(call: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await call();
+    } catch (err) {
+      const status = (err as { statusCode?: number }).statusCode;
+      if (status !== 409 || attempt >= 5) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+    }
+  }
+}
+
+/** Confirming a payment that is no longer Pending: already SUCCESSFUL is a
+ * harmless repeat; any other status is refused. */
+function assertConfirmable(status: string): void {
+  if (status !== 'SUCCESSFUL') {
+    throw new ConflictException("This payment was cancelled, failed or refunded, so it can't be marked as paid.");
+  }
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -396,15 +421,21 @@ export class PaymentsService {
     amount: number,
     currency: string,
     description: string,
+    idempotencyKey?: string,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const intent = await stripe.paymentIntents.create({
-      amount,
-      currency: currency.toLowerCase(),
-      description,
-      automatic_payment_methods: { enabled: true },
-    });
+    const intent = await withIdempotencyRetry(() =>
+      stripe.paymentIntents.create(
+        {
+          amount,
+          currency: currency.toLowerCase(),
+          description,
+          automatic_payment_methods: { enabled: true },
+        },
+        idempotencyKey ? { idempotencyKey } : undefined,
+      ),
+    );
     return { paymentIntentId: intent.id, clientSecret: intent.client_secret! };
   }
 
@@ -461,10 +492,14 @@ export class PaymentsService {
     // byte-for-byte unchanged below — same "undefined preserves old
     // behavior" convention existingPriceId's own header comment establishes.
     billingCycleAnchorDay?: number,
+    // The purchase's idempotency key (MembershipsService): a repeated purchase
+    // (a double click) gets the same customer, product and subscription back.
+    idempotencyKey?: string,
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const customer = await stripe.customers.create({ email: studentEmail });
+    const key = (part: string) => (idempotencyKey ? { idempotencyKey: `${idempotencyKey}-${part}` } : undefined);
+    const customer = await withIdempotencyRetry(() => stripe.customers.create({ email: studentEmail }, key('customer')));
     const item = existingPriceId
       ? { price: existingPriceId }
       : {
@@ -472,10 +507,10 @@ export class PaymentsService {
             currency: currency.toLowerCase(),
             unit_amount: amount,
             recurring: { interval: 'month' as const },
-            product: (await stripe.products.create({ name: productName })).id,
+            product: (await withIdempotencyRetry(() => stripe.products.create({ name: productName }, key('product')))).id,
           },
         };
-    const subscription = await stripe.subscriptions.create({
+    const subscription = await withIdempotencyRetry(() => stripe.subscriptions.create({
       customer: customer.id,
       items: [item],
       payment_behavior: 'default_incomplete',
@@ -488,7 +523,7 @@ export class PaymentsService {
       // own type definitions, SubscriptionCreateParams.BillingCycleAnchorConfig,
       // before using this rather than computing the anchor date by hand).
       ...(billingCycleAnchorDay ? { billing_cycle_anchor_config: { day_of_month: billingCycleAnchorDay } } : {}),
-    });
+    }, key('subscription')));
     const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
     const paymentIntent = invoice?.payment_intent;
     if (!paymentIntent) {
@@ -751,10 +786,11 @@ export class PaymentsService {
     amount: number,
     currency: string,
     description: string,
+    idempotencyKey?: string,
   ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const session = await stripe.checkout.sessions.create({
+    const session = await withIdempotencyRetry(() => stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [
         {
@@ -776,7 +812,7 @@ export class PaymentsService {
       success_url: 'ultm8-student://membership-purchase/complete',
       cancel_url: 'ultm8-student://membership-purchase/cancel',
       expand: ['payment_intent'],
-    });
+    }, idempotencyKey ? { idempotencyKey } : undefined));
     if (!session.url) {
       throw new Error('Stripe Checkout Session did not return a hosted URL.');
     }
@@ -944,8 +980,11 @@ export class PaymentsService {
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
 
       if (transaction.status !== 'PENDING') {
-        // Already resolved (by an earlier call, or was never Pending to begin with,
-        // e.g. a Stripe-paid Transaction) — idempotent no-op, not an error.
+        // Already confirmed (a double click, or a Stripe-paid Transaction): an
+        // idempotent no-op. Anything else (FAILED, which includes a cancelled
+        // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
+        // there made the owner think it worked (billing stress test, B1).
+        assertConfirmable(transaction.status);
         return { transaction, membershipCreated: false };
       }
       if (transaction.paymentMethod === 'STRIPE') {
@@ -960,10 +999,12 @@ export class PaymentsService {
         data: { status: 'SUCCESSFUL' },
       });
       if (updateResult.count === 0) {
-        // Lost a race with a concurrent confirm call between the findUnique above
-        // and this updateMany — the other call already won. No-op, matching the
-        // single-call idempotent case above.
-        return { transaction, membershipCreated: false };
+        // Lost a race between the findUnique above and this updateMany. A
+        // concurrent confirm already won: a no-op, as above. A concurrent
+        // Cancel won: refused, as above.
+        const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+        assertConfirmable(now.status);
+        return { transaction: now, membershipCreated: false };
       }
 
       const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
