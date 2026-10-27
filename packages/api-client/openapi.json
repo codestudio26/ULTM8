@@ -788,7 +788,77 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolResponseDto"
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-join-request": {
+      "get": {
+        "operationId": "SchoolsController_findFranchiseJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolFranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-join-request/cancel": {
+      "post": {
+        "operationId": "SchoolsController_cancelFranchiseJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
                 }
               }
             }
@@ -1658,6 +1728,224 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FranchiseMemberSchoolListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests": {
+      "get": {
+        "operationId": "FranchisesController_listJoinRequests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests/{requestId}/accept": {
+      "post": {
+        "operationId": "FranchisesController_acceptJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/join-requests/{requestId}/decline": {
+      "post": {
+        "operationId": "FranchisesController_declineJoinRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/schools/{schoolId}/remove": {
+      "post": {
+        "operationId": "FranchisesController_removeSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFranchiseSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/close": {
+      "post": {
+        "operationId": "FranchisesController_closeOwnFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify (passcode check).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseOwnFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseResponseDto"
                 }
               }
             }
@@ -13375,6 +13663,63 @@
           "franchiseId"
         ]
       },
+      "FranchiseJoinRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string",
+            "description": "The School's name when it asked."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "DECLINED",
+              "CANCELLED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "franchiseId",
+          "schoolId",
+          "schoolName",
+          "status",
+          "createdAt"
+        ]
+      },
+      "SchoolFranchiseJoinRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+              }
+            ]
+          }
+        }
+      },
       "CreateBranchDto": {
         "type": "object",
         "properties": {
@@ -14587,6 +14932,43 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "FranchiseJoinRequestListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseJoinRequestResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RemoveFranchiseSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId"
+        ]
+      },
+      "CloseOwnFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "confirmName": {
+            "type": "string",
+            "description": "Must exactly match the Franchise's current name."
+          }
+        },
+        "required": [
+          "confirmName"
         ]
       },
       "CreateCoachInviteDto": {

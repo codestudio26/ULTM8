@@ -407,4 +407,13 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage debe ser uno de los códigos de idioma admitidos.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency debe ser uno de los códigos de moneda admitidos.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "Esta franquicia tiene {v1} escuela(s) a las que ya se factura, así que no se puede cambiar su modelo de cuota. El importe de la cuota sí se puede cambiar.",
+  "Join request not found": "Solicitud de unión no encontrada",
+  "This join request has already been answered.": "Esta solicitud de unión ya ha sido respondida.",
+  "This School can no longer join: it is in another Franchise now, or it has been closed.": "Esta escuela ya no puede unirse: ahora pertenece a otra franquicia o ha sido cerrada.",
+  "This School is not a member of this Franchise.": "Esta escuela no es miembro de esta franquicia.",
+  "Type the Franchise's name exactly as it is to close it.": "Escribe el nombre de la franquicia exactamente como es para cerrarla.",
+  "This School has already asked to join a Franchise. Cancel that request first.": "Esta escuela ya ha pedido unirse a una franquicia. Cancela primero esa solicitud.",
+  "This School has no open request to join a Franchise.": "Esta escuela no tiene ninguna solicitud abierta para unirse a una franquicia.",
+  "Removing a School is not available during an impersonation session (Decision 39).": "Quitar una escuela no está disponible durante una sesión de suplantación (Decision 39).",
+  "Closing a Franchise is not available during an impersonation session (Decision 39).": "Cerrar una franquicia no está disponible durante una sesión de suplantación (Decision 39).",
 };

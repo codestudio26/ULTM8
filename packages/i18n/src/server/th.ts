@@ -407,4 +407,13 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage ต้องเป็นรหัสภาษาที่รองรับ",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency ต้องเป็นรหัสสกุลเงินที่รองรับ",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "แฟรนไชส์นี้มีโรงเรียน {v1} แห่งที่กำลังถูกเรียกเก็บเงินอยู่ จึงเปลี่ยนรูปแบบค่าธรรมเนียมไม่ได้ แต่ยังเปลี่ยนจำนวนเงินได้",
+  "Join request not found": "ไม่พบคำขอเข้าร่วม",
+  "This join request has already been answered.": "คำขอเข้าร่วมนี้ได้รับการตอบแล้ว",
+  "This School can no longer join: it is in another Franchise now, or it has been closed.": "โรงเรียนนี้ไม่สามารถเข้าร่วมได้อีกต่อไป: ตอนนี้อยู่ในแฟรนไชส์อื่นหรือถูกปิดไปแล้ว",
+  "This School is not a member of this Franchise.": "โรงเรียนนี้ไม่ใช่สมาชิกของแฟรนไชส์นี้",
+  "Type the Franchise's name exactly as it is to close it.": "พิมพ์ชื่อแฟรนไชส์ให้ตรงทุกตัวอักษรเพื่อปิดแฟรนไชส์",
+  "This School has already asked to join a Franchise. Cancel that request first.": "โรงเรียนนี้ได้ขอเข้าร่วมแฟรนไชส์แล้ว โปรดยกเลิกคำขอนั้นก่อน",
+  "This School has no open request to join a Franchise.": "โรงเรียนนี้ไม่มีคำขอเข้าร่วมแฟรนไชส์ที่ค้างอยู่",
+  "Removing a School is not available during an impersonation session (Decision 39).": "ไม่สามารถนำโรงเรียนออกระหว่างเซสชันการสวมสิทธิ์ (Decision 39)",
+  "Closing a Franchise is not available during an impersonation session (Decision 39).": "ไม่สามารถปิดแฟรนไชส์ระหว่างเซสชันการสวมสิทธิ์ (Decision 39)",
 };

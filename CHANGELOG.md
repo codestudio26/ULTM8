@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Joining a Franchise needs the Franchise Owner's approval** (Decision 352) —
+  a School asks to join with the Franchise ID and can cancel the request; the
+  Franchise page lists Schools asking to join, with Accept and Decline. The
+  Franchise Owner can also remove a member School (same as the School leaving)
+  and close their own Franchise after typing its name and their passcode.
+  Needs migration `20261202000000_franchise_join_requests`.
 - **Add student and Cancel booking on a class's page** (Decision 349) — staff
   can book a student into a class from the class itself (paid from the
   student's own membership; offered the waitlist when the class is full), and

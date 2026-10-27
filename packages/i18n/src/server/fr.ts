@@ -407,4 +407,13 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "defaultLanguage doit être l'un des codes de langue pris en charge.",
   "defaultCurrency must be one of the supported currency codes.": "defaultCurrency doit être l'un des codes de devise pris en charge.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "Cette franchise compte {v1} école(s) déjà facturée(s), son modèle de redevance ne peut donc pas être modifié. Le montant de la redevance peut toujours l'être.",
+  "Join request not found": "Demande d'adhésion introuvable",
+  "This join request has already been answered.": "Cette demande d'adhésion a déjà reçu une réponse.",
+  "This School can no longer join: it is in another Franchise now, or it has been closed.": "Cette école ne peut plus rejoindre : elle fait maintenant partie d'une autre franchise ou elle a été fermée.",
+  "This School is not a member of this Franchise.": "Cette école n'est pas membre de cette franchise.",
+  "Type the Franchise's name exactly as it is to close it.": "Saisissez le nom de la franchise exactement tel qu'il est pour la fermer.",
+  "This School has already asked to join a Franchise. Cancel that request first.": "Cette école a déjà demandé à rejoindre une franchise. Annulez d'abord cette demande.",
+  "This School has no open request to join a Franchise.": "Cette école n'a aucune demande ouverte pour rejoindre une franchise.",
+  "Removing a School is not available during an impersonation session (Decision 39).": "Le retrait d'une école n'est pas disponible pendant une session d'usurpation d'identité (Decision 39).",
+  "Closing a Franchise is not available during an impersonation session (Decision 39).": "La fermeture d'une franchise n'est pas disponible pendant une session d'usurpation d'identité (Decision 39).",
 };

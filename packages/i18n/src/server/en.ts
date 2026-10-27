@@ -416,4 +416,13 @@ export const SERVER_PATTERNS: string[] = [
  "{v1} student{v2} a rank in this style, so it can't be deleted.",
  "{v1} student{v2} this belt, so it can't be {v3}.",
  "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.",
+ "Join request not found",
+ "This join request has already been answered.",
+ "This School can no longer join: it is in another Franchise now, or it has been closed.",
+ "This School is not a member of this Franchise.",
+ "Type the Franchise's name exactly as it is to close it.",
+ "This School has already asked to join a Franchise. Cancel that request first.",
+ "This School has no open request to join a Franchise.",
+ "Removing a School is not available during an impersonation session (Decision 39).",
+ "Closing a Franchise is not available during an impersonation session (Decision 39).",
 ];

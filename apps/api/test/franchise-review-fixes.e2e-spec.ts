@@ -1,7 +1,9 @@
 /**
  * Decision 337 — the Franchises section review fixes (F1–F4, F10–F12, F15–F21,
  * roster F2). One file so each fix has a test that names it. Also Decision 350,
- * the both-must-allow switch for showing a Franchise's name and logo.
+ * the both-must-allow switch for showing a Franchise's name and logo, and
+ * Decision 352: joining needs the Franchise Owner to accept, the Owner can
+ * remove a member School, and can close their own Franchise.
  *
  * Stripe is faked throughout (no live key in CI or this sandbox): the fake
  * records every call, so the tests can check what WOULD be sent to Stripe —
@@ -21,6 +23,7 @@ import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
+import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
@@ -126,6 +129,7 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
   });
 
   afterAll(async () => {
+    await superuser.franchiseJoinRequest.deleteMany({ where: { OR: [{ schoolId: { in: schoolIds } }, { franchiseId: { in: franchiseIds } }] } });
     await superuser.franchiseFeeCharge.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.franchiseFeeRateChange.deleteMany({ where: { franchiseId: { in: franchiseIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
@@ -453,9 +457,237 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
       await superuser.school.update({ where: { id: school.id }, data: { showFranchiseBranding: true } });
       const join = await http().post(`/v1/schools/${school.id}/join-franchise`).set('Authorization', `Bearer ${token}`).send({ franchiseId: second.franchise.id });
       expect(join.status).toBe(201);
+      const accept = await http()
+        .post(`/v1/franchises/${second.franchise.id}/join-requests/${join.body.id}/accept`)
+        .set('Authorization', `Bearer ${second.token}`);
+      expect(accept.status).toBe(200);
       const after = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
       expect(after.franchiseId).toBe(second.franchise.id);
       expect(after.showFranchiseBranding).toBe(false);
+    });
+  });
+
+  describe('joining needs the Franchise Owner to accept (Decision 352)', () => {
+    const ask = (schoolId: string, franchiseId: string, token: string) =>
+      http().post(`/v1/schools/${schoolId}/join-franchise`).set('Authorization', `Bearer ${token}`).send({ franchiseId });
+
+    it('asking does not join; the Franchise Owner sees the request and accepts it', async () => {
+      const { franchise, token: fToken } = await seedFranchise();
+      const { school, token } = await seedSchool({ name: 'Asking School', showFranchiseBranding: true });
+
+      const asked = await ask(school.id, franchise.id, token);
+      expect(asked.status).toBe(201);
+      expect(asked.body).toMatchObject({ franchiseId: franchise.id, schoolId: school.id, schoolName: 'Asking School', status: 'PENDING', decidedAt: null });
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).franchiseId).toBeNull();
+
+      const mine = await http().get(`/v1/schools/${school.id}/franchise-join-request`).set('Authorization', `Bearer ${token}`);
+      expect(mine.status).toBe(200);
+      expect(mine.body.request.id).toBe(asked.body.id);
+
+      const list = await http().get(`/v1/franchises/${franchise.id}/join-requests`).set('Authorization', `Bearer ${fToken}`);
+      expect(list.status).toBe(200);
+      expect(list.body.items.map((r: { id: string }) => r.id)).toEqual([asked.body.id]);
+
+      const accept = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/accept`).set('Authorization', `Bearer ${fToken}`);
+      expect(accept.status).toBe(200);
+      expect(accept.body.status).toBe('ACCEPTED');
+      const after = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+      expect(after.franchiseId).toBe(franchise.id);
+      expect(after.showFranchiseBranding).toBe(false);
+
+      // Answered requests leave the list, and can't be answered twice.
+      const listAfter = await http().get(`/v1/franchises/${franchise.id}/join-requests`).set('Authorization', `Bearer ${fToken}`);
+      expect(listAfter.body.items).toEqual([]);
+      const again = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/decline`).set('Authorization', `Bearer ${fToken}`);
+      expect(again.status).toBe(409);
+    });
+
+    it('declining keeps the School independent, and it can ask again', async () => {
+      const { franchise, token: fToken } = await seedFranchise();
+      const { school, token } = await seedSchool();
+      const asked = await ask(school.id, franchise.id, token);
+      const decline = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/decline`).set('Authorization', `Bearer ${fToken}`);
+      expect(decline.status).toBe(200);
+      expect(decline.body.status).toBe('DECLINED');
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).franchiseId).toBeNull();
+      const mine = await http().get(`/v1/schools/${school.id}/franchise-join-request`).set('Authorization', `Bearer ${token}`);
+      expect(mine.body.request.status).toBe('DECLINED');
+      expect((await ask(school.id, franchise.id, token)).status).toBe(201);
+    });
+
+    it('one open request at a time; the School can cancel it', async () => {
+      const first = await seedFranchise();
+      const second = await seedFranchise();
+      const { school, token } = await seedSchool();
+      expect((await ask(school.id, first.franchise.id, token)).status).toBe(201);
+      const twice = await ask(school.id, second.franchise.id, token);
+      expect(twice.status).toBe(409);
+      expect(JSON.stringify(twice.body)).toContain('This School has already asked to join a Franchise. Cancel that request first.');
+
+      const cancel = await http().post(`/v1/schools/${school.id}/franchise-join-request/cancel`).set('Authorization', `Bearer ${token}`);
+      expect(cancel.status).toBe(200);
+      expect(cancel.body.status).toBe('CANCELLED');
+      const list = await http().get(`/v1/franchises/${first.franchise.id}/join-requests`).set('Authorization', `Bearer ${first.token}`);
+      expect(list.body.items).toEqual([]);
+      const none = await http().post(`/v1/schools/${school.id}/franchise-join-request/cancel`).set('Authorization', `Bearer ${token}`);
+      expect(none.status).toBe(404);
+      expect((await ask(school.id, second.franchise.id, token)).status).toBe(201);
+    });
+
+    it("only that Franchise's Owner sees and answers its requests", async () => {
+      const { franchise } = await seedFranchise();
+      const other = await seedFranchise();
+      const { school, token } = await seedSchool();
+      const asked = await ask(school.id, franchise.id, token);
+
+      const list = await http().get(`/v1/franchises/${franchise.id}/join-requests`).set('Authorization', `Bearer ${other.token}`);
+      expect([403, 404]).toContain(list.status);
+      const accept = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/accept`).set('Authorization', `Bearer ${other.token}`);
+      expect([403, 404]).toContain(accept.status);
+      // A School Owner can't accept their own request either.
+      const self = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/accept`).set('Authorization', `Bearer ${token}`);
+      expect([403, 404]).toContain(self.status);
+      // A request for another Franchise can't be answered through this one.
+      const wrongFranchise = await http().post(`/v1/franchises/${other.franchise.id}/join-requests/${asked.body.id}/accept`).set('Authorization', `Bearer ${other.token}`);
+      expect(wrongFranchise.status).toBe(404);
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).franchiseId).toBeNull();
+    });
+
+    it('a School that joined another Franchise meanwhile is not moved by a stale accept', async () => {
+      const { franchise, token: fToken } = await seedFranchise();
+      const elsewhere = await seedFranchise();
+      const { school, token } = await seedSchool();
+      const asked = await ask(school.id, franchise.id, token);
+      await superuser.school.update({ where: { id: school.id }, data: { franchiseId: elsewhere.franchise.id } });
+
+      const accept = await http().post(`/v1/franchises/${franchise.id}/join-requests/${asked.body.id}/accept`).set('Authorization', `Bearer ${fToken}`);
+      expect(accept.status).toBe(409);
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).franchiseId).toBe(elsewhere.franchise.id);
+      expect((await superuser.franchiseJoinRequest.findUniqueOrThrow({ where: { id: asked.body.id } })).status).toBe('PENDING');
+    });
+
+    it('closing the Franchise lapses its open requests', async () => {
+      const { franchise } = await seedFranchise({ name: 'Lapsing Franchise' });
+      const { school, token } = await seedSchool();
+      const asked = await ask(school.id, franchise.id, token);
+      const res = await http()
+        .post(`/v1/platform-admin/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${await fullAdminToken()}`)
+        .send({ confirmName: 'Lapsing Franchise' });
+      expect(res.status).toBe(201);
+      expect((await superuser.franchiseJoinRequest.findUniqueOrThrow({ where: { id: asked.body.id } })).status).toBe('CANCELLED');
+    });
+  });
+
+  describe('the Franchise Owner removes a member School (Decision 352)', () => {
+    it('removing is the same as the School leaving: fee billing stops with a final invoice', async () => {
+      const { franchise, token, connectedAccountId } = await seedFranchise({ feeModel: 'FLAT', flatFeeAmount: 5000 }, { stripeAccount: true });
+      const subscriptionId = `sub_fake_${randomUUID()}`;
+      const { school } = await seedSchool({ franchiseId: franchise.id, stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: 'ACTIVE', showFranchiseBranding: true });
+
+      const res = await http().post(`/v1/franchises/${franchise.id}/schools/${school.id}/remove`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ schoolId: school.id });
+      expect(stripe.calls.cancel).toContainEqual({ account: connectedAccountId, subscriptionId, params: { invoice_now: true, prorate: false } });
+      const after = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+      expect(after.franchiseId).toBeNull();
+      expect(after.stripeFranchiseFeeSubscriptionId).toBeNull();
+      expect(after.franchiseFeeSubscriptionStatus).toBeNull();
+      expect(after.showFranchiseBranding).toBe(false);
+      // Past fee charges are untouched (nothing deleted).
+    });
+
+    it("can't remove a School that isn't a member, and another Franchise's Owner can't remove one", async () => {
+      const { franchise, token } = await seedFranchise();
+      const other = await seedFranchise();
+      const outsider = await seedSchool();
+      const member = await seedSchool({ franchiseId: franchise.id });
+
+      const notMember = await http().post(`/v1/franchises/${franchise.id}/schools/${outsider.school.id}/remove`).set('Authorization', `Bearer ${token}`);
+      expect(notMember.status).toBe(404);
+      const wrongOwner = await http().post(`/v1/franchises/${franchise.id}/schools/${member.school.id}/remove`).set('Authorization', `Bearer ${other.token}`);
+      expect([403, 404]).toContain(wrongOwner.status);
+      const schoolOwner = await http().post(`/v1/franchises/${franchise.id}/schools/${member.school.id}/remove`).set('Authorization', `Bearer ${member.token}`);
+      expect([403, 404]).toContain(schoolOwner.status);
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: member.school.id } })).franchiseId).toBe(franchise.id);
+    });
+  });
+
+  describe('the Franchise Owner closes their own Franchise (Decision 352)', () => {
+    const PASSCODE = '246810';
+    async function stepUp(userId: string, token: string) {
+      await superuser.user.update({ where: { id: userId }, data: { passcodeHash: await bcrypt.hash(PASSCODE, 4) } });
+      const res = await http().post('/v1/auth/step-up/verify').set('Authorization', `Bearer ${token}`).send({ passcode: PASSCODE });
+      expect(res.status).toBe(201);
+      return res.body.stepUpToken as string;
+    }
+
+    it('needs the passcode check and the exact name, then closes for 90 days and stops fee billing', async () => {
+      const { franchise, owner, token, connectedAccountId } = await seedFranchise({ name: 'Self Closing Franchise', feeModel: 'FLAT', flatFeeAmount: 5000 }, { stripeAccount: true });
+      const subscriptionId = `sub_fake_${randomUUID()}`;
+      const member = await seedSchool({ franchiseId: franchise.id, stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: 'ACTIVE' });
+      const asker = await seedSchool();
+      const asked = await http().post(`/v1/schools/${asker.school.id}/join-franchise`).set('Authorization', `Bearer ${asker.token}`).send({ franchiseId: franchise.id });
+
+      const noProof = await http().post(`/v1/franchises/${franchise.id}/close`).set('Authorization', `Bearer ${token}`).send({ confirmName: 'Self Closing Franchise' });
+      expect(noProof.status).toBe(403);
+
+      const proof = await stepUp(owner.id, token);
+      const wrongName = await http()
+        .post(`/v1/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-step-up-token', proof)
+        .send({ confirmName: 'self closing franchise' });
+      expect(wrongName.status).toBe(400);
+      expect((await superuser.franchise.findUniqueOrThrow({ where: { id: franchise.id } })).archivedAt).toBeNull();
+
+      const res = await http()
+        .post(`/v1/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-step-up-token', proof)
+        .send({ confirmName: 'Self Closing Franchise' });
+      expect(res.status).toBe(200);
+      const after = await superuser.franchise.findUniqueOrThrow({ where: { id: franchise.id } });
+      expect(after.archivedAt).not.toBeNull();
+      const days = (after.purgeAt!.getTime() - after.archivedAt!.getTime()) / (24 * 60 * 60 * 1000);
+      expect(Math.round(days)).toBe(90);
+
+      expect(stripe.calls.cancel).toContainEqual({ account: connectedAccountId, subscriptionId, params: { invoice_now: true, prorate: false } });
+      const memberAfter = await superuser.school.findUniqueOrThrow({ where: { id: member.school.id } });
+      expect(memberAfter.archivedAt).toBeNull(); // the School itself stays open
+      expect(memberAfter.stripeFranchiseFeeSubscriptionId).toBeNull();
+      expect((await superuser.franchiseJoinRequest.findUniqueOrThrow({ where: { id: asked.body.id } })).status).toBe('CANCELLED');
+
+      const twice = await http()
+        .post(`/v1/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-step-up-token', proof)
+        .send({ confirmName: 'Self Closing Franchise' });
+      expect(twice.status).toBe(409);
+      // A closed Franchise can't remove Schools or accept new ones either.
+      const remove = await http().post(`/v1/franchises/${franchise.id}/schools/${member.school.id}/remove`).set('Authorization', `Bearer ${token}`);
+      expect(remove.status).toBe(403);
+    });
+
+    it("another user's passcode proof doesn't work, and a School Owner can't close the Franchise", async () => {
+      const { franchise, token } = await seedFranchise({ name: 'Guarded Franchise' });
+      const member = await seedSchool({ franchiseId: franchise.id });
+      const memberProof = await stepUp(member.owner.id, member.token);
+
+      const borrowed = await http()
+        .post(`/v1/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-step-up-token', memberProof)
+        .send({ confirmName: 'Guarded Franchise' });
+      expect(borrowed.status).toBe(403);
+
+      const bySchoolOwner = await http()
+        .post(`/v1/franchises/${franchise.id}/close`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .set('x-step-up-token', memberProof)
+        .send({ confirmName: 'Guarded Franchise' });
+      expect([403, 404]).toContain(bySchoolOwner.status);
+      expect((await superuser.franchise.findUniqueOrThrow({ where: { id: franchise.id } })).archivedAt).toBeNull();
     });
   });
 

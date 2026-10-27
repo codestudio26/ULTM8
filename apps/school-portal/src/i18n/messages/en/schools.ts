@@ -91,7 +91,7 @@ export const schools = {
     leave: 'Leave Franchise',
     independent: 'This School is independent — not affiliated with any Franchise.',
     franchiseId: 'Franchise ID',
-    join: 'Join Franchise',
+    join: 'Ask to join',
     leaveConfirmTitle: 'Leave this Franchise?',
     leaveConfirmBody:
       "This School's franchise-fee billing stops, with a final bill for this month. Past fee charges stay on record. You can join again later with the Franchise ID.",
@@ -100,5 +100,9 @@ export const schools = {
     brandingNotAllowed:
       "The Franchise Owner hasn't allowed member Schools to show the Franchise's name and logo. Your choice is kept and takes effect if they do.",
     partOf: 'Shown as: Part of {name}',
+    joinExplanation: 'Enter the Franchise ID the Franchise Owner gave you. They accept or decline your request.',
+    requestPending: 'Waiting for Franchise {id} to accept your request to join.',
+    cancelRequest: 'Cancel request',
+    requestDeclined: 'Franchise {id} declined your request to join. You can ask again.',
   },
 };

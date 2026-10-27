@@ -407,4 +407,13 @@ export const serverMessages: Record<string, string> = {
   "defaultLanguage must be one of the supported language codes.": "يجب أن يكون defaultLanguage أحد رموز اللغات المدعومة.",
   "defaultCurrency must be one of the supported currency codes.": "يجب أن يكون defaultCurrency أحد رموز العملات المدعومة.",
   "This Franchise has {v1} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.": "لدى هذا الامتياز {v1} مدرسة تتم فوترتها بالفعل، لذا لا يمكن تغيير نموذج الرسوم. لا يزال بالإمكان تغيير مبلغ الرسوم.",
+  "Join request not found": "لم يتم العثور على طلب الانضمام",
+  "This join request has already been answered.": "تم الرد على طلب الانضمام هذا بالفعل.",
+  "This School can no longer join: it is in another Franchise now, or it has been closed.": "لم يعد بإمكان هذه المدرسة الانضمام: فهي الآن ضمن امتياز آخر أو تم إغلاقها.",
+  "This School is not a member of this Franchise.": "هذه المدرسة ليست عضوًا في هذا الامتياز.",
+  "Type the Franchise's name exactly as it is to close it.": "اكتب اسم الامتياز تمامًا كما هو لإغلاقه.",
+  "This School has already asked to join a Franchise. Cancel that request first.": "طلبت هذه المدرسة بالفعل الانضمام إلى امتياز. ألغِ هذا الطلب أولاً.",
+  "This School has no open request to join a Franchise.": "ليس لدى هذه المدرسة طلب مفتوح للانضمام إلى امتياز.",
+  "Removing a School is not available during an impersonation session (Decision 39).": "إزالة مدرسة غير متاحة أثناء جلسة انتحال الهوية (Decision 39).",
+  "Closing a Franchise is not available during an impersonation session (Decision 39).": "إغلاق امتياز غير متاح أثناء جلسة انتحال الهوية (Decision 39).",
 };
