@@ -8,6 +8,7 @@ import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 import { BranchListResponseDto, BranchResponseDto } from './dto/branch-response.dto';
 import { BranchesQueryDto } from './dto/branches-query.dto';
+import { BranchClosePreviewDto, CloseBranchDto } from './dto/close-branch.dto';
 
 @ApiTags('branches')
 @ApiBearerAuth()
@@ -49,11 +50,26 @@ export class BranchesController {
   }
 
   /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
-   * active dependents. See BranchesService.archive's own header comment. */
+   * anything still in use (Decision 330). A close with nothing to move. */
   @ApiOkResponse({ type: BranchResponseDto })
   @Post('branches/:id/archive')
   archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.branchesService.archive(user.sub, id);
+  }
+
+  /** Decision 330 — what closing this Branch would move. Owner only. */
+  @ApiOkResponse({ type: BranchClosePreviewDto })
+  @Get('branches/:id/close-preview')
+  closePreview(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.branchesService.closePreview(user.sub, id);
+  }
+
+  /** Decision 330 — move what is still in use, then archive. Owner only,
+   * idempotent. See BranchesService.close. */
+  @ApiOkResponse({ type: BranchResponseDto })
+  @Post('branches/:id/close')
+  close(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CloseBranchDto) {
+    return this.branchesService.close(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: BranchResponseDto })
