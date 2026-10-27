@@ -1,6 +1,6 @@
 # Front desk: backend handover
 
-**Date:** 27 Oct 2026 · **Frontend:** built (this branch, `feature/front-desk-check-in`) · **Design:** `DESIGN.md` → "Check-in and front-desk mode" · **Rules:** Decisions 304, 315, 316, 317, 318, 320, 351 · **Build list:** `docs/v1.3-backend-backlog.md` §3.1, §3.2, §3.5, §3.21
+**Date:** 27 Oct 2026 · **Frontend:** built (this branch, `feature/front-desk-check-in`) · **Design:** `DESIGN.md` → "Check-in and front-desk mode" · **Rules:** Decisions 304, 315, 316, 317, 318, 320, 351, 362 · **Build list:** `docs/v1.3-backend-backlog.md` §3.1, §3.2, §3.5, §3.21
 
 ## What's built and works today
 
@@ -76,11 +76,14 @@ The School Portal has both front-desk screens, built on the API that already exi
 - **It creates a sign-up waiting for staff approval**, not a member (Decision 351).
 - **A child can be signed up only by their Guardian**, with consent, as for any child account. The API must refuse an under-age self sign-up.
 - **Staff need an approval list.** It isn't designed yet; design it with the sign-up forms of Decision 318.
-- **Rejected:** what the person is told and what's kept is `[UNRESOLVED]`. Ask the product owner.
+- **Rejected** (Decision 362):
+  - The person gets a polite email saying the sign-up wasn't accepted and to talk to the front desk. No reason is given.
+  - What they typed is kept for 30 days, so staff can still see it, then deleted.
+  - Undoing a rejection, and whether website sign-ups follow the same rule, aren't decided. Ask the product owner first.
 
 ### F6. Find me `findMe` (Decision 351)
 - **`POST /front-desk/find-me`** returns only `{ alreadyMember: boolean }`. It never returns or fills in stored details.
-- **Proposal, needs the product owner's OK:** the screen asks for **full name and date of birth**, so nobody can probe who is a member by typing names. If they'd rather it take the name only, drop the date field in `FrontDeskModePage.tsx` → `FindMeScreen`.
+- **Request:** `{ fullName, dateOfBirth }`. Both must match a member of the School (Decision 362), so nobody can find out who is a member by typing names. The screen already asks for both.
 
 ### F7. One check-in call for several classes (recommended)
 **Today:** the screen loops per ticked class. For each one it calls `POST /classes/{id}/book` (if not booked), then `POST /classes/{id}/attendance-scan`. If the second class fails, the first is already done, and the card shows the error.
@@ -111,7 +114,7 @@ The **+ Open mat session** button on the staff tab is shown switched off. It nee
 
 ## Notes for whoever picks this up
 
-- **The rules are decided** (Decisions 315, 317, 320, 351), except the items marked `[UNRESOLVED]` or "proposal" above. Ask the product owner before building those.
+- **The rules are decided** (Decisions 315, 317, 320, 351, 362), except the open points under F5 (undoing a rejection, website sign-ups). Ask the product owner before building those.
 - **The tablet's privacy rules are server-side once F1 exists.** Today the staff token returns full names and the screen shortens them. With a kiosk token, the API must return only the short form.
 - **Branch filter:** `GET /schools/{id}/classes` has no Branch filter, so the screen filters on `branchId`. Adding `branchId` to that query would save the client work.
 - **Check-in time:** a booking's `updatedAt` is its check-in time (schema comment on Booking). A real `checkedInAt` column would make "Recent check-ins" exact.
