@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
@@ -11,6 +11,7 @@ import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolRespon
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
+import { CloseOwnSchoolDto, CloseOwnSchoolResponseDto } from './dto/close-own-school.dto';
 import { FranchiseJoinRequestResponseDto, SchoolFranchiseJoinRequestResponseDto } from '../franchises/dto/franchise-join-request.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
@@ -140,6 +141,24 @@ export class SchoolsController {
   @Post(':id/leave-franchise')
   leaveFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.schoolsService.leaveFranchise(user.sub, id);
+  }
+
+  /** Decision 364 — the School Owner closes their own School, with its name
+   * re-typed and a passcode check. Not during impersonation. */
+  @ApiOkResponse({ type: CloseOwnSchoolResponseDto })
+  @ApiHeader({ name: 'x-step-up-token', required: true, description: 'From POST /auth/step-up/verify (passcode check).' })
+  @HttpCode(200)
+  @Post(':id/close')
+  closeOwnSchool(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: CloseOwnSchoolDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    if (user.impersonation) {
+      throw new ForbiddenException('Closing a School is not available during an impersonation session (Decision 39).');
+    }
+    return this.schoolsService.closeOwnSchool(user.sub, id, dto, stepUpToken);
   }
 
   /** School Owner/Manager only — see SchoolsService.regenerateJoinCode's own

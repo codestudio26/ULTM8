@@ -909,6 +909,60 @@
         ]
       }
     },
+    "/v1/schools/{id}/close": {
+      "post": {
+        "operationId": "SchoolsController_closeOwnSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify (passcode check).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseOwnSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloseOwnSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join-code/regenerate": {
       "post": {
         "operationId": "SchoolsController_regenerateJoinCode",
@@ -14251,6 +14305,40 @@
           }
         }
       },
+      "CloseOwnSchoolDto": {
+        "type": "object",
+        "properties": {
+          "confirmName": {
+            "type": "string",
+            "description": "Must exactly match the School's current name."
+          }
+        },
+        "required": [
+          "confirmName"
+        ]
+      },
+      "CloseOwnSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "purgeAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the School is deleted for good (90 days after closing)."
+          }
+        },
+        "required": [
+          "id",
+          "archivedAt",
+          "purgeAt"
+        ]
+      },
       "CreateBranchDto": {
         "type": "object",
         "properties": {
@@ -16120,14 +16208,16 @@
               "WAIVER",
               "PAYMENT",
               "CANCELLATIONS",
-              "GRADING"
+              "GRADING",
+              "FRANCHISE",
+              "SCHOOL"
             ],
             "description": "What clicking the notification opens (Decision 355), or null for nothing."
           },
           "targetId": {
             "type": "string",
             "nullable": true,
-            "description": "The Class or Waiver id, for CLASS and WAIVER targets (Decision 355)."
+            "description": "The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364)."
           }
         },
         "required": [

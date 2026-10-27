@@ -366,6 +366,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "取消申请",
       requestDeclined: "加盟体系 {id} 拒绝了您的加入申请。您可以再次申请。",
     },
+    close: {
+      title: "关闭此学校",
+      explanation: "关闭后，此学校的 ULTM8 订阅和每位学员的会员订阅将在已付费周期结束时终止，加盟费也会停止。学校将变为只读，并在 90 天后被永久删除；在此之前只有 ULTM8 支持团队可以重新开启。退款不会自动进行：请在关闭前通过“交易”办理。",
+      button: "关闭学校",
+      confirmTitle: "关闭此学校？",
+      confirmBody: "您无法自行撤销此操作。请输入学校名称和您的密码以确认。",
+      nameLabel: "输入“{name}”以确认",
+      passcodeLabel: "您的 6 位数密码",
+      closedTitle: "此学校已关闭",
+      closedBody: "它将于 {date} 被永久删除。在此之前只有 ULTM8 支持团队可以重新开启。",
+    },
   },
   branches: {
     cancellations: {

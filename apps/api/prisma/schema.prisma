@@ -3992,7 +3992,7 @@ model Notification {
   schoolName String?
 
   /// Developer-level addition (Decision 355): what clicking the notification
-  /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING
+  /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS, GRADING, FRANCHISE or SCHOOL
   /// (a free string, like `type`), `targetId` the Class/Waiver id where the
   /// app has a page for one item. Each app maps these to its own screens.
   targetType String?

@@ -369,6 +369,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "Cancelar solicitud",
       requestDeclined: "La franquicia {id} rechazó tu solicitud de unión. Puedes volver a pedirlo.",
     },
+    close: {
+      title: "Cerrar esta escuela",
+      explanation: "Cerrar termina la suscripción de ULTM8 de esta escuela y la suscripción de membresía de cada alumno al final del periodo ya pagado, y detiene las cuotas de franquicia. La escuela pasa a solo lectura y se elimina definitivamente a los 90 días; hasta entonces solo el soporte de ULTM8 puede reabrirla. Los reembolsos no son automáticos: hazlos desde Transacciones antes de cerrar.",
+      button: "Cerrar escuela",
+      confirmTitle: "¿Cerrar esta escuela?",
+      confirmBody: "No puedes deshacerlo tú mismo. Escribe el nombre de la escuela y tu código de acceso para confirmar.",
+      nameLabel: "Escribe «{name}» para confirmar",
+      passcodeLabel: "Tu código de acceso de 6 dígitos",
+      closedTitle: "Esta escuela está cerrada",
+      closedBody: "Se eliminará definitivamente el {date}. Hasta entonces solo el soporte de ULTM8 puede reabrirla.",
+    },
   },
   branches: {
     cancellations: {

@@ -20,6 +20,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   dates are cancelled under the normal cancellation rule and students are told,
   new classes skip them, and the calendar shows "Closed". Needs a database
   migration.
+- **School Owners can close their own School** (Decision 364) — from the
+  School page, after typing its name and their passcode: the same 90-day close
+  a Platform Admin does. Closing a School, by anyone, now also ends every
+  student's membership subscription and the School's ULTM8 subscription at the
+  end of the paid period. Franchise join requests, answers, removals and a
+  Franchise closing now send in-app notifications. No migration.
 - **Joining a Franchise needs the Franchise Owner's approval** (Decision 352) —
   a School asks to join with the Franchise ID and can cancel the request; the
   Franchise page lists Schools asking to join, with Accept and Decline. The

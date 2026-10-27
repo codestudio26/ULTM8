@@ -34,5 +34,6 @@ export interface NotificationFanoutJobData {
 }
 
 /** Decision 355 — what a notification opens when clicked. CLASS and WAIVER
- * carry the item's id; PAYMENT, CANCELLATIONS and GRADING open a list page. */
-export type NotificationTargetType = 'CLASS' | 'WAIVER' | 'PAYMENT' | 'CANCELLATIONS' | 'GRADING';
+ * carry the item's id; PAYMENT, CANCELLATIONS and GRADING open a list page.
+ * Decision 364 adds FRANCHISE (the Franchise's page) and SCHOOL (the School page). */
+export type NotificationTargetType = 'CLASS' | 'WAIVER' | 'PAYMENT' | 'CANCELLATIONS' | 'GRADING' | 'FRANCHISE' | 'SCHOOL';
