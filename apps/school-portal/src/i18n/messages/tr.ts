@@ -2346,6 +2346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Ders programı",
     subtitle: "Tekrarlayan haftalık zaman dilimi şablonu — bir öğrenciyi kaydetmek için herhangi bir derse tıklayın.",
+    staffSubtitle: "Şubendeki dersler. Resepsiyonda bir öğrenciyi kaydetmek için bir derse tıkla.",
     addSlot: "Zaman dilimi ekle",
     loadFailed: "Ders programı yüklenemedi.",
     rangeAria: "Tarih aralığı",
@@ -2360,6 +2361,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Ders programı görünümü",
     emptyTitle: "Ders programında henüz zaman dilimi yok",
     emptyDescription: "Başlamak için ilk haftalık zaman diliminizi ekleyin.",
+    staffEmptyDescription: "Şubende henüz planlanmış bir şey yok. Ders programını okul sahibi oluşturur.",
     addSlotTitle: "Ders programına zaman dilimi ekle",
     editSlotTitle: "Zaman dilimini düzenle",
     bookedClasses: {

@@ -2311,6 +2311,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "시간표",
     subtitle: "매주 반복되는 시간대 템플릿입니다. 회차를 클릭하면 수련생을 예약할 수 있습니다.",
+    staffSubtitle: "지점의 수업입니다. 수업을 클릭해 데스크에서 학생을 예약하세요.",
     addSlot: "시간대 추가",
     loadFailed: "시간표를 불러올 수 없습니다.",
     rangeAria: "기간",
@@ -2325,6 +2326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "시간표 보기",
     emptyTitle: "아직 시간표에 시간대가 없습니다",
     emptyDescription: "첫 주간 시간대를 추가해 시작하세요.",
+    staffEmptyDescription: "지점에 아직 예정된 수업이 없습니다. 시간표는 학교 소유자가 만듭니다.",
     addSlotTitle: "시간표에 시간대 추가",
     editSlotTitle: "시간대 수정",
     bookedClasses: {

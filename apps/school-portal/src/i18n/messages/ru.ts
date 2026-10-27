@@ -2413,6 +2413,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Расписание",
     subtitle: "Шаблон повторяющихся еженедельных слотов — нажмите на любое занятие, чтобы записать на него ученика.",
+    staffSubtitle: "Занятия вашего филиала. Нажмите на занятие, чтобы записать ученика на стойке.",
     addSlot: "Добавить слот",
     loadFailed: "Не удалось загрузить расписание.",
     rangeAria: "Период",
@@ -2427,6 +2428,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Вид расписания",
     emptyTitle: "В расписании пока нет слотов",
     emptyDescription: "Добавьте первый еженедельный слот, чтобы начать.",
+    staffEmptyDescription: "В вашем филиале пока ничего не запланировано. Расписание составляет владелец школы.",
     addSlotTitle: "Добавить слот в расписание",
     editSlotTitle: "Изменить слот расписания",
     bookedClasses: {

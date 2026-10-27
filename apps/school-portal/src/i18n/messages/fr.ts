@@ -2346,6 +2346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Planning",
     subtitle: "Le modèle hebdomadaire des créneaux récurrents — cliquez sur une séance pour y inscrire un élève.",
+    staffSubtitle: "Les cours de ton site. Clique sur un cours pour y inscrire un élève à l'accueil.",
     addSlot: "Ajouter un créneau",
     loadFailed: "Impossible de charger le planning.",
     rangeAria: "Période",
@@ -2360,6 +2361,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Vue du planning",
     emptyTitle: "Aucun créneau au planning pour le moment",
     emptyDescription: "Ajoutez votre premier créneau hebdomadaire pour commencer.",
+    staffEmptyDescription: "Rien n'est encore prévu dans ton site. Le propriétaire de l'école crée l'emploi du temps.",
     addSlotTitle: "Ajouter un créneau au planning",
     editSlotTitle: "Modifier le créneau du planning",
     bookedClasses: {

@@ -5603,13 +5603,15 @@ The product owner answered the Timetable review's remaining questions with "all 
 ### Decision
 
 1. **The calendar shows the real Classes (Q5, T7).** Each date shows the Classes that actually exist on it: one-offs, classes kept at old times, moved and cancelled dates, with seats taken and the number waiting. A cancelled class stays on the calendar, marked Cancelled, without Book; a class that has ended shows without Book. An On slot's dates past the 4-week horizon show as "Opens for booking later", without Book. Off and archived slots still show on their weekday, dimmed, so the owner can find and change them. New API call: `GET /schools/:schoolId/timetable/calendar?from&to` (at most 62 days). A class the slot cancels is now also marked cancelled (`cancelledAt`), so it shows as a cancelled date.
-2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call already enforces this; the portal screen for Branch Staff follows in its own change.
+2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call enforces this. In the portal, Branch Staff get a Timetable item in their menu and the same calendar, read-only: Book and Open class, but no Add slot, Edit slot, Archive, Show archived or Off slots. Instructors still have no Timetable screen; Q4 named Branch Staff only.
+   - **The students they can book.** RoleGrant RLS only let the owner list a School's students, so Branch Staff and coaches at a School with branches saw an empty list when booking (here, and on the Class page's Add student, Decision 349). They now see the students whose home branch is one of theirs, Decision 139's grading rule (`staff_student_roster()`, a security-definer function like `grading_board_rows()`); in a School without branches, every student, as before. Students without a home branch show only to the owner.
 3. **The break is shown on the class details only (Q6).** It has no effect on bookings, check-in or anything else. Each Class carries its slot's break for that date (`Class.breakStartAt`/`breakEndAt`), which moves with the class's times; a class kept at other times keeps its own. It is shown on the portal's class page and booking dialog and on the student app's class card.
 4. **A class moved to a day this week that has already passed keeps today's behaviour (Q7):** removed if unbooked, cancelled with notice if booked (Decision 322 §5).
 5. **Decision 319 order (Q8):** closure dates first, then the week start day and the timetable filters. Google Calendar and the schedule embed come later.
 
 ### Still open
 
+- Which students Branch Staff can pick (2 above) was built on the recommended answer, their own branch's; the product owner was asked on 27 Oct 2026 whether it should instead be every student at the School, or their branch's plus a search for others.
 - Decision 319's closures can "freeze every membership" for the closed dates, using Decision 316's freeze. Membership freezing isn't built yet, so closures are built without that option until it is.
 
 ### Recorded by

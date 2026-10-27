@@ -16,7 +16,7 @@ import {
   type ViewMode,
 } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -108,10 +108,19 @@ interface BookingTarget {
  * A Class that can still be booked gets a "Book" action (agenda cards on
  * Day/Week, a clickable dot on Month); a cancelled or ended one doesn't. An On
  * slot's dates past the 4-week horizon show as "Opens for booking later".
+ *
+ * Decision 353 (Q4): Branch Staff get this page too, read-only — their own
+ * Branch's classes plus School-wide ones (the API scopes the calendar), with
+ * Book and Open class but no Add/Edit/Archive slot. Only the owner edits slots.
  */
 export function TimetablePage() {
   const t = useT();
-  const schoolId = useOwnedSchoolId();
+  const { claims } = useAuth();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
+  const schoolId = ownedSchoolId ?? (isBranchStaff ? coachSchoolId : null);
+  const canEdit = !!ownedSchoolId;
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useTimetableSlots(schoolId);
   const { data: branchData } = useBranches(schoolId);
@@ -143,7 +152,7 @@ export function TimetablePage() {
   // prior incident comment (kept below on the memo it originally guarded).
   const allSlots = data?.items ?? [];
   const archivedCount = allSlots.filter((s) => s.archivedAt).length;
-  const slots = showArchived ? allSlots : allSlots.filter((s) => !s.archivedAt);
+  const slots = showArchived && canEdit ? allSlots : allSlots.filter((s) => !s.archivedAt);
 
   const { rangeStart, rangeEnd } = useMemo(() => {
     if (rangeMode === 'day') {
@@ -165,10 +174,15 @@ export function TimetablePage() {
   // error overlay. occurrencesForRange below is the same kind of per-render
   // derived value and stays up here with the rest, for the same reason.
   const calendar = useTimetableCalendar(schoolId, toDateKey(rangeStart), toDateKey(rangeEnd));
-  const days = useMemo(() => occurrencesForRange(slots, calendar.data, rangeStart, rangeEnd), [slots, calendar.data, rangeStart, rangeEnd]);
+  const days = useMemo(() => {
+    const all = occurrencesForRange(slots, calendar.data, rangeStart, rangeEnd);
+    // Off slots are only there for the owner to switch back on (Q4).
+    return canEdit ? all : all.map((day) => ({ ...day, entries: day.entries.filter((e) => e.kind !== 'template') }));
+  }, [slots, calendar.data, rangeStart, rangeEnd, canEdit]);
+  const slotActions: SlotActions | null = canEdit ? { onEdit: setEditing, onArchive: setArchiving, unarchiveSlot, setActionError } : null;
 
-  // Branch Staff and coaches have no Timetable screen yet (Decision 332, T11):
-  // send them home instead of a blank page, as the Staff page does.
+  // Instructors have no Timetable screen (Decision 353 gave it to Branch Staff
+  // only): send them home instead of a blank page, as the Staff page does.
   if (!schoolId) return <Navigate to="/" replace />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('timetable.loadFailed')} />;
@@ -178,7 +192,7 @@ export function TimetablePage() {
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
   const students = studentData?.items ?? [];
-  const hasAnything = slots.length > 0 || (calendar.data?.classes.length ?? 0) > 0;
+  const hasAnything = (canEdit ? slots.length > 0 : days.some((day) => day.entries.length > 0)) || (calendar.data?.classes.length ?? 0) > 0;
 
   function shiftAnchor(direction: 1 | -1) {
     if (rangeMode === 'day') setAnchor((a) => addDays(a, direction));
@@ -197,8 +211,8 @@ export function TimetablePage() {
     <>
       <PageHeader
         title={t('timetable.title')}
-        subtitle={t('timetable.subtitle')}
-        actions={<Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>}
+        subtitle={canEdit ? t('timetable.subtitle') : t('timetable.staffSubtitle')}
+        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button> : undefined}
       />
 
       {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
@@ -232,7 +246,7 @@ export function TimetablePage() {
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
-            <Checkbox label={archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            {canEdit ? <Checkbox label={archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> : null}
             {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('timetable.viewAria')} /> : null}
           </div>
         </div>
@@ -242,7 +256,7 @@ export function TimetablePage() {
 
       {!hasAnything ? (
         <Card>
-          <EmptyState title={t('timetable.emptyTitle')} description={t('timetable.emptyDescription')} />
+          <EmptyState title={t('timetable.emptyTitle')} description={canEdit ? t('timetable.emptyDescription') : t('timetable.staffEmptyDescription')} />
         </Card>
       ) : rangeMode === 'month' ? (
         <MonthGrid
@@ -252,13 +266,13 @@ export function TimetablePage() {
       ) : viewMode === 'grid' ? (
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
           {days.map((day) => (
-            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} onArchive={setArchiving} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
           ))}
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
           {days.map((day) => (
-            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} onArchive={setArchiving} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
           ))}
         </div>
       )}
@@ -274,7 +288,7 @@ export function TimetablePage() {
         />
       ) : null}
 
-      {creating ? (
+      {creating && canEdit ? (
         <TimetableSlotFormModal
           title={t('timetable.addSlotTitle')}
           branches={branches}
@@ -292,7 +306,7 @@ export function TimetablePage() {
         />
       ) : null}
 
-      {editing ? (
+      {editing && canEdit ? (
         <EditSlotModal schoolId={schoolId} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
       ) : null}
 
@@ -331,6 +345,14 @@ function branchLabel(branches: BranchResponse[], branchId: string | null | undef
  * component. */
 type ArchiveMutation = UseMutationResult<TimetableSlotResponse, unknown, string>;
 
+/** The owner's slot actions; null for Branch Staff, who only book (Q4). */
+type SlotActions = {
+  onEdit: (slot: TimetableSlotResponse) => void;
+  onArchive: (slot: TimetableSlotResponse) => void;
+  unarchiveSlot: ArchiveMutation;
+  setActionError: (message: string | null) => void;
+};
+
 /** One calendar entry's agenda card — shared by the Rows day-sections and the
  * Grid day columns, so "Book"/"Edit slot" behave identically regardless of
  * layout. A real Class shows its seats; a cancelled or ended one stays visible
@@ -341,19 +363,13 @@ function OccurrenceCard({
   date,
   branches,
   onBook,
-  onEdit,
-  onArchive,
-  unarchiveSlot,
-  setActionError,
+  slotActions,
 }: {
   entry: CalendarEntry;
   date: string;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
-  onEdit: (slot: TimetableSlotResponse) => void;
-  onArchive: (slot: TimetableSlotResponse) => void;
-  unarchiveSlot: ArchiveMutation;
-  setActionError: (message: string | null) => void;
+  slotActions: SlotActions | null;
 }) {
   const t = useT();
   const navigate = useNavigate();
@@ -396,14 +412,14 @@ function OccurrenceCard({
           actions={[
             ...(bookable ? [{ label: t('timetable.occurrence.book'), onClick: () => onBook({ classId: cls!.id, title, date }) }] : []),
             ...(cls ? [{ label: t('timetable.occurrence.openClass'), onClick: () => navigate(`/classes/${cls.id}`) }] : []),
-            ...(slot
+            ...(slot && slotActions
               ? [
-                  { label: t('timetable.occurrence.editSlot'), onClick: () => onEdit(slot) },
+                  { label: t('timetable.occurrence.editSlot'), onClick: () => slotActions.onEdit(slot) },
                   // Decision 226 — School Owner/Manager only, idempotent, blocked
                   // (409) by an upcoming Booking against a generated Class.
                   isArchived
-                    ? { label: t('timetable.occurrence.unarchive'), onClick: () => { setActionError(null); unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
-                    : { label: t('timetable.occurrence.archive'), onClick: () => { setActionError(null); onArchive(slot); } },
+                    ? { label: t('timetable.occurrence.unarchive'), onClick: () => { slotActions.setActionError(null); slotActions.unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => slotActions.setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
+                    : { label: t('timetable.occurrence.archive'), onClick: () => { slotActions.setActionError(null); slotActions.onArchive(slot); } },
                 ]
               : []),
           ]}
@@ -437,18 +453,12 @@ function DayAgendaCard({
   day,
   branches,
   onBook,
-  onEdit,
-  onArchive,
-  unarchiveSlot,
-  setActionError,
+  slotActions,
 }: {
   day: DayOccurrences;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
-  onEdit: (slot: TimetableSlotResponse) => void;
-  onArchive: (slot: TimetableSlotResponse) => void;
-  unarchiveSlot: ArchiveMutation;
-  setActionError: (message: string | null) => void;
+  slotActions: SlotActions | null;
 }) {
   const t = useT();
   return (
@@ -461,7 +471,7 @@ function DayAgendaCard({
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {day.entries.map((entry) => (
-            <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} onArchive={onArchive} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+            <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} slotActions={slotActions} />
           ))}
         </div>
       )}
@@ -473,18 +483,12 @@ function DayColumn({
   day,
   branches,
   onBook,
-  onEdit,
-  onArchive,
-  unarchiveSlot,
-  setActionError,
+  slotActions,
 }: {
   day: DayOccurrences;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
-  onEdit: (slot: TimetableSlotResponse) => void;
-  onArchive: (slot: TimetableSlotResponse) => void;
-  unarchiveSlot: ArchiveMutation;
-  setActionError: (message: string | null) => void;
+  slotActions: SlotActions | null;
 }) {
   return (
     <div style={{ minWidth: 220, flex: '1 0 220px' }}>
@@ -497,7 +501,7 @@ function DayColumn({
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {day.entries.map((entry) => (
-              <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} onArchive={onArchive} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
+              <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} slotActions={slotActions} />
             ))}
           </div>
         )}

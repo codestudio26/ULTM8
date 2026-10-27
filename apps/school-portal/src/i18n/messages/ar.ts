@@ -2482,6 +2482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "الجدول الزمني",
     subtitle: "قالب الفترات الأسبوعية المتكررة — انقر على أي موعد لحجز طالب فيه.",
+    staffSubtitle: "حصص فرعك. انقر على حصة لحجز طالب من مكتب الاستقبال.",
     addSlot: "إضافة فترة",
     loadFailed: "تعذّر تحميل الجدول الزمني.",
     rangeAria: "النطاق الزمني",
@@ -2496,6 +2497,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "عرض الجدول الزمني",
     emptyTitle: "لا توجد فترات في الجدول الزمني بعد",
     emptyDescription: "أضف أول فترة أسبوعية للبدء.",
+    staffEmptyDescription: "لا يوجد شيء مجدول في فرعك بعد. يضع مالك المدرسة الجدول.",
     addSlotTitle: "إضافة فترة إلى الجدول",
     editSlotTitle: "تعديل فترة الجدول",
     bookedClasses: {

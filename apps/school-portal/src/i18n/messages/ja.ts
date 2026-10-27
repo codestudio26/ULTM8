@@ -2311,6 +2311,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "時間割",
     subtitle: "毎週繰り返す時間枠のテンプレートです。日程をクリックすると生徒を予約できます。",
+    staffSubtitle: "あなたの支部のクラスです。クラスをクリックして、受付で生徒を予約します。",
     addSlot: "時間枠を追加",
     loadFailed: "時間割を読み込めませんでした。",
     rangeAria: "期間",
@@ -2325,6 +2326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "時間割の表示",
     emptyTitle: "時間割にまだ時間枠がありません",
     emptyDescription: "最初の週間時間枠を追加して始めましょう。",
+    staffEmptyDescription: "あなたの支部にはまだ予定がありません。時間割はスクールのオーナーが作成します。",
     addSlotTitle: "時間割に時間枠を追加",
     editSlotTitle: "時間枠を編集",
     bookedClasses: {

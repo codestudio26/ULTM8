@@ -2311,6 +2311,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "ตารางเรียน",
     subtitle: "เทมเพลตช่วงเวลาที่เกิดซ้ำทุกสัปดาห์ — คลิกรอบใดก็ได้เพื่อจองให้นักเรียน",
+    staffSubtitle: "คลาสของสาขาคุณ คลิกคลาสเพื่อจองให้นักเรียนที่เคาน์เตอร์",
     addSlot: "เพิ่มช่วงเวลา",
     loadFailed: "ไม่สามารถโหลดตารางเรียนได้",
     rangeAria: "ช่วงวันที่",
@@ -2325,6 +2326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "มุมมองตารางเรียน",
     emptyTitle: "ยังไม่มีช่วงเวลาในตารางเรียน",
     emptyDescription: "เพิ่มช่วงเวลารายสัปดาห์แรกเพื่อเริ่มต้น",
+    staffEmptyDescription: "สาขาของคุณยังไม่มีตารางเรียน เจ้าของโรงเรียนเป็นผู้สร้างตารางเรียน",
     addSlotTitle: "เพิ่มช่วงเวลาในตารางเรียน",
     editSlotTitle: "แก้ไขช่วงเวลาในตารางเรียน",
     bookedClasses: {

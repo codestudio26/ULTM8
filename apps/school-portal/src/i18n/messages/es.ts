@@ -2346,6 +2346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Horario",
     subtitle: "La plantilla semanal de franjas recurrentes: haz clic en cualquier sesión para inscribir a un alumno.",
+    staffSubtitle: "Las clases de tu sede. Haz clic en una clase para reservar a un alumno en recepción.",
     addSlot: "Añadir franja",
     loadFailed: "No se pudo cargar el horario.",
     rangeAria: "Periodo",
@@ -2360,6 +2361,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Vista del horario",
     emptyTitle: "Aún no hay franjas en el horario",
     emptyDescription: "Añade tu primera franja semanal para empezar.",
+    staffEmptyDescription: "Aún no hay nada programado en tu sede. El dueño de la escuela crea el horario.",
     addSlotTitle: "Añadir franja al horario",
     editSlotTitle: "Editar franja del horario",
     bookedClasses: {
