@@ -17,6 +17,22 @@ function dateKey(d: Date): string {
 }
 
 const todayKey = dateKey(new Date());
+
+/**
+ * A class time still ahead of us but on today's date. A fixed `now + 2h`
+ * spills into tomorrow after 22:00, where the today cell never shows it.
+ */
+function laterToday(): { occurrenceDate: Date; startDate: Date; endDate: Date } {
+  const now = new Date();
+  const lastStart = new Date(now);
+  lastStart.setHours(23, 50, 0, 0);
+  const start = Math.min(now.getTime() + 2 * 3_600_000, Math.max(now.getTime() + 60_000, lastStart.getTime()));
+  return {
+    occurrenceDate: new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())),
+    startDate: new Date(start),
+    endDate: new Date(start + 3_600_000),
+  };
+}
 // slotWithClass's default class is a week ahead; the calendar shows real
 // Classes (Decision 353), so tests open next week to find it.
 const nextKey = dateKey(new Date(Date.now() + 7 * 86_400_000));
@@ -241,13 +257,9 @@ test('more than 20 slots all show on the timetable', async ({ page }) => {
 });
 
 test('a cancelled class stays on the calendar, marked Cancelled, with no Book', async ({ page }) => {
-  const now = new Date();
-  const occurrenceDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   await slotWithClass({
     cls: {
-      occurrenceDate,
-      startDate: new Date(now.getTime() + 2 * 3_600_000),
-      endDate: new Date(now.getTime() + 3 * 3_600_000),
+      ...laterToday(),
       archivedAt: new Date(),
       cancelledAt: new Date(),
     },
