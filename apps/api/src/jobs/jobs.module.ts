@@ -22,6 +22,7 @@ import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from
 import { VideoProcessingPollProcessor, VideoProcessingPollScheduler } from './video-processing-poll.processor';
 import { CloudflareStreamService } from '../common/video/cloudflare-stream.service';
 import { TranscribeService } from '../common/video/transcribe.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migration.processor';
 
 /**
@@ -191,6 +192,7 @@ import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migrati
     VideoProcessingPollScheduler,
     CloudflareStreamService,
     TranscribeService,
+    R2ClientService,
     FranchiseFeeRateMigrationProcessor,
   ],
 })

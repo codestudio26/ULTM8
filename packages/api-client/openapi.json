@@ -9835,6 +9835,57 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}": {
+      "get": {
+        "operationId": "WaiversController_findSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -22089,6 +22140,10 @@
             "nullable": true,
             "description": "Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities."
           },
+          "version": {
+            "type": "number",
+            "description": "Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -22101,6 +22156,7 @@
           "schoolId",
           "title",
           "body",
+          "version",
           "createdAt",
           "updatedAt"
         ]
@@ -22171,6 +22227,30 @@
             "type": "string",
             "nullable": true,
             "description": "The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column."
+          },
+          "formerStudent": {
+            "type": "boolean",
+            "description": "Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record."
+          },
+          "signedWaiverTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver title as it was when signed. Null when not signed, or signed before copies were kept."
+          },
+          "signedWaiverBody": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it."
+          },
+          "signedWaiverSha256": {
+            "type": "string",
+            "nullable": true,
+            "description": "SHA-256 (hex) of signedWaiverBody."
+          },
+          "signedWaiverVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "The Waiver version that was signed."
           },
           "createdAt": {
             "type": "string"
@@ -22266,6 +22346,10 @@
           "signatureImageKey": {
             "type": "string",
             "description": "R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment."
+          },
+          "waiverVersion": {
+            "type": "number",
+            "description": "The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again."
           }
         },
         "required": [

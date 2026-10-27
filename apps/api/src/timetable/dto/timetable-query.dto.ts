@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsOptional } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
@@ -10,7 +10,8 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 export class TimetableQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ default: false, description: 'Include archived TimetableSlots too (excluded by default).' })
   @IsOptional()
-  @Type(() => Boolean)
+  // "false" is a non-empty string, which @Type(() => Boolean) read as true (Waivers review W11).
+  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : value))
   @IsBoolean()
   includeArchived?: boolean;
 }

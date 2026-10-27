@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { WaiverSignature } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -151,8 +151,15 @@ export class WaiversService {
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    // Waivers review W3: a change of wording is a new version, so later
+    // signatures record which one they were given.
+    const wordingChanged =
+      (dto.title !== undefined && dto.title !== existing.title) || (dto.body !== undefined && dto.body !== existing.body);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.waiver.update({ where: { id: waiverId }, data: { title: dto.title, body: dto.body } }),
+      tx.waiver.update({
+        where: { id: waiverId },
+        data: { title: dto.title, body: dto.body, ...(wordingChanged ? { version: { increment: 1 } } : {}) },
+      }),
     );
   }
 
@@ -212,12 +219,23 @@ export class WaiversService {
     if (existing.purgedAt) {
       throw new ConflictException('This Waiver has already been purged and cannot be unarchived.');
     }
-    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.waiver.updateMany({
+    // Waivers review W6: an archived Waiver is not assigned to anyone who
+    // joins, so bringing it back assigns it to them now.
+    const { count } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.waiver.updateMany({
         where: { id: waiverId, archivedAt: { not: null }, purgedAt: null },
         data: { archivedAt: null, purgeAt: null },
-      }),
-    );
+      });
+      if (result.count > 0) {
+        const studentGrants = await tx.roleGrant.findMany({
+          where: { schoolId: existing.schoolId, role: 'STUDENT', revokedAt: null },
+          select: { userId: true },
+          distinct: ['userId'],
+        });
+        await this.waiverAssignment.assignUnsignedRows(tx, existing.schoolId, [waiverId], studentGrants.map((g) => g.userId));
+      }
+      return result;
+    });
     if (count === 0) {
       return this.findOneWaiver(callerId, waiverId);
     }
@@ -274,26 +292,69 @@ export class WaiversService {
       throw new NotFoundException('Waiver not found');
     }
 
-    const { page, summary } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const pageResult = await cursorPaginate(
-        (args) =>
-          tx.waiverSignature.findMany({
-            ...args,
-            where: { waiverId, schoolId },
-            include: { student: { select: { firstName: true, surname: true } } },
-          }),
-        cursor,
-        limit,
-      );
+    // Waivers review W1: a student who has left the School is no longer
+    // visible to its staff (User RLS), so names are read separately rather
+    // than joined, which failed the whole list. A leaver's unsigned entry is
+    // left out; their signature stays, flagged formerStudent.
+    const { page, summary, names, activeIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const active = await tx.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', revokedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+      const activeIds = new Set(active.map((g) => g.userId));
+      const where = {
+        waiverId,
+        schoolId,
+        OR: [{ status: { in: ['SIGNED' as const, 'EXPIRED' as const] } }, { studentId: { in: [...activeIds] } }],
+      };
+      const pageResult = await cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where }), cursor, limit);
       const counts = await tx.waiverSignature.groupBy({
         by: ['status'],
-        where: { waiverId, schoolId },
+        where: { waiverId, schoolId, studentId: { in: [...activeIds] } },
         _count: { _all: true },
       });
-      return { page: pageResult, summary: summarizeStatusCounts(counts) };
+      const users = await tx.user.findMany({
+        where: { id: { in: pageResult.items.map((i) => i.studentId) } },
+        select: { id: true, firstName: true, surname: true },
+      });
+      const names = new Map(users.map((u) => [u.id, `${u.firstName} ${u.surname}`.trim()]));
+      return { page: pageResult, summary: summarizeStatusCounts(counts), names, activeIds };
     });
-    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item)));
+    // The signed copy of the text stays out of the list (one copy per row
+    // would make a long waiver's roster megabytes); the detail call has it.
+    const items = await Promise.all(
+      page.items.map(async (item) => {
+        const { signedWaiverBody: _body, ...response } = await this.toSignatureResponse(item);
+        return { ...response, studentName: names.get(item.studentId) ?? null, formerStudent: !activeIds.has(item.studentId) };
+      }),
+    );
     return { ...page, items, summary };
+  }
+
+  /** One row of the Signatures panel, with the copy of the text as signed
+   * (Waivers review W3). Same access and the same leaver rule as the list. */
+  async findSignatureForWaiver(callerId: string, schoolId: string, waiverId: string, signatureId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const waiver = await this.findOneWaiver(callerId, waiverId);
+    if (waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+    const { signature, name, active } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const signature = await tx.waiverSignature.findFirst({ where: { id: signatureId, waiverId, schoolId } });
+      if (!signature) return { signature: null, name: null, active: false };
+      const grant = await tx.roleGrant.findFirst({
+        where: { schoolId, userId: signature.studentId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      const user = await tx.user.findUnique({ where: { id: signature.studentId }, select: { firstName: true, surname: true } });
+      return { signature, name: user ? `${user.firstName} ${user.surname}`.trim() : null, active: !!grant };
+    });
+    if (!signature || (!active && signature.status !== 'SIGNED' && signature.status !== 'EXPIRED')) {
+      throw new NotFoundException('Waiver not found');
+    }
+    return { ...(await this.toSignatureResponse(signature)), studentName: name, formerStudent: !active };
   }
 
   // ---------------------------------------------------------------------------
@@ -406,6 +467,12 @@ export class WaiversService {
     }
 
     const waiver = await this.findOneWaiver(studentId, waiverId);
+    // Waivers review W6/W10: a retired Waiver, or one at a closed School, is
+    // no longer signed.
+    if (waiver.archivedAt) {
+      throw new ConflictException('This waiver is no longer in use, so it can no longer be signed.');
+    }
+    await this.tenantAuth.assertSchoolNotArchived(studentId, waiver.schoolId);
 
     // See this method's own header comment — a verified GuardianLink itself
     // satisfies SKILL.md §13's "or must be Guardian-linked" branch, so only the
@@ -435,6 +502,10 @@ export class WaiversService {
 
     const signedData = {
       status: 'SIGNED' as const,
+      signedWaiverTitle: null as string | null,
+      signedWaiverBody: null as string | null,
+      signedWaiverSha256: null as string | null,
+      signedWaiverVersion: null as number | null,
       signedById: callerId,
       signerFullName: dto.signerFullName,
       signatureText: dto.signatureText,
@@ -445,6 +516,18 @@ export class WaiversService {
     let created: WaiverSignature;
     try {
       created = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        // Waivers review W3: copy the wording being signed, read in this same
+        // transaction. A signer who read an older version is sent back to it.
+        const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiver.id }, select: { title: true, body: true, version: true } });
+        if (dto.waiverVersion !== undefined && dto.waiverVersion !== current.version) {
+          throw new ConflictException('This waiver was changed while you were reading it. Please read it again before signing.');
+        }
+        Object.assign(signedData, {
+          signedWaiverTitle: current.title,
+          signedWaiverBody: current.body,
+          signedWaiverSha256: createHash('sha256').update(current.body, 'utf8').digest('hex'),
+          signedWaiverVersion: current.version,
+        });
         const existing = await tx.waiverSignature.findFirst({
           where: { waiverId: waiver.id, studentId, status: { not: 'EXPIRED' } },
         });
@@ -498,9 +581,7 @@ export class WaiversService {
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
     if (!student.dateOfBirth) {
-      throw new ForbiddenException(
-        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
-      );
+      throw new ForbiddenException('Add your date of birth to your profile before signing a waiver.');
     }
     const today = new Date();
     let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
@@ -511,7 +592,7 @@ export class WaiversService {
 
     if (age < 18) {
       throw new ForbiddenException(
-        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+        "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
       );
     }
   }

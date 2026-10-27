@@ -3236,6 +3236,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_findSignature"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -6961,6 +6977,8 @@ export interface components {
             purgeAt?: string | null;
             /** @description Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities. */
             purgedAt?: string | null;
+            /** @description Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion. */
+            version: number;
             createdAt: string;
             updatedAt: string;
         };
@@ -6987,6 +7005,16 @@ export interface components {
             status: string;
             /** @description The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column. */
             studentName?: string | null;
+            /** @description Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record. */
+            formerStudent?: boolean;
+            /** @description The Waiver title as it was when signed. Null when not signed, or signed before copies were kept. */
+            signedWaiverTitle?: string | null;
+            /** @description The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it. */
+            signedWaiverBody?: string | null;
+            /** @description SHA-256 (hex) of signedWaiverBody. */
+            signedWaiverSha256?: string | null;
+            /** @description The Waiver version that was signed. */
+            signedWaiverVersion?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -7015,6 +7043,8 @@ export interface components {
             signatureText: string;
             /** @description R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment. */
             signatureImageKey?: string;
+            /** @description The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again. */
+            waiverVersion?: number;
         };
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */
@@ -12912,6 +12942,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaiverSignatureListResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_findSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+                signatureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSignatureResponseDto"];
                 };
             };
         };
