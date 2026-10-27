@@ -754,6 +754,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "晋级必须通过技术:在下一段位的所有技术都考核通过前禁止晋级(否则教练可附书面说明进行晋级)",
     },
     stylePicker: {
+      archivedName: "{name}（已归档）",
       style: "流派",
       styleNumbered: "流派 {number}",
       selectStyle: "选择流派…",
@@ -872,6 +873,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "编辑",
     back: "返回",
     reorderAffected: "这些学员的条纹保持不变，但其在晋级阶梯中的位置会改变，因此他们的下一个级别可能会变化（{count}）：",
+    formerStudent: "前学员",
     ladder: {
       duplicate: "复制",
       duplicateAria: "复制 {name}",
@@ -1548,6 +1550,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "此流派已归档：学员保留该段位和记录，但无法在其中晋级。如需再次晋级，请在“项目”页面取消归档。",
       loadFailed: "无法加载该学员的晋级信息。",
       formerInstructor: "前教练员",
       you: "你",

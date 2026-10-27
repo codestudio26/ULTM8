@@ -111,7 +111,8 @@ export function TimetablePage() {
   const { data, isLoading, error } = useTimetableSlots(schoolId);
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
-  const { data: disciplineData } = useDisciplines(schoolId);
+  // Archived styles too: the forms show one a record already has (Decision 310).
+  const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
   const { data: studentData } = useStudents(schoolId);
   const createSlot = useCreateTimetableSlot(schoolId ?? '');
   const archiveSlot = useArchiveTimetableSlot(schoolId ?? '');

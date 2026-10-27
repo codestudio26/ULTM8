@@ -754,6 +754,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "ต้องผ่านทักษะจึงเลื่อนระดับได้: ห้ามเลื่อนระดับจนกว่าทุกทักษะของระดับถัดไปจะได้รับการรับรอง (หากไม่เลือก โค้ชเลื่อนระดับได้โดยระบุเหตุผลเป็นลายลักษณ์อักษร)",
     },
     stylePicker: {
+      archivedName: "{name} (เก็บถาวร)",
       style: "สไตล์",
       styleNumbered: "สไตล์ {number}",
       selectStyle: "เลือกสไตล์…",
@@ -872,6 +873,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "แก้ไข",
     back: "ย้อนกลับ",
     reorderAffected: "นักเรียนเหล่านี้ยังอยู่ที่แถบเดิม แต่ตำแหน่งของแถบในลำดับขั้นเปลี่ยนไป ระดับถัดไปของพวกเขาจึงอาจเปลี่ยน ({count}):",
+    formerStudent: "อดีตนักเรียน",
     ladder: {
       duplicate: "ทำสำเนา",
       duplicateAria: "ทำสำเนา {name}",
@@ -1548,6 +1550,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "สไตล์นี้ถูกเก็บถาวรแล้ว: นักเรียนยังคงมีระดับและประวัติเดิม แต่ไม่มีใครเลื่อนระดับในสไตล์นี้ได้ เลิกเก็บถาวรได้ที่หน้าประเภทกีฬาเพื่อเลื่อนระดับอีกครั้ง",
       loadFailed: "โหลดข้อมูลการเลื่อนระดับของนักเรียนคนนี้ไม่ได้",
       formerInstructor: "อดีตผู้ฝึกสอน",
       you: "คุณ",

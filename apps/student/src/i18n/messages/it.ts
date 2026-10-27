@@ -493,6 +493,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Dal {date}",
       unverified: "In attesa che la scuola verifichi questa cintura.",
       topOfLadder: "In cima alla scala.",
+      noLongerTaught: "Non più insegnato in questa scuola. La tua cintura e la tua storia restano.",
       next: "Prossimo: {rank}",
       progress: "{percent}% del percorso",
       readyToGrade: "Pronto per l’esame",

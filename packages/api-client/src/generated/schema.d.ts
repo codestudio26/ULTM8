@@ -6302,6 +6302,8 @@ export interface components {
             studentId: string;
             firstName: string;
             surname: string;
+            /** @description Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310). */
+            enrolled: boolean;
         };
         RungHoldersDto: {
             /** @description The rung (stripe tier id). */
@@ -6522,6 +6524,8 @@ export interface components {
             schoolName: string;
             disciplineId: string;
             disciplineName: string;
+            /** @description The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress). */
+            archived: boolean;
             currentStripeId?: string | null;
             /** Format: date-time */
             dateOfCurrentRank: string;

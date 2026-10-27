@@ -764,6 +764,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "المهارات مطلوبة للترقية: يمنع الترقية حتى تُعتمد كل مهارات الرتبة التالية (وإلا يمكن للمدرّب الترقية مع إقرار مكتوب)",
     },
     stylePicker: {
+      archivedName: "{name} (مؤرشف)",
       style: "الأسلوب",
       styleNumbered: "الأسلوب {number}",
       selectStyle: "اختر أسلوبًا…",
@@ -902,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "تعديل",
     back: "رجوع",
     reorderAffected: "يبقى هؤلاء الطلاب على شريطهم، لكن موضعه في السلّم يتغير، لذا قد تتغير رتبتهم التالية ({count}):",
+    formerStudent: "طالب سابق",
     ladder: {
       duplicate: "تكرار",
       duplicateAria: "تكرار {name}",
@@ -1688,6 +1690,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "هذا الأسلوب مؤرشف: يحتفظ الطالب بهذه الرتبة وسجلها، لكن لا يمكن ترقية أحد فيه. ألغِ أرشفته من صفحة الرياضات للترقية مجددًا.",
       loadFailed: "تعذّر تحميل ترقيات هذا الطالب.",
       formerInstructor: "مدرّب سابق",
       you: "أنت",

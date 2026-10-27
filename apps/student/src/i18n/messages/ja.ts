@@ -481,6 +481,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date}から",
       unverified: "スクールによるこの帯の確認を待っています。",
       topOfLadder: "ラダーの最上位です。",
+      noLongerTaught: "このスクールでは現在指導されていません。帯と履歴はそのまま残ります。",
       next: "次：{rank}",
       progress: "{percent}% 達成",
       readyToGrade: "昇級準備完了",

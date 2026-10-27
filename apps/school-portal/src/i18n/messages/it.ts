@@ -756,6 +756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Tecniche obbligatorie per l'esame: blocca il passaggio di grado finché ogni tecnica del grado successivo non è convalidata (altrimenti l'allenatore può promuovere con una dichiarazione scritta)",
     },
     stylePicker: {
+      archivedName: "{name} (archiviato)",
       style: "Stile",
       styleNumbered: "Stile {number}",
       selectStyle: "Seleziona uno stile…",
@@ -878,6 +879,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Modifica",
     back: "Indietro",
     reorderAffected: "Questi allievi restano sul loro grado, ma la sua posizione nella scala cambia, quindi il loro prossimo livello potrebbe cambiare ({count}):",
+    formerStudent: "Ex allievo",
     ladder: {
       duplicate: "Duplica",
       duplicateAria: "Duplica {name}",
@@ -1576,6 +1578,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Questo stile è archiviato: l'allievo mantiene questo grado e lo storico, ma nessuno può essere graduato in esso. Ripristinalo dalla pagina Discipline per graduare di nuovo.",
       loadFailed: "Impossibile caricare i gradi di questo allievo.",
       formerInstructor: "Ex istruttore",
       you: "Tu",

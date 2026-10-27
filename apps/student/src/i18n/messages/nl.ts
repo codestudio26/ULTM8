@@ -485,6 +485,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Sinds {date}",
       unverified: "Wacht tot de school deze band verifieert.",
       topOfLadder: "Top van de ladder.",
+      noLongerTaught: "Wordt niet meer gegeven op deze school. Je band en geschiedenis blijven bewaard.",
       next: "Volgende: {rank}",
       progress: "{percent}% van de weg",
       readyToGrade: "Klaar voor examen",

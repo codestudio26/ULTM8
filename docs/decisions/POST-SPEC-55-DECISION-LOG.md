@@ -4686,6 +4686,37 @@ The same review found five gaps. Other class-booking and martial-arts apps deact
 
 User, 22 Oct 2026, after the Disciplines section review.
 
+## Decision 310 — Disciplines: archived styles where they're already used, enrolled counts, and students who left
+
+**Date:** 23 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 152, 308, 309
+
+A second pass over the Disciplines section after PR #286 found seven leftovers in how Decision 309's archive works in the rest of the app, plus a ladder editor failure that was already on `master`. The product owner asked for all of them to be fixed.
+
+### Decision
+
+1. **A student's rank in an archived style stays visible, read-only.**
+   - On the portal's student grading page, the style shows with an Archived badge and a note. There is no grading, progress, ready-to-grade or skills for the next rank.
+   - Voiding and notes on past history still work, as Decision 309 already allowed.
+   - The student app shows the belt and history with "No longer taught at this School", and no progress or skills. The API marks the style `archived` and sends no skills for it.
+2. **Archived styles are kept where they're already used, and refused anywhere new.** This covers class and timetable slot style pickers, membership plans, instructor specialisations and coach grading permissions.
+   - The portal lists an archived style only on a record that already has it, labelled "(archived)".
+   - The API refuses an archived style on a new plan or a new coach permission, but accepts it on a plan or permission that already had it. Classes and slots already refused it (Decision 309).
+3. **Student counts per style count only students still enrolled** (an active Student role at the School). This applies to the Disciplines list, the style's page and its students list. The rung-holder list marks each student `enrolled`.
+4. **Students who left still hold their rung.** Row security (by design) hides the account of someone with no active role at the School, so their name can't be shown.
+   - The ladder editor shows them as "Former student".
+   - Their rank still blocks removing the rung, and the message names them as "a former student".
+   - Before this, the rung-holder list and that check joined the hidden account and failed with a server error.
+5. **Clearer "still in use" messages** give the counts (upcoming classes, timetable slots, rungs on the ladder). The 17 Disciplines messages that weren't translated are now translated in all 14 languages.
+
+### What this does NOT resolve
+
+- Whether Branch Staff can be allowed to manage disciplines (proposed, waiting on the product owner).
+- Permanently deleting an archived style nobody uses (proposed, waiting on the product owner).
+
+### Recorded by
+
+User, 23 Oct 2026, after the second Disciplines review.
+
 ---
 
 ## Decision 311 — Instructors: fourteen bug fixes (archived instructors, revoked instructors, branches, roster)

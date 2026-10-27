@@ -32,6 +32,25 @@ type Tx = Prisma.TransactionClient;
 
 const NAME_MAX = 100;
 
+/** Student ranks of people still enrolled at the School (an active STUDENT
+ * grant): the style's student count leaves out students who have left
+ * (Decision 310). */
+function enrolledAt(schoolId: string) {
+  return { student: { roleGrants: { some: { role: 'STUDENT' as const, schoolId, revokedAt: null } } } };
+}
+
+/** Names of the students holding ranks, and whether each is still enrolled
+ * (Decision 310). Read separately from the ranks: row security hides the
+ * account of someone with no active role at the School, so a student who left
+ * has no name here, and joining it from the rank would fail. */
+async function holderPeople(tx: Prisma.TransactionClient, schoolId: string, studentIds: string[]) {
+  const users = await tx.user.findMany({
+    where: { id: { in: [...new Set(studentIds)] } },
+    select: { id: true, firstName: true, surname: true, roleGrants: { where: { role: 'STUDENT', schoolId, revokedAt: null }, select: { id: true }, take: 1 } },
+  });
+  return new Map(users.map((u) => [u.id, { firstName: u.firstName, surname: u.surname, enrolled: u.roleGrants.length > 0 }]));
+}
+
 /** Class types as stored (Decision 308): trimmed, blanks dropped, and a type
  * repeated with other capitals merged into its first spelling. */
 export function cleanClassTypes(types: string[]): string[] {
@@ -243,7 +262,7 @@ export class RanksService {
       tx.discipline.findMany({
         where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) },
         orderBy: { name: 'asc' },
-        include: { _count: { select: { studentRanks: true } } },
+        include: { _count: { select: { studentRanks: { where: enrolledAt(schoolId) } } } },
       }),
     );
     return rows.map(({ _count, ...d }) => ({ ...d, studentCount: _count.studentRanks }));
@@ -252,11 +271,12 @@ export class RanksService {
   /** One style with its student count, for the API response. */
   async getDiscipline(callerId: string, disciplineId: string) {
     const found = await this.findOneDiscipline(callerId, disciplineId);
-    return { ...found, studentCount: await this.countStudents(callerId, disciplineId) };
-  }
-
-  private countStudents(callerId: string, disciplineId: string): Promise<number> {
-    return this.prismaApp.withTenantContext(callerId, (tx) => tx.studentRank.count({ where: { disciplineId } }));
+    return {
+      ...found,
+      studentCount: await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.studentRank.count({ where: { disciplineId, ...enrolledAt(found.schoolId) } }),
+      ),
+    };
   }
 
   /** An archived style is read-only until unarchived (Decision 309). */
@@ -316,7 +336,7 @@ export class RanksService {
         where: { id: disciplineId },
         data: { name: dto.name, classTypesOffered: classTypes, skillsRequiredToGrade: dto.skillsRequiredToGrade },
       });
-      return { ...updated, studentCount: await tx.studentRank.count({ where: { disciplineId } }) };
+      return { ...updated, studentCount: await tx.studentRank.count({ where: { disciplineId, ...enrolledAt(updated.schoolId) } }) };
     });
   }
 
@@ -342,9 +362,13 @@ export class RanksService {
     }
     const removed = old.filter((t) => !next.includes(t) && !froms.has(t));
     if (removed.length) {
-      const uses = await this.classTypeUses(tx, discipline, removed);
-      if (uses.length) {
-        throw new ConflictException(`${uses.join('; ')}. Rename the class type instead of removing it, or change those first.`);
+      // The first type still in use, in one fixed sentence the portal can
+      // translate (Decision 310); the next one shows once this is fixed.
+      const use = await this.classTypeInUse(tx, discipline, removed);
+      if (use) {
+        throw new ConflictException(
+          `"${use.type}" is still in use (upcoming classes: ${use.classes}, timetable slots: ${use.slots}, rungs on the ladder: ${use.rungs}). Rename the class type instead of removing it, or change those first.`,
+        );
       }
     }
     const changes = renames.filter((r) => r.from !== r.to);
@@ -390,9 +414,12 @@ export class RanksService {
     }
   }
 
-  /** What still uses these class types, as readable phrases. */
-  private async classTypeUses(tx: Tx, discipline: { id: string; schoolId: string }, types: string[]): Promise<string[]> {
-    const out: string[] = [];
+  /** The first of these class types that something still uses, with the counts. */
+  private async classTypeInUse(
+    tx: Tx,
+    discipline: { id: string; schoolId: string },
+    types: string[],
+  ): Promise<{ type: string; classes: number; slots: number; rungs: number } | null> {
     const tiers = await tx.rankStripeTier.findMany({
       where: { rank: { disciplineId: discipline.id } },
       select: { eligibleClassTypes: true, bookingUnlocksClassTypes: true, classTypeRequirements: true },
@@ -407,14 +434,9 @@ export class RanksService {
           t.bookingUnlocksClassTypes.includes(type) ||
           ((t.classTypeRequirements ?? []) as unknown as Array<{ classType: string }>).some((r) => r.classType === type),
       ).length;
-      const parts = [
-        classes ? `${classes} upcoming class${classes === 1 ? '' : 'es'}` : '',
-        slots ? `${slots} timetable slot${slots === 1 ? '' : 's'}` : '',
-        rungs ? `${rungs} rung${rungs === 1 ? '' : 's'} on the ladder` : '',
-      ].filter(Boolean);
-      if (parts.length) out.push(`"${type}" is used by ${parts.join(', ')}`);
+      if (classes + slots + rungs > 0) return { type, classes, slots, rungs };
     }
-    return out;
+    return null;
   }
 
   /** A renamed style's name carried onto the copies other records keep for
@@ -449,8 +471,7 @@ export class RanksService {
       const [{ n: classes }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "Class" WHERE "schoolId" = ${discipline.schoolId} AND "archivedAt" IS NULL AND "endDate" >= now() AND "styles" @> ${match}::jsonb`;
       const [{ n: slots }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "TimetableSlot" WHERE "schoolId" = ${discipline.schoolId} AND "archivedAt" IS NULL AND "styles" @> ${match}::jsonb`;
       if (classes + slots > 0) {
-        const parts = [classes ? `${classes} upcoming class${classes === 1 ? '' : 'es'}` : '', slots ? `${slots} timetable slot${slots === 1 ? '' : 's'}` : ''].filter(Boolean);
-        throw new ConflictException(`${parts.join(' and ')} still use${classes + slots === 1 ? 's' : ''} this style. Archive or change them first.`);
+        throw new ConflictException(`This style is still in use (upcoming classes: ${classes}, timetable slots: ${slots}). Archive or change them first.`);
       }
       await tx.discipline.updateMany({ where: { id: disciplineId, archivedAt: null }, data: { archivedAt: new Date() } });
     });
@@ -715,10 +736,14 @@ export class RanksService {
         if (idsToDelete.length) {
           const holders = await tx.studentRank.findMany({
             where: { currentStripeId: { in: idsToDelete } },
-            select: { currentStripeId: true, student: { select: { firstName: true, surname: true } } },
+            select: { currentStripeId: true, studentId: true },
           });
           if (holders.length) {
-            const names = holders.map((h) => `${h.student.firstName} ${h.student.surname}`.trim());
+            const people = await holderPeople(tx, existing.schoolId, holders.map((h) => h.studentId));
+            const names = holders.map((h) => {
+              const p = people.get(h.studentId);
+              return p ? `${p.firstName} ${p.surname}`.trim() : 'a former student';
+            });
             const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a stripe'))];
             throw new ConflictException(
               `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first (Decision 152).`,
@@ -932,18 +957,25 @@ export class RanksService {
   async findRungHolders(callerId: string, disciplineId: string) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
     await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
-    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.studentRank.findMany({
+    const { rows, people } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const rows = await tx.studentRank.findMany({
         where: { disciplineId, currentStripeId: { not: null } },
-        select: { currentStripeId: true, student: { select: { id: true, firstName: true, surname: true } } },
-        orderBy: [{ student: { firstName: 'asc' } }, { student: { surname: 'asc' } }],
-      }),
-    );
-    const byRung = new Map<string, Array<{ studentId: string; firstName: string; surname: string }>>();
-    for (const r of rows) {
-      const list = byRung.get(r.currentStripeId as string) ?? [];
-      list.push({ studentId: r.student.id, firstName: r.student.firstName, surname: r.student.surname });
-      byRung.set(r.currentStripeId as string, list);
+        select: { currentStripeId: true, studentId: true },
+      });
+      return { rows, people: await holderPeople(tx, discipline.schoolId, rows.map((r) => r.studentId)) };
+    });
+    // Enrolled students by name; students who left (no name to show) last.
+    const holders = rows
+      .map((r) => {
+        const p = people.get(r.studentId);
+        return { rungId: r.currentStripeId as string, studentId: r.studentId, firstName: p?.firstName ?? '', surname: p?.surname ?? '', enrolled: p?.enrolled ?? false };
+      })
+      .sort((a, b) => Number(b.enrolled) - Number(a.enrolled) || a.firstName.localeCompare(b.firstName) || a.surname.localeCompare(b.surname));
+    const byRung = new Map<string, Array<{ studentId: string; firstName: string; surname: string; enrolled: boolean }>>();
+    for (const { rungId, ...h } of holders) {
+      const list = byRung.get(rungId) ?? [];
+      list.push(h);
+      byRung.set(rungId, list);
     }
     return { items: [...byRung.entries()].map(([rungId, students]) => ({ rungId, students })) };
   }

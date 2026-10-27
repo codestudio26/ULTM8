@@ -481,6 +481,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "自 {date} 起",
       unverified: "等待学校核实此腰带。",
       topOfLadder: "已到晋级阶梯顶端。",
+      noLongerTaught: "本校已不再教授此项目。你的腰带和记录会保留。",
       next: "下一级：{rank}",
       progress: "已完成 {percent}%",
       readyToGrade: "可晋级",

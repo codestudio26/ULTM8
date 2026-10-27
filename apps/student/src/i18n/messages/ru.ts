@@ -498,6 +498,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "С {date}",
       unverified: "Ждёт подтверждения этого пояса Школой.",
       topOfLadder: "Вершина лестницы.",
+      noLongerTaught: "Больше не преподаётся в этой школе. Ваш пояс и история сохраняются.",
       next: "Следующий: {rank}",
       progress: "Пройдено {percent}%",
       readyToGrade: "Готов к аттестации",

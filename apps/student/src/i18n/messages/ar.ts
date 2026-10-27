@@ -508,6 +508,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "منذ {date}",
       unverified: "بانتظار تحقّق المدرسة من هذا الحزام.",
       topOfLadder: "أعلى السلّم.",
+      noLongerTaught: "لم تعد هذه الرياضة تُدرَّس في هذه المدرسة. يبقى حزامك وسجلّك.",
       next: "التالي: {rank}",
       progress: "{percent}% من الطريق",
       readyToGrade: "جاهز للترقية",

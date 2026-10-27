@@ -754,6 +754,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "昇級に技の合格が必須: 次の段級のすべての技が合格認定されるまで昇級できません(必須にしない場合、コーチは書面の確認付きで昇級できます)",
     },
     stylePicker: {
+      archivedName: "{name}（アーカイブ済み）",
       style: "スタイル",
       styleNumbered: "スタイル {number}",
       selectStyle: "スタイルを選択…",
@@ -872,6 +873,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "編集",
     back: "戻る",
     reorderAffected: "これらの生徒のストライプは変わりませんが、ラダー内での位置が変わるため、次のランクが変わる可能性があります（{count}）：",
+    formerStudent: "元生徒",
     ladder: {
       duplicate: "複製",
       duplicateAria: "{name} を複製",
@@ -1548,6 +1550,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "このスタイルはアーカイブ済みです。生徒のランクと履歴は残りますが、このスタイルでは誰も昇級できません。再び昇級させるには「種目」ページでアーカイブを解除してください。",
       loadFailed: "この生徒の昇級情報を読み込めませんでした。",
       formerInstructor: "元インストラクター",
       you: "あなた",

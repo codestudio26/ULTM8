@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Disciplines follow-ups** (Decision 310) — a student's rank in an
+  archived style now shows on their grading page, read-only, and in the
+  student app as "No longer taught at this School". Classes, timetable slots,
+  plans and instructors that already use an archived style can still be
+  edited, but it can't be picked for anything new (the API refuses it too).
+  Student counts per style leave out students who have left. The ladder
+  editor no longer fails once a ranked student leaves the School; they show
+  as "Former student". The last 17 untranslated Disciplines messages are
+  translated.
 - **Notifications: Mark all read, click to open, School label (Decision 355)**
   — a **Mark all read** button marks every unread notification read, on every
   page; clicking a notification opens what it is about (its class, the

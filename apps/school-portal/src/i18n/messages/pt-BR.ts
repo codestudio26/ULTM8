@@ -756,6 +756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skillsRequired: "Habilidades obrigatórias para graduar: bloqueia a graduação até que todas as habilidades da próxima graduação sejam aprovadas (caso contrário, o professor pode graduar com uma justificativa por escrito)",
     },
     stylePicker: {
+      archivedName: "{name} (arquivado)",
       style: "Estilo",
       styleNumbered: "Estilo {number}",
       selectStyle: "Selecione um estilo…",
@@ -878,6 +879,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     edit: "Editar",
     back: "Voltar",
     reorderAffected: "Estes alunos continuam no mesmo grau, mas a posição dele na escada muda, então a próxima graduação deles pode mudar ({count}):",
+    formerStudent: "Ex-aluno",
     ladder: {
       duplicate: "Duplicar",
       duplicateAria: "Duplicar {name}",
@@ -1576,6 +1578,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     student: {
+      archivedStyleNote: "Este estilo está arquivado: o aluno mantém esta graduação e o histórico, mas ninguém pode ser graduado nele. Desarquive-o na página Modalidades para voltar a graduar.",
       loadFailed: "Não foi possível carregar as graduações deste aluno.",
       formerInstructor: "Ex-instrutor",
       you: "Você",

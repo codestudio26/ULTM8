@@ -19934,12 +19934,17 @@
           },
           "surname": {
             "type": "string"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "description": "Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310)."
           }
         },
         "required": [
           "studentId",
           "firstName",
-          "surname"
+          "surname",
+          "enrolled"
         ]
       },
       "RungHoldersDto": {
@@ -20661,6 +20666,10 @@
           "disciplineName": {
             "type": "string"
           },
+          "archived": {
+            "type": "boolean",
+            "description": "The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress)."
+          },
           "currentStripeId": {
             "type": "string",
             "nullable": true
@@ -20710,6 +20719,7 @@
           "schoolName",
           "disciplineId",
           "disciplineName",
+          "archived",
           "dateOfCurrentRank",
           "verificationStatus",
           "ladder",

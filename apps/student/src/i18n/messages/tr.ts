@@ -485,6 +485,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date} tarihinden beri",
       unverified: "Okulun bu kuşağı doğrulaması bekleniyor.",
       topOfLadder: "Merdivenin en üstündesiniz.",
+      noLongerTaught: "Bu okulda artık öğretilmiyor. Kuşağın ve geçmişin korunur.",
       next: "Sonraki: {rank}",
       progress: "Yolun %{percent} kadarı",
       readyToGrade: "Sınava hazır",

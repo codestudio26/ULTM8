@@ -485,6 +485,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Seit {date}",
       unverified: "Wartet darauf, dass die Schule diesen Gürtel bestätigt.",
       topOfLadder: "Ganz oben in der Graduierungsreihe.",
+      noLongerTaught: "Wird an dieser Schule nicht mehr unterrichtet. Dein Gürtel und deine Historie bleiben erhalten.",
       next: "Als Nächstes: {rank}",
       progress: "{percent} % geschafft",
       readyToGrade: "Prüfungsbereit",

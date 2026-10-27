@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addPerson, addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Disciplines review (Decisions 308, 309), against the real API: class types
  * edited as a list (a rename carries over), archiving a style, the skills'
  * context columns and the students list, and the read-only page for coaches.
+ * Then the leftovers (Decision 310): a student's rank in an archived style,
+ * and students who left the School.
  */
 let s: GradingSchool;
 
@@ -45,7 +47,7 @@ test('class types are a list: add one, then rename it and the rungs follow', asy
   dialog = page.getByRole('dialog', { name: 'Edit discipline' });
   await dialog.getByRole('button', { name: 'Remove class type 1' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(dialog.getByText(/"Kids Fundamentals" is used by 1 rung on the ladder/)).toBeVisible();
+  await expect(dialog.getByText(/"Kids Fundamentals" is still in use \(upcoming classes: 0, timetable slots: 0, rungs on the ladder: 1\)/)).toBeVisible();
 });
 
 test('a blank or repeated name is refused', async ({ page }) => {
@@ -119,4 +121,26 @@ test('a coach sees the Disciplines page read-only', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add skill' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add belt' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Students \(/ })).toHaveCount(0);
+});
+
+test('a student\'s rank in an archived style stays visible, read-only (Decision 310)', async ({ page }) => {
+  await db.discipline.update({ where: { id: s.disciplineId }, data: { archivedAt: new Date() } });
+  await page.goto(`/students/${s.student.id}`);
+  const card = page.getByRole('region', { name: 'BJJ' });
+  await expect(card.getByText('White 1', { exact: true })).toBeVisible();
+  await expect(card.getByText('Archived', { exact: true })).toBeVisible();
+  await expect(card.getByText(/This style is archived: the student keeps this rank and history/)).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Grade' })).toHaveCount(0);
+  await expect(card.getByRole('heading', { name: /Toward/ })).toHaveCount(0);
+});
+
+test('a student who left is not counted or listed on the style (Decision 310)', async ({ page }) => {
+  const leaver = await addStudent(s, 'Lea', 'Left', { rung: 'White 1' });
+  await db.roleGrant.updateMany({ where: { userId: leaver.id, schoolId: s.schoolId }, data: { revokedAt: new Date() } });
+  await page.goto(`/disciplines/${s.disciplineId}`);
+  await expect(page.getByRole('heading', { name: 'Students (1)' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sam Lee' })).toBeVisible();
+  await expect(page.getByText('Lea Left')).toHaveCount(0);
+  await page.goto('/disciplines');
+  await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: '1', exact: true })).toBeVisible();
 });
