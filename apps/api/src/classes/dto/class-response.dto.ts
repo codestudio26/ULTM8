@@ -41,6 +41,13 @@ export class ClassResponseDto {
   @ApiProperty()
   endDate!: string;
 
+  /** Decision 353 (Q6) — from the slot, shown on the class details only. */
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Break start, if its timetable slot has a break. Shown only; no effect on bookings.' })
+  breakStartAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  breakEndAt!: string | null;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Nullable = unlimited.' })
   capacity!: number | null;
 

@@ -1181,6 +1181,11 @@ model Class {
   startDate DateTime
   endDate   DateTime
 
+  /// Decision 353 (Q6) — the slot's break on this date, copied like the start
+  /// and end. Shown on the class details only; it has no effect on bookings.
+  breakStartAt DateTime?
+  breakEndAt   DateTime?
+
   capacity Int? // nullable = unlimited (confirmed)
 
   bookingEndAt      DateTime?

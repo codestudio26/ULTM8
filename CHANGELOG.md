@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Timetable shows the real classes (Decision 353)** — the calendar now shows
+  each date's actual classes, one-offs included, with seats taken and the
+  waitlist; cancelled and ended classes stay visible without Book, and dates
+  past four weeks say "Opens for booking later". A slot's break is copied onto
+  its classes and shown on the class page, the booking dialog and the student
+  app's class card. Needs a database migration.
 - **Add student and Cancel booking on a class's page** (Decision 349) — staff
   can book a student into a class from the class itself (paid from the
   student's own membership; offered the waitlist when the class is full), and

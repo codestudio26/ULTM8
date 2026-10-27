@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "พัก {start} – {end}",
       bookError: "ไม่สามารถจองคลาสนี้ได้ โปรดลองอีกครั้ง",
       joinWaitlistError: "ไม่สามารถเข้ารายชื่อรอได้ โปรดลองอีกครั้ง",
       leaveWaitlistError: "ไม่สามารถออกจากรายชื่อรอได้ โปรดลองอีกครั้ง",
