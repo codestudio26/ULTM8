@@ -105,6 +105,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "Als gelesen markieren",
     snooze: "Zurückstellen",
     markReadFailed: "Diese Benachrichtigung konnte nicht als gelesen markiert werden. Bitte versuche es erneut.",
+    markAllRead: "Alle als gelesen markieren",
+    markAllReadFailed: "Deine Benachrichtigungen konnten nicht als gelesen markiert werden. Bitte versuche es erneut.",
     delete: "Löschen",
     clearAllRead: "Alle gelesenen löschen",
     loadMore: "Mehr laden",

@@ -104,6 +104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     markRead: "읽음으로 표시",
     snooze: "나중에 알림",
     markReadFailed: "이 알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
+    markAllRead: "모두 읽음으로 표시",
+    markAllReadFailed: "알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
     delete: "삭제",
     clearAllRead: "읽은 알림 모두 지우기",
     loadMore: "더 보기",

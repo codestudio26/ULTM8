@@ -695,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Aucune notification pour le moment.",
+      markAllRead: "Tout marquer comme lu",
+      markAllReadFailed: "Impossible de marquer vos notifications comme lues. Veuillez réessayer.",
       loadFailed: "Impossible de charger les notifications — veuillez réessayer.",
     },
     row: {
@@ -702,6 +704,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, non lue",
       unread: "Non lue",
       markAsRead: "Marquer comme lue",
+      open: "Ouvrir",
       markReadFailed: "Impossible de marquer comme lue — veuillez réessayer.",
     },
   },

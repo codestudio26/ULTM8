@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Notifications: Mark all read, click to open, School label (Decision 355)**
+  — a **Mark all read** button marks every unread notification read, on every
+  page; clicking a notification opens what it is about (its class, the
+  waivers, payments, cancellations to resolve, or grading) and marks it read,
+  in the portal and the student app; and each notification shows the School it
+  came from. Needs a database migration
+  (`20261202000000_notification_school_and_target`). Notifications sent before
+  it have no label and open nothing.
 - **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
   breaks after a student leaves (their signature shows under "Former
   students"); each signature keeps a copy of the exact text signed, viewable

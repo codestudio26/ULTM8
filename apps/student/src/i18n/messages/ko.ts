@@ -673,6 +673,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "아직 알림이 없습니다.",
+      markAllRead: "모두 읽음으로 표시",
+      markAllReadFailed: "알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
       loadFailed: "알림을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     row: {
@@ -680,6 +682,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, 읽지 않음",
       unread: "읽지 않음",
       markAsRead: "읽음으로 표시",
+      open: "열기",
       markReadFailed: "읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
     },
   },

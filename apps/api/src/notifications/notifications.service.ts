@@ -159,6 +159,23 @@ export class NotificationsService {
   }
 
   /**
+   * POST /notifications/me/read-all (Decision 355) — "Mark all read": every
+   * unread, not-deleted Notification the caller has, across every page,
+   * snoozed ones included. `readAt` is set to now: an unread row has never
+   * been read (there is no way back to unread), so this is its first read,
+   * the same rule markRead follows. Nothing unread is a plain `{ updated: 0 }`.
+   */
+  async markAllRead(callerId: string): Promise<{ updated: number }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { userId: callerId, read: false, deletedAt: null },
+        data: { read: true, readAt: new Date() },
+      });
+      return { updated: result.count };
+    });
+  }
+
+  /**
    * PATCH /notifications/:id/snooze (v1.2 backend backlog — Snooze, approved
    * by the product owner). Exactly one of `dto.until`/`dto.minutes` must be
    * given — see SnoozeNotificationDto's own header comment for why that's
