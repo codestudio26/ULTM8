@@ -8,7 +8,10 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import * as bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
@@ -17,12 +20,17 @@ import { SchoolsService } from '../schools/schools.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
+import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../../jobs/queue.constants';
+import { cancelPlacesOfLeavingStudent } from '../../bookings/leaving-student-cancellation';
+import { cancelSubscriptionAtPeriodEnd } from '../../memberships/cancel-subscription';
+import { StripeClientService } from '../../payments/stripe-client.service';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
+import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
+import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
 import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole } from './dto/staff-list.dto';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
-import type { Prisma } from '@prisma/client';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -66,6 +74,8 @@ export class RoleGrantsService {
     private readonly coachInvites: CoachInvitesService,
     private readonly schoolsService: SchoolsService,
     private readonly delivery: NotificationDeliveryService,
+    @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
+    private readonly stripeClient: StripeClientService,
     private readonly rolesChanged: RolesChangedService,
   ) {}
 
@@ -361,6 +371,83 @@ export class RoleGrantsService {
   }
 
   /**
+   * POST /schools/:schoolId/students/add-manually (Decision 371) — the owner
+   * enrols an adult with no ULTM8 account yet: same pattern as Staff/Instructor
+   * Add Manually (a real account at once, a temporary passcode emailed, a new
+   * one chosen at first sign-in, in the student app). Enrolment itself goes
+   * through join(), so the home branch, waivers and the closed-School check are
+   * exactly an Invite's. The branch is checked before the account is created,
+   * so a wrong branch never leaves an account behind.
+   */
+  async createStudentManually(callerId: string, schoolId: string, dto: CreateStudentManuallyDto) {
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (!isAdultOn(new Date(dto.dateOfBirth))) {
+      throw new BadRequestException("Add manually is for adults (18 or over). A child joins through their Guardian's app.");
+    }
+
+    const branches = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.findMany({ where: { schoolId }, select: { id: true, archivedAt: true } }),
+    );
+    const chosen = dto.branchId ? branches.find((b) => b.id === dto.branchId) : undefined;
+    if (dto.branchId && !chosen) throw new BadRequestException('branchId must be a branch of this School.');
+    if (chosen?.archivedAt) throw new BadRequestException('This branch has been archived. Choose another branch.');
+    if (!dto.branchId && branches.some((b) => !b.archivedAt)) {
+      throw new BadRequestException('This School has branches: choose your home branch (branchId).');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingUser) {
+      throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+    }
+
+    const userId = randomUUID();
+    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+    // The bootstrap trick createStaffManually uses: a User row may only be
+    // inserted under its own (about-to-exist) id.
+    await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
+      await setContext(userId);
+      try {
+        await tx.user.create({
+          data: { id: userId, email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: new Date(dto.dateOfBirth), passcodeHash, mustChangePasscode: true },
+        });
+      } catch (err) {
+        // Two adds of the same email at once: the second loses the unique index.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+        }
+        throw err;
+      }
+    });
+    await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
+
+    let emailSent = true;
+    try {
+      await this.delivery.sendEmail(
+        email,
+        `You've been added to ${school.name} on ULTM8`,
+        [
+          `${school.name} has added you as a student on ULTM8.`,
+          '',
+          `Sign in to the ULTM8 app with this email address (${email}) and the temporary passcode below. You'll be asked to choose your own passcode straight away.`,
+          '',
+          `Temporary passcode: ${tempPasscode}`,
+        ].join('\n'),
+      );
+    } catch (err) {
+      emailSent = false;
+      this.logger.warn(`Student ${userId}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+    }
+    // Email isn't always set up (or can fail): the owner then gets the
+    // passcode once, to hand over in person, instead of an account nobody can
+    // sign in to.
+    return { id: userId, firstName: dto.firstName, surname: dto.surname, email, emailSent, temporaryPasscode: emailSent ? null : tempPasscode };
+  }
+
+  /**
    * Exact email/phone match only, never a name search (Decision 116) — the invite
    * target has no RoleGrant at this School yet, so user_self_or_shared_school can't
    * cover the read; this is a lookup-then-confirm step ahead of create(), which
@@ -424,6 +511,42 @@ export class RoleGrantsService {
     };
   }
 
+  /** Cancels at period end every live Stripe Subscription the student holds
+   * at this School, when this is their last STUDENT grant there. Same "in
+   * effect" test as the Revoke dialog's leaving-summary. */
+  private async stopSubscriptionsOfLeavingStudent(callerId: string, schoolId: string, studentId: string, roleGrantId: string): Promise<void> {
+    const now = new Date();
+    const subscriptions = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const otherGrants = await tx.roleGrant.count({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null, id: { not: roleGrantId } } });
+      if (otherGrants > 0) return [];
+      return tx.membership.findMany({
+        where: {
+          schoolId,
+          studentId,
+          status: 'ACTIVE',
+          stripeSubscriptionId: { not: null },
+          cancelAt: null,
+          OR: [{ expiryDate: null }, { expiryDate: { gte: now } }],
+        },
+        select: { id: true, schoolId: true, status: true, stripeSubscriptionId: true, cancelAt: true },
+      });
+    });
+    for (const membership of subscriptions) {
+      try {
+        await this.prismaApp.withTenantContext(callerId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, membership, callerId));
+      } catch (err) {
+        // Nothing here can cancel it (e.g. the School's Stripe account is
+        // gone): the owner deals with it in Stripe; it mustn't block leaving.
+        if (err instanceof BadRequestException) {
+          this.logger.warn(`Revoke ${roleGrantId}: Subscription Membership ${membership.id} not cancelled — ${err.message}`);
+          continue;
+        }
+        this.logger.warn(`Revoke ${roleGrantId}: Stripe refused to cancel Membership ${membership.id} — ${err instanceof Error ? err.message : String(err)}`);
+        throw new ServiceUnavailableException("Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.");
+      }
+    }
+  }
+
   /** Revoke = set revokedAt (soft — RoleGrant is an auditable history, never hard-deleted). */
   async revoke(callerId: string, targetUserId: string, roleGrantId: string) {
     const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -446,14 +569,42 @@ export class RoleGrantsService {
 
     const schoolId = grant.schoolId;
     if (grant.role === 'INSTRUCTOR') await this.assertNoClassesLeftWithoutInstructor(callerId, grant.id, targetUserId, schoolId);
+    // Leaving the School stops their Subscriptions at the end of the paid
+    // period (Decision 343). Done first, each in its own transaction around
+    // the Stripe call: if Stripe refuses, nothing is revoked and the owner can
+    // try again; if the revoke below then fails, a retry finds the
+    // Subscription already cancelled and moves on.
+    if (grant.role === 'STUDENT') await this.stopSubscriptionsOfLeavingStudent(callerId, schoolId, targetUserId, roleGrantId);
+    let freedClassIds: string[] = [];
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
       await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
+      // A home branch belongs to an enrolment (Decision 341, S13): left
+      // behind, it blocked re-enrolling (one per School and student) and
+      // archiving the branch (Decision 252). Re-enrolling picks one again.
+      if (grant.role === 'STUDENT') {
+        const stillEnrolled = await tx.roleGrant.count({ where: { userId: targetUserId, schoolId, role: 'STUDENT', revokedAt: null } });
+        if (stillEnrolled === 0) {
+          await tx.studentHomeBranch.deleteMany({ where: { schoolId, studentId: targetUserId } });
+          // Someone who has left gives up their seats and waitlist places
+          // (Decision 343, S2).
+          ({ freedClassIds } = await cancelPlacesOfLeavingStudent(tx, schoolId, targetUserId, callerId, this.logger));
+        }
+      }
       return row;
     });
     // Branch Staff no longer at that branch can't have coach invites open
     // there (Decision 183; security review M1).
     if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
+    // Enqueued after commit and only logged on failure, like cancelBooking():
+    // a Redis hiccup must not undo the revoke.
+    for (const classId of freedClassIds) {
+      try {
+        await this.waitlistCascadeQueue.add('seat-freed', { classId });
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue waitlist-cascade-processing for Class ${classId} after revoking ${roleGrantId}: ${err}`);
+      }
+    }
     // Decision 361: their current access token stops working on its next use.
     this.rolesChanged.forget(targetUserId);
     return revoked;

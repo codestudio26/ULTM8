@@ -164,6 +164,8 @@ export const server = {
     removedFromFranchiseBody: '{franchise} removed {school} from the Franchise. Its franchise fees have stopped.',
     franchiseClosedTitle: 'Franchise closed',
     franchiseClosedBody: '{franchise} has been closed. {school} stays open, and its franchise fees have stopped.',
+    studentAddedTitle: 'Added to a School',
+    studentAddedBody: "You've been added to {school}.",
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",

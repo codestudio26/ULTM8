@@ -23,7 +23,12 @@ export function LoginScreen({ navigation }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, passcode);
+      const outcome = await login(email, passcode);
+      // A temporary passcode from the School: choose one's own first.
+      if (outcome) {
+        navigation.navigate('ChoosePasscode', { passcodeChangeToken: outcome.passcodeChangeToken });
+        return;
+      }
       // No navigation.reset() needed here — RootNavigator swaps the whole stack to
       // AppNavigator once useAuth().accessToken is set (see RootNavigator.tsx).
     } catch (err) {

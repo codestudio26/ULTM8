@@ -267,13 +267,45 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["SchoolsController_getStudentProfile"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch: operations["SchoolsController_updateStudentProfile"];
+        trace?: never;
+    };
+    "/v1/schools/{id}/students/{studentId}/guardians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_getStudentGuardians"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/students/{studentId}/leaving-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_getStudentLeavingSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/schools/{id}/join": {
@@ -542,6 +574,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["RoleGrantsController_createStaffManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/add-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_createStudentManually"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1916,6 +1964,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["BookingsController_findAllForClass"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/bookings/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findNextForStudent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4796,9 +4860,12 @@ export interface components {
             firstName: string;
             surname: string;
             email: string;
+            guardianManaged: boolean;
             profilePhotoUrl?: string | null;
             enrolledAt: string;
             status: components["schemas"]["StudentStatus"];
+            homeBranchId?: string | null;
+            homeBranchName?: string | null;
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -4815,32 +4882,6 @@ export interface components {
             assignedById: string | null;
             createdAt: string;
             updatedAt: string;
-        };
-        UpdateStudentProfileDto: {
-            firstName?: string;
-            surname?: string;
-            /** @description Mobile-only per confirmed field list. Null clears it. */
-            username?: string | null;
-            /** @description ISO 8601 date, no time component */
-            dateOfBirth?: string;
-            /** @description Null clears it. */
-            gender?: string | null;
-            /** @description Null clears it. */
-            nationality?: string | null;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
-            language?: string | null;
-            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it. */
-            currency?: string | null;
-            /** @description Null clears it. */
-            address?: string | null;
-            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
-            weightCategory?: string | null;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
-            kimonoSize?: string | null;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
-            beltSize?: string | null;
         };
         UserResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4874,6 +4915,57 @@ export interface components {
             beltSize?: string | null;
             createdAt: string;
             updatedAt: string;
+        };
+        StudentGuardianDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+        };
+        StudentGuardiansResponseDto: {
+            items: components["schemas"]["StudentGuardianDto"][];
+        };
+        LeavingStudentMembershipDto: {
+            id: string;
+            planTitle: string;
+            /** @enum {string} */
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP";
+            classesRemaining?: number | null;
+            /** Format: date-time */
+            expiryDate?: string | null;
+            renews: boolean;
+            /** Format: date-time */
+            cancelAt?: string | null;
+        };
+        StudentLeavingSummaryResponseDto: {
+            upcomingBookings: number;
+            waitlistPlaces: number;
+            memberships: components["schemas"]["LeavingStudentMembershipDto"][];
+        };
+        UpdateStudentProfileDto: {
+            firstName?: string;
+            surname?: string;
+            /** @description Mobile-only per confirmed field list. Null clears it. */
+            username?: string | null;
+            /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
+            dateOfBirth?: string;
+            /** @description Null clears it. */
+            gender?: string | null;
+            /** @description Null clears it. */
+            nationality?: string | null;
+            /** @description A code from GET /settings/languages. Null clears it. */
+            language?: string | null;
+            /** @description A code from GET /settings/currencies. Null clears it. */
+            currency?: string | null;
+            /** @description Null clears it. */
+            address?: string | null;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
+            profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            beltSize?: string | null;
         };
         JoinSchoolDto: {
             /** @description Enroll this person at the School instead of the caller — a Guardian enrolling a linked minor, or School Owner/Manager staff enrolling an already-registered person who found via the invite-candidate lookup (schools/:id/role-grants/invite-candidate). */
@@ -5178,6 +5270,23 @@ export interface components {
             email: string;
             /** @description False if the temp-passcode email could not be sent — the Staff account was still created. */
             emailSent: boolean;
+        };
+        CreateStudentManuallyDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description YYYY-MM-DD. The student must be 18 or over. */
+            dateOfBirth: string;
+            /** @description Required when the School has open branches: the home branch. */
+            branchId?: string;
+        };
+        CreateStudentManuallyResponseDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            emailSent: boolean;
+            temporaryPasscode?: string | null;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -5569,7 +5678,7 @@ export interface components {
             surname?: string;
             /** @description Mobile-only per confirmed field list. Null clears it. */
             username?: string | null;
-            /** @description ISO 8601 date, no time component */
+            /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth?: string;
             /** @description Null clears it. */
             gender?: string | null;
@@ -6162,6 +6271,10 @@ export interface components {
             attendees: components["schemas"]["BookingAttendeeResponseDto"][];
             createdAt: string;
             updatedAt: string;
+        };
+        StudentNextBookingResponseDto: {
+            next?: components["schemas"]["StudentBookingResponseDto"] | null;
+            moreUpcoming: number;
         };
         StudentBookingListResponseDto: {
             items: components["schemas"]["StudentBookingResponseDto"][];
@@ -8753,6 +8866,28 @@ export interface operations {
             };
         };
     };
+    SchoolsController_getStudentProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_updateStudentProfile: {
         parameters: {
             query?: never;
@@ -8775,6 +8910,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_getStudentGuardians: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentGuardiansResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_getStudentLeavingSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentLeavingSummaryResponseDto"];
                 };
             };
         };
@@ -9253,6 +9432,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateStaffManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_createStudentManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStudentManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateStudentManuallyResponseDto"];
                 };
             };
         };
@@ -11471,6 +11675,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findNextForStudent: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNextBookingResponseDto"];
                 };
             };
         };

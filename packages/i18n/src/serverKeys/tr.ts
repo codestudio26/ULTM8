@@ -181,6 +181,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise}, {school} okulunu franchise'tan çıkardı. Franchise ücretleri durduruldu.",
     franchiseClosedTitle: "Franchise kapatıldı",
     franchiseClosedBody: "{franchise} kapatıldı. {school} açık kalıyor ve franchise ücretleri durduruldu.",
+    studentAddedTitle: "Bir okula eklendiniz",
+    studentAddedBody: "{school} okuluna eklendiniz.",
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
     childPromotionFeeBody: "{name} için {rank} ({style}) terfisinin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",

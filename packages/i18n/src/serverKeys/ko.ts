@@ -167,6 +167,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise}이(가) {school}을(를) 프랜차이즈에서 제거했습니다. 프랜차이즈 수수료가 중단되었습니다.",
     franchiseClosedTitle: "프랜차이즈 폐쇄됨",
     franchiseClosedBody: "{franchise}이(가) 폐쇄되었습니다. {school}은(는) 계속 운영되며 프랜차이즈 수수료가 중단되었습니다.",
+    studentAddedTitle: "학교에 추가됨",
+    studentAddedBody: "{school}에 추가되었습니다.",
     toDecideBody: "{name}님의 {rank}({style}) 승급이 결정을 기다리고 있습니다. 승급하거나 하지 않기로 결정하세요.",
     promotionFeeBody: "{rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
     childPromotionFeeBody: "{name}님의 {rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
