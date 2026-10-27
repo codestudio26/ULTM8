@@ -10531,6 +10531,249 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waiver-settings": {
+      "get": {
+        "operationId": "WaiversController_getWaiverSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "WaiversController_updateWaiverSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWaiverSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/remind": {
+      "post": {
+        "operationId": "WaiversController_remind",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemindResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}/paper-upload-url": {
+      "post": {
+        "operationId": "WaiversController_requestPaperUploadUrl",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperSignatureUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignatureUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}/paper": {
+      "post": {
+        "operationId": "WaiversController_recordPaperSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordPaperSignatureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -23471,6 +23714,29 @@
             "nullable": true,
             "description": "The Waiver version that was signed."
           },
+          "method": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "PAPER"
+            ],
+            "description": "ONLINE: signed in the app. PAPER: signed on paper and recorded by the Owner or a Manager (Decision 354)."
+          },
+          "recordedById": {
+            "type": "string",
+            "nullable": true,
+            "description": "PAPER only: the staff member who recorded it."
+          },
+          "recordedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Read one signature only: the name of the staff member who recorded a paper signature."
+          },
+          "lastRemindedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When this member was last reminded to sign."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -23484,6 +23750,7 @@
           "studentId",
           "schoolId",
           "status",
+          "method",
           "createdAt",
           "updatedAt"
         ]
@@ -23536,6 +23803,139 @@
           "items"
         ]
       },
+      "WaiverSettingsDto": {
+        "type": "object",
+        "properties": {
+          "waiverArchivedSignaturesCount": {
+            "type": "boolean",
+            "description": "A signature on an archived waiver still counts for classes and plans that need a waiver. Default on."
+          },
+          "waiverRenewalMonths": {
+            "type": "number",
+            "nullable": true,
+            "description": "Members sign again every this many months. Null (the default): a signature never runs out."
+          },
+          "waiverMinorsSignAgainAt18": {
+            "type": "boolean",
+            "description": "A waiver a Guardian signed for a child stops counting when the child turns 18, and they sign it themselves. Default on."
+          },
+          "waiverPaperSignaturesAllowed": {
+            "type": "boolean",
+            "description": "The Owner and Managers can record a waiver signed on paper. Default on."
+          },
+          "waiverNoticeOnJoin": {
+            "type": "boolean",
+            "description": "A new member is told which waivers to sign when they join. Default on."
+          },
+          "waiverReminderDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Remind members who have not signed every this many days. Null (the default): no repeat reminders."
+          }
+        },
+        "required": [
+          "waiverArchivedSignaturesCount",
+          "waiverRenewalMonths",
+          "waiverMinorsSignAgainAt18",
+          "waiverPaperSignaturesAllowed",
+          "waiverNoticeOnJoin",
+          "waiverReminderDays"
+        ]
+      },
+      "UpdateWaiverSettingsDto": {
+        "type": "object",
+        "properties": {
+          "waiverArchivedSignaturesCount": {
+            "type": "boolean"
+          },
+          "waiverRenewalMonths": {
+            "type": "number",
+            "nullable": true,
+            "description": "1 to 120 months, or null for never."
+          },
+          "waiverMinorsSignAgainAt18": {
+            "type": "boolean"
+          },
+          "waiverPaperSignaturesAllowed": {
+            "type": "boolean"
+          },
+          "waiverNoticeOnJoin": {
+            "type": "boolean"
+          },
+          "waiverReminderDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "1 to 90 days, or null for off."
+          }
+        }
+      },
+      "RemindResponseDto": {
+        "type": "object",
+        "properties": {
+          "reminded": {
+            "type": "number",
+            "description": "How many members were reminded."
+          }
+        },
+        "required": [
+          "reminded"
+        ]
+      },
+      "PaperSignatureUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png"
+            ],
+            "description": "The photo or scan of the signed paper."
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "SignatureUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "Pass this back as signatureImageKey when calling POST /waivers/{id}/sign."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "objectKey"
+        ]
+      },
+      "RecordPaperSignatureDto": {
+        "type": "object",
+        "properties": {
+          "signerFullName": {
+            "type": "string",
+            "description": "The name written on the paper: the student, or for a child the parent or guardian who signed."
+          },
+          "signedDate": {
+            "type": "string",
+            "description": "The date written on the paper (YYYY-MM-DD). Not in the future."
+          },
+          "imageKey": {
+            "type": "string",
+            "description": "objectKey from paper-upload-url, after the photo was uploaded."
+          }
+        },
+        "required": [
+          "signerFullName",
+          "signedDate",
+          "imageKey"
+        ]
+      },
       "UpdateWaiverDto": {
         "type": "object",
         "properties": {
@@ -23545,6 +23945,10 @@
           "body": {
             "type": "string",
             "description": "The waiver document body text."
+          },
+          "resign": {
+            "type": "boolean",
+            "description": "When the wording changes: true asks everyone to sign again (their signatures expire); false keeps the signatures (a small fix)."
           }
         }
       },
@@ -23584,23 +23988,6 @@
             "description": "Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller."
           }
         }
-      },
-      "SignatureUploadUrlResponseDto": {
-        "type": "object",
-        "properties": {
-          "uploadUrl": {
-            "type": "string",
-            "description": "Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here."
-          },
-          "objectKey": {
-            "type": "string",
-            "description": "Pass this back as signatureImageKey when calling POST /waivers/{id}/sign."
-          }
-        },
-        "required": [
-          "uploadUrl",
-          "objectKey"
-        ]
       },
       "ScanAttendanceDto": {
         "type": "object",

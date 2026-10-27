@@ -96,7 +96,11 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  *     own documented minor-signing path) is treated as a minor's waiver:
  *     eligible once the signing Student turns 18 + 6 more years. A null
  *     `dateOfBirth` means this can never be computed safely — skipped and
- *     logged for manual review, never guessed.
+ *     logged for manual review, never guessed. Decision 354 (W16): never
+ *     while the Student is still enrolled, and not before 7 years after
+ *     they left — the later of the two dates. A paper signature (no
+ *     signedById) counts as a minor's when the Student was under 18 on the
+ *     date signed.
  *   - A self-signed signature is treated as an adult's: eligible 7 years
  *     after the Student's most recent revoked STUDENT RoleGrant at that
  *     School ("departure"). A Student still actively enrolled (an
@@ -326,18 +330,35 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
    * to retain and are left alone). */
   private async sweepWaiverSignatures(now: Date): Promise<{ deleted: number; skipped: number }> {
     const signatures = await this.prismaJobs.waiverSignature.findMany({
-      where: { status: { in: ['SIGNED', 'EXPIRED'] }, signedById: { not: null } },
-      select: { id: true, studentId: true, signedById: true, schoolId: true, signatureImageKey: true },
+      where: { status: { in: ['SIGNED', 'EXPIRED'] }, OR: [{ signedById: { not: null } }, { method: 'PAPER' }] },
+      select: { id: true, studentId: true, signedById: true, schoolId: true, signatureImageKey: true, method: true, signedDate: true },
     });
 
     let deleted = 0;
     let skipped = 0;
     for (const sig of signatures) {
-      const guardianSigned = sig.signedById !== sig.studentId;
+      // Decision 354 (W16): no signature is purged while its Student is
+      // still enrolled at that School, whoever signed it.
+      const stillEnrolled = await this.prismaJobs.roleGrant.count({
+        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: null },
+      });
+      if (stillEnrolled > 0) {
+        skipped += 1;
+        continue;
+      }
+      const mostRecentDeparture = await this.prismaJobs.roleGrant.findFirst({
+        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: { not: null } },
+        orderBy: { revokedAt: 'desc' },
+        select: { revokedAt: true },
+      });
+      const student = await this.prismaJobs.user.findUnique({ where: { id: sig.studentId }, select: { dateOfBirth: true } });
+      const guardianSigned =
+        sig.method === 'PAPER'
+          ? !!student?.dateOfBirth && !!sig.signedDate && addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS) > sig.signedDate
+          : sig.signedById !== sig.studentId;
       let eligible: boolean;
 
       if (guardianSigned) {
-        const student = await this.prismaJobs.user.findUnique({ where: { id: sig.studentId }, select: { dateOfBirth: true } });
         if (!student?.dateOfBirth) {
           this.logger.warn(
             `entity-offboarding-purge: WaiverSignature ${sig.id} is a Guardian-signed (minor's) waiver with no Student dateOfBirth on file — ` +
@@ -346,20 +367,13 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
           skipped += 1;
           continue;
         }
-        eligible = addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS + MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY) <= now;
+        // A minor who was never enrolled (signed for, never joined) has no
+        // departure; the age rule alone applies.
+        const pastMajority = addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS + MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY) <= now;
+        const pastDeparture =
+          !mostRecentDeparture?.revokedAt || addYears(mostRecentDeparture.revokedAt, ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE) <= now;
+        eligible = pastMajority && pastDeparture;
       } else {
-        const stillEnrolled = await this.prismaJobs.roleGrant.count({
-          where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: null },
-        });
-        if (stillEnrolled > 0) {
-          skipped += 1;
-          continue;
-        }
-        const mostRecentDeparture = await this.prismaJobs.roleGrant.findFirst({
-          where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: { not: null } },
-          orderBy: { revokedAt: 'desc' },
-          select: { revokedAt: true },
-        });
         if (!mostRecentDeparture?.revokedAt) {
           // No STUDENT RoleGrant history at all for this signer at this School — no
           // departure signal to measure retention from. Left in place rather than

@@ -5626,6 +5626,35 @@ Waiting on the product owner: when Archive is allowed (W2, Decision 252), whethe
 
 User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
 
+## Decision 354 — Waivers follow-ups and Waiver settings
+
+**Date:** 27 Oct 2026 · **Status:** Approved by product owner (Waivers review cards and "Q4–Q9 as School settings" advice)
+**Resolves:** Waivers review findings W2, W3 (second half) and W16, and questions Q4, Q5, Q6 and Q8. Q7 was already done by Decision 334. Q9 (guests on a booking) stays open. Changes Decision 252 (W2) and Decision 269 (W16). Database change: `20261203000000_waiver_settings`.
+
+### Decision
+
+1. **Archive is always allowed** (W2, replaces Decision 252's block). Archiving retires a waiver for new members. Every signature and unsigned entry is kept, and the waiver template is still never purged.
+2. **Editing a signed waiver asks what kind of change it is** (W3, second half). When the title or text changes and someone has signed, the Owner chooses: a small fix keeps the signatures, or new terms mean everyone signs again. With new terms, every Signed entry becomes Expired (kept with its copy of what was signed), current students get a new unsigned entry, and those who had signed are notified. The API takes `resign: true` on `PATCH /waivers/:id`; without it, signatures stay.
+3. **A Guardian-signed waiver is kept while the student is enrolled** (W16, changes Decision 269). No signature is purged while its student is still enrolled at that School. A minor's signature is purged at the later of age 18 + 6 years and 7 years after the student left. A paper signature counts as a minor's when the student was under 18 on the date signed.
+4. **Waiver settings, chosen by each School** (Waivers → Settings, Owner and Managers). Each setting says what most schools choose. Defaults follow common gym software (Wodify, DaySmart, MyTime, Zenamu, ROLLER):
+   - **Signatures on archived waivers still count** (Q4): on. Off means only signatures on waivers in use unlock classes and plans that need a waiver. Applies to booking, waitlist join and claim, plan purchase and desk sale.
+   - **Members sign again after a set time** (Q5): off (a signature never runs out); 1 to 120 months when on.
+   - **A child signs again at 18** (Q5): on. A signature given while the student was under 18 expires on their 18th birthday, and they are asked to sign themselves.
+   - **Record waivers signed on paper** (Q6): on. The Owner or a Manager uploads a photo of the paper (JPEG or PNG), with the name on the paper and the date signed (not in the future). The entry becomes Signed, method Paper, with who recorded it and a copy of the current wording.
+   - **Tell new members which waivers to sign** (Q8): on. A notice for each unsigned waiver when someone joins.
+   - **Remind members until they've signed** (Q8): off; 1 to 90 days when on.
+5. **"Remind everyone who hasn't signed"** (Q8): a button on each waiver in use. It reminds current students with an unsigned entry, each at most once a day.
+6. **A daily job** (5am UTC) expires signatures for the renewal and age-18 settings, adds the new unsigned entries and sends the notices, and sends repeat reminders. Expired signatures are kept. Only current students, waivers in use and open Schools.
+7. **The Signatures count** ("X of Y signed") leaves out Expired entries, since each one has been replaced by a new entry for the same student.
+8. New notices (reminder, waiver updated, renewal, sign at 18) and error messages are translated into all 15 languages.
+
+### What this does NOT resolve
+
+Q9: whether guests on a booking must sign (waiting on the product owner's pick; recommended: guests sign through a shared link, as its own change).
+
+### Recorded by
+
+User (Code), 27 Oct 2026: *"go with the recommendations"* (W2, W3b, W16), then *"These all should be decided by the school owner … Although there must be general answers to help them choosing"* and *"Go"* on the advice for Q4 to Q9.
 ---
 
 ## Decision 353 — Timetable follow-ups: the calendar shows real classes, Branch Staff get their branch's timetable, the break is shown only, closures come first
@@ -5762,6 +5791,28 @@ Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend 
 ### Recorded by
 
 User (Code), 27 Oct 2026: "Agreed" to the recommendation (a polite email with no reason given, and keep the details 30 days, then delete them), then "1 a1, B2, 2": the same two answers, plus option 2 for Find me (name and date of birth).
+
+---
+
+## Decision 365 — Rejected sign-ups: website sign-ups too, and staff can still approve within 30 days
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Extends:** Decision 362 (answers both points it left open) · **Builds on:** Decision 318 (website sign-up forms)
+
+### Decision
+
+1. **Website sign-ups follow Decision 362 too.** When staff reject a sign-up made through a website sign-up form (Decision 318), the person gets the same polite email with no reason, and what they typed is kept for 30 days, then deleted.
+2. **Staff can approve a rejected sign-up within those 30 days**, from the tablet or the website. Rejected sign-ups stay in their own list for that time.
+   - Approving it makes the person a member straight away, as a normal approval does, and they get the normal welcome email. It doesn't go back to "waiting".
+   - The record keeps who rejected it and who approved it later.
+   - After 30 days the details are deleted, so there's nothing left to approve; the person signs up again.
+
+### Not built
+
+Nothing here is built yet. Tablet sign-ups are F5 in `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`; website sign-up forms are Decision 318.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, then "agree" to the recommendation that staff can approve a rejected sign-up within the 30 days.
 
 ## Decision 341 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
 

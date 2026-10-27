@@ -34,21 +34,17 @@ const BCRYPT_ROUNDS = 12;
 
 /** Display label per GrantableRoleDto value, for the "you've been granted..."
  * notification email's subject/body — this endpoint only ever creates these three
- * (see GRANTABLE_ROLES below), so no other role needs an entry here. */
+ * (see GrantableRoleDto in CreateRoleGrantDto), so no other role needs an entry here. */
 const ROLE_LABELS: Record<string, string> = {
   INSTRUCTOR: 'Instructor',
   BRANCH_STAFF: 'Branch Staff',
   SCHOOL_OWNER_MANAGER: 'Owner/Manager',
 };
 
-/** The roles this endpoint is authorized to GRANT — see CreateRoleGrantDto.
- * SCHOOL_OWNER_MANAGER added by Decision 270. */
-const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'SCHOOL_OWNER_MANAGER'] as const;
-
 /**
  * The roles this endpoint is authorized to REVOKE (v1.2 backend backlog —
  * Student Detail's/Instructor Detail's "Revoke Enrollment" action) — a
- * strictly wider set than GRANTABLE_ROLES above, since revoking an existing
+ * strictly wider set than GrantableRoleDto, since revoking an existing
  * grant is a different, narrower authorization question than creating one:
  * STUDENT is deliberately excluded from GrantableRoleDto (see its own header
  * comment — "granting... STUDENT... has no confirmed authorization rule"),
@@ -270,7 +266,7 @@ export class RoleGrantsService {
    * passcode emailed, forced change on first login."
    *
    * Lives here on RoleGrantsService, not as a new module/controller, because
-   * RoleGrantsService already owns all Staff CRUD (GRANTABLE_ROLES above) — "Staff" is
+   * RoleGrantsService already owns all Staff CRUD (GrantableRoleDto) — "Staff" is
    * not a separate Role or profile table the way Instructor is its own table; it IS a
    * RoleGrant row with role: 'BRANCH_STAFF'. So unlike
    * InstructorsService.createManually() (User + RoleGrant + a third Instructor profile

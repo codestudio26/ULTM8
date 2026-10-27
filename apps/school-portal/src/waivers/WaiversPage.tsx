@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Modal, PageHeader, Spinner } from '@ultm8/ui';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useArchiveWaiver, useCreateWaiver, useUnarchiveWaiver, useUpdateWaiver, useWaivers, useWaiverSignature, useWaiverSignatures, type WaiverResponse, type WaiverSignatureResponse } from './waiverQueries';
+import {
+  PAPER_PHOTO_TYPES,
+  useArchiveWaiver,
+  useCreateWaiver,
+  useRecordPaperSignature,
+  useRemindWaiver,
+  useUnarchiveWaiver,
+  useUpdateWaiver,
+  useWaivers,
+  useWaiverSettings,
+  useWaiverSignature,
+  useWaiverSignatures,
+  type WaiverResponse,
+  type WaiverSignatureResponse,
+} from './waiverQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { WaiverFormModal } from './WaiverFormModal';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
@@ -32,6 +46,7 @@ function formatUpdatedLabel(iso: string): string {
 
 export function WaiversPage() {
   const t = useT();
+  const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useWaivers(schoolId);
   const createWaiver = useCreateWaiver(schoolId ?? '');
@@ -66,7 +81,14 @@ export function WaiversPage() {
       <PageHeader
         title={t('waivers.title')}
         subtitle={t('waivers.subtitle')}
-        actions={<Button onClick={() => setCreating(true)}>{t('waivers.addWaiver')}</Button>}
+        actions={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" onClick={() => navigate('/waivers/settings')}>
+              {t('waivers.settings.open')}
+            </Button>
+            <Button onClick={() => setCreating(true)}>{t('waivers.addWaiver')}</Button>
+          </div>
+        }
       />
 
       {actionError ? <ErrorBanner message={actionError} /> : null}
@@ -129,9 +151,8 @@ export function WaiversPage() {
                   <Button variant="secondary" onClick={() => setEditing(selected)}>
                     {t('waivers.edit')}
                   </Button>
-                  {/* Decision 226 — School Owner/Manager only, idempotent,
-                      blocked (409) by any WaiverSignature row (signed or
-                      unsigned-assignment). */}
+                  {/* Decision 226 — School Owner/Manager only, idempotent;
+                      always allowed since Decision 354 (signatures stay). */}
                   {selected.archivedAt ? (
                     <Button
                       variant="secondary"
@@ -233,8 +254,26 @@ function signatureName(s: WaiverSignatureResponse, t: TranslateFn): string {
 function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: WaiverResponse }) {
   const t = useT();
   const { data, isLoading, error } = useWaiverSignatures(schoolId, waiver.id);
+  const settings = useWaiverSettings(schoolId);
+  const remind = useRemindWaiver(schoolId, waiver.id);
   const [tab, setTab] = useState<SignatureTab>('all');
   const [opened, setOpened] = useState<WaiverSignatureResponse | null>(null);
+  const [recording, setRecording] = useState<WaiverSignatureResponse | null>(null);
+  const [remindNote, setRemindNote] = useState<{ ok: boolean; text: string } | null>(null);
+  // Decision 354: paper signatures (if the School allows them) and reminders
+  // are for current students' unsigned entries on a waiver still in use.
+  const canRecordPaper = !waiver.archivedAt && !!settings.data?.waiverPaperSignaturesAllowed;
+  const isOpenEntry = (s: WaiverSignatureResponse) => !s.formerStudent && (s.status === 'UNSIGNED' || s.status === 'PENDING');
+
+  async function sendReminders() {
+    setRemindNote(null);
+    try {
+      const { reminded } = await remind.mutateAsync();
+      setRemindNote({ ok: true, text: reminded > 0 ? t('waivers.remind.sent', { count: reminded }) : t('waivers.remind.none') });
+    } catch (err) {
+      setRemindNote({ ok: false, text: err instanceof ApiError ? err.message : t('waivers.remind.failed') });
+    }
+  }
   const summary = data?.summary;
   const byName = (a: WaiverSignatureResponse, b: WaiverSignatureResponse) =>
     signatureName(a, t).localeCompare(signatureName(b, t), formatLocale() ?? undefined, { sensitivity: 'base' });
@@ -244,7 +283,7 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
   const former = shown.filter((s) => s.formerStudent);
 
   const row = (s: WaiverSignatureResponse) => (
-    <li key={s.id}>
+    <li key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       <button
         type="button"
         disabled={s.status !== 'SIGNED' && s.status !== 'EXPIRED'}
@@ -269,6 +308,11 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
           <Badge variant={statusBadgeVariant(s.status)}>{SIGNATURE_STATUS_LABEL[s.status] ? t(SIGNATURE_STATUS_LABEL[s.status]!) : s.status}</Badge>
         </span>
       </button>
+      {canRecordPaper && isOpenEntry(s) ? (
+        <Button variant="secondary" onClick={() => setRecording(s)} aria-label={`${t('waivers.paper.record')}: ${signatureName(s, t)}`}>
+          {t('waivers.paper.record')}
+        </Button>
+      ) : null}
     </li>
   );
 
@@ -285,6 +329,14 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
           {t('waivers.signatures.summary', { signed: summary.signed, total: summary.total })}
         </p>
       ) : null}
+      {!waiver.archivedAt && all.some(isOpenEntry) ? (
+        <div style={{ marginBottom: 8 }}>
+          <Button variant="secondary" onClick={sendReminders} loading={remind.isPending}>
+            {t('waivers.remind.button')}
+          </Button>
+        </div>
+      ) : null}
+      {remindNote ? remindNote.ok ? <SuccessBanner message={remindNote.text} /> : <ErrorBanner message={remindNote.text} /> : null}
       {all.length > 0 ? (
         <div className="ultm8-view-toggle" role="group" aria-label={t('waivers.signatures.filterLabel')} style={{ marginBottom: 8 }}>
           {(['all', 'signed', 'unsigned'] as const).map((key) => (
@@ -321,6 +373,7 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
         </>
       )}
       {opened ? <SignatureDetailModal schoolId={schoolId} signature={opened} waiver={waiver} onClose={() => setOpened(null)} /> : null}
+      {recording ? <PaperSignatureModal schoolId={schoolId} waiver={waiver} signature={recording} onClose={() => setRecording(null)} /> : null}
     </div>
   );
 }
@@ -333,6 +386,8 @@ function SignatureDetailModal({ schoolId, signature, waiver, onClose }: { school
   const detail = useWaiverSignature(schoolId, waiver.id, signature.id);
   const signedBody = detail.data?.signedWaiverBody;
   const byGuardian = signature.signedById !== null && signature.signedById !== signature.studentId;
+  const onPaper = signature.method === 'PAPER';
+  const recordedByName = detail.data?.recordedByName;
   // Only signatures with a kept copy can tell; updatedAt also moves on
   // archive/unarchive, so it can't stand in for older ones.
   const editedSince = signature.signedWaiverVersion != null && signature.signedWaiverVersion !== waiver.version;
@@ -342,10 +397,20 @@ function SignatureDetailModal({ schoolId, signature, waiver, onClose }: { school
     <Modal title={t('waivers.signatureDetail.title', { name: signatureName(signature, t) })} onClose={onClose} wide>
       <p style={label}>{t('waivers.signatureDetail.signedName')}</p>
       <p style={value}>{signature.signerFullName ?? '—'}{byGuardian ? ` · ${t('waivers.signatureDetail.byGuardian')}` : ''}</p>
-      <p style={label}>{t('waivers.signatureDetail.signature')}</p>
-      <p style={value}>{signature.signatureText ?? '—'}</p>
+      {onPaper ? (
+        <p style={value}>{recordedByName ? t('waivers.paper.recordedBy', { name: recordedByName }) : t('waivers.paper.recorded')}</p>
+      ) : (
+        <>
+          <p style={label}>{t('waivers.signatureDetail.signature')}</p>
+          <p style={value}>{signature.signatureText ?? '—'}</p>
+        </>
+      )}
       {signature.signatureImageUrl ? (
-        <img src={signature.signatureImageUrl} alt={t('waivers.signatureDetail.drawnAlt')} style={{ maxWidth: 320, background: '#fff', borderRadius: 'var(--radius-md)', marginBottom: 12 }} />
+        <img
+          src={signature.signatureImageUrl}
+          alt={onPaper ? t('waivers.paper.photoAlt') : t('waivers.signatureDetail.drawnAlt')}
+          style={{ maxWidth: onPaper ? '100%' : 320, background: '#fff', borderRadius: 'var(--radius-md)', marginBottom: 12 }}
+        />
       ) : null}
       <p style={label}>{t('waivers.signatureDetail.signedOn')}</p>
       <p style={value}>{signature.signedDate ? formatUpdatedLabel(signature.signedDate) : '—'}</p>
@@ -368,15 +433,120 @@ function SignatureDetailModal({ schoolId, signature, waiver, onClose }: { school
   );
 }
 
+/** Record a waiver signed on paper (Decision 354): who signed, when, and a
+ * photo of the paper. Kept with the staff member who recorded it. */
+function PaperSignatureModal({ schoolId, waiver, signature, onClose }: { schoolId: string; waiver: WaiverResponse; signature: WaiverSignatureResponse; onClose: () => void }) {
+  const t = useT();
+  const record = useRecordPaperSignature(schoolId, waiver.id);
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [signerFullName, setSignerFullName] = useState(signature.studentName ?? '');
+  const [signedDate, setSignedDate] = useState(todayIso);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!photo || !PAPER_PHOTO_TYPES.includes(photo.type as (typeof PAPER_PHOTO_TYPES)[number])) {
+      setError(t('waivers.paper.photoType'));
+      return;
+    }
+    try {
+      await record.mutateAsync({ signatureId: signature.id, signerFullName: signerFullName.trim(), signedDate, photo, uploadFailed: t('waivers.paper.uploadFailed') });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Modal title={t('waivers.paper.title', { name: signatureName(signature, t) })} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 0 }}>{t('waivers.paper.intro')}</p>
+        <Field label={t('waivers.paper.signerName')} htmlFor="paper-signer" hint={t('waivers.paper.signerHint')}>
+          <TextField id="paper-signer" required value={signerFullName} onChange={(e) => setSignerFullName(e.target.value)} />
+        </Field>
+        <Field label={t('waivers.paper.date')} htmlFor="paper-date">
+          <TextField id="paper-date" type="date" required max={todayIso} value={signedDate} onChange={(e) => setSignedDate(e.target.value)} />
+        </Field>
+        <Field label={t('waivers.paper.photo')} htmlFor="paper-photo" hint={t('waivers.paper.photoHint')}>
+          <input id="paper-photo" type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+        </Field>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <Button type="submit" loading={record.isPending} disabled={!signerFullName.trim() || !signedDate || !photo}>
+            {t('waivers.paper.save')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Editing a waiver people have signed asks, when the wording changes,
+ * whether it is a small fix or new terms everyone signs again (Decision 354,
+ * Waivers review W3b). */
 function EditWaiverModal({ schoolId, waiver, onClose }: { schoolId: string; waiver: WaiverResponse; onClose: () => void }) {
   const t = useT();
   const updateWaiver = useUpdateWaiver(schoolId, waiver.id);
+  const signatures = useWaiverSignatures(schoolId, waiver.id);
+  const [pending, setPending] = useState<{ title: string; body: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const signedCount = signatures.data?.summary?.signed ?? 0;
+
+  async function saveWith(values: { title: string; body: string }, resign: boolean) {
+    setError(null);
+    try {
+      await updateWaiver.mutateAsync({ ...values, ...(resign ? { resign: true } : {}) });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  if (pending) {
+    return (
+      <Modal title={t('waivers.resign.title')} onClose={() => setPending(null)}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <p style={{ marginTop: 0 }}>{t('waivers.resign.body', { count: signedCount })}</p>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <Button variant="secondary" loading={updateWaiver.isPending} onClick={() => saveWith(pending, false)}>
+              {t('waivers.resign.keep')}
+            </Button>
+            <p className="ultm8-field__hint" style={{ margin: '4px 0 0' }}>{t('waivers.resign.keepHint')}</p>
+          </div>
+          <div>
+            <Button loading={updateWaiver.isPending} onClick={() => saveWith(pending, true)}>
+              {t('waivers.resign.resign')}
+            </Button>
+            <p className="ultm8-field__hint" style={{ margin: '4px 0 0' }}>{t('waivers.resign.resignHint')}</p>
+          </div>
+          <div>
+            <Button variant="secondary" onClick={() => setPending(null)}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <WaiverFormModal
       title={t('waivers.editWaiver')}
       initial={waiver}
       submitting={updateWaiver.isPending}
       onSubmit={async (values) => {
+        const wordingChanged = values.title !== waiver.title || values.body !== waiver.body;
+        if (wordingChanged && signedCount > 0) {
+          setPending(values);
+          return;
+        }
         await updateWaiver.mutateAsync(values);
         onClose();
       }}
