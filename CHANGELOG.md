@@ -21,6 +21,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   account (a parent or guardian signs for a guest under 18). The class page
   shows which guests haven't signed, with the link to copy, and the Waivers
   page lists guest signatures with the wording each one signed.
+- **Close branch** (Decision 330) replaces Archive on the Branches page. Only
+  what is still in use stops a Branch closing (upcoming classes, weekly slots,
+  Instructor profiles, home-branch Students, staff and coach roles); past
+  classes no longer do. The window asks where each group goes (another Branch,
+  or the whole School where that makes sense), moves it all and closes the
+  Branch in one step, and cancels open coach invites there. Nobody is charged
+  or emailed. A closed Branch with history is kept for good; an empty one is
+  removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
+  archive words, in all 15 languages. **Needs a database migration.**
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,
