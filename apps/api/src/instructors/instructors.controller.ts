@@ -20,8 +20,9 @@ import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-res
 import { InstructorClassListResponseDto } from './dto/instructor-class-response.dto';
 import { CertificationUrlResponseDto } from './dto/certification-url-response.dto';
 import { ReassignInstructorDto, ReassignInstructorResponseDto } from './dto/reassign-instructor.dto';
+import { ResendPasscodeResponseDto } from './dto/resend-passcode-response.dto';
 
-/** Each Add Manually call sends an email — limited per account, same tier as
+/** Each Add Manually (or resend-passcode) call sends an email — limited per account, same tier as
  * CoachInvitesController's own invite-send throttle. */
 const ADD_MANUALLY_THROTTLE = { identity: { limit: 20, ttl: 3_600_000, getTracker: jwtSubTracker } };
 
@@ -138,6 +139,16 @@ export class InstructorsController {
     @Body() dto: CreateInstructorManuallyDto,
   ) {
     return this.instructorsService.createManually(user.sub, schoolId, dto);
+  }
+
+  /** Decision 331 — a new temporary passcode for someone Add Manually created
+   * who hasn't signed in yet. School Owner/Manager only. */
+  @ApiOkResponse({ type: ResendPasscodeResponseDto })
+  @Throttle(ADD_MANUALLY_THROTTLE)
+  @HttpCode(200)
+  @Post('instructors/:id/resend-passcode')
+  resendPasscode(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.resendPasscode(user.sub, id);
   }
 
   @ApiOkResponse({ type: InstructorListResponseDto })

@@ -24,6 +24,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   only) can move the main owner role, optionally removing the former main
   owner; both are audit-logged. Existing Schools: the earliest owner becomes
   the main owner. Needs the migration `20261212000000_school_main_owner`.
+- **Instructors: resend passcode, self-edit, safer revoke, private details**
+  (Decision 331) — the owner can send a new temporary passcode to an
+  instructor who hasn't signed in yet; instructors can change their own
+  photo, bio and the phone number the School sees on Complete your profile;
+  an Instructor role can't be revoked while they still teach upcoming classes
+  or weekly slots (the page offers "Hand over classes" instead); and an
+  instructor's address and certification are shown only to the School owner
+  and to the instructor, not to colleagues.
 - **Staff page: staff list, Remove from School, "Give role", instant access
   changes (Decisions 360, 361)** — the Staff page now lists everyone with an
   owner, coach or Branch Staff role, filterable by role, branch, name and

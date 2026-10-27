@@ -78,6 +78,13 @@ export class UploadsService {
       case PublicPhotoEntityType.INSTRUCTOR: {
         const schoolId = this.requireSchoolId(dto, 'INSTRUCTOR');
         await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+        // An instructor may upload a photo for their own profile (Decision 331).
+        const ownProfile = dto.entityId
+          ? await this.prismaApp.withTenantContext(callerId, (tx) =>
+              tx.instructor.findFirst({ where: { id: dto.entityId, schoolId, userId: callerId }, select: { id: true } }),
+            )
+          : null;
+        if (ownProfile) return { scope: schoolId, entityId: ownProfile.id };
         await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
         if (dto.entityId) {
           const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
