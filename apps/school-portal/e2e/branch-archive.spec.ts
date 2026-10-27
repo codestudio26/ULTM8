@@ -3,9 +3,10 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision 293 — archiving a Branch asks first and shows what still belongs
- * to it inside the dialog; archived Branches are left out of Branch pickers,
- * except the one a record being edited already points at.
+ * Decision 330 — "Close branch" shows what is still in use and moves it where
+ * the owner picks; a Branch with history is kept for good. Decision 293 —
+ * closed Branches are left out of Branch pickers, except the one a record
+ * being edited already points at.
  */
 let s: GradingSchool;
 const branchIds: string[] = [];
@@ -37,32 +38,35 @@ async function mkBranch(name: string, archived = false) {
   return branch;
 }
 
-test('Archive asks first: Cancel leaves the Branch, confirming archives it', async ({ page }) => {
+test('Close branch asks first: Cancel leaves the Branch, closing an empty one sets it to be removed after 90 days', async ({ page }) => {
   await mkBranch('Riverside');
   await signIn(page, s.ownerToken);
   await page.goto('/branches');
 
-  const openArchive = async () => {
+  const openClose = async () => {
     await page.getByRole('button', { name: 'Actions for Riverside' }).click();
-    await page.getByRole('menu', { name: 'Actions for Riverside' }).getByRole('menuitem', { name: 'Archive' }).click();
+    await page.getByRole('menu', { name: 'Actions for Riverside' }).getByRole('menuitem', { name: 'Close branch' }).click();
   };
 
-  await openArchive();
-  const dialog = page.getByRole('dialog', { name: 'Archive Riverside?' });
-  await expect(dialog).toBeVisible();
+  await openClose();
+  const dialog = page.getByRole('dialog', { name: 'Close Riverside?' });
+  await expect(dialog.getByText('Nothing at this Branch is still in use, so nothing needs to move.')).toBeVisible();
+  await expect(dialog.getByText(/removed for good after 90 days/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Riverside', exact: true })).toBeVisible();
 
-  await openArchive();
-  await page.getByRole('dialog', { name: 'Archive Riverside?' }).getByRole('button', { name: 'Archive' }).click();
+  await openClose();
+  await page.getByRole('dialog', { name: 'Close Riverside?' }).getByRole('button', { name: 'Close branch' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Riverside', exact: true })).toHaveCount(0);
-  await expect(page.getByText('Show archived (1)')).toBeVisible();
+  await expect(page.getByText('Show closed (1)')).toBeVisible();
 });
 
-test('a Branch with a weekly timetable slot is not archived, and the dialog says why', async ({ page }) => {
+// Decision 330 — what is still in use moves where the owner picks; the past stays.
+test('closing a Branch with a weekly slot moves the slot to the chosen Branch and keeps the Branch for good', async ({ page }) => {
   const branch = await mkBranch('Hillside');
+  const target = await mkBranch('Lakeside');
   const slot = await db.timetableSlot.create({
     data: {
       id: randomUUID(),
@@ -76,25 +80,56 @@ test('a Branch with a weekly timetable slot is not archived, and the dialog says
     },
   });
   slotIds.push(slot.id);
+  const past = new Date(Date.now() - 7 * 86_400_000);
+  const pastClass = await db.class.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, branchId: branch.id, title: 'Last week at Hillside', startDate: past, endDate: new Date(past.getTime() + 3_600_000) },
+  });
+  classIds.push(pastClass.id);
 
   await signIn(page, s.ownerToken);
   await page.goto('/branches');
   await page.getByRole('button', { name: 'Actions for Hillside' }).click();
-  await page.getByRole('menu', { name: 'Actions for Hillside' }).getByRole('menuitem', { name: 'Archive' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Archive Hillside?' });
-  await dialog.getByRole('button', { name: 'Archive' }).click();
+  await page.getByRole('menu', { name: 'Actions for Hillside' }).getByRole('menuitem', { name: 'Close branch' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Close Hillside?' });
 
-  await expect(dialog.getByText(/1 weekly timetable slot/)).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByRole('cell', { name: 'Hillside', exact: true })).toBeVisible();
+  const where = dialog.getByLabel('Upcoming classes: 0 · Weekly timetable slots: 1');
+  await expect(where).toBeVisible();
+  await expect(where.locator('option', { hasText: 'Hillside' })).toHaveCount(0);
+  await expect(dialog.getByText(/has history, so it will be kept for good/)).toBeVisible();
+  const confirm = dialog.getByRole('button', { name: 'Close branch' });
+  await expect(confirm).toBeDisabled();
+
+  await where.selectOption({ label: 'Lakeside' });
+  await confirm.click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Hillside', exact: true })).toHaveCount(0);
+
+  expect((await db.timetableSlot.findUnique({ where: { id: slot.id } }))?.branchId).toBe(target.id);
+  expect((await db.class.findUnique({ where: { id: pastClass.id } }))?.branchId).toBe(branch.id);
+  const closed = await db.branch.findUnique({ where: { id: branch.id } });
+  expect(closed?.archivedAt).not.toBeNull();
+  expect(closed?.purgeAt).toBeNull();
 });
 
-test('Branch pickers leave out archived Branches, except the one a class already uses', async ({ page }) => {
+test('staff roles with no other open Branch to go to: the window says so and cannot close', async ({ page }) => {
+  const branch = await mkBranch('Solo');
+  await db.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: s.ownerId, schoolId: s.schoolId, branchId: branch.id } });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/branches');
+  await page.getByRole('button', { name: 'Actions for Solo' }).click();
+  await page.getByRole('menu', { name: 'Actions for Solo' }).getByRole('menuitem', { name: 'Close branch' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Close Solo?' });
+  await expect(dialog.getByTestId('close-branch-staff-stuck')).toContainText('Remove their access on the Staff page first');
+  await expect(dialog.getByRole('button', { name: 'Close branch' })).toBeDisabled();
+});
+
+test('Branch pickers leave out closed Branches, except the one a class already uses', async ({ page }) => {
   await mkBranch('Open Branch');
-  const closed = await mkBranch('Closed Branch', true);
+  const closed = await mkBranch('Old Branch', true);
   const start = new Date(Date.now() + 7 * 86_400_000);
   const cls = await db.class.create({
-    data: { id: randomUUID(), schoolId: s.schoolId, branchId: closed.id, title: 'Class at Closed Branch', startDate: start, endDate: new Date(start.getTime() + 3_600_000) },
+    data: { id: randomUUID(), schoolId: s.schoolId, branchId: closed.id, title: 'Class at Old Branch', startDate: start, endDate: new Date(start.getTime() + 3_600_000) },
   });
   classIds.push(cls.id);
 
@@ -104,12 +139,12 @@ test('Branch pickers leave out archived Branches, except the one a class already
   await page.getByRole('button', { name: 'Add class' }).click();
   const addOptions = page.getByRole('dialog').getByLabel('Branch').locator('option');
   await expect(addOptions).toContainText(['Whole School', 'Open Branch']);
-  await expect(addOptions.filter({ hasText: 'Closed Branch' })).toHaveCount(0);
+  await expect(addOptions.filter({ hasText: 'Old Branch' })).toHaveCount(0);
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 
-  await page.getByRole('button', { name: 'Actions for Class at Closed Branch' }).click();
-  await page.getByRole('menu', { name: 'Actions for Class at Closed Branch' }).getByRole('menuitem', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: 'Actions for Class at Old Branch' }).click();
+  await page.getByRole('menu', { name: 'Actions for Class at Old Branch' }).getByRole('menuitem', { name: 'Edit' }).click();
   const editBranch = page.getByRole('dialog', { name: 'Edit class' }).getByLabel('Branch');
   await expect(editBranch).toHaveValue(closed.id);
-  await expect(editBranch.locator('option', { hasText: 'Closed Branch (Archived)' })).toHaveCount(1);
+  await expect(editBranch.locator('option', { hasText: 'Old Branch (Closed)' })).toHaveCount(1);
 });

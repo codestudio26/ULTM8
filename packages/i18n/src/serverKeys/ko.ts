@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "사범이 이 띠를 등록해 두어 삭제할 수 없습니다.",
     beltDeclaredArchive: "사범이 이 띠를 등록해 두어 보관할 수 없습니다.",
     classHasDependents: "이 수업에 아직 다음 항목이 있어 보관할 수 없습니다: {items}.",
-    branchHasDependents: "이 지점에 아직 다음 항목이 있어 보관할 수 없습니다: {items}. 먼저 옮기거나 삭제하세요.",
+    branchHasDependents: "이 지점에 아직 다음 항목이 있어 닫을 수 없습니다: {items}. 옮길 곳을 고르거나 먼저 옮기세요.",
     instructorHasDependents: "이 사범은 아직 다음 항목에 배정되어 있어 보관할 수 없습니다: {items}. 먼저 다른 사람에게 배정하세요.",
     schoolHasSubscription: "이 도장에는 이미 활성 플랫폼 구독이 있습니다. 플랜 변경은 아직 지원되지 않습니다.",
     franchiseHasSubscription: "이 프랜차이즈에는 이미 활성 플랫폼 구독이 있습니다. 플랜 변경은 아직 지원되지 않습니다.",
@@ -92,6 +92,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "활성 시간대 {count}개",
+      },
+      weeklySlots: {
+        other: "주간 시간대 {count}개",
       },
     },
   },

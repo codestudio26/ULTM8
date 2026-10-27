@@ -5816,6 +5816,37 @@ User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, the
 
 ---
 
+## Decision 330 — Closing a Branch: only what is still in use blocks it, "Close branch" moves it, and a Branch with history is kept
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Changes:** Decision 252 (Branch archive) · **Builds on:** Decision 293
+
+Fixes 5 to 7 from the Branches review. Under Decision 252 any Class ever held at a Branch, even years ago, blocked archiving it, so a real Branch could never be closed; the owner had to move everything by hand first; and a closed Branch was always deleted after 90 days, which set its past Classes' Branch to "whole School" and deleted its role history.
+
+### Decision
+
+1. **Only what is still in use blocks closing** (fix 5): classes that haven't ended and aren't archived, weekly timetable slots and Instructor profiles that aren't archived, Students with it as their home Branch, and active staff or coach roles. Past and archived classes stay linked to the Branch as its history and no longer block.
+2. **"Close branch"** (fix 6) replaces "Archive" on the Branches page. Its window lists what is still in use and asks, per group, where it goes:
+   - upcoming classes and weekly slots: another open Branch, or the whole School. Their bookings and waitlist entries follow the class;
+   - home-branch Students: another Branch, or no home Branch;
+   - Instructor profiles: another Branch, or the whole School;
+   - staff and coach roles: another Branch only. A Branch role never becomes School-wide, since that would widen what the person can see. The old role is revoked and the same role granted at the new Branch, so the role history stays with the closed Branch. With no other open Branch, the window says to remove their access on the Staff page first.
+   Coach invites still open for the Branch are cancelled (an invite's branch can't change after it is sent). If a class would end up at a Branch where its coach has no coach role, nothing is moved and the window says why. Everything happens in one step: all of it moves and the Branch closes, or nothing changes. Past classes, bookings, attendance, money and messages are untouched, and nobody is charged or emailed. API: `GET /v1/branches/{id}/close-preview` and `POST /v1/branches/{id}/close`; `POST /v1/branches/{id}/archive` stays, as a close with nothing to move.
+3. **A closed Branch with history is kept for good** (fix 7). History means any class (past, future or archived), timetable slot, Instructor profile, or staff/coach role (current or revoked) ever at the Branch. Such a Branch gets no removal date; an empty one is still removed after 90 days. The purge job checks again before deleting and, if it finds history, clears the date instead. Reopen works either way.
+4. **Wording:** "Close branch", "Reopen", "Closed" and "Show closed" replace the archive words on the Branches page and in Branch pickers ("(Closed)"), in all 15 languages.
+
+Migration `20261205000000_branch_close`: the School owner may delete a home-branch row (for "no home Branch"; the owner-only RLS policy already covered it, the table grant was missing), and the purge job may clear a closed Branch's `purgeAt`.
+
+### What this does NOT resolve
+
+- A coach's other Branch roles, permissions and the Classes they teach elsewhere are untouched; only what points at the closed Branch moves.
+- A slot moved to a Branch in another timezone keeps its wall-clock times, so its classes happen at that local time there, as when a slot's Branch is edited today.
+
+### Recorded by
+
+User, 26 Oct 2026, choosing on the Branches review's decision cards: fix 5 "Only live things block", fix 6 "Build Close branch", fix 7 "Keep it if it has history".
+
+---
+
 ## Decision 360 — Staff page: what to build next (the eight build-plan answers)
 
 **Date:** 26–27 Oct 2026 · **Status:** Product-owner answers to the Staff build plan's eight questions · **Follows:** Decisions 183, 295, 296

@@ -24,7 +24,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   "Give role", since it works straight away. A removed or changed role now
   applies on the person's next click, even if they are signed in, instead of
   up to 15 minutes later. Names made only of spaces are refused on Add staff
-  manually. Needs the migration `20261205000000_user_roles_changed_at`.
+  manually. Needs the migration `20261206000000_user_roles_changed_at`.
+- **Close branch** (Decision 330) replaces Archive on the Branches page. Only
+  what is still in use stops a Branch closing (upcoming classes, weekly slots,
+  Instructor profiles, home-branch Students, staff and coach roles); past
+  classes no longer do. The window asks where each group goes (another Branch,
+  or the whole School where that makes sense), moves it all and closes the
+  Branch in one step, and cancels open coach invites there. Nobody is charged
+  or emailed. A closed Branch with history is kept for good; an empty one is
+  removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
+  archive words, in all 15 languages. **Needs a database migration.**
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,

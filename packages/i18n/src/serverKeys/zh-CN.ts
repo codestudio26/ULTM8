@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "有教练员申报了此腰带，因此无法删除。",
     beltDeclaredArchive: "有教练员申报了此腰带，因此无法归档。",
     classHasDependents: "此课程仍有以下内容，无法归档：{items}。",
-    branchHasDependents: "此分校仍有以下内容，无法归档：{items}。请先移走或删除它们。",
+    branchHasDependents: "此分校仍有以下内容，无法关闭：{items}。请选择去向或先移走。",
     instructorHasDependents: "此教练员仍被分配到以下内容，无法归档：{items}。请先将其改派给其他人。",
     schoolHasSubscription: "该学校已有有效的平台订阅——暂不支持更改方案。",
     franchiseHasSubscription: "该加盟机构已有有效的平台订阅——暂不支持更改方案。",
@@ -92,6 +92,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "{count} 个有效课表时段",
+      },
+      weeklySlots: {
+        other: "{count} 个每周课表时段",
       },
     },
   },
