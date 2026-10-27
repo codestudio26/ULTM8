@@ -87,3 +87,6 @@ export const VIDEO_PROCESSING_POLL_QUEUE = 'video-processing-poll';
 // header comment for why, unlike that queue's GRANDFATHER case, BOTH strategies
 // here always enqueue real work.
 export const FRANCHISE_FEE_RATE_MIGRATION_QUEUE = 'franchise-fee-rate-migration';
+
+/** Decision 354 — daily: waiver renewals, the sign-again-at-18 rule and repeat reminders. */
+export const WAIVER_RENEWAL_SWEEP_QUEUE = 'waiver-renewal-sweep';

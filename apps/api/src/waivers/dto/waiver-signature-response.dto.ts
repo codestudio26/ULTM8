@@ -77,6 +77,18 @@ export class WaiverSignatureResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'The Waiver version that was signed.' })
   signedWaiverVersion!: number | null;
 
+  @ApiProperty({ enum: ['ONLINE', 'PAPER'], description: 'ONLINE: signed in the app. PAPER: signed on paper and recorded by the Owner or a Manager (Decision 354).' })
+  method!: 'ONLINE' | 'PAPER';
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'PAPER only: the staff member who recorded it.' })
+  recordedById!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Read one signature only: the name of the staff member who recorded a paper signature.' })
+  recordedByName?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'When this member was last reminded to sign.' })
+  lastRemindedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -87,7 +99,9 @@ export class WaiverSignatureResponseDto {
 /** The rollup count the v1.2 backend backlog's own "Recommended display
  * shape" named — "12 of 40 signed" — expandable, client-side, into the full
  * per-Student roster `WaiverSignatureListResponseDto.items` already carries.
- * `total` is every row regardless of status, not just signed+unsigned. */
+ * `total` counts current entries only: an Expired row is an old signature
+ * the same student has since been asked to give again (Decision 354), so it
+ * is in `expired` but not in `total`. */
 export class WaiverSignatureSummaryDto {
   @ApiProperty()
   total!: number;
