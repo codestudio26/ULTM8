@@ -1,4 +1,9 @@
 export const students = {
+  tabs: {
+    aria: 'Students sections',
+    students: 'Students',
+    checkIn: 'Check-in',
+  },
   title: 'Students',
   subtitle: 'Everyone currently enrolled at your School. Open a student to see and change their ranks.',
   inviteButton: 'Invite a Student',

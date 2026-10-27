@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pause {start} – {end}",
       bookError: "Impossible de réserver ce cours — veuillez réessayer.",
       joinWaitlistError: "Impossible de rejoindre la liste d’attente — veuillez réessayer.",
       leaveWaitlistError: "Impossible de quitter la liste d’attente — veuillez réessayer.",
@@ -493,6 +494,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Depuis le {date}",
       unverified: "En attente de la vérification de cette ceinture par l’école.",
       topOfLadder: "Sommet de la progression.",
+      noLongerTaught: "N'est plus enseigné dans cette école. Ta ceinture et ton historique sont conservés.",
       next: "Suivant : {rank}",
       progress: "{percent} % du chemin parcouru",
       readyToGrade: "Prêt pour le passage",
@@ -669,6 +671,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Expire le {date}",
       empty: "Aucune adhésion pour le moment.",
       loadError: "Impossible de charger les adhésions — veuillez réessayer.",
+      cancelSubscription: "Résilier l'abonnement",
+      keepSubscription: "Le garder",
+      cancelConfirm: "Vous gardez votre abonnement jusqu'à la fin du mois payé. Il se termine ensuite et aucun autre paiement n'est prélevé.",
+      cancelError: "Impossible de résilier votre abonnement — veuillez réessayer.",
+      cancelledEnds: "Résilié, se termine le {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
@@ -690,6 +697,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Aucune notification pour le moment.",
+      markAllRead: "Tout marquer comme lu",
+      markAllReadFailed: "Impossible de marquer vos notifications comme lues. Veuillez réessayer.",
       loadFailed: "Impossible de charger les notifications — veuillez réessayer.",
     },
     row: {
@@ -697,6 +706,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, non lue",
       unread: "Non lue",
       markAsRead: "Marquer comme lue",
+      open: "Ouvrir",
       markReadFailed: "Impossible de marquer comme lue — veuillez réessayer.",
     },
   },
@@ -782,6 +792,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Voir le reçu",
       noReceipt: "Aucun reçu n’est disponible pour ce paiement.",
       receiptFailed: "Impossible de charger le reçu — veuillez réessayer.",
+      renewal: "Renouvellement : {plan}",
+      lateCancelFee: "Frais d'annulation tardive : {class}",
+      lateCancelFeeNoClass: "Frais d'annulation tardive",
     },
     status: {
       successful: "RÉUSSI",
@@ -818,6 +831,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "D’autres personnes attendent déjà une place dans ce cours. Rejoignez la liste d’attente pour attendre votre tour.",
       bookingClosed: "Les réservations pour ce cours sont closes. Un membre du personnel peut encore vous ajouter.",
       classBusy: "Beaucoup de personnes réservent ce cours en ce moment. Veuillez réessayer dans un instant.",
+      ticketRequired: "Ce cours ponctuel nécessite son propre billet. Un abonnement, un pass semaine ou un carnet de cours général ne le couvre pas.",
       checkInNotOpen: "Le pointage pour ce cours n’est pas encore ouvert.",
       checkInNotOpenAt: "Le pointage pour ce cours n’est pas encore ouvert. Il ouvre {time}.",
     },

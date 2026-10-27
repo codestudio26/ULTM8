@@ -38,6 +38,7 @@ import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal,
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
+import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { formatHours } from './hours';
 
 type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
@@ -78,7 +79,8 @@ export function StudentGradingPage() {
   const my = useMyGrading(schoolId);
   // Former students too, so their page still shows their name (Decision 341).
   const students = useStudents(schoolId, 'ALL');
-  const disciplines = useDisciplines(schoolId);
+  // Archived styles too: a student keeps their rank and history in one (Decision 310).
+  const disciplines = useDisciplines(schoolId, { includeArchived: true });
   const eligibility = useStudentEligibility(studentId, schoolId);
   const lessons = useLessons(schoolId);
   const instructors = useInstructors(schoolId);
@@ -110,8 +112,8 @@ export function StudentGradingPage() {
 
   const student = students.data?.items.find((s) => s.id === studentId);
   // A coach sees the styles they grade in (Decisions 181, 184).
-  const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const ranks = eligibility.data?.items ?? [];
+  const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id) && (!d.archivedAt || ranks.some((r) => r.disciplineId === d.id)));
   const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? t('grading.studentFallback');
   // A former student's grading history stays readable, but nothing can be
   // changed: the API refuses grading a student who isn't enrolled.
@@ -177,6 +179,10 @@ export function StudentGradingPage() {
         </Card>
       </div>
 
+      {/* Decision 348: memberships, selling at the desk, Friend Pass and
+          cancelling a Subscription. Owner only, like the API. */}
+      {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
+
       {styles.length === 0 ? (
         <Card>
           {my.isOwner ? (
@@ -199,6 +205,7 @@ export function StudentGradingPage() {
             performerName={performerName}
             can={(toggle) => !inactive && my.can(discipline.id, toggle)}
             isOwner={my.isOwner}
+            archived={!!discipline.archivedAt}
             firstName={student?.firstName || studentName}
             studentName={studentName}
             feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
@@ -311,8 +318,9 @@ function DisciplineGradingCard({
   history,
   historyLoading,
   performerName,
-  can,
+  can: canInStyle,
   isOwner,
+  archived,
   firstName,
   studentName,
   feeRequests,
@@ -329,12 +337,16 @@ function DisciplineGradingCard({
   /** What the caller may do in this style; actions they can't use are hidden. */
   can: (toggle: GradingToggle) => boolean;
   isOwner: boolean;
+  /** The School no longer teaches this style (Decision 309): the rank and
+   * history show, read-only but for voiding and notes (Decision 310). */
+  archived: boolean;
   firstName: string;
   studentName: string;
   /** This style's promotion fee requests (Decisions 300, 307, 313). */
   feeRequests: StudentFeeRequest[];
   feeCurrency: string | null;
 }) {
+  const can = (toggle: GradingToggle) => (archived ? toggle === 'canVoidHistory' && canInStyle(toggle) : canInStyle(toggle));
   const ranks = useRanks(discipline.id);
   const skills = useSkills(discipline.id);
   const t = useT();
@@ -342,7 +354,7 @@ function DisciplineGradingCard({
   const changeNote = useChangeHistoryNote(studentId, schoolId);
   const [noteError, setNoteError] = useState<string | null>(null);
   // Who may grade this student in this style may edit or hide notes (Decision 192).
-  const mayEditNotes = can('canPromote') || can('canDowngrade');
+  const mayEditNotes = canInStyle('canPromote') || canInStyle('canDowngrade');
 
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
   const current = studentRank ? ladder.find((r) => r.id === studentRank.currentStripeId) ?? null : null;
@@ -359,8 +371,9 @@ function DisciplineGradingCard({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div>
             <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-              {discipline.name}
+              {discipline.name} {archived ? <Badge>{t('disciplines.list.archived')}</Badge> : null}
             </h2>
+            {archived ? <p className="ultm8-field__hint">{t('grading.student.archivedStyleNote')}</p> : null}
             {ranks.isLoading ? (
               <Spinner />
             ) : !studentRank ? (
@@ -374,7 +387,7 @@ function DisciplineGradingCard({
                 <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
                 {fee ? <FeeBadge status={fee.status} /> : null}
                 {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
-                {eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
+                {!archived && eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
               </div>
             )}
           </div>
@@ -423,7 +436,7 @@ function DisciplineGradingCard({
           />
         ) : null}
 
-        {current && eligibility && studentRank ? (
+        {current && eligibility && studentRank && !archived ? (
           <Progress
             eligibility={eligibility}
             breakdown={studentRank.progressBreakdown ?? null}
@@ -443,7 +456,7 @@ function DisciplineGradingCard({
           </div>
         ) : null}
 
-        {current && eligibility?.hasNext ? (
+        {current && eligibility?.hasNext && !archived ? (
           <SkillsForNext
             studentId={studentId}
             eligibility={eligibility}

@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pause {start} – {end}",
       bookError: "Dieser Kurs konnte nicht gebucht werden — bitte versuche es erneut.",
       joinWaitlistError: "Du konntest dich nicht auf die Warteliste setzen — bitte versuche es erneut.",
       leaveWaitlistError: "Du konntest die Warteliste nicht verlassen — bitte versuche es erneut.",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Seit {date}",
       unverified: "Wartet darauf, dass die Schule diesen Gürtel bestätigt.",
       topOfLadder: "Ganz oben in der Graduierungsreihe.",
+      noLongerTaught: "Wird an dieser Schule nicht mehr unterrichtet. Dein Gürtel und deine Historie bleiben erhalten.",
       next: "Als Nächstes: {rank}",
       progress: "{percent} % geschafft",
       readyToGrade: "Prüfungsbereit",
@@ -652,6 +654,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Läuft ab am {date}",
       empty: "Noch keine Mitgliedschaften.",
       loadError: "Mitgliedschaften konnten nicht geladen werden — bitte versuche es erneut.",
+      cancelSubscription: "Abo kündigen",
+      keepSubscription: "Behalten",
+      cancelConfirm: "Du behältst dein Abo bis zum Ende des bezahlten Monats. Danach endet es und es werden keine Zahlungen mehr eingezogen.",
+      cancelError: "Dein Abo konnte nicht gekündigt werden — bitte versuche es erneut.",
+      cancelledEnds: "Gekündigt, endet am {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} Kurs", other: "{count} Kurse" },
@@ -673,6 +680,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Noch keine Benachrichtigungen.",
+      markAllRead: "Alle als gelesen markieren",
+      markAllReadFailed: "Deine Benachrichtigungen konnten nicht als gelesen markiert werden. Bitte versuche es erneut.",
       loadFailed: "Benachrichtigungen konnten nicht geladen werden — bitte versuche es erneut.",
     },
     row: {
@@ -680,6 +689,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ungelesen",
       unread: "Ungelesen",
       markAsRead: "Als gelesen markieren",
+      open: "Öffnen",
       markReadFailed: "Das konnte nicht als gelesen markiert werden — bitte versuche es erneut.",
     },
   },
@@ -764,6 +774,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Beleg ansehen",
       noReceipt: "Für diese Zahlung ist kein Beleg verfügbar.",
       receiptFailed: "Der Beleg konnte nicht geladen werden — bitte versuche es erneut.",
+      renewal: "Verlängerung: {plan}",
+      lateCancelFee: "Gebühr für späte Absage: {class}",
+      lateCancelFeeNoClass: "Gebühr für späte Absage",
     },
     status: {
       successful: "ERFOLGREICH",
@@ -800,6 +813,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Andere warten bereits auf einen Platz in diesem Kurs. Setz dich auf die Warteliste, um an die Reihe zu kommen.",
       bookingClosed: "Die Buchung für diesen Kurs ist geschlossen. Ein Mitarbeiter kann dich trotzdem hinzufügen.",
       classBusy: "Gerade buchen viele Leute diesen Kurs. Bitte versuche es gleich noch einmal.",
+      ticketRequired: "Für diesen Einzelkurs brauchst du ein eigenes Ticket. Ein Abo, ein Wochenpass oder eine allgemeine Kurskarte deckt ihn nicht ab.",
       checkInNotOpen: "Der Check-in für diesen Kurs ist noch nicht geöffnet.",
       checkInNotOpenAt: "Der Check-in für diesen Kurs ist noch nicht geöffnet. Öffnung: {time}.",
     },

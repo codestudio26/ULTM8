@@ -133,6 +133,33 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
     expect(unchanged.name).toBe('RLS Test School B');
   });
 
+  it('a Franchise join request is visible only to that School\'s Owner and that Franchise\'s Owner (Decision 352)', async () => {
+    const franchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'RLS Join Franchise' } });
+    const otherFranchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'RLS Other Franchise' } });
+    try {
+      // userA owns a different Franchise, so a FRANCHISE_OWNER grant alone is not enough.
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: userA.id, franchiseId: otherFranchise.id } });
+      const req = await superuser.franchiseJoinRequest.create({
+        data: { id: randomUUID(), franchiseId: franchise.id, schoolId: schoolB.id, schoolName: 'RLS Test School B', requestedById: userB.id },
+      });
+
+      const seenByA = await withUser(userA.id, (tx) => tx.franchiseJoinRequest.findMany({ where: { id: req.id } }));
+      expect(seenByA).toHaveLength(0);
+      await withUser(userA.id, (tx) => tx.franchiseJoinRequest.updateMany({ where: { id: req.id }, data: { status: 'ACCEPTED' } }));
+      expect((await superuser.franchiseJoinRequest.findUniqueOrThrow({ where: { id: req.id } })).status).toBe('PENDING');
+
+      const seenByB = await withUser(userB.id, (tx) => tx.franchiseJoinRequest.findMany({ where: { id: req.id } }));
+      expect(seenByB).toHaveLength(1);
+
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: userA.id, franchiseId: franchise.id } });
+      const seenByOwner = await withUser(userA.id, (tx) => tx.franchiseJoinRequest.findMany({ where: { id: req.id } }));
+      expect(seenByOwner).toHaveLength(1);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchise.id, otherFranchise.id] } } });
+      await superuser.franchise.deleteMany({ where: { id: { in: [franchise.id, otherFranchise.id] } } });
+    }
+  });
+
   it('a request with no tenant context set sees zero rows, not an error and not all rows', async () => {
     // Deliberately bypass withUser — no SET LOCAL app.current_user_id at all.
     const schools = await appDb.school.findMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });

@@ -34,6 +34,9 @@ export class RungHolderDto {
 
   @ApiProperty()
   surname!: string;
+
+  @ApiProperty({ description: 'Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310).' })
+  enrolled!: boolean;
 }
 
 export class RungHoldersDto {

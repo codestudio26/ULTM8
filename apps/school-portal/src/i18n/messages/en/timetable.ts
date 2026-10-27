@@ -1,6 +1,8 @@
 export const timetable = {
   title: 'Timetable',
   subtitle: 'The recurring weekly slot template — click any occurrence to book a Student into it.',
+  /** Decision 353 (Q4) — Branch Staff see the calendar read-only. */
+  staffSubtitle: 'The classes at your branch. Click a class to book a Student in at the desk.',
   addSlot: 'Add slot',
   loadFailed: 'Could not load the Timetable.',
   rangeAria: 'Date range',
@@ -15,6 +17,7 @@ export const timetable = {
   viewAria: 'Timetable view',
   emptyTitle: 'No Timetable slots yet',
   emptyDescription: 'Add your first weekly slot to get started.',
+  staffEmptyDescription: 'Nothing is scheduled at your branch yet. The School owner adds the timetable.',
   addSlotTitle: 'Add timetable slot',
   editSlotTitle: 'Edit timetable slot',
   bookedClasses: {
@@ -50,6 +53,14 @@ export const timetable = {
     unarchiveFailed: 'Could not unarchive this slot.',
     off: 'Off',
     archived: 'Archived',
+    openClass: 'Open class',
+    seats: '{taken} booked',
+    seatsOf: '{taken} of {capacity} booked',
+    waiting: '{count} waiting',
+    cancelled: 'Cancelled',
+    ended: 'Ended',
+    full: 'Full',
+    later: 'Opens for booking later',
     archiveConfirmTitle: 'Archive {title}?',
     archiveConfirmDescription: 'The slot comes off the timetable and its upcoming classes are removed. A slot with upcoming bookings can’t be archived. You can unarchive it later.',
   },
@@ -94,13 +105,9 @@ export const timetable = {
     bannerUrlLabel: 'Banner URL',
     descriptionLabel: 'Description',
     waiverRequired: 'Requires signed waiver/terms to book',
-    membershipInclusion: 'Included in general membership access (no separate ticket required)',
   },
   booking: {
     title: 'Book — {title}',
-    notBookableTitle: 'Not bookable yet.',
-    notBookable:
-      "{notBookableTitle} This occurrence ({date}) hasn't been generated as a real Class yet — Classes are generated up to 4 weeks ahead of time. Check back closer to the date, or confirm this slot is turned On.",
     close: 'Close',
     loadFailed: 'Could not load this occurrence.',
     bookFailed: 'Could not create this Booking.',
@@ -110,6 +117,7 @@ export const timetable = {
     classLabel: 'Class',
     instructorLabel: 'Instructor',
     timingsLabel: 'Class Timings',
+    breakLine: 'Break {start} – {end}',
     dateLabel: 'Class Date',
     confirm: 'Confirm',
     addToWaitlist: 'Add to waitlist',

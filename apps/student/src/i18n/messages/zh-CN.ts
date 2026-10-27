@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "休息 {start} – {end}",
       bookError: "无法预约此课程，请重试。",
       joinWaitlistError: "无法加入候补名单，请重试。",
       leaveWaitlistError: "无法退出候补名单，请重试。",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "自 {date} 起",
       unverified: "等待学校核实此腰带。",
       topOfLadder: "已到晋级阶梯顶端。",
+      noLongerTaught: "本校已不再教授此项目。你的腰带和记录会保留。",
       next: "下一级：{rank}",
       progress: "已完成 {percent}%",
       readyToGrade: "可晋级",
@@ -646,6 +648,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date} 到期",
       empty: "还没有会员。",
       loadError: "无法加载会员，请重试。",
+      cancelSubscription: "取消订阅",
+      keepSubscription: "保留",
+      cancelConfirm: "你可以使用订阅至已付费月份结束。之后订阅结束，不再扣款。",
+      cancelError: "无法取消你的订阅，请重试。",
+      cancelledEnds: "已取消，{date} 结束",
     },
     planRow: {
       classesIncluded: { other: "{count} 节课" },
@@ -667,6 +674,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "还没有通知。",
+      markAllRead: "全部标为已读",
+      markAllReadFailed: "无法将通知标为已读，请重试。",
       loadFailed: "无法加载通知，请重试。",
     },
     row: {
@@ -674,6 +683,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}，未读",
       unread: "未读",
       markAsRead: "标为已读",
+      open: "打开",
       markReadFailed: "无法标为已读，请重试。",
     },
   },
@@ -757,6 +767,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "查看收据",
       noReceipt: "此笔付款没有可用的收据。",
       receiptFailed: "无法加载收据，请重试。",
+      renewal: "续费：{plan}",
+      lateCancelFee: "迟取消费用：{class}",
+      lateCancelFeeNoClass: "迟取消费用",
     },
     status: {
       successful: "成功",
@@ -793,6 +806,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "已有其他人在候补此课程的名额。加入候补名单即可排队等候。",
       bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
       classBusy: "目前很多人正在预约此课程，请稍后再试。",
+      ticketRequired: "这节单次课程需要专属门票。订阅、周卡或通用课时包都不包含它。",
       checkInNotOpen: "此课程的签到尚未开放。",
       checkInNotOpenAt: "此课程的签到尚未开放，将于 {time} 开放。",
     },

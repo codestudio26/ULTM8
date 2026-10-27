@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "휴식 {start} – {end}",
       bookError: "이 수업을 예약하지 못했습니다. 다시 시도해 주세요.",
       joinWaitlistError: "대기자 명단에 등록하지 못했습니다. 다시 시도해 주세요.",
       leaveWaitlistError: "대기자 명단에서 나가지 못했습니다. 다시 시도해 주세요.",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date}부터",
       unverified: "도장에서 이 띠를 확인하기를 기다리는 중입니다.",
       topOfLadder: "단계표 최상위입니다.",
+      noLongerTaught: "이 도장에서는 더 이상 가르치지 않습니다. 띠와 기록은 그대로 남습니다.",
       next: "다음: {rank}",
       progress: "{percent}% 진행",
       readyToGrade: "승급 준비 완료",
@@ -647,6 +649,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date} 만료",
       empty: "아직 회원권이 없습니다.",
       loadError: "회원권을 불러오지 못했습니다. 다시 시도해 주세요.",
+      cancelSubscription: "구독 해지",
+      keepSubscription: "유지하기",
+      cancelConfirm: "결제한 달이 끝날 때까지 구독을 유지합니다. 그 후 구독이 끝나고 더 이상 결제되지 않습니다.",
+      cancelError: "구독을 해지할 수 없습니다 — 다시 시도해 주세요.",
+      cancelledEnds: "해지됨, {date}에 종료",
     },
     planRow: {
       classesIncluded: { other: "수업 {count}회" },
@@ -668,6 +675,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "아직 알림이 없습니다.",
+      markAllRead: "모두 읽음으로 표시",
+      markAllReadFailed: "알림을 읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
       loadFailed: "알림을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     row: {
@@ -675,6 +684,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, 읽지 않음",
       unread: "읽지 않음",
       markAsRead: "읽음으로 표시",
+      open: "열기",
       markReadFailed: "읽음으로 표시하지 못했습니다. 다시 시도해 주세요.",
     },
   },
@@ -758,6 +768,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "영수증 보기",
       noReceipt: "이 결제에 대한 영수증이 없습니다.",
       receiptFailed: "영수증을 불러오지 못했습니다. 다시 시도해 주세요.",
+      renewal: "갱신: {plan}",
+      lateCancelFee: "늦은 취소 수수료: {class}",
+      lateCancelFeeNoClass: "늦은 취소 수수료",
     },
     status: {
       successful: "성공",
@@ -794,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "이 수업은 이미 자리를 기다리는 사람이 있습니다. 대기자 명단에 등록해 차례를 기다리세요.",
       bookingClosed: "이 수업의 예약이 마감되었습니다. 직원은 여전히 추가해 줄 수 있습니다.",
       classBusy: "지금 많은 사람이 이 수업을 예약하고 있습니다. 잠시 후 다시 시도해 주세요.",
+      ticketRequired: "이 일회성 수업은 전용 티켓이 필요합니다. 구독, 주간 패스, 일반 수업 패키지로는 예약할 수 없습니다.",
       checkInNotOpen: "이 수업의 출석 체크가 아직 시작되지 않았습니다.",
       checkInNotOpenAt: "이 수업의 출석 체크가 아직 시작되지 않았습니다. {time}에 시작합니다.",
     },

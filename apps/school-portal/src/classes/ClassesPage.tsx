@@ -80,7 +80,8 @@ export function ClassesPage() {
   const { data: school } = useSchool(schoolId);
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
-  const { data: disciplineData } = useDisciplines(schoolId);
+  // Archived styles too: the forms show one a record already has (Decision 310).
+  const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
   const createClass = useCreateClass(schoolId ?? '');
   const archiveClass = useArchiveClass(schoolId ?? '');
   const unarchiveClass = useUnarchiveClass(schoolId ?? '');
@@ -233,6 +234,7 @@ export function ClassesPage() {
                     <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={40} />
                     <strong>{c.title}</strong>
                     {c.archivedAt ? <Badge variant="default">{t('classes.archived')}</Badge> : null}
+                    {c.cancelledAt ? <Badge variant="danger">{t('classes.cancelled')}</Badge> : null}
                   </div>
                   <div style={{ margin: '8px 0' }}>{badges(c)}</div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
@@ -258,7 +260,7 @@ export function ClassesPage() {
             rows={classes}
             columns={[
               { key: 'banner', header: '', render: (c) => <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={32} /> },
-              { key: 'title', header: t('classes.columns.title'), render: (c) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{c.title}{c.archivedAt ? <Badge variant="default">{t('classes.archived')}</Badge> : null}</div>) },
+              { key: 'title', header: t('classes.columns.title'), render: (c) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{c.title}{c.archivedAt ? <Badge variant="default">{t('classes.archived')}</Badge> : null}{c.cancelledAt ? <Badge variant="danger">{t('classes.cancelled')}</Badge> : null}</div>) },
               {
                 key: 'activities',
                 header: t('classes.columns.activities'),

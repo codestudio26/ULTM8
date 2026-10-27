@@ -159,6 +159,23 @@ export class NotificationsService {
   }
 
   /**
+   * POST /notifications/me/read-all (Decision 355) — "Mark all read": every
+   * unread, not-deleted Notification the caller has, across every page,
+   * snoozed ones included. `readAt` is set to now: an unread row has never
+   * been read (there is no way back to unread), so this is its first read,
+   * the same rule markRead follows. Nothing unread is a plain `{ updated: 0 }`.
+   */
+  async markAllRead(callerId: string): Promise<{ updated: number }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { userId: callerId, read: false, deletedAt: null },
+        data: { read: true, readAt: new Date() },
+      });
+      return { updated: result.count };
+    });
+  }
+
+  /**
    * PATCH /notifications/:id/snooze (v1.2 backend backlog — Snooze, approved
    * by the product owner). Exactly one of `dto.until`/`dto.minutes` must be
    * given — see SnoozeNotificationDto's own header comment for why that's
@@ -180,6 +197,11 @@ export class NotificationsService {
     const snoozedUntil = dto.until ? new Date(dto.until) : new Date(Date.now() + dto.minutes! * 60_000);
     if (snoozedUntil.getTime() <= Date.now()) {
       throw new BadRequestException('`until`/`minutes` must resolve to a future time.');
+    }
+    // The same 7-day ceiling `minutes` has (SnoozeNotificationDto), so `until`
+    // can't hide a notification for years.
+    if (snoozedUntil.getTime() > Date.now() + MAX_SNOOZE_MS) {
+      throw new BadRequestException('A notification can be snoozed for at most 7 days.');
     }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -289,6 +311,8 @@ export class NotificationsService {
   }
 }
 
+const MAX_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface NotificationCursor {
   createdAt: Date;
   id: string;
@@ -298,7 +322,19 @@ function encodeCursor(n: { createdAt: Date; id: string }): string {
   return Buffer.from(JSON.stringify({ createdAt: n.createdAt.toISOString(), id: n.id })).toString('base64url');
 }
 
+/** A cursor that isn't one this service wrote is the caller's mistake (a 400),
+ * not a server fault: JSON.parse and an Invalid Date used to surface as 500s. */
 function decodeCursor(cursor: string): NotificationCursor {
-  const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { createdAt: string; id: string };
-  return { createdAt: new Date(parsed.createdAt), id: parsed.id };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+  } catch {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  const { createdAt, id } = (parsed ?? {}) as { createdAt?: unknown; id?: unknown };
+  const date = typeof createdAt === 'string' ? new Date(createdAt) : null;
+  if (!date || Number.isNaN(date.getTime()) || typeof id !== 'string') {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  return { createdAt: date, id };
 }

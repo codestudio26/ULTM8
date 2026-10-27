@@ -10,6 +10,7 @@ export const grading = {
     since: 'Since {date}',
     unverified: 'Waiting for the School to verify this belt.',
     topOfLadder: 'Top of the ladder.',
+    noLongerTaught: 'No longer taught at this School. Your belt and history stay.',
     next: 'Next: {rank}',
     progress: '{percent}% of the way',
     readyToGrade: 'Ready to grade',

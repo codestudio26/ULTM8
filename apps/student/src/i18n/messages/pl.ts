@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Przerwa {start} – {end}",
       bookError: "Nie udało się zarezerwować tych zajęć — spróbuj ponownie.",
       joinWaitlistError: "Nie udało się dołączyć do listy oczekujących — spróbuj ponownie.",
       leaveWaitlistError: "Nie udało się opuścić listy oczekujących — spróbuj ponownie.",
@@ -498,6 +499,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Od {date}",
       unverified: "Ten pas czeka na weryfikację przez Szkołę.",
       topOfLadder: "Szczyt drabinki.",
+      noLongerTaught: "Nie jest już nauczane w tej szkole. Twój pas i historia zostają.",
       next: "Następny: {rank}",
       progress: "{percent}% drogi",
       readyToGrade: "Gotowy do egzaminu",
@@ -677,6 +679,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Wygasa {date}",
       empty: "Brak członkostw.",
       loadError: "Nie udało się wczytać członkostw — spróbuj ponownie.",
+      cancelSubscription: "Anuluj subskrypcję",
+      keepSubscription: "Zachowaj",
+      cancelConfirm: "Zachowujesz subskrypcję do końca opłaconego miesiąca. Potem się kończy i nie są pobierane kolejne płatności.",
+      cancelError: "Nie udało się anulować subskrypcji — spróbuj ponownie.",
+      cancelledEnds: "Anulowany, kończy się {date}",
     },
     planRow: {
       classesIncluded: {
@@ -708,6 +715,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Brak powiadomień.",
+      markAllRead: "Oznacz wszystkie jako przeczytane",
+      markAllReadFailed: "Nie udało się oznaczyć powiadomień jako przeczytanych. Spróbuj ponownie.",
       loadFailed: "Nie udało się wczytać powiadomień — spróbuj ponownie.",
     },
     row: {
@@ -715,6 +724,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, nieprzeczytane",
       unread: "Nieprzeczytane",
       markAsRead: "Oznacz jako przeczytane",
+      open: "Otwórz",
       markReadFailed: "Nie udało się oznaczyć jako przeczytane — spróbuj ponownie.",
     },
   },
@@ -801,6 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Zobacz potwierdzenie",
       noReceipt: "Brak potwierdzenia dla tej płatności.",
       receiptFailed: "Nie udało się wczytać potwierdzenia — spróbuj ponownie.",
+      renewal: "Odnowienie: {plan}",
+      lateCancelFee: "Opłata za późne anulowanie: {class}",
+      lateCancelFeeNoClass: "Opłata za późne anulowanie",
     },
     status: {
       successful: "UDANA",
@@ -837,6 +850,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Inni już czekają na miejsce na tych zajęciach. Dołącz do listy oczekujących, aby poczekać na swoją kolej.",
       bookingClosed: "Rezerwacja na te zajęcia została zamknięta. Członek personelu nadal może Cię dopisać.",
       classBusy: "Wiele osób rezerwuje teraz te zajęcia. Spróbuj ponownie za chwilę.",
+      ticketRequired: "Te jednorazowe zajęcia wymagają osobnego biletu. Subskrypcja, karnet tygodniowy ani ogólny pakiet zajęć ich nie obejmują.",
       checkInNotOpen: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło.",
       checkInNotOpenAt: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło. Rozpocznie się {time}.",
     },

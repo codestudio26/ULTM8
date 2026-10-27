@@ -74,8 +74,29 @@ export function useNextStudentBooking(studentId: string | null, schoolId: string
  * fresh on their own navigation.
  */
 export function useBookClass() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ classId, body }: { classId: string; body: BookClassInput }) =>
       unwrap(apiClient.POST('/v1/classes/{id}/book', { params: { path: { id: classId } }, body })),
+    // The Class page's Add student shows the new row straight away.
+    onSuccess: (_booking, { classId }) => queryClient.invalidateQueries({ queryKey: ['classBookings', classId] }),
+  });
+}
+
+/** Class page "Cancel booking" — PATCH /bookings/:id/cancel by Staff. The
+ * School's (or Branch's) cancellation settings decide what goes back, and a
+ * refund by anyone but an Owner/Manager waits on the Cancellations page
+ * (Decision 291), all server-side. */
+export function useCancelBooking(classId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      unwrap(apiClient.PATCH('/v1/bookings/{id}/cancel', { params: { path: { id: bookingId } }, body: {} })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classBookings', classId] });
+      // A freed seat can offer the next waiting student a place.
+      queryClient.invalidateQueries({ queryKey: ['classWaitlist', classId] });
+      queryClient.invalidateQueries({ queryKey: ['openCancellations'] });
+    },
   });
 }

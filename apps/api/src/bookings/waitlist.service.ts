@@ -67,6 +67,10 @@ export class WaitlistService {
     // Hoisted to a local const — same closure-narrowing fix bookClass()'s own
     // resolvedClass already applies.
     const resolvedClass = cls;
+    // Decision 291 — the School cancelled this class.
+    if (resolvedClass.cancelledAt) {
+      throw new ConflictException('This class has been cancelled by the school.');
+    }
 
     if (isGuardianAction) {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
@@ -97,6 +101,17 @@ export class WaitlistService {
       }
       if (resolvedClass.capacity === null) {
         throw new ConflictException('This Class has no seat limit. Book it instead.');
+      }
+      // Waivers review W15: the claim step needs a signed Waiver, so a
+      // student without one would hold an offered seat they can never take.
+      if (resolvedClass.termsWaiverRequired) {
+        const signed = await tx.waiverSignature.findFirst({
+          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
+          select: { id: true },
+        });
+        if (!signed) {
+          throw new BadRequestException('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
+        }
       }
       const [booked, guests, queued] = await Promise.all([
         this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
@@ -236,6 +251,9 @@ export class WaitlistService {
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       const studentId = resolvedEntry.studentId;
+      if (cls.cancelledAt) {
+        throw new ConflictException('This class has been cancelled by the school.');
+      }
       // A claim was offered by the waitlist, so the booking cut-off doesn't apply;
       // an archived or ended Class still can't be claimed into.
       assertClassBookable(cls, { byStaff: true });
@@ -272,7 +290,7 @@ export class WaitlistService {
         }
       }
 
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls.id);
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls);
 
       const bookingId = randomUUID();
       try {

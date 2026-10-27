@@ -209,29 +209,37 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] **Schedule:** the **ASSIGN** menu opened and **adding a class**
 
 ## B4. Billing (left-nav item)
-- [ ] Every tab
-- [ ] Transactions list, filters, and opening one transaction
-- [ ] Creating an invoice / charge, refunds, failed payments
-- [ ] Any reports
+- [x] Every tab, and every Settings → Billing page (received 26 Oct 2026; compared in the parity backlog §6)
+- [x] Payments list (Paid/Scheduled/Overdue), Edit Charge, Recurring list, create/edit recurring payment
+- [x] Reports: Overview, Accounting, Growth, Income Categories
+- [x] The **Filter** and **Export** menus opened (Payments, Accounting) (received 26 Oct 2026)
+- [x] An **invoice opened**, Mark Paid and Cancel (recording 26 Oct 2026)
+- [x] Bulk select and **Mass Payment Changes** (recording 26 Oct 2026)
+- [x] "Overdue (**Why?**)": a tooltip, "No card assigned to payment" (26 Oct 2026)
+- [x] **Creating a one-off charge** from the member profile, and cancelling it (recordings 26 Oct 2026)
+- [x] A **refund** of a cash payment (recording 26 Oct 2026)
+- [x] Accounting → **Product Revenue** and **Member Balances** sub-tabs (recording 26 Oct 2026). **Billing captures complete.**
+- [ ] Optional: a discount and a payment form filled in, then saved
 
-## B5. Marketing
+## B5. Marketing: moved to the next version (27 Oct 2026, Decision 351)
+Not captured. Kept for then:
 - [ ] Every tab
 - [ ] Lead capture forms: building one
 - [ ] Email campaigns: creating one
 - [ ] Automations / follow-ups: creating one
 - [ ] Referral programme
 
-## B6. Website
+## B6. Website: moved to the next version (27 Oct 2026, Decision 351)
 - [ ] The website builder or editor
 - [ ] Embeddable widgets (schedule, sign-up form) and the settings to connect your own site
 
-## B7. Sales
+## B7. Sales: moved to the next version (27 Oct 2026, Decision 351)
 - [ ] Products / shop list and **Add product**
 - [ ] Point of sale (selling at the desk), stock, discounts
 
-## B8. Front Desk
-- [ ] What it opens, and whether it's a separate locked mode
-- [ ] Everything a front-desk person can do from it
+## B8. Front Desk: done (27 Oct 2026)
+- [x] What it opens, and whether it's a separate locked mode: a locked front-desk mode with Check-In and Sign-up tabs (7 screenshots, chat only)
+- [x] Everything a front-desk person can do from it: check in by code or name, sign up, Find Me, exit. See `GYMDESK-PARITY-BACKLOG.md` §10; answers in Decision 351
 
 ## B9. Settings → remaining categories
 - [ ] For each of **Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations**: the list of rows, and at least the important ones opened

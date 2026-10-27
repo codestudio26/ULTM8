@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "استراحة {start} – {end}",
       bookError: "تعذّر حجز هذه الحصة، يُرجى المحاولة مرة أخرى.",
       joinWaitlistError: "تعذّر الانضمام إلى قائمة الانتظار، يُرجى المحاولة مرة أخرى.",
       leaveWaitlistError: "تعذّر مغادرة قائمة الانتظار، يُرجى المحاولة مرة أخرى.",
@@ -508,6 +509,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "منذ {date}",
       unverified: "بانتظار تحقّق المدرسة من هذا الحزام.",
       topOfLadder: "أعلى السلّم.",
+      noLongerTaught: "لم تعد هذه الرياضة تُدرَّس في هذه المدرسة. يبقى حزامك وسجلّك.",
       next: "التالي: {rank}",
       progress: "{percent}% من الطريق",
       readyToGrade: "جاهز للترقية",
@@ -693,6 +695,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "تنتهي في {date}",
       empty: "لا توجد عضويات بعد.",
       loadError: "تعذّر تحميل العضويات، يُرجى المحاولة مرة أخرى.",
+      cancelSubscription: "إلغاء الاشتراك",
+      keepSubscription: "الإبقاء عليه",
+      cancelConfirm: "تحتفظ باشتراكك حتى نهاية الشهر المدفوع. ثم ينتهي ولا تُؤخذ أي دفعات أخرى.",
+      cancelError: "تعذّر إلغاء اشتراكك — يُرجى المحاولة مرة أخرى.",
+      cancelledEnds: "أُلغي، ينتهي في {date}",
     },
     planRow: {
       classesIncluded: {
@@ -728,6 +735,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "لا توجد إشعارات بعد.",
+      markAllRead: "تعليم الكل كمقروء",
+      markAllReadFailed: "تعذّر تعليم إشعاراتك كمقروءة، يُرجى المحاولة مرة أخرى.",
       loadFailed: "تعذّر تحميل الإشعارات، يُرجى المحاولة مرة أخرى.",
     },
     row: {
@@ -735,6 +744,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}، غير مقروء",
       unread: "غير مقروء",
       markAsRead: "وضع علامة كمقروء",
+      open: "فتح",
       markReadFailed: "تعذّر وضع علامة كمقروء، يُرجى المحاولة مرة أخرى.",
     },
   },
@@ -823,6 +833,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "عرض الإيصال",
       noReceipt: "لا يوجد إيصال متاح لهذه الدفعة.",
       receiptFailed: "تعذّر تحميل الإيصال، يُرجى المحاولة مرة أخرى.",
+      renewal: "تجديد: {plan}",
+      lateCancelFee: "رسوم الإلغاء المتأخر: {class}",
+      lateCancelFeeNoClass: "رسوم الإلغاء المتأخر",
     },
     status: {
       successful: "ناجحة",
@@ -859,6 +872,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "هناك آخرون ينتظرون مكانًا في هذه الحصة بالفعل. انضم إلى قائمة الانتظار لتأخذ دورك.",
       bookingClosed: "أُغلق الحجز لهذه الحصة. لا يزال بإمكان أحد الموظفين إضافتك.",
       classBusy: "يحجز كثيرون هذه الحصة الآن. يُرجى المحاولة مرة أخرى بعد قليل.",
+      ticketRequired: "يحتاج هذا الصف الفردي إلى تذكرة خاصة به. لا يغطيه الاشتراك أو التصريح الأسبوعي أو باقة الحصص العامة.",
       checkInNotOpen: "لم يُفتح تسجيل الحضور لهذه الحصة بعد.",
       checkInNotOpenAt: "لم يُفتح تسجيل الحضور لهذه الحصة بعد. يُفتح في {time}.",
     },

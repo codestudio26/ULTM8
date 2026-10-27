@@ -67,3 +67,24 @@ describe('ClassBookingRow — booking refusals', () => {
     await waitFor(() => expect(screen.getByText('Booking for this class has closed. A member of staff can still add you.')).toBeTruthy());
   });
 });
+
+/** Decision 353 (Q6) — the slot's break is shown on the class card, only when set. */
+describe('ClassBookingRow — break', () => {
+  beforeEach(() => {
+    mocked(bookingQueries.useBookClass).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+  });
+
+  it('shows the break when the class has one', async () => {
+    const screen = await render(
+      <ClassBookingRow classItem={{ ...classItem, breakStartAt: '2026-11-02T18:20:00.000Z', breakEndAt: '2026-11-02T18:30:00.000Z' }} />,
+    );
+    expect(screen.getByText(/^Break /)).toBeTruthy();
+  });
+
+  it('shows no break line without one', async () => {
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    expect(screen.queryByText(/^Break /)).toBeNull();
+  });
+});

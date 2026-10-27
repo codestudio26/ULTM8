@@ -6,6 +6,8 @@ export const PAYMENT_METHOD_LABELS: Record<string, TranslationKey> = {
   STRIPE: 'lib.paymentMethod.stripe',
   CASH: 'lib.paymentMethod.cash',
   BANK_TRANSFER: 'lib.paymentMethod.bankTransfer',
+  PIX: 'lib.paymentMethod.pix',
+  CARD_TERMINAL: 'lib.paymentMethod.cardTerminal',
 };
 
 export const ROLE_LABELS: Record<string, TranslationKey> = {

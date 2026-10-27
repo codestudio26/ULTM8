@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Перерыв {start} – {end}",
       bookError: "Не удалось записаться на это занятие — попробуйте ещё раз.",
       joinWaitlistError: "Не удалось встать в лист ожидания — попробуйте ещё раз.",
       leaveWaitlistError: "Не удалось выйти из листа ожидания — попробуйте ещё раз.",
@@ -498,6 +499,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "С {date}",
       unverified: "Ждёт подтверждения этого пояса Школой.",
       topOfLadder: "Вершина лестницы.",
+      noLongerTaught: "Больше не преподаётся в этой школе. Ваш пояс и история сохраняются.",
       next: "Следующий: {rank}",
       progress: "Пройдено {percent}%",
       readyToGrade: "Готов к аттестации",
@@ -677,6 +679,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Действует до {date}",
       empty: "Абонементов пока нет.",
       loadError: "Не удалось загрузить абонементы — попробуйте ещё раз.",
+      cancelSubscription: "Отменить подписку",
+      keepSubscription: "Оставить",
+      cancelConfirm: "Подписка сохраняется до конца оплаченного месяца. Затем она заканчивается, и больше платежей не будет.",
+      cancelError: "Не удалось отменить подписку — попробуйте ещё раз.",
+      cancelledEnds: "Отменён, заканчивается {date}",
     },
     planRow: {
       classesIncluded: {
@@ -708,6 +715,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Уведомлений пока нет.",
+      markAllRead: "Отметить все как прочитанные",
+      markAllReadFailed: "Не удалось отметить уведомления как прочитанные. Попробуйте ещё раз.",
       loadFailed: "Не удалось загрузить уведомления — попробуйте ещё раз.",
     },
     row: {
@@ -715,6 +724,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, не прочитано",
       unread: "Не прочитано",
       markAsRead: "Отметить как прочитанное",
+      open: "Открыть",
       markReadFailed: "Не удалось отметить как прочитанное — попробуйте ещё раз.",
     },
   },
@@ -801,6 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Посмотреть чек",
       noReceipt: "Для этого платежа чек недоступен.",
       receiptFailed: "Не удалось загрузить чек — попробуйте ещё раз.",
+      renewal: "Продление: {plan}",
+      lateCancelFee: "Плата за позднюю отмену: {class}",
+      lateCancelFeeNoClass: "Плата за позднюю отмену",
     },
     status: {
       successful: "УСПЕШНО",
@@ -837,6 +850,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Другие уже ждут места на этом занятии. Встаньте в лист ожидания, чтобы дождаться своей очереди.",
       bookingClosed: "Запись на это занятие закрыта. Сотрудник всё ещё может вас добавить.",
       classBusy: "Сейчас на это занятие записывается много людей. Попробуйте ещё раз через минуту.",
+      ticketRequired: "Для этого разового занятия нужен отдельный билет. Подписка, недельный абонемент или общий пакет занятий его не покрывают.",
       checkInNotOpen: "Отметка на это занятие ещё не открыта.",
       checkInNotOpenAt: "Отметка на это занятие ещё не открыта. Она откроется {time}.",
     },

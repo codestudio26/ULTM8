@@ -20,6 +20,8 @@ export const bookings = {
   classRow: {
     /** A Class's start and end dates. */
     dateRange: '{start} – {end}',
+    /** Decision 353 (Q6): the class's break, shown only. */
+    breakLine: 'Break {start} – {end}',
     bookError: 'Could not book this class — please try again.',
     joinWaitlistError: 'Could not join the waitlist — please try again.',
     leaveWaitlistError: 'Could not leave the waitlist — please try again.',

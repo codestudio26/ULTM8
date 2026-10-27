@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Intervalo {start} – {end}",
       bookError: "Não foi possível reservar esta aula — tente novamente.",
       joinWaitlistError: "Não foi possível entrar na lista de espera — tente novamente.",
       leaveWaitlistError: "Não foi possível sair da lista de espera — tente novamente.",
@@ -485,6 +486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Desde {date}",
       unverified: "Aguardando a Escola verificar esta faixa.",
       topOfLadder: "Topo da escada.",
+      noLongerTaught: "Não é mais ensinado nesta escola. Sua faixa e seu histórico continuam.",
       next: "Próxima: {rank}",
       progress: "{percent}% do caminho",
       readyToGrade: "Pronto para graduar",
@@ -648,6 +650,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "Outras pessoas já estão esperando uma vaga nesta aula. Entre na lista de espera para aguardar sua vez.",
       bookingClosed: "As reservas para esta aula foram encerradas. Alguém da equipe ainda pode incluir você.",
       classBusy: "Muitas pessoas estão reservando esta aula agora. Tente novamente em instantes.",
+      ticketRequired: "Esta aula avulsa precisa de um ingresso próprio. Uma assinatura, passe semanal ou pacote de aulas geral não a cobre.",
       checkInNotOpen: "O check-in desta aula ainda não abriu.",
       checkInNotOpenAt: "O check-in desta aula ainda não abriu. Ele abre em {time}.",
     },
@@ -662,6 +665,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "Expira em {date}",
       empty: "Nenhuma matrícula ainda.",
       loadError: "Não foi possível carregar as matrículas — tente novamente.",
+      cancelSubscription: "Cancelar assinatura",
+      keepSubscription: "Manter",
+      cancelConfirm: "Você mantém sua assinatura até o fim do mês já pago. Depois ela termina e nenhuma outra cobrança é feita.",
+      cancelError: "Não foi possível cancelar sua assinatura — tente novamente.",
+      cancelledEnds: "Cancelado, termina em {date}",
     },
     planRow: {
       classesIncluded: { one: "{count} aula", other: "{count} aulas" },
@@ -683,6 +691,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Nenhuma notificação ainda.",
+      markAllRead: "Marcar todas como lidas",
+      markAllReadFailed: "Não foi possível marcar suas notificações como lidas. Tente novamente.",
       loadFailed: "Não foi possível carregar as notificações — tente novamente.",
     },
     row: {
@@ -690,6 +700,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, não lida",
       unread: "Não lida",
       markAsRead: "Marcar como lida",
+      open: "Abrir",
       markReadFailed: "Não foi possível marcar como lida — tente novamente.",
     },
   },
@@ -774,6 +785,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Ver recibo",
       noReceipt: "Nenhum recibo disponível para este pagamento.",
       receiptFailed: "Não foi possível carregar o recibo — tente novamente.",
+      renewal: "Renovação: {plan}",
+      lateCancelFee: "Taxa de cancelamento tardio: {class}",
+      lateCancelFeeNoClass: "Taxa de cancelamento tardio",
     },
     status: {
       successful: "APROVADO",

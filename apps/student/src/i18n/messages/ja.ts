@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "休憩 {start} – {end}",
       bookError: "このクラスを予約できませんでした。もう一度お試しください。",
       joinWaitlistError: "キャンセル待ちに登録できませんでした。もう一度お試しください。",
       leaveWaitlistError: "キャンセル待ちを取り消せませんでした。もう一度お試しください。",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "{date}から",
       unverified: "スクールによるこの帯の確認を待っています。",
       topOfLadder: "ラダーの最上位です。",
+      noLongerTaught: "このスクールでは現在指導されていません。帯と履歴はそのまま残ります。",
       next: "次：{rank}",
       progress: "{percent}% 達成",
       readyToGrade: "昇級準備完了",
@@ -647,6 +649,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       expires: "{date}に期限切れ",
       empty: "会員プランはまだありません。",
       loadError: "会員プランを読み込めませんでした。もう一度お試しください。",
+      cancelSubscription: "サブスクリプションを解約",
+      keepSubscription: "継続する",
+      cancelConfirm: "支払い済みの月の終わりまでサブスクリプションを利用できます。その後終了し、以降の支払いは発生しません。",
+      cancelError: "サブスクリプションを解約できませんでした。もう一度お試しください。",
+      cancelledEnds: "解約済み、{date} に終了",
     },
     planRow: {
       classesIncluded: { other: "{count}クラス" },
@@ -668,6 +675,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "通知はまだありません。",
+      markAllRead: "すべて既読にする",
+      markAllReadFailed: "通知を既読にできませんでした。もう一度お試しください。",
       loadFailed: "通知を読み込めませんでした。もう一度お試しください。",
     },
     row: {
@@ -675,6 +684,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}、未読",
       unread: "未読",
       markAsRead: "既読にする",
+      open: "開く",
       markReadFailed: "既読にできませんでした。もう一度お試しください。",
     },
   },
@@ -758,6 +768,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "領収書を表示",
       noReceipt: "この支払いの領収書はありません。",
       receiptFailed: "領収書を読み込めませんでした。もう一度お試しください。",
+      renewal: "更新：{plan}",
+      lateCancelFee: "直前キャンセル料：{class}",
+      lateCancelFeeNoClass: "直前キャンセル料",
     },
     status: {
       successful: "成功",
@@ -794,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFirst: "このクラスには、すでに空きを待っている人がいます。キャンセル待ちに登録して順番をお待ちください。",
       bookingClosed: "このクラスの予約受付は終了しました。スタッフに追加してもらうことはできます。",
       classBusy: "現在このクラスの予約が集中しています。少し待ってからもう一度お試しください。",
+      ticketRequired: "この単発クラスには専用のチケットが必要です。サブスクリプション、週間パス、一般の回数券では予約できません。",
       checkInNotOpen: "このクラスのチェックインはまだ始まっていません。",
       checkInNotOpenAt: "このクラスのチェックインはまだ始まっていません。{time}に開始します。",
     },
