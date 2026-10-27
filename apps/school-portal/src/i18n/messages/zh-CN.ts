@@ -2328,6 +2328,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "课表",
     subtitle: "每周重复的时段模板——点击任意课次即可为学员预约。",
+    staffSubtitle: "你所在分校的课程。点击课程，在前台为学员预约。",
     addSlot: "添加时段",
     loadFailed: "无法加载课表。",
     rangeAria: "日期范围",
@@ -2342,6 +2343,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "课表视图",
     emptyTitle: "课表中还没有时段",
     emptyDescription: "添加第一个每周时段以开始使用。",
+    staffEmptyDescription: "你所在的分校还没有安排课程。课程表由学校负责人创建。",
     addSlotTitle: "添加课表时段",
     editSlotTitle: "编辑课表时段",
     bookedClasses: {

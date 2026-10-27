@@ -2364,6 +2364,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Grade horária",
     subtitle: "O modelo semanal de horários recorrentes — clique em qualquer ocorrência para inscrever um aluno.",
+    staffSubtitle: "As aulas da sua unidade. Clique em uma aula para reservar um aluno na recepção.",
     addSlot: "Adicionar horário",
     loadFailed: "Não foi possível carregar a grade horária.",
     rangeAria: "Período",
@@ -2378,6 +2379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Visualização da grade horária",
     emptyTitle: "Nenhum horário na grade ainda",
     emptyDescription: "Adicione seu primeiro horário semanal para começar.",
+    staffEmptyDescription: "Ainda não há nada agendado na sua unidade. O dono da escola cria a grade de horários.",
     addSlotTitle: "Adicionar horário à grade",
     editSlotTitle: "Editar horário da grade",
     bookedClasses: {

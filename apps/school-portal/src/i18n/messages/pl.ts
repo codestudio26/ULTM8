@@ -2434,6 +2434,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Grafik",
     subtitle: "Cykliczny tygodniowy szablon terminów — kliknij dowolne zajęcia, aby zapisać na nie ucznia.",
+    staffSubtitle: "Zajęcia w Twojej filii. Kliknij zajęcia, aby zapisać ucznia na recepcji.",
     addSlot: "Dodaj termin",
     loadFailed: "Nie udało się wczytać grafiku.",
     rangeAria: "Zakres dat",
@@ -2448,6 +2449,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Widok grafiku",
     emptyTitle: "Brak terminów w grafiku",
     emptyDescription: "Dodaj pierwszy cotygodniowy termin, aby zacząć.",
+    staffEmptyDescription: "W Twojej filii nic jeszcze nie zaplanowano. Grafik tworzy właściciel szkoły.",
     addSlotTitle: "Dodaj termin do grafiku",
     editSlotTitle: "Edytuj termin w grafiku",
     bookedClasses: {

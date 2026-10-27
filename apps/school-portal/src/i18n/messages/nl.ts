@@ -2364,6 +2364,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Rooster",
     subtitle: "Het terugkerende wekelijkse sjabloon — klik op een sessie om er een leerling voor in te schrijven.",
+    staffSubtitle: "De lessen van je vestiging. Klik op een les om een leerling aan de balie in te boeken.",
     addSlot: "Tijdslot toevoegen",
     loadFailed: "Het rooster kan niet worden geladen.",
     rangeAria: "Periode",
@@ -2378,6 +2379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Roosterweergave",
     emptyTitle: "Nog geen tijdsloten in het rooster",
     emptyDescription: "Voeg je eerste wekelijkse tijdslot toe om te beginnen.",
+    staffEmptyDescription: "Er is nog niets gepland in je vestiging. De eigenaar van de school maakt het rooster.",
     addSlotTitle: "Tijdslot aan rooster toevoegen",
     editSlotTitle: "Tijdslot bewerken",
     bookedClasses: {

@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
+  Timetable item in the Branch Staff menu opens the calendar read-only, with
+  their branch's and School-wide classes, to book walk-ins; only the owner
+  edits slots. Branch Staff and coaches at a School with branches now see
+  their branch's students when booking (here and on the Class page's Add
+  student), instead of an empty list. Needs a database migration.
 - **Timetable shows the real classes (Decision 353)** — the calendar now shows
   each date's actual classes, one-offs included, with seats taken and the
   waitlist; cancelled and ended classes stay visible without Book, and dates

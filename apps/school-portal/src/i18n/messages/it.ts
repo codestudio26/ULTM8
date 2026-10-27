@@ -2364,6 +2364,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Orario",
     subtitle: "Il modello settimanale delle fasce ricorrenti — fai clic su una sessione per prenotare un allievo.",
+    staffSubtitle: "Le lezioni della tua sede. Fai clic su una lezione per prenotare un allievo alla reception.",
     addSlot: "Aggiungi fascia",
     loadFailed: "Impossibile caricare l'orario.",
     rangeAria: "Periodo",
@@ -2378,6 +2379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Vista dell'orario",
     emptyTitle: "Ancora nessuna fascia nell'orario",
     emptyDescription: "Aggiungi la tua prima fascia settimanale per iniziare.",
+    staffEmptyDescription: "Nella tua sede non è ancora previsto nulla. L'orario lo crea il titolare della scuola.",
     addSlotTitle: "Aggiungi fascia all'orario",
     editSlotTitle: "Modifica fascia dell'orario",
     bookedClasses: {

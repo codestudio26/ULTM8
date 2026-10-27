@@ -2364,6 +2364,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   timetable: {
     title: "Stundenplan",
     subtitle: "Die wiederkehrende Wochenvorlage – klicke auf einen Termin, um einen Schüler einzubuchen.",
+    staffSubtitle: "Die Kurse deiner Filiale. Klicke auf einen Kurs, um einen Schüler an der Theke einzubuchen.",
     addSlot: "Zeitfenster hinzufügen",
     loadFailed: "Der Stundenplan konnte nicht geladen werden.",
     rangeAria: "Zeitraum",
@@ -2378,6 +2379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     viewAria: "Stundenplanansicht",
     emptyTitle: "Noch keine Zeitfenster im Stundenplan",
     emptyDescription: "Füge dein erstes wöchentliches Zeitfenster hinzu, um loszulegen.",
+    staffEmptyDescription: "An deiner Filiale ist noch nichts geplant. Der Schulinhaber legt den Stundenplan an.",
     addSlotTitle: "Zeitfenster zum Stundenplan hinzufügen",
     editSlotTitle: "Zeitfenster bearbeiten",
     bookedClasses: {
