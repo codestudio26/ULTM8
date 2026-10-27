@@ -194,23 +194,35 @@ export class RoleGrantsService {
         select: { id: true },
       }),
     );
+    const duplicateMessage = 'This user already holds an active grant of this role at this scope.';
     if (duplicate) {
-      throw new ConflictException('This user already holds an active grant of this role at this scope.');
+      throw new ConflictException(duplicateMessage);
     }
 
     const roleGrantId = randomUUID();
-    const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.create({
-        data: {
-          id: roleGrantId,
-          role: dto.role,
-          userId: targetUserId,
-          schoolId: dto.schoolId,
-          branchId: dto.branchId,
-          grantedById: callerId,
-        },
-      }),
-    );
+    let grant;
+    try {
+      grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.create({
+          data: {
+            id: roleGrantId,
+            role: dto.role,
+            userId: targetUserId,
+            schoolId: dto.schoolId,
+            branchId: dto.branchId,
+            grantedById: callerId,
+          },
+        }),
+      );
+    } catch (err) {
+      // The check above can't see a twin request that is still inserting (a
+      // double click on "Give role"); RoleGrant_one_live_per_scope stops the
+      // second one, and it gets the same answer the check gives.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException(duplicateMessage);
+      }
+      throw err;
+    }
     // Decision 361: their current access token is refused on its next use and
     // the app refreshes it with the new grant, so the role works straight away.
     this.rolesChanged.forget(targetUserId);
