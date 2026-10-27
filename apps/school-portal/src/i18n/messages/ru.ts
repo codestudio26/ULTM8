@@ -328,6 +328,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Всегда возвращать, даже после окончания",
       ranksToggle: "Включить учёт поясов/степеней",
       branchStaffPayments: "Разрешить сотрудникам филиалов записывать оплату, принятую на стойке",
+      weekStart: "Неделя в расписании начинается с",
+      weekStartMonday: "Понедельник",
+      weekStartSunday: "Воскресенье",
+      timetableLayout: "Расписание открывается как",
+      layoutList: "Список",
+      layoutGrid: "Сетка",
     },
     create: {
       createdTitle: "Школа создана",
@@ -2636,6 +2642,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "Не удалось добавить этого ученика в лист ожидания.",
       cancelled: "Это занятие отменено, записаться на него больше нельзя.",
       ended: "Это занятие уже закончилось, записаться на него больше нельзя.",
+    },
+    filters: {
+      branch: "Филиал",
+      allBranches: "Все филиалы",
+      style: "Стиль",
+      allStyles: "Все стили",
+      classType: "Тип занятия",
+      allClassTypes: "Все типы",
     },
     closures: {
       button: "Закрытия",

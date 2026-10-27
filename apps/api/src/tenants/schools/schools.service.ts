@@ -165,6 +165,8 @@ export class SchoolsService {
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
+          weekStartsOn: dto.weekStartsOn,
+          timetableDefaultLayout: dto.timetableDefaultLayout,
         },
       });
 
@@ -866,6 +868,8 @@ export class SchoolsService {
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
+          weekStartsOn: dto.weekStartsOn,
+          timetableDefaultLayout: dto.timetableDefaultLayout,
         },
       }),
     );

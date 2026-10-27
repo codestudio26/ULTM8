@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "종료 후에도 항상 환불",
       ranksToggle: "띠/단급 관리 사용",
       branchStaffPayments: "지점 직원이 데스크에서 받은 결제를 기록하도록 허용",
+      weekStart: "시간표 주 시작일",
+      weekStartMonday: "월요일",
+      weekStartSunday: "일요일",
+      timetableLayout: "시간표 기본 보기",
+      layoutList: "목록",
+      layoutGrid: "그리드",
     },
     create: {
       createdTitle: "도장이 만들어졌습니다",
@@ -2531,6 +2537,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "이 수련생을 대기자 명단에 추가할 수 없습니다.",
       cancelled: "이 수업은 취소되어 더 이상 예약할 수 없습니다.",
       ended: "이 수업은 이미 끝나 더 이상 예약할 수 없습니다.",
+    },
+    filters: {
+      branch: "지점",
+      allBranches: "모든 지점",
+      style: "스타일",
+      allStyles: "모든 스타일",
+      classType: "수업 유형",
+      allClassTypes: "모든 유형",
     },
     closures: {
       button: "휴무일",

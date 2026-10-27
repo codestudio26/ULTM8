@@ -28,6 +28,12 @@ export const schools = {
     lateCancelAlwaysRefund: 'Always refund, even after it ends',
     ranksToggle: 'Enable belt/rank tracking',
     branchStaffPayments: 'Let Branch Staff record payments taken at the desk',
+    weekStart: 'Timetable week starts on',
+    weekStartMonday: 'Monday',
+    weekStartSunday: 'Sunday',
+    timetableLayout: 'Timetable opens as',
+    layoutList: 'Rows',
+    layoutGrid: 'Grid',
   },
   create: {
     createdTitle: 'School created',

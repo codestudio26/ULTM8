@@ -322,6 +322,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Immer erstatten, auch nach Kursende",
       ranksToggle: "Gürtel-/Graduierungsverfolgung aktivieren",
       branchStaffPayments: "Filialmitarbeitern erlauben, am Empfang erhaltene Zahlungen zu erfassen",
+      weekStart: "Stundenplan-Woche beginnt am",
+      weekStartMonday: "Montag",
+      weekStartSunday: "Sonntag",
+      timetableLayout: "Stundenplan öffnet als",
+      layoutList: "Liste",
+      layoutGrid: "Raster",
     },
     create: {
       createdTitle: "Schule erstellt",
@@ -2566,6 +2572,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "Dieser Schüler konnte nicht auf die Warteliste gesetzt werden.",
       cancelled: "Dieser Kurs wurde abgesagt und kann nicht mehr gebucht werden.",
       ended: "Dieser Kurs ist bereits vorbei und kann nicht mehr gebucht werden.",
+    },
+    filters: {
+      branch: "Filiale",
+      allBranches: "Alle Filialen",
+      style: "Stil",
+      allStyles: "Alle Stile",
+      classType: "Kursart",
+      allClassTypes: "Alle Kursarten",
     },
     closures: {
       button: "Schließtage",

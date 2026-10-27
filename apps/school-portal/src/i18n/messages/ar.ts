@@ -334,6 +334,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "استرداد دائمًا، حتى بعد انتهائها",
       ranksToggle: "تفعيل تتبّع الأحزمة/الرتب",
       branchStaffPayments: "السماح لموظفي الفروع بتسجيل الدفعات المستلمة في الاستقبال",
+      weekStart: "يبدأ أسبوع الجدول يوم",
+      weekStartMonday: "الاثنين",
+      weekStartSunday: "الأحد",
+      timetableLayout: "يُفتح الجدول بعرض",
+      layoutList: "قائمة",
+      layoutGrid: "شبكة",
     },
     create: {
       createdTitle: "تم إنشاء المدرسة",
@@ -2706,6 +2712,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "تعذّرت إضافة هذا الطالب إلى قائمة الانتظار.",
       cancelled: "أُلغيت هذه الحصة، لذا لم يعد بالإمكان حجزها.",
       ended: "انتهت هذه الحصة بالفعل، لذا لم يعد بالإمكان حجزها.",
+    },
+    filters: {
+      branch: "الفرع",
+      allBranches: "كل الفروع",
+      style: "الأسلوب",
+      allStyles: "كل الأساليب",
+      classType: "نوع الحصة",
+      allClassTypes: "كل الأنواع",
     },
     closures: {
       button: "أيام الإغلاق",
