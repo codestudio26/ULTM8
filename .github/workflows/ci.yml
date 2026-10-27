@@ -178,6 +178,11 @@ jobs:
         working-directory: apps/api
         run: npx prisma generate
 
+      # apps/api runs ESLint (type-aware, so it needs the Prisma Client above);
+      # every other workspace's `lint` is a `tsc --noEmit` type check.
+      - name: Lint
+        run: npx turbo run lint
+
       - name: Build
         run: npx turbo run build
 
