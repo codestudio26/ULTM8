@@ -108,14 +108,14 @@ export class BookingsController {
     return this.bookingsService.findAllForStudent(user.sub, id, schoolId, cursor, limit);
   }
 
-  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. Staff-only
-   * (School Owner/Manager, Branch Staff, or Instructor). See
+  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. School
+   * Owner only since Decision 367. See
    * BookingsService.getWeeklySummary's own header comment for the date-range
    * default/validation and the two disclosed judgment calls on grouping. */
   @ApiOkResponse({ type: BookingsSummaryResponseDto })
   @Get('schools/:schoolId/bookings/summary')
   getWeeklySummary(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: BookingsSummaryQueryDto) {
-    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
+    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to, query.branchId);
   }
 
   /** Decision 291 — the School cancels a whole class. School Owner/Manager or

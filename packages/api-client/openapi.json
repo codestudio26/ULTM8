@@ -5289,6 +5289,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes held at this Branch of the School.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -18308,7 +18317,8 @@
         "properties": {
           "activity": {
             "type": "string",
-            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
+            "nullable": true,
+            "description": "The Style name (or, for a Class with no Styles, its free-text activity tag) this row is for; null for a Class with neither."
           },
           "totalBookings": {
             "type": "number"
@@ -18323,12 +18333,60 @@
           "upcomingBookings"
         ]
       },
+      "BookingsSummaryClassDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The IANA time zone the Class runs in (Branch, else School, else UTC)."
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "null = unlimited."
+          },
+          "bookedCount": {
+            "type": "number"
+          },
+          "cancelledCount": {
+            "type": "number"
+          },
+          "cancelled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "startDate",
+          "timeZone",
+          "branchName",
+          "capacity",
+          "bookedCount",
+          "cancelledCount",
+          "cancelled"
+        ]
+      },
       "BookingsSummaryDayDto": {
         "type": "object",
         "properties": {
           "date": {
             "type": "string",
-            "description": "YYYY-MM-DD, the School's own local calendar day."
+            "description": "YYYY-MM-DD, the Classes' own local calendar day."
           },
           "totalBookings": {
             "type": "number"
@@ -18336,10 +18394,19 @@
           "upcomingBookings": {
             "type": "number"
           },
+          "cancelledBookings": {
+            "type": "number"
+          },
           "activities": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BookingsSummaryActivityDto"
+            }
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryClassDto"
             }
           }
         },
@@ -18347,7 +18414,9 @@
           "date",
           "totalBookings",
           "upcomingBookings",
-          "activities"
+          "cancelledBookings",
+          "activities",
+          "classes"
         ]
       },
       "BookingsSummaryResponseDto": {
@@ -18361,10 +18430,24 @@
             "type": "string",
             "description": "Inclusive range end actually used, YYYY-MM-DD."
           },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Branch filter applied, if any."
+          },
           "totalBookings": {
             "type": "number"
           },
           "upcomingBookings": {
+            "type": "number"
+          },
+          "cancelledBookings": {
+            "type": "number"
+          },
+          "attendedBookings": {
+            "type": "number"
+          },
+          "noShowBookings": {
             "type": "number"
           },
           "days": {
@@ -18377,8 +18460,12 @@
         "required": [
           "from",
           "to",
+          "branchId",
           "totalBookings",
           "upcomingBookings",
+          "cancelledBookings",
+          "attendedBookings",
+          "noShowBookings",
           "days"
         ]
       },

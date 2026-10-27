@@ -5813,3 +5813,41 @@ Nothing here is built yet. Tablet sign-ups are F5 in `docs/handover/FRONT-DESK-B
 ### Recorded by
 
 User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, then "agree" to the recommendation that staff can approve a rejected sign-up within the 30 days.
+
+---
+
+## Decision 367 — Dashboard review: cancelled bookings apart, Attendance card, by Style, classes per day, Branch filter, Owner only
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Follows up:** Decision 224 (drill-down grouped by raw activity tags) · **Builds:** Spec 55 §2.1's Attendance (Present / Absent) Dashboard card
+
+The School Portal Dashboard review (27 Oct 2026) found 9 bugs (D1–D9) and asked 7 questions (Q1–Q7). The owner chose every recommendation.
+
+### Decision
+
+1. **Cancelled bookings are counted apart (Q1).** "Bookings this week", "Upcoming", each day and each style leave cancelled Bookings out; the card shows "N cancelled" underneath, and each day and class show their own.
+2. **Attendance card (Q2).** The Dashboard shows this week's Present (checked in, `COMPLETED`) and Absent (`NO_SHOW`), per Spec 55 §2.1.
+3. **Grouped by Style (Q3).** The Bookings page groups by each class's Styles, by the Style's current name. A class with no Styles keeps its free-text activity tags; one with neither shows as "No style". A class with several Styles still counts once in each Style's row and once in every total (unchanged from Decision 224).
+4. **Classes per day (Q4).** Each day lists its classes: start time on the class's own clock, name (linking to the class page), Branch, booked / seats (or "N booked" when unlimited), cancelled bookings, and "Class cancelled" for a class the School cancelled. An archived class shows only if it has bookings.
+5. **Branch filter (Q5).** Shown on the Dashboard and the Bookings page when the School has two or more open Branches. "All Branches" (the default) also includes School-wide classes; one Branch shows only classes held there. The choice is kept in the page address and carried by "See more".
+6. **Owner only (Q6).** `GET /schools/:schoolId/bookings/summary` now answers only the School Owner; Branch Staff and coaches get 403 (no screen of theirs used it). If Branch Staff get a Dashboard later, it shows their own Branch only.
+7. **Decided-but-unbuilt Dashboard items (Q7)**: Active students (Decision 317 item 5), this week's birthdays (Decision 318 item 2) and the setup checklist (Decision 318 item 1) come next as their own PR; "What's new" (Decision 318 item 3) waits for Platform Admin.
+
+### Bugs fixed with it (no product decision needed)
+
+- **D1** Bookings page day names were one day early anywhere west of London (a calendar day was formatted as UTC midnight in the browser's zone).
+- **D2** No range limit: a half-typed year (0202) made the server build ~666,000 empty days. A range is now at most **92 days**, checked in the page and on the server.
+- **D3** Days and weeks used the School's time zone or UTC, ignoring the Branch's. Each class now lands on its own local day: Branch, else School, else UTC (the Classes page's rule).
+- **D4** A cleared date or To-before-From showed the API's English error; the page now says so in the picked language and doesn't ask.
+- **D5** The Dashboard's week shows as "26 Oct – 1 Nov" in the picked language, not "2026-10-26 – 2026-11-01".
+- **D6** "Unspecified" is now the translated "No style".
+- **D7** The Dashboard refreshes when the Owner returns to the tab and every 5 minutes.
+- **D8** "Upcoming" has its own singular/plural ("1 próxima").
+- **D9** From/To (and the Branch) are kept in the page address.
+
+### Not changed
+
+The week still runs Monday to Sunday. Once the Timetable's "week starts on" setting (Decision 319) is built, the Dashboard should follow it.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, choosing "All recommended" on the Dashboard review's decision card.

@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Dashboard review fixes** (Decision 367) — "Bookings this week" leaves
+  cancelled bookings out and shows them as their own number; a new Attendance
+  card shows this week's present and absent; a Branch filter for Schools with
+  several Branches. The Bookings page groups by Style, lists each day's
+  classes (time, booked / seats, link to the class), names each day correctly
+  in the Americas, limits a range to 92 days with a clear message, counts
+  each class on its Branch's local day, and keeps the dates in the address.
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,
