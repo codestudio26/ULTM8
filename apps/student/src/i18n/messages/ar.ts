@@ -829,6 +829,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "عرض الإيصال",
       noReceipt: "لا يوجد إيصال متاح لهذه الدفعة.",
       receiptFailed: "تعذّر تحميل الإيصال، يُرجى المحاولة مرة أخرى.",
+      renewal: "تجديد: {plan}",
+      lateCancelFee: "رسوم الإلغاء المتأخر: {class}",
+      lateCancelFeeNoClass: "رسوم الإلغاء المتأخر",
     },
     status: {
       successful: "ناجحة",

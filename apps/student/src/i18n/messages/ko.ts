@@ -764,6 +764,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "영수증 보기",
       noReceipt: "이 결제에 대한 영수증이 없습니다.",
       receiptFailed: "영수증을 불러오지 못했습니다. 다시 시도해 주세요.",
+      renewal: "갱신: {plan}",
+      lateCancelFee: "늦은 취소 수수료: {class}",
+      lateCancelFeeNoClass: "늦은 취소 수수료",
     },
     status: {
       successful: "성공",

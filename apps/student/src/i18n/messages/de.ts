@@ -770,6 +770,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Beleg ansehen",
       noReceipt: "Für diese Zahlung ist kein Beleg verfügbar.",
       receiptFailed: "Der Beleg konnte nicht geladen werden — bitte versuche es erneut.",
+      renewal: "Verlängerung: {plan}",
+      lateCancelFee: "Gebühr für späte Absage: {class}",
+      lateCancelFeeNoClass: "Gebühr für späte Absage",
     },
     status: {
       successful: "ERFOLGREICH",

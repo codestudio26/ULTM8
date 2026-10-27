@@ -781,6 +781,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Ver recibo",
       noReceipt: "No hay recibo disponible para este pago.",
       receiptFailed: "No se pudo cargar el recibo — inténtalo de nuevo.",
+      renewal: "Renovación: {plan}",
+      lateCancelFee: "Cargo por cancelación tardía: {class}",
+      lateCancelFeeNoClass: "Cargo por cancelación tardía",
     },
     status: {
       successful: "CORRECTO",

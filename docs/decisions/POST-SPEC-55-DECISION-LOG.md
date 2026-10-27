@@ -5441,6 +5441,55 @@ User (Code), 26 Oct 2026, choosing "Both must allow it" on the Q7 decision card.
 
 ---
 
+## Decision 346 — Transactions: renewals and late-cancel fees as rows, filters and CSV export, Record a payment at the desk
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 234, 339, 348 · **Migration:** `20261201000200_transactions_renewals_fees_desk`
+
+The Transactions review (26 Oct 2026, Decision 339) left gaps G3, G4, G5 and G7 for the owner. The owner answered: renewals and late-cancel fees should **both** become Transactions rows (Q3, *"Both"*), the page should get **filters and CSV export** (Q6), and front-desk cash payments should be the School owner's call (Q5: the School owner should decide this for their own School).
+
+### Decision
+
+1. **Every paid or failed Subscription renewal is its own row** (G4, kind `RENEWAL`). The Stripe webhook job writes one row per invoice (`invoice.paid` → Successful, `invoice.payment_failed` → Failed), keyed by the invoice id so a redelivered or retried event never makes a second row. A failed invoice that is later paid turns its row Successful; a Successful row never goes back to Failed. The first invoice of a Subscription is skipped, because the purchase already wrote that row. A renewal never creates a membership.
+2. **Every late-cancellation fee is its own row** (G5, kind `LATE_CANCEL_FEE`). When a fee is charged (Decision 234) the row is Successful; when the card is declined it is Failed. When there is no saved card nothing was charged and no row is written. The row names the Booking's class instead of a plan, so `Transaction.membershipPlanId` is now optional. Fees already charged before this change get their row from the migration.
+3. **Filters and CSV export** (G3). The list and the tiles can be narrowed by status, method, type, plan and a date range (both dates included). Export CSV downloads every row the filters pick out, not only the page on screen, with amounts as plain numbers and the currency in its own column. Cells that start with `=`, `+`, `-` or `@` are prefixed so a spreadsheet does not run them as formulas.
+4. **Record a payment** (G7, first part). From the Transactions page, the School owner can record a payment already received at the desk (cash, bank transfer, Pix or the School's own card terminal) for a current Student and a one-time plan (Class Pack, Weekly Pass, Trial; not Subscriptions, Friend Passes or archived plans). It starts the membership at once with a Successful row, which shows "at desk", and the Student is told. `POST schools/:schoolId/desk-payments` checks who may record it, then calls `MembershipsService.recordDeskSale()`, the one desk-sale path from Decision 348. So it runs the same checks as selling from the Student's page: waiver, one live general access, the trial allowance, a one-class plan whose class hasn't started. The person who recorded it is kept on the row (`Transaction.recordedById`, from Decision 348's migration).
+
+### What this does NOT resolve
+
+- **Branch Staff recording payments** is Decision 347.
+- Record a payment does not apply the Decision 67 date-of-birth checks, the same as Decision 348's desk sale.
+- Refunds and refund-owed (G2, PR #273) and Stripe-dashboard refunds (G6) are unchanged.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, answering the Transactions questions Q3, Q5 and Q6.
+
+---
+
+## Decision 347 — Branch Staff may record desk payments when the School owner switches it on (amends Spec 55 §8.2 for this one action)
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 168, 169, 177, 346 · **Amends:** Spec 55 §8.2 · **Migration:** `20261201000300_branch_staff_record_payments`
+
+Spec 55 §8.2 keeps every money action with the School Owner/Manager. The product owner decided that each School owner should choose this for their own School (Q5), and then confirmed, on a card that named the spec rule it changes, *"Yes, add the switch"*. As with grading (Decision 124), this is the product owner's explicit override of the spec, and it applies only through this decision.
+
+### Decision
+
+1. **A per-School switch, off by default.** `School.branchStaffCanRecordPayments` is set by the School owner on the School page ("Let Branch Staff record payments taken at the desk"). Only the owner can change it.
+2. **What it allows: Record a payment (Decision 346) and nothing else.** With the switch on, Branch Staff can record a payment already received at the desk and start the membership. The rules are the same as the owner's, all applied by `recordDeskSale()`: one-time plans only, the School not closed, the ULTM8 subscription not degraded. The row keeps who recorded it, and the student is notified as usual.
+3. **Their own branch's students only.** This uses the grading board's visibility rule (Decisions 168, 169, 177). In a School with branches, Branch Staff can record payments for the students whose home branch is one of theirs; in a School without branches, for every enrolled student. A new `desk_payment_students()` database function applies the rule, and `GET schools/:schoolId/desk-payments/options` returns those students together with the plans that can be paid this way.
+4. **Everything else in §8.2 stays.** Branch Staff still can't see the Transactions list or tiles, confirm or cancel Pending payments, refund, or change plans or prices. Instructors can never record payments.
+5. **In the portal**, Branch Staff whose School has the switch on get a "Record a payment" menu item. It opens a page with only the form, not the ledger. With the switch off, the page says that only the School owner can see transactions.
+
+### What this does NOT resolve
+
+The Staff page's planned per-person access switches (Staff build plan, Q7) are separate work. This is one School-wide switch for all Branch Staff, not a per-person permission.
+
+### Recorded by
+
+User (Code), 26 Oct 2026, choosing "Yes, add the switch" on the Transactions Q5 follow-up card.
+
+---
+
 ## Decision 349 — Add student and Cancel booking on the Class page
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner request ("start Add student and Cancel booking on the Class page") · **Follows:** Decisions 291, 345
@@ -5482,6 +5531,32 @@ Nothing here is built yet. The kiosk is `docs/v1.3-backend-backlog.md` §3.21.
 ### Recorded by
 
 User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website for the next version. We will work on front desk and that is it for this version", then "agree" to the five Front Desk recommendations.
+## Decision 340 — Waivers review fixes
+
+**Date:** 26 Oct 2026 · **Status:** Approved by product owner (Waivers fix plan, deep dive)
+**Resolves:** Waivers review findings W1, W3 (first half), W4–W6, W8–W15, W17 (W7 is Decision 333), and the read-then-sign race found in the deep dive. Database change: `20261130000000_waiver_signed_copy`.
+
+### Decision
+
+1. **The Signatures panel keeps working after a student leaves** (W1). Names are read separately, so a leaver no longer fails the whole list. A leaver's unsigned entry drops out of the list and the "X of Y signed" count; their signature stays, shown under "Former students" with the name they typed.
+2. **A signature keeps a copy of what was signed** (W3, first half): the waiver's title, text, a SHA-256 of the text, and the waiver's version. Waivers get a `version` that goes up only when the title or text actually changes. The signer's app sends the version it showed (`waiverVersion`); an out-of-date one is refused (409) and the signer reads it again. Callers that send no version are still accepted. The Signatures list leaves the text out (a waiver can be 20,000 characters); `GET /schools/:schoolId/waivers/:id/signatures/:signatureId` returns it, owner only, with the same leaver rule as the list. Signatures made before this change show that no copy was kept; nothing is reconstructed for them.
+3. **Blank values are refused** (W4, W5): waiver title and text, signer name and signature text are trimmed and must not be empty.
+4. **An archived waiver is out of use** (W6): it is not assigned to new members and can't be signed. Unarchiving assigns it to current students who have no entry. Signatures made before archiving still count for bookings (Decision 216 unchanged).
+5. **The request notification names the School** (W7): done by Decision 333 ("[School] has invited you to sign the waiver …"), so not repeated here.
+6. **Portal** (W8, W9, W12, W14): every waiver and every signature loads (no 20 cap); All / Signed / Not signed tabs, names A to Z; opening a signed row shows the signature and the text as signed, and says when the waiver changed since; Archive asks first; waivers newest first, a new one opens straight away; a user with no owned School is sent home instead of a blank page.
+7. **Signing at a closed School is refused** (W10), the same check Add and Edit use.
+8. **`includeArchived=false` means false** (W11) on Waivers, Classes, Timetable, Branches and Instructors lists (Franchises already did this).
+9. **Clear signing errors** (W13): no date of birth, and under 18 (a parent or guardian signs from their Guardian account). No internal wording.
+10. **Waitlist join needs a signed waiver** when the Class requires one (W15), the same as booking; the claim-time check stays.
+11. **A purged signature takes its drawn image with it** (W17). The image is deleted first; if that fails, the record stays and the next nightly run tries both again. `R2ClientService.deleteObject` is new.
+
+### What this does NOT resolve
+
+Waiting on the product owner: when Archive is allowed (W2, Decision 252), whether editing a signed waiver asks everyone to sign again (W3, second half), and keeping a Guardian-signed waiver while the student is still enrolled (W16, Decision 269). Questions Q4–Q9 in the Waivers review stay open.
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
 
 ---
 

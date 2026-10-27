@@ -440,6 +440,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // idempotent no-op, not an error.
       return;
     }
+    const membershipPlanId = transaction.membershipPlanId;
+    if (transaction.kind !== 'MEMBERSHIP' || !membershipPlanId) {
+      return; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
+    }
 
     const updateResult = await tx.transaction.updateMany({
       where: { id: transaction.id, status: { in: SETTLEABLE } },
@@ -449,7 +453,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return; // lost a race with a concurrent delivery — the other one already won.
     }
 
-    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: membershipPlanId } });
 
     // Decision 334 (Memberships review M1/M20/M3) — replaces the partial unique
     // index Membership_one_active_general_access_per_school. A refusal is the
@@ -487,7 +491,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: {
           id: randomUUID(),
           studentId: transaction.studentId,
-          membershipPlanId: transaction.membershipPlanId,
+          membershipPlanId,
           schoolId: transaction.schoolId,
           frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
           classesRemaining: plan.classesIncluded ?? undefined,
@@ -734,6 +738,13 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // in the installed Stripe API version.
     const paymentIntentId = this.extractPaymentIntentId(invoice);
 
+    // Decision 346 (G4) — a Membership Subscription's later charges. Tried first:
+    // Membership.stripeSubscriptionId can never also match a franchise-fee or
+    // platform Subscription id below.
+    if (await this.recordMembershipRenewal(tx, invoice, subscriptionId, paymentIntentId, 'SUCCESSFUL')) {
+      return;
+    }
+
     // Decision 337 (F17) — a Per-headcount (metered) franchise-fee subscription
     // opens with a $0 invoice for no usage yet. It isn't a fee charge, and it must
     // not mark the month's Pending charge paid either.
@@ -906,6 +917,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return;
     }
 
+    // Decision 346 (G4) — a failed renewal shows as a Failed row; Stripe keeps
+    // retrying, and a later invoice.paid turns the same row Successful.
+    if (await this.recordMembershipRenewal(tx, invoice, subscriptionId, this.extractPaymentIntentId(invoice), 'FAILED')) {
+      return;
+    }
+
     // Decision 337 (F17) — match the Pending charge for the period this invoice
     // billed, not simply the newest one. Stripe bills a month's usage just after
     // that month ends, by which time the monthly job may already have recorded
@@ -954,6 +971,78 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: { platformSubscriptionStatus: 'PAST_DUE' },
       });
     }
+  }
+
+  /**
+   * Decision 346 (G4) — one Transaction row per renewal Invoice of a Membership
+   * Subscription, so the School's ledger shows every month Stripe charges, not
+   * only the first. Keyed on the Invoice id: a retried or redelivered event
+   * updates the same row, and a Successful row never goes back to Failed. The
+   * first Invoice (billing_reason subscription_create) is skipped, since the
+   * purchase already wrote its row. Returns false when the Subscription is not a
+   * Membership's, so the franchise-fee and platform branches can try theirs.
+   */
+  private async recordMembershipRenewal(
+    tx: Prisma.TransactionClient,
+    invoice: Stripe.Invoice,
+    subscriptionId: string,
+    paymentIntentId: string | undefined,
+    status: 'SUCCESSFUL' | 'FAILED',
+  ): Promise<boolean> {
+    const membership = await tx.membership.findUnique({ where: { stripeSubscriptionId: subscriptionId } });
+    if (!membership) {
+      return false;
+    }
+    if (invoice.billing_reason === 'subscription_create') {
+      return true;
+    }
+    if (paymentIntentId) {
+      const purchase = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+      if (purchase && purchase.stripeInvoiceId !== invoice.id) {
+        return true; // the purchase's own charge, already on the ledger
+      }
+    }
+    const existing = await tx.transaction.findUnique({ where: { stripeInvoiceId: invoice.id } });
+    if (existing) {
+      if (existing.status === 'FAILED' && status === 'SUCCESSFUL') {
+        await tx.transaction.update({
+          where: { id: existing.id },
+          data: { status, amount: invoice.amount_paid, stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
+        });
+      } else if (paymentIntentId && !existing.stripePaymentIntentId) {
+        await tx.transaction.update({ where: { id: existing.id }, data: { stripePaymentIntentId: paymentIntentId } });
+      }
+      return true;
+    }
+    const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: membership.schoolId } });
+    if (!paymentAccount) {
+      this.logger.error(`Renewal invoice ${invoice.id} for Membership ${membership.id} — School ${membership.schoolId} has no PaymentAccount, cannot record it.`);
+      return true;
+    }
+    await tx.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: membership.schoolId,
+        studentId: membership.studentId,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: membership.membershipPlanId,
+        membershipId: membership.id,
+        kind: 'RENEWAL',
+        billingDate: this.invoiceDate(invoice),
+        amount: status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due,
+        currency: invoice.currency?.toUpperCase() ?? 'USD',
+        status,
+        paymentMethod: 'STRIPE',
+        stripePaymentIntentId: paymentIntentId,
+        stripeSubscriptionId: subscriptionId,
+        stripeInvoiceId: invoice.id,
+      },
+    });
+    return true;
+  }
+
+  private invoiceDate(invoice: Stripe.Invoice): Date {
+    return new Date((invoice.status_transitions?.paid_at ?? invoice.created) * 1000);
   }
 
   /** Decision 111 — extracts the PaymentIntent id behind this Invoice, from its

@@ -807,6 +807,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Zobacz potwierdzenie",
       noReceipt: "Brak potwierdzenia dla tej płatności.",
       receiptFailed: "Nie udało się wczytać potwierdzenia — spróbuj ponownie.",
+      renewal: "Odnowienie: {plan}",
+      lateCancelFee: "Opłata za późne anulowanie: {class}",
+      lateCancelFeeNoClass: "Opłata za późne anulowanie",
     },
     status: {
       successful: "UDANA",

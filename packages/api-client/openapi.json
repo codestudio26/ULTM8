@@ -6486,6 +6486,86 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/desk-payments": {
+      "post": {
+        "operationId": "MembershipsController_recordDeskPayment",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordDeskPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordDeskPaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/desk-payments/options": {
+      "get": {
+        "operationId": "MembershipsController_deskPaymentOptions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskPaymentOptionsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/memberships/me": {
       "get": {
         "operationId": "MembershipsController_findMyMemberships",
@@ -6607,6 +6687,75 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SUCCESSFUL",
+                "PENDING",
+                "FAILED",
+                "REFUNDED",
+                "DISPUTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMethod",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "STRIPE",
+                "CASH",
+                "BANK_TRANSFER",
+                "PIX",
+                "CARD_TERMINAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "MEMBERSHIP",
+                "RENEWAL",
+                "LATE_CANCEL_FEE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "membershipPlanId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6639,6 +6788,75 @@
             "name": "schoolId",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SUCCESSFUL",
+                "PENDING",
+                "FAILED",
+                "REFUNDED",
+                "DISPUTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentMethod",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "STRIPE",
+                "CASH",
+                "BANK_TRANSFER",
+                "PIX",
+                "CARD_TERMINAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "MEMBERSHIP",
+                "RENEWAL",
+                "LATE_CANCEL_FEE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "membershipPlanId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day included, YYYY-MM-DD (UTC).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day included, YYYY-MM-DD (UTC).",
             "schema": {
               "type": "string"
             }
@@ -9679,6 +9897,57 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}": {
+      "get": {
+        "operationId": "WaiversController_findSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -12573,6 +12842,10 @@
               "ALWAYS_REFUND"
             ],
             "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
+          },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
           }
         },
         "required": [
@@ -12768,6 +13041,10 @@
               "ALWAYS_REFUND"
             ]
           },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Branch Staff may record desk payments (Decision 347)."
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -12814,6 +13091,7 @@
           "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
           "lateCancelRefundPolicy",
+          "branchStaffCanRecordPayments",
           "createdAt",
           "updatedAt"
         ]
@@ -12969,6 +13247,10 @@
               "ALWAYS_REFUND"
             ],
             "description": "What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled."
+          },
+          "branchStaffCanRecordPayments": {
+            "type": "boolean",
+            "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
           },
           "mobileNumber": {
             "type": "string",
@@ -18881,6 +19163,122 @@
           "membershipPlanId"
         ]
       },
+      "RecordDeskPaymentDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK_TRANSFER",
+              "PIX",
+              "CARD_TERMINAL"
+            ]
+          }
+        },
+        "required": [
+          "studentId",
+          "membershipPlanId",
+          "paymentMethod"
+        ]
+      },
+      "RecordDeskPaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a free plan, which has no Transaction."
+          },
+          "membershipId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "transactionId",
+          "membershipId"
+        ]
+      },
+      "DeskPaymentStudentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname"
+        ]
+      },
+      "DeskPaymentPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "description": "In hundredths of the currency."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "price",
+          "currency"
+        ]
+      },
+      "DeskPaymentOptionsDto": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskPaymentStudentDto"
+            }
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskPaymentPlanDto"
+            }
+          }
+        },
+        "required": [
+          "students",
+          "plans"
+        ]
+      },
       "MembershipListResponseDto": {
         "type": "object",
         "properties": {
@@ -18937,10 +19335,32 @@
             "type": "string"
           },
           "membershipPlanId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "membershipPlanTitle": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEMBERSHIP",
+              "RENEWAL",
+              "LATE_CANCEL_FEE"
+            ]
+          },
+          "bookingId": {
+            "type": "string",
+            "nullable": true
+          },
+          "bookingClassTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordedById": {
+            "type": "string",
+            "nullable": true
           },
           "membershipId": {
             "type": "string",
@@ -18984,8 +19404,7 @@
           "studentFirstName",
           "studentSurname",
           "paymentAccountId",
-          "membershipPlanId",
-          "membershipPlanTitle",
+          "kind",
           "billingDate",
           "amount",
           "status",
@@ -21934,6 +22353,10 @@
             "nullable": true,
             "description": "Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities."
           },
+          "version": {
+            "type": "number",
+            "description": "Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -21946,6 +22369,7 @@
           "schoolId",
           "title",
           "body",
+          "version",
           "createdAt",
           "updatedAt"
         ]
@@ -22016,6 +22440,30 @@
             "type": "string",
             "nullable": true,
             "description": "The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column."
+          },
+          "formerStudent": {
+            "type": "boolean",
+            "description": "Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record."
+          },
+          "signedWaiverTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver title as it was when signed. Null when not signed, or signed before copies were kept."
+          },
+          "signedWaiverBody": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Waiver text exactly as it was when signed. Null when not signed, or signed before copies were kept. Left out of the Signatures list; read one signature to get it."
+          },
+          "signedWaiverSha256": {
+            "type": "string",
+            "nullable": true,
+            "description": "SHA-256 (hex) of signedWaiverBody."
+          },
+          "signedWaiverVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "The Waiver version that was signed."
           },
           "createdAt": {
             "type": "string"
@@ -22111,6 +22559,10 @@
           "signatureImageKey": {
             "type": "string",
             "description": "R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment."
+          },
+          "waiverVersion": {
+            "type": "number",
+            "description": "The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again."
           }
         },
         "required": [

@@ -42,7 +42,7 @@ jest.mock('./waiverQueries', () => ({ useSignWaiver: jest.fn() }));
 
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 
-const WAIVER = { id: 'waiver-1', schoolId: 'school-1', title: 'Liability Waiver', body: 'I agree to assume all risk…' };
+const WAIVER = { id: 'waiver-1', schoolId: 'school-1', title: 'Liability Waiver', body: 'I agree to assume all risk…', version: 3 };
 
 const idleSign = () => ({ mutate: jest.fn(), data: undefined, isPending: false, isSuccess: false, isError: false, error: null });
 
@@ -102,6 +102,7 @@ describe('WaiverRow — drawn-signature capture', () => {
 
     expect(sign.mutate).toHaveBeenCalledWith({
       waiverId: 'waiver-1',
+      waiverVersion: 3,
       signerFullName: 'Jane Doe',
       signatureText: 'Jane Doe',
       signatureImage: null,
@@ -134,6 +135,7 @@ describe('WaiverRow — drawn-signature capture', () => {
 
     expect(sign.mutate).toHaveBeenCalledWith({
       waiverId: 'waiver-1',
+      waiverVersion: 3,
       signerFullName: 'Jane Doe',
       signatureText: 'Jane Doe',
       signatureImage: FAKE_DRAWN_PNG,

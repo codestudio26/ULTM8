@@ -426,6 +426,7 @@ export class BookingsService {
     // the user-facing action" shape SchoolsService.leaveFranchise's own Stripe
     // cancellation already established.
     if (cancellationChargeAmount !== null) {
+      const feeAmount = cancellationChargeAmount;
       let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
       let paymentIntentId: string | null = null;
       try {
@@ -446,8 +447,31 @@ export class BookingsService {
           this.logger.error(`Late-cancellation charge failed for Booking ${booking.id} (Student ${resolvedBooking.studentId}, School ${resolvedBooking.schoolId}).`, err as Error);
         }
       }
-      return this.prismaApp.withTenantContext(resolvedBooking.studentId, (tx) =>
-        tx.booking.update({
+      return this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+        // Decision 346 (G5) — a fee that was charged, or tried and declined, is
+        // also a row on the School's Transactions ledger. No saved card means
+        // nothing was charged, so no row.
+        if (outcome !== 'NO_SAVED_PAYMENT_METHOD') {
+          const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: resolvedBooking.schoolId }, select: { id: true } });
+          if (paymentAccount) {
+            await tx.transaction.create({
+              data: {
+                id: randomUUID(),
+                schoolId: resolvedBooking.schoolId,
+                studentId: resolvedBooking.studentId,
+                paymentAccountId: paymentAccount.id,
+                kind: 'LATE_CANCEL_FEE',
+                bookingId,
+                amount: feeAmount,
+                currency: cancellationChargeCurrency.toUpperCase(),
+                status: outcome === 'CHARGED' ? 'SUCCESSFUL' : 'FAILED',
+                paymentMethod: 'STRIPE',
+                stripePaymentIntentId: paymentIntentId,
+              },
+            });
+          }
+        }
+        return tx.booking.update({
           where: { id: bookingId },
           data: {
             cancellationChargeOutcome: outcome,
@@ -455,8 +479,8 @@ export class BookingsService {
             stripeCancellationPaymentIntentId: paymentIntentId,
           },
           include: { attendees: true },
-        }),
-      );
+        });
+      });
     }
 
     // Re-read when a Stripe refund ran after the cancellation committed, so the

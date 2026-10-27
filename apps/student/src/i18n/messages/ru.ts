@@ -807,6 +807,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "Посмотреть чек",
       noReceipt: "Для этого платежа чек недоступен.",
       receiptFailed: "Не удалось загрузить чек — попробуйте ещё раз.",
+      renewal: "Продление: {plan}",
+      lateCancelFee: "Плата за позднюю отмену: {class}",
+      lateCancelFeeNoClass: "Плата за позднюю отмену",
     },
     status: {
       successful: "УСПЕШНО",

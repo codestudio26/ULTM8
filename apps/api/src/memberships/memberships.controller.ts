@@ -9,6 +9,7 @@ import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
 import { CancelMembershipDto, GiftFriendPassDto, SellMembershipDto } from './dto/desk-membership.dto';
+import { DeskPaymentOptionsDto, RecordDeskPaymentDto, RecordDeskPaymentResponseDto } from './dto/record-desk-payment.dto';
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
   DeskMembershipResponseDto,
@@ -166,6 +167,23 @@ export class MembershipsController {
     @Body() dto: GiftFriendPassDto,
   ) {
     return this.membershipsService.giftFriendPass(user.sub, schoolId, studentId, dto);
+  }
+
+  /** A cash or bank payment taken at the front desk (Decision 346, G7):
+   * records it and starts the Student's membership at once. */
+  @ApiCreatedResponse({ type: RecordDeskPaymentResponseDto })
+  @Post('schools/:schoolId/desk-payments')
+  recordDeskPayment(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: RecordDeskPaymentDto) {
+    return this.membershipsService.recordDeskPayment(user.sub, schoolId, dto);
+  }
+
+  /** The students and plans the caller may record a desk payment for
+   * (Decision 347): every current Student for the owner, their own branches'
+   * for Branch Staff; plans that can be paid once in cash. */
+  @ApiOkResponse({ type: DeskPaymentOptionsDto })
+  @Get('schools/:schoolId/desk-payments/options')
+  deskPaymentOptions(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.membershipsService.deskPaymentOptions(user.sub, schoolId);
   }
 
   @ApiOkResponse({ type: MembershipListResponseDto })
