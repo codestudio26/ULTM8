@@ -20,6 +20,7 @@ import {
 } from './waiverQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { WaiverFormModal } from './WaiverFormModal';
+import { GuestSignaturesPanel } from './GuestSignaturesPanel';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -184,6 +185,7 @@ export function WaiversPage() {
               </div>
 
               <SignaturesPanel schoolId={schoolId} waiver={selected} />
+              <GuestSignaturesPanel schoolId={schoolId} waiverId={selected.id} />
             </Card>
             </div>
           ) : null}

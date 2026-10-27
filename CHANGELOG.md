@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Waivers: guests sign by a shared link** (Decision 365) — members can
+  bring guests on a booking with their Friend Passes in the app, and each
+  guest gets a link to sign the School's waivers on a web page, without an
+  account (a parent or guardian signs for a guest under 18). The class page
+  shows which guests haven't signed, with the link to copy, and the Waivers
+  page lists guest signatures with the wording each one signed.
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,
