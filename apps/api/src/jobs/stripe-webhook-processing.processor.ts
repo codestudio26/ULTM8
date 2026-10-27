@@ -350,7 +350,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // cancels the PaymentIntent (or its expired Checkout Session's), and the
       // row would otherwise sit Pending for ever. Failed is the nearest of the
       // five confirmed Transaction statuses; nothing else to undo, same as a
-      // failed charge.
+      // failed charge. Falls through on purpose.
       case 'payment_intent.canceled':
         await this.handlePaymentIntentFailed(tx, objectId);
         return noSideEffects;

@@ -65,7 +65,6 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
   let franchiseOwner: { id: string; email: string };
   let studentA: { id: string; email: string };
   let tokenOwnerA: string;
-  let tokenOwnerB: string;
   let tokenFranchiseOwner: string;
   let tokenStudentA: string;
 
@@ -129,9 +128,6 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
 
     tokenOwnerA = signAccessToken(ownerA, [
       { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolA.id, branchId: null },
-    ]);
-    tokenOwnerB = signAccessToken(ownerB, [
-      { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null },
     ]);
     tokenFranchiseOwner = signAccessToken(franchiseOwner, [
       { role: 'FRANCHISE_OWNER', franchiseId: franchise.id, schoolId: null, branchId: null },

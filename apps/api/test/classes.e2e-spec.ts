@@ -54,7 +54,6 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
   let instructorSchoolWide: { id: string };
   let instructorBranchA2: { id: string };
   let tokenOwnerA: string;
-  let tokenOwnerB: string;
   let tokenBranchStaffA1: string;
 
   const classIds: string[] = [];
@@ -116,9 +115,6 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
 
     tokenOwnerA = signAccessToken(ownerA, [
       { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolA.id, branchId: null },
-    ]);
-    tokenOwnerB = signAccessToken(ownerB, [
-      { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null },
     ]);
     tokenBranchStaffA1 = signAccessToken(branchStaffA1User, [
       { role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolA.id, branchId: branchA1.id },

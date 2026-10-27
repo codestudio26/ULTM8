@@ -220,14 +220,14 @@ describeIfDb('Timetable review fixes (Decision 332)', () => {
     expect((await patch(slot, { termsWaiverRequired: true, bookedClasses: 'CANCEL' })).status).toBe(400);
 
     expect((await patch(slot, { termsWaiverRequired: true, title: 'Evening Gi', bookedClasses: 'KEEP' })).status).toBe(200);
-    let [b, u] = await Promise.all([booked.id, unbooked.id].map((id) => superuser.class.findUniqueOrThrow({ where: { id } })));
+    const [b, u] = await Promise.all([booked.id, unbooked.id].map((id) => superuser.class.findUniqueOrThrow({ where: { id } })));
     expect(b.termsWaiverRequired).toBe(false);
     expect(u.termsWaiverRequired).toBe(true);
     expect(b.title).toBe('Evening Gi'); // title follows whatever the choice
 
     expect((await patch(slot, { refundCutoffHoursBeforeStart: 12, bookedClasses: 'MOVE' })).status).toBe(200);
-    [b, u] = await Promise.all([booked.id, unbooked.id].map((id) => superuser.class.findUniqueOrThrow({ where: { id } })));
-    expect(b.refundFeeDate?.getTime()).toBe(b.startDate.getTime() - 12 * HOUR);
+    const bMoved = await superuser.class.findUniqueOrThrow({ where: { id: booked.id } });
+    expect(bMoved.refundFeeDate?.getTime()).toBe(bMoved.startDate.getTime() - 12 * HOUR);
 
     expect((await patch(slot, { title: 'Evening No-Gi' })).status).toBe(200);
     expect((await superuser.class.findUniqueOrThrow({ where: { id: booked.id } })).title).toBe('Evening No-Gi');
