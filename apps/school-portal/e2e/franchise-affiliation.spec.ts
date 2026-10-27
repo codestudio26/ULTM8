@@ -3,10 +3,10 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision 232 — leave/switch-Franchise, on top of Decision 98's existing
- * one-way-only join-franchise endpoint. Covers the new Franchise affiliation
- * card on SchoolPage: join (no prior UI existed for this at all), leave, then
- * switch (join a different Franchise after leaving).
+ * Decision 232 — leave/switch-Franchise, and Decision 352 — joining is a
+ * request the Franchise Owner accepts or declines. Covers the Franchise
+ * affiliation card on SchoolPage: ask to join (cancel, declined, accepted),
+ * leave, then switch (ask to join a different Franchise after leaving).
  */
 let s: GradingSchool;
 const franchiseIds: string[] = [];
@@ -26,7 +26,15 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-test('School Owner joins, leaves, then switches Franchise from the School profile page', async ({ page }) => {
+/** Decision 352 — the Franchise Owner's side of accepting is in
+ * franchise-review-fixes.spec.ts; here it is done straight in the database. */
+async function acceptLatestRequest(schoolId: string) {
+  const req = await db.franchiseJoinRequest.findFirstOrThrow({ where: { schoolId, status: 'PENDING' } });
+  await db.franchiseJoinRequest.update({ where: { id: req.id }, data: { status: 'ACCEPTED', decidedAt: new Date() } });
+  await db.school.update({ where: { id: schoolId }, data: { franchiseId: req.franchiseId } });
+}
+
+test('School Owner asks to join, leaves, then switches Franchise from the School profile page', async ({ page }) => {
   const franchiseA = await db.franchise.create({ data: { id: randomUUID(), name: 'Affiliation Test Franchise A' } });
   franchiseIds.push(franchiseA.id);
 
@@ -34,14 +42,32 @@ test('School Owner joins, leaves, then switches Franchise from the School profil
   await expect(page.getByRole('heading', { name: 'Franchise affiliation' })).toBeVisible();
   await expect(page.getByText('This School is independent')).toBeVisible();
 
+  // Decision 352 — asking does not join; the School can withdraw the request.
   await page.getByLabel('Franchise ID').fill(franchiseA.id);
-  await page.getByRole('button', { name: 'Join Franchise' }).click();
+  await page.getByRole('button', { name: 'Ask to join' }).click();
+  const pending = page.getByTestId('franchise-join-pending');
+  await expect(pending).toContainText(`Waiting for Franchise ${franchiseA.id} to accept your request to join.`);
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).franchiseId).toBeNull();
+  await pending.getByRole('button', { name: 'Cancel request' }).click();
+  await expect(pending).toHaveCount(0);
+  await expect(page.getByLabel('Franchise ID')).toBeVisible();
+
+  // A declined request says so, and the School can ask again.
+  await page.getByLabel('Franchise ID').fill(franchiseA.id);
+  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await expect(pending).toBeVisible();
+  await db.franchiseJoinRequest.updateMany({ where: { schoolId: s.schoolId, status: 'PENDING' }, data: { status: 'DECLINED', decidedAt: new Date() } });
+  await page.reload();
+  await expect(page.getByTestId('franchise-join-declined')).toContainText(`Franchise ${franchiseA.id} declined your request to join.`);
+
+  await page.getByLabel('Franchise ID').fill(franchiseA.id);
+  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await expect(pending).toBeVisible();
+  await acceptLatestRequest(s.schoolId);
+  await page.reload();
 
   await expect(page.getByText(franchiseA.id)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Leave Franchise' })).toBeVisible();
-
-  const afterJoin = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
-  expect(afterJoin.franchiseId).toBe(franchiseA.id);
 
   // Decision 337 (F6) — Leave asks first; Cancel keeps the School in.
   await page.getByRole('button', { name: 'Leave Franchise' }).click();
@@ -58,13 +84,16 @@ test('School Owner joins, leaves, then switches Franchise from the School profil
   const afterLeave = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(afterLeave.franchiseId).toBeNull();
 
-  // Switch — join a second, different Franchise now that leaving cleared the
-  // one-way guard (Decision 98's own 409 no longer applies).
+  // Switch — ask to join a second, different Franchise now that leaving
+  // cleared the old membership.
   const franchiseB = await db.franchise.create({ data: { id: randomUUID(), name: 'Affiliation Test Franchise B' } });
   franchiseIds.push(franchiseB.id);
 
   await page.getByLabel('Franchise ID').fill(franchiseB.id);
-  await page.getByRole('button', { name: 'Join Franchise' }).click();
+  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await expect(pending).toContainText(franchiseB.id);
+  await acceptLatestRequest(s.schoolId);
+  await page.reload();
   await expect(page.getByText(franchiseB.id)).toBeVisible();
 
   const afterSwitch = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });

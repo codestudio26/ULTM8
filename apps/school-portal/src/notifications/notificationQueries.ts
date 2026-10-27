@@ -8,6 +8,7 @@ export type NotificationCountsResponse = components['schemas']['NotificationCoun
 export type SnoozeNotificationInput = components['schemas']['SnoozeNotificationDto'];
 export type BroadcastNotificationInput = components['schemas']['BroadcastNotificationDto'];
 export type BroadcastResponse = components['schemas']['BroadcastResponseDto'];
+export type SentBroadcast = components['schemas']['SentBroadcastResponseDto'];
 
 /** The CALLER's own notification inbox — every authenticated User has one,
  * School staff included, so this is not School-scoped (no schoolId in the
@@ -49,6 +50,43 @@ export function useMarkNotificationRead() {
       queryClient.invalidateQueries({ queryKey: ['notifications', 'counts'] });
     },
   });
+}
+
+/** Decision 355 — "Mark all read": every unread notification the caller has,
+ * on every page. Same list + counts invalidation as useMarkNotificationRead. */
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/notifications/me/read-all', {})),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'counts'] });
+    },
+  });
+}
+
+/** Decision 355 — the portal page a notification opens when clicked, or null
+ * when it has nothing to open. */
+export function notificationLink(n: Pick<NotificationResponse, 'targetType' | 'targetId'>): string | null {
+  switch (n.targetType) {
+    case 'CLASS':
+      return n.targetId ? `/classes/${n.targetId}` : null;
+    case 'WAIVER':
+      return '/waivers';
+    case 'PAYMENT':
+      return '/transactions';
+    case 'CANCELLATIONS':
+      return '/cancellations';
+    case 'GRADING':
+      return '/grading';
+    // Decision 364 — Franchise membership notices.
+    case 'FRANCHISE':
+      return n.targetId ? `/franchises/${n.targetId}` : null;
+    case 'SCHOOL':
+      return '/school';
+    default:
+      return null;
+  }
 }
 
 /** v1.2 backend backlog ("Notifications page", Decision 204's Concept 5
@@ -113,13 +151,36 @@ export function useClearReadNotifications() {
  * by the product owner). School-Owner-gated on the backend
  * (NotificationBroadcastService.broadcast) — `schoolId` here is
  * NotificationsPage's own `useOwnedSchoolId()`, same convention
- * WaiversPage/MembershipPlansPage already use for an Owner-only write. No
- * query to invalidate on success — a broadcast fans out to OTHER Students'
- * own inboxes, never the calling Staff member's own `GET /notifications/me`. */
+ * WaiversPage/MembershipPlansPage already use for an Owner-only write. A
+ * broadcast fans out to OTHER Students' own inboxes, never the calling Staff
+ * member's own `GET /notifications/me`, so only the sent-broadcast history
+ * (Decision 363) is refreshed on success. */
 export function useBroadcastNotification(schoolId: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: BroadcastNotificationInput) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/notifications/broadcast', { params: { path: { schoolId } }, body })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-broadcasts', schoolId] });
+    },
+  });
+}
+
+/** Decision 363 — the School's sent broadcasts, newest first, one page at a
+ * time ("Load more"). School-Owner-only, so it only runs with an owned
+ * schoolId. */
+export function useSentBroadcasts(schoolId: string | null) {
+  return useInfiniteQuery({
+    queryKey: ['notification-broadcasts', schoolId],
+    enabled: !!schoolId,
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/notifications/broadcasts', {
+          params: { path: { schoolId: schoolId! }, query: { cursor: pageParam ?? undefined } },
+        }),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? null,
   });
 }
 

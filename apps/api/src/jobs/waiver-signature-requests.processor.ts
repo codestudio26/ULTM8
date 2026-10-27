@@ -93,6 +93,9 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
             // place ("Adult Waiver has invited you...").
             body: `${waiver.school.name} has invited you to sign the waiver "${waiver.title}".`,
             type: 'WAIVER_SIGNATURE_REQUEST',
+            schoolId,
+            targetType: 'WAIVER',
+            targetId: waiverId,
           } satisfies NotificationFanoutJobData,
           opts: {
             jobId: `waiver-${waiverId}-${grant.userId}`,

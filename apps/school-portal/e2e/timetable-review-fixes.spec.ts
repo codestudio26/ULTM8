@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Decision 332 in the portal (Timetable review, 26 Oct 2026): Archive asks
@@ -17,6 +17,9 @@ function dateKey(d: Date): string {
 }
 
 const todayKey = dateKey(new Date());
+// slotWithClass's default class is a week ahead; the calendar shows real
+// Classes (Decision 353), so tests open next week to find it.
+const nextKey = dateKey(new Date(Date.now() + 7 * 86_400_000));
 const slotTitle = 'Review Fixes BJJ';
 
 let s: GradingSchool;
@@ -42,6 +45,7 @@ test.afterEach(async () => {
   await db.class.deleteMany({ where });
   await db.timetableSlot.deleteMany({ where });
   await db.membership.deleteMany({ where });
+  await db.studentHomeBranch.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where: { id: planId } });
 });
 
@@ -51,7 +55,7 @@ test.afterAll(async () => {
 
 /** A slot on today's weekday (so the Week view shows it on today), with one
  * class a week from today unless `cls` says otherwise. */
-async function slotWithClass(opts: { capacity?: number; breakStart?: Date; breakEnd?: Date; cls?: { occurrenceDate: Date; startDate: Date; endDate: Date; archivedAt?: Date } } = {}) {
+async function slotWithClass(opts: { capacity?: number; breakStart?: Date; breakEnd?: Date; cls?: { occurrenceDate: Date; startDate: Date; endDate: Date; archivedAt?: Date; cancelledAt?: Date } } = {}) {
   const slot = await db.timetableSlot.create({
     data: {
       id: randomUUID(),
@@ -97,7 +101,8 @@ async function bookDirectly(classId: string, studentId: string) {
 
 async function openEdit(page: import('@playwright/test').Page) {
   await page.goto('/timetable');
-  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: `Actions for ${slotTitle} on ${nextKey}` }).click();
   await page.getByRole('menuitem', { name: 'Edit slot' }).click();
   return page.getByRole('dialog', { name: 'Edit timetable slot' });
 }
@@ -106,9 +111,10 @@ test('Archive asks first: Cancel leaves the slot, confirming archives it', async
   const { slotId } = await slotWithClass();
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
+  await page.getByRole('button', { name: 'Next' }).click();
 
   const openArchive = async () => {
-    await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
+    await page.getByRole('button', { name: `Actions for ${slotTitle} on ${nextKey}` }).click();
     await page.getByRole('menuitem', { name: 'Archive' }).click();
   };
   await openArchive();
@@ -194,26 +200,46 @@ test('a capacity cut below seats booked only asks to confirm, and the fuller cla
 
 test('more than 20 slots all show on the timetable', async ({ page }) => {
   const weekday = WEEKDAY_NAMES[new Date().getDay()];
-  await db.timetableSlot.createMany({
-    data: Array.from({ length: 25 }, (_, i) => ({
-      id: randomUUID(),
-      schoolId: s.schoolId,
-      weekday,
-      startTime: new Date(Date.UTC(1970, 0, 1, 6, i)),
-      endTime: new Date(Date.UTC(1970, 0, 1, 7, i)),
-      title: `Many Slot ${String(i + 1).padStart(2, '0')}`,
-      activities: ['BJJ'],
-      styles: [{ disciplineId: s.disciplineId, classType: null }],
-      status: 'ON' as const,
-    })),
-  });
+  const now = new Date();
+  const occurrenceDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  for (let i = 0; i < 25; i++) {
+    const title = `Many Slot ${String(i + 1).padStart(2, '0')}`;
+    const slot = await db.timetableSlot.create({
+      data: {
+        id: randomUUID(),
+        schoolId: s.schoolId,
+        weekday,
+        startTime: new Date(Date.UTC(1970, 0, 1, 6, i)),
+        endTime: new Date(Date.UTC(1970, 0, 1, 7, i)),
+        title,
+        activities: ['BJJ'],
+        styles: [{ disciplineId: s.disciplineId, classType: null }],
+        status: 'ON',
+      },
+    });
+    // The calendar shows each slot's real Class (Decision 353); Edit slot needs the slot itself.
+    await db.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: s.schoolId,
+        timetableSlotId: slot.id,
+        occurrenceDate,
+        title,
+        activities: ['BJJ'],
+        styles: [{ disciplineId: s.disciplineId, classType: null }],
+        startDate: new Date(occurrenceDate.getTime() + (6 * 60 + i) * 60_000),
+        endDate: new Date(occurrenceDate.getTime() + (7 * 60 + i) * 60_000),
+      },
+    });
+  }
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
-  await expect(page.getByRole('button', { name: `Actions for Many Slot 25 on ${todayKey}` })).toBeVisible();
+  await page.getByRole('button', { name: `Actions for Many Slot 25 on ${todayKey}` }).click();
+  await expect(page.getByRole('menuitem', { name: 'Edit slot' })).toBeVisible();
   await expect(page.getByRole('button', { name: `Actions for Many Slot 01 on ${todayKey}` })).toBeVisible();
 });
 
-test('a cancelled class says it is cancelled instead of offering Confirm', async ({ page }) => {
+test('a cancelled class stays on the calendar, marked Cancelled, with no Book', async ({ page }) => {
   const now = new Date();
   const occurrenceDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   await slotWithClass({
@@ -222,14 +248,111 @@ test('a cancelled class says it is cancelled instead of offering Confirm', async
       startDate: new Date(now.getTime() + 2 * 3_600_000),
       endDate: new Date(now.getTime() + 3 * 3_600_000),
       archivedAt: new Date(),
+      cancelledAt: new Date(),
     },
   });
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
+  await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
-  await page.getByRole('menuitem', { name: 'Book' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Open class' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Book' })).toHaveCount(0);
+});
 
-  const dialog = page.getByRole('dialog', { name: `Book — ${slotTitle}` });
-  await expect(dialog.getByText('This class has been cancelled, so it can no longer be booked.')).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Confirm' })).toHaveCount(0);
+test('the calendar shows a one-off class with its seats, and booking it from there works', async ({ page }) => {
+  const start = new Date(Date.now() + 10 * 60_000);
+  const oneOff = await db.class.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      title: 'One-off Seminar',
+      activities: ['BJJ'],
+      styles: [{ disciplineId: s.disciplineId, classType: null }],
+      startDate: start,
+      endDate: new Date(start.getTime() + 3_600_000),
+      capacity: 4,
+      // Covered by the Students' general membership.
+      membershipInclusion: true,
+    },
+  });
+  await bookDirectly(oneOff.id, s.newStudent.id);
+  const key = dateKey(start);
+  await signIn(page, s.ownerToken);
+  await page.goto('/timetable');
+  await expect(page.getByText('1 of 4 booked')).toBeVisible();
+  await page.getByRole('button', { name: `Actions for One-off Seminar on ${key}` }).click();
+  await page.getByRole('menuitem', { name: 'Book' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Book — One-off Seminar' });
+  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(page.getByText('2 of 4 booked')).toBeVisible();
+});
+
+test('the class details show its break (Decision 353, Q6)', async ({ page }) => {
+  const { classId } = await slotWithClass();
+  const cls = await db.class.findUniqueOrThrow({ where: { id: classId } });
+  await db.class.update({
+    where: { id: classId },
+    data: { breakStartAt: new Date(cls.startDate.getTime() + 20 * 60_000), breakEndAt: new Date(cls.startDate.getTime() + 30 * 60_000) },
+  });
+  await signIn(page, s.ownerToken);
+  await page.goto(`/classes/${classId}`);
+  await expect(page.getByText(/Break /)).toBeVisible();
+});
+
+test('Branch Staff see their own branch on a read-only timetable and book walk-ins (Decision 353, Q4)', async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  const south = await addBranch(s, 'South');
+  const start = new Date(Date.now() + 10 * 60_000);
+  const oneOff = (title: string, branchId: string | null) =>
+    db.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: s.schoolId,
+        branchId,
+        title,
+        activities: ['BJJ'],
+        styles: [{ disciplineId: s.disciplineId, classType: null }],
+        startDate: start,
+        endDate: new Date(start.getTime() + 3_600_000),
+        capacity: 4,
+        membershipInclusion: true,
+      },
+    });
+  await oneOff('North Fundamentals', north.id);
+  await oneOff('South Fundamentals', south.id);
+  await oneOff('Open Mat', null);
+  // Branch Staff pick from their own branch's students (Decision 139's rule).
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
+  const staff = await addPerson('Nia', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  const key = dateKey(start);
+
+  await signIn(page, staff.token);
+  await page.goto('/coach');
+  await page.getByRole('navigation').getByRole('link', { name: 'Timetable' }).click();
+  await expect(page.getByRole('heading', { name: 'Timetable' })).toBeVisible();
+  await expect(page.getByText('North Fundamentals')).toBeVisible();
+  await expect(page.getByText('Open Mat')).toBeVisible();
+  await expect(page.getByText('South Fundamentals')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add slot' })).toHaveCount(0);
+  await expect(page.getByText('Show archived')).toHaveCount(0);
+
+  await page.getByRole('button', { name: `Actions for North Fundamentals on ${key}` }).click();
+  await expect(page.getByRole('menuitem', { name: 'Open class' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Edit slot' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Book' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Book — North Fundamentals' });
+  await expect(dialog.getByLabel('Student').locator('option')).toHaveText(['Select a Student…', 'Sam Lee']);
+  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(page.getByText('1 of 4 booked')).toBeVisible();
+});
+
+test('an Instructor still has no Timetable screen', async ({ page }) => {
+  const coach = await addPerson('Ian', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Timetable' })).toHaveCount(0);
+  await page.goto('/timetable');
+  await expect(page).not.toHaveURL(/\/timetable$/);
 });

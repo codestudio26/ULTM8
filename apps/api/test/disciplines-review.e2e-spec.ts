@@ -3,7 +3,9 @@
  * repeated names, class types that are renamed or removed, a renamed style
  * carried onto classes and instructors, archived belts left out of grading,
  * a belt added after the purge job left a gap, archiving a whole style, and
- * skill order and lesson counts.
+ * skill order and lesson counts. Then the leftovers (Decision 310): archived
+ * styles can't be newly picked, students who left aren't counted, and the
+ * student app's view of an archived style.
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET.
  */
@@ -103,6 +105,7 @@ describeIfDb('Disciplines review fixes (Decisions 308, 309)', () => {
     await superuser.promotionEvent.deleteMany({ where: { schoolId: id } });
     await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: id } });
     await superuser.studentRank.deleteMany({ where: { schoolId: id } });
+    await superuser.gradingPermission.deleteMany({ where: { schoolId: id } });
     await superuser.instructor.deleteMany({ where: { schoolId: id } });
     await superuser.class.deleteMany({ where: { schoolId: id } });
     await superuser.timetableSlot.deleteMany({ where: { schoolId: id } });
@@ -209,7 +212,7 @@ describeIfDb('Disciplines review fixes (Decisions 308, 309)', () => {
 
     const removed = await owner.patch(`/v1/disciplines/${d.body.id}`).send({ classTypesOffered: ['Adults'] });
     expect(removed.status).toBe(409);
-    expect(removed.body.error.message).toContain('"Kids" is used by 1 upcoming class, 1 rung on the ladder');
+    expect(removed.body.error.message).toContain('"Kids" is still in use (upcoming classes: 1, timetable slots: 0, rungs on the ladder: 1)');
 
     // Renaming to a type that already exists is refused (no silent merge).
     expect(
@@ -296,7 +299,7 @@ describeIfDb('Disciplines review fixes (Decisions 308, 309)', () => {
 
     const blocked = await owner.post(`/v1/disciplines/${d.body.id}/archive`);
     expect(blocked.status).toBe(409);
-    expect(blocked.body.error.message).toContain('1 upcoming class still uses this style');
+    expect(blocked.body.error.message).toContain('This style is still in use (upcoming classes: 1, timetable slots: 0)');
     expect((await owner.post(`/v1/classes/${cls.body.id}/archive`)).status).toBe(201);
 
     const archived = await owner.post(`/v1/disciplines/${d.body.id}/archive`);
@@ -352,5 +355,90 @@ describeIfDb('Disciplines review fixes (Decisions 308, 309)', () => {
     // Instructors can read the catalog (Decision 309: read-only Disciplines page for coaches).
     expect((await http().get(`/v1/styles/${d.body.id}/skills`).set('Authorization', `Bearer ${tokInstructor}`)).status).toBe(200);
     expect((await http().get(`/v1/styles/${d.body.id}/ranks`).set('Authorization', `Bearer ${tokInstructor}`)).status).toBe(200);
+  });
+
+  it('archived styles: refused on new plans and new coach permissions, kept where already set (Decision 310)', async () => {
+    const d = await newStyle({ name: 'Old Style' });
+    const kept = await owner.post(`/v1/schools/${school.id}/membership-plans`).send({ type: 'SUBSCRIPTION', title: 'Old plan', price: 1000, disciplineIds: [d.body.id] });
+    expect(kept.status).toBe(201);
+    const toggles = { canPromote: true, canDowngrade: false, canSignOffSkills: false, canAdjustProgress: false, canVerifyRanks: false, canVoidHistory: false, canChangeBoardThresholds: false };
+    const grant = await owner.put(`/v1/schools/${school.id}/grading-permissions/${instructorUserId}`).send({ styles: [{ disciplineId: d.body.id, ...toggles }] });
+    expect(grant.status).toBe(200);
+    expect((await owner.post(`/v1/disciplines/${d.body.id}/archive`)).status).toBe(201);
+
+    const plan = await owner.post(`/v1/schools/${school.id}/membership-plans`).send({ type: 'SUBSCRIPTION', title: 'New plan', price: 1000, disciplineIds: [d.body.id] });
+    expect(plan.status).toBe(400);
+    expect(plan.body.error.message).toContain('"Old Style" is archived, so it can\'t be picked.');
+    // A plan that already had it can still be saved.
+    expect((await owner.patch(`/v1/membership-plans/${kept.body.id}`).send({ title: 'Old plan renamed', disciplineIds: [d.body.id] })).status).toBe(200);
+    // The same for coach permissions.
+    expect((await owner.put(`/v1/schools/${school.id}/grading-permissions/${instructorUserId}`).send({ styles: [{ disciplineId: d.body.id, ...toggles }] })).status).toBe(200);
+    // Once removed, it can't be given again while archived.
+    expect((await owner.put(`/v1/schools/${school.id}/grading-permissions/${instructorUserId}`).send({ styles: [] })).status).toBe(200);
+    const refused = await owner.put(`/v1/schools/${school.id}/grading-permissions/${instructorUserId}`).send({ styles: [{ disciplineId: d.body.id, ...toggles }] });
+    expect(refused.status).toBe(400);
+    expect(refused.body.error.message).toContain('archived');
+    await owner.post(`/v1/disciplines/${d.body.id}/unarchive`);
+  });
+
+  it('students who left the School are not counted, and are marked on the ladder (Decision 310)', async () => {
+    const d = await newStyle({ name: 'Counted' });
+    const white = await owner.post(`/v1/styles/${d.body.id}/ranks`).send({
+      order: 0,
+      name: 'White',
+      primaryColour: '#FFFFFF',
+      stripeTiers: [
+        { order: 0, count: 0, colour: '#FFFFFF', classesRequired: 1 },
+        { order: 1, count: 1, colour: '#FFFFFF', classesRequired: 1 },
+      ],
+    });
+    const leaver = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `${tag}-leaver@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Leaver',
+        surname: 'Review',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: leaver.id, schoolId: school.id, revokedAt: new Date() } });
+    const rung = white.body.stripeTiers.find((t: { order: number }) => t.order === 0).id;
+    for (const id of [studentId, leaver.id]) {
+      await superuser.studentRank.create({ data: { id: randomUUID(), studentId: id, disciplineId: d.body.id, schoolId: school.id, currentRankId: white.body.id, currentStripeId: rung } });
+    }
+    expect((await owner.get(`/v1/disciplines/${d.body.id}`)).body.studentCount).toBe(1);
+    const list = await owner.get(`/v1/schools/${school.id}/disciplines`);
+    expect(list.body.items.find((x: { id: string }) => x.id === d.body.id).studentCount).toBe(1);
+    const holders = await owner.get(`/v1/styles/${d.body.id}/rung-holders`);
+    expect(holders.status).toBe(200);
+    const enrolled = Object.fromEntries(holders.body.items[0].students.map((s: { studentId: string; enrolled: boolean }) => [s.studentId, s.enrolled]));
+    expect(enrolled).toEqual({ [studentId]: true, [leaver.id]: false });
+    // Their rank still holds the rung: it can't be removed, and the reason
+    // names them only as a former student (their account is no longer visible).
+    const kept = white.body.stripeTiers.find((t: { order: number }) => t.order === 1);
+    const removal = await owner.patch(`/v1/ranks/${white.body.id}`).send({ stripeTiers: [{ id: kept.id, order: 0, count: 1, colour: '#FFFFFF', name: kept.name }] });
+    expect(removal.status).toBe(409);
+    expect(removal.body.error.message).toContain('student Review, a former student');
+  });
+
+  it('the student app shows an archived style as archived, with no skills to work toward (Decision 310)', async () => {
+    const d = await newStyle({ name: 'Retired' });
+    const white = await newBelt(d.body.id, 0, 'White');
+    await newBelt(d.body.id, 1, 'Yellow');
+    await owner.post(`/v1/styles/${d.body.id}/skills`).send({ name: 'Bow' });
+    await superuser.studentRank.create({
+      data: { id: randomUUID(), studentId, disciplineId: d.body.id, schoolId: school.id, currentRankId: white.body.id, currentStripeId: white.body.stripeTiers[0].id },
+    });
+    const view = () => http().get(`/v1/students/${studentId}/grading`).set('Authorization', `Bearer ${tokStudent}`);
+    const before = (await view()).body.items.find((x: { disciplineId: string }) => x.disciplineId === d.body.id);
+    expect(before.archived).toBe(false);
+    expect((await owner.post(`/v1/disciplines/${d.body.id}/archive`)).status).toBe(201);
+    const res = await view();
+    expect(res.status).toBe(200);
+    const after = res.body.items.find((x: { disciplineId: string }) => x.disciplineId === d.body.id);
+    expect(after).toMatchObject({ archived: true, disciplineName: 'Retired', skills: [] });
   });
 });

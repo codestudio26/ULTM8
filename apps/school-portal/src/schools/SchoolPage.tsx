@@ -4,9 +4,19 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
-import { useJoinFranchise, useLeaveFranchise, useSchool, useSchoolFranchiseBranding, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import {
+  useCancelFranchiseJoinRequest,
+  useCloseSchool,
+  useJoinFranchise,
+  useLeaveFranchise,
+  useSchool,
+  useSchoolFranchiseBranding,
+  useSchoolFranchiseJoinRequest,
+  useUpdateSchool,
+  type SchoolResponse,
+} from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
-import { languageName } from '../i18n/format';
+import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload } from '../cancellations/CancellationSettingsFields';
 
@@ -218,7 +228,88 @@ export function SchoolPage() {
       {schoolId && school ? <CancellationSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
+      {schoolId && school ? <CloseSchoolCard schoolId={schoolId} school={school} /> : null}
     </>
+  );
+}
+
+/** Decision 364 — the School Owner closes their own School: the name re-typed
+ * plus their passcode, the same 90-day close as Decision 110's. Once closed,
+ * the card says when the School is deleted and who can reopen it. */
+function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
+  const close = useCloseSchool(schoolId);
+  const [open, setOpen] = useState(false);
+  const [confirmName, setConfirmName] = useState('');
+  const [passcode, setPasscode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  if (school.archivedAt) {
+    return (
+      <Card>
+        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+          {t('schools.close.closedTitle')}
+        </h2>
+        <p data-testid="school-closed-notice">
+          {t('schools.close.closedBody', { date: school.purgeAt ? new Date(school.purgeAt).toLocaleDateString(formatLocale()) : '—' })}
+        </p>
+      </Card>
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await close.mutateAsync({ confirmName, passcode });
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+        {t('schools.close.title')}
+      </h2>
+      <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.close.explanation')}</p>
+      <Button variant="danger" onClick={() => setOpen(true)}>
+        {t('schools.close.button')}
+      </Button>
+      {open ? (
+        <Modal title={t('schools.close.confirmTitle')} onClose={() => setOpen(false)}>
+          <form onSubmit={handleSubmit}>
+            <p>{t('schools.close.confirmBody')}</p>
+            {error ? <ErrorBanner message={error} /> : null}
+            <Field label={t('schools.close.nameLabel', { name: school.name })} htmlFor="close-school-name">
+              <TextField id="close-school-name" required value={confirmName} onChange={(e) => setConfirmName(e.target.value)} autoComplete="off" />
+            </Field>
+            <Field label={t('schools.close.passcodeLabel')} htmlFor="close-school-passcode">
+              <TextField
+                id="close-school-passcode"
+                type="password"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                required
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                autoComplete="current-password"
+              />
+            </Field>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <Button type="submit" variant="danger" loading={close.isPending} disabled={confirmName !== school.name}>
+                {t('schools.close.button')}
+              </Button>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+    </Card>
   );
 }
 
@@ -388,6 +479,10 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   // Decision 350 — the Franchise's name and logo show only when both owners allow it.
   const updateSchool = useUpdateSchool(schoolId);
   const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
+  // Decision 352 — joining is a request the Franchise Owner accepts or declines.
+  const { data: joinRequestData } = useSchoolFranchiseJoinRequest(franchiseId ? null : schoolId);
+  const cancelJoinRequest = useCancelFranchiseJoinRequest(schoolId);
+  const joinRequest = joinRequestData?.request ?? null;
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
@@ -399,6 +494,15 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
     try {
       await joinFranchise.mutateAsync(franchiseIdInput);
       setFranchiseIdInput('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  async function handleCancelRequest() {
+    setError(null);
+    try {
+      await cancelJoinRequest.mutateAsync();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
@@ -481,14 +585,33 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.independent')}
           </p>
-          <form onSubmit={handleJoin}>
-            <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
-              <TextField required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
-            </Field>
-            <Button type="submit" loading={joinFranchise.isPending}>
-              {t('schools.franchise.join')}
-            </Button>
-          </form>
+          {joinRequest?.status === 'PENDING' ? (
+            <div data-testid="franchise-join-pending">
+              <p>
+                <Trans k="schools.franchise.requestPending" nodes={{ id: <Badge>{joinRequest.franchiseId}</Badge> }} />
+              </p>
+              <Button variant="secondary" onClick={handleCancelRequest} loading={cancelJoinRequest.isPending}>
+                {t('schools.franchise.cancelRequest')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {joinRequest?.status === 'DECLINED' ? (
+                <p className="ultm8-field__hint" data-testid="franchise-join-declined">
+                  <Trans k="schools.franchise.requestDeclined" nodes={{ id: <Badge>{joinRequest.franchiseId}</Badge> }} />
+                </p>
+              ) : null}
+              <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.franchise.joinExplanation')}</p>
+              <form onSubmit={handleJoin}>
+                <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
+                  <TextField id="join-franchise-id" required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
+                </Field>
+                <Button type="submit" loading={joinFranchise.isPending}>
+                  {t('schools.franchise.join')}
+                </Button>
+              </form>
+            </>
+          )}
         </>
       )}
     </Card>

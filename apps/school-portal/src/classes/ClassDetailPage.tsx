@@ -264,7 +264,18 @@ export function ClassDetailPage() {
     <>
       <PageHeader
         title={cls?.title ?? t('classes.detail.fallbackTitle')}
-        subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
+        subtitle={
+          cls
+            ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` +
+              // Decision 353 (Q6): the slot's break, shown on the class details only.
+              (cls.breakStartAt && cls.breakEndAt
+                ? ` · ${t('timetable.booking.breakLine', {
+                    start: new Date(cls.breakStartAt).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' }),
+                    end: new Date(cls.breakEndAt).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' }),
+                  })}`
+                : '')
+            : undefined
+        }
         actions={cls && mayCancel && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
       />
       {done ? <SuccessBanner message={done} /> : null}

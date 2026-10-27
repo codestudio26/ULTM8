@@ -14,6 +14,15 @@ export function formatDate(iso: string): string {
   }
 }
 
+/** A timestamp's time of day only (e.g. a class's break). */
+export function formatTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat(formatLocale(), { timeStyle: 'short' }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
 export function formatDateTime(iso: string): string {
   try {
     return new Intl.DateTimeFormat(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));

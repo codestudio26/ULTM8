@@ -308,6 +308,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/franchise-join-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_findFranchiseJoinRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/franchise-join-request/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_cancelFranchiseJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/leave-franchise": {
         parameters: {
             query?: never;
@@ -318,6 +350,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SchoolsController_leaveFranchise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_closeOwnSchool"];
         delete?: never;
         options?: never;
         head?: never;
@@ -526,6 +574,86 @@ export interface paths {
         get: operations["FranchisesController_findSchools"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_listJoinRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests/{requestId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_acceptJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/join-requests/{requestId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_declineJoinRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/schools/{schoolId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_removeSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchisesController_closeOwnFranchise"];
         delete?: never;
         options?: never;
         head?: never;
@@ -846,6 +974,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["NotificationsController_clearRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/me/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_markAllRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1502,6 +1646,22 @@ export interface paths {
         get: operations["TimetableController_findAll"];
         put?: never;
         post: operations["TimetableController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/timetable/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_calendar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3524,6 +3684,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/notifications/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationBroadcastController_findSent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -4438,6 +4614,36 @@ export interface components {
         JoinFranchiseDto: {
             franchiseId: string;
         };
+        FranchiseJoinRequestResponseDto: {
+            id: string;
+            franchiseId: string;
+            schoolId: string;
+            /** @description The School's name when it asked. */
+            schoolName: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        SchoolFranchiseJoinRequestResponseDto: {
+            request?: components["schemas"]["FranchiseJoinRequestResponseDto"] | null;
+        };
+        CloseOwnSchoolDto: {
+            /** @description Must exactly match the School's current name. */
+            confirmName: string;
+        };
+        CloseOwnSchoolResponseDto: {
+            id: string;
+            /** Format: date-time */
+            archivedAt: string;
+            /**
+             * Format: date-time
+             * @description When the School is deleted for good (90 days after closing).
+             */
+            purgeAt: string;
+        };
         CreateBranchDto: {
             name: string;
             address?: string;
@@ -4778,6 +4984,16 @@ export interface components {
             items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
             nextCursor?: string | null;
         };
+        FranchiseJoinRequestListResponseDto: {
+            items: components["schemas"]["FranchiseJoinRequestResponseDto"][];
+        };
+        RemoveFranchiseSchoolResponseDto: {
+            schoolId: string;
+        };
+        CloseOwnFranchiseDto: {
+            /** @description Must exactly match the Franchise's current name. */
+            confirmName: string;
+        };
         CreateCoachInviteDto: {
             email: string;
             /** @description Required when the School has branches; the branch they will coach at. */
@@ -4942,6 +5158,17 @@ export interface components {
             snoozedUntil?: string | null;
             /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
             readAt?: string | null;
+            /** @description The School this notification came from (Decision 355), or null. */
+            schoolId?: string | null;
+            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 355). */
+            schoolName?: string | null;
+            /**
+             * @description What clicking the notification opens (Decision 355), or null for nothing.
+             * @enum {string|null}
+             */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | null;
+            /** @description The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364). */
+            targetId?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -4963,6 +5190,10 @@ export interface components {
         ClearReadNotificationsResponseDto: {
             /** @description How many read Notifications were cleared (hidden; the records are kept). */
             cleared: number;
+        };
+        MarkAllReadResponseDto: {
+            /** @description How many unread Notifications were marked read. */
+            updated: number;
         };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future and at most 7 days away. Provide this OR `minutes`, not both. */
@@ -5064,6 +5295,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
             bookingEndAt?: string | null;
@@ -5362,6 +5596,44 @@ export interface components {
             items: components["schemas"]["TimetableSlotResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        TimetableCalendarClassDto: {
+            id: string;
+            timetableSlotId: string | null;
+            title: string;
+            branchId: string | null;
+            instructorId: string | null;
+            activities: string[];
+            styles: components["schemas"]["ClassStyleResponseDto"][];
+            /** @description Local date of the class (YYYY-MM-DD), in its Branch's zone, else its School's, else UTC. */
+            date: string;
+            /** @description Local start time, HH:mm. */
+            startTime: string;
+            /** @description Local end time, HH:mm. */
+            endTime: string;
+            /** @description Local break start, HH:mm (Decision 353, Q6). */
+            breakStart: string | null;
+            /** @description Local break end, HH:mm. */
+            breakEnd: string | null;
+            startDate: string;
+            endDate: string;
+            capacity: number | null;
+            /** @description Seats taken: bookings that are not cancelled, plus their guests. */
+            seatsTaken: number;
+            /** @description Students waiting or offered a seat. */
+            waiting: number;
+            cancelledAt: string | null;
+            archivedAt: string | null;
+        };
+        TimetableCalendarLaterDto: {
+            slotId: string;
+            /** @description YYYY-MM-DD. */
+            date: string;
+        };
+        TimetableCalendarResponseDto: {
+            classes: components["schemas"]["TimetableCalendarClassDto"][];
+            /** @description Dates On slots reach that have no class yet because they are past the 4-week horizon. */
+            later: components["schemas"]["TimetableCalendarLaterDto"][];
         };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
@@ -6271,6 +6543,8 @@ export interface components {
             studentId: string;
             firstName: string;
             surname: string;
+            /** @description Still enrolled at the School; false for a student who has left but keeps their rank (Decision 310). */
+            enrolled: boolean;
         };
         RungHoldersDto: {
             /** @description The rung (stripe tier id). */
@@ -6491,6 +6765,8 @@ export interface components {
             schoolName: string;
             disciplineId: string;
             disciplineName: string;
+            /** @description The School no longer teaches this style (Decision 309): the belt and history stay, nothing to work toward (no skills; the app hides progress). */
+            archived: boolean;
             currentStripeId?: string | null;
             /** Format: date-time */
             dateOfCurrentRank: string;
@@ -7118,6 +7394,9 @@ export interface components {
             description?: string | null;
             startDate: string;
             endDate: string;
+            /** @description Break start, if its timetable slot has a break. Shown only; no effect on bookings. */
+            breakStartAt?: string | null;
+            breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
         };
@@ -7186,6 +7465,33 @@ export interface components {
             audience: "ALL" | "BRANCH" | "CLASS";
             /** @description How many distinct Students this broadcast was enqueued for. */
             recipientCount: number;
+        };
+        SentBroadcastResponseDto: {
+            /** @description The broadcastId POST .../broadcast returned. */
+            id: string;
+            schoolId: string;
+            sentById: string;
+            /** @description The sender's name when it was sent. */
+            sentByName: string;
+            title: string;
+            body: string;
+            /** @enum {string} */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            branchId?: string | null;
+            branchName?: string | null;
+            classId?: string | null;
+            classTitle?: string | null;
+            classStartDate?: string | null;
+            /** @description CLASS only: who on the class list it went to. Empty otherwise. */
+            classAudience: ("BOOKED" | "WAITLIST" | "CANCELLED")[];
+            /** @description How many distinct Students it was queued for. */
+            recipientCount: number;
+            createdAt: string;
+        };
+        SentBroadcastListResponseDto: {
+            items: components["schemas"]["SentBroadcastResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
         };
         FranchiseFeeChargeResponseDto: {
             id: string;
@@ -7948,7 +8254,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchoolResponseDto"];
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_findFranchiseJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolFranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_cancelFranchiseJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
                 };
             };
         };
@@ -7970,6 +8318,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_closeOwnSchool: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify (passcode check). */
+                "x-step-up-token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOwnSchoolDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloseOwnSchoolResponseDto"];
                 };
             };
         };
@@ -8402,6 +8778,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseMemberSchoolListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_listJoinRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_acceptJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_declineJoinRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_removeSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveFranchiseSchoolResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_closeOwnFranchise: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify (passcode check). */
+                "x-step-up-token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOwnFranchiseDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseResponseDto"];
                 };
             };
         };
@@ -8874,6 +9365,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClearReadNotificationsResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponseDto"];
                 };
             };
         };
@@ -9946,6 +10456,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_calendar: {
+        parameters: {
+            query: {
+                /** @description First date shown, YYYY-MM-DD. */
+                from: string;
+                /** @description Last date shown, YYYY-MM-DD. */
+                to: string;
+                /** @description Only this Branch, plus School-wide classes. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableCalendarResponseDto"];
                 };
             };
         };
@@ -13378,6 +13916,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BroadcastResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_findSent: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentBroadcastListResponseDto"];
                 };
             };
         };

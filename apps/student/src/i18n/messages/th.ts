@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "พัก {start} – {end}",
       bookError: "ไม่สามารถจองคลาสนี้ได้ โปรดลองอีกครั้ง",
       joinWaitlistError: "ไม่สามารถเข้ารายชื่อรอได้ โปรดลองอีกครั้ง",
       leaveWaitlistError: "ไม่สามารถออกจากรายชื่อรอได้ โปรดลองอีกครั้ง",
@@ -481,6 +482,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "ตั้งแต่ {date}",
       unverified: "รอโรงเรียนยืนยันสายคาดนี้",
       topOfLadder: "อยู่ขั้นสูงสุดของลำดับขั้นแล้ว",
+      noLongerTaught: "สถาบันนี้ไม่ได้สอนประเภทกีฬานี้แล้ว สายและประวัติของคุณยังคงอยู่",
       next: "ถัดไป: {rank}",
       progress: "ผ่านไปแล้ว {percent}%",
       readyToGrade: "พร้อมเลื่อนระดับ",
@@ -672,6 +674,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "ยังไม่มีการแจ้งเตือน",
+      markAllRead: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+      markAllReadFailed: "ไม่สามารถทำเครื่องหมายการแจ้งเตือนว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
       loadFailed: "ไม่สามารถโหลดการแจ้งเตือนได้ โปรดลองอีกครั้ง",
     },
     row: {
@@ -679,6 +683,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, ยังไม่อ่าน",
       unread: "ยังไม่อ่าน",
       markAsRead: "ทำเครื่องหมายว่าอ่านแล้ว",
+      open: "เปิด",
       markReadFailed: "ไม่สามารถทำเครื่องหมายว่าอ่านแล้วได้ โปรดลองอีกครั้ง",
     },
   },
