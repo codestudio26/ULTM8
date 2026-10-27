@@ -15,6 +15,21 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Check-in and front-desk mode (School Portal)** — a new **Check-in** page
+  (a tab next to Students for owners, a menu item for coaches and Branch
+  Staff) shows today's classes, checks a student in by scanning the QR in their
+  app or by name, books the place first when they aren't booked, and lists
+  recent check-ins. **Front-desk mode** turns a tablet or phone into a
+  full-screen check-in desk for one branch, with short names ("Lucas M.").
+  Not yet available, shown as "Soon" until the backend is built:
+  - personal check-in codes;
+  - locking the device and leaving it with a staff code;
+  - signing up and "Find me" on the tablet;
+  - waiver status on the welcome card;
+  - starting an open mat.
+  Until the device can be locked, front-desk mode runs in the staff member's
+  own login and says so. Backend handover: `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`.
+
 - **Disciplines follow-ups** (Decision 310) — a student's rank in an
   archived style now shows on their grading page, read-only, and in the
   student app as "No longer taught at this School". Classes, timetable slots,

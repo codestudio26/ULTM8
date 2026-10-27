@@ -27,6 +27,10 @@ export interface ClassesFilter {
    * passes `true` explicitly so it can show an accurate count and let the
    * caller toggle their visibility. */
   includeArchived?: boolean;
+  /** Only Classes starting in this window (ISO date-times, both inclusive) —
+   * the front desk's "today" list. */
+  startsFrom?: string;
+  startsTo?: string;
 }
 
 /** `filter`/`cursor` — additive, optional server-side filters + cursor pagination
@@ -50,6 +54,8 @@ export function useClasses(schoolId: string | null, filter: ClassesFilter = {}, 
       filter.when ?? null,
       filter.instructorId ?? null,
       filter.limit ?? null,
+      filter.startsFrom ?? null,
+      filter.startsTo ?? null,
     ],
     queryFn: () =>
       unwrap(
@@ -65,6 +71,8 @@ export function useClasses(schoolId: string | null, filter: ClassesFilter = {}, 
               when: filter.when,
               instructorId: filter.instructorId,
               limit: filter.limit,
+              startsFrom: filter.startsFrom,
+              startsTo: filter.startsTo,
             },
           },
         }),

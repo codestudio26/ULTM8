@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
+import { StudentsTabs } from './StudentsTabs';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -44,6 +45,7 @@ export function StudentsPage() {
         subtitle={t('students.subtitle')}
         actions={<Button onClick={() => navigate('/students/invite')}>{t('students.inviteButton')}</Button>}
       />
+      <StudentsTabs />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ maxWidth: 220 }}>
