@@ -168,7 +168,7 @@ async function api(method: string, url: string, body?: unknown, tok = ownerTok):
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
-  let json: any = null;
+  let json: any;
   try {
     json = JSON.parse(text);
   } catch {
@@ -722,7 +722,7 @@ async function suiteStudentPanel() {
   eq((await srOf(alex, R.id))?.skillStatuses.find((x: any) => x.skillId === e)?.status, 'SIGNED_OFF', 'one click moves "Learning" to signed');
   el = (await eligibilityOf(alex, R.id)).el;
   eq(el.eligible, true, 'the student becomes eligible');
-  r = await api('PATCH', `/v1/students/${alex}/skills/${e}`);
+  await api('PATCH', `/v1/students/${alex}/skills/${e}`);
   eq((await srOf(alex, R.id))?.skillStatuses.find((x: any) => x.skillId === e)?.status, 'NOT_STARTED', 'clicking again cycles back to "not started"');
   eq((await eligibilityOf(alex, R.id)).el.eligible, false, '…and eligibility is withdrawn');
   r = await api('PATCH', `/v1/students/${alex}/skills/${R.byName('Purple Belt').id === '' ? '' : randomUUID()}`);
@@ -732,11 +732,9 @@ async function suiteStudentPanel() {
   const s = await student('Brown Belt · 4 Stripes', { classes: 10, daysAgo: 400 });
   el = (await eligibilityOf(s, R.id)).el;
   ok(el.requiredClasses === 26 && el.countedClasses === 10, 'Brown Belt · 4 Stripes shows "10 / 26" classes toward Black Belt (not "10 / 0")', `${el.countedClasses} / ${el.requiredClasses}`);
-  let logged = 0;
   for (let i = 0; i < 16; i++) {
     const lr = await api('POST', `/v1/students/${s}/ranks/${R.id}/log-class`, { classType: 'Adult Fundamentals' });
-    if (lr.status === 201) logged++;
-    else if (i === 0) ok(false, 'log-class answers 201', msg(lr));
+    if (lr.status !== 201 && i === 0) ok(false, 'log-class answers 201', msg(lr));
   }
   eq((await srOf(s, R.id))?.classesAttendedTowardCheckpoint, 26, 'sixteen "Log a class" add sixteen classes');
   eq((await eligibilityOf(s, R.id)).el.eligible, true, 'reaching the class target (with the days already served) makes the student eligible');
@@ -794,7 +792,7 @@ async function suiteBoard(seed: number) {
   const boardGet = (q: string) => api('GET', `/v1/schools/${school.id}/grading-board?disciplineId=${st.id}${q}`);
 
   family('6a columns, % and warnings');
-  let t0 = Date.now();
+  const t0 = Date.now();
   let b = await boardGet('&activeOnly=true');
   const ms600 = Date.now() - t0;
   note(`Grading Board GET with 600 students (owner): ${ms600} ms.`);
