@@ -9,7 +9,7 @@ const CACHE_MS = 5_000;
  * Decision 361 — "when did this user's roles last change?", read on every
  * authenticated request by JwtStrategy. The answer is `User.rolesChangedAt`,
  * which a trigger on RoleGrant keeps current for every path that touches a
- * grant (see migration 20261206000000_user_roles_changed_at).
+ * grant (see migration 20261211000000_user_roles_changed_at).
  *
  * Read through PrismaAuthService (the pre-tenant-context, SELECT-only role):
  * the check runs before any tenant context exists. Each instance keeps the

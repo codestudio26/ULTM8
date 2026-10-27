@@ -24,7 +24,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   "Give role", since it works straight away. A removed or changed role now
   applies on the person's next click, even if they are signed in, instead of
   up to 15 minutes later. Names made only of spaces are refused on Add staff
-  manually. Needs the migration `20261206000000_user_roles_changed_at`.
+  manually. Needs the migration `20261211000000_user_roles_changed_at`.
+- **Waivers: guests sign by a shared link** (Decision 366) — members can
+  bring guests on a booking with their Friend Passes in the app, and each
+  guest gets a link to sign the School's waivers on a web page, without an
+  account (a parent or guardian signs for a guest under 18). The class page
+  shows which guests haven't signed, with the link to copy, and the Waivers
+  page lists guest signatures with the wording each one signed.
 - **Close branch** (Decision 330) replaces Archive on the Branches page. Only
   what is still in use stops a Branch closing (upcoming classes, weekly slots,
   Instructor profiles, home-branch Students, staff and coach roles); past

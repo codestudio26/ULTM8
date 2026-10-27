@@ -34,6 +34,26 @@ export const bookings = {
     waitlistPosition: "You're #{position} on the waitlist.",
     leaveWaitlist: 'Leave waitlist',
   },
+  /** Guests on a booking, each paid for with one of the member's Friend
+   * Passes, and the link each guest signs the waiver with (Waivers Q9). */
+  guests: {
+    /** {count} is how many guests are being booked. */
+    count: 'Guests: {count}',
+    add: 'Add a guest',
+    remove: 'Remove a guest',
+    /** {count} is how many of the member's Friend Passes can pay for a guest in this class. */
+    passesLeft: 'Friend Passes you can use for this class: {count}',
+    linksIntro: 'Send each guest their link, so they can sign the waiver before the class.',
+    /** {number} is 1, 2, 3… in booking order. */
+    guestNumber: 'Guest {number}',
+    signed: 'Waiver signed: {name}',
+    unsigned: "Hasn't signed the waiver yet",
+    share: 'Share link',
+    shareMessage: 'Please sign the waiver before the class: {link}',
+    noLink: "The signing link isn't available. Ask the School to send it.",
+    noShare: 'Sharing is not available here. Copy the link above and send it to your guest.',
+    loadError: 'Could not load your guests — please try again.',
+  },
   /** A booking's status, in capitals as the app has always shown it. */
   statusLabel: {
     upcoming: 'UPCOMING',

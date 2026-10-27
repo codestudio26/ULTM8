@@ -505,6 +505,13 @@ app's actual target) are unaffected. Verified the underlying cancel logic separa
 by temporarily bypassing just the dialog against a local mock server: the mutation,
 `ApiError` handling, and `invalidateQueries`-triggered refetch all fired correctly.
 
+### Guests (27 Oct 2026, Decision 366)
+
+A class row lets a member add guests, one of their own Friend Passes each
+(`GET /schools/:schoolId/friend-passes/me`), and after booking shows each
+guest's waiver signing link with Share. My Bookings shows the same for an
+upcoming booking with guests. Not offered for Guardian or Kid Mode bookings.
+
 ---
 
 ## Slice 3 — Rank & Grading (read-only) — DONE
