@@ -13,6 +13,8 @@ export type UpcomingImpactResponse = components['schemas']['UpcomingImpactRespon
 export type TimetableOccurrenceResponse = components['schemas']['ClassResponseDto'];
 export type TimetableCalendarResponse = components['schemas']['TimetableCalendarResponseDto'];
 export type TimetableCalendarClass = components['schemas']['TimetableCalendarClassDto'];
+export type ClosureResponse = components['schemas']['ClosureResponseDto'];
+export type CreateClosureInput = components['schemas']['CreateClosureDto'];
 
 /** Loads every page (100 at a time), like useInstructors: the list used to
  * stop at the API's default page of 20, so a School with more slots lost the
@@ -118,5 +120,31 @@ export function useTimetableOccurrence(slotId: string | null, date: string | nul
       unwrap(apiClient.GET('/v1/timetable/{id}/occurrence', { params: { path: { id: slotId! }, query: { date: date! } } })),
     enabled: !!slotId && !!date,
     retry: false,
+  });
+}
+
+/** Decision 353 (Q8, Decision 319 §3) — the School's closure dates. Under the
+ * ['timetable', schoolId] key, so adding or removing one refreshes the calendar. */
+export function useClosures(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['timetable', schoolId, 'closures'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/closures', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+export function useCreateClosure(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateClosureInput) => unwrap(apiClient.POST('/v1/schools/{schoolId}/closures', { params: { path: { schoolId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+  });
+}
+
+export function useDeleteClosure(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (closureId: string) => unwrap(apiClient.DELETE('/v1/closures/{id}', { params: { path: { id: closureId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
   });
 }
