@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "يوجد استرداد مستحق بالفعل على هذا الحجز — حدده كمدفوع بعد إعادة المال.",
   "There is no cash refund owed on this booking yet.": "لا يوجد استرداد نقدي مستحق على هذا الحجز بعد.",
   "Someone else has already resolved this booking.": "حسم شخص آخر هذا الحجز بالفعل.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "أُلغيت هذه الدفعة أو فشلت أو استُردت، لذا لا يمكن تعليمها كمدفوعة.",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "لا يمكن استرداد هذا الحجز تلقائيًا (الدفعة متنازع عليها، أو مستردة بالفعل، أو لا توجد باقة حصص مدفوعة). أعد الرصيد أو احتفظ به بدلًا من ذلك.",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "تعذر على Stripe معالجة هذا الاسترداد. لا يزال في القائمة — حاول مرة أخرى، أو أعد الرصيد بدلًا من ذلك.",
   "This class has been cancelled by the school.": "ألغت المدرسة هذه الحصة.",

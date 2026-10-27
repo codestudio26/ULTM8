@@ -45,6 +45,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Failed with the money taken; and Stripe's payment notices are no longer
   rate-limited, so card purchases settle at once in a busy hour instead of
   waiting on Stripe's retries.
+- **Billing stress-test follow-ups (B1, B2)** — marking a cash payment as paid
+  after it was cancelled or failed now says it can't be done (it used to
+  answer "OK" and change nothing); and clicking Subscribe or Buy several times
+  in a row now makes one card order and one Stripe subscription or Checkout
+  page, not one per click (Stripe idempotency keys per student and plan).
 
 - **Classes: second batch of fixes** (Decision 345, needs a migration) — a
   one-off class now needs its own ticket unless "Included in membership" is

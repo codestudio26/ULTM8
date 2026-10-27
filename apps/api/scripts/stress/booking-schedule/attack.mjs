@@ -13,7 +13,7 @@ const subsOf = (s) => local(s).filter((x) => x.kind === 'sub');
 const packsOf = (s) => local(s).filter((x) => x.kind === 'pack');
 let k = 0;
 const mkClass = async (s, cap, extra = {}) => {
-  const r = await call('attack:mk-class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], instructorId: s.instructor.id, title: `Attack ${k++}`, styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 5 * 60e3).toISOString(), endDate: new Date(now + 65 * 60e3).toISOString(), ...(cap === null ? {} : { capacity: cap }), ...extra });
+  const r = await call('attack:mk-class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], instructorId: s.instructor.id, title: `Attack ${k++}`, styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 5 * 60e3).toISOString(), endDate: new Date(now + 65 * 60e3).toISOString(), membershipInclusion: true, ...(cap === null ? {} : { capacity: cap }), ...extra });
   if (r.status >= 300) throw new Error('mkClass ' + JSON.stringify(r.body));
   return r.body.id;
 };
@@ -192,7 +192,7 @@ const upcoming = (classId) => db.booking.count({ where: { classId, status: 'UPCO
 {
   const s = S[11]; const st = packsOf(s)[8];
   await db.membership.updateMany({ where: { studentId: st.id, schoolId: s.id }, data: { classesRemaining: 2 } });
-  const r = await call('A12:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Started', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now - 20 * 60e3).toISOString(), endDate: new Date(now + 40 * 60e3).toISOString(), capacity: 40 });
+  const r = await call('A12:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Started', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now - 20 * 60e3).toISOString(), endDate: new Date(now + 40 * 60e3).toISOString(), membershipInclusion: true, capacity: 40 });
   const b = await call('A12:book', 'POST', `/classes/${r.body.id}/book`, st.tok, {});
   const c = await call('A12:cancel', 'PATCH', `/bookings/${b.body.id}/cancel`, st.tok, {});
   const m = await db.membership.findFirst({ where: { studentId: st.id, schoolId: s.id } });

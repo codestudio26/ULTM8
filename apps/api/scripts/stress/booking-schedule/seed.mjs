@@ -20,7 +20,11 @@ const cast = { schools: [] };
 const t0 = Date.now();
 for (let s = 0; s < N_SCHOOLS; s++) {
   const tz = TZ[s % TZ.length];
-  const school = await db.school.create({ data: { id: randomUUID(), name: `Stress Academy ${s + 1}`, timezone: tz, ranksToggle: true, waitlistClaimWindowMinutes: 60 } });
+  const school = await db.school.create({ data: { id: randomUUID(), name: `Stress Academy ${s + 1}`, timezone: tz, ranksToggle: true, waitlistClaimWindowMinutes: 60,
+    // Auto-credit, as existing Schools were migrated to (Decision 292): a cancellation
+    // before the cutoff gives the class credit back, which the credit attacks check.
+    // New Schools start on Manual, where the seat waits on the "to resolve" list.
+    classCancellationPolicy: 'AUTO_CREDIT', cancellationPolicyChosenAt: new Date() } });
   const nBranches = 1 + (s % 3);
   const branches = [];
   for (let b = 0; b < nBranches; b++) branches.push(await db.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: `Branch ${b + 1}` } }));
@@ -54,7 +58,7 @@ for (let s = 0; s < N_SCHOOLS; s++) {
   // One-off classes running now (check-in window open): 12 big, 2 tiny (capacity races), 1 unlimited.
   const nowClasses = [];
   const mkClass = async (title, cap, startOff, endOff, extra = {}) => {
-    const r = await call('seed:class', 'POST', `/schools/${school.id}/classes`, tOwner, { branchId: branches[0].id, instructorId: instructor.id, title, styles, startDate: new Date(now + startOff).toISOString(), endDate: new Date(now + endOff).toISOString(), ...(cap === null ? {} : { capacity: cap }), ...extra });
+    const r = await call('seed:class', 'POST', `/schools/${school.id}/classes`, tOwner, { branchId: branches[0].id, instructorId: instructor.id, title, styles, startDate: new Date(now + startOff).toISOString(), endDate: new Date(now + endOff).toISOString(), membershipInclusion: true, ...(cap === null ? {} : { capacity: cap }), ...extra });
     if (r.status >= 300) throw new Error('class ' + JSON.stringify(r.body));
     return r.body;
   };
@@ -63,7 +67,10 @@ for (let s = 0; s < N_SCHOOLS; s++) {
   const open = await mkClass('Open mat (no cap)', null, -10 * 60e3, 80 * 60e3);
   // Probes for the gate audit (phase 3): booking closed, already ended, archived later.
   const closed = await mkClass('Booking closed', 40, 2 * 3600e3, 3 * 3600e3, { bookingEndAt: new Date(now - 60e3).toISOString() });
-  const ended = await mkClass('Ended yesterday', 40, -26 * 3600e3, -25 * 3600e3);
+  // The API refuses a class that has already ended (Decision 345), so the probe is
+  // created tomorrow and moved back a day in the database.
+  const endedNew = await mkClass('Ended yesterday', 40, 22 * 3600e3, 23 * 3600e3);
+  const ended = await db.class.update({ where: { id: endedNew.id }, data: { startDate: new Date(now - 26 * 3600e3), endDate: new Date(now - 25 * 3600e3) } });
   const future = await mkClass('Next week', 40, 7 * 86400e3, 7 * 86400e3 + 3600e3);
 
   // Membership plans (DB: purchase needs Stripe) and students.

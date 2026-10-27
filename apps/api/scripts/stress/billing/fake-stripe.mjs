@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 const port = Number(process.env.FAKE_STRIPE_PORT ?? 12111);
 const store = new Map();
 const calls = {};
+const idempotent = new Map();
 const id = (p) => `${p}_${randomBytes(9).toString('hex')}`;
 
 function parseForm(body) {
@@ -82,9 +83,19 @@ http.createServer((req, res) => {
     const params = parseForm(body);
     const h = handlers[key];
     if (h) {
+      // Idempotency keys, as Stripe keeps them: the same key on the same
+      // account and endpoint returns the first response again.
+      const idem = req.headers['idempotency-key'];
+      const idemKey = idem ? `${account ?? ''}|${key}|${idem}` : null;
+      if (idemKey && idempotent.has(idemKey)) {
+        const [status, out] = idempotent.get(idemKey);
+        calls[`${key} (replayed)`] = (calls[`${key} (replayed)`] ?? 0) + 1;
+        return send(status, out);
+      }
       const out = h(params, account);
-      if (out?.error) return send(out.error.status, out.error.body);
-      return send(200, out);
+      const reply = out?.error ? [out.error.status, out.error.body] : [200, out];
+      if (idemKey) idempotent.set(idemKey, reply);
+      return send(...reply);
     }
     // Generic retrieve / update / cancel / delete on a stored object.
     const m = path.match(/^\/v1\/(?:[a-z_]+\/)+?([a-z]+_[0-9a-f]+)(?:\/(cancel))?$/);

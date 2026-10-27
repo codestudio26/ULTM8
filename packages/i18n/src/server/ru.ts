@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "По этой записи уже нужно вернуть деньги — отметьте возврат выплаченным, когда деньги будут возвращены.",
   "There is no cash refund owed on this booking yet.": "По этой записи пока нет возврата наличными к выплате.",
   "Someone else has already resolved this booking.": "Эту запись уже обработал кто-то другой.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Этот платёж отменён, не прошёл или возвращён, поэтому его нельзя отметить как оплаченный.",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Эту запись нельзя вернуть автоматически (платёж оспорен, уже возвращён или нет оплаченного абонемента на занятия). Верните занятие на баланс или оставьте его.",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe не смог обработать этот возврат. Он остаётся в списке — попробуйте ещё раз или верните занятие на баланс.",
   "This class has been cancelled by the school.": "Это занятие отменено школой.",

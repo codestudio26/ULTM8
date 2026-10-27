@@ -4,7 +4,7 @@ const cast = JSON.parse(fs.readFileSync(new URL('./cast.json', import.meta.url))
 const now = Date.now();
 for (const [nClasses, perClass, cap] of [[1, 40, 20], [1, 100, 30], [5, 40, 20], [10, 40, 20]]) {
   const picks = cast.schools.filter((s) => s.branches.length === 1).slice(0, nClasses);
-  const classes = await Promise.all(picks.map(async (s) => (await call('b:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Burst', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 3600e3).toISOString(), endDate: new Date(now + 7200e3).toISOString(), capacity: cap })).body.id));
+  const classes = await Promise.all(picks.map(async (s) => (await call('b:mk', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], title: 'Burst', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: new Date(now + 3600e3).toISOString(), endDate: new Date(now + 7200e3).toISOString(), membershipInclusion: true, capacity: cap })).body.id));
   const t0 = performance.now();
   const rs = (await Promise.all(picks.map((s, i) => Promise.all(s.students.filter((x) => x.kind === 'sub' && x.branch === s.branches[0]).slice(150, 150 + perClass).map(async (st) => { const a = performance.now(); const r = await call('b:book', 'POST', `/classes/${classes[i]}/book`, st.tok, {}); return { s: r.status, ms: performance.now() - a }; }))))).flat();
   const filled = await Promise.all(classes.map((c) => db.booking.count({ where: { classId: c, status: 'UPCOMING' } })));

@@ -9,6 +9,7 @@ export const serverMessages: Record<string, string> = {
   "A refund is already owed on this booking — mark it paid once the money has gone back.": "การจองนี้มีเงินค้างคืนอยู่แล้ว — ทำเครื่องหมายว่าคืนแล้วเมื่อคืนเงินเรียบร้อย",
   "There is no cash refund owed on this booking yet.": "การจองนี้ยังไม่มีเงินสดค้างคืน",
   "Someone else has already resolved this booking.": "มีคนอื่นจัดการการจองนี้ไปแล้ว",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "การชำระเงินนี้ถูกยกเลิก ไม่สำเร็จ หรือคืนเงินแล้ว จึงทำเครื่องหมายว่าชำระแล้วไม่ได้",
   "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "การจองนี้คืนเงินอัตโนมัติไม่ได้ (การชำระเงินอยู่ระหว่างข้อพิพาท คืนเงินไปแล้ว หรือไม่มีแพ็กคลาสที่ชำระแล้ว) ให้คืนสิทธิ์เรียนหรือเก็บไว้แทน",
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe ไม่สามารถดำเนินการคืนเงินนี้ได้ ยังคงรออยู่ในรายการ — ลองอีกครั้ง หรือคืนสิทธิ์เรียนแทน",
   "This class has been cancelled by the school.": "คลาสนี้ถูกโรงเรียนยกเลิกแล้ว",

@@ -185,16 +185,20 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 }
 
 // C7. A card payment for a second week pass: the student already holds one.
+// A repeat click within a couple of minutes now reuses the first Checkout page
+// (C11b), so the second payment stands for a second tab opened later: a second
+// order with its own PaymentIntent, both paid.
 {
   const s = card[2]; const st = free(s, 6);
   const first = await call('C7:buy', 'POST', `/membership-plans/${s.plans.weekly}/purchase`, st.tok, { useHostedCheckout: true });
-  const second = await call('C7:buy', 'POST', `/membership-plans/${s.plans.weekly}/purchase`, st.tok, { useHostedCheckout: true });
-  const rows = await db.transaction.findMany({ where: { id: { in: [first.body.transactionId, second.body.transactionId].filter(Boolean) } } });
+  const firstRow = await db.transaction.findUnique({ where: { id: first.body.transactionId } });
+  const secondRow = await db.transaction.create({ data: { ...firstRow, id: randomUUID(), stripePaymentIntentId: `pi_c7_${randomUUID().replace(/-/g, '')}`, createdAt: undefined, updatedAt: undefined } });
+  const rows = [firstRow, secondRow];
   await Promise.all(rows.map((x) => webhook('C7', 'payment_intent.succeeded', x.stripePaymentIntentId, s.acct)));
   await waitFor(async () => (await db.transaction.count({ where: { id: { in: rows.map((x) => x.id) }, status: 'PENDING' } })) === 0, 30000);
   const after = await db.transaction.findMany({ where: { id: { in: rows.map((x) => x.id) } }, select: { status: true, membershipId: true, refundedAmount: true } });
   const live = await db.membership.count({ where: { studentId: st.id, membershipPlanId: s.plans.weekly } });
-  ok('C7 paying twice for a week pass: one pass, the second payment refunded', live === 1 && after.some((x) => x.status === 'REFUNDED'), `second purchase ${second.status}; orders ${JSON.stringify(after)}; passes ${live}`);
+  ok('C7 paying twice for a week pass: one pass, the second payment refunded', live === 1 && after.some((x) => x.status === 'REFUNDED'), `first purchase ${first.status}; orders ${JSON.stringify(after)}; passes ${live}`);
 }
 
 // C8. Stripe says the payment failed, then (the member retried in Checkout) that it succeeded.
@@ -213,7 +217,7 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 // C9. Cross-tenant and wrong-role attempts on payments.
 {
   const A = cash[3], B = cash[4];
-  const stB = nth(B, 8);
+  const stB = free(B, 8);
   const r = await call('C9:buy', 'POST', `/membership-plans/${B.plans.weekly}/purchase`, stB.tok, {});
   const txB = r.body.transactionId;
   const tries = {
@@ -254,9 +258,21 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
   const before = await (await fetch(`${FAKE}/__calls`)).json();
   const rs = await Promise.all(Array.from({ length: 5 }, () => call('C11:subscribe', 'POST', `/membership-plans/${s.plans.sub}/purchase`, st.tok, {})));
   const after = await (await fetch(`${FAKE}/__calls`)).json();
-  const subs = (after['POST /v1/subscriptions'] ?? 0) - (before['POST /v1/subscriptions'] ?? 0);
+  // Every request is counted; ones Stripe answers again from the same idempotency key
+  // are also counted as replayed, and create nothing.
+  const made = (calls, key) => (calls[key] ?? 0) - (calls[`${key} (replayed)`] ?? 0);
+  const subs = made(after, 'POST /v1/subscriptions') - made(before, 'POST /v1/subscriptions');
   const pend = await db.transaction.count({ where: { studentId: st.id, membershipPlanId: s.plans.sub, status: 'PENDING' } });
   ok('C11 double-clicking Subscribe opens one Stripe subscription', subs <= 1 && pend <= 1, `5 clicks: ${JSON.stringify(codes(rs))}; Stripe subscriptions created ${subs}; Pending orders ${pend}`);
+  // The same for a pack bought through hosted Checkout.
+  const st2 = free(s, 13);
+  const before2 = await (await fetch(`${FAKE}/__calls`)).json();
+  const rs2 = await Promise.all(Array.from({ length: 5 }, () => call('C11:checkout', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st2.tok, { useHostedCheckout: true })));
+  const after2 = await (await fetch(`${FAKE}/__calls`)).json();
+  const sessions = made(after2, 'POST /v1/checkout/sessions') - made(before2, 'POST /v1/checkout/sessions');
+  const pend2 = await db.transaction.count({ where: { studentId: st2.id, membershipPlanId: s.plans.pack, status: 'PENDING' } });
+  const urls = new Set(rs2.map((r) => r.body?.checkoutUrl));
+  ok('C11b double-clicking Buy (Checkout) opens one Checkout and one order', pend2 === 1 && urls.size === 1 && sessions === 1, `5 clicks: ${JSON.stringify(codes(rs2))}; Checkout sessions created ${sessions}; Pending orders ${pend2}; distinct checkout links ${urls.size}`);
 }
 
 // C12. Promotion fees: accept, waive and cancel races, and other Schools.
@@ -326,7 +342,16 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
   const failed = await db.transaction.create({ data: { id: randomUUID(), schoolId: s.id, studentId: st.id, paymentAccountId: s.paymentAccountId, membershipPlanId: s.plans.pack, amount: 6000, currency: 'GBP', status: 'FAILED', paymentMethod: 'CASH' } });
   const cf = await call('C14:confirm-failed', 'PATCH', `/transactions/${failed.id}/confirm`, s.owner.tok, {});
   const fm = await db.transaction.findUnique({ where: { id: failed.id } });
-  ok('C14 a payment taken before the plan was archived can still be confirmed; a failed one cannot', c.status < 300 && fm.status === 'FAILED' && !fm.membershipId, `confirm after archive ${c.status}; confirm FAILED ${cf.status} → ${fm.status}`);
+  ok('C14 a payment taken before the plan was archived can still be confirmed; a failed one cannot, and says so', c.status < 300 && cf.status === 409 && fm.status === 'FAILED' && !fm.membershipId, `confirm after archive ${c.status}; confirm FAILED ${cf.status} → ${fm.status}`);
+  // A cash order the owner cancelled (Decision 339) can't then be confirmed.
+  const st3 = free(s, 21);
+  const m3Before = await db.membership.count({ where: { studentId: st3.id, membershipPlanId: s.plans.pack } });
+  const r3 = await call('C14:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st3.tok, {});
+  const cancel = await call('C14:cancel', 'PATCH', `/transactions/${r3.body.transactionId}/cancel`, s.owner.tok, {});
+  const after = await call('C14:confirm-cancelled', 'PATCH', `/transactions/${r3.body.transactionId}/confirm`, s.owner.tok, {});
+  const m3 = (await db.membership.count({ where: { studentId: st3.id, membershipPlanId: s.plans.pack } })) - m3Before;
+  const o3 = await db.transaction.findUnique({ where: { id: r3.body.transactionId } });
+  ok('C14b confirming a cancelled cash order is refused (409), no membership', cancel.status < 300 && after.status === 409 && m3 === 0 && o3.status === 'FAILED' && !o3.membershipId, `cancel ${cancel.status}; confirm ${after.status} → ${o3.status}; new memberships ${m3}`);
 }
 
 
