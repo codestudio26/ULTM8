@@ -1608,6 +1608,128 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff": {
+      "get": {
+        "operationId": "RoleGrantsController_listStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Default active. \"removed\" = had a staff role here, holds none now.",
+            "schema": {
+              "enum": [
+                "active",
+                "removed",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SCHOOL_OWNER_MANAGER",
+                "INSTRUCTOR",
+                "BRANCH_STAFF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Part of a name or email, any capitals.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+      "post": {
+        "operationId": "RoleGrantsController_removeFromSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -15767,6 +15889,131 @@
           "updatedAt",
           "email",
           "emailSent"
+        ]
+      },
+      "StaffRoleDto": {
+        "type": "object",
+        "properties": {
+          "grantId": {
+            "type": "string",
+            "description": "The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SCHOOL_OWNER_MANAGER",
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "grantedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "grantId",
+          "role",
+          "grantedAt"
+        ]
+      },
+      "StaffMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Holds at least one active staff, coach or owner role here."
+          },
+          "addedAt": {
+            "type": "string",
+            "description": "When they were first given a staff role here."
+          },
+          "removedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When their last staff role here ended, for removed staff."
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          },
+          "roles": {
+            "description": "Active roles first, then ended ones, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRoleDto"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "active",
+          "addedAt",
+          "canInviteCoaches",
+          "roles"
+        ]
+      },
+      "StaffListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffMemberDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RemoveFromSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "removedRoles": {
+            "type": "number",
+            "description": "How many roles were ended."
+          }
+        },
+        "required": [
+          "removedRoles"
         ]
       },
       "CreateFranchiseDto": {

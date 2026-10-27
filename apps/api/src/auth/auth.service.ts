@@ -280,7 +280,7 @@ export class AuthService {
    */
   async issueAccessToken(userId: string): Promise<string> {
     const { user, grants } = await this.prismaApp.withTenantContext(userId, async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true } });
+      const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true, rolesChangedAt: true } });
       if (!user) {
         // Shouldn't happen — userId is always the already-authenticated caller's own
         // id at every call site — but fail loudly rather than sign a token with no
@@ -301,7 +301,9 @@ export class AuthService {
       branchId: g.branchId,
     }));
 
-    const payload: JwtPayload = { sub: userId, email: user.email, grants: claims };
+    // Read in the same transaction as the grants, so `rca` always describes
+    // exactly the grants in this token (Decision 361).
+    const payload: JwtPayload = { sub: userId, email: user.email, grants: claims, rca: user.rolesChangedAt?.getTime() ?? 0 };
     return this.jwt.sign(payload);
   }
 
