@@ -55,8 +55,19 @@ export function useUpdateSchool(schoolId: string) {
   });
 }
 
-/** Decision 98 — one-way join (409 if already affiliated). "Switch" is this
- * hook called again after useLeaveFranchise() below, not a separate call. */
+/** Decision 350 — the Franchise's name and logo, set only when both the
+ * Franchise Owner and the School Owner allow it. Keyed under ['school', id] so
+ * saving the School, joining or leaving refreshes it too. */
+export function useSchoolFranchiseBranding(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId, 'franchise-branding'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/franchise-branding', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 352 — asks to join: the Franchise Owner accepts or declines (409
+ * if already affiliated or already asking). "Switch" is leave, then ask again. */
 export function useJoinFranchise(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,6 +83,43 @@ export function useLeaveFranchise(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => unwrap(apiClient.POST('/v1/schools/{id}/leave-franchise', { params: { path: { id: schoolId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}
+
+/** Decision 352 — this School's latest request to join a Franchise (pending,
+ * accepted, declined or cancelled), or null if it never asked. */
+export function useSchoolFranchiseJoinRequest(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId, 'franchise-join-request'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/franchise-join-request', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 352 — withdraws the School's pending request to join. */
+export function useCancelFranchiseJoinRequest(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/schools/{id}/franchise-join-request/cancel', { params: { path: { id: schoolId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}
+
+/** Decision 364 — the School Owner closes their own School: re-checks the
+ * passcode first (POST /auth/step-up/verify), then closes with that proof. */
+export function useCloseSchool(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ confirmName, passcode }: { confirmName: string; passcode: string }) => {
+      const { stepUpToken } = await unwrap(apiClient.POST('/v1/auth/step-up/verify', { body: { passcode } }));
+      return unwrap(
+        apiClient.POST('/v1/schools/{id}/close', {
+          params: { path: { id: schoolId }, header: { 'x-step-up-token': stepUpToken } },
+          body: { confirmName },
+        }),
+      );
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
   });
 }

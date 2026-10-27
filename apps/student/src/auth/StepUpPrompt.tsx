@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Button, InlineError, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useVerifyStepUp } from './stepUpQueries';
 
 /**
@@ -20,6 +21,7 @@ export function StepUpPrompt({
   onVerified: (stepUpToken: string) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [passcode, setPasscode] = useState('');
   const verify = useVerifyStepUp();
 
@@ -32,9 +34,9 @@ export function StepUpPrompt({
 
   return (
     <View style={{ marginTop: 10 }}>
-      <Text style={{ fontSize: 13, marginBottom: 8 }}>Re-enter your passcode to confirm.</Text>
+      <Text style={{ fontSize: 13, marginBottom: 8 }}>{t('auth.stepUp.prompt')}</Text>
       {verify.isError ? (
-        <InlineError message={getApiErrorMessage(verify.error, 'Incorrect passcode — please try again.')} />
+        <InlineError message={getApiErrorMessage(verify.error, t('auth.stepUp.incorrect'))} />
       ) : null}
       <TextField
         testID="step-up-passcode-input"
@@ -46,11 +48,11 @@ export function StepUpPrompt({
       />
       <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
         <View style={{ flex: 1 }}>
-          <Button title="Cancel" variant="secondary" onPress={onCancel} />
+          <Button title={t('auth.stepUp.cancel')} variant="secondary" onPress={onCancel} />
         </View>
         <View style={{ flex: 1 }}>
           <Button
-            title="Confirm"
+            title={t('auth.stepUp.confirm')}
             variant="destructive"
             onPress={handleSubmit}
             loading={verify.isPending}

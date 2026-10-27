@@ -5,6 +5,7 @@ import type { components } from '@ultm8/api-client';
 import { InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useRank } from './rankQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type StudentRank = components['schemas']['StudentRankResponseDto'];
 type StudentRankList = components['schemas']['StudentRankListResponseDto'];
@@ -17,6 +18,7 @@ type DisciplineList = components['schemas']['DisciplineListResponseDto'];
  * `GET /ranks?ids=` endpoint exists) — flagged as a backend follow-up, not "fixed"
  * client-side. */
 function MyRankRow({ studentRank, disciplineName }: { studentRank: StudentRank; disciplineName: string }) {
+  const t = useT();
   const { data: rank, isLoading, isError, error } = useRank(studentRank.currentRankId);
   const stripeTier = rank?.stripeTiers.find((t) => t.id === studentRank.currentStripeId) ?? null;
 
@@ -37,12 +39,13 @@ function MyRankRow({ studentRank, disciplineName }: { studentRank: StudentRank; 
       ) : null}
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: '600' }}>{disciplineName}</Text>
-        {isLoading ? <Text style={{ color: '#5F6368', fontSize: 12 }}>Loading rank…</Text> : null}
-        {isError ? <InlineError message={getApiErrorMessage(error, 'Could not load rank details.')} /> : null}
+        {isLoading ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('ranks.myRank.loading')}</Text> : null}
+        {isError ? <InlineError message={getApiErrorMessage(error, t('ranks.myRank.rankError'))} /> : null}
         {rank ? (
           <Text style={{ color: '#5F6368', fontSize: 12 }}>
-            Rank {rank.order}
-            {stripeTier ? ` · ${stripeTier.count} stripe${stripeTier.count === 1 ? '' : 's'}` : ''}
+            {stripeTier
+              ? t('ranks.myRank.rankWithStripes', { order: rank.order, count: stripeTier.count })
+              : t('ranks.myRank.rank', { order: rank.order })}
           </Text>
         ) : null}
       </View>
@@ -72,6 +75,7 @@ export function MyRankSection({
   studentRanks: UseQueryResult<StudentRankList>;
   disciplines: UseQueryResult<DisciplineList>;
 }) {
+  const t = useT();
   const { data: ranksData, isLoading: ranksLoading, isError: ranksIsError, error: ranksError } = studentRanks;
   const { data: disciplinesData, isLoading: disciplinesLoading, isError: disciplinesIsError, error: disciplinesError } = disciplines;
 
@@ -103,20 +107,20 @@ export function MyRankSection({
   if (ranksIsError && ranks.length === 0) {
     return (
       <View style={{ marginTop: 16 }}>
-        <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
-        <InlineError message={getApiErrorMessage(ranksError, 'Failed to load your rank — please try again.')} />
+        <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('ranks.myRank.title')}</Text>
+        <InlineError message={getApiErrorMessage(ranksError, t('ranks.myRank.loadError'))} />
       </View>
     );
   }
 
   return (
     <View style={{ marginTop: 16 }}>
-      <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
+      <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('ranks.myRank.title')}</Text>
       {disciplinesIsError ? (
-        <InlineError message={getApiErrorMessage(disciplinesError, 'Could not load discipline names.')} />
+        <InlineError message={getApiErrorMessage(disciplinesError, t('ranks.myRank.disciplinesError'))} />
       ) : null}
       {ranks.map((r) => (
-        <MyRankRow key={r.id} studentRank={r} disciplineName={disciplineNameById.get(r.disciplineId) ?? 'Unknown discipline'} />
+        <MyRankRow key={r.id} studentRank={r} disciplineName={disciplineNameById.get(r.disciplineId) ?? t('ranks.myRank.unknownDiscipline')} />
       ))}
     </View>
   );

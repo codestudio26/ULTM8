@@ -20,26 +20,25 @@ import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
+import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole } from './dto/staff-list.dto';
+import { RolesChangedService } from '../../common/prisma/roles-changed.service';
+import type { Prisma } from '@prisma/client';
 
 const BCRYPT_ROUNDS = 12;
 
 /** Display label per GrantableRoleDto value, for the "you've been granted..."
  * notification email's subject/body — this endpoint only ever creates these three
- * (see GRANTABLE_ROLES below), so no other role needs an entry here. */
+ * (see GrantableRoleDto in CreateRoleGrantDto), so no other role needs an entry here. */
 const ROLE_LABELS: Record<string, string> = {
   INSTRUCTOR: 'Instructor',
   BRANCH_STAFF: 'Branch Staff',
   SCHOOL_OWNER_MANAGER: 'Owner/Manager',
 };
 
-/** The roles this endpoint is authorized to GRANT — see CreateRoleGrantDto.
- * SCHOOL_OWNER_MANAGER added by Decision 270. */
-const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'SCHOOL_OWNER_MANAGER'] as const;
-
 /**
  * The roles this endpoint is authorized to REVOKE (v1.2 backend backlog —
  * Student Detail's/Instructor Detail's "Revoke Enrollment" action) — a
- * strictly wider set than GRANTABLE_ROLES above, since revoking an existing
+ * strictly wider set than GrantableRoleDto, since revoking an existing
  * grant is a different, narrower authorization question than creating one:
  * STUDENT is deliberately excluded from GrantableRoleDto (see its own header
  * comment — "granting... STUDENT... has no confirmed authorization rule"),
@@ -67,6 +66,7 @@ export class RoleGrantsService {
     private readonly coachInvites: CoachInvitesService,
     private readonly schoolsService: SchoolsService,
     private readonly delivery: NotificationDeliveryService,
+    private readonly rolesChanged: RolesChangedService,
   ) {}
 
   /** Same convention as CoachInvitesService/InstructorsService's own
@@ -90,6 +90,9 @@ export class RoleGrantsService {
    */
   async create(callerId: string, targetUserId: string, dto: CreateRoleGrantDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, dto.schoolId);
+    // Decision 110 — a closed School accepts no further writes; Add Manually
+    // below already checked this, this path didn't (Decision 296).
+    await this.tenantAuth.assertSchoolNotArchived(callerId, dto.schoolId);
 
     // The verification gate from "we verify the accounts" (Decision 80) applies to the
     // GRANTOR, not the grantee — corrected by Decision 81 after the product owner was
@@ -157,10 +160,14 @@ export class RoleGrantsService {
     let branchName: string | null = null;
     if (dto.branchId) {
       const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true, name: true } }),
+        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true, name: true, archivedAt: true } }),
       );
       if (!branch || branch.schoolId !== dto.schoolId) {
         throw new BadRequestException('branchId must reference a Branch belonging to schoolId');
+      }
+      // Decision 296: nobody new joins a Branch that is waiting to be purged.
+      if (branch.archivedAt) {
+        throw new BadRequestException('This branch has been archived. Choose another branch.');
       }
       branchName = branch.name;
     }
@@ -194,10 +201,9 @@ export class RoleGrantsService {
         },
       }),
     );
-    // NOTE: this does not affect any access token targetUserId already holds — JWTs are
-    // only rebuilt from the live RoleGrant set at login/refresh time (Spec §8.3). If
-    // they're already logged in, the new grant has no effect until their token is
-    // reissued. Flagged in the Phase 2 summary per the phase brief's own instruction.
+    // Decision 361: their current access token is refused on its next use and
+    // the app refreshes it with the new grant, so the role works straight away.
+    this.rolesChanged.forget(targetUserId);
 
     // "You've been granted the Instructor role..." notification — previously
     // missing entirely: the grant itself always succeeded, but the invited
@@ -252,7 +258,7 @@ export class RoleGrantsService {
    * passcode emailed, forced change on first login."
    *
    * Lives here on RoleGrantsService, not as a new module/controller, because
-   * RoleGrantsService already owns all Staff CRUD (GRANTABLE_ROLES above) — "Staff" is
+   * RoleGrantsService already owns all Staff CRUD (GrantableRoleDto) — "Staff" is
    * not a separate Role or profile table the way Instructor is its own table; it IS a
    * RoleGrant row with role: 'BRANCH_STAFF'. So unlike
    * InstructorsService.createManually() (User + RoleGrant + a third Instructor profile
@@ -279,6 +285,13 @@ export class RoleGrantsService {
     // already makes branchId required at the validation layer; this just checks it
     // actually belongs to this School, same as create()'s own branchId check below.
     await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+    // Decision 296: nobody new joins a Branch that is waiting to be purged.
+    const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.findUnique({ where: { id: dto.branchId }, select: { archivedAt: true } }),
+    );
+    if (branch?.archivedAt) {
+      throw new BadRequestException('This branch has been archived. Choose another branch.');
+    }
 
     // Decision 116's existing-email check, same PrismaAuthService pre-tenant-context
     // lookup InstructorsService.createManually()/create() below/AuthService.register()
@@ -432,27 +445,171 @@ export class RoleGrantsService {
     }
 
     const schoolId = grant.schoolId;
+    if (grant.role === 'INSTRUCTOR') await this.assertNoClassesLeftWithoutInstructor(callerId, grant.id, targetUserId, schoolId);
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
-      // Given the role again later, they start with today's permissions, not
-      // their old ones (Decision 193). Cleared only once they hold no coach
-      // role at this School, so losing one branch keeps the others' rights.
-      const remaining = await tx.roleGrant.findMany({
-        where: { userId: targetUserId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
-        select: { role: true },
-      });
-      if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId: targetUserId, schoolId } });
-      if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
-        await tx.staffPermission.updateMany({ where: { userId: targetUserId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
-      }
+      await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
       return row;
     });
     // Branch Staff no longer at that branch can't have coach invites open
     // there (Decision 183; security review M1).
     if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
+    // Decision 361: their current access token stops working on its next use.
+    this.rolesChanged.forget(targetUserId);
     return revoked;
-    // Same JWT-staleness caveat as create() above: an already-issued token keeps this
-    // grant's claim until it expires (≤15 min) or is refreshed — there is no
-    // session-invalidation mechanism yet (flagged, not silently assumed away).
+  }
+
+  /** Given the role again later, they start with today's permissions, not
+   * their old ones (Decision 193). Cleared only once they hold no coach role
+   * at this School, so losing one branch keeps the others' rights. */
+  private async clearCoachRightsIfGone(tx: Prisma.TransactionClient, userId: string, schoolId: string) {
+    const remaining = await tx.roleGrant.findMany({
+      where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+      select: { role: true },
+    });
+    if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId, schoolId } });
+    if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
+      await tx.staffPermission.updateMany({ where: { userId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
+    }
+  }
+
+  /**
+   * GET /schools/{schoolId}/staff (Decision 361) — everyone who holds, or held,
+   * an owner, coach or Branch Staff role at this School, one row per person
+   * with their roles grouped. Replaces looking people up by User ID.
+   *
+   * Owner only for now; the "See the staff list" switch for Branch Staff comes
+   * with the access switches. Grants are read under the owner's own tenant
+   * context (an owner already sees every grant at their School, ended ones
+   * too). Names and contact details come through PrismaAuthService, like
+   * findAllForUser(): once all of someone's roles here have ended, the ordinary
+   * RLS path can no longer see their User row, and the Removed filter needs it.
+   * A School's staff is small, so the whole list comes back in one response.
+   */
+  async listStaff(callerId: string, schoolId: string, query: StaffListQueryDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const { grants, branches, inviters } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      grants: await tx.roleGrant.findMany({
+        where: { schoolId, role: { in: [...STAFF_ROLES] } },
+        select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, grantedById: true, revokedAt: true },
+        orderBy: { grantedAt: 'desc' },
+      }),
+      branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      inviters: await tx.staffPermission.findMany({ where: { schoolId, canInviteCoaches: true }, select: { userId: true } }),
+    }));
+
+    const userIds = [...new Set(grants.map((g) => g.userId))];
+    const granterIds = [...new Set(grants.map((g) => g.grantedById).filter((id): id is string => !!id))];
+    const users = await this.prismaAuth.user.findMany({
+      where: { id: { in: [...new Set([...userIds, ...granterIds])] } },
+      select: { id: true, firstName: true, surname: true, email: true, phone: true, profilePhotoUrl: true },
+    });
+    const userById = new Map(users.map((u) => [u.id, u]));
+    const branchName = new Map(branches.map((b) => [b.id, b.name]));
+    const mayInvite = new Set(inviters.map((p) => p.userId));
+
+    const status = query.status ?? 'active';
+    const q = query.q?.toLowerCase();
+    const items: StaffMemberDto[] = [];
+    for (const userId of userIds) {
+      const user = userById.get(userId);
+      if (!user) continue; // account deleted since
+      const own = grants.filter((g) => g.userId === userId);
+      const active = own.some((g) => !g.revokedAt);
+      if ((status === 'active' && !active) || (status === 'removed' && active)) continue;
+      // The role and branch filters look at the roles this view is about:
+      // current ones for active staff, ended ones for removed staff.
+      const relevant = own.filter((g) => (status === 'all' ? true : active ? !g.revokedAt : true));
+      if (query.role && !relevant.some((g) => g.role === query.role)) continue;
+      if (query.branchId && !relevant.some((g) => g.branchId === query.branchId)) continue;
+      if (q && ![`${user.firstName} ${user.surname}`, user.email].some((v) => v.toLowerCase().includes(q))) continue;
+
+      const roles = [...own].sort((a, b) => Number(!!a.revokedAt) - Number(!!b.revokedAt) || b.grantedAt.getTime() - a.grantedAt.getTime());
+      const granter = (id: string | null) => {
+        const u = id ? userById.get(id) : undefined;
+        return u ? `${u.firstName} ${u.surname}`.trim() : null;
+      };
+      items.push({
+        userId,
+        firstName: user.firstName,
+        surname: user.surname,
+        email: user.email,
+        phone: user.phone,
+        profilePhotoUrl: user.profilePhotoUrl,
+        active,
+        addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
+        removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
+        canInviteCoaches: mayInvite.has(userId),
+        roles: roles.map((g) => ({
+          grantId: g.id,
+          role: g.role as StaffRole,
+          branchId: g.branchId,
+          branchName: g.branchId ? branchName.get(g.branchId) ?? null : null,
+          grantedAt: g.grantedAt.toISOString(),
+          grantedByName: granter(g.grantedById),
+          revokedAt: g.revokedAt?.toISOString() ?? null,
+        })),
+      });
+    }
+    items.sort(
+      (a, b) =>
+        Number(b.active) - Number(a.active) ||
+        `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`, undefined, { sensitivity: 'base' }),
+    );
+    return { items };
+  }
+
+  /**
+   * POST /schools/{schoolId}/staff/{userId}/remove (Decision 361) — "Remove
+   * from School": ends every coach and Branch Staff role the person holds
+   * here, at every branch, in one step, with the same clean-up as revoke()
+   * (grading permissions, "Can invite coaches", their open coach invites).
+   * Their account stays, and so does any student role they hold here. Owner
+   * roles are not touched: removing an owner is its own, separate rule (main
+   * owner and co-owners). Their access ends on their next request.
+   */
+  async removeFromSchool(callerId: string, schoolId: string, userId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const removedRoles = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const { count } = await tx.roleGrant.updateMany({
+        where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+        data: { revokedAt: new Date() },
+      });
+      if (count > 0) await this.clearCoachRightsIfGone(tx, userId, schoolId);
+      return count;
+    });
+    if (removedRoles === 0) {
+      throw new NotFoundException('This person holds no coach or Branch Staff role at this School.');
+    }
+    await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
+    this.rolesChanged.forget(userId);
+    return { removedRoles };
+  }
+
+  /** Decision 331 — an Instructor role can't be taken away while it still
+   * leaves upcoming Classes or active weekly Timetable slots at this School
+   * with an instructor who no longer holds the role there. A row is still
+   * covered when another active Instructor role of theirs covers its branch
+   * (the same rule as TenantAuthorizationService.assertValidInstructor), so
+   * removing one branch of several only blocks on that branch's rows. Same
+   * "upcoming"/"active" test as archiving an Instructor profile, so "Hand
+   * over classes" clears exactly what this counts. */
+  private async assertNoClassesLeftWithoutInstructor(callerId: string, grantId: string, userId: string, schoolId: string): Promise<void> {
+    const now = new Date();
+    const [others, classes, slots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.roleGrant.findMany({ where: { userId, schoolId, role: 'INSTRUCTOR', revokedAt: null, id: { not: grantId } }, select: { branchId: true } }),
+        tx.class.findMany({ where: { schoolId, instructorId: userId, endDate: { gte: now }, archivedAt: null }, select: { branchId: true } }),
+        tx.timetableSlot.findMany({ where: { schoolId, instructorId: userId, status: 'ON', archivedAt: null }, select: { branchId: true } }),
+      ]),
+    );
+    const covered = (branchId: string | null) => others.some((g) => g.branchId === null || branchId === null || g.branchId === branchId);
+    if (classes.some((c) => !covered(c.branchId)) || slots.some((t) => !covered(t.branchId))) {
+      throw new ConflictException(
+        'They still teach upcoming classes or weekly timetable slots here. Use "Hand over classes" on their instructor page first, then remove the role.',
+      );
+    }
   }
 }

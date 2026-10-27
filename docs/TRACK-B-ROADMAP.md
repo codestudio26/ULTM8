@@ -505,6 +505,13 @@ app's actual target) are unaffected. Verified the underlying cancel logic separa
 by temporarily bypassing just the dialog against a local mock server: the mutation,
 `ApiError` handling, and `invalidateQueries`-triggered refetch all fired correctly.
 
+### Guests (27 Oct 2026, Decision 366)
+
+A class row lets a member add guests, one of their own Friend Passes each
+(`GET /schools/:schoolId/friend-passes/me`), and after booking shows each
+guest's waiver signing link with Share. My Bookings shows the same for an
+upcoming booking with guests. Not offered for Guardian or Kid Mode bookings.
+
 ---
 
 ## Slice 3 — Rank & Grading (read-only) — DONE
@@ -871,6 +878,10 @@ saved-card reuse. Also unchanged: `AcademyMembershipPlanDto` still has no
 Stripe-backed plan still creates a real Transaction + Checkout Session before the
 client could ever pre-filter, same cost `requires_payment` already had.
 
+### Follow-up — cancel a Subscription (26 Oct 2026, Decision 348)
+
+My Memberships now offers "Cancel subscription" on a live Subscription, confirmed in an inline panel (not `Alert.alert`, a no-op on web). It calls `POST /memberships/:id/cancel`; the Subscription runs to the end of the paid month and the row then shows "Cancelled, ends …". Tested in `MyMembershipsScreen.test.tsx`. Guardians can cancel for a linked minor through the same endpoint (`studentId` in the body); no Guardian screen calls it yet.
+
 ## Slice 5 — Notifications — DONE, with a scope change from the original plan below
 
 `POST /notifications/device-tokens` (device token registration) and
@@ -991,6 +1002,34 @@ Nothing — see the new Lessons section below, which closes this gap for metadat
 
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
+
+## Translation into 15 languages (Decision 323) — DONE (26 Oct 2026)
+
+### What was built
+- **Translation layer** (`src/i18n/`): `useT()` / `translate()`, the same lookup and plural rules as the School Portal through the shared `@ultm8/i18n` package. Order for every text: a Platform Admin Translations row for the language (screen `studentApp.<group>`, so it never collides with the portal's own rows) → the app's own translation → English, never a blank.
+- **Which language:** the account's saved `language` (Profile's language picker, the same setting the portal uses), else the phone's language when it is one of the 15, else English. Dates and money follow it too. Arabic flips the layout to right to left after the app restarts (a React Native limit); Profile says so.
+- **Every screen's text** (610 texts in 20 groups, `src/i18n/messages/en/*.ts`) in English, Portuguese (BR), Spanish, Arabic, French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese, Korean, Chinese (Simplified) and Thai. The API's own messages (errors, job-written notifications) are translated with the portal's shared catalogue.
+- **Native-speaker review:** the translation review page now lists the student app's texts too (`studentApp.<key>`), one item per English text across both apps.
+
+### Not yet
+The translations are first drafts: the native-speaker review from zero before launch (Decision 323 item 4) is what makes them final.
+
+### Verified
+`tsc --noEmit`; jest full suite (165 tests, 28 files), including `src/i18n/catalogue.test.ts` (every English key in all 14 languages with the same placeholders) and `src/i18n/I18nProvider.test.tsx` (saved language, then the phone's, then English; `studentApp.*` overrides).
+
+## My grading: breakdown, hours trained, promotion fee (Decisions 287, 300, 301, 306) — DONE (26 Oct 2026)
+
+### What was built
+- **Breakdown** on each style in My grading: classes (and per type), days at this rank and skills signed off, each with ✓, "x of y" and its %, and whether it counts toward the % — the same rule as the portal's Ranks tab, from the API's `progressBreakdown`.
+- **Hours trained:** hours at this rank and in all, "A record of your time on the mat. Grading doesn't use it." (`hoursTrained`).
+- **Promotion fee** at the top of My grading, for the student or a guardian for their child ("Ben was graded to …"): the grade, School and price; **See and answer** shows the grading date and "Nothing is charged until you accept it…", then **Accept {price}** or **Decline** (Decline asks again, in red, and says the School is told). An accepted fee shows that the promotion goes through once it is paid. Uses `GET /students/{id}/promotion-fee-requests` and `POST /promotion-fee-requests/{id}/accept|decline`.
+
+### Not yet
+- **Paying the fee in the app**, and "Credit on your balance": paying an accepted fee belongs to staff-created charges (Decision 303), which aren't built; the app says to pay as the School asks.
+- **Ask for a belt correction** (B8) from the design. The **Home** card is built (26 Oct 2026): one "Promotion fee" card per fee waiting for an answer, the student's own and each of a guardian's children's; **See and answer** opens My grading with that fee open.
+
+### Verified
+`tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (9, 4 new) and the full suite (146, 26 files).
 
 ## Lessons, metadata + lock state (Decisions 101, 154, 190, 195, 208) — DONE
 

@@ -23,8 +23,7 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     null as never,
     null as never,
     { scopedClient } as never,
-    null as never,
-  );
+    null as never, null as never, null as never);
   jest
     .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
     .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
@@ -88,8 +87,7 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
       null as never,
       null as never,
       { scopedClient } as never,
-      null as never,
-    );
+      null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
       .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
@@ -197,7 +195,7 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
 describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () => {
   function makeService(stripe: Record<string, unknown>) {
     const scopedClient = jest.fn().mockReturnValue(stripe);
-    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
       .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
@@ -266,7 +264,7 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
   it('refunds the given PaymentIntent on the School\'s own connected account', async () => {
     const stripe = { refunds: { create: jest.fn().mockResolvedValue({ id: 're_1' }) } };
     const scopedClient = jest.fn().mockReturnValue(stripe);
-    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
       .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
@@ -277,3 +275,4 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
     expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_1' });
   });
 });
+

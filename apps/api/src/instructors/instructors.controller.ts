@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
@@ -18,8 +18,11 @@ import { CreateInstructorManuallyResponseDto } from './dto/create-instructor-man
 import { CertificationUploadUrlResponseDto } from './dto/certification-upload-url-response.dto';
 import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-response.dto';
 import { InstructorClassListResponseDto } from './dto/instructor-class-response.dto';
+import { CertificationUrlResponseDto } from './dto/certification-url-response.dto';
+import { ReassignInstructorDto, ReassignInstructorResponseDto } from './dto/reassign-instructor.dto';
+import { ResendPasscodeResponseDto } from './dto/resend-passcode-response.dto';
 
-/** Each Add Manually call sends an email — limited per account, same tier as
+/** Each Add Manually (or resend-passcode) call sends an email — limited per account, same tier as
  * CoachInvitesController's own invite-send throttle. */
 const ADD_MANUALLY_THROTTLE = { identity: { limit: 20, ttl: 3_600_000, getTracker: jwtSubTracker } };
 
@@ -52,7 +55,7 @@ export class InstructorsController {
     @Param('schoolId') schoolId: string,
     @Query() query: InstructorsQueryDto,
   ) {
-    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
+    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived, query.search);
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115). */
@@ -60,6 +63,13 @@ export class InstructorsController {
   @Get('schools/:schoolId/instructors/eligible-users')
   findEligibleUsers(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
     return this.instructorsService.findEligibleInstructorUsers(user.sub, schoolId);
+  }
+
+  /** Decision 312 — declared before `instructors/:id` so `me` is never read as an id. */
+  @ApiOkResponse({ type: InstructorListResponseDto })
+  @Get('instructors/me/profile')
+  findMyProfiles(@CurrentUser() user: JwtPayload) {
+    return this.instructorsService.findMyProfiles(user.sub);
   }
 
   @ApiOkResponse({ type: InstructorResponseDto })
@@ -88,6 +98,22 @@ export class InstructorsController {
     return this.instructorsService.unarchive(user.sub, id);
   }
 
+  /** Decision 312 — School Owner/Manager only; a 15-minute download link. */
+  @ApiOkResponse({ type: CertificationUrlResponseDto })
+  @Get('instructors/:id/certification-url')
+  getCertificationUrl(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.getCertificationUrl(user.sub, id);
+  }
+
+  /** Decision 312 — moves upcoming Classes and active Timetable slots to
+   * another instructor, all or nothing. School Owner/Manager only. */
+  @ApiOkResponse({ type: ReassignInstructorResponseDto })
+  @HttpCode(200)
+  @Post('instructors/:id/reassign')
+  reassign(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: ReassignInstructorDto) {
+    return this.instructorsService.reassign(user.sub, id, dto.toUserId);
+  }
+
   /** v1.2 backend backlog — "Instructor Class" grid, the real replacement for
    * the School Portal's client-side filter-the-School's-Classes workaround.
    * See InstructorsService.findClassesForInstructor's own header comment. */
@@ -113,6 +139,16 @@ export class InstructorsController {
     @Body() dto: CreateInstructorManuallyDto,
   ) {
     return this.instructorsService.createManually(user.sub, schoolId, dto);
+  }
+
+  /** Decision 331 — a new temporary passcode for someone Add Manually created
+   * who hasn't signed in yet. School Owner/Manager only. */
+  @ApiOkResponse({ type: ResendPasscodeResponseDto })
+  @Throttle(ADD_MANUALLY_THROTTLE)
+  @HttpCode(200)
+  @Post('instructors/:id/resend-passcode')
+  resendPasscode(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.resendPasscode(user.sub, id);
   }
 
   @ApiOkResponse({ type: InstructorListResponseDto })

@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useGrantBookingDelegation, useWithdrawBookingDelegation } from './bookingDelegationQueries';
 
 type BookingDelegation = components['schemas']['BookingDelegationResponseDto'];
@@ -15,6 +16,7 @@ type BookingDelegation = components['schemas']['BookingDelegationResponseDto'];
  * Kid-Mode bookings move to the Guardian's own review queue rather than
  * disappearing). */
 export function BookingDelegationRow({ studentId, delegation }: { studentId: string; delegation: BookingDelegation | undefined }) {
+  const t = useT();
   const grant = useGrantBookingDelegation();
   const withdraw = useWithdrawBookingDelegation();
 
@@ -37,26 +39,23 @@ export function BookingDelegationRow({ studentId, delegation }: { studentId: str
 
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>Kid Mode — self-booking</Text>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
-        Lets your minor book a class themselves, from your device, against a class credit you've already paid for — never a
-        purchase, cancellation, or waiver signature.
-      </Text>
+      <Text style={{ fontWeight: '600' }}>{t('guardians.bookingDelegation.title')}</Text>
+      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('guardians.bookingDelegation.description')}</Text>
 
       {grant.isError ? (
-        <InlineError message={getApiErrorMessage(grant.error, 'Could not enable Kid Mode — please try again.')} />
+        <InlineError message={getApiErrorMessage(grant.error, t('guardians.bookingDelegation.enableError'))} />
       ) : null}
       {withdraw.isError ? (
-        <InlineError message={getApiErrorMessage(withdraw.error, 'Could not disable Kid Mode — please try again.')} />
+        <InlineError message={getApiErrorMessage(withdraw.error, t('guardians.bookingDelegation.disableError'))} />
       ) : null}
 
       {active ? (
         <>
-          <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Enabled ✓</Text>
-          <Button title="Disable Kid Mode" variant="secondary" onPress={handleWithdraw} loading={withdraw.isPending} />
+          <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>{t('guardians.bookingDelegation.enabled')}</Text>
+          <Button title={t('guardians.bookingDelegation.disable')} variant="secondary" onPress={handleWithdraw} loading={withdraw.isPending} />
         </>
       ) : (
-        <Button title="Enable Kid Mode" onPress={handleGrant} loading={grant.isPending} />
+        <Button title={t('guardians.bookingDelegation.enable')} onPress={handleGrant} loading={grant.isPending} />
       )}
     </View>
   );

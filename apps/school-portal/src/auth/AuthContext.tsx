@@ -289,6 +289,15 @@ export function useCoachSchoolId(): string | null {
   return schoolIds[0];
 }
 
+/** True for a coach or Branch Staff member who doesn't own a School — the one test
+ * that picks the coach sidebar over the owner's (Shell.tsx), and that the header's
+ * account menu and Global Search follow so they never drift from the sidebar. */
+export function useIsCoachOnly(): boolean {
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  return !ownedSchoolId && !!coachSchoolId;
+}
+
 /** The School the grading screens work in: the owner's, else the coach's. */
 export function useGradingSchoolId(): string | null {
   const owned = useOwnedSchoolId();

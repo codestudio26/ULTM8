@@ -10,12 +10,15 @@ import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
+import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
 /**
- * Thrown by handlePaymentIntentSucceeded's own `tx.membership.create()` call when
- * it collides with `Membership_one_active_general_access_per_school` — a signal to
+ * Thrown by handlePaymentIntentSucceeded when assertCanCreateMembership() refuses
+ * the new Membership (Decision 334; before that, when its `tx.membership.create()`
+ * collided with the since-dropped `Membership_one_active_general_access_per_school`
+ * index) — a signal to
  * process()'s own catch block to run resolveMembershipCollision(), not a generic
  * failure. A dedicated type, not a `P2002` + `err.meta?.target` inspection at the
  * call site that needs to react to it — see that call site's own catch block for
@@ -51,6 +54,10 @@ type DisputeSideEffects = {
   chargebackPatternCheckStudentIds: string[];
   freedClassIds: string[];
 };
+
+/** Card Transactions a payment_intent.succeeded may still settle. FAILED is
+ * included because a failed attempt is not final (handlePaymentIntentSucceeded). */
+const SETTLEABLE: Transaction['status'][] = ['PENDING', 'FAILED'];
 
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
@@ -339,6 +346,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         await this.handlePaymentIntentSucceeded(tx, objectId);
         return noSideEffects;
       case 'payment_intent.payment_failed':
+      // Decision 339 (T12) — a card payment the Student walked away from: Stripe
+      // cancels the PaymentIntent (or its expired Checkout Session's), and the
+      // row would otherwise sit Pending for ever. Failed is the nearest of the
+      // five confirmed Transaction statuses; nothing else to undo, same as a
+      // failed charge. Falls through on purpose.
+      case 'payment_intent.canceled':
         await this.handlePaymentIntentFailed(tx, objectId);
         return noSideEffects;
       case 'customer.subscription.deleted':
@@ -416,22 +429,45 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return;
     }
-    if (transaction.status !== 'PENDING') {
+    // FAILED is not final: payment_intent.payment_failed fires for each failed
+    // attempt, and the payer can try again (another card in Checkout) on the
+    // same PaymentIntent, which then succeeds. Before, that payment stayed
+    // FAILED with no Membership though the money was taken (billing stress
+    // test, 26 Oct 2026).
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already settled by an earlier delivery of this same event, or a duplicate
       // payment_intent.succeeded Stripe occasionally sends for the same intent —
       // idempotent no-op, not an error.
       return;
     }
+    const membershipPlanId = transaction.membershipPlanId;
+    if (transaction.kind !== 'MEMBERSHIP' || !membershipPlanId) {
+      return; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
+    }
 
     const updateResult = await tx.transaction.updateMany({
-      where: { id: transaction.id, status: 'PENDING' },
+      where: { id: transaction.id, status: { in: SETTLEABLE } },
       data: { status: 'SUCCESSFUL' },
     });
     if (updateResult.count === 0) {
       return; // lost a race with a concurrent delivery — the other one already won.
     }
 
-    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: membershipPlanId } });
+
+    // Decision 334 (Memberships review M1/M20/M3) — replaces the partial unique
+    // index Membership_one_active_general_access_per_school. A refusal is the
+    // same collision as before: thrown as MembershipCollisionError, so the
+    // whole transaction rolls back and process() refunds the payment (and
+    // cancels a Subscription) via resolveMembershipCollision().
+    try {
+      await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
+    } catch (err) {
+      if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+        throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: ${err.message}`);
+      }
+      throw err;
+    }
 
     // The create() below is wrapped in its own try/catch, but — critically — NOT to
     // swallow a P2002 collision (Spec 55 §11.5's two-simultaneous-Active-Memberships
@@ -455,7 +491,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: {
           id: randomUUID(),
           studentId: transaction.studentId,
-          membershipPlanId: transaction.membershipPlanId,
+          membershipPlanId,
           schoolId: transaction.schoolId,
           frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
           classesRemaining: plan.classesIncluded ?? undefined,
@@ -543,7 +579,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // drop a refund that's genuinely owed.
       throw new Error(`resolveMembershipCollision: no Transaction found for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) — this should be unreachable.`);
     }
-    if (transaction.status !== 'PENDING') {
+    if (!SETTLEABLE.includes(transaction.status)) {
       // Already resolved by an earlier delivery of this same event (a BullMQ retry,
       // or a genuine Stripe redelivery) — idempotent no-op.
       this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
@@ -576,7 +612,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     await this.prismaJobs.$transaction(async (tx) => {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
       await tx.transaction.updateMany({
-        where: { id: transaction.id, status: 'PENDING' },
+        where: { id: transaction.id, status: { in: SETTLEABLE } },
         data: { status: 'REFUNDED', refundedAmount: transaction.amount },
       });
     });
@@ -702,10 +738,42 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // in the installed Stripe API version.
     const paymentIntentId = this.extractPaymentIntentId(invoice);
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 346 (G4) — a Membership Subscription's later charges. Tried first:
+    // Membership.stripeSubscriptionId can never also match a franchise-fee or
+    // platform Subscription id below.
+    if (await this.recordMembershipRenewal(tx, invoice, subscriptionId, paymentIntentId, 'SUCCESSFUL')) {
+      return;
+    }
+
+    // Decision 337 (F17) — a Per-headcount (metered) franchise-fee subscription
+    // opens with a $0 invoice for no usage yet. It isn't a fee charge, and it must
+    // not mark the month's Pending charge paid either.
+    if (invoice.billing_reason === 'subscription_create' && invoice.amount_paid === 0) {
+      const openingFor = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId }, select: { id: true } });
+      if (openingFor) return;
+    }
+
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       // FOUND ON REVIEW: `amount` is deliberately NOT overwritten with
       // `invoice.amount_paid` here, unlike the fallback branch below — the
@@ -849,10 +917,33 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return;
     }
 
-    const pending = await tx.franchiseFeeCharge.findFirst({
-      where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Decision 346 (G4) — a failed renewal shows as a Failed row; Stripe keeps
+    // retrying, and a later invoice.paid turns the same row Successful.
+    if (await this.recordMembershipRenewal(tx, invoice, subscriptionId, this.extractPaymentIntentId(invoice), 'FAILED')) {
+      return;
+    }
+
+    // Decision 337 (F17) — match the Pending charge for the period this invoice
+    // billed, not simply the newest one. Stripe bills a month's usage just after
+    // that month ends, by which time the monthly job may already have recorded
+    // next month's Pending charge; matching the newest one marked next month paid
+    // and left this month Pending forever. A Pending charge is recorded at the
+    // moment its usage is reported, so it belongs to the invoice whose period
+    // contains that moment. Falls back to the oldest Pending charge recorded
+    // before this invoice's period ended, never a later one.
+    const pending =
+      (await tx.franchiseFeeCharge.findFirst({
+        where: {
+          stripeSubscriptionId: subscriptionId,
+          status: 'PENDING',
+          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
+        },
+        orderBy: { createdAt: 'asc' },
+      })) ??
+      (await tx.franchiseFeeCharge.findFirst({
+        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
+        orderBy: { createdAt: 'asc' },
+      }));
     if (pending) {
       await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED' } });
     }
@@ -880,6 +971,78 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: { platformSubscriptionStatus: 'PAST_DUE' },
       });
     }
+  }
+
+  /**
+   * Decision 346 (G4) — one Transaction row per renewal Invoice of a Membership
+   * Subscription, so the School's ledger shows every month Stripe charges, not
+   * only the first. Keyed on the Invoice id: a retried or redelivered event
+   * updates the same row, and a Successful row never goes back to Failed. The
+   * first Invoice (billing_reason subscription_create) is skipped, since the
+   * purchase already wrote its row. Returns false when the Subscription is not a
+   * Membership's, so the franchise-fee and platform branches can try theirs.
+   */
+  private async recordMembershipRenewal(
+    tx: Prisma.TransactionClient,
+    invoice: Stripe.Invoice,
+    subscriptionId: string,
+    paymentIntentId: string | undefined,
+    status: 'SUCCESSFUL' | 'FAILED',
+  ): Promise<boolean> {
+    const membership = await tx.membership.findUnique({ where: { stripeSubscriptionId: subscriptionId } });
+    if (!membership) {
+      return false;
+    }
+    if (invoice.billing_reason === 'subscription_create') {
+      return true;
+    }
+    if (paymentIntentId) {
+      const purchase = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+      if (purchase && purchase.stripeInvoiceId !== invoice.id) {
+        return true; // the purchase's own charge, already on the ledger
+      }
+    }
+    const existing = await tx.transaction.findUnique({ where: { stripeInvoiceId: invoice.id } });
+    if (existing) {
+      if (existing.status === 'FAILED' && status === 'SUCCESSFUL') {
+        await tx.transaction.update({
+          where: { id: existing.id },
+          data: { status, amount: invoice.amount_paid, stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
+        });
+      } else if (paymentIntentId && !existing.stripePaymentIntentId) {
+        await tx.transaction.update({ where: { id: existing.id }, data: { stripePaymentIntentId: paymentIntentId } });
+      }
+      return true;
+    }
+    const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: membership.schoolId } });
+    if (!paymentAccount) {
+      this.logger.error(`Renewal invoice ${invoice.id} for Membership ${membership.id} — School ${membership.schoolId} has no PaymentAccount, cannot record it.`);
+      return true;
+    }
+    await tx.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: membership.schoolId,
+        studentId: membership.studentId,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: membership.membershipPlanId,
+        membershipId: membership.id,
+        kind: 'RENEWAL',
+        billingDate: this.invoiceDate(invoice),
+        amount: status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due,
+        currency: invoice.currency?.toUpperCase() ?? 'USD',
+        status,
+        paymentMethod: 'STRIPE',
+        stripePaymentIntentId: paymentIntentId,
+        stripeSubscriptionId: subscriptionId,
+        stripeInvoiceId: invoice.id,
+      },
+    });
+    return true;
+  }
+
+  private invoiceDate(invoice: Stripe.Invoice): Date {
+    return new Date((invoice.status_transitions?.paid_at ?? invoice.created) * 1000);
   }
 
   /** Decision 111 — extracts the PaymentIntent id behind this Invoice, from its
@@ -1022,7 +1185,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       distinct: ['userId'],
     });
     return {
-      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment')),
+      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment', transaction.schoolId)),
       subscriptionCancellations,
       // Decision 112 — only on a NEWLY-recorded loss (never on a redelivery of an
       // already-lost dispute, since disputeLostAt is set unconditionally above
@@ -1101,6 +1264,9 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     outcome: { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean },
     stripeEventId: string,
     chargeLabel: string,
+    /** A Membership payment's School (Decision 355: labelled, and opens
+     * Transactions); a franchise fee charge has none. */
+    schoolId?: string,
   ): NotificationFanoutJobData {
     const amount = this.formatDisputeAmount(dispute);
     const title = outcome.lost ? 'Payment dispute lost' : dispute.status === 'won' ? 'Payment dispute resolved' : 'Payment dispute opened';
@@ -1115,6 +1281,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       title,
       body,
       type: 'PAYMENT_DISPUTE',
+      ...(schoolId ? { schoolId, targetType: 'PAYMENT' as const } : {}),
     };
   }
 

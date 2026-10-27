@@ -6,8 +6,8 @@ import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 /** GET /memberships/me — a Student's own current Memberships. Cursor-paginated, same
  * convention as My Bookings/Academies (Decision 22/70). MembershipStatus is
  * ACTIVE/EXPIRED (apps/api/prisma/schema.prisma) — both are real, resolved states,
- * unlike Booking's UPCOMING (nothing to gate a client action on here; this is a
- * read-only list, Slice 4a builds no cancel/renew flow). */
+ * unlike Booking's UPCOMING. The one action, cancelling a Subscription, is
+ * useCancelSubscription() below (Decision 348). */
 export function useMyMemberships() {
   return usePaginatedQuery(['my-memberships'], (cursor) =>
     unwrap(apiClient.GET('/v1/memberships/me', { params: { query: { cursor } } })),
@@ -90,4 +90,16 @@ export function usePurchaseMembership() {
 export function useInvalidateMyMemberships() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ['my-memberships'] });
+}
+
+/** POST /memberships/{id}/cancel (Decision 348) — cancels the Student's own
+ * Subscription at the end of the paid period. The Membership stays live until
+ * then and comes back with `cancelAt` set. */
+export function useCancelSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (membershipId: string) =>
+      unwrap(apiClient.POST('/v1/memberships/{id}/cancel', { params: { path: { id: membershipId } }, body: {} })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-memberships'] }),
+  });
 }

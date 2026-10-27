@@ -185,7 +185,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       await superuser.studentRank.create({
         data: { id: randomUUID(), studentId: studentA.id, disciplineId: discipline.id, schoolId: school.id, currentRankId: rank.id, classesAttendedTowardCheckpoint: 3 },
       });
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({
         data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: null }], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
@@ -204,7 +204,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a Student with no Upcoming Booking on the Class is rejected — 404', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'No Booking Here', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
 
       const qrToken = await fetchClassToken(tokenInstructor, cls.id);
@@ -219,7 +219,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       // first scan completes it, a second scan against the same Class finds
       // nothing to match at all. Documented, deliberate collapse — see
       // AttendanceService.scan()'s own comment.
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Open Mat', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membershipB = await mkActiveMembership(studentB.id);
       await mkBooking(studentB.id, cls.id, membershipB.id);
@@ -250,7 +250,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a QR token minted for a different Class is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const [clsA, clsB] = await Promise.all([
         superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Class A', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
         superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Class B', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
@@ -264,7 +264,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('an expired QR token is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Expired Token Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
       await mkBooking(studentB.id, cls.id, membershipB.id);
@@ -275,7 +275,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a non-Staff caller cannot mint a Class QR token — 403', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Staff Only Mint', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const res = await request(app.getHttpServer()).get(`/v1/classes/${cls.id}/qr-token`).set('Authorization', `Bearer ${tokenStudentA}`);
       expect(res.status).toBe(403);
@@ -302,7 +302,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
         .set('Authorization', `Bearer ${tokenStudentA}`);
       expect(withdrawRes.status).toBe(200);
 
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Minor Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membership = await mkActiveMembership(minorId);
       await mkBooking(minorId, cls.id, membership.id);
@@ -319,7 +319,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
 
   describe('Decision 235 — self-service code entry (POST /attendance/code)', () => {
     it('a Student CAN type the current code shown alongside the QR — marks Completed, records SELF_SERVICE_CODE', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({
         data: { id: randomUUID(), schoolId: school.id, title: 'Code Entry Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
@@ -340,7 +340,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       const minorId = minorWithWithdrawnConsent!.id;
       const tokenMinor = signAccessToken({ id: minorId, email: 'minor@example.test' }, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
 
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Minor Code Entry Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       // This minor already has an Active Membership from the earlier
       // withdrawn-consent scan test (line ~307) — reuse it instead of
@@ -356,7 +356,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('an incorrect code is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Wrong Code Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
       await mkBooking(studentB.id, cls.id, membershipB.id);
@@ -368,7 +368,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a code minted for a different Class is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const [clsA, clsB] = await Promise.all([
         superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code Class A', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
         superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code Class B', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
@@ -395,7 +395,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a Student with no Upcoming Booking on the Class is rejected — 404', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code No Booking Here', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
 
       const code = await fetchClassCode(tokenInstructor, cls.id);
@@ -439,7 +439,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
 
   describe('Instructor roll-call scan (GET /attendance/my-qr-token, POST /classes/{id}/attendance-scan)', () => {
     it('an Instructor CAN scan a Student\'s own personal token — marks Completed, records INSTRUCTOR_SCAN + checkedInById', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({
         data: { id: randomUUID(), schoolId: school.id, title: 'Roll Call Class', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
@@ -458,7 +458,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('an Instructor CAN confirm a Student manually, with no token at all — records INSTRUCTOR_MANUAL', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Manual Roll Call', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membership = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
       await mkBooking(studentB.id, cls.id, membership.id);
@@ -476,7 +476,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       expect(minorWithWithdrawnConsent).toBeDefined();
       const minorId = minorWithWithdrawnConsent!.id;
 
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Consent Fallback Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       // Reuses the minor's EXISTING general-access Membership (minted by the
       // self-service consent-withdrawal test that created this fixture) rather
@@ -507,7 +507,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a mismatched Student token (belongs to a different Student) is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Mismatched Token Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
       await mkBooking(studentB.id, cls.id, membershipB.id);
@@ -522,7 +522,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('an expired Student token is rejected — 400', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Expired Student Token', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
       await mkBooking(studentB.id, cls.id, membershipB.id);
@@ -536,7 +536,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     });
 
     it('a non-Staff caller (a Student) cannot use the roll-call scan endpoint — 403', async () => {
-      const future = new Date(Date.now() + 3_600_000);
+      const future = new Date(Date.now() + 10 * 60_000); // inside the default 30-minute check-in opening (product owner, 26 Oct 2026)
       const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Student Cannot Roll Call', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
       const res = await request(app.getHttpServer())
         .post(`/v1/classes/${cls.id}/attendance-scan`)

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from '../instructors/instructorQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import { useI18n } from '../i18n/I18nProvider';
 import type { TimetableSlotResponse } from './timetableQueries';
 import { weekdayName } from './timetableOccurrences';
@@ -21,13 +21,9 @@ export interface TimetableSlotFormValues {
   weekday: (typeof WEEKDAYS)[number];
   startTime: string;
   endTime: string;
-  /** NOT clearable via this form yet — TimetableService.update() converts
-   * these via `dto.X ? parseHHmm(dto.X) : undefined`, a falsy check that
-   * would treat an explicit `null` the same as an omitted field. A real,
-   * separate, flagged backend gap (see that service's own comment), not
-   * something this form can fix on its own. */
-  breakStart?: string;
-  breakEnd?: string;
+  /** `null` removes the break (Decision 332, T9). */
+  breakStart?: string | null;
+  breakEnd?: string | null;
   /** Always populated — defaults to 'ON', never undefined. */
   status: 'ON' | 'OFF';
   title: string;
@@ -129,6 +125,21 @@ export function TimetableSlotFormModal({
       setError(t('timetable.form.endAfterStart'));
       return;
     }
+    // The same break checks the API makes (Decision 332, T8).
+    if (!form.breakStart !== !form.breakEnd) {
+      setError(t('timetable.form.breakBothEnds'));
+      return;
+    }
+    if (form.breakStart && form.breakEnd) {
+      if (form.breakEnd <= form.breakStart) {
+        setError(t('timetable.form.breakEndAfterStart'));
+        return;
+      }
+      if (form.breakStart < form.startTime || form.breakEnd > form.endTime) {
+        setError(t('timetable.form.breakInsideClass'));
+        return;
+      }
+    }
     try {
       await onSubmit({
         branchId: form.branchId || null,
@@ -136,8 +147,8 @@ export function TimetableSlotFormModal({
         weekday: form.weekday,
         startTime: form.startTime,
         endTime: form.endTime,
-        breakStart: form.breakStart || undefined,
-        breakEnd: form.breakEnd || undefined,
+        breakStart: form.breakStart || null,
+        breakEnd: form.breakEnd || null,
         status: form.status,
         title: form.title,
         ...(usesStyles ? { styles } : { activities }),
@@ -204,14 +215,13 @@ export function TimetableSlotFormModal({
         <Field
           label={t('timetable.form.breakStartLabel')}
           htmlFor="slot-breakStart"
-          hint={initial?.breakStart ? t('timetable.form.cantClearHint') : undefined}
+          hint={t('timetable.form.breakHint')}
         >
           <TextField type="time" value={form.breakStart} onChange={(e) => setForm((f) => ({ ...f, breakStart: e.target.value }))} />
         </Field>
         <Field
           label={t('timetable.form.breakEndLabel')}
           htmlFor="slot-breakEnd"
-          hint={initial?.breakEnd ? t('timetable.form.cantClearHint') : undefined}
         >
           <TextField type="time" value={form.breakEnd} onChange={(e) => setForm((f) => ({ ...f, breakEnd: e.target.value }))} />
         </Field>
@@ -229,7 +239,7 @@ export function TimetableSlotFormModal({
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('timetable.form.wholeSchool') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('timetable.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
         </Field>
         <Field label={t('timetable.form.instructorLabel')} htmlFor="slot-instructor">
@@ -238,7 +248,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: t('timetable.form.unassigned') },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>
@@ -287,11 +297,6 @@ export function TimetableSlotFormModal({
           label={t('timetable.form.waiverRequired')}
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
-        />
-        <Checkbox
-          label={t('timetable.form.membershipInclusion')}
-          checked={form.membershipInclusion}
-          onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
         />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>

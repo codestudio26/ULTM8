@@ -18,26 +18,54 @@ export function useBranch(branchId: string | null) {
   });
 }
 
-/** `city` — additive, optional filter (Branches page's City filter, now wired to the
- * real `GET /schools/:schoolId/branches?city=` server-side filter instead of
- * filtering an already-fetched list client-side). Omitted (the default, used by
- * every other caller of this hook — Instructors/Classes/Timetable's Branch
- * dropdowns), behaves exactly as before this filter existed. */
-/** Decision 226 — always fetches `includeArchived: true` so the Branches
+export type BranchListItem = components['schemas']['BranchListItemDto'];
+
+/** Decision 294 — the Branches page's filters, all optional and combinable. */
+export interface BranchFilters {
+  /** Exact city (case and accents ignored), from the page's City dropdown. */
+  city?: string;
+  /** Branch name, city or postcode. */
+  q?: string;
+  /** ISO 3166-1 alpha-2. */
+  country?: string;
+}
+
+/** Every Branch of the School, sorted by name, archived ones included.
+ *
+ * Decision 294 — follows `nextCursor` until the list ends. The endpoint pages
+ * at 20 by default and nothing here asked for more, so a School with over 20
+ * Branches silently lost the rest on the Branches page and in every Branch
+ * picker (Instructors/Classes/Timetable/Staff/... all call this hook).
+ *
+ * Decision 226 — always fetches `includeArchived: true` so the Branches
  * page can compute an accurate "Archived" count and let the caller toggle
- * their visibility client-side, same "excluded by default, visible via a
- * filter" convention this build applies to every one of the 7 entities;
- * the actual default-hide happens in BranchesPage's own render, not here. */
-export function useBranches(schoolId: string | null, city?: string) {
+ * their visibility client-side; the actual default-hide happens in
+ * BranchesPage's own render, not here. */
+export function useBranches(schoolId: string | null, filters: BranchFilters = {}) {
+  const { city, q, country } = filters;
   return useQuery({
-    queryKey: ['branches', schoolId, city ?? null],
-    queryFn: () =>
-      unwrap(
-        apiClient.GET('/v1/schools/{schoolId}/branches', {
-          params: { path: { schoolId: schoolId! }, query: { city: city || undefined, includeArchived: true } },
-        }),
-      ),
+    queryKey: ['branches', schoolId, city ?? null, q ?? null, country ?? null],
+    queryFn: async () => {
+      const items: BranchListItem[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/branches', {
+            params: {
+              path: { schoolId: schoolId! },
+              query: { city: city || undefined, q: q || undefined, country: country || undefined, includeArchived: true, limit: 100, cursor },
+            },
+          }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items };
+    },
     enabled: !!schoolId,
+    // Typing in the search box keeps showing the last results until the new
+    // ones arrive, instead of flashing the spinner on every keystroke.
+    placeholderData: (previous) => previous,
     // FOUND ON REVIEW (Phase 17): Instructors/Classes/Timetable all call this
     // same hook to populate a Branch dropdown, and the global QueryClient
     // default is staleTime: 0 — without this, navigating between those
@@ -48,6 +76,22 @@ export function useBranches(schoolId: string | null, city?: string) {
     // only affects how long an unrelated navigation can serve cached data.
     staleTime: 60_000,
   });
+}
+
+/** Branch picker options (Decision 293): archived Branches are left out, so
+ * nothing new gets assigned to a Branch that is waiting to be purged —
+ * except `keepId`, the Branch the record being edited already points at,
+ * shown with an "(Archived)" suffix so the form doesn't look like it lost
+ * it. `useBranches` still returns every Branch, so name lookups for
+ * existing rows keep working. */
+export function branchSelectOptions(
+  branches: BranchResponse[],
+  archivedLabel: string,
+  keepId?: string | null,
+): { value: string; label: string }[] {
+  return branches
+    .filter((b) => !b.archivedAt || b.id === keepId)
+    .map((b) => ({ value: b.id, label: b.archivedAt ? `${b.name} (${archivedLabel})` : b.name }));
 }
 
 export function useCreateBranch(schoolId: string) {
@@ -72,8 +116,9 @@ export function useUpdateBranch(schoolId: string, branchId: string) {
 }
 
 /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
- * active dependents (any Class, Instructor profile, Student, or active
- * staff/instructor role grant scoped to this Branch). */
+ * active dependents (any Class, weekly timetable slot (Decision 293),
+ * Instructor profile, Student, or active staff/instructor role grant scoped
+ * to this Branch). */
 export function useArchiveBranch(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -81,6 +126,39 @@ export function useArchiveBranch(schoolId: string) {
     onSuccess: (_data, branchId) => {
       queryClient.invalidateQueries({ queryKey: ['branches', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['branch', branchId] });
+    },
+  });
+}
+
+export type BranchClosePreview = components['schemas']['BranchClosePreviewDto'];
+export type CloseBranchInput = components['schemas']['CloseBranchDto'];
+
+/** Decision 330 — what closing a Branch would move. Read fresh each time the
+ * window opens, so the counts are today's. */
+export function useBranchClosePreview(branchId: string | null) {
+  return useQuery({
+    queryKey: ['branch-close-preview', branchId],
+    queryFn: () => unwrap(apiClient.GET('/v1/branches/{id}/close-preview', { params: { path: { id: branchId! } } })),
+    enabled: !!branchId,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+/** Decision 330 — move what is still in use, then close (archive). Moves
+ * classes, students, Instructor profiles and staff roles, so every list that
+ * shows them is refreshed too. */
+export function useCloseBranch(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ branchId, body }: { branchId: string; body: CloseBranchInput }) =>
+      unwrap(apiClient.POST('/v1/branches/{id}/close', { params: { path: { id: branchId } }, body })),
+    onSuccess: (_data, { branchId }) => {
+      queryClient.invalidateQueries({ queryKey: ['branches', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['branch', branchId] });
+      for (const key of ['classes', 'timetable', 'instructors', 'students', 'roleGrants', 'coach-invites']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
     },
   });
 }

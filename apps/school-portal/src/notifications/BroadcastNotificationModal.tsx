@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useT } from '../i18n/I18nProvider';
-import type { BranchResponse } from '../branches/branchQueries';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BroadcastNotificationInput, BroadcastResponse } from './notificationQueries';
 
 type AudienceScope = BroadcastNotificationInput['audience'];
+type ClassGroup = NonNullable<BroadcastNotificationInput['classAudience']>[number];
+
+/** Who on the Class's list gets it — the Owner ticks them (Decision 333). */
+const CLASS_GROUPS: Array<{ value: ClassGroup; labelKey: TranslationKey }> = [
+  { value: 'BOOKED', labelKey: 'notifications.broadcastModal.classGroupBooked' },
+  { value: 'WAITLIST', labelKey: 'notifications.broadcastModal.classGroupWaitlist' },
+  { value: 'CANCELLED', labelKey: 'notifications.broadcastModal.classGroupCancelled' },
+];
 
 /**
  * Broadcast/compose — the single biggest gap the "Notifications page" v1.2
@@ -36,9 +45,18 @@ export function BroadcastNotificationModal({
   const [audience, setAudience] = useState<AudienceScope>('ALL');
   const [branchId, setBranchId] = useState('');
   const [classId, setClassId] = useState('');
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>(['BOOKED']);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<BroadcastResponse | null>(null);
   const t = useT();
+  const branchNames = new Map(branches.map((b) => [b.id, b.name]));
+  // A weekly class repeats its title every week, so each option also carries
+  // its own date, time and branch to tell the occurrences apart.
+  const classLabel = (c: ClassResponse) => {
+    const when = new Date(c.startDate).toLocaleString(formatLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const branch = c.branchId ? branchNames.get(c.branchId) : undefined;
+    return [c.title, when, branch].filter(Boolean).join(' · ');
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,13 +73,17 @@ export function BroadcastNotificationModal({
       setError(t('notifications.broadcastModal.selectClass'));
       return;
     }
+    if (audience === 'CLASS' && classGroups.length === 0) {
+      setError(t('notifications.broadcastModal.selectClassGroup'));
+      return;
+    }
     try {
       const result = await onSubmit({
         title: title.trim(),
         body: body.trim(),
         audience,
         ...(audience === 'BRANCH' ? { branchId } : {}),
-        ...(audience === 'CLASS' ? { classId } : {}),
+        ...(audience === 'CLASS' ? { classId, classAudience: classGroups } : {}),
       });
       setSent(result);
     } catch (err) {
@@ -111,7 +133,7 @@ export function BroadcastNotificationModal({
               required
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
-              options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
           </Field>
         ) : null}
@@ -122,9 +144,24 @@ export function BroadcastNotificationModal({
               required
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
-              options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: classLabel(c) }))]}
             />
           </Field>
+        ) : null}
+        {audience === 'CLASS' ? (
+          <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+            <legend className="ultm8-field__label">{t('notifications.broadcastModal.classGroupsLabel')}</legend>
+            {CLASS_GROUPS.map((g) => (
+              <Checkbox
+                key={g.value}
+                label={t(g.labelKey)}
+                checked={classGroups.includes(g.value)}
+                onChange={(e) =>
+                  setClassGroups((prev) => (e.target.checked ? [...prev, g.value] : prev.filter((v) => v !== g.value)))
+                }
+              />
+            ))}
+          </fieldset>
         ) : null}
         <Button type="submit" loading={submitting}>
           {t('notifications.broadcastModal.submit')}

@@ -24,6 +24,9 @@ import {
 // writes it to a NOT NULL column. Found on independent review (PR 2).
 const NotNullIfPresent = () => ValidateIf((_obj: unknown, value: unknown) => value !== undefined);
 
+/** Upper bound on a rung's promotion fee (input sanity, not a pricing rule). */
+export const MAX_PROMOTION_FEE_MINOR = 100_000_000;
+
 /** One ticked class type's own number, for a rung in EACH_TYPE mode
  * (Decision 149: e.g. 20 Fundamentals + 10 Sparring). */
 export class ClassTypeRequirementInputDto {
@@ -155,6 +158,19 @@ export class RankStripeTierInputDto {
   @IsString({ each: true })
   @MaxLength(100, { each: true })
   bookingUnlocksClassTypes?: string[];
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 1,
+    description:
+      'Promotion fee for being graded into this rung, in the School\'s currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School\'s promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_PROMOTION_FEE_MINOR)
+  promotionFeeMinor?: number | null;
 
   @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
   @NotNullIfPresent()

@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
@@ -11,21 +12,23 @@ import { MyRankSection } from '../ranks/MyRankSection';
 import { useDisciplines, useStudentRanks } from '../ranks/rankQueries';
 import { useAcademy, useAcademyTimetable } from './academyQueries';
 import { useDeclareOptions } from './joinQueries';
+import type { TranslationKey } from '../i18n/types';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'AcademyDetail'>;
 
-const WEEKDAY_LABEL: Record<string, string> = {
-  MONDAY: 'Mon',
-  TUESDAY: 'Tue',
-  WEDNESDAY: 'Wed',
-  THURSDAY: 'Thu',
-  FRIDAY: 'Fri',
-  SATURDAY: 'Sat',
-  SUNDAY: 'Sun',
+const WEEKDAY_LABEL: Record<string, TranslationKey> = {
+  MONDAY: 'academies.weekday.MONDAY',
+  TUESDAY: 'academies.weekday.TUESDAY',
+  WEDNESDAY: 'academies.weekday.WEDNESDAY',
+  THURSDAY: 'academies.weekday.THURSDAY',
+  FRIDAY: 'academies.weekday.FRIDAY',
+  SATURDAY: 'academies.weekday.SATURDAY',
+  SUNDAY: 'academies.weekday.SUNDAY',
 };
 
 export function AcademyDetailScreen({ route, navigation }: Props) {
+  const t = useT();
   const { academyId } = route.params;
   const { claims } = useAuth();
   const enrolled = useEnrolledSchoolIds().includes(academyId);
@@ -83,7 +86,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
   if (!academy) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load this academy — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(error, t('academies.detail.loadFailed'))} />
       </Screen>
     );
   }
@@ -97,29 +100,29 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
 
         {!enrolled || isGuardian ? (
           <View style={{ marginTop: 16 }}>
-            <Button title="Join this School" onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name })} />
+            <Button title={t('academies.detail.join')} onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name })} />
           </View>
         ) : null}
         {canAddBelt && claims ? (
           <View style={{ marginTop: 8 }}>
             <Button
-              title="Add my belt"
+              title={t('academies.detail.addMyBelt')}
               variant="secondary"
-              onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name, beltsFor: { studentId: claims.sub, name: 'Me' } })}
+              onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name, beltsFor: { studentId: claims.sub, name: t('academies.join.me') } })}
             />
           </View>
         ) : null}
 
         {academy.activities.length ? (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Activities</Text>
+            <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.activities')}</Text>
             <Text style={{ color: '#5F6368' }}>{academy.activities.join(' · ')}</Text>
           </View>
         ) : null}
 
         {academy.membershipPlans.length ? (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Membership Plans</Text>
+            <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.membershipPlans')}</Text>
             {academy.membershipPlans.map((plan) => (
               <MembershipPlanRow key={plan.id} plan={plan} schoolId={academyId} />
             ))}
@@ -130,27 +133,31 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
 
         {academy.upcomingClasses.length ? (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Upcoming classes</Text>
+            <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.upcomingClasses')}</Text>
             {academy.upcomingClasses.map((c) => (
-              <ClassBookingRow key={c.id} classItem={c} />
+              <ClassBookingRow key={c.id} classItem={c} schoolId={academyId} />
             ))}
           </View>
         ) : null}
 
         {slots.length ? (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Timetable</Text>
+            <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.timetable')}</Text>
             {slots.map((slot) => (
               <View key={slot.id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
                 <Text>
-                  {WEEKDAY_LABEL[slot.weekday] ?? slot.weekday} · {slot.startTime}–{slot.endTime}
+                  {t('academies.detail.slot', {
+                    weekday: WEEKDAY_LABEL[slot.weekday] ? t(WEEKDAY_LABEL[slot.weekday]!) : slot.weekday,
+                    start: slot.startTime,
+                    end: slot.endTime,
+                  })}
                 </Text>
               </View>
             ))}
             {hasMoreTimetableSlots ? (
               <View style={{ marginTop: 8 }}>
                 <Button
-                  title="Load more"
+                  title={t('academies.detail.loadMore')}
                   variant="secondary"
                   loading={isFetchingMoreTimetableSlots}
                   onPress={() => fetchNextTimetablePage()}

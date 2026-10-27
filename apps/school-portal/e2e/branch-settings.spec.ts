@@ -54,7 +54,7 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   // replacing the old free-text input this test used to .fill() directly.
   await page.getByLabel('Default language').selectOption('en-GB');
   await page.getByLabel('Description').fill('Our flagship location.');
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
 
   await expect(page.getByText('Branch settings saved.')).toBeVisible();
   // Save sits at the bottom of a long form; the confirmation above it is
@@ -90,7 +90,7 @@ test('sets the Branch timezone via the searchable combobox, and it survives a re
   await page.getByRole('option', { name: /America\/New_York/ }).click();
 
   await expect(timezoneInput).toHaveValue(/^America\/New_York \(UTC[+-]\d{2}:\d{2}\)$/);
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Branch settings saved.')).toBeVisible();
 
   const updated = await db.branch.findUniqueOrThrow({ where: { id: branchId } });

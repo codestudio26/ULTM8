@@ -65,7 +65,6 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   let studentB: { id: string; email: string };
   let studentRevoked: { id: string; email: string };
   let studentOtherSchool: { id: string; email: string };
-  let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
 
@@ -127,7 +126,6 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       ],
     });
 
-    tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
   });
@@ -314,6 +312,13 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   // backend backlog — Snooze, approved by the product owner).
   // ---------------------------------------------------------------------------
 
+  it('GET /notifications/me answers a cursor it never wrote with a 400, not a server error', async () => {
+    for (const cursor of ['garbage', Buffer.from('{"createdAt":"x","id":"y"}').toString('base64url'), Buffer.from('[]').toString('base64url')]) {
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me').query({ cursor }).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(400);
+    }
+  });
+
   describe('PATCH /notifications/:id/snooze', () => {
     it('hides the Notification from the unread count while snoozed; validates input; self-only', async () => {
       const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
@@ -338,6 +343,14 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
         .set('Authorization', `Bearer ${tokenStudentA}`)
         .send({ until: new Date(Date.now() - 60_000).toISOString() });
       expect(pastSnooze.status).toBe(400);
+
+      // Further than 7 days — `minutes` already stops there, and `until` now
+      // does too, rather than hiding a notification for years.
+      const tooLong = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ until: '3000-01-01T00:00:00.000Z' });
+      expect(tooLong.status).toBe(400);
 
       // Cross-caller snooze is RLS-blocked — indistinguishable from
       // not-found, same design as every other self-only resource.
@@ -465,6 +478,134 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   });
 
   // ---------------------------------------------------------------------------
+  // Soft delete + "Clear all read" (Decision 277).
+  // ---------------------------------------------------------------------------
+
+  describe('DELETE /notifications/:id and POST /notifications/me/clear-read', () => {
+    async function listIds(token: string): Promise<string[]> {
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me?limit=100').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      return (res.body.items as Array<{ id: string }>).map((n) => n.id);
+    }
+
+    it('hides one Notification from the list and Total/Unread counts but keeps the row; self-only; a second delete is a 404', async () => {
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Delete me', body: 'body' },
+      });
+      notificationIds.push(n.id);
+      const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+
+      // Cross-caller delete is RLS-blocked, indistinguishable from not-found.
+      const cross = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentB}`);
+      expect(cross.status).toBe(404);
+      expect((await superuser.notification.findUniqueOrThrow({ where: { id: n.id } })).deletedAt).toBeNull();
+
+      const del = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(del.status).toBe(204);
+
+      // Soft delete: the record is still there, only hidden.
+      const row = await superuser.notification.findUniqueOrThrow({ where: { id: n.id } });
+      expect(row.deletedAt).not.toBeNull();
+      expect(await listIds(tokenStudentA)).not.toContain(n.id);
+
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.total).toBe(before.body.total - 1);
+      expect(after.body.unread).toBe(before.body.unread - 1);
+
+      // Already deleted: gone from the caller's point of view.
+      const again = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(again.status).toBe(404);
+      const markRead = await request(app.getHttpServer()).patch(`/v1/notifications/${n.id}/read`).set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(markRead.status).toBe(404);
+      const snooze = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ minutes: 60 });
+      expect(snooze.status).toBe(404);
+
+      const unauth = await request(app.getHttpServer()).delete(`/v1/notifications/${n.id}`);
+      expect(unauth.status).toBe(401);
+    });
+
+    it("clears only the caller's READ Notifications, leaves unread ones and other callers' alone, and keeps the read metric", async () => {
+      const readOne = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Read one', body: 'b', read: true, readAt: new Date() },
+      });
+      const unreadOne = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Unread one', body: 'b' },
+      });
+      const otherCallersRead = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentB.id, title: "B's read one", body: 'b', read: true, readAt: new Date() },
+      });
+      notificationIds.push(readOne.id, unreadOne.id, otherCallersRead.id);
+
+      const metricBefore = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+
+      const res = await request(app.getHttpServer()).post('/v1/notifications/me/clear-read').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(200);
+      expect(res.body.cleared).toBeGreaterThanOrEqual(1);
+
+      const idsA = await listIds(tokenStudentA);
+      expect(idsA).not.toContain(readOne.id);
+      expect(idsA).toContain(unreadOne.id);
+      expect(await listIds(tokenStudentB)).toContain(otherCallersRead.id);
+
+      // Every read row A had is now hidden; Total is just the unread ones left.
+      expect(await superuser.notification.count({ where: { userId: studentA.id, read: true, deletedAt: null } })).toBe(0);
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.total).toBe(await superuser.notification.count({ where: { userId: studentA.id, deletedAt: null } }));
+      // Hidden rows were still read, so the Read-within-24h metric keeps them.
+      expect(after.body.readTotalCount).toBe(metricBefore.body.readTotalCount);
+
+      // Nothing read left: a plain zero, not an error.
+      const second = await request(app.getHttpServer()).post('/v1/notifications/me/clear-read').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(second.status).toBe(200);
+      expect(second.body.cleared).toBe(0);
+    });
+  });
+
+  describe('POST /notifications/me/read-all (Decision 355)', () => {
+    it("marks every unread Notification the caller has read, on every page, snoozed ones too; leaves other callers' alone", async () => {
+      const rows = await Promise.all(
+        Array.from({ length: 25 }, (_, i) =>
+          superuser.notification.create({ data: { id: randomUUID(), userId: studentA.id, title: `Unread ${i}`, body: 'b', ...(i === 0 ? { snoozedUntil: new Date(Date.now() + 3_600_000) } : {}) } }),
+        ),
+      );
+      const deleted = await superuser.notification.create({ data: { id: randomUUID(), userId: studentA.id, title: 'Deleted', body: 'b', deletedAt: new Date() } });
+      const others = await superuser.notification.create({ data: { id: randomUUID(), userId: studentB.id, title: "B's unread", body: 'b' } });
+      notificationIds.push(...rows.map((r) => r.id), deleted.id, others.id);
+
+      const res = await request(app.getHttpServer()).post('/v1/notifications/me/read-all').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(200);
+      expect(res.body.updated).toBeGreaterThanOrEqual(25);
+
+      expect(await superuser.notification.count({ where: { userId: studentA.id, read: false, deletedAt: null } })).toBe(0);
+      const marked = await superuser.notification.findUnique({ where: { id: rows[0].id } });
+      expect(marked!.readAt).not.toBeNull();
+      // A hidden (deleted) row is left as it was.
+      expect((await superuser.notification.findUnique({ where: { id: deleted.id } }))!.read).toBe(false);
+      expect((await superuser.notification.findUnique({ where: { id: others.id } }))!.read).toBe(false);
+      const counts = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(counts.body.unread).toBe(0);
+
+      // Nothing unread left: a plain zero.
+      const again = await request(app.getHttpServer()).post('/v1/notifications/me/read-all').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(again.body.updated).toBe(0);
+      expect((await request(app.getHttpServer()).post('/v1/notifications/me/read-all')).status).toBe(401);
+    });
+
+    it('GET /notifications/me returns the School label and what the notification opens', async () => {
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Labelled', body: 'b', schoolId: school.id, schoolName: 'Old School Name', targetType: 'CLASS', targetId: 'class-1' },
+      });
+      notificationIds.push(n.id);
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me').set('Authorization', `Bearer ${tokenStudentA}`);
+      const row = res.body.items.find((i: { id: string }) => i.id === n.id);
+      expect(row).toMatchObject({ schoolId: school.id, schoolName: 'Old School Name', targetType: 'CLASS', targetId: 'class-1' });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------
 
@@ -525,7 +666,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     // being absent either — a real class here would make process() reject
     // with a config error today and silently change behavior the moment
     // someone sets those env vars locally).
-    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined), isConfigured: jest.fn().mockReturnValue(true) };
     // Same reasoning as fakeDelivery above, for push (Decision 223/264) — this
     // suite's scope is the Notification-row write/idempotency and the
     // email/push wiring itself, not live FCM delivery (no real credentials in
@@ -552,6 +693,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
     beforeEach(() => {
       fakePush.send.mockReset().mockResolvedValue({ sent: 0, staleTokens: [] });
+      fakeDelivery.sendEmail.mockReset().mockResolvedValue(undefined);
+      fakeDelivery.isConfigured.mockReset().mockReturnValue(true);
     });
 
     it("fans out to every active Student at the Waiver's own School only — not a revoked grant, not a different School", async () => {
@@ -573,7 +716,9 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(enqueuedUserIds).not.toContain(owner.id);
 
       const studentAJob = enqueued.find((job) => job.data.userId === studentA.id)!;
-      expect(studentAJob.data.body).toBe('Direct-Invocation Waiver has invited you to sign the following waiver.');
+      // Names the School as the sender and the waiver by its title (it used
+      // to put the waiver's title where the sender belongs).
+      expect(studentAJob.data.body).toBe('Notifications HTTP School has invited you to sign the waiver "Direct-Invocation Waiver".');
       expect(studentAJob.data.type).toBe('WAIVER_SIGNATURE_REQUEST');
       expect(studentAJob.data.notificationId).toBe(`waiver-${waiver.id}-${studentA.id}`);
 
@@ -586,6 +731,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(created).not.toBeNull();
       expect(created!.userId).toBe(studentA.id);
       expect(created!.title).toBe('Waiver signature requested');
+      // Decision 355: labelled with its School, and it opens that waiver.
+      expect(created!).toMatchObject({ schoolId: school.id, schoolName: 'Notifications HTTP School', targetType: 'WAIVER', targetId: waiver.id });
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Waiver signature requested', studentAJob.data.body);
       notificationIds.push(created!.id);
 
@@ -652,6 +799,103 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Push test 3', 'push body 3');
 
       await superuser.deviceToken.delete({ where: { id: goodToken.id } });
+    });
+
+    it('push does not wait on email: no email service skips email quietly, a failing email still retries, and a retry never re-sends push', async () => {
+      const token = await superuser.deviceToken.create({
+        data: { id: randomUUID(), userId: studentA.id, platform: 'IOS', token: `order-${randomUUID()}` },
+      });
+
+      // No email service configured (staging this round): push goes out, the
+      // job succeeds, and email is not attempted at all.
+      fakeDelivery.isConfigured.mockReturnValue(false);
+      const idNoEmail = `order-no-email-${randomUUID()}`;
+      await expect(
+        fanoutProcessor.process({ id: 'order-1', data: { notificationId: idNoEmail, userId: studentA.id, title: 'T', body: 'B' } } as never),
+      ).resolves.toBeUndefined();
+      notificationIds.push(idNoEmail);
+      expect(fakePush.send).toHaveBeenCalledTimes(1);
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+
+      // Email configured but failing: push has already gone out, and the job
+      // still fails so BullMQ retries the email.
+      fakeDelivery.isConfigured.mockReturnValue(true);
+      fakeDelivery.sendEmail.mockRejectedValueOnce(new Error('Postmark down'));
+      const idEmailDown = `order-email-down-${randomUUID()}`;
+      const jobData = { notificationId: idEmailDown, userId: studentA.id, title: 'T2', body: 'B2' };
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 0 } as never)).rejects.toThrow('Postmark down');
+      notificationIds.push(idEmailDown);
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+
+      // The retry sends the email but not a second push.
+      await expect(fanoutProcessor.process({ id: 'order-2', data: jobData, attemptsMade: 1 } as never)).resolves.toBeUndefined();
+      expect(fakePush.send).toHaveBeenCalledTimes(2);
+      expect(fakeDelivery.sendEmail).toHaveBeenLastCalledWith(studentA.email, 'T2', 'B2');
+
+      await superuser.deviceToken.delete({ where: { id: token.id } });
+    });
+
+    it("parents (Decision 333): a child's notification is copied to each linked guardian, a minor's placeholder address gets no push or email, and a copy is never copied on", async () => {
+      const guardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'Parent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const revokedGuardian = await superuser.user.create({
+        data: { id: randomUUID(), email: `notifications-guardian-old-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'OldParent', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('1980-01-01'), phoneVerifiedAt: new Date() },
+      });
+      const minorId = randomUUID();
+      const minor = await superuser.user.create({
+        data: { id: minorId, email: `minor+${minorId}@guardian-managed.ultm8.internal`, phone: `+000${Math.floor(100_000_000_000 + Math.random() * 899_999_999_999)}`, firstName: 'Mia', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2018-01-01') },
+      });
+      userIds.push(guardian.id, revokedGuardian.id, minor.id);
+      await superuser.guardianLink.createMany({
+        data: [
+          { id: randomUUID(), guardianId: guardian.id, studentId: minor.id },
+          { id: randomUUID(), guardianId: revokedGuardian.id, studentId: minor.id, revokedAt: new Date() },
+        ],
+      });
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+
+      const id = `guardian-test-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-1', data: { notificationId: id, userId: minor.id, title: 'Class cancelled', body: 'Kids Judo was cancelled.' } } as never);
+      notificationIds.push(id);
+
+      // The child's own in-app row is still written…
+      expect(await superuser.notification.findUnique({ where: { id } })).not.toBeNull();
+      // …but nothing goes to the placeholder address.
+      expect(fakeDelivery.sendEmail).not.toHaveBeenCalled();
+      expect(fakePush.send).not.toHaveBeenCalled();
+
+      // One copy, for the live link only.
+      expect(fakeNotificationFanoutQueue.addBulk).toHaveBeenCalledTimes(1);
+      const copies: Array<{ data: NotificationFanoutJobData; opts: { jobId: string } }> = fakeNotificationFanoutQueue.addBulk.mock.calls[0][0];
+      expect(copies).toHaveLength(1);
+      expect(copies[0].data).toEqual({
+        notificationId: `${id}-guardian-${guardian.id}`,
+        userId: guardian.id,
+        title: 'Class cancelled',
+        body: 'For Mia: Kids Judo was cancelled.',
+        type: undefined,
+        guardianCopyOf: minor.id,
+        schoolId: undefined,
+        targetType: undefined,
+        targetId: undefined,
+      });
+      expect(copies[0].opts.jobId).toBe(copies[0].data.notificationId);
+
+      // Processing the copy delivers to the parent and copies nothing further.
+      fakeNotificationFanoutQueue.addBulk.mockClear();
+      await fanoutProcessor.process({ id: 'guardian-2', data: copies[0].data } as never);
+      notificationIds.push(copies[0].data.notificationId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+      expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(guardian.email, 'Class cancelled', 'For Mia: Kids Judo was cancelled.');
+
+      // A Student with no guardians is untouched.
+      const plainId = `guardian-test-plain-${randomUUID()}`;
+      await fanoutProcessor.process({ id: 'guardian-3', data: { notificationId: plainId, userId: studentA.id, title: 'T', body: 'B' } } as never);
+      notificationIds.push(plainId);
+      expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+
+      await superuser.guardianLink.deleteMany({ where: { studentId: minor.id } });
     });
   });
 });

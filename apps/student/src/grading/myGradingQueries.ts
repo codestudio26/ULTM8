@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -27,5 +27,44 @@ export function useMyRankHistory(studentId: string | null, schoolId: string | nu
     queryFn: () =>
       unwrap(apiClient.GET('/v1/students/{id}/rank-history', { params: { path: { id: studentId! }, query: { schoolId: schoolId!, limit: 100 } } })),
     enabled: !!studentId && !!schoolId,
+  });
+}
+
+export type FeeRequest = components['schemas']['PromotionFeeRequestResponseDto'];
+
+/** The student's promotion fee requests at every School, newest first, for
+ * the student or their Guardian (Decisions 287, 300). */
+export function feeRequestsQuery(studentId: string | null) {
+  return {
+    queryKey: ['my-fee-requests', studentId],
+    queryFn: () => unwrap(apiClient.GET('/v1/students/{id}/promotion-fee-requests', { params: { path: { id: studentId! } } })),
+    enabled: !!studentId,
+  };
+}
+
+export function useMyFeeRequests(studentId: string | null) {
+  return useQuery(feeRequestsQuery(studentId));
+}
+
+/** A fee waiting for an answer: not yet accepted or declined, and not a
+ * promotion left "to decide" by a coach (Decision 307). */
+export function isFeeToAnswer(r: FeeRequest): boolean {
+  return r.status === 'PENDING' && !r.toDecide;
+}
+
+/** Accept or decline a fee (the student, or the Guardian for a child). The
+ * School is told either way; accepting never charges by itself. */
+export function useAnswerFee(studentId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, answer }: { id: string; answer: 'accept' | 'decline' }) =>
+      answer === 'accept'
+        ? unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/accept', { params: { path: { id } } }))
+        : unwrap(apiClient.POST('/v1/promotion-fee-requests/{id}/decline', { params: { path: { id } } })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['my-fee-requests', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['grading-overview', studentId] }),
+      ]),
   });
 }

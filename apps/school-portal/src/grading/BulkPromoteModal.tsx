@@ -4,7 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
-import { type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
+import { BulkPromotePartialError, type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
@@ -57,47 +57,58 @@ export function BulkPromoteModal({
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<{ rows: ReportRow[]; skipped: Array<{ name: string; reasons: string[] }>; date: string } | null>(null);
+  // A batch that stopped part-way (Decision 284): what is done, and who is left to try again.
+  const [partial, setPartial] = useState<{ done: BulkPromoteResult; remaining: string[]; batch: string[] } | null>(null);
   const dragId = useRef<string | null>(null);
 
   const byId = (id: string) => students.find((s) => s.studentId === id);
   const rung = (id: string | null | undefined) => ladder.find((r) => r.id === id) ?? null;
-  const checkKey = `${[...order].sort().join(',')}|${date}`;
+  const latestCheck = useRef(0);
 
-  // Re-check whenever who is in the batch, or the date, changes.
-  useEffect(() => {
-    if (report || order.length === 0) return;
-    let cancelled = false;
+  /** Check the batch (a dry run). Each student's check stands on its own, so
+   * removing a student needs no new check; only the date (or a failed check)
+   * does. That keeps a large batch inside the API's request limit. */
+  function runCheck(ids: string[]) {
+    if (report || ids.length === 0) return;
+    const mine = ++latestCheck.current;
     setChecking(true);
     setError(null);
     bulk
-      .mutateAsync({ disciplineId: style.id, studentIds: order, dryRun: true, ...(date && date !== todayLocal() ? { effectiveDate: date } : {}) })
+      .mutateAsync({ disciplineId: style.id, studentIds: ids, dryRun: true, ...(date && date !== todayLocal() ? { effectiveDate: date } : {}) })
       .then((r) => {
-        if (!cancelled) setCheck(r);
+        if (mine === latestCheck.current) setCheck(r);
       })
       .catch((err) => {
-        if (!cancelled) {
+        if (mine === latestCheck.current) {
           setCheck(null);
           setError(err instanceof ApiError ? err.message : t('grading.bulk.checkFailed'));
         }
       })
       .finally(() => {
-        if (!cancelled) setChecking(false);
+        if (mine === latestCheck.current) setChecking(false);
       });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkKey, report]);
+  }
 
-  const needsLook = check?.needsAcknowledgement ?? [];
-  const cannot = check?.cannotPromote ?? [];
+  // Check when the window opens and whenever the date changes.
+  useEffect(() => {
+    runCheck(order);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
+
+  // Only students still in the batch count.
+  const inBatch = (r: { studentId: string }) => order.includes(r.studentId);
+  const needsLook = (check?.needsAcknowledgement ?? []).filter(inBatch);
+  const cannot = (check?.cannotPromote ?? []).filter(inBatch);
   const flagged = (id: string) => needsLook.find((n) => n.studentId === id);
   const blocked = (id: string) => cannot.find((n) => n.studentId === id);
   const toPromote = order.filter((id) => !blocked(id));
 
   function remove(id: string) {
-    setOrder((o) => o.filter((x) => x !== id));
+    const next = order.filter((x) => x !== id);
+    setOrder(next);
     onRemove(id);
+    // A failed check (e.g. the date didn't suit this student) is run again without them.
+    if (!check) runCheck(next);
   }
 
   function moveBy(id: string, delta: number) {
@@ -122,39 +133,70 @@ export function BulkPromoteModal({
     });
   }
 
-  async function confirm() {
+  const effective = date && date !== todayLocal() ? date : undefined;
+  const join = (a: BulkPromoteResult, b: BulkPromoteResult): BulkPromoteResult => ({
+    ready: [...a.ready, ...b.ready],
+    needsAcknowledgement: [],
+    cannotPromote: [...a.cannotPromote, ...b.cannotPromote],
+  });
+
+  /** Promote `ids`, adding to what earlier tries already did. Each student
+   * carries the rung the check found them on, so trying again never promotes
+   * anyone twice (Decision 284). */
+  async function send(ids: string[], batch: string[], before: BulkPromoteResult) {
     setError(null);
+    const wanted = new Set(ids);
+    const expected = [...(check?.ready ?? []), ...(check?.needsAcknowledgement ?? [])]
+      .filter((r) => wanted.has(r.studentId) && r.fromRungId)
+      .map((r) => ({ studentId: r.studentId, rungId: r.fromRungId as string }));
+    const acknowledgedIds = needsLook.map((n) => n.studentId).filter((id) => wanted.has(id));
     try {
-      const effective = date && date !== todayLocal() ? date : undefined;
       const result = await bulk.mutateAsync({
         disciplineId: style.id,
-        studentIds: toPromote,
+        studentIds: ids,
         ...(effective ? { effectiveDate: effective } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
-        ...(needsLook.length > 0 ? { acknowledgedStudentIds: needsLook.map((n) => n.studentId) } : {}),
+        ...(acknowledgedIds.length > 0 ? { acknowledgedStudentIds: acknowledgedIds } : {}),
+        ...(expected.length > 0 ? { expected } : {}),
       });
-      // The report follows the calling order.
-      const rows = toPromote
-        .map((id) => result.ready.find((r) => r.studentId === id))
-        .filter((r): r is BulkPromoteStudent => !!r)
-        .map((r) => ({
-          name: fullName(byId(r.studentId) ?? { firstName: t('grading.studentFallback'), surname: '' }),
-          from: rung(r.fromRungId)?.name ?? '—',
-          to: rung(r.toRungId)?.name ?? '—',
-        }));
-      setReport({
-        rows,
-        // Names now: the board's selection is cleared once the batch is done.
-        skipped: [...cannot, ...result.cannotPromote.filter((c) => !cannot.some((x) => x.studentId === c.studentId))].map((c) => ({
-          name: fullName(byId(c.studentId) ?? { firstName: t('grading.studentFallback'), surname: '' }),
-          reasons: c.reasons,
-        })),
-        date: effective ?? todayLocal(),
-      });
-      onDone();
+      finish(join(before, result), batch, []);
     } catch (err) {
+      // Sent 200 at a time (Decision 282): a later batch failed even after one
+      // automatic retry. Keep what is done and offer the rest again.
+      if (err instanceof BulkPromotePartialError) {
+        setPartial({ done: join(before, err.done), remaining: err.remaining, batch });
+        return;
+      }
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
+  }
+
+  function confirm() {
+    return send(toPromote, toPromote, { ready: [], needsAcknowledgement: [], cannotPromote: [] });
+  }
+
+  /** The done window and report, in calling order; `notReached` are students
+   * a stopped batch never got to. */
+  function finish(result: BulkPromoteResult, batch: string[], notReached: string[]) {
+    const nameOf = (id: string) => fullName(byId(id) ?? { firstName: t('grading.studentFallback'), surname: '' });
+    const rows = batch
+      .map((id) => result.ready.find((r) => r.studentId === id))
+      .filter((r): r is BulkPromoteStudent => !!r)
+      .map((r) => ({ name: nameOf(r.studentId), from: rung(r.fromRungId)?.name ?? '—', to: rung(r.toRungId)?.name ?? '—' }));
+    setPartial(null);
+    setReport({
+      rows,
+      // Names now: the board's selection is cleared once the batch is done.
+      skipped: [
+        ...[...cannot, ...result.cannotPromote.filter((c) => !cannot.some((x) => x.studentId === c.studentId))].map((c) => ({
+          name: nameOf(c.studentId),
+          reasons: c.reasons,
+        })),
+        ...notReached.map((id) => ({ name: nameOf(id), reasons: [t('grading.bulk.notReached')] })),
+      ],
+      date: effective ?? todayLocal(),
+    });
+    onDone();
   }
 
   function openReport() {
@@ -164,9 +206,28 @@ export function BulkPromoteModal({
     window.open(url, '_blank');
   }
 
+  if (partial) {
+    const total = partial.batch.length;
+    return (
+      <Modal title={t('grading.bulk.title')} onClose={() => finish(partial.done, partial.batch, partial.remaining)}>
+        <ErrorBanner message={t('grading.bulk.stoppedPartWay', { done: partial.done.ready.length, total })} />
+        {error ? <ErrorBanner message={error} /> : null}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+          <Button type="button" onClick={() => send(partial.remaining, partial.batch, partial.done)} loading={bulk.isPending}>
+            {t('grading.bulk.tryRemaining', { count: partial.remaining.length })}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => finish(partial.done, partial.batch, partial.remaining)} disabled={bulk.isPending}>
+            {t('grading.bulk.stopHere')}
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
   if (report) {
     return (
       <Modal title={t('grading.bulk.doneTitle')} onClose={onClose}>
+        {error ? <ErrorBanner message={error} /> : null}
         <p>{t('grading.bulk.youPromoted', { count: report.rows.length })}</p>
         <ol style={{ paddingLeft: 20 }}>
           {report.rows.map((r, i) => (

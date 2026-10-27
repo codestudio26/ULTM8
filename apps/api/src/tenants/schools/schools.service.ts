@@ -5,19 +5,36 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
+import { JOIN_REQUEST_SELECT } from '../franchises/franchises.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
+import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { UsersService } from '../../users/users.service';
 import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { NOTIFICATION_FANOUT_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../../jobs/queue.constants';
+import type { WaiverSignatureRequestJobData } from '../../jobs/waiver-signature-requests.processor';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
+import { matchesPersonName } from '../../common/search/name-search';
+import { addressWriteData } from '../../common/address/postal-address.dto';
+import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
+import { StepUpService } from '../../auth/step-up.service';
+import { stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
+import { stopSchoolBilling } from '../stop-tenant-billing';
+import { sendFranchiseNotice } from '../franchises/franchise-notifications';
+import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
+
+/** Decision 110's retention window, the same one the Platform Admin close uses. */
+const RETENTION_WINDOW_DAYS = 90;
 
 @Injectable()
 export class SchoolsService {
@@ -33,6 +50,10 @@ export class SchoolsService {
     private readonly stripeClient: StripeClientService,
     private readonly usersService: UsersService,
     private readonly waiverAssignment: WaiverAssignmentService,
+    @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
+    private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
+    private readonly stepUp: StepUpService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   /**
@@ -112,7 +133,7 @@ export class SchoolsService {
           id: schoolId,
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           businessType: dto.businessType,
           activities: dto.activities ?? [],
           facilities: dto.facilities ?? [],
@@ -134,6 +155,16 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          classCancellationPolicyWindow: dto.classCancellationPolicyWindow,
+          chargeLateCancellationFee: dto.chargeLateCancellationFee,
+          schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
+          defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
+          noShowFee: dto.noShowFee,
+          // Decision 292 — saving a policy is the owner choosing it.
+          ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
+          checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       });
 
@@ -267,6 +298,7 @@ export class SchoolsService {
 
     const roleGrantId = randomUUID();
 
+    let joinWaiverIds: string[] = [];
     const roleGrant = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const [{ school_exists: schoolExists }] = await tx.$queryRaw<[{ school_exists: boolean }]>`
         SELECT school_exists(${schoolId})
@@ -324,16 +356,38 @@ export class SchoolsService {
       // lets this context see this School's Waivers at all (Waiver's RLS is
       // "any active RoleGrant holder at the School"), same reasoning the home
       // branch lookup just above already relies on for Branch's own RLS.
-      const waivers = await tx.waiver.findMany({ where: { schoolId }, select: { id: true } });
+      // Waivers review W6: an archived Waiver is not assigned to new members.
+      const waivers = await tx.waiver.findMany({ where: { schoolId, archivedAt: null }, select: { id: true } });
       await this.waiverAssignment.assignUnsignedRows(
         tx,
         schoolId,
         waivers.map((w) => w.id),
         [studentId],
       );
+      // Decision 354 (Q8): tell the new member which waivers to sign, unless
+      // the School turned that off. Only waivers still unsigned (a returning
+      // member's earlier signature still stands).
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverNoticeOnJoin: true } });
+      const toSign = school?.waiverNoticeOnJoin
+        ? await tx.waiverSignature.findMany({
+            where: { schoolId, studentId, waiverId: { in: waivers.map((w) => w.id) }, status: { in: ['UNSIGNED', 'PENDING'] } },
+            select: { waiverId: true },
+          })
+        : [];
+      joinWaiverIds = toSign.map((r) => r.waiverId);
 
       return created;
     });
+
+    for (const waiverId of joinWaiverIds) {
+      const data: WaiverSignatureRequestJobData = { waiverId, schoolId, studentIds: [studentId], reason: 'assigned', batchId: roleGrant.id };
+      try {
+        await this.waiverSignatureRequestsQueue.add('notify', data, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+      } catch (err) {
+        // The member has joined; a missed notice must not undo that.
+        this.logger.error(`Joining School ${schoolId}: the waiver notice for Waiver ${waiverId} could not be queued.`, err instanceof Error ? err.stack : String(err));
+      }
+    }
 
     if (isGuardianAction || isStaffAction) {
       // No access token to mint — the caller (Guardian or Staff) isn't the
@@ -353,106 +407,137 @@ export class SchoolsService {
   }
 
   /**
-   * A School's own, narrow join into a Franchise — School Owner/Manager initiated,
-   * self-service, deliberately one-way only (no leave/switch/reaffiliation). Closes a
-   * real, previously-unaddressed gap surfaced while researching Phase 16b
-   * (FranchiseFeeCharge): grepped every write site in this codebase and confirmed
-   * `School.franchiseId` was NEVER written anywhere — `CreateSchoolDto` deliberately
-   * excludes it (a self-service-created School is always independent), so there was
-   * genuinely no way for a real School to ever become affiliated with a Franchise at
-   * all. Same class of gap Decision 96 found and fixed for Student enrollment; see
-   * Decision 98 for the full account, including why this needed the user's own
-   * direct sign-off rather than a unilateral "best decision" call (it borders the
-   * Franchise-reaffiliation topic Decision 97 explicitly deferred).
-   *
-   * Deliberately NOT a `CreateSchoolDto`/`UpdateSchoolDto` field — a dedicated,
-   * single-purpose, auditable action, the same shape `join()` above already
-   * established for the Student side of this pattern (POST /schools/:id/join).
-   *
-   * FOUND ON REVIEW, before this ever shipped — a first draft added a new
-   * `franchise_exists()` SECURITY DEFINER function (mirroring `school_exists()`) as
-   * a separate existence check before the write, in its own `withTenantContext`
-   * call. Two independent review angles caught that this was both unnecessary AND
-   * a real, if narrow, correctness regression: `School.franchiseId` already carries
-   * a real foreign-key constraint to `Franchise.id` (schema.prisma), and Postgres
-   * foreign-key checks always run outside row security by design (documented
-   * Postgres behavior — RI checks bypass RLS specifically so referential integrity
-   * can't be subverted by a restrictive policy) — so the write below already fails
-   * with a real FK-violation error (caught below) if `franchiseId` doesn't
-   * reference a real row, with NO separate existence check needed at all. The
-   * removed draft also split the (unnecessary) existence check and the write
-   * across two separate `withTenantContext` transactions, unlike `join()`
-   * immediately above, which deliberately keeps its own existence check and write
-   * in ONE transaction for exactly this reason (a real TOCTOU window otherwise) —
-   * this version closes that gap too, by removing the second transaction
-   * entirely rather than trying to keep both in sync.
-   *
-   * Idempotency/guard: `updateMany` with a `franchiseId: null` WHERE-clause guard,
-   * checked via the returned row count — NOT a separate findUnique-then-update,
-   * which would leave a TOCTOU window between two concurrent joins for the same
-   * School. This is an UPDATE, not an INSERT, so the "atomic create() + caught
-   * P2002" pattern `join()` above uses doesn't apply directly in shape, but the
-   * same idea does: the FK-violation catch below plays P2002's role (a real DB
-   * constraint surfacing as a clean error, not a plausible-looking pre-check that
-   * could itself race), and the conditional `updateMany` plays the uniqueness-guard
-   * role.
-   *
-   * WHAT THIS DELIBERATELY DOES NOT DO (Decision 98, following the user's own
-   * explicit direction on Franchise-reaffiliation this session): no "leave a
-   * Franchise" or "switch Franchise" path exists anywhere — a School that already
-   * has a franchiseId gets 409, never a silent re-link. That is the entire point of
-   * keeping this one-way: it never has to answer "what happens to this School's
-   * PaymentAccount/MembershipPlan/FranchiseFeeCharge history on reaffiliation"
-   * (Spec 55 §12.2, domain-rules §2/§17), because reaffiliation cannot happen
-   * through this endpoint. Do not extend this method to support leaving/switching
-   * without the user's own "revisit when the project is done" conversation
-   * (Decision 97) happening first — that is a real, separate decision, not an
-   * incremental extension of this one.
-   *
-   * Also does NOT create any Stripe subscription or FranchiseFeeCharge row this
-   * phase (16b-i) — only the relationship itself. The actual billing mechanics are
-   * Phase 16b-ii, built against the real School↔Franchise relationships this method
-   * creates, not fixture-only data (the same anti-pattern Decision 96 already
-   * flagged and fixed once this session for Student enrollment).
+   * School Owner/Manager asks to join a Franchise by its ID. Decision 352 (product
+   * owner, 27 Oct 2026): the School no longer joins at once; this records a
+   * PENDING FranchiseJoinRequest and the Franchise Owner accepts (the School
+   * joins, FranchisesService.decideJoinRequest) or declines. One open request
+   * per School (a partial unique index). A School already in a Franchise leaves
+   * first (Decision 232), and closed Schools and Franchises can't take part
+   * (Decision 337, F3/F4). The Franchise row isn't visible to a School Owner
+   * under RLS, so its existence and closed state are read on the jobs
+   * connection; the School's name is copied onto the request because the
+   * Franchise Owner can't read a non-member School.
    */
   async joinFranchise(callerId: string, schoolId: string, franchiseId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 337 (F4) — a closed School can't join, the same rule leaveFranchise()
+    // and every other write at a closed School already follow.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // Decision 337 (F3) — nor can anyone join a closed Franchise. A School Owner
+    // can't read the Franchise row through RLS, so this one-column check uses the
+    // same jobs connection leaveFranchise() below already uses for the Franchise's
+    // PaymentAccount.
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { name: true, archivedAt: true } });
+    if (!target) {
+      throw new NotFoundException('Franchise not found');
+    }
+    if (target.archivedAt) {
+      throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
+    }
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      let count: number;
+    // Decision 352 — joining asks the Franchise Owner, who accepts or declines
+    // (FranchisesService.decideJoinRequest); the School no longer joins at once.
+    const request = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { name: true, franchiseId: true } });
+      if (!school) {
+        throw new NotFoundException('School not found');
+      }
+      if (school.franchiseId) {
+        throw new ConflictException('This School is already in a Franchise. Leave it first, then join the new one.');
+      }
       try {
-        ({ count } = await tx.school.updateMany({
-          where: { id: schoolId, franchiseId: null },
-          data: { franchiseId },
-        }));
+        return await tx.franchiseJoinRequest.create({
+          data: { franchiseId, schoolId, schoolName: school.name, requestedById: callerId },
+          select: JOIN_REQUEST_SELECT,
+        });
       } catch (err) {
-        // P2003 = foreign key constraint violation — franchiseId doesn't reference
-        // a real Franchise row. See this method's own header comment for why this
-        // replaces a separate existence-check function entirely, not just avoids
-        // duplicating it.
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
-          throw new NotFoundException('Franchise not found');
+        // P2002 — the partial unique index: one open request per School.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('This School has already asked to join a Franchise. Cancel that request first.');
         }
         throw err;
       }
-      if (count === 0) {
-        // Noted on review, not engineered around: `count === 0` here technically
-        // conflates two distinct causes — franchiseId genuinely already set, or
-        // (an astronomically narrow race) the caller's own SCHOOL_OWNER_MANAGER
-        // grant was revoked in the gap between assertSchoolOwner above and this
-        // UPDATE reaching Postgres, so school_tenant_isolation's own UPDATE policy
-        // silently matched zero rows. Both produce the same, correctly-safe
-        // outcome (no write happens either way) — only the error MESSAGE would be
-        // misleading in the second case, not the behavior. Disambiguating would
-        // need a re-fetch inside this same transaction, undoing the round-trip
-        // reduction this method exists to have made; not worth it for a race this
-        // narrow with a consequence this small.
-        throw new ConflictException(
-          'This School is already affiliated with a Franchise — leaving or switching Franchise is not supported yet.',
-        );
-      }
-      return tx.school.findUniqueOrThrow({ where: { id: schoolId } });
     });
+    // Decision 364 — the Franchise's Owners hear that a School is asking.
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: 'ASKED',
+      requestId: request.id,
+      franchiseId,
+      franchiseName: target.name,
+      schoolId,
+      schoolName: request.schoolName,
+    });
+    return request;
+  }
+
+  /** Decision 352 — the School's latest request to join a Franchise, or null. */
+  async findFranchiseJoinRequest(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const request = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseJoinRequest.findFirst({ where: { schoolId }, orderBy: { createdAt: 'desc' }, select: JOIN_REQUEST_SELECT }),
+    );
+    return { request };
+  }
+
+  /** Decision 352 — the School withdraws its open request. */
+  async cancelFranchiseJoinRequest(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const open = await tx.franchiseJoinRequest.findFirst({ where: { schoolId, status: 'PENDING' }, select: { id: true } });
+      if (!open) {
+        throw new NotFoundException('This School has no open request to join a Franchise.');
+      }
+      const { count } = await tx.franchiseJoinRequest.updateMany({
+        where: { id: open.id, status: 'PENDING' },
+        data: { status: 'CANCELLED', decidedAt: new Date() },
+      });
+      if (count === 0) {
+        throw new ConflictException('This join request has already been answered.');
+      }
+      return tx.franchiseJoinRequest.findUniqueOrThrow({ where: { id: open.id }, select: JOIN_REQUEST_SELECT });
+    });
+  }
+
+  /**
+   * Decision 364 — a School Owner closes their own School: the same close a
+   * Full Platform Admin can do (TenantLifecycleService.closeSchool, Decision
+   * 110): read-only from now, purged after 90 days, reopened only by a Platform
+   * Admin. Needs the School's name re-typed and a fresh passcode check
+   * (StepUpService, the X-Step-Up-Token header). The write uses the
+   * platform-admin connection, which holds the only grant on archivedAt/purgeAt,
+   * after the ownership check. Then, as on every close: the franchise fee stops
+   * (Decision 337, F16), an open request to join a Franchise lapses (Decision
+   * 352), and the Students' Subscriptions and the School's own ULTM8
+   * subscription end with their paid period (stopSchoolBilling).
+   */
+  async closeOwnSchool(callerId: string, schoolId: string, dto: CloseOwnSchoolDto, stepUpToken: string | undefined) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    this.stepUp.assertVerified(callerId, stepUpToken);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { name: true, archivedAt: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    if (school.archivedAt) {
+      throw new ConflictException('This School is already closed.');
+    }
+    if (dto.confirmName !== school.name) {
+      throw new BadRequestException("Type the School's name exactly as it is to close it.");
+    }
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const { count } = await this.prismaPlatformAdmin.school.updateMany({
+      where: { id: schoolId, archivedAt: null },
+      data: { archivedAt: now, purgeAt },
+    });
+    if (count === 0) {
+      throw new ConflictException('This School is already closed.');
+    }
+    await stopFranchiseFeeBilling(this.prismaJobs, this.stripeClient, this.logger, { schoolId });
+    await this.prismaJobs.franchiseJoinRequest.updateMany({ where: { schoolId, status: 'PENDING' }, data: { status: 'CANCELLED', decidedAt: now } });
+    await stopSchoolBilling(this.prismaJobs, this.stripeClient, this.logger, schoolId, callerId);
+    return this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { id: true, archivedAt: true, purgeAt: true } });
   }
 
   /**
@@ -505,7 +590,7 @@ export class SchoolsService {
     const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.updateMany({
         where: { id: schoolId, franchiseId: oldFranchiseId },
-        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
       }),
     );
     if (count === 0) {
@@ -520,7 +605,14 @@ export class SchoolsService {
         });
         const account = oldFranchise?.paymentAccount;
         if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
-          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(oldSubscriptionId);
+          // Decision 337 (F19, product owner's answer to Q9) — the School pays for
+          // the month it leaves in: the subscription is cancelled with a final
+          // invoice for what has accrued (a Per-headcount School's count was
+          // reported on the 1st), so the month's Pending fee charge resolves
+          // instead of staying Pending forever. No proration credit either way.
+          await this.stripeClient
+            .scopedClient(account.stripeConnectedAccountId)
+            .subscriptions.cancel(oldSubscriptionId, FRANCHISE_FEE_FINAL_CANCEL);
         }
       } catch (err) {
         this.logger.error(
@@ -573,6 +665,37 @@ export class SchoolsService {
   }
 
   /**
+   * Decision 350 — the Franchise's name and logo for a member School, shown only
+   * when both owners allow it. Same RLS visibility as findTheme() (any RoleGrant
+   * holder at the School). The Franchise row itself isn't visible to School-side
+   * callers under RLS, so it's read through prismaJobs, and only after the School
+   * read above proved the caller can see this School; nothing beyond the name and
+   * logo leaves this method, and those only when both switches are on.
+   */
+  async findFranchiseBranding(callerId: string, schoolId: string) {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { franchiseId: true, showFranchiseBranding: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    const franchise = school.franchiseId
+      ? await this.prismaJobs.franchise.findUnique({
+          where: { id: school.franchiseId },
+          select: { name: true, logoUrl: true, archivedAt: true, shareBrandingWithMembers: true },
+        })
+      : null;
+    const franchiseAllows = !!franchise && !franchise.archivedAt && franchise.shareBrandingWithMembers;
+    const shown = franchiseAllows && school.showFranchiseBranding;
+    return {
+      franchiseAllows,
+      schoolShows: school.showFranchiseBranding,
+      name: shown ? franchise!.name : null,
+      logoUrl: shown ? franchise!.logoUrl : null,
+    };
+  }
+
+  /**
    * The Student roster — Users holding an active STUDENT RoleGrant at this School.
    * Staff-gated broadly (School Owner/Manager, Branch Staff, or Instructor — the
    * same set Bookings/Waitlist's own roster reads already use via
@@ -594,7 +717,15 @@ export class SchoolsService {
    * "Students page" gap: the roster previously hard-coded `revokedAt: null`,
    * silently excluding revoked enrollments with no way to ever see them.
    */
-  async findAllStudentsForSchool(callerId: string, schoolId: string, status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE) {
+  /** Decision 278 — `search` (header Global Search) narrows whichever roster the
+   * caller is already allowed to read, in memory (matchesPersonName's own header
+   * comment says why not a relation filter). Omitted or blank, nothing changes. */
+  async findAllStudentsForSchool(
+    callerId: string,
+    schoolId: string,
+    status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE,
+    search?: string,
+  ) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
@@ -613,8 +744,19 @@ export class SchoolsService {
           },
         }),
       );
+      const items = grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt }));
+      // Decision 353 (Q4): RLS shows Branch Staff and coaches at a School with
+      // branches no students, so add the ones they cover, their home branch's
+      // (Decision 139's rule; staff_student_roster, 20261202000100).
+      const covered = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.$queryRaw<Array<{ id: string; firstName: string; surname: string; email: string; profilePhotoUrl: string | null; enrolledAt: Date }>>`SELECT * FROM staff_student_roster(${schoolId})`,
+      );
+      const seen = new Set(items.map((i) => i.id));
+      items.push(...covered.filter((c) => !seen.has(c.id)));
       return {
-        items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
+        items: items
+          .filter((g) => !search || matchesPersonName(g.firstName, g.surname, search))
+          .map((g) => ({ ...g, status: StudentStatusDto.ACTIVE })),
       };
     }
 
@@ -671,6 +813,9 @@ export class SchoolsService {
     if (status === StudentRosterStatusDto.INACTIVE) {
       rows = rows.filter((r) => r.status === StudentStatusDto.INACTIVE);
     }
+    if (search) {
+      rows = rows.filter((r) => matchesPersonName(r.firstName, r.surname, search));
+    }
     rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
 
     return { items: rows };
@@ -688,11 +833,12 @@ export class SchoolsService {
         data: {
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           businessType: dto.businessType,
           activities: dto.activities,
           facilities: dto.facilities,
           ranksToggle: dto.ranksToggle,
+          showFranchiseBranding: dto.showFranchiseBranding,
           defaultLanguage: dto.defaultLanguage,
           defaultCurrency: dto.defaultCurrency,
           timezone: dto.timezone,
@@ -710,6 +856,16 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          classCancellationPolicyWindow: dto.classCancellationPolicyWindow,
+          chargeLateCancellationFee: dto.chargeLateCancellationFee,
+          schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
+          defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
+          noShowFee: dto.noShowFee,
+          // Decision 292 — saving a policy is the owner choosing it.
+          ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
+          checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       }),
     );

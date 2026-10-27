@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, IsUrl, MaxLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../../common/address/postal-address.dto';
 
 /**
  * Field set per Decision 76 (docs/decisions/POST-SPEC-55-DECISION-LOG.md) — Branch
@@ -38,6 +40,15 @@ export class CreateBranchDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional()
   @IsOptional()

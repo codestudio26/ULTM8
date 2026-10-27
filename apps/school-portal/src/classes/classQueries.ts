@@ -7,8 +7,18 @@ export type ClassResponse = components['schemas']['ClassResponseDto'];
 export type CreateClassInput = components['schemas']['CreateClassDto'];
 export type UpdateClassInput = components['schemas']['UpdateClassDto'];
 
+/** Classes review C3: a date view sorted by start time. Omitted = the old
+ * creation-order list, which MembershipPlansPage and NotificationsPage still use. */
+export type ClassesWhen = 'upcoming' | 'past' | 'all';
+
 export interface ClassesFilter {
   activities?: string;
+  /** A School style (Decision 170). */
+  disciplineId?: string;
+  when?: ClassesWhen;
+  /** The User id the Class is taught by (the coach dashboard's own Classes). */
+  instructorId?: string;
+  limit?: number;
   search?: string;
   /** Decision 226 — defaults to false (archived Classes excluded), same as
    * every other caller of this hook before this field existed (e.g.
@@ -17,6 +27,10 @@ export interface ClassesFilter {
    * passes `true` explicitly so it can show an accurate count and let the
    * caller toggle their visibility. */
   includeArchived?: boolean;
+  /** Only Classes starting in this window (ISO date-times, both inclusive) —
+   * the front desk's "today" list. */
+  startsFrom?: string;
+  startsTo?: string;
 }
 
 /** `filter`/`cursor` — additive, optional server-side filters + cursor pagination
@@ -29,13 +43,37 @@ export interface ClassesFilter {
  * one page of it) behaves exactly as before any of this existed. */
 export function useClasses(schoolId: string | null, filter: ClassesFilter = {}, cursor?: string | null) {
   return useQuery({
-    queryKey: ['classes', schoolId, filter.activities ?? null, filter.search ?? null, cursor ?? null, filter.includeArchived ?? false],
+    queryKey: [
+      'classes',
+      schoolId,
+      filter.activities ?? null,
+      filter.search ?? null,
+      cursor ?? null,
+      filter.includeArchived ?? false,
+      filter.disciplineId ?? null,
+      filter.when ?? null,
+      filter.instructorId ?? null,
+      filter.limit ?? null,
+      filter.startsFrom ?? null,
+      filter.startsTo ?? null,
+    ],
     queryFn: () =>
       unwrap(
         apiClient.GET('/v1/schools/{schoolId}/classes', {
           params: {
             path: { schoolId: schoolId! },
-            query: { activities: filter.activities, search: filter.search, cursor: cursor ?? undefined, includeArchived: filter.includeArchived },
+            query: {
+              activities: filter.activities,
+              search: filter.search,
+              cursor: cursor ?? undefined,
+              includeArchived: filter.includeArchived,
+              disciplineId: filter.disciplineId,
+              when: filter.when,
+              instructorId: filter.instructorId,
+              limit: filter.limit,
+              startsFrom: filter.startsFrom,
+              startsTo: filter.startsTo,
+            },
           },
         }),
       ),

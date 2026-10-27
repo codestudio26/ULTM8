@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -23,28 +23,42 @@ import {
 import { CreateCommentDto } from './dto/comment.dto';
 
 /** `content` is null when the database doesn't let the caller read it (Decision 208). */
-const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } }, content: true } as const;
+const LESSON_INCLUDE = {
+  skills: { include: { skill: { select: { disciplineId: true } } } },
+  category: { select: { name: true } },
+  content: true,
+  _count: { select: { comments: true } },
+} as const;
 
 const RETENTION_WINDOW_DAYS = 90;
 
-/** Shared select shape for a PlaylistItem joined with just enough of its own
- * Lesson to compute `locked`/`lessonTitle` (CurriculumService.
- * shapePlaylistItem). */
+const VIDEO_UPLOADS_OFF = 'Video uploads aren\'t set up yet. Lessons can be made and watched without a video until they are.';
+
+/** A PlaylistItem's own columns. Its Lesson is read separately
+ * (CurriculumService.withPlaylistLessons), never joined: a Lesson the caller
+ * can no longer read (they left that School) comes back from a join as null,
+ * which Prisma rejects for a required relation and the whole playlist failed
+ * to load (C14). */
 const PLAYLIST_ITEM_SELECT = {
   id: true,
   playlistId: true,
   order: true,
   createdAt: true,
   lessonId: true,
-  lesson: {
-    select: {
-      title: true,
-      free: true,
-      schoolId: true,
-      skills: { select: { skill: { select: { disciplineId: true } } } },
-    },
-  },
 } satisfies Prisma.PlaylistItemSelect;
+
+/** Just enough of a playlist item's Lesson to compute `locked`/`lessonTitle`. */
+const PLAYLIST_LESSON_SELECT = {
+  id: true,
+  title: true,
+  free: true,
+  schoolId: true,
+  archivedAt: true,
+  skills: { select: { skill: { select: { disciplineId: true } } } },
+} satisfies Prisma.LessonSelect;
+
+type PlaylistItemRow = Prisma.PlaylistItemGetPayload<{ select: typeof PLAYLIST_ITEM_SELECT }>;
+type PlaylistLesson = Prisma.LessonGetPayload<{ select: typeof PLAYLIST_LESSON_SELECT }>;
 
 /** What a caller may watch (Decisions 154, 190, 195): staff everything; a
  * student, or a guardian on their behalf, free lessons and those of the styles
@@ -67,9 +81,9 @@ const LESSON_ORDER: Prisma.LessonOrderByWithRelationInput[] = [{ category: { ord
  * the schema default (captionStatus PENDING, everything else null) — that's a
  * later phase's work, once real credentials exist to build and verify against.
  *
- * Writes (create/update) require Staff/Instructor (assertStaffAtSchool — Decision
- * 58's own "an instructor uploads", resolved as Decision 104 to mean ordinary
- * tenant Staff, not Platform Admin). Reads: lesson_tenant_isolation admits any
+ * Writes require the School owner (assertSchoolOwner, Decision 326 — it
+ * replaces Decision 104's "Instructor/Staff-authored"; coaches and Branch
+ * Staff see the curriculum read-only). Reads: lesson_tenant_isolation admits any
  * active RoleGrant at the School to the lesson itself; its content
  * (LessonContent) only to those who may watch it (Decisions 154, 190, 195,
  * 208), checked here and by the database.
@@ -87,17 +101,17 @@ export class CurriculumService {
 
   async createLesson(callerId: string, schoolId: string, dto: CreateLessonDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    // Only the owner changes the curriculum; coaches and Branch Staff see it
+    // read-only (Decision 326).
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     if (dto.instructorId) {
       // Lesson has no Branch of its own — null targetBranchId means "any of this
       // Instructor's grants at the School count," same as a School-wide Class.
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, null);
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, schoolId, null);
     }
     await this.assertSkillsBelongToSchool(callerId, dto.skillIds, schoolId);
-    // Only the owner makes a lesson free (Decision 190).
-    if (dto.free) await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const lessonId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -133,8 +147,10 @@ export class CurriculumService {
   async findLessonsForSchool(callerId: string, schoolId: string, includeArchived?: boolean) {
     await this.schoolsService.findOne(callerId, schoolId);
     const access = await this.accessFor(callerId, schoolId);
+    // Archived lessons are for staff only, whatever the flag says (C3).
+    const withArchived = includeArchived && access === 'all';
     const lessons = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.lesson.findMany({ where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
+      tx.lesson.findMany({ where: { schoolId, ...(withArchived ? {} : { archivedAt: null }) }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
     );
     return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
@@ -145,14 +161,15 @@ export class CurriculumService {
     if (!skill) {
       throw new NotFoundException('Skill not found');
     }
+    const access = await this.accessFor(callerId, skill.schoolId);
     const lessons = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.lesson.findMany({
-        where: { skills: { some: { skillId } } },
+        // Archived lessons are for staff only (C3).
+        where: { skills: { some: { skillId } }, ...(access === 'all' ? {} : { archivedAt: null }) },
         orderBy: LESSON_ORDER,
         include: LESSON_INCLUDE,
       }),
     );
-    const access = await this.accessFor(callerId, skill.schoolId);
     return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
 
@@ -163,7 +180,10 @@ export class CurriculumService {
     if (!found) {
       throw new NotFoundException('Lesson not found');
     }
-    return this.shapeLessonResponse(found, await this.accessFor(callerId, found.schoolId));
+    const access = await this.accessFor(callerId, found.schoolId);
+    // An archived lesson is for staff only (C3).
+    if (found.archivedAt && access !== 'all') throw new NotFoundException('Lesson not found');
+    return this.shapeLessonResponse(found, access);
   }
 
   /** The lessons a student may watch, for the student or their guardian
@@ -321,17 +341,16 @@ export class CurriculumService {
     if (!existing) {
       throw new NotFoundException('Lesson not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
-    if (dto.instructorId) {
-      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, existing.schoolId, null);
+    // Decision 311: checked only when the instructor changes.
+    if (dto.instructorId && dto.instructorId !== existing.instructorId) {
+      await this.tenantAuth.assertInstructorAssignable(callerId, dto.instructorId, existing.schoolId, null);
     }
     if (dto.skillIds) {
       await this.assertSkillsBelongToSchool(callerId, dto.skillIds, existing.schoolId);
     }
-    // Only the owner makes a lesson free, or not (Decision 190).
-    if (dto.free !== undefined && dto.free !== existing.free) await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // A new category puts the lesson at its end (null: no category).
@@ -371,13 +390,13 @@ export class CurriculumService {
   // ---------------------------------------------------------------------------
 
   private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>, access: LessonAccess = 'all') {
-    const { skills, category, content, ...rest } = lesson;
+    const { skills, category, content, _count, ...rest } = lesson;
     const locked = this.isLocked(lesson, access);
     // A locked lesson shows what it is, not its content. The database applies
     // the same rule (Decision 208): content it won't give is null either way.
     const shown = locked ? null : content;
     // Only once captionStatus is READY — Cloudflare Stream's own readiness
-    // (isVideoReady) and caption readiness are polled together by
+    // (videoState) and caption readiness are polled together by
     // VideoProcessingPollScheduler and READY only once both are done (that
     // scheduler's own header comment), so this never hands out a URL for a
     // video still mid-transcode. getPublicPlaybackUrl itself never throws
@@ -394,6 +413,8 @@ export class CurriculumService {
       videoRef: shown?.videoRef ?? null,
       captionTrackRef: shown?.captionTrackRef ?? null,
       playbackUrl,
+      // For the portal's comments panel (Decision 326).
+      commentCount: _count.comments,
     };
   }
 
@@ -472,7 +493,7 @@ export class CurriculumService {
 
   async createCategory(callerId: string, schoolId: string, name: string) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await this.assertNameFree(tx, schoolId, name);
@@ -485,7 +506,7 @@ export class CurriculumService {
   async renameCategory(callerId: string, categoryId: string, name: string) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
     if (!existing) throw new NotFoundException('Category not found');
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       await this.assertNameFree(tx, existing.schoolId, name, categoryId);
@@ -493,10 +514,21 @@ export class CurriculumService {
     });
   }
 
+  /** The owner deletes a category; its lessons move to "No category" (the
+   * foreign key sets their categoryId to null), nothing else is lost
+   * (Decision 326). */
+  async deleteCategory(callerId: string, categoryId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
+    if (!existing) throw new NotFoundException('Category not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.deleteMany({ where: { id: categoryId } }));
+  }
+
   /** Every category of the School, in the new order. */
   async orderCategories(callerId: string, schoolId: string, dto: OrderLessonCategoriesDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const all = await tx.lessonCategory.findMany({ where: { schoolId }, select: { id: true } });
@@ -515,7 +547,7 @@ export class CurriculumService {
   async orderCategoryLessons(callerId: string, categoryId: string, dto: OrderCategoryLessonsDto) {
     const category = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lessonCategory.findUnique({ where: { id: categoryId } }));
     if (!category) throw new NotFoundException('Category not found');
-    await this.tenantAuth.assertStaffAtSchool(callerId, category.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, category.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, category.schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const sent = new Set(dto.lessonIds);
@@ -590,6 +622,8 @@ export class CurriculumService {
       const where: Prisma.FavoriteWhereInput = {
         studentId: callerId,
         schoolId,
+        // Kept while archived, so Unarchive brings it back, but not listed (C3).
+        lesson: { archivedAt: null },
         ...(decoded
           ? { OR: [{ createdAt: { lt: decoded.sortValue } }, { createdAt: decoded.sortValue, id: { lt: decoded.id } }] }
           : {}),
@@ -699,6 +733,9 @@ export class CurriculumService {
     await this.assertCanWatchLesson(callerId, undefined, dto.lessonId);
     const itemId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Already in this playlist: nothing to do, like favouriting twice (C16).
+      const already = await tx.playlistItem.findFirst({ where: { playlistId, lessonId: dto.lessonId }, select: PLAYLIST_ITEM_SELECT });
+      if (already) return (await this.withPlaylistLessons(tx, callerId, [already]))[0];
       const last = await tx.playlistItem.aggregate({ where: { playlistId }, _max: { order: true } });
       // studentId denormalized from the playlist we already loaded above, not
       // a second lookup (PlaylistItem's own self-only RLS needs this column
@@ -707,8 +744,7 @@ export class CurriculumService {
         data: { id: itemId, playlistId, lessonId: dto.lessonId, studentId: playlist.studentId, order: (last._max.order ?? -1) + 1 },
       });
       const full = await tx.playlistItem.findUniqueOrThrow({ where: { id: itemId }, select: PLAYLIST_ITEM_SELECT });
-      const access = await this.accessFor(callerId, full.lesson.schoolId);
-      return this.shapePlaylistItem(full, access);
+      return (await this.withPlaylistLessons(tx, callerId, [full]))[0];
     });
   }
 
@@ -734,8 +770,7 @@ export class CurriculumService {
       }
       for (const [order, id] of dto.itemIds.entries()) await tx.playlistItem.update({ where: { id }, data: { order } });
       const full = await tx.playlistItem.findMany({ where: { playlistId }, orderBy: { order: 'asc' }, select: PLAYLIST_ITEM_SELECT });
-      const accessCache = await this.buildAccessCache(callerId, full.map((i) => i.lesson.schoolId));
-      return { items: full.map((i) => this.shapePlaylistItem(i, accessCache.get(i.lesson.schoolId)!)) };
+      return { items: await this.withPlaylistLessons(tx, callerId, full) };
     });
   }
 
@@ -750,11 +785,10 @@ export class CurriculumService {
    */
   async findPlaylistItems(callerId: string, playlistId: string) {
     await this.loadOwnPlaylist(callerId, playlistId);
-    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.playlistItem.findMany({ where: { playlistId }, orderBy: { order: 'asc' }, select: PLAYLIST_ITEM_SELECT }),
+    const items = await this.prismaApp.withTenantContext(callerId, async (tx) =>
+      this.withPlaylistLessons(tx, callerId, await tx.playlistItem.findMany({ where: { playlistId }, orderBy: { order: 'asc' }, select: PLAYLIST_ITEM_SELECT })),
     );
-    const accessCache = await this.buildAccessCache(callerId, items.map((i) => i.lesson.schoolId));
-    return { items: items.map((i) => this.shapePlaylistItem(i, accessCache.get(i.lesson.schoolId)!)) };
+    return { items };
   }
 
   /** Explicit own-row check for a clean 404, same convention as every other
@@ -779,15 +813,30 @@ export class CurriculumService {
     return cache;
   }
 
-  private shapePlaylistItem(item: Prisma.PlaylistItemGetPayload<{ select: typeof PLAYLIST_ITEM_SELECT }>, access: LessonAccess) {
+  /** Shapes playlist items with their Lessons, read in one query. A Lesson
+   * the caller can't read any more (they left its School) or that is archived
+   * comes back unavailable: no title, locked, still removable (C3, C14). */
+  private async withPlaylistLessons(tx: Prisma.TransactionClient, callerId: string, items: PlaylistItemRow[]) {
+    const lessons = await tx.lesson.findMany({ where: { id: { in: items.map((i) => i.lessonId) } }, select: PLAYLIST_LESSON_SELECT });
+    const byId = new Map(lessons.map((l) => [l.id, l]));
+    const accessCache = await this.buildAccessCache(callerId, lessons.map((l) => l.schoolId));
+    return items.map((item) => {
+      const lesson = byId.get(item.lessonId);
+      const access = lesson ? accessCache.get(lesson.schoolId)! : null;
+      return this.shapePlaylistItem(item, lesson && !(lesson.archivedAt && access !== 'all') ? { lesson, access: access! } : null);
+    });
+  }
+
+  private shapePlaylistItem(item: PlaylistItemRow, found: { lesson: PlaylistLesson; access: LessonAccess } | null) {
     return {
       id: item.id,
       playlistId: item.playlistId,
       lessonId: item.lessonId,
       order: item.order,
       createdAt: item.createdAt.toISOString(),
-      lessonTitle: item.lesson.title,
-      locked: this.isLocked(item.lesson, access),
+      available: found !== null,
+      lessonTitle: found?.lesson.title ?? '',
+      locked: found ? this.isLocked(found.lesson, found.access) : true,
     };
   }
 
@@ -797,6 +846,8 @@ export class CurriculumService {
    * locked Lesson can't be commented on. */
   async createComment(callerId: string, schoolId: string, lessonId: string, dto: CreateCommentDto) {
     await this.assertCanWatchLesson(callerId, schoolId, lessonId);
+    // Other people read comments, so a closed School takes no new ones (C17).
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.comment.create({ data: { id: randomUUID(), lessonId, authorId: callerId, schoolId, body: dto.body } }),
     );
@@ -833,8 +884,8 @@ export class CurriculumService {
     });
   }
 
-  /** Author or Staff at the School may delete (Comment's own schema.prisma/
-   * migration comment) — RLS only enforces the tenant boundary for DELETE,
+  /** The author or the School owner may delete (Decision 326; coaches read
+   * comments in the portal but don't remove them) — RLS only enforces the tenant boundary for DELETE,
    * this is the specific-action gate, same "RLS is the tenant boundary, the
    * service layer is the specific-action gate" split this codebase already
    * uses for every other write-authorization check. */
@@ -845,10 +896,10 @@ export class CurriculumService {
     }
     if (existing.authorId !== callerId) {
       try {
-        await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+        await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
-        throw new ForbiddenException('Only the Comment\'s own author, or School staff, may delete it.');
+        throw new ForbiddenException('Only the Comment\'s own author, or the School owner, may delete it.');
       }
     }
     await this.prismaApp.withTenantContext(callerId, (tx) => tx.comment.deleteMany({ where: { id: commentId } }));
@@ -887,17 +938,18 @@ export class CurriculumService {
    * VideoProcessingPollScheduler once AWS Transcribe completes); FAILED =
    * either stage failed (also set by that scheduler).
    *
-   * Staff-gated the same way every other Lesson write in this file is
-   * (assertStaffAtSchool + assertSchoolNotArchived, updateLesson's own
-   * gate) — the controller does not duplicate this check.
+   * Owner-gated the same way every other Lesson write in this file is
+   * (assertSchoolOwner + assertSchoolNotArchived, updateLesson's own
+   * gate, Decision 326) — the controller does not duplicate this check.
    */
   async requestVideoUploadUrl(callerId: string, schoolId: string, lessonId: string) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
     if (!existing || existing.schoolId !== schoolId) {
       throw new NotFoundException('Lesson not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId); // Decision 326
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!this.cloudflareStream.isConfigured()) throw new ServiceUnavailableException(VIDEO_UPLOADS_OFF);
 
     const { uploadUrl, videoRef } = await this.cloudflareStream.createDirectUploadUrl();
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -909,6 +961,12 @@ export class CurriculumService {
       await tx.lesson.update({ where: { id: lessonId }, data: { captionStatus: 'PROCESSING' } });
     });
     return { uploadUrl, videoRef };
+  }
+
+  /** Whether lesson videos can be uploaded on this server yet (C4). */
+  async videoUploadStatus(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    return { enabled: this.cloudflareStream.isConfigured() };
   }
 
   // ---------------------------------------------------------------------------

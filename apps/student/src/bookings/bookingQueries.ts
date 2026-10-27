@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { usePaginatedQuery } from '../lib/usePaginatedQuery';
@@ -20,12 +20,39 @@ export function useMyBookings() {
 export function useBookClass() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (classId: string) => unwrap(apiClient.POST('/v1/classes/{id}/book', { params: { path: { id: classId } }, body: {} })),
+    // `guestPassIds` (Waivers Q9): one of the member's own Friend Passes per
+    // guest; the API checks each belongs to them and covers this class.
+    mutationFn: ({ classId, guestPassIds = [] }: { classId: string; guestPassIds?: string[] }) =>
+      unwrap(
+        apiClient.POST('/v1/classes/{id}/book', {
+          params: { path: { id: classId } },
+          body: guestPassIds.length ? { attendeeMembershipIds: guestPassIds } : {},
+        }),
+      ),
     // Returned (not fire-and-forget) so mutateAsync's caller only resolves once the
     // list has actually been told to refetch — otherwise a screen that awaits the
     // booking and immediately navigates to MyBookingsScreen could still see the
     // pre-booking list for a moment.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
+    onSuccess: () =>
+      Promise.all([queryClient.invalidateQueries({ queryKey: ['my-bookings'] }), queryClient.invalidateQueries({ queryKey: ['friend-passes'] })]),
+  });
+}
+
+/** The member's own Friend Passes at a School that can still pay for a guest. */
+export function useMyFriendPasses(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['friend-passes', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/friend-passes/me', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** A booking's guests: each one's signing link and whether they have signed. */
+export function useBookingGuests(bookingId: string | null) {
+  return useQuery({
+    queryKey: ['booking-guests', bookingId],
+    queryFn: () => unwrap(apiClient.GET('/v1/bookings/{id}/guests', { params: { path: { id: bookingId! } } })),
+    enabled: !!bookingId,
   });
 }
 

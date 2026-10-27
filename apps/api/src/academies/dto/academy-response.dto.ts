@@ -73,6 +73,8 @@ export class AcademyClassDto extends PickType(ClassResponseDto, [
   'description',
   'startDate',
   'endDate',
+  'breakStartAt',
+  'breakEndAt',
   'capacity',
 ] as const) {}
 

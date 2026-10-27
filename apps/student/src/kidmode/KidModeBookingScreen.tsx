@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ApiError } from '@ultm8/api-client';
 import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
+import { useT } from '../i18n/I18nProvider';
 import { useAcademies, useAcademy } from '../academies/academyQueries';
 import { useMyMinors } from '../guardians/guardianQueries';
 import { useMintKidModeToken, useMyBookingDelegations } from '../guardians/bookingDelegationQueries';
@@ -25,6 +25,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'KidModeBooking'>;
  * capability).
  */
 export function KidModeBookingScreen({ navigation }: Props) {
+  const t = useT();
   const delegations = useMyBookingDelegations();
   const minors = useMyMinors();
   const mintToken = useMintKidModeToken();
@@ -50,7 +51,7 @@ export function KidModeBookingScreen({ navigation }: Props) {
   if (delegations.isError && !delegations.data) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(delegations.error, 'Could not load Kid Mode — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(delegations.error, t('kidmode.booking.loadError'))} />
       </Screen>
     );
   }
@@ -61,9 +62,9 @@ export function KidModeBookingScreen({ navigation }: Props) {
   if (eligibleMinors.length === 0) {
     return (
       <Screen>
-        <Text style={{ fontSize: 16, textAlign: 'center' }}>No minor is currently enabled for Kid Mode.</Text>
+        <Text style={{ fontSize: 16, textAlign: 'center' }}>{t('kidmode.booking.noneEnabled')}</Text>
         <Text style={{ color: '#5F6368', fontSize: 13, textAlign: 'center', marginTop: 8 }}>
-          Enable it from a minor's own settings first.
+          {t('kidmode.booking.noneEnabledHint')}
         </Text>
       </Screen>
     );
@@ -76,7 +77,7 @@ export function KidModeBookingScreen({ navigation }: Props) {
       const token = await mintToken.mutateAsync(studentId);
       setKidModeToken(token.accessToken);
     } catch (err) {
-      setActionError(getApiErrorMessage(err, 'Could not start Kid Mode for this minor — please try again.'));
+      setActionError(getApiErrorMessage(err, t('kidmode.booking.startError')));
       setSelectedStudentId(null);
     }
   }
@@ -89,10 +90,10 @@ export function KidModeBookingScreen({ navigation }: Props) {
       await bookClassAsKidMode(kidModeToken, classId, selectedStudentId);
       setBookedClassIds((ids) => [...ids, classId]);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setActionError('This class is full.');
+      if (isWaitlistNext(err)) {
+        setActionError(t('kidmode.booking.classFull'));
       } else {
-        setActionError(getApiErrorMessage(err, 'Could not book this class — please try again.'));
+        setActionError(getApiErrorMessage(err, t('kidmode.booking.bookError')));
       }
     } finally {
       setBookingClassId(null);
@@ -102,7 +103,7 @@ export function KidModeBookingScreen({ navigation }: Props) {
   if (!selectedStudentId || !kidModeToken) {
     return (
       <Screen>
-        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>Who's booking?</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>{t('kidmode.booking.whosBooking')}</Text>
         {eligibleMinors.map((minor) => (
           <Button
             key={minor.studentId}
@@ -122,10 +123,12 @@ export function KidModeBookingScreen({ navigation }: Props) {
     <ScrollView>
       <Screen>
         <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 4 }}>
-          Booking for {selectedMinorName ? `${selectedMinorName.firstName} ${selectedMinorName.surname}` : 'this minor'}
+          {selectedMinorName
+            ? t('kidmode.booking.bookingFor', { name: `${selectedMinorName.firstName} ${selectedMinorName.surname}` })
+            : t('kidmode.booking.bookingForFallback')}
         </Text>
         <Button
-          title="Switch minor"
+          title={t('kidmode.booking.switchMinor')}
           variant="secondary"
           onPress={() => {
             setSelectedStudentId(null);
@@ -138,7 +141,7 @@ export function KidModeBookingScreen({ navigation }: Props) {
 
         {!selectedAcademyId ? (
           <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Pick an academy</Text>
+            <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('kidmode.booking.pickAcademy')}</Text>
             {academies.isLoading ? <ActivityIndicator /> : null}
             {academies.data?.pages
               .flatMap((p) => p.items)
@@ -154,18 +157,18 @@ export function KidModeBookingScreen({ navigation }: Props) {
           </View>
         ) : (
           <View style={{ marginTop: 16 }}>
-            <Button title="Back to academies" variant="secondary" onPress={() => setSelectedAcademyId(null)} />
+            <Button title={t('kidmode.booking.backToAcademies')} variant="secondary" onPress={() => setSelectedAcademyId(null)} />
             {academy.isLoading ? <ActivityIndicator /> : null}
             {(academy.data?.upcomingClasses ?? []).map((c) => (
               <View key={c.id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
                 <Text style={{ fontWeight: '600' }}>{c.title}</Text>
                 <Text style={{ color: '#5F6368', fontSize: 12 }}>
-                  {formatDate(c.startDate)} – {formatDate(c.endDate)}
+                  {t('kidmode.booking.dateRange', { start: formatDate(c.startDate), end: formatDate(c.endDate) })}
                 </Text>
                 {bookedClassIds.includes(c.id) ? (
-                  <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>Booked ✓</Text>
+                  <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('kidmode.booking.booked')}</Text>
                 ) : (
-                  <Button title="Book" onPress={() => handleBook(c.id)} loading={bookingClassId === c.id} />
+                  <Button title={t('kidmode.booking.book')} onPress={() => handleBook(c.id)} loading={bookingClassId === c.id} />
                 )}
               </View>
             ))}

@@ -8,7 +8,7 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useRanks } from '../ranks/rankQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useTimetableSlots, type TimetableSlotResponse } from '../timetable/timetableQueries';
-import { useNotifications } from '../notifications/notificationQueries';
+import { notificationLink, useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
 import { useGradingBoard, useMyGrading, useStudentEligibility, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
 import { BeltChip } from '../grading/BeltChip';
@@ -129,9 +129,10 @@ function StyleSummary({ schoolId, style }: { schoolId: string; style: Discipline
 /** Classes and weekly timetable slots where they are the instructor. */
 function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   const t = useT();
-  const classes = useClasses(schoolId);
+  // Classes review C17: asked of the server, soonest first, so a School with
+  // many Classes doesn't hide this coach's next one past the first page.
+  const classes = useClasses(schoolId, { when: 'upcoming', instructorId: me, limit: 10 });
   const slots = useTimetableSlots(schoolId);
-  const now = Date.now();
   const weekly = useMemo(
     () =>
       (slots.data?.items ?? [])
@@ -139,14 +140,7 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
         .sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime)),
     [slots.data, me],
   );
-  const upcoming = useMemo(
-    () =>
-      (classes.data?.items ?? [])
-        .filter((c: ClassResponse) => c.instructorId === me && new Date(c.endDate).getTime() >= now)
-        .sort((a, b) => a.startDate.localeCompare(b.startDate))
-        .slice(0, 10),
-    [classes.data, me, now],
-  );
+  const upcoming: ClassResponse[] = classes.data?.items ?? [];
   const loading = classes.isLoading || slots.isLoading;
   const error = classes.error ?? slots.error;
   return (
@@ -177,7 +171,10 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {upcoming.map((c) => (
                   <li key={c.id}>
-                    {shortDate(c.startDate)} · {c.title}
+                    {shortDate(c.startDate)} · {c.title} ·{' '}
+                    {/* Classes review C4: a coach had no way to reach these. */}
+                    <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
+                    <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
                   </li>
                 ))}
               </ul>
@@ -193,7 +190,8 @@ function NotificationsSection() {
   const { t, serverText } = useI18n();
   const notifications = useNotifications();
   const items = (notifications.data?.items ?? []).slice(0, 5).map((n) => ({ ...n, ...serverText.notification(n) }));
-  const unread = (notifications.data?.items ?? []).filter((n) => !n.read).length;
+  // Every page, snoozed left out — not just the five-row preview's page.
+  const unread = useNotificationCounts().data?.unread ?? 0;
   return (
     <Section
       title={t('coach.dashboard.notifications')}
@@ -209,7 +207,8 @@ function NotificationsSection() {
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {items.map((n) => (
             <li key={n.id} style={{ fontWeight: n.read ? 400 : 700 }}>
-              {n.title}
+              {/* Decision 355: opens what the notification is about. */}
+              {notificationLink(n) ? <Link to={notificationLink(n)!}>{n.title}</Link> : n.title}
               <div className="ultm8-field__hint" style={{ fontWeight: 400 }}>
                 {n.body}
               </div>

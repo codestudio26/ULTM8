@@ -2,7 +2,10 @@ import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 import { messages as ptBR } from '../src/i18n/messages/pt-BR';
-import { serverMessages as ptBRServer } from '../src/i18n/server/pt-BR';
+import { serverMessages as ptBRServer } from '../../../packages/i18n/src/server/pt-BR';
+import { server as ptBRServerKeys } from '../../../packages/i18n/src/serverKeys/pt-BR';
+import { messages as english } from '../src/i18n/messages/en-GB';
+import { LOCALE_LOADERS } from '../src/i18n/locales';
 
 /**
  * Decision 273 — the portal's language picker switches its text, and a
@@ -78,16 +81,29 @@ test("a job-written notification is shown in the picked language; a School's bro
   const broadcast = await db.notification.create({
     data: { id: randomUUID(), userId: s.ownerId, type: 'SCHOOL_BROADCAST', title: 'A spot opened up', body: 'Gym closed Friday.' },
   });
-  notificationIds.push(job.id, broadcast.id);
+  // A parent's copy of their child's notification (Decision 333).
+  const childCopy = await db.notification.create({
+    data: {
+      id: randomUUID(), userId: s.ownerId, type: 'WAITLIST_SPOT_OPENED', title: 'A spot opened up',
+      body: "For Mia: A spot opened up in Teen Judo. Claim it soon — it goes to the next person on the waitlist if you don't.",
+    },
+  });
+  notificationIds.push(job.id, broadcast.id, childCopy.id);
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
 
-  const expectedTitle = ptBR.server!.notifications!.spotOpenedTitle!;
-  const expectedBody = ptBR.server!.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
-  await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toBeVisible();
+  const expectedTitle = ptBRServerKeys.notifications!.spotOpenedTitle!;
+  const expectedBody = ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
+  // Two rows carry this title: the job's own, and the child's copy below.
+  await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toHaveCount(2);
   await expect(page.getByRole('cell', { name: expectedBody, exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'A spot opened up', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Gym closed Friday.', exact: true })).toBeVisible();
+  const childBody = ptBRServerKeys.notifications!.forChild!.replace('{name}', 'Mia').replace(
+    '{body}',
+    ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Teen Judo'),
+  );
+  await expect(page.getByRole('cell', { name: childBody, exact: true })).toBeVisible();
 });
 
 test("the API's error messages are shown in the picked language, and an untranslated one is never shown in English", async ({ page }) => {
@@ -107,6 +123,20 @@ test("the API's error messages are shown in the picked language, and an untransl
 
   reply = { status: 400, message: 'A message nobody has translated yet.' };
   await save.click();
-  await expect(page.getByText(ptBR.server!.generic!.badRequest!)).toBeVisible();
+  await expect(page.getByText(ptBRServerKeys.generic!.badRequest!)).toBeVisible();
   await expect(page.getByText('A message nobody has translated yet.')).toHaveCount(0);
+});
+
+test('every locale translates every English key — nothing falls back to English', async () => {
+  const keys = (tree: object, prefix = ''): string[] =>
+    Object.entries(tree).flatMap(([k, v]) =>
+      typeof v === 'string' || typeof (v as { other?: unknown }).other === 'string' ? [prefix + k] : keys(v as object, `${prefix}${k}.`),
+    );
+  const lookup = (tree: unknown, key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), tree);
+  const englishKeys = keys(english);
+  for (const [locale, load] of Object.entries(LOCALE_LOADERS)) {
+    const catalogue = await load();
+    expect(englishKeys.filter((k) => lookup(catalogue, k) === undefined), locale).toEqual([]);
+  }
 });

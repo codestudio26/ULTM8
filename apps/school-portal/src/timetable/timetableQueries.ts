@@ -6,22 +6,49 @@ import { apiClient } from '../api';
 export type TimetableSlotResponse = components['schemas']['TimetableSlotResponseDto'];
 export type CreateTimetableSlotInput = components['schemas']['CreateTimetableSlotDto'];
 export type UpdateTimetableSlotInput = components['schemas']['UpdateTimetableSlotDto'];
+export type UpcomingImpactResponse = components['schemas']['UpcomingImpactResponseDto'];
 /** GET /timetable/:id/occurrence's response — the materialized Class, field-for-field
  * (see TimetableService.findOccurrence's own comment for why this reuses
  * ClassResponseDto rather than a new, narrower DTO). */
 export type TimetableOccurrenceResponse = components['schemas']['ClassResponseDto'];
+export type TimetableCalendarResponse = components['schemas']['TimetableCalendarResponseDto'];
+export type TimetableCalendarClass = components['schemas']['TimetableCalendarClassDto'];
 
-/** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors/useClasses (see their own header
- * comments). Decision 226 — always fetches `includeArchived: true`, same
+/** Loads every page (100 at a time), like useInstructors: the list used to
+ * stop at the API's default page of 20, so a School with more slots lost the
+ * rest from the calendar (Decision 332, T14). Decision 226 — always fetches
+ * `includeArchived: true`, same
  * "fetch everything, filter/toggle client-side" convention useBranches
  * already established, so TimetablePage can show an accurate count and let
  * the caller toggle archived slots' visibility without a second request. */
 export function useTimetableSlots(schoolId: string | null) {
   return useQuery({
     queryKey: ['timetable', schoolId],
+    queryFn: async () => {
+      const items: TimetableSlotResponse[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true, limit: 100, cursor } } }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items, nextCursor: null };
+    },
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 353 (T7) — the real Classes on the dates shown (`YYYY-MM-DD`,
+ * at most 62 days), with seats taken, and the dates On slots reach past the
+ * 4-week horizon. Under the ['timetable', schoolId] key, so slot changes and
+ * bookings refresh it. */
+export function useTimetableCalendar(schoolId: string | null, from: string, to: string, branchId?: string) {
+  return useQuery({
+    queryKey: ['timetable', schoolId, 'calendar', from, to, branchId ?? null],
     queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable/calendar', { params: { path: { schoolId: schoolId! }, query: { from, to, branchId } } })),
     enabled: !!schoolId,
   });
 }
@@ -42,6 +69,13 @@ export function useUpdateTimetableSlot(schoolId: string, slotId: string) {
       unwrap(apiClient.PATCH('/v1/timetable/{id}', { params: { path: { id: slotId } }, body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
   });
+}
+
+/** Decision 322 — upcoming Classes from a slot and how many have bookings, read
+ * just before saving an edit that moves them, so it's fetched on demand rather
+ * than kept as a query. */
+export function fetchUpcomingImpact(slotId: string): Promise<UpcomingImpactResponse> {
+  return unwrap(apiClient.GET('/v1/timetable/{id}/upcoming-impact', { params: { path: { id: slotId } } }));
 }
 
 /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by an

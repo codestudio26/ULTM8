@@ -165,19 +165,21 @@ describeIfDb('CurriculumModule — HTTP-level Lesson CRUD, skillIds validation, 
   });
 
   // ---------------------------------------------------------------------------
-  // Write gate — assertStaffAtSchool (Owner/Manager, Branch Staff, Instructor)
+  // Write gate — assertSchoolOwner (Decision 326: coaches read only)
   // ---------------------------------------------------------------------------
 
-  it('a Student cannot create a Lesson; an Instructor can (write gate)', async () => {
-    const forbidden = await request(app.getHttpServer())
-      .post(`/v1/schools/${schoolA.id}/curriculum/lessons`)
-      .set('Authorization', `Bearer ${tokenStudentA}`)
-      .send({ title: 'Denied', format: 'PRERECORDED', skillIds: [skillA.id] });
-    expect(forbidden.status).toBe(403);
+  it('a Student or an Instructor cannot create a Lesson; the School Owner can (write gate)', async () => {
+    for (const token of [tokenStudentA, tokenInstructorA]) {
+      const forbidden = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/curriculum/lessons`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Denied', format: 'PRERECORDED', skillIds: [skillA.id] });
+      expect(forbidden.status).toBe(403);
+    }
 
     const res = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/curriculum/lessons`)
-      .set('Authorization', `Bearer ${tokenInstructorA}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
       .send({
         title: 'Armbar From Guard',
         durationSeconds: 300,
@@ -197,12 +199,14 @@ describeIfDb('CurriculumModule — HTTP-level Lesson CRUD, skillIds validation, 
     expect(res.body.skills).toBeUndefined(); // the raw LessonSkill join rows must not leak onto the wire
   });
 
-  it('a Student cannot update a Lesson; the School Owner can (write gate applies to updateLesson too)', async () => {
-    const forbidden = await request(app.getHttpServer())
-      .patch(`/v1/lessons/${lessonId}`)
-      .set('Authorization', `Bearer ${tokenStudentA}`)
-      .send({ title: 'Denied' });
-    expect(forbidden.status).toBe(403);
+  it('a Student or an Instructor cannot update a Lesson; the School Owner can (write gate applies to updateLesson too)', async () => {
+    for (const token of [tokenStudentA, tokenInstructorA]) {
+      const forbidden = await request(app.getHttpServer())
+        .patch(`/v1/lessons/${lessonId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Denied' });
+      expect(forbidden.status).toBe(403);
+    }
 
     const res = await request(app.getHttpServer())
       .patch(`/v1/lessons/${lessonId}`)

@@ -17,6 +17,7 @@ import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -29,7 +30,6 @@ if (!hasDb) {
 }
 
 const TZ = 'America/Los_Angeles';
-const localToday = () => DateTime.now().setZone(TZ).toISODate() as string;
 const localDaysAgo = (n: number) => DateTime.now().setZone(TZ).minus({ days: n }).toISODate() as string;
 
 describeIfDb('Grading actions (Phase 3a)', () => {
@@ -66,6 +66,7 @@ describeIfDb('Grading actions (Phase 3a)', () => {
     });
     userIds.push(user.id);
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: user.id, schoolId: school.id } });
+    await giveLiveMembership(superuser, school.id, user.id);
     if (at) {
       await superuser.studentRank.create({
         data: {

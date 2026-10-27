@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, IsUrl, Max, Min, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Min, MaxLength, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { LANGUAGES } from '../../../settings/constants/languages';
+import { CURRENCIES } from '../../../settings/constants/currencies';
+
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+/** Decision 337 (F21) — the same lists GET /settings/languages and
+ * /settings/currencies serve the form's pickers from. */
+export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code);
+export const CURRENCY_CODES = CURRENCIES.map((c) => c.code);
+import { PostalAddressDto } from '../../../common/address/postal-address.dto';
 
 /** Postgres INTEGER's own ceiling (2^31-1) — the actual backing column type for
  * Franchise.flatFeeAmount/perHeadcountRate (schema.prisma). A first draft of
@@ -46,8 +57,11 @@ export enum FeeModelDto {
  * elements) — one convention, not re-derived per model.
  */
 export class CreateFranchiseDto {
+  // Decision 337 (F10) — trimmed, and a name of only spaces is rejected.
   @ApiProperty()
+  @Transform(trim)
   @IsString()
+  @IsNotEmpty({ message: "Franchise name can't be empty." })
   @MaxLength(100)
   name!: string;
 
@@ -62,6 +76,15 @@ export class CreateFranchiseDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -86,12 +109,14 @@ export class CreateFranchiseDto {
   @ApiPropertyOptional({ description: 'One of the 4 confirmed languages — free text, matching School.defaultLanguage\'s existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).' })
   @IsOptional()
   @IsString()
+  @IsIn(LANGUAGE_CODES, { message: 'defaultLanguage must be one of the supported language codes.' })
   @MaxLength(100)
   defaultLanguage?: string;
 
   @ApiPropertyOptional({ description: 'An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage.' })
   @IsOptional()
   @IsString()
+  @IsIn(CURRENCY_CODES, { message: 'defaultCurrency must be one of the supported currency codes.' })
   @MaxLength(100)
   defaultCurrency?: string;
 
@@ -149,4 +174,12 @@ export class CreateFranchiseDto {
   @Min(0)
   @Max(POSTGRES_INTEGER_MAX)
   perHeadcountRate?: number;
+
+  /** Decision 350 — the Franchise Owner allows member Schools to show this
+   * Franchise's name and logo. A member School shows them only when its own
+   * School Owner also turns showFranchiseBranding on (both must allow it). */
+  @ApiPropertyOptional({ description: "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)." })
+  @IsOptional()
+  @IsBoolean()
+  shareBrandingWithMembers?: boolean;
 }

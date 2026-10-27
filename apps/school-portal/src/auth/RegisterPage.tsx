@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, TextField } from '@ultm8/ui';
+import { AddressFields, AuthCard, AuthSuccessCard, Button, CurrencyField, ErrorBanner, Field, PasscodeField, PhoneField, SelectField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { languageName } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 
@@ -13,6 +15,8 @@ import { Trans } from '../i18n/Trans';
 export function RegisterPage() {
   const t = useT();
   const navigate = useNavigate();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
   // A coach invite link passes the invited email along (Decision 183).
   const invitedEmail = (useLocation() as { state?: { email?: string } }).state?.email ?? '';
 
@@ -29,8 +33,9 @@ export function RegisterPage() {
     nationality: '',
     language: '',
     currency: '',
-    address: '',
   });
+  const [address, setAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState(false);
@@ -47,6 +52,12 @@ export function RegisterPage() {
       setError(t('auth.register.passcodeMismatch'));
       return;
     }
+    const prepared = preparePostalAddress(address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
 
     setSubmitting(true);
     try {
@@ -65,7 +76,7 @@ export function RegisterPage() {
             nationality: form.nationality || undefined,
             language: form.language || undefined,
             currency: form.currency || undefined,
-            address: form.address || undefined,
+            postalAddress: prepared.postalAddress ?? undefined,
           },
         }),
       );
@@ -150,14 +161,22 @@ export function RegisterPage() {
             <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
           </Field>
           <Field label={t('auth.register.language')} htmlFor="reg-language">
-            <TextField value={form.language} onChange={(e) => set('language', e.target.value)} />
+            <SelectField
+              value={form.language}
+              onChange={(e) => set('language', e.target.value)}
+              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
+            />
           </Field>
           <Field label={t('auth.register.currency')} htmlFor="reg-currency">
-            <TextField value={form.currency} onChange={(e) => set('currency', e.target.value)} />
+            <CurrencyField
+              id="reg-currency"
+              value={form.currency}
+              onChange={(code) => set('currency', code)}
+              options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+              placeholder={t('schools.form.notSet')}
+            />
           </Field>
-          <Field label={t('auth.register.address')} htmlFor="reg-address">
-            <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
-          </Field>
+          <AddressFields idPrefix="reg-address" value={address} onChange={setAddress} errors={addressErrors} />
         </details>
 
         <div style={{ marginTop: 16 }}>

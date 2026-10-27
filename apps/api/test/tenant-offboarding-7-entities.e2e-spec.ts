@@ -233,6 +233,37 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       expect(succeeds.status).toBe(201);
       expect(succeeds.body.archivedAt).toBeTruthy();
     });
+
+    // Decision 293 — the class-occurrence-generation job copies a slot's
+    // branchId onto every Class it creates, so a slot left on an archived
+    // Branch would keep adding Classes to it.
+    it('is blocked (409) while a weekly timetable slot still points at it, and succeeds once the slot is gone', async () => {
+      const branch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'Offboarding Branch — has a slot' } });
+      branchIds.push(branch.id);
+      const slot = await superuser.timetableSlot.create({
+        data: {
+          id: randomUUID(),
+          schoolId: schoolA.id,
+          branchId: branch.id,
+          weekday: 'TUESDAY',
+          startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
+          endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+          title: 'Blocks Branch Archive',
+          activities: ['Yoga'],
+        },
+      });
+      timetableSlotIds.push(slot.id);
+
+      const blocked = await request(app.getHttpServer()).post(`/v1/branches/${branch.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(blocked.status).toBe(409);
+      expect(blocked.body.error.message).toContain('1 weekly timetable slot');
+
+      await superuser.timetableSlot.delete({ where: { id: slot.id } });
+      timetableSlotIds.splice(timetableSlotIds.indexOf(slot.id), 1);
+
+      const succeeds = await request(app.getHttpServer()).post(`/v1/branches/${branch.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(succeeds.status).toBe(201);
+    });
   });
 
   // ===========================================================================
@@ -565,7 +596,7 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       expect(res.status).toBe(404);
     });
 
-    it('is blocked (409) by ANY WaiverSignature row, including an Unsigned assignment row (not just a completed signature)', async () => {
+    it('is archived even with signatures (Decision 354, W2), and every signature row is kept', async () => {
       const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: schoolA.id, title: 'Offboarding Waiver — has a signature', body: 'Terms.' } });
       waiverIds.push(waiver.id);
       const signature = await superuser.waiverSignature.create({
@@ -573,14 +604,10 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       });
       waiverSignatureIds.push(signature.id);
 
-      const blocked = await request(app.getHttpServer()).post(`/v1/waivers/${waiver.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
-      expect(blocked.status).toBe(409);
-
-      await superuser.waiverSignature.delete({ where: { id: signature.id } });
-      waiverSignatureIds.splice(waiverSignatureIds.indexOf(signature.id), 1);
-
-      const succeeds = await request(app.getHttpServer()).post(`/v1/waivers/${waiver.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
-      expect(succeeds.status).toBe(201);
+      const archived = await request(app.getHttpServer()).post(`/v1/waivers/${waiver.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(archived.status).toBe(201);
+      expect(archived.body.archivedAt).not.toBeNull();
+      expect(await superuser.waiverSignature.count({ where: { id: signature.id } })).toBe(1);
     });
 
     // Regression test: GET .../waivers previously bound the whole query

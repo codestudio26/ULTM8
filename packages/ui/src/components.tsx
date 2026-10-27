@@ -58,6 +58,11 @@ function useUiStrings() {
   return React.useContext(UiStringsContext);
 }
 
+/** The locale passed to `UiStringsProvider`, or `undefined` for English. */
+export function useUiLocale(): string | undefined {
+  return React.useContext(UiStringsContext).locale;
+}
+
 export function fillUiString(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
 }
@@ -273,6 +278,11 @@ const PHONE_COUNTRIES: Array<[CountryCode, string, string]> = [
 /** `AA` → 🇦🇦 via the "regional indicator symbol" Unicode block — standard trick,
  * degrades gracefully to the plain two letters on platforms without flag-emoji
  * rendering (older Windows browsers) rather than erroring. */
+/** Decision 276 — [ISO code, English name] for every country above, for the
+ * address form's country picker (`AddressFields`). Same list as the phone
+ * picker so the two never offer different countries. */
+export const COUNTRY_NAMES: ReadonlyArray<readonly [string, string]> = PHONE_COUNTRIES.map(([code, name]) => [code, name] as const);
+
 function flagEmoji(iso2: string): string {
   return iso2
     .toUpperCase()
@@ -1309,6 +1319,46 @@ export function Checkbox({ label, ...rest }: { label: string } & React.InputHTML
   );
 }
 
+/** An on/off setting (DESIGN.md → Settings pages): a button with
+ * `role="switch"`, labelled by `label`, with an optional line under it. */
+export function Switch({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  description?: ReactNode;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="ultm8-switch-row">
+      <div className="ultm8-switch-row__text">
+        <label htmlFor={id} className="ultm8-switch-row__label">
+          {label}
+        </label>
+        {description ? <div className="ultm8-field__hint">{description}</div> : null}
+      </div>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        className={`ultm8-switch${checked ? ' ultm8-switch--on' : ''}`}
+        onClick={() => onChange(!checked)}
+      >
+        <span className="ultm8-switch__knob" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------------- Layout */
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
@@ -1538,7 +1588,7 @@ export function CardGrid({ children }: { children: ReactNode }) {
 
 /* ---------------------------------------------------------------------- Feedback */
 
-export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' }) {
+export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' | 'warning' | 'info' }) {
   const cls = variant === 'default' ? 'ultm8-badge' : `ultm8-badge ultm8-badge--${variant}`;
   return <span className={cls}>{children}</span>;
 }
@@ -1792,11 +1842,11 @@ export function AuthSuccessCard({
 
 /* ---------------------------------------------------------------------- Modal */
 
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return (
     <div className="ultm8-modal-overlay" role="presentation" onClick={onClose}>
       <div
-        className="ultm8-modal"
+        className={wide ? 'ultm8-modal ultm8-modal--wide' : 'ultm8-modal'}
         role="dialog"
         aria-modal="true"
         aria-label={title}

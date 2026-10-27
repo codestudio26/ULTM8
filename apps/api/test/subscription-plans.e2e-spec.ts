@@ -341,8 +341,8 @@ describeIfDb('SubscriptionPlansModule — HTTP-level CRUD, subscribe/cancel gate
     return {
       title: 'Degraded-Gate Fixture Class',
       activities: ['BJJ'],
-      startDate: '2026-10-01T10:00:00.000Z',
-      endDate: '2026-10-01T11:00:00.000Z',
+      startDate: '2036-10-01T10:00:00.000Z',
+      endDate: '2036-10-01T11:00:00.000Z',
       ...overrides,
     };
   }

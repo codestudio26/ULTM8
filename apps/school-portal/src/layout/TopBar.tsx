@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { SelectField } from '@ultm8/ui';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
-import { useNotifications } from '../notifications/notificationQueries';
+import { useNotificationCounts } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
-import { Avatar } from '../lib/Avatar';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
+import { AccountMenu } from './AccountMenu';
+import { GlobalSearch } from './GlobalSearch';
 import type { RoleGrantClaim } from '../auth/types';
 import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
 
@@ -33,23 +34,24 @@ function nativeName(code: string, fallback: string): string {
 /**
  * App-shell header — rendered once by AppShell, above every page's own
  * content, not just Instructors'. Notifications and the profile are wired to
- * real data (GET /notifications/me, GET/PATCH /users/me); language is a real,
+ * real data (GET /notifications/me/counts, GET/PATCH /users/me), and the avatar
+ * block opens the account menu (AccountMenu.tsx); language is a real,
  * working preference backed by the confirmed GET /settings/languages list —
  * picking one saves it to the profile and switches the portal's text
- * (I18nProvider, Decision 273). Search has no backing feature
- * anywhere in this codebase (no search endpoint exists anywhere) — shown
- * disabled rather than omitted or faked, so it reads as "not built yet," not
- * broken.
+ * (I18nProvider, Decision 273). The search box is the Global Search
+ * (GlobalSearch.tsx, Decision 278).
  */
 export function TopBar() {
   const { claims } = useAuth();
-  const { data: notifications } = useNotifications();
+  // The counts endpoint covers every page and leaves snoozed notifications out,
+  // the same Unread number the Notifications page shows.
+  const { data: counts } = useNotificationCounts();
   const { data: me } = useCurrentUser();
   const { data: languages } = useLanguages();
   const updateCurrentUser = useUpdateCurrentUser();
   const { t, locale, rememberLocale } = useI18n();
 
-  const hasUnread = (notifications?.items ?? []).some((n) => !n.read);
+  const hasUnread = (counts?.unread ?? 0) > 0;
 
   return (
     <>
@@ -73,13 +75,7 @@ export function TopBar() {
       </span>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <input
-          disabled
-          className="ultm8-input"
-          placeholder={t('layout.searchPlaceholder')}
-          aria-label={t('layout.searchAria')}
-          style={{ width: 200, minHeight: 40 }}
-        />
+        <GlobalSearch />
 
         <Link
           to="/notifications"
@@ -114,17 +110,7 @@ export function TopBar() {
 
         <SchoolSwitcher />
 
-        {me ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar firstName={me.firstName} surname={me.surname} photoUrl={me.profilePhotoUrl} size={34} />
-            <div style={{ lineHeight: 1.25 }}>
-              <div style={{ fontSize: 14 }}>
-                {me.firstName} {me.surname}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel(claims?.grants, t)}</div>
-            </div>
-          </div>
-        ) : null}
+        {me ? <AccountMenu me={me} roleLabel={roleLabel(claims?.grants, t)} /> : null}
 
         {languages?.length ? (
           <SelectField

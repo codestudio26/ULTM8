@@ -16,6 +16,12 @@ export class SkillResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   description!: string | null;
 
+  @ApiProperty({ description: 'Position in the style\'s skill list, 0 first (Decision 309).' })
+  order!: number;
+
+  @ApiProperty({ description: 'Lessons that teach this skill (Decision 309).' })
+  lessonCount!: number;
+
   @ApiProperty()
   createdAt!: string;
 

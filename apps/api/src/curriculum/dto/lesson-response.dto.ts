@@ -50,6 +50,9 @@ export class LessonResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method\'s own header comment).' })
   playbackUrl!: string | null;
 
+  @ApiProperty({ description: 'Comments on this lesson the caller can read (Decision 326).' })
+  commentCount!: number;
+
   @ApiProperty({ type: [String] })
   skillIds!: string[];
 

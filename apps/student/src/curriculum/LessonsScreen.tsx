@@ -16,6 +16,7 @@ import {
 } from './curriculumQueries';
 import { LessonRow } from './LessonRow';
 import type { AppStackParamList } from '../navigation/types';
+import { useT } from '../i18n/I18nProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Lessons'>;
 
@@ -58,6 +59,7 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
  * found while wiring the Guardian-Lessons fix itself, fixed here by simply not
  * fetching/rendering them rather than showing something misleading. */
 export function LessonsScreen({ route, navigation }: Props) {
+  const t = useT();
   const { claims } = useAuth();
   const viewingStudentId = route.params?.studentId;
   const isGuardianView = !!viewingStudentId;
@@ -85,7 +87,7 @@ export function LessonsScreen({ route, navigation }: Props) {
   if (lessons.isError && items.length === 0) {
     return (
       <View style={{ padding: spacing[4] }}>
-        <ErrorBanner message={getApiErrorMessage(lessons.error, 'Failed to load lessons — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(lessons.error, t('curriculum.lessons.loadError'))} />
       </View>
     );
   }
@@ -109,12 +111,12 @@ export function LessonsScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
-      {!isGuardianView ? <Button title="My Playlists" variant="secondary" onPress={() => navigation.navigate('Playlists')} /> : null}
+      {!isGuardianView ? <Button title={t('curriculum.lessons.myPlaylists')} variant="secondary" onPress={() => navigation.navigate('Playlists')} /> : null}
 
       {continueWatching.length > 0 ? (
         <View style={{ marginTop: spacing[4], marginBottom: spacing[6] }}>
           <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
-            Continue watching
+            {t('curriculum.lessons.continueWatching')}
           </Text>
           {continueWatching.map(({ entry, lesson }) => (
             <Pressable
@@ -127,14 +129,14 @@ export function LessonsScreen({ route, navigation }: Props) {
               ]}
             >
               <Text style={{ fontWeight: fontWeight.heading, fontSize: fontSize.body, color: theme.textPrimary }}>{lesson.title}</Text>
-              <Muted>Continue watching</Muted>
+              <Muted>{t('curriculum.lessons.continueWatchingHint')}</Muted>
             </Pressable>
           ))}
         </View>
       ) : null}
 
       {items.length === 0 ? (
-        <Muted>No lessons yet.</Muted>
+        <Muted>{t('curriculum.lessons.empty')}</Muted>
       ) : (
         schoolIds.map((schoolId) => (
           <View key={schoolId} style={{ marginBottom: spacing[6] }}>
@@ -167,6 +169,7 @@ function SchoolLessons({
   favoritedIds: Set<string>;
   onPressLesson: (lesson: Lesson) => void;
 }) {
+  const t = useT();
   const byCategory = new Map<string, Lesson[]>();
   const uncategorised: Lesson[] = [];
   for (const lesson of lessons) {
@@ -213,7 +216,7 @@ function SchoolLessons({
         <View>
           {categories.length > 0 ? (
             <Text style={{ fontWeight: fontWeight.heading, fontSize: fontSize.footnote, color: theme.textSecondary, marginBottom: spacing[1] }}>
-              Other
+              {t('curriculum.lessons.otherCategory')}
             </Text>
           ) : null}
           {uncategorised

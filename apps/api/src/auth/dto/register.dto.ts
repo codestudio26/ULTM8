@@ -8,11 +8,16 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../common/address/postal-address.dto';
+import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 
 /** Confirmed base User fields (ultm8-domain-rules §3, Spec §6.1) collected at registration. */
 export class RegisterDto {
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 
@@ -79,4 +84,13 @@ export class RegisterDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiProperty({ required: false, type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, Switch, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -12,6 +12,15 @@ const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
 const FEE_RATE_CHANGE_STRATEGIES = ['MIGRATE_NEXT_CYCLE', 'MIGRATE_IMMEDIATE'] as const;
 
+/** Decision 337 (F5) — fees are typed in US dollars and cents (e.g. 50.00), the
+ * same way the Refund box already takes them; the API stores and bills cents. */
+function centsToDollarsInput(cents: number | null | undefined): string {
+  return cents == null ? '' : (cents / 100).toFixed(2);
+}
+function dollarsInputToCents(value: string): number | undefined {
+  return value.trim() === '' ? undefined : Math.round(Number(value) * 100);
+}
+
 export interface FranchiseFormValues {
   name: string;
   /** `null` means "cleared" — UpdateFranchiseDto accepts `null` on these
@@ -19,7 +28,7 @@ export interface FranchiseFormValues {
    * page-level caller maps `null` back to `undefined` for the CREATE path,
    * which has nothing to clear. */
   mobileNumber?: string | null;
-  address?: string | null;
+  postalAddress?: PostalAddress | null;
   type?: string | null;
   activities: string[];
   facilities: string[];
@@ -29,12 +38,16 @@ export interface FranchiseFormValues {
   logoUrl?: string | null;
   bannerUrl?: string | null;
   feeModel: (typeof FEE_MODELS)[number];
-  /** Deliberately never sent as `null` from this form — see
+  /** In cents, as the API takes it (the form itself shows dollars, Decision 337).
+   * Deliberately never sent as `null` from this form — see
    * UpdateFranchiseDto's own header comment on why clearing a configured fee
    * rate is out of scope this phase. Left blank means "don't change it"
    * (omitted from the request), not "clear it". */
   flatFeeAmount?: number;
   perHeadcountRate?: number;
+  /** Decision 350 — member Schools may show this Franchise's name and logo
+   * (each School Owner must also turn it on). */
+  shareBrandingWithMembers: boolean;
   /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */
   feeRateChangeStrategy?: (typeof FEE_RATE_CHANGE_STRATEGIES)[number];
 }
@@ -76,7 +89,7 @@ export function FranchiseFormModal({
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     mobileNumber: initial?.mobileNumber ?? '',
-    address: initial?.address ?? '',
+    address: postalAddressFromRecord(initial, guessDefaultCountry()),
     type: initial?.type ?? '',
     activities: initial?.activities?.join(', ') ?? '',
     facilities: initial?.facilities?.join(', ') ?? '',
@@ -86,10 +99,13 @@ export function FranchiseFormModal({
     logoUrl: initial?.logoUrl ?? '',
     bannerUrl: initial?.bannerUrl ?? '',
     feeModel: (initial?.feeModel as (typeof FEE_MODELS)[number]) ?? 'FLAT',
-    flatFeeAmount: initial?.flatFeeAmount?.toString() ?? '',
-    perHeadcountRate: initial?.perHeadcountRate?.toString() ?? '',
+    flatFeeAmount: centsToDollarsInput(initial?.flatFeeAmount),
+    perHeadcountRate: centsToDollarsInput(initial?.perHeadcountRate),
+    shareBrandingWithMembers: initial?.shareBrandingWithMembers ?? false,
   });
   const [feeRateChangeStrategy, setFeeRateChangeStrategy] = useState<(typeof FEE_RATE_CHANGE_STRATEGIES)[number] | ''>('');
+  const [initialAddress] = useState(() => (initial ? postalAddressFromRecord(initial, guessDefaultCountry()) : undefined));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
 
   // Decision 99's own follow-up — mirrors FranchisesService.update()'s own
@@ -98,22 +114,42 @@ export function FranchiseFormModal({
   // Franchise can hold a configured rate for a feeModel it isn't currently
   // active under). Required only while editing (a brand-new Franchise has no
   // Schools to migrate) and only once at least one School is already billing.
-  const flatChanged = initial && form.flatFeeAmount !== '' && Number(form.flatFeeAmount) !== (initial.flatFeeAmount ?? null);
-  const perHeadcountChanged = initial && form.perHeadcountRate !== '' && Number(form.perHeadcountRate) !== (initial.perHeadcountRate ?? null);
+  const flatCents = dollarsInputToCents(form.flatFeeAmount);
+  const perHeadcountCents = dollarsInputToCents(form.perHeadcountRate);
+  const flatChanged = initial && flatCents !== undefined && flatCents !== (initial.flatFeeAmount ?? null);
+  const perHeadcountChanged = initial && perHeadcountCents !== undefined && perHeadcountCents !== (initial.perHeadcountRate ?? null);
   const feeRateChangeDecisionRequired = !!initial && (flatChanged || perHeadcountChanged) && schoolsAlreadyBillingCount > 0;
+  // Decision 337 (F1) — the fee model can't change once any School is billing;
+  // the server refuses it too.
+  const feeModelLocked = !!initial && schoolsAlreadyBillingCount > 0;
+  // Decision 337 (F7) — the amount for the chosen fee model is required on a new
+  // Franchise, and whenever the fee model is changed. An existing Franchise that
+  // never had one can still be saved as it is.
+  const feeModelChanged = !!initial && form.feeModel !== initial.feeModel;
+  const chosenFeeMissing = form.feeModel === 'FLAT' ? flatCents === undefined && initial?.flatFeeAmount == null : perHeadcountCents === undefined && initial?.perHeadcountRate == null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if ((!initial || feeModelChanged) && chosenFeeMissing) {
+      setError(form.feeModel === 'FLAT' ? t('franchises.form.flatFeeRequired') : t('franchises.form.perHeadcountRequired'));
+      return;
+    }
     if (feeRateChangeDecisionRequired && !feeRateChangeStrategy) {
       setError(t('franchises.form.rateChangeRequired', { count: schoolsAlreadyBillingCount }));
       return;
     }
+    const prepared = preparePostalAddress(form.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await onSubmit({
         name: form.name,
         mobileNumber: form.mobileNumber || null,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         type: form.type || null,
         activities: form.activities.split(',').map((s) => s.trim()).filter(Boolean),
         facilities: form.facilities.split(',').map((s) => s.trim()).filter(Boolean),
@@ -123,8 +159,9 @@ export function FranchiseFormModal({
         logoUrl: form.logoUrl || null,
         bannerUrl: form.bannerUrl || null,
         feeModel: form.feeModel,
-        flatFeeAmount: form.flatFeeAmount ? Number(form.flatFeeAmount) : undefined,
-        perHeadcountRate: form.perHeadcountRate ? Number(form.perHeadcountRate) : undefined,
+        flatFeeAmount: flatCents,
+        perHeadcountRate: perHeadcountCents,
+        shareBrandingWithMembers: form.shareBrandingWithMembers,
         feeRateChangeStrategy: feeRateChangeDecisionRequired && feeRateChangeStrategy ? feeRateChangeStrategy : undefined,
       });
     } catch (err) {
@@ -146,9 +183,13 @@ export function FranchiseFormModal({
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label={t('franchises.form.addressLabel')} htmlFor="franchise-address">
-          <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-        </Field>
+        <AddressFields
+          idPrefix="franchise-address"
+          value={form.address}
+          onChange={(address) => setForm((f) => ({ ...f, address }))}
+          errors={addressErrors}
+          legacy={hasLegacyAddressOnly(initial) && !form.address.country}
+        />
         <Field label={t('franchises.form.typeLabel')} htmlFor="franchise-type">
           <TextField value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
         </Field>
@@ -191,6 +232,13 @@ export function FranchiseFormModal({
             }
           />
         </Field>
+        <Switch
+          id="franchise-share-branding"
+          label={t('franchises.form.shareBrandingLabel')}
+          description={t('franchises.form.shareBrandingHint')}
+          checked={form.shareBrandingWithMembers}
+          onChange={(shareBrandingWithMembers) => setForm((f) => ({ ...f, shareBrandingWithMembers }))}
+        />
         <Field label={t('franchises.form.bannerLabel')} htmlFor="franchise-banner">
           <PhotoUploadField
             value={form.bannerUrl}
@@ -204,8 +252,14 @@ export function FranchiseFormModal({
             }
           />
         </Field>
-        <Field label={t('franchises.form.feeModelLabel')} htmlFor="franchise-feeModel">
+        <Field
+          label={t('franchises.form.feeModelLabel')}
+          htmlFor="franchise-feeModel"
+          hint={feeModelLocked ? t('franchises.form.feeModelLocked') : undefined}
+        >
           <SelectField
+            id="franchise-feeModel"
+            disabled={feeModelLocked}
             value={form.feeModel}
             onChange={(e) => setForm((f) => ({ ...f, feeModel: e.target.value as (typeof FEE_MODELS)[number] }))}
             options={[
@@ -220,8 +274,10 @@ export function FranchiseFormModal({
           hint={initial ? t('franchises.form.flatFeeHintEditing') : t('franchises.form.flatFeeHint')}
         >
           <TextField
+            id="franchise-flatFee"
             type="number"
             min={0}
+            step={0.01}
             value={form.flatFeeAmount}
             onChange={(e) => setForm((f) => ({ ...f, flatFeeAmount: e.target.value }))}
           />
@@ -232,8 +288,10 @@ export function FranchiseFormModal({
           hint={initial ? t('franchises.form.perHeadcountHintEditing') : t('franchises.form.perHeadcountHint')}
         >
           <TextField
+            id="franchise-perHeadcount"
             type="number"
             min={0}
+            step={0.01}
             value={form.perHeadcountRate}
             onChange={(e) => setForm((f) => ({ ...f, perHeadcountRate: e.target.value }))}
           />
