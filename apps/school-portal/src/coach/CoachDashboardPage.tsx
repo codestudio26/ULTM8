@@ -207,7 +207,7 @@ function NotificationsSection() {
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {items.map((n) => (
             <li key={n.id} style={{ fontWeight: n.read ? 400 : 700 }}>
-              {/* Decision 352: opens what the notification is about. */}
+              {/* Decision 355: opens what the notification is about. */}
               {notificationLink(n) ? <Link to={notificationLink(n)!}>{n.title}</Link> : n.title}
               <div className="ultm8-field__hint" style={{ fontWeight: 400 }}>
                 {n.body}

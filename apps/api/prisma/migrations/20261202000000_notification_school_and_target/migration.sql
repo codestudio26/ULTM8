@@ -1,4 +1,4 @@
--- Decision 352: each Notification can carry the School it came from (shown as
+-- Decision 355: each Notification can carry the School it came from (shown as
 -- a label) and the thing it is about (opened when the notification is
 -- clicked). All four are nullable: older rows, and notifications with no
 -- School or nothing to open, simply have none. `schoolName` is written by the

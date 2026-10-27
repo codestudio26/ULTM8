@@ -566,7 +566,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     });
   });
 
-  describe('POST /notifications/me/read-all (Decision 352)', () => {
+  describe('POST /notifications/me/read-all (Decision 355)', () => {
     it("marks every unread Notification the caller has read, on every page, snoozed ones too; leaves other callers' alone", async () => {
       const rows = await Promise.all(
         Array.from({ length: 25 }, (_, i) =>
@@ -733,7 +733,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       expect(created).not.toBeNull();
       expect(created!.userId).toBe(studentA.id);
       expect(created!.title).toBe('Waiver signature requested');
-      // Decision 352: labelled with its School, and it opens that waiver.
+      // Decision 355: labelled with its School, and it opens that waiver.
       expect(created!).toMatchObject({ schoolId: school.id, schoolName: 'Notifications HTTP School', targetType: 'WAIVER', targetId: waiver.id });
       expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Waiver signature requested', studentAJob.data.body);
       notificationIds.push(created!.id);

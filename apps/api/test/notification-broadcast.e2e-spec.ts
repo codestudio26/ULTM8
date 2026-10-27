@@ -457,7 +457,7 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
       });
       expect(result.recipientCount).toBe(1);
       expect(recipientIdsFromLastCall()).toEqual([studentClassBooker.id]);
-      // Decision 352: labelled with the School, and opens the Class.
+      // Decision 355: labelled with the School, and opens the Class.
       const job = fakeQueue.addBulk.mock.calls[0][0][0];
       expect(job.data).toMatchObject({ schoolId: school.id, targetType: 'CLASS', targetId: classInBranchX.id });
     });

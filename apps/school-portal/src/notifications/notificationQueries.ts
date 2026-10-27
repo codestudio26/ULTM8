@@ -51,7 +51,7 @@ export function useMarkNotificationRead() {
   });
 }
 
-/** Decision 352 — "Mark all read": every unread notification the caller has,
+/** Decision 355 — "Mark all read": every unread notification the caller has,
  * on every page. Same list + counts invalidation as useMarkNotificationRead. */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
@@ -64,7 +64,7 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-/** Decision 352 — the portal page a notification opens when clicked, or null
+/** Decision 355 — the portal page a notification opens when clicked, or null
  * when it has nothing to open. */
 export function notificationLink(n: Pick<NotificationResponse, 'targetType' | 'targetId'>): string | null {
   switch (n.targetType) {

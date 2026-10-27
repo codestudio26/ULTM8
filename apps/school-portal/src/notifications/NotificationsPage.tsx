@@ -133,7 +133,7 @@ export function NotificationsPage() {
     }
   }
 
-  /** Decision 352 — opening a notification also marks it read. */
+  /** Decision 355 — opening a notification also marks it read. */
   function handleOpen(n: NotificationResponse, to: string) {
     if (!n.read) markRead.mutate(n.id);
     navigate(to);
@@ -152,7 +152,7 @@ export function NotificationsPage() {
         subtitle={t('notifications.subtitle')}
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {/* Decision 352 — every unread notification, on every page. */}
+            {/* Decision 355 — every unread notification, on every page. */}
             <Button
               variant="secondary"
               onClick={handleMarkAllRead}
@@ -232,7 +232,7 @@ export function NotificationsPage() {
               {
                 key: 'title',
                 header: t('notifications.columnTitle'),
-                // Decision 352: the title opens what the notification is about,
+                // Decision 355: the title opens what the notification is about,
                 // and the School it came from sits under it.
                 render: (n) => {
                   const to = notificationLink(n);

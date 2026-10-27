@@ -13,7 +13,7 @@ import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications 
 type Notification = components['schemas']['NotificationResponseDto'];
 type Props = NativeStackScreenProps<AppStackParamList, 'Notifications'>;
 
-/** Decision 352 — the screen a notification opens, or null when there is
+/** Decision 355 — the screen a notification opens, or null when there is
  * none in this app (CANCELLATIONS is a School staff page). */
 type Target = 'MyBookings' | 'Waivers' | 'TransactionHistory' | 'MyGrading';
 function notificationTarget(n: Notification): Target | null {
@@ -77,7 +77,7 @@ function NotificationRow({ notification: raw, onOpen }: { notification: Notifica
           />
         ) : null}
       </View>
-      {/* Decision 352: the School it came from. */}
+      {/* Decision 355: the School it came from. */}
       {notification.schoolName ? <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 2 }}>{notification.schoolName}</Text> : null}
       <Text style={{ color: '#5F6368', marginTop: 2 }}>{notification.body}</Text>
       <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 4 }}>{formatDateTime(notification.createdAt)}</Text>
@@ -102,7 +102,7 @@ export function NotificationsScreen({ navigation }: Props) {
       header={
         anyUnread || markAllRead.isError ? (
           <View style={{ marginBottom: 8 }}>
-            {/* Decision 352 — every unread notification, not only the loaded ones. */}
+            {/* Decision 355 — every unread notification, not only the loaded ones. */}
             <Button title={t('notifications.list.markAllRead')} variant="secondary" onPress={() => markAllRead.mutate()} loading={markAllRead.isPending} />
             {markAllRead.isError ? (
               <InlineError message={getApiErrorMessage(markAllRead.error, t('notifications.list.markAllReadFailed'))} />

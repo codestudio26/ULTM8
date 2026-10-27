@@ -159,7 +159,7 @@ export class NotificationsService {
   }
 
   /**
-   * POST /notifications/me/read-all (Decision 352) — "Mark all read": every
+   * POST /notifications/me/read-all (Decision 355) — "Mark all read": every
    * unread, not-deleted Notification the caller has, across every page,
    * snoozed ones included. `readAt` is set to now: an unread row has never
    * been read (there is no way back to unread), so this is its first read,

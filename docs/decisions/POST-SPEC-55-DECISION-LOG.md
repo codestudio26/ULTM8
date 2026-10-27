@@ -5563,7 +5563,7 @@ User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
 
 ---
 
-## Decision 352 — Notifications: Mark all read, click to open, and a School label
+## Decision 355 — Notifications: Mark all read, click to open, and a School label
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 277, 333
 

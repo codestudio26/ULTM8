@@ -117,7 +117,7 @@ export class ChargebackPatternRestrictionProcessor extends WorkerHost {
           body,
           type: 'CHARGEBACK_PATTERN_RESTRICTION',
           // An Owner of more than one of the Student's Schools gets one notice,
-          // labelled with the first (Decision 352).
+          // labelled with the first (Decision 355).
           ...(grant.schoolId ? { schoolId: grant.schoolId } : {}),
           targetType: 'PAYMENT',
         } satisfies NotificationFanoutJobData,

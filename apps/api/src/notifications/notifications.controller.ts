@@ -62,7 +62,7 @@ export class NotificationsController {
     return this.notificationsService.clearRead(user.sub);
   }
 
-  /** Decision 352 — "Mark all read". Static segment before the `:id` routes,
+  /** Decision 355 — "Mark all read". Static segment before the `:id` routes,
    * same convention as `me/clear-read` above. */
   @ApiOkResponse({ type: MarkAllReadResponseDto })
   @HttpCode(200)

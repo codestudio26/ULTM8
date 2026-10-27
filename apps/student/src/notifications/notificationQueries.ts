@@ -43,7 +43,7 @@ export function useMarkNotificationRead() {
   });
 }
 
-/** Decision 352 — "Mark all read": every unread notification, on every page,
+/** Decision 355 — "Mark all read": every unread notification, on every page,
  * so the whole list is refetched rather than patched page by page. */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();

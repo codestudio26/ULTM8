@@ -4958,16 +4958,16 @@ export interface components {
             snoozedUntil?: string | null;
             /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
             readAt?: string | null;
-            /** @description The School this notification came from (Decision 352), or null. */
+            /** @description The School this notification came from (Decision 355), or null. */
             schoolId?: string | null;
-            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 352). */
+            /** @description That School's name as it was when the notification was sent, shown as a label (Decision 355). */
             schoolName?: string | null;
             /**
-             * @description What clicking the notification opens (Decision 352), or null for nothing.
+             * @description What clicking the notification opens (Decision 355), or null for nothing.
              * @enum {string|null}
              */
             targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | null;
-            /** @description The Class or Waiver id, for CLASS and WAIVER targets (Decision 352). */
+            /** @description The Class or Waiver id, for CLASS and WAIVER targets (Decision 355). */
             targetId?: string | null;
         };
         NotificationListResponseDto: {

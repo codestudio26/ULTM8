@@ -81,7 +81,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
   async process(job: Job<NotificationFanoutJobData>): Promise<void> {
     const { notificationId, userId, title, body, type, guardianCopyOf, schoolId, targetType, targetId } = job.data;
 
-    // Decision 352: the School's name is copied onto the row now, since the
+    // Decision 355: the School's name is copied onto the row now, since the
     // reader can't always see the School itself (see the Notification model).
     const school = schoolId ? await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true } }) : null;
     const extra = { schoolId: schoolId ?? null, schoolName: school?.name ?? null, targetType: targetType ?? null, targetId: targetId ?? null };

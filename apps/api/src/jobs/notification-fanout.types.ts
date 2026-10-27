@@ -25,7 +25,7 @@ export interface NotificationFanoutJobData {
   /** Set on a parent's copy of a child's notification (the child's userId) —
    * see NotificationFanoutProcessor. A copy is never copied on again. */
   guardianCopyOf?: string;
-  /** Decision 352 — the School this is from (the fanout job looks up its
+  /** Decision 355 — the School this is from (the fanout job looks up its
    * name for the label) and what clicking it opens. See the Notification
    * model's own comments. */
   schoolId?: string;
@@ -33,6 +33,6 @@ export interface NotificationFanoutJobData {
   targetId?: string;
 }
 
-/** Decision 352 — what a notification opens when clicked. CLASS and WAIVER
+/** Decision 355 — what a notification opens when clicked. CLASS and WAIVER
  * carry the item's id; PAYMENT, CANCELLATIONS and GRADING open a list page. */
 export type NotificationTargetType = 'CLASS' | 'WAIVER' | 'PAYMENT' | 'CANCELLATIONS' | 'GRADING';

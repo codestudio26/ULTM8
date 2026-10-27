@@ -259,7 +259,7 @@ test('Broadcast to one class — the Owner ticks who on the class list gets it (
   expect(sent).toMatchObject({ audience: 'CLASS', classId: cls.id, classAudience: ['WAITLIST', 'CANCELLED'] });
 });
 
-test('Mark all read, the School label, and clicking a notification opens its class (Decision 352)', async ({ page }) => {
+test('Mark all read, the School label, and clicking a notification opens its class (Decision 355)', async ({ page }) => {
   const cls = await db.class.create({
     data: { id: randomUUID(), schoolId: s.schoolId, title: 'Open Mat', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
   });

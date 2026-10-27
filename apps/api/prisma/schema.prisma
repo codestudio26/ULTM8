@@ -3925,7 +3925,7 @@ model Notification {
   /// DELETE grant on this table).
   deletedAt DateTime?
 
-  /// Developer-level addition (Decision 352), same treatment as the fields
+  /// Developer-level addition (Decision 355), same treatment as the fields
   /// above. The School this notification came from, shown as a label.
   /// `schoolName` is copied in by notification-fanout when the row is
   /// written — the reader can't always see the School row under RLS (a
@@ -3935,7 +3935,7 @@ model Notification {
   schoolId   String?
   schoolName String?
 
-  /// Developer-level addition (Decision 352): what clicking the notification
+  /// Developer-level addition (Decision 355): what clicking the notification
   /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS or GRADING
   /// (a free string, like `type`), `targetId` the Class/Waiver id where the
   /// app has a page for one item. Each app maps these to its own screens.

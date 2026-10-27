@@ -39,21 +39,21 @@ export class NotificationResponseDto {
   })
   readAt!: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'The School this notification came from (Decision 352), or null.' })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The School this notification came from (Decision 355), or null.' })
   schoolId!: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: "That School's name as it was when the notification was sent, shown as a label (Decision 352)." })
+  @ApiPropertyOptional({ type: String, nullable: true, description: "That School's name as it was when the notification was sent, shown as a label (Decision 355)." })
   schoolName!: string | null;
 
   @ApiPropertyOptional({
     type: String,
     nullable: true,
     enum: ['CLASS', 'WAIVER', 'PAYMENT', 'CANCELLATIONS', 'GRADING'],
-    description: 'What clicking the notification opens (Decision 352), or null for nothing.',
+    description: 'What clicking the notification opens (Decision 355), or null for nothing.',
   })
   targetType!: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Class or Waiver id, for CLASS and WAIVER targets (Decision 352).' })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Class or Waiver id, for CLASS and WAIVER targets (Decision 355).' })
   targetId!: string | null;
 }
 

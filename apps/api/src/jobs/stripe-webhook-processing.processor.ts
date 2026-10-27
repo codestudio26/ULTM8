@@ -1264,7 +1264,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     outcome: { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean },
     stripeEventId: string,
     chargeLabel: string,
-    /** A Membership payment's School (Decision 352: labelled, and opens
+    /** A Membership payment's School (Decision 355: labelled, and opens
      * Transactions); a franchise fee charge has none. */
     schoolId?: string,
   ): NotificationFanoutJobData {
