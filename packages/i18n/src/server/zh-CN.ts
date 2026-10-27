@@ -443,4 +443,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "已存在名为“{v1}”的项目（已归档 — 请改为取消归档）。",
   "The new name \"{v1}\" must be in classTypesOffered.": "新名称“{v1}”必须包含在 classTypesOffered 中。",
   "This style already has a skill called \"{v1}\".": "此流派已有名为“{v1}”的技能。",
+  "Type the School's name exactly as it is to close it.": "请准确输入学校名称以将其关闭。",
+  "Closing a School is not available during an impersonation session (Decision 39).": "模拟登录会话期间无法关闭学校（Decision 39）。",
 };

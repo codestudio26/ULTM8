@@ -369,6 +369,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "İsteği iptal et",
       requestDeclined: "Franchise {id} katılma isteğinizi reddetti. Yeniden isteyebilirsiniz.",
     },
+    close: {
+      title: "Bu okulu kapat",
+      explanation: "Kapatmak, bu okulun ULTM8 aboneliğini ve her öğrencinin üyelik aboneliğini zaten ödenmiş dönemin sonunda bitirir ve franchise ücretlerini durdurur. Okul salt okunur olur ve 90 gün sonra kalıcı olarak silinir; o zamana kadar yalnızca ULTM8 desteği yeniden açabilir. İadeler otomatik değildir: kapatmadan önce İşlemler'den yapın.",
+      button: "Okulu kapat",
+      confirmTitle: "Bu okul kapatılsın mı?",
+      confirmBody: "Bunu kendiniz geri alamazsınız. Onaylamak için okulun adını ve şifrenizi yazın.",
+      nameLabel: "Onaylamak için \"{name}\" yazın",
+      passcodeLabel: "6 haneli şifreniz",
+      closedTitle: "Bu okul kapalı",
+      closedBody: "{date} tarihinde kalıcı olarak silinecek. O zamana kadar yalnızca ULTM8 desteği yeniden açabilir.",
+    },
   },
   branches: {
     cancellations: {

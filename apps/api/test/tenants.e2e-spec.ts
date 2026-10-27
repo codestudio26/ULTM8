@@ -134,6 +134,9 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   afterAll(async () => {
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: [schoolA.id, schoolB.id] } } });
     await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+    // Decision 364's join/leave notices are written by the fanout worker; let it finish first.
+    await new Promise((r) => setTimeout(r, 1500));
+    await superuser.notification.deleteMany({ where: { userId: { in: [ownerA.id, ownerB.id, verifiedInvitee.id] } } });
     await superuser.user.deleteMany({ where: { id: { in: [ownerA.id, ownerB.id, verifiedInvitee.id] } } });
     await superuser.school.deleteMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });
     await superuser.$disconnect();

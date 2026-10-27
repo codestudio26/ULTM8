@@ -105,3 +105,21 @@ export function useCancelFranchiseJoinRequest(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
   });
 }
+
+/** Decision 364 — the School Owner closes their own School: re-checks the
+ * passcode first (POST /auth/step-up/verify), then closes with that proof. */
+export function useCloseSchool(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ confirmName, passcode }: { confirmName: string; passcode: string }) => {
+      const { stepUpToken } = await unwrap(apiClient.POST('/v1/auth/step-up/verify', { body: { passcode } }));
+      return unwrap(
+        apiClient.POST('/v1/schools/{id}/close', {
+          params: { path: { id: schoolId }, header: { 'x-step-up-token': stepUpToken } },
+          body: { confirmName },
+        }),
+      );
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}

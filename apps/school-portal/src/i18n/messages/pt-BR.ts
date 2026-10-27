@@ -369,6 +369,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "Cancelar pedido",
       requestDeclined: "A franquia {id} recusou seu pedido para entrar. Você pode pedir de novo.",
     },
+    close: {
+      title: "Encerrar esta escola",
+      explanation: "Encerrar termina a assinatura da ULTM8 desta escola e a assinatura de plano de cada aluno no fim do período já pago, e interrompe as taxas de franquia. A escola fica somente leitura e é excluída definitivamente após 90 dias; até lá, só o suporte da ULTM8 pode reabri-la. Reembolsos não são automáticos: faça-os em Transações antes de encerrar.",
+      button: "Encerrar escola",
+      confirmTitle: "Encerrar esta escola?",
+      confirmBody: "Você não pode desfazer isso sozinho. Digite o nome da escola e sua senha para confirmar.",
+      nameLabel: "Digite \"{name}\" para confirmar",
+      passcodeLabel: "Sua senha de 6 dígitos",
+      closedTitle: "Esta escola está encerrada",
+      closedBody: "Ela será excluída definitivamente em {date}. Até lá, só o suporte da ULTM8 pode reabri-la.",
+    },
   },
   branches: {
     cancellations: {

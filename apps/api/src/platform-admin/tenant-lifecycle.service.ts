@@ -5,6 +5,11 @@ import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-adm
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelOpenJoinRequests, stopFranchiseFeeBilling } from '../franchise-fees/stop-franchise-fee-billing';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { stopPlatformSubscription, stopSchoolBilling } from '../tenants/stop-tenant-billing';
+import { memberSchoolsOf, sendFranchiseNotice } from '../tenants/franchises/franchise-notifications';
 import { AuditLogService, AuditAction } from './audit-log.service';
 import { CloseTenantAccountDto } from './dto/close-tenant-account.dto';
 
@@ -72,6 +77,7 @@ export class TenantLifecycleService {
     private readonly auditLog: AuditLogService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly stripeClient: StripeClientService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   /** Decision 337 (F16) — see stopFranchiseFeeBilling's own comment. */
@@ -134,6 +140,9 @@ export class TenantLifecycleService {
     await this.stopFranchiseFeeBilling({ schoolId });
     // Decision 352 — a closed School's open request to join a Franchise lapses.
     await this.prismaJobs.franchiseJoinRequest.updateMany({ where: { schoolId, status: 'PENDING' }, data: { status: 'CANCELLED', decidedAt: new Date() } });
+    // Decision 364 — Students' Subscriptions and the School's own ULTM8
+    // subscription end with their paid period.
+    await stopSchoolBilling(this.prismaJobs, this.stripeClient, this.logger, schoolId, null);
 
     return updated;
   }
@@ -205,6 +214,7 @@ export class TenantLifecycleService {
       throw new BadRequestException("confirmName must exactly match the Franchise's current name.");
     }
 
+    const members = await memberSchoolsOf(this.prismaJobs, franchiseId);
     const now = new Date();
     const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
     const { count } = await this.prismaPlatformAdmin.franchise.updateMany({
@@ -229,6 +239,18 @@ export class TenantLifecycleService {
 
     await this.stopFranchiseFeeBilling({ franchiseId });
     await cancelOpenJoinRequests(this.prismaJobs, franchiseId);
+    // Decision 364 — the Franchise's own ULTM8 subscription ends with its paid
+    // period, and each member School's Owners are told.
+    await stopPlatformSubscription(this.prismaJobs, this.stripeClient, this.logger, { franchiseId });
+    for (const member of members) {
+      await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+        kind: 'FRANCHISE_CLOSED',
+        franchiseId,
+        franchiseName: franchise.name,
+        schoolId: member.id,
+        schoolName: member.name,
+      });
+    }
 
     return updated;
   }

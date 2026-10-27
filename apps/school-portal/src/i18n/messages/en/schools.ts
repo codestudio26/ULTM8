@@ -106,4 +106,15 @@ export const schools = {
     cancelRequest: 'Cancel request',
     requestDeclined: 'Franchise {id} declined your request to join. You can ask again.',
   },
+  close: {
+    title: 'Close this School',
+    explanation: "Closing ends this School's ULTM8 subscription and every student's membership subscription at the end of the period already paid for, and stops franchise fees. The School becomes read-only and is deleted for good after 90 days; until then only ULTM8 support can reopen it. Refunds aren't automatic: give any from Transactions before closing.",
+    button: 'Close School',
+    confirmTitle: 'Close this School?',
+    confirmBody: "You can't undo this yourself. Type the School's name and your passcode to confirm.",
+    nameLabel: 'Type "{name}" to confirm',
+    passcodeLabel: 'Your 6-digit passcode',
+    closedTitle: 'This School is closed',
+    closedBody: 'It will be deleted for good on {date}. Until then only ULTM8 support can reopen it.',
+  },
 };

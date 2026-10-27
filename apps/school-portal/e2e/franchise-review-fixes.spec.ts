@@ -83,6 +83,9 @@ test.afterEach(async () => {
   await db.school.deleteMany({ where: { id: { in: schoolIds } } });
   await db.paymentAccount.deleteMany({ where: { franchiseId: { in: ids } } });
   await db.franchise.deleteMany({ where: { id: { in: ids } } });
+  // Decision 364 — accepting, declining and removing send notices; let the worker finish first.
+  await new Promise((r) => setTimeout(r, 1500));
+  await db.notification.deleteMany({ where: { userId: { in: userIds } } });
   await db.user.deleteMany({ where: { id: { in: userIds } } });
   extraFranchiseIds.length = 0;
   schoolIds.length = 0;

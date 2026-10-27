@@ -443,4 +443,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "يوجد بالفعل تخصص باسم \"{v1}\" (مؤرشف — ألغِ أرشفته بدلاً من ذلك).",
   "The new name \"{v1}\" must be in classTypesOffered.": "يجب أن يكون الاسم الجديد \"{v1}\" ضمن classTypesOffered.",
   "This style already has a skill called \"{v1}\".": "يحتوي هذا الأسلوب بالفعل على مهارة باسم \"{v1}\".",
+  "Type the School's name exactly as it is to close it.": "اكتب اسم المدرسة تمامًا كما هو لإغلاقها.",
+  "Closing a School is not available during an impersonation session (Decision 39).": "إغلاق مدرسة غير متاح أثناء جلسة انتحال الهوية (Decision 39).",
 };
