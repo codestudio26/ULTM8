@@ -24,7 +24,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   "Give role", since it works straight away. A removed or changed role now
   applies on the person's next click, even if they are signed in, instead of
   up to 15 minutes later. Names made only of spaces are refused on Add staff
-  manually. Needs the migration `20261202000000_user_roles_changed_at`.
+  manually. Needs the migration `20261205000000_user_roles_changed_at`.
 - **Add student and Cancel booking on a class's page** (Decision 349) — staff
   can book a student into a class from the class itself (paid from the
   student's own membership; offered the waitlist when the class is full), and
