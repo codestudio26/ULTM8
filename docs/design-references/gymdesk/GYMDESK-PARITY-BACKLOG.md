@@ -607,7 +607,29 @@ password · **Selected membership + credit card payment** · Additional forms / 
 | IE4 | **Merge duplicates** (member/lead entries into one profile) | ❌ |
 | IE5 | **Export all members' documents and uploaded files** | ❌ Waiver signatures exist; bulk export ❌ |
 
-## 10. Code checks
+## 10. Front Desk (7 screenshots, chat only, 27 Oct 2026)
+
+**Scope (27 Oct 2026, Decision 351):** Front Desk is the last Gymdesk section studied for this version.
+**Marketing, Website and Sales (POS) are moved to the next version** and weren't captured.
+
+Front Desk opens a locked **front-desk mode** with two tabs, **Check-In** and **Sign-up**, and an **Exit** link.
+It's the same kiosk as `10-checkin-kiosk.webp` (§7, K1–K5). The screenshots show member data, so they
+aren't saved here.
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| FD1 | Three panels: **Today's Sessions** · check-in pad · **Recent Check-ins** | ❌ decided | Kiosk mode, Decision 317. The tablet is set to one Branch; both side panels cover that Branch (Decision 351) |
+| FD2 | **Enter Code** tab: keypad (0–9, delete, confirm) and **Check-In** button | ❌ decided | Personal check-in code, Decision 315 (generated, 4 digits by default, unique in the School) |
+| FD3 | **Name Search** tab: type a first or last name; results show photo, full name and *Member* | ❌ decided | Allowed on the kiosk (317). ULTM8 shows **first name, last-name initial and photo**, plus Member or Visitor. A child's photo only while the Guardian's camera consent is active (Decisions 57, 69, 351) |
+| FD4 | **Welcome back** screen: photo, name, membership status (e.g. red "No active memberships"), **Available sessions** to tick, **Confirm check-in**, **Go Back** | ❌ decided | School check-in rules decide what's allowed and the reason shown (317). A Class Pack with no credits offers the same pack, and check-in completes once paid (316). Several classes at once is a School switch (§3.5 of the v1.3 backlog) |
+| FD5 | **Recent Check-ins** list | ❌ decided | Today only, first name and last-name initial, the last 10 (351) |
+| FD6 | **Sign-up** tab: **Visitor / Member**; first and last name, gender, phone, email with **Send account access**, date of birth, secondary phone and email; **Pick a check-in code** (pre-filled 4 digits); **Join date**; Address (street, city, ZIP, state, country); **Contacts** (name, phone, relation, photo) | ❌ decided | Front-desk sign-up form (318), Visitors and emergency contact (315). **Differences:** the code is generated and shown read-only (315); join date is today (only staff set an earlier one, 315). A tablet sign-up **waits for staff approval**, and a child is signed up only by their Guardian with the Guardian's consent (351) |
+| FD7 | **Find Me** on Sign-up: type a name, pick the match, and the form fills in that member's stored details | ❌ decided, **different on purpose** | On the kiosk, Find Me only says "you're already a member" and sends the person to Check-In. Stored details are never shown or filled in on the tablet (351) |
+| FD8 | **Exit Front Desk Mode** needs the logged-in staff member's **password** | ❌ decided, **different on purpose** | Each staff member's own kiosk code unlocks it, and the log records who (Decision 320) |
+
+**Questions:** none open. All answered on 27 Oct 2026 (Decision 351).
+
+## 11. Code checks
 
 All ❓ items from the first pass were checked against `schema.prisma` on 19 Oct 2026
 and resolved above. Field-level only: a 🟡 may still need its service/endpoint checked
