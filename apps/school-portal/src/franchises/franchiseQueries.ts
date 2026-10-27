@@ -8,6 +8,7 @@ export type CreateFranchiseInput = components['schemas']['CreateFranchiseDto'];
 export type UpdateFranchiseInput = components['schemas']['UpdateFranchiseDto'];
 export type FranchiseFeeChargeResponse = components['schemas']['FranchiseFeeChargeResponseDto'];
 export type FranchiseMemberSchool = components['schemas']['FranchiseMemberSchoolResponseDto'];
+export type FranchiseJoinRequest = components['schemas']['FranchiseJoinRequestResponseDto'];
 export type FeeModel = components['schemas']['FranchiseResponseDto']['feeModel'];
 
 export interface FranchisesFilter {
@@ -133,5 +134,65 @@ export function useFranchisePaymentAccount(franchiseId: string | null) {
       }
     },
     enabled: !!franchiseId,
+  });
+}
+
+/** Decision 352 — Schools asking to join this Franchise (pending only, oldest
+ * first). Franchise Owner only. */
+export function useFranchiseJoinRequests(franchiseId: string | null) {
+  return useQuery({
+    queryKey: ['franchise-join-requests', franchiseId],
+    queryFn: () => unwrap(apiClient.GET('/v1/franchises/{id}/join-requests', { params: { path: { id: franchiseId! } } })),
+    enabled: !!franchiseId,
+  });
+}
+
+/** Decision 352 — accept (the School joins) or decline a join request. */
+export function useDecideJoinRequest(franchiseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, accept }: { requestId: string; accept: boolean }) =>
+      unwrap(
+        accept
+          ? apiClient.POST('/v1/franchises/{id}/join-requests/{requestId}/accept', { params: { path: { id: franchiseId, requestId } } })
+          : apiClient.POST('/v1/franchises/{id}/join-requests/{requestId}/decline', { params: { path: { id: franchiseId, requestId } } }),
+      ),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['franchise-join-requests', franchiseId] });
+      queryClient.invalidateQueries({ queryKey: ['franchise-schools', franchiseId] });
+    },
+  });
+}
+
+/** Decision 352 — removes a member School; the same result as the School leaving. */
+export function useRemoveFranchiseSchool(franchiseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (schoolId: string) =>
+      unwrap(apiClient.POST('/v1/franchises/{id}/schools/{schoolId}/remove', { params: { path: { id: franchiseId, schoolId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['franchise-schools', franchiseId] }),
+  });
+}
+
+/** Decision 352 — the Franchise Owner closes their own Franchise: re-checks the
+ * passcode first (POST /auth/step-up/verify), then closes with that proof. */
+export function useCloseFranchise(franchiseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ confirmName, passcode }: { confirmName: string; passcode: string }) => {
+      const { stepUpToken } = await unwrap(apiClient.POST('/v1/auth/step-up/verify', { body: { passcode } }));
+      return unwrap(
+        apiClient.POST('/v1/franchises/{id}/close', {
+          params: { path: { id: franchiseId }, header: { 'x-step-up-token': stepUpToken } },
+          body: { confirmName },
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['franchises'] });
+      queryClient.invalidateQueries({ queryKey: ['franchise', franchiseId] });
+      queryClient.invalidateQueries({ queryKey: ['franchise-join-requests', franchiseId] });
+      queryClient.invalidateQueries({ queryKey: ['franchise-schools', franchiseId] });
+    },
   });
 }

@@ -4,7 +4,16 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
-import { useJoinFranchise, useLeaveFranchise, useSchool, useSchoolFranchiseBranding, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import {
+  useCancelFranchiseJoinRequest,
+  useJoinFranchise,
+  useLeaveFranchise,
+  useSchool,
+  useSchoolFranchiseBranding,
+  useSchoolFranchiseJoinRequest,
+  useUpdateSchool,
+  type SchoolResponse,
+} from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
@@ -388,6 +397,10 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   // Decision 350 — the Franchise's name and logo show only when both owners allow it.
   const updateSchool = useUpdateSchool(schoolId);
   const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
+  // Decision 352 — joining is a request the Franchise Owner accepts or declines.
+  const { data: joinRequestData } = useSchoolFranchiseJoinRequest(franchiseId ? null : schoolId);
+  const cancelJoinRequest = useCancelFranchiseJoinRequest(schoolId);
+  const joinRequest = joinRequestData?.request ?? null;
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
@@ -399,6 +412,15 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
     try {
       await joinFranchise.mutateAsync(franchiseIdInput);
       setFranchiseIdInput('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  async function handleCancelRequest() {
+    setError(null);
+    try {
+      await cancelJoinRequest.mutateAsync();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
@@ -481,14 +503,33 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.independent')}
           </p>
-          <form onSubmit={handleJoin}>
-            <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
-              <TextField required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
-            </Field>
-            <Button type="submit" loading={joinFranchise.isPending}>
-              {t('schools.franchise.join')}
-            </Button>
-          </form>
+          {joinRequest?.status === 'PENDING' ? (
+            <div data-testid="franchise-join-pending">
+              <p>
+                <Trans k="schools.franchise.requestPending" nodes={{ id: <Badge>{joinRequest.franchiseId}</Badge> }} />
+              </p>
+              <Button variant="secondary" onClick={handleCancelRequest} loading={cancelJoinRequest.isPending}>
+                {t('schools.franchise.cancelRequest')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {joinRequest?.status === 'DECLINED' ? (
+                <p className="ultm8-field__hint" data-testid="franchise-join-declined">
+                  <Trans k="schools.franchise.requestDeclined" nodes={{ id: <Badge>{joinRequest.franchiseId}</Badge> }} />
+                </p>
+              ) : null}
+              <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.franchise.joinExplanation')}</p>
+              <form onSubmit={handleJoin}>
+                <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
+                  <TextField id="join-franchise-id" required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
+                </Field>
+                <Button type="submit" loading={joinFranchise.isPending}>
+                  {t('schools.franchise.join')}
+                </Button>
+              </form>
+            </>
+          )}
         </>
       )}
     </Card>

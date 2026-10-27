@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Joining a Franchise needs the Franchise Owner's approval** (Decision 352) —
+  a School asks to join with the Franchise ID and can cancel the request; the
+  Franchise page lists Schools asking to join, with Accept and Decline. The
+  Franchise Owner can also remove a member School (same as the School leaving)
+  and close their own Franchise after typing its name and their passcode.
+  Needs migration `20261204000100_franchise_join_requests`.
 - **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
   Timetable item in the Branch Staff menu opens the calendar read-only, with
   their branch's and School-wide classes, to book walk-ins; only the owner

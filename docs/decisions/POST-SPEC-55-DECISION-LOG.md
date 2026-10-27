@@ -5565,6 +5565,40 @@ User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website fo
 
 ---
 
+## Decision 352 — Joining a Franchise needs the Owner's approval; the Owner can remove a School and close their own Franchise; paying fees by card and connecting Stripe move to v1.3
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 98, 110, 232, 236, 337 · **Answers:** Decision 337's Q1, Q2, Q4, Q5 and Q6
+
+Decision 337 left five Franchise questions open. The product owner answered *"all recommended"*.
+
+### Decision
+
+1. **Joining is a request (Q1).** A School Owner enters the Franchise ID and asks to join. Nothing changes until the Franchise Owner accepts. New table `FranchiseJoinRequest` (status Pending, Accepted, Declined or Cancelled), with the School's name copied in so the Franchise Owner never needs to read the School's own row.
+   - The School page shows "Waiting for Franchise … to accept", with **Cancel request**. A declined request says so, and the School can ask again.
+   - One open request per School at a time (a database rule). Asking while already in a Franchise is still refused: leave first.
+   - The Franchise page lists **Schools asking to join** with **Accept** and **Decline**. Accepting joins the School only if it is still independent and open; if it joined somewhere else meanwhile, or was closed, the accept is refused and the request stays open. Accepting resets the School's "show the Franchise's name" switch, as joining always has (Decision 350).
+   - Open requests lapse (Cancelled) when the Franchise or the School is closed.
+   - Only that School's Owner/Manager and that Franchise's Owner can see a request (RLS).
+2. **The Franchise Owner can remove a member School (Q2)** after an "are you sure?" step. It has the same effect as the School leaving (Decision 232): fee billing stops with a final bill for the month, past fee charges stay, and the School's branding switch resets. Not available on a closed Franchise or during impersonation.
+3. **The Franchise Owner can close their own Franchise (Q6)** by typing its name exactly and re-entering their passcode (the step-up check from Decision 236). It is the same close as a Platform Admin's (Decision 110): 90 days, then deleted; until then only a Platform Admin can reopen it. Per Q8 (Decision 337) every member School's fee subscription is cancelled. The member Schools themselves stay open and keep running. Not available during impersonation.
+4. **Q4 and Q5 move to v1.3.** A School pays its franchise fees by a card the School Owner adds (Q4), built together with the screen for a Franchise Owner to connect their Stripe account (Q5). See `docs/v1.3-backend-backlog.md` §3.22.
+
+### Correction to the question
+
+Q6 assumed School Owners can already close their own School. They can't: only a Full Platform Admin can close a School or a Franchise (`TenantLifecycleService`). The Franchise Owner's close is built as approved anyway. Whether School Owners should be able to close their own School is a separate question, not decided here.
+
+### What this does NOT resolve
+
+- The Franchise Owner isn't notified of a new join request, and the School Owner isn't notified of the answer; both see it on their page.
+- A Franchise Owner's own close isn't written to the Platform Admin audit log (that log needs an admin user), so only the close date is recorded, not who closed it.
+- `apps/student` has no Franchise screens, so nothing changes there.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "all recommended" on the five Franchise questions (joining approval, removing a School, closing a Franchise, connecting Stripe, how a School pays).
+
+---
+
 ## Decision 340 — Waivers review fixes
 
 **Date:** 26 Oct 2026 · **Status:** Approved by product owner (Waivers fix plan, deep dive)

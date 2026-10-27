@@ -4,7 +4,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-admin.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
-import { FRANCHISE_FEE_FINAL_CANCEL } from '../franchise-fees/franchise-fee-cancel';
+import { cancelOpenJoinRequests, stopFranchiseFeeBilling } from '../franchise-fees/stop-franchise-fee-billing';
 import { AuditLogService, AuditAction } from './audit-log.service';
 import { CloseTenantAccountDto } from './dto/close-tenant-account.dto';
 
@@ -74,48 +74,9 @@ export class TenantLifecycleService {
     private readonly stripeClient: StripeClientService,
   ) {}
 
-  /**
-   * Decision 337 (F16, product owner's answer to Q8) — closing a School, or the
-   * Franchise it belongs to, ends that School's franchise-fee billing straight
-   * away, the same way leaving the Franchise does (SchoolsService.leaveFranchise):
-   * a final invoice for what has accrued, then the subscription is cancelled and
-   * the School's columns cleared. Reactivating doesn't restart anything here — the
-   * monthly franchise-fee job sets up a fresh subscription at its next run, as it
-   * does for any newly joined School.
-   *
-   * Runs on the jobs connection (the platform-admin role has no grant on these
-   * columns or on PaymentAccount's Stripe id beyond read), after the close itself
-   * has committed, and best-effort like leaveFranchise: a Stripe failure is logged
-   * loudly, never a reason to undo the close. The monthly job also skips closed
-   * Schools and Franchises, so a subscription left behind by a failure here is not
-   * reported further usage.
-   */
-  private async stopFranchiseFeeBilling(where: { schoolId: string } | { franchiseId: string }): Promise<void> {
-    const schools = await this.prismaJobs.school.findMany({
-      where: {
-        ...('schoolId' in where ? { id: where.schoolId } : { franchiseId: where.franchiseId }),
-        stripeFranchiseFeeSubscriptionId: { not: null },
-      },
-      select: { id: true, stripeFranchiseFeeSubscriptionId: true, franchise: { select: { id: true, paymentAccount: true } } },
-    });
-    for (const school of schools) {
-      const subscriptionId = school.stripeFranchiseFeeSubscriptionId!;
-      const account = school.franchise?.paymentAccount;
-      try {
-        if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
-          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(subscriptionId, FRANCHISE_FEE_FINAL_CANCEL);
-        }
-        await this.prismaJobs.school.updateMany({
-          where: { id: school.id, stripeFranchiseFeeSubscriptionId: subscriptionId },
-          data: { stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: 'CANCELED' },
-        });
-      } catch (err) {
-        this.logger.error(
-          `School ${school.id} was closed (or its Franchise ${school.franchise?.id} was), but cancelling its franchise-fee subscription (${subscriptionId}) failed — it may need manual cancellation.`,
-          err as Error,
-        );
-      }
-    }
+  /** Decision 337 (F16) — see stopFranchiseFeeBilling's own comment. */
+  private stopFranchiseFeeBilling(where: { schoolId: string } | { franchiseId: string }): Promise<void> {
+    return stopFranchiseFeeBilling(this.prismaJobs, this.stripeClient, this.logger, where);
   }
 
   private async assertFullAdmin(callerId: string): Promise<void> {
@@ -171,6 +132,8 @@ export class TenantLifecycleService {
     });
 
     await this.stopFranchiseFeeBilling({ schoolId });
+    // Decision 352 — a closed School's open request to join a Franchise lapses.
+    await this.prismaJobs.franchiseJoinRequest.updateMany({ where: { schoolId, status: 'PENDING' }, data: { status: 'CANCELLED', decidedAt: new Date() } });
 
     return updated;
   }
@@ -265,6 +228,7 @@ export class TenantLifecycleService {
     });
 
     await this.stopFranchiseFeeBilling({ franchiseId });
+    await cancelOpenJoinRequests(this.prismaJobs, franchiseId);
 
     return updated;
   }
