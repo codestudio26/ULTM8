@@ -3620,6 +3620,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/notifications/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationBroadcastController_findSent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -7401,6 +7417,33 @@ export interface components {
             audience: "ALL" | "BRANCH" | "CLASS";
             /** @description How many distinct Students this broadcast was enqueued for. */
             recipientCount: number;
+        };
+        SentBroadcastResponseDto: {
+            /** @description The broadcastId POST .../broadcast returned. */
+            id: string;
+            schoolId: string;
+            sentById: string;
+            /** @description The sender's name when it was sent. */
+            sentByName: string;
+            title: string;
+            body: string;
+            /** @enum {string} */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            branchId?: string | null;
+            branchName?: string | null;
+            classId?: string | null;
+            classTitle?: string | null;
+            classStartDate?: string | null;
+            /** @description CLASS only: who on the class list it went to. Empty otherwise. */
+            classAudience: ("BOOKED" | "WAITLIST" | "CANCELLED")[];
+            /** @description How many distinct Students it was queued for. */
+            recipientCount: number;
+            createdAt: string;
+        };
+        SentBroadcastListResponseDto: {
+            items: components["schemas"]["SentBroadcastResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
         };
         FranchiseFeeChargeResponseDto: {
             id: string;
@@ -13762,6 +13805,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BroadcastResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_findSent: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentBroadcastListResponseDto"];
                 };
             };
         };

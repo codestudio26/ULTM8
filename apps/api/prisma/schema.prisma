@@ -445,6 +445,7 @@ model User {
   membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
   membershipsCancelled              Membership[]                @relation("MembershipCancelledBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
+  notificationBroadcastsSent        NotificationBroadcast[]     @relation("NotificationBroadcastSentBy")
   franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
   transactionsRecorded              Transaction[]               @relation("TransactionRecordedBy")
@@ -1063,6 +1064,8 @@ model School {
   promotionFeeRequests  PromotionFeeRequest[]
   trainingLogs          TrainingLog[]
 
+  notificationBroadcasts NotificationBroadcast[]
+
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
   @@index([franchiseId])
@@ -1146,6 +1149,8 @@ model Branch {
   instructors    Instructor[]
   homeStudents   StudentHomeBranch[]
   coachInvites   CoachInvite[]
+
+  notificationBroadcasts NotificationBroadcast[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -1263,6 +1268,8 @@ model Class {
   bookings        Booking[]
   waitlistEntries WaitlistEntry[]
   trainingLogs    TrainingLog[]
+
+  notificationBroadcasts NotificationBroadcast[]
 
   // The DB-level guarantee behind "the job never double-materializes the same
   // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
@@ -3995,6 +4002,56 @@ model Notification {
   // flagged the same way: small table today, revisit if this ever shows up in
   // a slow-query report).
   @@index([snoozedUntil])
+}
+
+/// Decision 363 — the sent-broadcast history on the portal's Notifications
+/// page. One row per POST /schools/:schoolId/notifications/broadcast, written
+/// by NotificationBroadcastService.broadcast once the per-Student fanout jobs
+/// are queued; `id` is the same broadcastId every fanned-out Notification's
+/// notificationId starts with. Before this table a broadcast left no trace a
+/// School Owner could read: its only record was the Notification rows in each
+/// Student's own inbox, which are self-only under RLS.
+///
+/// School-Owner-only under RLS (same gate as sending one). Never edited or
+/// deleted by the app (no UPDATE/DELETE grant); it goes with the School via
+/// ON DELETE CASCADE. The audience's names are copied in at send time, so a
+/// Branch or Class purged later still reads correctly; its id goes to null.
+model NotificationBroadcast {
+  id String @id
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  sentById   String
+  sentBy     User   @relation("NotificationBroadcastSentBy", fields: [sentById], references: [id])
+  /// Copied at send time — another Owner of the same School can't always
+  /// read the sender's User row under RLS.
+  sentByName String
+
+  title String
+  body  String
+
+  /// ALL, BRANCH or CLASS (BroadcastAudienceDto).
+  audience String
+
+  branchId   String?
+  branch     Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  branchName String?
+
+  classId        String?
+  class          Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  classTitle     String?
+  classStartDate DateTime?
+  /// BOOKED / WAITLIST / CANCELLED (BroadcastClassAudienceDto), CLASS only.
+  classAudience  String[]  @default([])
+
+  /// How many distinct Students it was queued for.
+  recipientCount Int
+
+  createdAt DateTime @default(now())
+
+  // Serves the history list: WHERE schoolId = ? ORDER BY createdAt DESC, id DESC.
+  @@index([schoolId, createdAt, id])
 }
 
 /// DeviceToken (Phase 15, Spec 55 §6.1, Decision 46, page 28) — confirmed field

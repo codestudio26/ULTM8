@@ -714,10 +714,19 @@ export class SchoolsService {
           },
         }),
       );
+      const items = grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt }));
+      // Decision 353 (Q4): RLS shows Branch Staff and coaches at a School with
+      // branches no students, so add the ones they cover, their home branch's
+      // (Decision 139's rule; staff_student_roster, 20261202000100).
+      const covered = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.$queryRaw<Array<{ id: string; firstName: string; surname: string; email: string; profilePhotoUrl: string | null; enrolledAt: Date }>>`SELECT * FROM staff_student_roster(${schoolId})`,
+      );
+      const seen = new Set(items.map((i) => i.id));
+      items.push(...covered.filter((c) => !seen.has(c.id)));
       return {
-        items: grants
-          .filter((g) => !search || matchesPersonName(g.user.firstName, g.user.surname, search))
-          .map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
+        items: items
+          .filter((g) => !search || matchesPersonName(g.firstName, g.surname, search))
+          .map((g) => ({ ...g, status: StudentStatusDto.ACTIVE })),
       };
     }
 

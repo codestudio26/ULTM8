@@ -1,6 +1,8 @@
 export const timetable = {
   title: 'Timetable',
   subtitle: 'The recurring weekly slot template — click any occurrence to book a Student into it.',
+  /** Decision 353 (Q4) — Branch Staff see the calendar read-only. */
+  staffSubtitle: 'The classes at your branch. Click a class to book a Student in at the desk.',
   addSlot: 'Add slot',
   loadFailed: 'Could not load the Timetable.',
   rangeAria: 'Date range',
@@ -15,6 +17,7 @@ export const timetable = {
   viewAria: 'Timetable view',
   emptyTitle: 'No Timetable slots yet',
   emptyDescription: 'Add your first weekly slot to get started.',
+  staffEmptyDescription: 'Nothing is scheduled at your branch yet. The School owner adds the timetable.',
   addSlotTitle: 'Add timetable slot',
   editSlotTitle: 'Edit timetable slot',
   bookedClasses: {

@@ -194,6 +194,8 @@ export async function cleanup() {
   if (schoolIds.length === 0) return;
   const where = { schoolId: { in: schoolIds } };
   await db.notification.deleteMany({ where: { userId: { in: userIds } } });
+  // Decision 363 — a sent broadcast's history row holds its sender.
+  await db.notificationBroadcast.deleteMany({ where });
   await db.skillSignOffLog.deleteMany({ where });
   await db.studentRankSkillStatus.deleteMany({ where });
   await db.gradingPermission.deleteMany({ where });
