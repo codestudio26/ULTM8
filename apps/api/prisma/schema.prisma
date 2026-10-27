@@ -505,6 +505,7 @@ model User {
   notifications                     Notification[]
   deviceTokens                      DeviceToken[]
   refreshTokens                     RefreshToken[]
+  guestWaiverSignaturesBooked       GuestWaiverSignature[]      @relation("GuestWaiverSignatureBookedBy")
 
   @@index([email])
   @@index([phone])
@@ -917,16 +918,16 @@ model School {
   /// A signature on an archived waiver still counts for bookings and plans.
   waiverArchivedSignaturesCount Boolean @default(true)
   /// Sign again every N months; null = a signature never runs out.
-  waiverRenewalMonths Int?
+  waiverRenewalMonths           Int?
   /// A waiver a Guardian signed for a child stops counting at 18, and the
   /// student signs it again as an adult.
-  waiverMinorsSignAgainAt18 Boolean @default(true)
+  waiverMinorsSignAgainAt18     Boolean @default(true)
   /// The Owner and Managers may record a signed paper waiver.
-  waiverPaperSignaturesAllowed Boolean @default(true)
+  waiverPaperSignaturesAllowed  Boolean @default(true)
   /// Tell a new member which waivers to sign when they join.
-  waiverNoticeOnJoin Boolean @default(true)
+  waiverNoticeOnJoin            Boolean @default(true)
   /// Remind members again every N days until they sign; null = off.
-  waiverReminderDays Int?
+  waiverReminderDays            Int?
 
   defaultLanguage String?
   defaultCurrency String?
@@ -1075,6 +1076,7 @@ model School {
   instructorBelts       InstructorBelt[]
   promotionFeeRequests  PromotionFeeRequest[]
   trainingLogs          TrainingLog[]
+  guestWaiverSignatures GuestWaiverSignature[]
 
   notificationBroadcasts NotificationBroadcast[]
 
@@ -1277,9 +1279,10 @@ model Class {
   scopedByMemberships     Membership[]     @relation("MembershipScopedClass")
 
   // Phase 11 — a Class now has real Bookings/WaitlistEntry rows.
-  bookings        Booking[]
-  waitlistEntries WaitlistEntry[]
-  trainingLogs    TrainingLog[]
+  bookings              Booking[]
+  waitlistEntries       WaitlistEntry[]
+  trainingLogs          TrainingLog[]
+  guestWaiverSignatures GuestWaiverSignature[]
 
   notificationBroadcasts NotificationBroadcast[]
 
@@ -3315,7 +3318,8 @@ model Waiver {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  signatures WaiverSignature[]
+  signatures      WaiverSignature[]
+  guestSignatures GuestWaiverSignature[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -3634,12 +3638,12 @@ model Booking {
   // Decision 291 — the money side of a refund (refundResolution MONEY_REFUNDED or
   // REFUND_OWED, or PENDING when a refund is waiting), and the no-show fee, which
   // reuses CancellationChargeOutcome's value set.
-  refundAmount                  Int?
-  stripeRefundId                String?
-  resolvedAt                    DateTime?
-  noShowFeeOutcome              CancellationChargeOutcome?
-  noShowFeeAmount               Int?
-  stripeNoShowPaymentIntentId   String?
+  refundAmount                Int?
+  stripeRefundId              String?
+  resolvedAt                  DateTime?
+  noShowFeeOutcome            CancellationChargeOutcome?
+  noShowFeeAmount             Int?
+  stripeNoShowPaymentIntentId String?
 
   // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
   // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
@@ -3661,6 +3665,7 @@ model Booking {
   trainingLogs     TrainingLog[]
 
   lateCancelFeeTransaction Transaction?
+  guestWaiverSignatures    GuestWaiverSignature[]
 
   // Composite indexes leading with the tenant column (Decision 30). The "one
   // active Booking per Student per Class" guard (status = 'UPCOMING') is a
@@ -3712,6 +3717,11 @@ model BookingAttendee {
   stripeRefundId   String?
   resolvedAt       DateTime?
 
+  // Waivers Q9: SHA-256 of this seat's guest waiver link token. The API derives
+  // the token from the seat id, so only the hash is kept.
+  guestTokenHash        String?                @unique
+  guestWaiverSignatures GuestWaiverSignature[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -3719,6 +3729,55 @@ model BookingAttendee {
   @@index([schoolId])
   @@index([bookingId])
   @@index([membershipId])
+}
+
+/// A guest's signature on one of the School's waivers, made through the link
+/// for their seat on a booking (Waivers Q9). A guest has no account, so the
+/// guest's name and date of birth are typed on the signing page; a guest under
+/// 18 is signed for by a parent or guardian (`signedByGuardian`). Keeps a copy
+/// of the wording signed and of the class, so it outlives the seat, booking and
+/// class (each link is SET NULL); the retention purge removes it.
+model GuestWaiverSignature {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  // Copied from the booking.
+  branchId String?
+
+  bookingAttendeeId String?
+  bookingAttendee   BookingAttendee? @relation(fields: [bookingAttendeeId], references: [id], onDelete: SetNull)
+  bookingId         String?
+  booking           Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  bookedById        String?
+  bookedBy          User?            @relation("GuestWaiverSignatureBookedBy", fields: [bookedById], references: [id], onDelete: SetNull)
+
+  waiverId String
+  waiver   Waiver @relation(fields: [waiverId], references: [id], onDelete: Cascade)
+
+  classId       String?
+  class         Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  classTitle    String
+  classStartsAt DateTime
+
+  guestFullName    String
+  guestDateOfBirth DateTime @db.Date
+  signerFullName   String
+  signatureText    String
+  signedByGuardian Boolean
+
+  signedWaiverTitle   String
+  signedWaiverBody    String
+  signedWaiverSha256  String
+  signedWaiverVersion Int
+
+  signedAt DateTime @default(now())
+
+  @@unique([bookingAttendeeId, waiverId])
+  @@index([schoolId])
+  @@index([waiverId])
+  @@index([bookingId])
+  @@index([classId])
 }
 
 /// WaitlistEntry (Phase 11, SKILL.md §10) — belongs to a Student and a Class.

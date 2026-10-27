@@ -3620,6 +3620,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{id}/guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_bookingGuests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/guest-waivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_classGuests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/friend-passes/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_myFriendPasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_listSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures/{signatureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_getSignature"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guest-waiver-links/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiverLinksController_page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guest-waiver-links/{token}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuestWaiverLinksController_sign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/attendance/scan": {
         parameters: {
             query?: never;
@@ -7533,6 +7645,122 @@ export interface components {
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */
             studentId?: string;
+        };
+        BookingGuestDto: {
+            attendeeId: string;
+            /** @description The guest's signing link. Only for the booker and the School Owner/Manager, and null when the portal address isn't set up. */
+            link?: string | null;
+            /**
+             * @description NONE: the School has no current waiver to sign.
+             * @enum {string}
+             */
+            waiverStatus: "SIGNED" | "UNSIGNED" | "NONE";
+            guestFullName?: string | null;
+        };
+        BookingGuestsDto: {
+            bookingId: string;
+            /** @description The class asks for a signed waiver, so its guests should sign one too. */
+            waiverRequired: boolean;
+            guests: components["schemas"]["BookingGuestDto"][];
+        };
+        ClassGuestWaiversDto: {
+            waiverRequired: boolean;
+            /** @description Upcoming bookings with guests. */
+            bookings: components["schemas"]["BookingGuestsDto"][];
+        };
+        FriendPassDto: {
+            membershipId: string;
+            /** @description Only good for this class. */
+            scopedClassId?: string | null;
+            /** Format: date-time */
+            expiryDate?: string | null;
+        };
+        FriendPassListDto: {
+            items: components["schemas"]["FriendPassDto"][];
+        };
+        GuestWaiverSignatureDto: {
+            id: string;
+            guestFullName: string;
+            /** @description YYYY-MM-DD */
+            guestDateOfBirth: string;
+            signerFullName: string;
+            signatureText: string;
+            signedByGuardian: boolean;
+            classTitle: string;
+            /** Format: date-time */
+            classStartsAt: string;
+            bookedByName?: string | null;
+            /** Format: date-time */
+            signedAt: string;
+            signedWaiverVersion: number;
+        };
+        GuestWaiverSignatureListDto: {
+            items: components["schemas"]["GuestWaiverSignatureDto"][];
+            nextCursor?: string | null;
+        };
+        GuestWaiverSignatureDetailDto: {
+            id: string;
+            guestFullName: string;
+            /** @description YYYY-MM-DD */
+            guestDateOfBirth: string;
+            signerFullName: string;
+            signatureText: string;
+            signedByGuardian: boolean;
+            classTitle: string;
+            /** Format: date-time */
+            classStartsAt: string;
+            bookedByName?: string | null;
+            /** Format: date-time */
+            signedAt: string;
+            signedWaiverVersion: number;
+            signedWaiverTitle: string;
+            signedWaiverBody: string;
+            signedWaiverSha256: string;
+        };
+        GuestWaiverPageWaiverDto: {
+            id: string;
+            title: string;
+            body: string;
+            /** @description Send it back when signing; a waiver changed since is refused. */
+            version: number;
+            signed: boolean;
+        };
+        GuestWaiverPageDto: {
+            schoolName: string;
+            classTitle: string;
+            /** Format: date-time */
+            classStartsAt: string;
+            /** Format: date-time */
+            classEndsAt: string;
+            /**
+             * @description CLOSED: the booking was cancelled, the class has ended or the School has closed.
+             * @enum {string}
+             */
+            status: "OPEN" | "CLOSED";
+            /** @description The School's current waivers. */
+            waivers: components["schemas"]["GuestWaiverPageWaiverDto"][];
+            /** @description The guest named on an earlier signature on this link, if any. */
+            guestFullName?: string | null;
+        };
+        GuestWaiverSignItemDto: {
+            waiverId: string;
+            /** @description The version the guest read (GuestWaiverPageWaiverDto.version). */
+            version: number;
+        };
+        SignGuestWaiversDto: {
+            /** @description The guest's full name. */
+            guestFullName: string;
+            /** @description The guest's date of birth, YYYY-MM-DD. */
+            guestDateOfBirth: string;
+            /** @description Who is signing: the guest, or for a guest under 18 their parent or guardian. */
+            signerFullName: string;
+            /** @description Typed signature. */
+            signatureText: string;
+            /** @description Every current waiver the guest has not signed yet. */
+            waivers: components["schemas"]["GuestWaiverSignItemDto"][];
+        };
+        SignGuestWaiversResponseDto: {
+            signed: number;
         };
         ScanAttendanceDto: {
             classId: string;
@@ -14055,6 +14283,164 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignatureUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_bookingGuests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingGuestsDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_classGuests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassGuestWaiversDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_myFriendPasses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendPassListDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_listSignatures: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestWaiverSignatureListDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_getSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+                signatureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestWaiverSignatureDetailDto"];
+                };
+            };
+        };
+    };
+    GuestWaiverLinksController_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestWaiverPageDto"];
+                };
+            };
+        };
+    };
+    GuestWaiverLinksController_sign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignGuestWaiversDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignGuestWaiversResponseDto"];
                 };
             };
         };

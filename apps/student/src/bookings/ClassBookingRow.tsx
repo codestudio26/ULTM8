@@ -4,7 +4,8 @@ import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate, formatTime } from '../lib/formatDate';
-import { useBookClass } from './bookingQueries';
+import { useBookClass, useMyFriendPasses } from './bookingQueries';
+import { BookingGuests } from './BookingGuests';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
 
@@ -26,7 +27,7 @@ interface ClassSummary {
  * stranding the Student on the waitlist with no in-app way off it. */
 type RowState =
   | { kind: 'idle' }
-  | { kind: 'booked' }
+  | { kind: 'booked'; bookingId: string }
   | { kind: 'full'; reason: 'full' | 'queue' }
   | { kind: 'waitlisted'; entryId: string; position: number };
 
@@ -37,9 +38,17 @@ type RowState =
  * slice (surfaced as-is via the real error message), the third gets a real "Join
  * waitlist" follow-up action, since apps/api's own error message for it literally
  * names that as the next step. */
-export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
+export function ClassBookingRow({ classItem, schoolId = null }: { classItem: ClassSummary; schoolId?: string | null }) {
   const t = useT();
   const [state, setState] = useState<RowState>({ kind: 'idle' });
+  // Waivers Q9: guests, one of the member's Friend Passes each. A pass for
+  // this class only is used before a general one.
+  const friendPasses = useMyFriendPasses(schoolId);
+  const usablePasses = (friendPasses.data?.items ?? [])
+    .filter((p) => !p.scopedClassId || p.scopedClassId === classItem.id)
+    .sort((a, b) => Number(!!b.scopedClassId) - Number(!!a.scopedClassId));
+  const [guestCount, setGuestCount] = useState(0);
+  const guests = Math.min(guestCount, usablePasses.length);
   const [actionError, setActionError] = useState<string | null>(null);
   const bookClass = useBookClass();
   const joinWaitlist = useJoinWaitlist();
@@ -52,8 +61,9 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
     if (bookClass.isPending) return;
     setActionError(null);
     try {
-      await bookClass.mutateAsync(classItem.id);
-      setState({ kind: 'booked' });
+      const booking = await bookClass.mutateAsync({ classId: classItem.id, guestPassIds: usablePasses.slice(0, guests).map((p) => p.membershipId) });
+      setState({ kind: 'booked', bookingId: booking.id });
+      setGuestCount(0);
     } catch (err) {
       // Only "full" and "students already waiting" lead to the waitlist
       // (Decision 322); any other refusal — a busy Class, no membership credit —
@@ -108,9 +118,29 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
 
       {actionError ? <InlineError message={actionError} /> : null}
 
+      {state.kind === 'idle' && usablePasses.length > 0 ? (
+        <View style={{ marginTop: 6 }}>
+          <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('bookings.guests.passesLeft', { count: usablePasses.length })}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <View style={{ flex: 1 }}>
+              <Button title={t('bookings.guests.remove')} variant="secondary" onPress={() => setGuestCount(Math.max(0, guests - 1))} disabled={guests === 0} />
+            </View>
+            <Text style={{ fontSize: 13 }}>{t('bookings.guests.count', { count: guests })}</Text>
+            <View style={{ flex: 1 }}>
+              <Button title={t('bookings.guests.add')} variant="secondary" onPress={() => setGuestCount(guests + 1)} disabled={guests >= usablePasses.length} />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       {state.kind === 'idle' ? <Button title={t('bookings.classRow.book')} onPress={handleBook} loading={bookClass.isPending} /> : null}
 
-      {state.kind === 'booked' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.booked')}</Text> : null}
+      {state.kind === 'booked' ? (
+        <>
+          <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.booked')}</Text>
+          <BookingGuests bookingId={state.bookingId} />
+        </>
+      ) : null}
 
       {state.kind === 'full' ? (
         <>

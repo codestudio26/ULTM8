@@ -5869,3 +5869,34 @@ Migration `20261205000000_branch_close`: the School owner may delete a home-bran
 ### Recorded by
 
 User, 26 Oct 2026, choosing on the Branches review's decision cards: fix 5 "Only live things block", fix 6 "Build Close branch", fix 7 "Keep it if it has history".
+
+---
+
+## Decision 366 — Guests on a booking sign the waiver by a shared link
+
+**Date:** 27 Oct 2026 · **Status:** Approved by product owner (two Waivers decision cards: "Guests sign by shared link", then "Build guest booking + link together")
+**Resolves:** Waivers review question Q9, left open by Decision 354. Database change: `20261210000000_guest_waivers`.
+
+### Background
+
+A guest on a booking is a seat paid for with one of the booker's Friend Passes (SKILL.md §10). A guest has no account, name or login, so "guests must sign" had no one to apply to. Checking the plan against the code also showed that the API could put guests on a booking but no screen could, and that a booking is checked in as a whole, not guest by guest.
+
+### Decision
+
+1. **Members can bring guests in the Student app.** A class row shows how many of the member's own Friend Passes can pay for a guest in that class (a pass for this class only is used before a general one) and lets them add guests up to that number. The API is unchanged: each guest is one Friend Pass in `attendeeMembershipIds`. New `GET /schools/:schoolId/friend-passes/me` lists the caller's usable passes.
+2. **Each guest seat gets its own signing link**, `PORTAL_BASE_URL/guest-waiver/<token>`. The token is an HMAC of the seat id keyed by `JWT_ACCESS_SECRET`, so the booker can share the same link again; only its SHA-256 is stored (`BookingAttendee.guestTokenHash`), as coach invites do. The booker shares it from the class row after booking and from My Bookings. The School Owner/Manager and Branch Staff can copy it from the class page; Instructors see only whether the guest signed.
+3. **The guest signs on a public web page with no account.** They read the School's current waivers (not archived) and sign them all at once: full name, date of birth, a typed signature and "I agree". A guest under 18 (by the date of birth given) is signed for by a parent or guardian, whose name must be given and differ from the guest's. A waiver changed while the guest was reading is refused (version check), as for members. The link works while the booking is Upcoming, the class hasn't ended and the School is open. A waiver added later is asked for on the same link.
+4. **The booking is not blocked.** When a class asks for a waiver, the class page shows each guest as "Waiver signed: name" or "Guest hasn't signed the waiver", with a note counting unsigned guests. Check-in is unchanged, since a booking is checked in as a whole.
+5. **Each guest signature is its own record** (`GuestWaiverSignature`): guest name and date of birth, signer, whether a parent signed, a copy of the wording signed with its SHA-256 and version, and the class title and start. It outlives the seat, booking and class. The Owner/Manager sees guest signatures on the Waivers page, with the wording each signed. Read access follows `WaiverSignature`'s narrow shape (Owner/Manager and the booker). Branch Staff and Instructors get only signed or not, read by the API through `ultm8_jobs` after checking they are staff for the class. The signing page reaches its seat only through the token (SECURITY DEFINER read functions and token-holder RLS policies).
+6. **Retention** follows Decision 354's rule for a student who has left: a guest signature is purged 7 years after the class, and for a guest under 18, not before they turn 24 (18 + 6), whichever is later.
+7. The signing page is limited to 30 reads and 10 signs a minute per IP. Every new text is translated into all 15 languages.
+
+### What this does NOT resolve
+
+- A drawn signature for guests: the guest page uses the typed signature only (drawn capture stays optional, Decision 74).
+- Guests on a booking a Guardian makes for a child, or through Kid Mode: not offered in the app.
+- Changing `JWT_ACCESS_SECRET` changes every guest link. Links are only useful until the class ends.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: chose "Guests sign by shared link" on the Q9 card, then "Build guest booking + link together" on the follow-up card.
