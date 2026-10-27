@@ -5482,3 +5482,51 @@ Nothing here is built yet. The kiosk is `docs/v1.3-backend-backlog.md` §3.21.
 ### Recorded by
 
 User (Code), 27 Oct 2026: "We will leave the marketing, Sales and the website for the next version. We will work on front desk and that is it for this version", then "agree" to the five Front Desk recommendations.
+
+---
+
+## Decision 360 — Staff page: what to build next (the eight build-plan answers)
+
+**Date:** 26–27 Oct 2026 · **Status:** Product-owner answers to the Staff build plan's eight questions · **Follows:** Decisions 183, 295, 296
+**Resolves:** the Staff review's "still not built" list: no staff list, no Remove from School, no co-owner rules, no edit, revoked access lasting up to 15 minutes.
+
+### Decision
+
+1. **Wording and acceptance.** The Staff page's "Send invite" (which grants at once, it never invited anyone) becomes **Give role**. An owner setting **New staff must accept first** follows, off by default; when on, a role given this way waits for the person to accept.
+2. **Access changes are instant.** Any change to someone's roles (given, removed, Remove from School) takes effect on their next request, even if they are signed in; the apps quietly fetch a fresh session. No 15-minute wait.
+3. **Owners.** Every School has one **main owner**; other owners are equal **co-owners**. Nobody inside the School can remove the main owner; only a Platform Admin can, through support. The main owner can hand the main role to a co-owner after re-entering their passcode. For existing Schools, the main owner is the owner with the earliest owner grant.
+4. **Staff list.** The Staff page lists everyone with an owner, coach or Branch Staff role, with a **Removed** filter that is hidden by default.
+5. **Editing staff details.** Hybrid: the owner sets a School-only **display name** and **work phone**; the person's own account (real name, login email, personal phone) stays theirs alone.
+6. **Remove and Pause.** **Remove from School** is built first; **Pause** follows as the very next piece of work.
+7. **Access switches.** Six switches per staff member (classes and timetable; bookings and check-in; students; credit for cancelled classes; see the staff list; invite coaches) with two presets, **Front desk** and **Branch manager**. Money and School settings stay owner-only.
+8. **Activity log.** A log of who changed what on the Staff page comes right after the access switches.
+
+### Order of work
+
+One pull request at a time: (a) Decision 361 below; (b) owners and co-owners; (c) display name and work phone; (d) access switches and presets; (e) Pause; (f) the "must accept first" setting; (g) the activity log. Each records its own decision before it is built.
+
+### Recorded by
+
+User (Code), 26 Oct 2026 in the Staff thread (Q1 "option B", Q3 the main-owner model, Q4 "go with recommendation", Q7 "yes"), and 27 Oct 2026 "all recommended" for the rest (Q2 D, Q3 hand-over and earliest owner, Q5 hybrid, Q6 Remove now and Pause next, Q8 after the switches).
+
+---
+
+## Decision 361 — Staff list, Remove from School, "Give role", and instant access changes
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (items 1, 2, 4, 6)
+
+### Decision
+
+1. **Instant access changes.** `User.rolesChangedAt` is stamped by a database trigger whenever a `RoleGrant` row for that user is inserted, updated or deleted, so every path is covered, not only the Staff page. Access tokens carry the stamp they were made with (`rca`). If the user's stamp is newer, the API answers `401` with code `ROLES_CHANGED`; the portal and Student app already refresh on any 401 and retry, and the refreshed token carries the current roles. The stamp is read through a 5-second in-process cache, cleared at once by the API's own role changes, so a change made through the Staff page applies on the very next request and any other change (another server instance, raw SQL) within 5 seconds. If the stamp can't be read, the request is refused rather than let through. Tokens without `rca` (Kid Mode, impersonation, tokens made before this change) are not checked; they still expire within 15 minutes.
+2. **Staff list.** `GET /schools/:schoolId/staff` (owner only) lists one row per person who holds or held an owner, Instructor or Branch Staff role at the School: name, email, phone, photo, roles with branch names, who gave each, "Can invite coaches", added and removed dates. Filters: status (active by default, removed, all), role, branch, and a name/email search that ignores capitals. It replaces looking people up by User ID.
+3. **Remove from School.** `POST /schools/:schoolId/staff/:userId/remove` (owner only) ends every Instructor and Branch Staff role the person holds at the School in one step, clears their grading permissions and "Can invite coaches", and cancels open coach invites they sent. Owner roles are never touched here (Decision 360 item 3 decides who may remove an owner). Student roles and memberships are kept. The person appears under "Removed".
+4. **"Give role".** The Staff page's grant button and messages say "Give role" and that it works straight away; the coach-invite card keeps "Send invite", since that one really does send an invite.
+5. **Blank names.** Add staff manually trims first name and surname, so a name of only spaces is refused (Add Instructor already did).
+
+### Not built here
+
+Owners and co-owners, display name and work phone, access switches, Pause, "must accept first" and the activity log (Decision 360's order of work).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, Staff thread.

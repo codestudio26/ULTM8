@@ -371,6 +371,12 @@ model User {
   /// wrong.
   phoneVerifiedAt DateTime?
 
+  /// Decision 361 — stamped by a trigger whenever one of this User's
+  /// RoleGrant rows is created, changed or deleted. Access tokens carry the
+  /// stamp they were built from (`rca`); JwtStrategy refuses an older one so a
+  /// role change takes effect on the next request (RolesChangedService).
+  rolesChangedAt DateTime?
+
   /// Decision 68/112 — set once by the chargeback-pattern-restriction job when this
   /// Student's lost Stripe disputes (Transaction.disputeLostAt) cross the confirmed
   /// threshold (2). While set, MembershipsService.purchase() refuses a purchase at any
