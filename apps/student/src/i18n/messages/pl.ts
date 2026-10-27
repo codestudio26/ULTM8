@@ -498,6 +498,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "Od {date}",
       unverified: "Ten pas czeka na weryfikację przez Szkołę.",
       topOfLadder: "Szczyt drabinki.",
+      noLongerTaught: "Nie jest już nauczane w tej szkole. Twój pas i historia zostają.",
       next: "Następny: {rank}",
       progress: "{percent}% drogi",
       readyToGrade: "Gotowy do egzaminu",
@@ -713,6 +714,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "Brak powiadomień.",
+      markAllRead: "Oznacz wszystkie jako przeczytane",
+      markAllReadFailed: "Nie udało się oznaczyć powiadomień jako przeczytanych. Spróbuj ponownie.",
       loadFailed: "Nie udało się wczytać powiadomień — spróbuj ponownie.",
     },
     row: {
@@ -720,6 +723,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}, nieprzeczytane",
       unread: "Nieprzeczytane",
       markAsRead: "Oznacz jako przeczytane",
+      open: "Otwórz",
       markReadFailed: "Nie udało się oznaczyć jako przeczytane — spróbuj ponownie.",
     },
   },

@@ -409,6 +409,8 @@ export const grading = {
     noUpcomingBooking: 'No upcoming Booking.',
     moreBookings: '+{count} more',
     noRankYet: 'No rank in this style yet.',
+    archivedStyleNote:
+      'This style is archived: the student keeps this rank and history, but nobody can be graded in it. Unarchive it on the Disciplines page to grade again.',
     rankOffLadder: "This student's rank isn't on the ladder any more. Give them a rank again to fix it.",
     since: 'since {date}',
     selfDeclared: 'Self-declared — not verified',

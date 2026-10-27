@@ -508,6 +508,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "منذ {date}",
       unverified: "بانتظار تحقّق المدرسة من هذا الحزام.",
       topOfLadder: "أعلى السلّم.",
+      noLongerTaught: "لم تعد هذه الرياضة تُدرَّس في هذه المدرسة. يبقى حزامك وسجلّك.",
       next: "التالي: {rank}",
       progress: "{percent}% من الطريق",
       readyToGrade: "جاهز للترقية",
@@ -733,6 +734,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "لا توجد إشعارات بعد.",
+      markAllRead: "تعليم الكل كمقروء",
+      markAllReadFailed: "تعذّر تعليم إشعاراتك كمقروءة، يُرجى المحاولة مرة أخرى.",
       loadFailed: "تعذّر تحميل الإشعارات، يُرجى المحاولة مرة أخرى.",
     },
     row: {
@@ -740,6 +743,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}، غير مقروء",
       unread: "غير مقروء",
       markAsRead: "وضع علامة كمقروء",
+      open: "فتح",
       markReadFailed: "تعذّر وضع علامة كمقروء، يُرجى المحاولة مرة أخرى.",
     },
   },

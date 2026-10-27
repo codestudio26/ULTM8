@@ -29,6 +29,7 @@ export const layout = {
   },
   nav: {
     dashboard: 'Dashboard',
+    checkIn: 'Check-in',
     school: 'School',
     branches: 'Branches',
     staff: 'Staff',

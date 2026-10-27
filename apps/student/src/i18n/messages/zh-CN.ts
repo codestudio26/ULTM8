@@ -481,6 +481,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       since: "自 {date} 起",
       unverified: "等待学校核实此腰带。",
       topOfLadder: "已到晋级阶梯顶端。",
+      noLongerTaught: "本校已不再教授此项目。你的腰带和记录会保留。",
       next: "下一级：{rank}",
       progress: "已完成 {percent}%",
       readyToGrade: "可晋级",
@@ -672,6 +673,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   notifications: {
     list: {
       empty: "还没有通知。",
+      markAllRead: "全部标为已读",
+      markAllReadFailed: "无法将通知标为已读，请重试。",
       loadFailed: "无法加载通知，请重试。",
     },
     row: {
@@ -679,6 +682,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       labelUnread: "{title}，未读",
       unread: "未读",
       markAsRead: "标为已读",
+      open: "打开",
       markReadFailed: "无法标为已读，请重试。",
     },
   },

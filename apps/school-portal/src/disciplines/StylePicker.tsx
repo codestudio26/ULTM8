@@ -67,7 +67,14 @@ export function StylePicker({
                 value={row.disciplineId}
                 // A new style starts with no class type: the old one belonged to the previous style's list.
                 onChange={(e) => update(i, { disciplineId: e.target.value, classType: null })}
-                options={[{ value: '', label: t('disciplines.stylePicker.selectStyle') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
+                // An archived style is offered only on the row that already has it, so an
+                // older class or slot still saves (Decision 310); new rows can't pick it.
+                options={[
+                  { value: '', label: t('disciplines.stylePicker.selectStyle') },
+                  ...disciplines
+                    .filter((d) => !d.archivedAt || d.id === row.disciplineId)
+                    .map((d) => ({ value: d.id, label: d.archivedAt ? t('disciplines.stylePicker.archivedName', { name: d.name }) : d.name })),
+                ]}
               />
             </Field>
             {types.length > 0 ? (

@@ -436,7 +436,9 @@ export class CancellationService {
     const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
     const recipients = new Set([...bookings.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);
     for (const userId of recipients) {
-      await this.notify({ notificationId: `class-cancelled-${classId}-${userId}`, userId, title: 'Class cancelled', body, type: 'CLASS_CANCELLED' });
+      await this.notify({
+        notificationId: `class-cancelled-${classId}-${userId}`, userId, title: 'Class cancelled', body, type: 'CLASS_CANCELLED', schoolId: cls.schoolId, targetType: 'CLASS', targetId: classId,
+      });
     }
     if (needsStaff > 0) {
       await this.alertOwners(cls.schoolId, `class-cancelled-review-${classId}`, `Bookings from the cancelled class ${cls.title} need a refund decision or a cash refund paid (${needsStaff}). See Cancellations to resolve.`);
@@ -589,7 +591,7 @@ export class CancellationService {
       select: { userId: true },
     });
     for (const userId of new Set(owners.map((o) => o.userId))) {
-      await this.notify({ notificationId: `${key}-${userId}`, userId, title: 'Cancellations to resolve', body, type: 'CANCELLATION_TO_RESOLVE' });
+      await this.notify({ notificationId: `${key}-${userId}`, userId, title: 'Cancellations to resolve', body, type: 'CANCELLATION_TO_RESOLVE', schoolId, targetType: 'CANCELLATIONS' });
     }
   }
 

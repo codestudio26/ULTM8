@@ -183,6 +183,9 @@ export class WaitlistCascadeProcessingProcessor extends WorkerHost {
         title: 'A spot opened up',
         body: `A spot opened up in ${next.class.title}. Claim it soon — it goes to the next person on the waitlist if you don't.`,
         type: 'WAITLIST_SPOT_OPENED',
+        schoolId: next.schoolId,
+        targetType: 'CLASS',
+        targetId: classId,
       } satisfies NotificationFanoutJobData,
       {
         jobId: `waitlist-notified-${next.id}`,
