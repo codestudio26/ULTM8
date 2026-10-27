@@ -46,6 +46,7 @@ test.afterEach(async () => {
   await db.timetableSlot.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.studentHomeBranch.deleteMany({ where });
+  await db.closure.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where: { id: planId } });
 });
 
@@ -355,4 +356,48 @@ test('an Instructor still has no Timetable screen', async ({ page }) => {
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Timetable' })).toHaveCount(0);
   await page.goto('/timetable');
   await expect(page).not.toHaveURL(/\/timetable$/);
+});
+
+test('the owner closes the School for a day: its classes are cancelled and the calendar says Closed (Decision 353, Q8)', async ({ page }) => {
+  const start = new Date(Date.now() + 2 * 86_400_000);
+  start.setHours(18, 0, 0, 0);
+  const cls = await db.class.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      title: 'Holiday Class',
+      activities: ['BJJ'],
+      styles: [{ disciplineId: s.disciplineId, classType: null }],
+      startDate: start,
+      endDate: new Date(start.getTime() + 3_600_000),
+      capacity: 4,
+      membershipInclusion: true,
+    },
+  });
+  await bookDirectly(cls.id, s.student.id);
+  const key = dateKey(start);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/timetable');
+  await page.getByRole('button', { name: 'Closures' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Closures' });
+  await expect(dialog.getByText('No closures yet.')).toBeVisible();
+  await dialog.getByLabel('From').fill(key);
+  await dialog.getByLabel('Reason').fill('Holiday');
+  await dialog.getByRole('button', { name: 'Add closure' }).click();
+  await dialog.getByRole('button', { name: 'Close and cancel classes' }).click();
+  await expect(dialog.getByRole('status')).toHaveText('Closure added. 1 classes cancelled.');
+  await expect(dialog.getByRole('listitem', { name: 'Holiday' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Done' }).click();
+
+  // The Week view starts on Monday; open the class's week.
+  const monday = (d: Date) => dateKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)));
+  if (monday(start) !== monday(new Date())) await page.getByRole('button', { name: 'Next →' }).click();
+  await expect(page.getByText('Closed — Holiday')).toBeVisible();
+  await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
+  expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id } })).status).toBe('CANCELLED');
+
+  await page.getByRole('button', { name: 'Closures' }).click();
+  await page.getByRole('dialog', { name: 'Closures' }).getByRole('button', { name: 'Remove' }).click();
+  await expect(page.getByRole('dialog', { name: 'Closures' }).getByText('No closures yet.')).toBeVisible();
 });

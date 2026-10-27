@@ -4394,6 +4394,112 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/closures": {
+      "get": {
+        "operationId": "TimetableController_listClosures",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "TimetableController_createClosure",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClosureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCreatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/closures/{id}": {
+      "delete": {
+        "operationId": "TimetableController_deleteClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/timetable/{id}": {
       "get": {
         "operationId": "TimetableController_findOne",
@@ -17119,6 +17225,45 @@
           "date"
         ]
       },
+      "ClosureResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt"
+        ]
+      },
       "TimetableCalendarResponseDto": {
         "type": "object",
         "properties": {
@@ -17134,11 +17279,103 @@
             "items": {
               "$ref": "#/components/schemas/TimetableCalendarLaterDto"
             }
+          },
+          "closures": {
+            "description": "Closures overlapping the dates shown that the caller covers (Decision 353, Q8).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureResponseDto"
+            }
           }
         },
         "required": [
           "classes",
-          "later"
+          "later",
+          "closures"
+        ]
+      },
+      "ClosureListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateClosureDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "First closed date, YYYY-MM-DD (local)."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Last closed date, YYYY-MM-DD (local). The same as startDate for one day."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Shown on the calendar and in the cancellation notice, e.g. \"Christmas\"."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Close only this Branch. Left out, the whole School is closed."
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "reason"
+        ]
+      },
+      "ClosureCreatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "cancelledClasses": {
+            "type": "number",
+            "description": "How many classes the closure cancelled."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt",
+          "cancelledClasses"
         ]
       },
       "UpcomingImpactResponseDto": {

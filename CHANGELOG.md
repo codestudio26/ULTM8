@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Closures (Decision 353, Q8)** — the owner can close the School or one
+  branch for some dates from the Timetable's Closures button; classes on those
+  dates are cancelled under the normal cancellation rule and students are told,
+  new classes skip them, and the calendar shows "Closed". Needs a database
+  migration.
 - **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
   Timetable item in the Branch Staff menu opens the calendar read-only, with
   their branch's and School-wide classes, to book walk-ins; only the owner

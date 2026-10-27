@@ -1540,6 +1540,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_listClosures"];
+        put?: never;
+        post: operations["TimetableController_createClosure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/closures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["TimetableController_deleteClosure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/timetable/{id}": {
         parameters: {
             query?: never;
@@ -5462,10 +5494,51 @@ export interface components {
             /** @description YYYY-MM-DD. */
             date: string;
         };
+        ClosureResponseDto: {
+            id: string;
+            schoolId: string;
+            /** @description Null: the whole School. */
+            branchId: string | null;
+            /** @description YYYY-MM-DD */
+            startDate: string;
+            /** @description YYYY-MM-DD */
+            endDate: string;
+            reason: string;
+            createdAt: string;
+        };
         TimetableCalendarResponseDto: {
             classes: components["schemas"]["TimetableCalendarClassDto"][];
             /** @description Dates On slots reach that have no class yet because they are past the 4-week horizon. */
             later: components["schemas"]["TimetableCalendarLaterDto"][];
+            /** @description Closures overlapping the dates shown that the caller covers (Decision 353, Q8). */
+            closures: components["schemas"]["ClosureResponseDto"][];
+        };
+        ClosureListResponseDto: {
+            items: components["schemas"]["ClosureResponseDto"][];
+        };
+        CreateClosureDto: {
+            /** @description First closed date, YYYY-MM-DD (local). */
+            startDate: string;
+            /** @description Last closed date, YYYY-MM-DD (local). The same as startDate for one day. */
+            endDate: string;
+            /** @description Shown on the calendar and in the cancellation notice, e.g. "Christmas". */
+            reason: string;
+            /** @description Close only this Branch. Left out, the whole School is closed. */
+            branchId?: string;
+        };
+        ClosureCreatedResponseDto: {
+            id: string;
+            schoolId: string;
+            /** @description Null: the whole School. */
+            branchId: string | null;
+            /** @description YYYY-MM-DD */
+            startDate: string;
+            /** @description YYYY-MM-DD */
+            endDate: string;
+            reason: string;
+            createdAt: string;
+            /** @description How many classes the closure cancelled. */
+            cancelledClasses: number;
         };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
@@ -10132,6 +10205,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TimetableCalendarResponseDto"];
                 };
+            };
+        };
+    };
+    TimetableController_listClosures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureListResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_createClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClosureDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureCreatedResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_deleteClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
