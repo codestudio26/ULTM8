@@ -30,7 +30,6 @@ if (!hasDb) {
 }
 
 const TZ = 'America/Los_Angeles';
-const localToday = () => DateTime.now().setZone(TZ).toISODate() as string;
 const localDaysAgo = (n: number) => DateTime.now().setZone(TZ).minus({ days: n }).toISODate() as string;
 
 describeIfDb('Grading actions (Phase 3a)', () => {

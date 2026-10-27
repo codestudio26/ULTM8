@@ -51,7 +51,7 @@ function addMonths(date: Date, months: number): Date {
 }
 
 function ageOn(dateOfBirth: Date, on: Date): number {
-  let age = on.getUTCFullYear() - dateOfBirth.getUTCFullYear();
+  const age = on.getUTCFullYear() - dateOfBirth.getUTCFullYear();
   const hadBirthday =
     on.getUTCMonth() > dateOfBirth.getUTCMonth() ||
     (on.getUTCMonth() === dateOfBirth.getUTCMonth() && on.getUTCDate() >= dateOfBirth.getUTCDate());
