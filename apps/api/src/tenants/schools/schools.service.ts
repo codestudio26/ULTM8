@@ -16,7 +16,7 @@ import { UsersService } from '../../users/users.service';
 import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../../jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../../jobs/queue.constants';
 import type { WaiverSignatureRequestJobData } from '../../jobs/waiver-signature-requests.processor';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
@@ -26,6 +26,15 @@ import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
+import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
+import { StepUpService } from '../../auth/step-up.service';
+import { stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
+import { stopSchoolBilling } from '../stop-tenant-billing';
+import { sendFranchiseNotice } from '../franchises/franchise-notifications';
+import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
+
+/** Decision 110's retention window, the same one the Platform Admin close uses. */
+const RETENTION_WINDOW_DAYS = 90;
 
 @Injectable()
 export class SchoolsService {
@@ -42,6 +51,9 @@ export class SchoolsService {
     private readonly usersService: UsersService,
     private readonly waiverAssignment: WaiverAssignmentService,
     @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
+    private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
+    private readonly stepUp: StepUpService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   /**
@@ -415,7 +427,7 @@ export class SchoolsService {
     // can't read the Franchise row through RLS, so this one-column check uses the
     // same jobs connection leaveFranchise() below already uses for the Franchise's
     // PaymentAccount.
-    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { archivedAt: true } });
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { name: true, archivedAt: true } });
     if (!target) {
       throw new NotFoundException('Franchise not found');
     }
@@ -425,7 +437,7 @@ export class SchoolsService {
 
     // Decision 352 — joining asks the Franchise Owner, who accepts or declines
     // (FranchisesService.decideJoinRequest); the School no longer joins at once.
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const request = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const school = await tx.school.findUnique({ where: { id: schoolId }, select: { name: true, franchiseId: true } });
       if (!school) {
         throw new NotFoundException('School not found');
@@ -446,6 +458,16 @@ export class SchoolsService {
         throw err;
       }
     });
+    // Decision 364 — the Franchise's Owners hear that a School is asking.
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: 'ASKED',
+      requestId: request.id,
+      franchiseId,
+      franchiseName: target.name,
+      schoolId,
+      schoolName: request.schoolName,
+    });
+    return request;
   }
 
   /** Decision 352 — the School's latest request to join a Franchise, or null. */
@@ -474,6 +496,48 @@ export class SchoolsService {
       }
       return tx.franchiseJoinRequest.findUniqueOrThrow({ where: { id: open.id }, select: JOIN_REQUEST_SELECT });
     });
+  }
+
+  /**
+   * Decision 364 — a School Owner closes their own School: the same close a
+   * Full Platform Admin can do (TenantLifecycleService.closeSchool, Decision
+   * 110): read-only from now, purged after 90 days, reopened only by a Platform
+   * Admin. Needs the School's name re-typed and a fresh passcode check
+   * (StepUpService, the X-Step-Up-Token header). The write uses the
+   * platform-admin connection, which holds the only grant on archivedAt/purgeAt,
+   * after the ownership check. Then, as on every close: the franchise fee stops
+   * (Decision 337, F16), an open request to join a Franchise lapses (Decision
+   * 352), and the Students' Subscriptions and the School's own ULTM8
+   * subscription end with their paid period (stopSchoolBilling).
+   */
+  async closeOwnSchool(callerId: string, schoolId: string, dto: CloseOwnSchoolDto, stepUpToken: string | undefined) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    this.stepUp.assertVerified(callerId, stepUpToken);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { name: true, archivedAt: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    if (school.archivedAt) {
+      throw new ConflictException('This School is already closed.');
+    }
+    if (dto.confirmName !== school.name) {
+      throw new BadRequestException("Type the School's name exactly as it is to close it.");
+    }
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const { count } = await this.prismaPlatformAdmin.school.updateMany({
+      where: { id: schoolId, archivedAt: null },
+      data: { archivedAt: now, purgeAt },
+    });
+    if (count === 0) {
+      throw new ConflictException('This School is already closed.');
+    }
+    await stopFranchiseFeeBilling(this.prismaJobs, this.stripeClient, this.logger, { schoolId });
+    await this.prismaJobs.franchiseJoinRequest.updateMany({ where: { schoolId, status: 'PENDING' }, data: { status: 'CANCELLED', decidedAt: now } });
+    await stopSchoolBilling(this.prismaJobs, this.stripeClient, this.logger, schoolId, callerId);
+    return this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { id: true, archivedAt: true, purgeAt: true } });
   }
 
   /**

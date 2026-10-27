@@ -215,6 +215,12 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
   'Promotion fee': 'promotionFeeTitle',
+  // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
+  'School asking to join': 'joinAskedTitle',
+  'Joined the Franchise': 'joinAcceptedTitle',
+  'Request to join declined': 'joinDeclinedTitle',
+  'Removed from the Franchise': 'removedFromFranchiseTitle',
+  'Franchise closed': 'franchiseClosedTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -290,6 +296,18 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^(.+) on (.+) was cancelled by your School\. Any class credit you used has been given back\.$/s,
     (m, { t }) => n(t, 'classCancelledBody', { class: m[1], when: m[2] }),
+  ],
+  // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
+  [/^(.+) has asked to join (.+)\.$/s, (m, { t }) => n(t, 'joinAskedBody', { school: m[1], franchise: m[2] })],
+  [/^(.+) accepted (.+)'s request to join\.$/s, (m, { t }) => n(t, 'joinAcceptedBody', { franchise: m[1], school: m[2] })],
+  [/^(.+) declined (.+)'s request to join\. You can ask again\.$/s, (m, { t }) => n(t, 'joinDeclinedBody', { franchise: m[1], school: m[2] })],
+  [
+    /^(.+) removed (.+) from the Franchise\. Its franchise fees have stopped\.$/s,
+    (m, { t }) => n(t, 'removedFromFranchiseBody', { franchise: m[1], school: m[2] }),
+  ],
+  [
+    /^(.+) has been closed\. (.+) stays open, and its franchise fees have stopped\.$/s,
+    (m, { t }) => n(t, 'franchiseClosedBody', { franchise: m[1], school: m[2] }),
   ],
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),

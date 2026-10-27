@@ -449,4 +449,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "\"{v1}\" adında bir branş zaten var (arşivlendi — bunun yerine arşivden çıkarın).",
   "The new name \"{v1}\" must be in classTypesOffered.": "Yeni ad \"{v1}\" classTypesOffered içinde olmalıdır.",
   "This style already has a skill called \"{v1}\".": "Bu stilde zaten \"{v1}\" adında bir beceri var.",
+  "Type the School's name exactly as it is to close it.": "Kapatmak için okulun adını tam olarak yazın.",
+  "Closing a School is not available during an impersonation session (Decision 39).": "Kimliğine bürünme oturumu sırasında okul kapatma kullanılamaz (Decision 39).",
 };

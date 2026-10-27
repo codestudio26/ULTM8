@@ -79,6 +79,11 @@ export function notificationLink(n: Pick<NotificationResponse, 'targetType' | 't
       return '/cancellations';
     case 'GRADING':
       return '/grading';
+    // Decision 364 — Franchise membership notices.
+    case 'FRANCHISE':
+      return n.targetId ? `/franchises/${n.targetId}` : null;
+    case 'SCHOOL':
+      return '/school';
     default:
       return null;
   }

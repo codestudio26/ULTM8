@@ -366,6 +366,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "リクエストを取り消す",
       requestDeclined: "フランチャイズ {id} が参加リクエストを却下しました。もう一度リクエストできます。",
     },
+    close: {
+      title: "このスクールを閉鎖",
+      explanation: "閉鎖すると、このスクールの ULTM8 サブスクリプションと各生徒の会員サブスクリプションは支払い済み期間の終了時に終了し、フランチャイズ料金も停止します。スクールは読み取り専用になり、90日後に完全に削除されます。それまでは ULTM8 サポートのみが再開できます。返金は自動では行われません。閉鎖前に「取引」から返金してください。",
+      button: "スクールを閉鎖",
+      confirmTitle: "このスクールを閉鎖しますか？",
+      confirmBody: "ご自身で元に戻すことはできません。確認のため、スクール名とパスコードを入力してください。",
+      nameLabel: "確認のため「{name}」と入力してください",
+      passcodeLabel: "6桁のパスコード",
+      closedTitle: "このスクールは閉鎖されています",
+      closedBody: "{date} に完全に削除されます。それまでは ULTM8 サポートのみが再開できます。",
+    },
   },
   branches: {
     cancellations: {

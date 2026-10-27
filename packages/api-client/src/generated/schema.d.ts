@@ -356,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_closeOwnSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/join-code/regenerate": {
         parameters: {
             query?: never;
@@ -4678,6 +4694,20 @@ export interface components {
         SchoolFranchiseJoinRequestResponseDto: {
             request?: components["schemas"]["FranchiseJoinRequestResponseDto"] | null;
         };
+        CloseOwnSchoolDto: {
+            /** @description Must exactly match the School's current name. */
+            confirmName: string;
+        };
+        CloseOwnSchoolResponseDto: {
+            id: string;
+            /** Format: date-time */
+            archivedAt: string;
+            /**
+             * Format: date-time
+             * @description When the School is deleted for good (90 days after closing).
+             */
+            purgeAt: string;
+        };
         CreateBranchDto: {
             name: string;
             address?: string;
@@ -5200,8 +5230,8 @@ export interface components {
              * @description What clicking the notification opens (Decision 355), or null for nothing.
              * @enum {string|null}
              */
-            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | null;
-            /** @description The Class or Waiver id, for CLASS and WAIVER targets (Decision 355). */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | null;
+            /** @description The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364). */
             targetId?: string | null;
         };
         NotificationListResponseDto: {
@@ -8408,6 +8438,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_closeOwnSchool: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify (passcode check). */
+                "x-step-up-token": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOwnSchoolDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloseOwnSchoolResponseDto"];
                 };
             };
         };

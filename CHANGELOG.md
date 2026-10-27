@@ -25,6 +25,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the wording of a signed waiver asks whether it's a small fix or new terms
   everyone signs again. Each waiver has a "Remind everyone who hasn't signed"
   button. A waiver signed by a parent is kept while the student is enrolled.
+- **School Owners can close their own School** (Decision 364) — from the
+  School page, after typing its name and their passcode: the same 90-day close
+  a Platform Admin does. Closing a School, by anyone, now also ends every
+  student's membership subscription and the School's ULTM8 subscription at the
+  end of the paid period. Franchise join requests, answers, removals and a
+  Franchise closing now send in-app notifications. No migration.
 - **Joining a Franchise needs the Franchise Owner's approval** (Decision 352) —
   a School asks to join with the Franchise ID and can cancel the request; the
   Franchise page lists Schools asking to join, with Accept and Decline. The

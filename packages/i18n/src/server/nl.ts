@@ -449,4 +449,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "Er bestaat al een discipline met de naam \"{v1}\" (gearchiveerd — zet die liever terug).",
   "The new name \"{v1}\" must be in classTypesOffered.": "De nieuwe naam \"{v1}\" moet in classTypesOffered staan.",
   "This style already has a skill called \"{v1}\".": "Deze stijl heeft al een vaardigheid met de naam \"{v1}\".",
+  "Type the School's name exactly as it is to close it.": "Typ de naam van de school precies zoals hij is om haar te sluiten.",
+  "Closing a School is not available during an impersonation session (Decision 39).": "Een school sluiten is niet beschikbaar tijdens een impersonatiesessie (Decision 39).",
 };

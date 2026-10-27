@@ -449,4 +449,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "Es gibt bereits eine Disziplin namens „{v1}“ (archiviert — stelle sie stattdessen wieder her).",
   "The new name \"{v1}\" must be in classTypesOffered.": "Der neue Name „{v1}“ muss in classTypesOffered enthalten sein.",
   "This style already has a skill called \"{v1}\".": "Dieser Stil hat bereits eine Fertigkeit namens „{v1}“.",
+  "Type the School's name exactly as it is to close it.": "Gib den Namen der Schule genau so ein, wie er lautet, um sie zu schließen.",
+  "Closing a School is not available during an impersonation session (Decision 39).": "Das Schließen einer Schule ist während einer Impersonation-Sitzung nicht verfügbar (Decision 39).",
 };

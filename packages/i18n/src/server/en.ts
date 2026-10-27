@@ -458,4 +458,6 @@ export const SERVER_PATTERNS: string[] = [
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).",
   "The new name \"{v1}\" must be in classTypesOffered.",
   "This style already has a skill called \"{v1}\".",
+ "Type the School's name exactly as it is to close it.",
+ "Closing a School is not available during an impersonation session (Decision 39).",
 ];

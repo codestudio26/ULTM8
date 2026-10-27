@@ -132,6 +132,9 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
     await superuser.franchiseJoinRequest.deleteMany({ where: { OR: [{ schoolId: { in: schoolIds } }, { franchiseId: { in: franchiseIds } }] } });
     await superuser.franchiseFeeCharge.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.franchiseFeeRateChange.deleteMany({ where: { franchiseId: { in: franchiseIds } } });
+    // Decision 364's join/leave notices are written by the fanout worker; let it finish first.
+    await new Promise((r) => setTimeout(r, 1500));
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.auditLogEntry.deleteMany({ where: { adminUserId: { in: adminIds } } });

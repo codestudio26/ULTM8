@@ -5712,6 +5712,32 @@ User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all r
 
 ---
 
+## Decision 364 — A School Owner can close their own School; every close stops billing; Franchise join notices
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 110, 348, 352, 355
+
+Decision 352's Q6 assumed a School Owner could already close their own School. They couldn't: only a Platform Admin could (Decision 110). Join requests (Decision 352) also told nobody. The product owner asked what was "right and best" and approved the recommendation ("go", 27 Oct 2026).
+
+### Decision
+
+1. **A School Owner closes their own School** from the School page: `POST /schools/:id/close` with the School's exact name and an `x-step-up-token` from the passcode check, the same as a Franchise Owner closing a Franchise (Decision 352). Only a SCHOOL_OWNER_MANAGER of that School; not during impersonation (Decision 39). It is the same close a Platform Admin does: read-only, purged after 90 days, and only ULTM8 support can reopen it. Open join requests lapse and franchise fees stop (as for an admin close).
+2. **Every School close stops billing**, whether the Owner or a Platform Admin closes it. Each ACTIVE Subscription Membership at the School is cancelled the way Spec 55 §10.2 confirms for any cancellation: Stripe `cancel_at_period_end`, no proration, no immediate cutoff. The Membership gets the same `cancelAt` its own Cancel button writes (Decision 348), with `cancelledById` set to the Owner, or null for an admin close. The School's own ULTM8 platform subscription is cancelled at period end too. Closing a Franchise (by its Owner or an admin) also cancels the Franchise's platform subscription. All of this runs after the close has committed and is best-effort: a Stripe failure is logged, never a reason to undo the close. This is a behaviour change for the admin close, which used to leave Students' subscriptions running.
+3. **The confirm step says so:** the Close School card explains that the ULTM8 subscription and every student's membership subscription end at the end of the period already paid for, and that refunds aren't automatic.
+4. **In-app notices** (email and push follow once those go live, Decision 355):
+   - a School asks to join → the Franchise's Owners, opening the Franchise page;
+   - accepted, declined, removed, or the Franchise closed → the School's Owners, opening the School page.
+   Notification `targetType` gains FRANCHISE and SCHOOL. Owners are read on the jobs connection, since neither side can see the other's RoleGrants. Each notice is best-effort and has a deterministic id, so a retry never doubles it.
+
+### What this does NOT resolve
+
+Reopening a School does not restore cancelled subscriptions; Students would buy again. Any School Owner/Manager can close the School; once a "main owner" exists (Staff thread), closing may be limited to them. An Owner's own close isn't in the admin audit log. Refunds stay manual.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go" on the recommendation to let School Owners close their own School and to send join-request notices.
+
+---
+
 ## Decision 363 — Notifications: a history of sent broadcasts
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 333, 355

@@ -369,6 +369,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "Annuler la demande",
       requestDeclined: "La franchise {id} a refusé votre demande d'adhésion. Vous pouvez redemander.",
     },
+    close: {
+      title: "Fermer cette école",
+      explanation: "La fermeture met fin à l'abonnement ULTM8 de cette école et à l'abonnement de chaque élève à la fin de la période déjà payée, et arrête les frais de franchise. L'école passe en lecture seule et est supprimée définitivement après 90 jours ; d'ici là, seul le support ULTM8 peut la rouvrir. Les remboursements ne sont pas automatiques : effectuez-les depuis Transactions avant de fermer.",
+      button: "Fermer l'école",
+      confirmTitle: "Fermer cette école ?",
+      confirmBody: "Vous ne pourrez pas l'annuler vous-même. Saisissez le nom de l'école et votre code d'accès pour confirmer.",
+      nameLabel: "Saisissez « {name} » pour confirmer",
+      passcodeLabel: "Votre code d'accès à 6 chiffres",
+      closedTitle: "Cette école est fermée",
+      closedBody: "Elle sera supprimée définitivement le {date}. D'ici là, seul le support ULTM8 peut la rouvrir.",
+    },
   },
   branches: {
     cancellations: {

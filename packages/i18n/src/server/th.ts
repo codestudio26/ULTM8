@@ -449,4 +449,6 @@ export const serverMessages: Record<string, string> = {
   "A discipline called \"{v1}\" already exists (archived — unarchive it instead).": "มีประเภทกีฬาชื่อ \"{v1}\" อยู่แล้ว (เก็บถาวรแล้ว — ให้เลิกเก็บถาวรแทน)",
   "The new name \"{v1}\" must be in classTypesOffered.": "ชื่อใหม่ \"{v1}\" ต้องอยู่ใน classTypesOffered",
   "This style already has a skill called \"{v1}\".": "สไตล์นี้มีทักษะชื่อ \"{v1}\" อยู่แล้ว",
+  "Type the School's name exactly as it is to close it.": "พิมพ์ชื่อโรงเรียนให้ตรงทุกตัวอักษรเพื่อปิดโรงเรียน",
+  "Closing a School is not available during an impersonation session (Decision 39).": "ไม่สามารถปิดโรงเรียนระหว่างเซสชันการสวมสิทธิ์ (Decision 39)",
 };

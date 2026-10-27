@@ -369,6 +369,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelRequest: "Aanvraag annuleren",
       requestDeclined: "Franchise {id} heeft je aanvraag geweigerd. Je kunt het opnieuw vragen.",
     },
+    close: {
+      title: "Deze school sluiten",
+      explanation: "Sluiten beëindigt het ULTM8-abonnement van deze school en het lidmaatschapsabonnement van elke leerling aan het eind van de al betaalde periode, en stopt de franchisekosten. De school wordt alleen-lezen en wordt na 90 dagen definitief verwijderd; tot die tijd kan alleen ULTM8-support haar heropenen. Terugbetalingen gaan niet automatisch: doe ze vóór het sluiten via Transacties.",
+      button: "School sluiten",
+      confirmTitle: "Deze school sluiten?",
+      confirmBody: "Je kunt dit niet zelf ongedaan maken. Typ de naam van de school en je toegangscode om te bevestigen.",
+      nameLabel: "Typ ‘{name}’ om te bevestigen",
+      passcodeLabel: "Je 6-cijferige toegangscode",
+      closedTitle: "Deze school is gesloten",
+      closedBody: "Ze wordt op {date} definitief verwijderd. Tot die tijd kan alleen ULTM8-support haar heropenen.",
+    },
   },
   branches: {
     cancellations: {
