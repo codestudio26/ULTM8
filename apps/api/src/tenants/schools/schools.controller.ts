@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -11,6 +11,7 @@ import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolRespon
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
+import { FranchiseJoinRequestResponseDto, SchoolFranchiseJoinRequestResponseDto } from '../franchises/dto/franchise-join-request.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
@@ -108,12 +109,27 @@ export class SchoolsController {
     return this.schoolsService.join(user.sub, id, dto);
   }
 
-  /** School Owner/Manager only — see SchoolsService.joinFranchise's own header
-   * comment for the full "narrow, one-way only" account (Phase 16b-i, Decision 98). */
-  @ApiCreatedResponse({ type: SchoolResponseDto })
+  /** School Owner/Manager only — asks the Franchise Owner to let this School
+   * join (Decision 352); see SchoolsService.joinFranchise. */
+  @ApiCreatedResponse({ type: FranchiseJoinRequestResponseDto })
   @Post(':id/join-franchise')
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
+  }
+
+  /** Decision 352 — the School's latest request to join a Franchise. */
+  @ApiOkResponse({ type: SchoolFranchiseJoinRequestResponseDto })
+  @Get(':id/franchise-join-request')
+  findFranchiseJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findFranchiseJoinRequest(user.sub, id);
+  }
+
+  /** Decision 352 — withdraw the open request. */
+  @ApiOkResponse({ type: FranchiseJoinRequestResponseDto })
+  @HttpCode(200)
+  @Post(':id/franchise-join-request/cancel')
+  cancelFranchiseJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.cancelFranchiseJoinRequest(user.sub, id);
   }
 
   /** School Owner/Manager only — see SchoolsService.leaveFranchise's own header

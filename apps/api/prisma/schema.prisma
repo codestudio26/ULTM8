@@ -116,6 +116,14 @@ enum FranchiseFeeRateChangeStrategy {
 /// runs, then COMPLETED/FAILED. For a MIGRATE_NEXT_CYCLE/PER_HEADCOUNT row,
 /// COMPLETED means every affected School's deferred swap was successfully
 /// SCHEDULED, not that it has executed yet — see the processor's own comment.
+/// Decision 352 — a School's request to join a Franchise, decided by its Owner.
+enum FranchiseJoinRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 enum FranchiseFeeRateChangeStatus {
   PENDING
   PROCESSING
@@ -447,6 +455,8 @@ model User {
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
   notificationBroadcastsSent        NotificationBroadcast[]     @relation("NotificationBroadcastSentBy")
   franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
+  franchiseJoinRequestsMade         FranchiseJoinRequest[]      @relation("FranchiseJoinRequestRequestedBy")
+  franchiseJoinRequestsDecided      FranchiseJoinRequest[]      @relation("FranchiseJoinRequestDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
   transactionsRecorded              Transaction[]               @relation("TransactionRecordedBy")
   studentRanks                      StudentRank[]
@@ -807,6 +817,7 @@ model Franchise {
   franchiseFeeCharges FranchiseFeeCharge[]
   platformCharges     PlatformCharge[]
   feeRateChanges      FranchiseFeeRateChange[]
+  joinRequests        FranchiseJoinRequest[]
 
   @@index([name])
   @@index([subscriptionPlanId])
@@ -1053,6 +1064,7 @@ model School {
   disciplines           Discipline[]
   waivers               Waiver[]
   franchiseFeeCharges   FranchiseFeeCharge[]
+  franchiseJoinRequests FranchiseJoinRequest[]
   lessons               Lesson[]
   platformCharges       PlatformCharge[]
   studentHomeBranches   StudentHomeBranch[]
@@ -4400,4 +4412,36 @@ model PromotionFeeRequest {
   @@index([studentId])
   @@index([disciplineId])
   @@index([toDecideAt])
+}
+
+/// Decision 352 — a School asks to join a Franchise; the Franchise Owner accepts
+/// (the School joins) or declines. At most one PENDING request per School
+/// (partial unique index in the migration). Visible to the Franchise's Owner and
+/// the School's Owner/Manager only (RLS).
+model FranchiseJoinRequest {
+  id String @id @default(uuid())
+
+  franchiseId String
+  franchise   Franchise @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// The School's name when it asked. The Franchise Owner can't read a
+  /// non-member School's row, so the request carries it.
+  schoolName String
+
+  requestedById String
+  requestedBy   User   @relation("FranchiseJoinRequestRequestedBy", fields: [requestedById], references: [id])
+
+  status FranchiseJoinRequestStatus @default(PENDING)
+
+  decidedById String?
+  decidedBy   User?     @relation("FranchiseJoinRequestDecidedBy", fields: [decidedById], references: [id])
+  decidedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([franchiseId, status])
+  @@index([schoolId, createdAt])
 }

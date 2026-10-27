@@ -5,6 +5,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
+import { JOIN_REQUEST_SELECT } from '../franchises/franchises.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
@@ -394,67 +395,16 @@ export class SchoolsService {
   }
 
   /**
-   * A School's own, narrow join into a Franchise — School Owner/Manager initiated,
-   * self-service, deliberately one-way only (no leave/switch/reaffiliation). Closes a
-   * real, previously-unaddressed gap surfaced while researching Phase 16b
-   * (FranchiseFeeCharge): grepped every write site in this codebase and confirmed
-   * `School.franchiseId` was NEVER written anywhere — `CreateSchoolDto` deliberately
-   * excludes it (a self-service-created School is always independent), so there was
-   * genuinely no way for a real School to ever become affiliated with a Franchise at
-   * all. Same class of gap Decision 96 found and fixed for Student enrollment; see
-   * Decision 98 for the full account, including why this needed the user's own
-   * direct sign-off rather than a unilateral "best decision" call (it borders the
-   * Franchise-reaffiliation topic Decision 97 explicitly deferred).
-   *
-   * Deliberately NOT a `CreateSchoolDto`/`UpdateSchoolDto` field — a dedicated,
-   * single-purpose, auditable action, the same shape `join()` above already
-   * established for the Student side of this pattern (POST /schools/:id/join).
-   *
-   * FOUND ON REVIEW, before this ever shipped — a first draft added a new
-   * `franchise_exists()` SECURITY DEFINER function (mirroring `school_exists()`) as
-   * a separate existence check before the write, in its own `withTenantContext`
-   * call. Two independent review angles caught that this was both unnecessary AND
-   * a real, if narrow, correctness regression: `School.franchiseId` already carries
-   * a real foreign-key constraint to `Franchise.id` (schema.prisma), and Postgres
-   * foreign-key checks always run outside row security by design (documented
-   * Postgres behavior — RI checks bypass RLS specifically so referential integrity
-   * can't be subverted by a restrictive policy) — so the write below already fails
-   * with a real FK-violation error (caught below) if `franchiseId` doesn't
-   * reference a real row, with NO separate existence check needed at all. The
-   * removed draft also split the (unnecessary) existence check and the write
-   * across two separate `withTenantContext` transactions, unlike `join()`
-   * immediately above, which deliberately keeps its own existence check and write
-   * in ONE transaction for exactly this reason (a real TOCTOU window otherwise) —
-   * this version closes that gap too, by removing the second transaction
-   * entirely rather than trying to keep both in sync.
-   *
-   * Idempotency/guard: `updateMany` with a `franchiseId: null` WHERE-clause guard,
-   * checked via the returned row count — NOT a separate findUnique-then-update,
-   * which would leave a TOCTOU window between two concurrent joins for the same
-   * School. This is an UPDATE, not an INSERT, so the "atomic create() + caught
-   * P2002" pattern `join()` above uses doesn't apply directly in shape, but the
-   * same idea does: the FK-violation catch below plays P2002's role (a real DB
-   * constraint surfacing as a clean error, not a plausible-looking pre-check that
-   * could itself race), and the conditional `updateMany` plays the uniqueness-guard
-   * role.
-   *
-   * WHAT THIS DELIBERATELY DOES NOT DO (Decision 98, following the user's own
-   * explicit direction on Franchise-reaffiliation this session): no "leave a
-   * Franchise" or "switch Franchise" path exists anywhere — a School that already
-   * has a franchiseId gets 409, never a silent re-link. That is the entire point of
-   * keeping this one-way: it never has to answer "what happens to this School's
-   * PaymentAccount/MembershipPlan/FranchiseFeeCharge history on reaffiliation"
-   * (Spec 55 §12.2, domain-rules §2/§17), because reaffiliation cannot happen
-   * through this endpoint. Do not extend this method to support leaving/switching
-   * without the user's own "revisit when the project is done" conversation
-   * (Decision 97) happening first — that is a real, separate decision, not an
-   * incremental extension of this one.
-   *
-   * Also does NOT create any Stripe subscription or FranchiseFeeCharge row this
-   * phase (16b-i) — only the relationship itself. The actual billing mechanics are
-   * Phase 16b-ii, built against the real School↔Franchise relationships this method
-   * creates, not fixture-only data (the same anti-pattern Decision 96 already
-   * flagged and fixed once this session for Student enrollment).
+   * School Owner/Manager asks to join a Franchise by its ID. Decision 352 (product
+   * owner, 27 Oct 2026): the School no longer joins at once; this records a
+   * PENDING FranchiseJoinRequest and the Franchise Owner accepts (the School
+   * joins, FranchisesService.decideJoinRequest) or declines. One open request
+   * per School (a partial unique index). A School already in a Franchise leaves
+   * first (Decision 232), and closed Schools and Franchises can't take part
+   * (Decision 337, F3/F4). The Franchise row isn't visible to a School Owner
+   * under RLS, so its existence and closed state are read on the jobs
+   * connection; the School's name is copied onto the request because the
+   * Franchise Owner can't read a non-member School.
    */
   async joinFranchise(callerId: string, schoolId: string, franchiseId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
@@ -464,49 +414,65 @@ export class SchoolsService {
     // Decision 337 (F3) — nor can anyone join a closed Franchise. A School Owner
     // can't read the Franchise row through RLS, so this one-column check uses the
     // same jobs connection leaveFranchise() below already uses for the Franchise's
-    // PaymentAccount. A Franchise that doesn't exist falls through to the FK check
-    // below, keeping its existing 404.
+    // PaymentAccount.
     const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { archivedAt: true } });
-    if (target?.archivedAt) {
+    if (!target) {
+      throw new NotFoundException('Franchise not found');
+    }
+    if (target.archivedAt) {
       throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
     }
 
+    // Decision 352 — joining asks the Franchise Owner, who accepts or declines
+    // (FranchisesService.decideJoinRequest); the School no longer joins at once.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      let count: number;
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { name: true, franchiseId: true } });
+      if (!school) {
+        throw new NotFoundException('School not found');
+      }
+      if (school.franchiseId) {
+        throw new ConflictException('This School is already in a Franchise. Leave it first, then join the new one.');
+      }
       try {
-        ({ count } = await tx.school.updateMany({
-          where: { id: schoolId, franchiseId: null },
-          // Decision 350 — a new Franchise's branding starts hidden until the
-          // School Owner turns it on.
-          data: { franchiseId, showFranchiseBranding: false },
-        }));
+        return await tx.franchiseJoinRequest.create({
+          data: { franchiseId, schoolId, schoolName: school.name, requestedById: callerId },
+          select: JOIN_REQUEST_SELECT,
+        });
       } catch (err) {
-        // P2003 = foreign key constraint violation — franchiseId doesn't reference
-        // a real Franchise row. See this method's own header comment for why this
-        // replaces a separate existence-check function entirely, not just avoids
-        // duplicating it.
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
-          throw new NotFoundException('Franchise not found');
+        // P2002 — the partial unique index: one open request per School.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('This School has already asked to join a Franchise. Cancel that request first.');
         }
         throw err;
       }
-      if (count === 0) {
-        // Noted on review, not engineered around: `count === 0` here technically
-        // conflates two distinct causes — franchiseId genuinely already set, or
-        // (an astronomically narrow race) the caller's own SCHOOL_OWNER_MANAGER
-        // grant was revoked in the gap between assertSchoolOwner above and this
-        // UPDATE reaching Postgres, so school_tenant_isolation's own UPDATE policy
-        // silently matched zero rows. Both produce the same, correctly-safe
-        // outcome (no write happens either way) — only the error MESSAGE would be
-        // misleading in the second case, not the behavior. Disambiguating would
-        // need a re-fetch inside this same transaction, undoing the round-trip
-        // reduction this method exists to have made; not worth it for a race this
-        // narrow with a consequence this small.
-        throw new ConflictException(
-          'This School is already in a Franchise. Leave it first, then join the new one.',
-        );
+    });
+  }
+
+  /** Decision 352 — the School's latest request to join a Franchise, or null. */
+  async findFranchiseJoinRequest(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const request = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseJoinRequest.findFirst({ where: { schoolId }, orderBy: { createdAt: 'desc' }, select: JOIN_REQUEST_SELECT }),
+    );
+    return { request };
+  }
+
+  /** Decision 352 — the School withdraws its open request. */
+  async cancelFranchiseJoinRequest(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const open = await tx.franchiseJoinRequest.findFirst({ where: { schoolId, status: 'PENDING' }, select: { id: true } });
+      if (!open) {
+        throw new NotFoundException('This School has no open request to join a Franchise.');
       }
-      return tx.school.findUniqueOrThrow({ where: { id: schoolId } });
+      const { count } = await tx.franchiseJoinRequest.updateMany({
+        where: { id: open.id, status: 'PENDING' },
+        data: { status: 'CANCELLED', decidedAt: new Date() },
+      });
+      if (count === 0) {
+        throw new ConflictException('This join request has already been answered.');
+      }
+      return tx.franchiseJoinRequest.findUniqueOrThrow({ where: { id: open.id }, select: JOIN_REQUEST_SELECT });
     });
   }
 
