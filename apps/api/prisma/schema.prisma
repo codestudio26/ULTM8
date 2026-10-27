@@ -912,6 +912,22 @@ model School {
   /// Hours are a record only and never affect grading (Decision 306).
   openMatCountsTowardHours Boolean @default(false)
 
+  /// Waiver settings (Waivers page → Settings; Decision 354). Each School
+  /// chooses; the defaults follow common gym software.
+  /// A signature on an archived waiver still counts for bookings and plans.
+  waiverArchivedSignaturesCount Boolean @default(true)
+  /// Sign again every N months; null = a signature never runs out.
+  waiverRenewalMonths Int?
+  /// A waiver a Guardian signed for a child stops counting at 18, and the
+  /// student signs it again as an adult.
+  waiverMinorsSignAgainAt18 Boolean @default(true)
+  /// The Owner and Managers may record a signed paper waiver.
+  waiverPaperSignaturesAllowed Boolean @default(true)
+  /// Tell a new member which waivers to sign when they join.
+  waiverNoticeOnJoin Boolean @default(true)
+  /// Remind members again every N days until they sign; null = off.
+  waiverReminderDays Int?
+
   defaultLanguage String?
   defaultCurrency String?
   /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
@@ -3244,6 +3260,13 @@ enum WaiverSignatureStatus {
   PENDING
 }
 
+/// How a signature was given (Decision 354): in the app, or on paper and
+/// recorded by the Owner or a Manager.
+enum WaiverSignatureMethod {
+  ONLINE
+  PAPER
+}
+
 /// Waiver (Phase 10, Spec 55 §6.1/§13) — belongs to School; has many
 /// WaiverSignatures. Confirmed fields (quoted): "title, body text, per-school
 /// assignment."
@@ -3406,6 +3429,14 @@ model WaiverSignature {
   signedWaiverBody    String?
   signedWaiverSha256  String?
   signedWaiverVersion Int?
+
+  // Decision 354. A PAPER signature has no signedById (the signer used a pen,
+  // not an account); recordedById is the staff member who recorded it and
+  // signatureImageKey holds the photo of the paper.
+  method         WaiverSignatureMethod @default(ONLINE)
+  recordedById   String?
+  // When this member was last reminded to sign (button or repeat reminders).
+  lastRemindedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

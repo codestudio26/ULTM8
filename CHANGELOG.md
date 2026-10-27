@@ -24,6 +24,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   or emailed. A closed Branch with history is kept for good; an empty one is
   removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
   archive words, in all 15 languages. **Needs a database migration.**
+- **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
+  Settings page lets each School choose whether archived waivers' signatures
+  still count, whether members sign again after a set number of months,
+  whether a child signs again at 18, whether staff can record a paper
+  signature (with a photo), whether new members are told which waivers to
+  sign, and whether to remind members until they sign; each setting says
+  what most schools choose. A waiver can now always be archived. Changing
+  the wording of a signed waiver asks whether it's a small fix or new terms
+  everyone signs again. Each waiver has a "Remind everyone who hasn't signed"
+  button. A waiver signed by a parent is kept while the student is enrolled.
 - **School Owners can close their own School** (Decision 364) — from the
   School page, after typing its name and their passcode: the same 90-day close
   a Platform Admin does. Closing a School, by anyone, now also ends every

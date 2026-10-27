@@ -27,6 +27,7 @@ import {
 import { CURRENCIES } from '../settings/constants/currencies';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
+import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
@@ -748,9 +749,7 @@ export class MembershipsService {
     // switch, checked the same way BookingsService.bookClass() checks a
     // Class's: any Signed Waiver at this School.
     if (plan.termsWaiverRequired) {
-      const signed = await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.waiverSignature.findFirst({ where: { studentId, schoolId: plan.schoolId, status: 'SIGNED' }, select: { id: true } }),
-      );
+      const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, plan.schoolId));
       if (!signed) {
         throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
       }
@@ -1236,9 +1235,7 @@ export class MembershipsService {
       throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
     }
     if (plan.termsWaiverRequired) {
-      const signed = await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.waiverSignature.findFirst({ where: { studentId, schoolId, status: 'SIGNED' }, select: { id: true } }),
-      );
+      const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, schoolId));
       if (!signed) {
         throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
       }

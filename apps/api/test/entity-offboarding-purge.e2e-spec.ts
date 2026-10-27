@@ -512,6 +512,41 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     expect(await superuser.waiverSignature.findUnique({ where: { id: signature.id } })).not.toBeNull();
   });
 
+  it('W16 (Decision 354): a Guardian-signed WaiverSignature is kept while the Student is still enrolled, and until 7 years after they leave', async () => {
+    const guardian = await mkSigner('GuardianW16', new Date('1980-01-01'));
+    const enrolled = await mkSigner('W16Enrolled', yearsAgo(25));
+    const leftRecently = await mkSigner('W16LeftRecently', yearsAgo(25));
+    const leftLongAgo = await mkSigner('W16LeftLongAgo', yearsAgo(30));
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: enrolled.id, schoolId: school.id } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: leftRecently.id, schoolId: school.id, revokedAt: yearsAgo(2) } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: leftLongAgo.id, schoolId: school.id, revokedAt: yearsAgo(8) } });
+    const kept1 = await mkWaiverAndSignature({ signedById: guardian.id, studentId: enrolled.id });
+    const kept2 = await mkWaiverAndSignature({ signedById: guardian.id, studentId: leftRecently.id });
+    const purged = await mkWaiverAndSignature({ signedById: guardian.id, studentId: leftLongAgo.id });
+
+    await processor.process(fakeJob());
+
+    expect(await superuser.waiverSignature.findUnique({ where: { id: kept1.id } })).not.toBeNull();
+    expect(await superuser.waiverSignature.findUnique({ where: { id: kept2.id } })).not.toBeNull();
+    expect(await superuser.waiverSignature.findUnique({ where: { id: purged.id } })).toBeNull();
+  });
+
+  it('Decision 354: a paper signature follows the same rules (a minor\'s when the Student was under 18 on the date signed)', async () => {
+    const recorder = await mkSigner('PaperRecorder', new Date('1980-01-01'));
+    const grownUp = await mkSigner('PaperMinorGrownUp', yearsAgo(25));
+    const adultLeft = await mkSigner('PaperAdultLeft', yearsAgo(40));
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: adultLeft.id, schoolId: school.id, revokedAt: yearsAgo(8) } });
+    const minorPaper = await mkWaiverAndSignature({ signedById: recorder.id, studentId: grownUp.id });
+    await superuser.waiverSignature.update({ where: { id: minorPaper.id }, data: { method: 'PAPER', signedById: null, recordedById: recorder.id, signedDate: yearsAgo(10) } });
+    const adultPaper = await mkWaiverAndSignature({ signedById: recorder.id, studentId: adultLeft.id });
+    await superuser.waiverSignature.update({ where: { id: adultPaper.id }, data: { method: 'PAPER', signedById: null, recordedById: recorder.id, signedDate: yearsAgo(12) } });
+
+    await processor.process(fakeJob());
+
+    expect(await superuser.waiverSignature.findUnique({ where: { id: minorPaper.id } })).toBeNull();
+    expect(await superuser.waiverSignature.findUnique({ where: { id: adultPaper.id } })).toBeNull();
+  });
+
   it('a minor\'s (Guardian-signed) WaiverSignature is left alone when the Student has no dateOfBirth on file — never guessed', async () => {
     const guardian = await mkSigner('Guardian3', new Date('1980-01-01'));
     const minorNoDob = await superuser.user.create({
