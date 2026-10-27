@@ -176,6 +176,10 @@ export class WaiversService {
     // students are asked to sign the new version.
     const resign = wordingChanged && dto.resign === true;
     const { updated, toNotify } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // The Waiver row lock comes first: sign() holds FOR SHARE on it while it
+      // checks the version, so a signature either commits before this (and is
+      // expired below) or sees the new version (stress test round 3).
+      await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiverId} FOR UPDATE`;
       const updated = await tx.waiver.update({
         where: { id: waiverId },
         data: { title: dto.title, body: dto.body, ...(wordingChanged ? { version: { increment: 1 } } : {}) },
@@ -539,6 +543,8 @@ export class WaiversService {
       throw new BadRequestException('Upload the photo of the signed paper first.');
     }
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Same Waiver lock as sign(): new terms saved meanwhile expire this too.
+      await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiverId} FOR SHARE`;
       const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiverId }, select: { title: true, body: true, version: true } });
       const { count } = await tx.waiverSignature.updateMany({
         where: { id: signatureId, status: { in: ['UNSIGNED', 'PENDING'] } },
@@ -728,6 +734,9 @@ export class WaiversService {
       created = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         // Waivers review W3: copy the wording being signed, read in this same
         // transaction. A signer who read an older version is sent back to it.
+        // FOR SHARE holds off new terms (updateWaiver) until this signature is
+        // saved, so it is expired with the rest, never left on the old version.
+        await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiver.id} FOR SHARE`;
         const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiver.id }, select: { title: true, body: true, version: true } });
         if (dto.waiverVersion !== undefined && dto.waiverVersion !== current.version) {
           throw new ConflictException('This waiver was changed while you were reading it. Please read it again before signing.');
@@ -751,8 +760,17 @@ export class WaiversService {
           }
           // UNSIGNED or PENDING — the assignment-time row this Student was
           // always going to sign. Update in place rather than create a
-          // second row for the same (waiverId, studentId) pair.
-          return tx.waiverSignature.update({ where: { id: existing.id }, data: signedData });
+          // second row for the same (waiverId, studentId) pair. Only while it
+          // is still unsigned: of two signings at once (a double click) one
+          // wins and the other gets the same 409 as signing twice.
+          const { count } = await tx.waiverSignature.updateMany({
+            where: { id: existing.id, status: { in: ['UNSIGNED', 'PENDING'] } },
+            data: signedData,
+          });
+          if (count === 0) {
+            throw new ConflictException('This Student already holds a non-Expired signature for this Waiver.');
+          }
+          return tx.waiverSignature.findUniqueOrThrow({ where: { id: existing.id } });
         }
         return tx.waiverSignature.create({
           data: { id: randomUUID(), waiverId: waiver.id, studentId, schoolId: waiver.schoolId, ...signedData },
