@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "มีผู้ฝึกสอนแจ้งว่าถือสายคาดนี้ จึงลบไม่ได้",
     beltDeclaredArchive: "มีผู้ฝึกสอนแจ้งว่าถือสายคาดนี้ จึงเก็บถาวรไม่ได้",
     classHasDependents: "ไม่สามารถเก็บถาวรคลาสนี้ได้ ขณะที่ยังมี{items}",
-    branchHasDependents: "ไม่สามารถเก็บถาวรสาขานี้ได้ ขณะที่ยังมี{items} โปรดย้ายหรือนำออกก่อน",
+    branchHasDependents: "ไม่สามารถปิดสาขานี้ได้ ขณะที่ยังมี{items} โปรดเลือกปลายทางหรือย้ายออกก่อน",
     instructorHasDependents: "ไม่สามารถเก็บถาวรผู้ฝึกสอนคนนี้ได้ ขณะที่ยังได้รับมอบหมายให้ดูแล{items} โปรดมอบหมายให้คนอื่นก่อน",
     schoolHasSubscription: "โรงเรียนนี้มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่แล้ว — ยังไม่รองรับการเปลี่ยนแผน",
     franchiseHasSubscription: "แฟรนไชส์นี้มีการสมัครใช้งานแพลตฟอร์มที่ใช้งานอยู่แล้ว — ยังไม่รองรับการเปลี่ยนแผน",
@@ -92,6 +92,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "ช่วงเวลาที่ใช้งานอยู่ในตารางเรียน {count} ช่วง",
+      },
+      weeklySlots: {
+        other: "ช่วงเวลาในตารางรายสัปดาห์ {count} ช่วง",
       },
     },
   },

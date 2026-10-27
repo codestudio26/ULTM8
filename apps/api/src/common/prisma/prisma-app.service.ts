@@ -132,6 +132,20 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
     });
   }
 
+  /**
+   * A transaction for a guest waiver link's holder (Waivers Q9): no signed-in
+   * user, only the link token's hash, so GuestWaiverSignature's token-holder
+   * policies let it sign for that one booking seat. The hash is SHA-256 hex,
+   * checked before it is set.
+   */
+  async withGuestWaiverToken<T>(tokenHash: string, fn: (tx: TenantTx) => Promise<T>): Promise<T> {
+    if (!/^[0-9a-f]{64}$/.test(tokenHash)) throw new Error('Invalid guest waiver token hash');
+    return this.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.guest_waiver_token_hash = '${tokenHash}'`);
+      return fn(tx);
+    });
+  }
+
   /** Shared by withTenantContext/withMultiTenantContext — see withTenantContext's own
    * header comment for the full Phase 47 account. Same UUID validation as userId
    * above, and for the identical reason (SET LOCAL can't bind-parameter an

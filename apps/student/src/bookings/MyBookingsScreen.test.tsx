@@ -8,6 +8,7 @@ import { MyBookingsScreen } from './MyBookingsScreen';
 jest.mock('./bookingQueries', () => ({
   useMyBookings: jest.fn(),
   useCancelBooking: jest.fn(),
+  useBookingGuests: jest.fn(),
 }));
 jest.mock('../attendance/attendanceQueries', () => ({
   useEnterCheckInCode: jest.fn(),
@@ -48,7 +49,7 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
 
   it('offers "Check in with code" and "Cancel" for an UPCOMING booking', async () => {
     mocked(bookingQueries.useMyBookings).mockReturnValue(
-      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING' }]),
+      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [] }]),
     );
 
     const { getByText } = await render(<MyBookingsScreen />);
@@ -58,7 +59,7 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
 
   it('offers neither action for a COMPLETED booking', async () => {
     mocked(bookingQueries.useMyBookings).mockReturnValue(
-      pagedQuery([{ id: 'b1', classId: 'c1', status: 'COMPLETED' }]),
+      pagedQuery([{ id: 'b1', classId: 'c1', status: 'COMPLETED', attendees: [] }]),
     );
 
     const { queryByText } = await render(<MyBookingsScreen />);
@@ -68,7 +69,7 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
 
   it('tapping "Check in with code" opens the code field; submits classId + code on Check in', async () => {
     mocked(bookingQueries.useMyBookings).mockReturnValue(
-      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING' }]),
+      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [] }]),
     );
 
     const { getByText, getByPlaceholderText } = await render(<MyBookingsScreen />);
@@ -83,7 +84,7 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
 
   it('shows the API error message inline when the code is rejected', async () => {
     mocked(bookingQueries.useMyBookings).mockReturnValue(
-      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING' }]),
+      pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [] }]),
     );
     enterCode.mutateAsync.mockRejectedValueOnce(new Error('boom'));
 
@@ -93,5 +94,27 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
     await fireEvent.press(getByText('Check in'));
 
     await waitFor(() => expect(getByText('Incorrect or expired code — ask Staff for the current code.')).toBeTruthy());
+  });
+  it("lists an upcoming booking's guests with each one's link and whether they signed", async () => {
+    mocked(bookingQueries.useMyBookings).mockReturnValue(pagedQuery([{ id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [{ id: 'a1' }, { id: 'a2' }] }]));
+    mocked(bookingQueries.useBookingGuests).mockReturnValue({
+      isLoading: false,
+      error: null,
+      data: {
+        bookingId: 'b1',
+        waiverRequired: true,
+        guests: [
+          { attendeeId: 'a1', link: 'https://portal.example/guest-waiver/tok1', waiverStatus: 'UNSIGNED', guestFullName: null },
+          { attendeeId: 'a2', link: 'https://portal.example/guest-waiver/tok2', waiverStatus: 'SIGNED', guestFullName: 'Gina Guest' },
+        ],
+      },
+    });
+    const { getByText, queryByText } = await render(<MyBookingsScreen />);
+    expect(getByText('Guest 1')).toBeTruthy();
+    expect(getByText("Hasn't signed the waiver yet")).toBeTruthy();
+    expect(getByText('https://portal.example/guest-waiver/tok1')).toBeTruthy();
+    expect(getByText('Waiver signed: Gina Guest')).toBeTruthy();
+    expect(queryByText('https://portal.example/guest-waiver/tok2')).toBeNull();
+    expect(mocked(bookingQueries.useBookingGuests)).toHaveBeenCalledWith('b1');
   });
 });

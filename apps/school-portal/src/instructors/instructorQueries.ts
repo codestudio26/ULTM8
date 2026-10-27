@@ -202,6 +202,14 @@ export function useReassignInstructor(schoolId: string, instructorId: string) {
   });
 }
 
+/** POST /instructors/{id}/resend-passcode (Decision 331) — a new temporary
+ * passcode for someone added manually who hasn't signed in yet. */
+export function useResendInstructorPasscode(instructorId: string) {
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/instructors/{id}/resend-passcode', { params: { path: { id: instructorId } } })),
+  });
+}
+
 /** Every Timetable slot of the School, all pages, for the detail page's
  * "Weekly timetable" box. Under the ['timetable', schoolId] key, so a slot
  * edit anywhere refreshes it. */
