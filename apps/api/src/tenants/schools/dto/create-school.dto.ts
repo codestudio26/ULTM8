@@ -282,4 +282,9 @@ export class CreateSchoolDto {
   @IsOptional()
   @IsEnum(['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'])
   lateCancelRefundPolicy?: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+
+  @ApiPropertyOptional({ description: 'Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false.' })
+  @IsOptional()
+  @IsBoolean()
+  branchStaffCanRecordPayments?: boolean;
 }

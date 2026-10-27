@@ -762,6 +762,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       viewReceipt: "查看收据",
       noReceipt: "此笔付款没有可用的收据。",
       receiptFailed: "无法加载收据，请重试。",
+      renewal: "续费：{plan}",
+      lateCancelFee: "迟取消费用：{class}",
+      lateCancelFeeNoClass: "迟取消费用",
     },
     status: {
       successful: "成功",

@@ -147,6 +147,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       });
 
@@ -337,7 +338,8 @@ export class SchoolsService {
       // lets this context see this School's Waivers at all (Waiver's RLS is
       // "any active RoleGrant holder at the School"), same reasoning the home
       // branch lookup just above already relies on for Branch's own RLS.
-      const waivers = await tx.waiver.findMany({ where: { schoolId }, select: { id: true } });
+      // Waivers review W6: an archived Waiver is not assigned to new members.
+      const waivers = await tx.waiver.findMany({ where: { schoolId, archivedAt: null }, select: { id: true } });
       await this.waiverAssignment.assignUnsignedRows(
         tx,
         schoolId,
@@ -763,6 +765,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
+          branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
         },
       }),
     );

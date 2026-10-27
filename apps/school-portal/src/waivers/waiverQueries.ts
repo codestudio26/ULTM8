@@ -7,16 +7,27 @@ export type WaiverResponse = components['schemas']['WaiverResponseDto'];
 export type CreateWaiverInput = components['schemas']['CreateWaiverDto'];
 export type UpdateWaiverInput = components['schemas']['UpdateWaiverDto'];
 export type WaiverSignatureResponse = components['schemas']['WaiverSignatureResponseDto'];
+export type WaiverSignatureSummary = components['schemas']['WaiverSignatureSummaryDto'];
 
-/** No pagination in this UI yet — same established convention as the other
- * list screens (see e.g. useBranches' own header comment). Decision 226 —
+/** Reads every page, like useBranches. Decision 226 —
  * always fetches `includeArchived: true`, same "fetch everything, filter/
  * toggle client-side" convention useBranches already established. */
 export function useWaivers(schoolId: string | null) {
   return useQuery({
     queryKey: ['waivers', schoolId],
-    queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/waivers', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
+    // Every page (Waivers review W8: only the first 20 used to show).
+    queryFn: async () => {
+      const items: WaiverResponse[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/waivers', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true, limit: 100, cursor } } }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items };
+    },
     enabled: !!schoolId,
   });
 }
@@ -58,20 +69,40 @@ export function useUnarchiveWaiver(schoolId: string) {
   });
 }
 
-/** v1.2 backend backlog — the "Signatures" panel's real data: who HAS
- * signed, with what status. No pagination in this UI yet, same convention
- * as useWaivers above — the backend endpoint itself still paginates
- * (cursor/limit), so a School with a very large signer count would need
- * this revisited, not a gap this hook papers over silently. */
+/** v1.2 backend backlog — the "Signatures" panel's real data: who has
+ * signed, with what status. Reads every page (Waivers review W8). */
+/** One signature with the text as it was signed — the list leaves that out. */
+export function useWaiverSignature(schoolId: string, waiverId: string, signatureId: string) {
+  return useQuery({
+    queryKey: ['waivers', schoolId, waiverId, 'signatures', signatureId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures/{signatureId}', {
+          params: { path: { schoolId, id: waiverId, signatureId } },
+        }),
+      ),
+  });
+}
+
 export function useWaiverSignatures(schoolId: string | null, waiverId: string | null) {
   return useQuery({
     queryKey: ['waivers', schoolId, waiverId, 'signatures'],
-    queryFn: () =>
-      unwrap(
-        apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures', {
-          params: { path: { schoolId: schoolId!, id: waiverId! } },
-        }),
-      ),
+    queryFn: async () => {
+      const items: WaiverSignatureResponse[] = [];
+      let summary: WaiverSignatureSummary | undefined;
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures', {
+            params: { path: { schoolId: schoolId!, id: waiverId! }, query: { limit: 100, cursor } },
+          }),
+        );
+        items.push(...page.items);
+        summary = page.summary;
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items, summary };
+    },
     enabled: !!schoolId && !!waiverId,
   });
 }

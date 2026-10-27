@@ -21,6 +21,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261202000000_franchise_join_requests`.
+- **Waivers: review fixes** (Decision 340) — the Signatures panel no longer
+  breaks after a student leaves (their signature shows under "Former
+  students"); each signature keeps a copy of the exact text signed, viewable
+  by opening it, and signing an out-of-date version asks the student to read
+  it again; blank waivers and blank signatures are refused; archived waivers
+  are no longer assigned or signable, and Archive asks first; every waiver and signature loads, with
+  All / Signed / Not signed tabs sorted A to Z; clearer signing errors;
+  waitlists need a signed waiver when the class does; "include archived =
+  false" now works on Waivers, Classes, Timetable, Branches and Instructors;
+  drawn signature images are deleted with their signature. Needs migration
+  `20261130000000_waiver_signed_copy`.
 - **Add student and Cancel booking on a class's page** (Decision 349) — staff
   can book a student into a class from the class itself (paid from the
   student's own membership; offered the waitlist when the class is full), and
@@ -101,6 +112,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   when sending to one class, the Owner ticks who gets it (booked, waitlist,
   cancelled; booked by default); and the payment-restricted alert names the
   student.
+- **Branch Staff can record desk payments when the owner allows it
+  (Decision 347)** — a new School setting, off by default, lets Branch Staff
+  record payments taken at the desk for their own branch's students. They
+  still can't see the Transactions list. **Needs a database migration.**
+
+- **Transactions: renewals, late-cancel fees, filters, CSV export and Record a
+  payment (Decision 346)** — each Subscription renewal and each late-cancellation
+  fee now shows as its own row, in the portal and in the student app; the page
+  can be filtered by status, method, type, plan and dates, and the tiles follow
+  the filters; Export CSV downloads every filtered row; the School owner can
+  record a payment taken at the desk (cash, bank transfer, Pix or card
+  terminal), which starts the membership at once. **Needs a database migration** (adds the new columns and
+  writes rows for late-cancel fees already charged).
 - **Class cancellations, chosen by each academy** (Decision 291) — the
   School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
   actually applies, in its own "Class cancellations" section with new
