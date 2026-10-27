@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "这节课有已预约或候补的学员。请先取消他们的预约，再把课程移到其他分馆。",
     classMovedToPast: "这节课有已预约或候补的学员，因此只能改到尚未过去的时间。",
     classAlreadyEnded: "这节课已经结束。请选择一个未来的结束时间。",
+    schoolCurrencyChange: "按学校货币收费的会员计划：{count} 个。从现在起将以 {currency} 收费，金额不变。",
+    schoolCurrencyInUse: "按学校货币收费的会员计划：{count} 个。清空货币前，请先为这些计划设置各自的货币。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",

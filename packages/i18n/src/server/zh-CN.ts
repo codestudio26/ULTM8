@@ -451,4 +451,9 @@ export const serverMessages: Record<string, string> = {
   "This style already has a skill called \"{v1}\".": "此流派已有名为“{v1}”的技能。",
   "Type the School's name exactly as it is to close it.": "请准确输入学校名称以将其关闭。",
   "Closing a School is not available during an impersonation session (Decision 39).": "模拟登录会话期间无法关闭学校（Decision 39）。",
+  "School name can't be empty.": "学校名称不能为空。",
+  "Social links must be full web addresses starting with https://.": "社交链接必须是以 https:// 开头的完整网址。",
+  "Enter a valid contact email address.": "请输入有效的联系邮箱。",
+  "The waitlist claim window must be a whole number of minutes, at least 1.": "候补名单领取时限必须是至少 1 的整数分钟。",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.": "请按加盟所有者提供的原样输入加盟 ID。",
 };

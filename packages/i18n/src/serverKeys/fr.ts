@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Des élèves sont inscrits ou en liste d'attente pour ce cours. Annule leurs réservations avant de le déplacer vers un autre site.",
     classMovedToPast: "Des élèves sont inscrits ou en liste d'attente pour ce cours : il ne peut être déplacé qu'à un horaire qui n'est pas encore passé.",
     classAlreadyEnded: "Ce cours est déjà terminé. Choisis une heure de fin dans le futur.",
+    schoolCurrencyChange: "Formules facturées dans la devise de l'école : {count}. Elles sont désormais facturées en {currency}, avec les mêmes montants.",
+    schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
   },
   errors: {
     beltInHistoryDelete: "Cette ceinture figure dans l’historique de grades des élèves, elle ne peut donc pas être supprimée.",

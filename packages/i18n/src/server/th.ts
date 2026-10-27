@@ -451,4 +451,9 @@ export const serverMessages: Record<string, string> = {
   "This style already has a skill called \"{v1}\".": "สไตล์นี้มีทักษะชื่อ \"{v1}\" อยู่แล้ว",
   "Type the School's name exactly as it is to close it.": "พิมพ์ชื่อโรงเรียนให้ตรงทุกตัวอักษรเพื่อปิดโรงเรียน",
   "Closing a School is not available during an impersonation session (Decision 39).": "ไม่สามารถปิดโรงเรียนระหว่างเซสชันการสวมสิทธิ์ (Decision 39)",
+  "School name can't be empty.": "ชื่อโรงเรียนต้องไม่ว่าง",
+  "Social links must be full web addresses starting with https://.": "ลิงก์โซเชียลต้องเป็นที่อยู่เต็มที่ขึ้นต้นด้วย https://",
+  "Enter a valid contact email address.": "กรอกอีเมลติดต่อที่ถูกต้อง",
+  "The waitlist claim window must be a whole number of minutes, at least 1.": "ระยะเวลารับที่ว่างจากรายชื่อรอต้องเป็นจำนวนเต็มนาที อย่างน้อย 1",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.": "กรอกรหัสแฟรนไชส์ให้ตรงตามที่เจ้าของแฟรนไชส์ให้มา",
 };

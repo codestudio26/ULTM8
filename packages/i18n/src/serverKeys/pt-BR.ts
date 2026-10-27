@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Há alunos reservados ou na lista de espera desta aula. Cancele as reservas deles antes de mudá-la para outra unidade.",
     classMovedToPast: "Há alunos reservados ou na lista de espera desta aula, então ela só pode ir para um horário que ainda não passou.",
     classAlreadyEnded: "Esta aula já terminou. Escolha um horário de término no futuro.",
+    schoolCurrencyChange: "Planos cobrados na moeda da escola: {count}. A partir de agora eles são cobrados em {currency}, com os mesmos valores.",
+    schoolCurrencyInUse: "Planos cobrados na moeda da escola: {count}. Dê a esses planos uma moeda própria antes de limpá-la.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",

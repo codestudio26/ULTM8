@@ -451,4 +451,9 @@ export const serverMessages: Record<string, string> = {
   "This style already has a skill called \"{v1}\".": "Este estilo já tem uma habilidade chamada \"{v1}\".",
   "Type the School's name exactly as it is to close it.": "Digite o nome da escola exatamente como ele é para encerrá-la.",
   "Closing a School is not available during an impersonation session (Decision 39).": "Encerrar uma escola não está disponível durante uma sessão de personificação (Decision 39).",
+  "School name can't be empty.": "O nome da escola não pode ficar vazio.",
+  "Social links must be full web addresses starting with https://.": "Os links de redes sociais devem ser endereços completos começando com https://.",
+  "Enter a valid contact email address.": "Digite um e-mail de contato válido.",
+  "The waitlist claim window must be a whole number of minutes, at least 1.": "A janela da lista de espera deve ser um número inteiro de minutos, no mínimo 1.",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.": "Digite o ID da franquia exatamente como o proprietário da franquia passou.",
 };

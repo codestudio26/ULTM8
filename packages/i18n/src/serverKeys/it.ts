@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Ci sono allievi prenotati o in lista d'attesa per questa lezione. Annulla le loro prenotazioni prima di spostarla in un'altra sede.",
     classMovedToPast: "Ci sono allievi prenotati o in lista d'attesa per questa lezione, quindi può essere spostata solo a un orario non ancora passato.",
     classAlreadyEnded: "Questa lezione è già finita. Scegli un orario di fine nel futuro.",
+    schoolCurrencyChange: "Piani addebitati nella valuta della scuola: {count}. D'ora in poi sono addebitati in {currency}, con gli stessi importi.",
+    schoolCurrencyInUse: "Piani addebitati nella valuta della scuola: {count}. Dai a questi piani una valuta propria prima di cancellarla.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",

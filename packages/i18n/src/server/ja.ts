@@ -451,4 +451,9 @@ export const serverMessages: Record<string, string> = {
   "This style already has a skill called \"{v1}\".": "このスタイルにはすでに「{v1}」というスキルがあります。",
   "Type the School's name exactly as it is to close it.": "閉鎖するには、スクール名を正確に入力してください。",
   "Closing a School is not available during an impersonation session (Decision 39).": "なりすましセッション中はスクールを閉鎖できません（Decision 39）。",
+  "School name can't be empty.": "スクール名は空にできません。",
+  "Social links must be full web addresses starting with https://.": "SNSのリンクは https:// で始まる完全なアドレスにしてください。",
+  "Enter a valid contact email address.": "有効な連絡先メールアドレスを入力してください。",
+  "The waitlist claim window must be a whole number of minutes, at least 1.": "キャンセル待ちの確保時間は1分以上の整数で入力してください。",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.": "フランチャイズのオーナーから受け取ったIDをそのまま入力してください。",
 };

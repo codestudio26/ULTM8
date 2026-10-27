@@ -18,6 +18,8 @@ export enum PublicPhotoEntityType {
   BRANCH = 'BRANCH',
   FRANCHISE = 'FRANCHISE',
   CLASS = 'CLASS',
+  /** Decision 368 — the School's own logo (School.logoUrl), which the student app shows. */
+  SCHOOL = 'SCHOOL',
 }
 
 const ALLOWED_CONTENT_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;

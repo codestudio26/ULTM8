@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste. Storniere ihre Buchungen, bevor du ihn an einen anderen Standort verlegst.",
     classMovedToPast: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste, daher kann er nur auf eine Zeit verlegt werden, die noch nicht vorbei ist.",
     classAlreadyEnded: "Dieser Kurs ist bereits vorbei. Wähle eine Endzeit in der Zukunft.",
+    schoolCurrencyChange: "Mitgliedschaftstarife in der Währung der Schule: {count}. Ab jetzt werden sie in {currency} abgerechnet, mit denselben Beträgen.",
+    schoolCurrencyInUse: "Mitgliedschaftstarife in der Währung der Schule: {count}. Gib diesen Tarifen eine eigene Währung, bevor du sie leerst.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",

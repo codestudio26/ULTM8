@@ -114,6 +114,19 @@ export class UploadsService {
         }
         return { scope: schoolId, entityId: dto.entityId ?? randomUUID() };
       }
+      case PublicPhotoEntityType.SCHOOL: {
+        // Decision 368 — the School's own logo: the same Owner/Manager gate as
+        // SchoolsService.update(), which saves the URL, and the same closed-School
+        // rule. Like FRANCHISE, the School is both scope and entity.
+        const schoolId = this.requireSchoolId(dto, 'SCHOOL');
+        await this.schoolsService.findOne(callerId, schoolId);
+        await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+        await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+        if (dto.entityId && dto.entityId !== schoolId) {
+          throw new BadRequestException('entityId must equal schoolId for entityType SCHOOL.');
+        }
+        return { scope: schoolId, entityId: schoolId };
+      }
       case PublicPhotoEntityType.FRANCHISE: {
         if (!dto.franchiseId) {
           // Unlike INSTRUCTOR/BRANCH/CLASS (which always nest under an

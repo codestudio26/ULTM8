@@ -42,6 +42,9 @@ export const server = {
     classBranchBooked: "Students are booked or waiting for this class. Cancel their bookings before moving it to another branch.",
     classMovedToPast: "Students are booked or waiting for this class, so it can only move to a time that hasn't passed yet.",
     classAlreadyEnded: "This class has already ended. Pick an end time in the future.",
+    // School Settings review (Decision 368, Q3).
+    schoolCurrencyChange: "Membership plans charged in the School's currency: {count}. From now on they're charged in {currency}, with the same amounts.",
+    schoolCurrencyInUse: "Membership plans charged in the School's currency: {count}. Give those plans their own currency before clearing it.",
   },
   errors: {
     slotHasBookings: {

@@ -451,4 +451,9 @@ export const serverMessages: Record<string, string> = {
   "This style already has a skill called \"{v1}\".": "Bu stilde zaten \"{v1}\" adında bir beceri var.",
   "Type the School's name exactly as it is to close it.": "Kapatmak için okulun adını tam olarak yazın.",
   "Closing a School is not available during an impersonation session (Decision 39).": "Kimliğine bürünme oturumu sırasında okul kapatma kullanılamaz (Decision 39).",
+  "School name can't be empty.": "Okul adı boş olamaz.",
+  "Social links must be full web addresses starting with https://.": "Sosyal medya bağlantıları https:// ile başlayan tam adresler olmalıdır.",
+  "Enter a valid contact email address.": "Geçerli bir iletişim e-posta adresi girin.",
+  "The waitlist claim window must be a whole number of minutes, at least 1.": "Bekleme listesi süresi en az 1 olan tam sayı dakika olmalıdır.",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.": "Franchise kimliğini franchise sahibinin verdiği şekilde aynen girin.",
 };

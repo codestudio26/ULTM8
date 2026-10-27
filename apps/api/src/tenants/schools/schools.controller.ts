@@ -4,7 +4,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { SchoolsService } from './schools.service';
+import { SchoolsService, withoutBillingIds } from './schools.service';
+import { FranchisePreviewQueryDto, FranchisePreviewResponseDto } from './dto/franchise-preview.dto';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
@@ -44,8 +45,8 @@ export class SchoolsController {
 
   @ApiOkResponse({ type: SchoolResponseDto })
   @Get(':id')
-  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.findOne(user.sub, id);
+  async findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return withoutBillingIds(await this.schoolsService.findOne(user.sub, id));
   }
 
   /** FOUND ON REVIEW — see SchoolsService.findTheme's own header comment. */
@@ -116,6 +117,14 @@ export class SchoolsController {
   @Post(':id/join-franchise')
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
+  }
+
+  /** Decision 368 — the Franchise's name, so the School Owner can check it
+   * before asking to join; see SchoolsService.previewFranchise. */
+  @ApiOkResponse({ type: FranchisePreviewResponseDto })
+  @Get(':id/franchise-preview')
+  previewFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: FranchisePreviewQueryDto) {
+    return this.schoolsService.previewFranchise(user.sub, id, query.franchiseId);
   }
 
   /** Decision 352 — the School's latest request to join a Franchise. */
