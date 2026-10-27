@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, Spinner, SuccessBanner, TextArea, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, Spinner, SuccessBanner, TextArea, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useCompleteMyInstructorProfile, useMyInstructorProfiles, useRequestCertificationUploadUrl, type InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
 
@@ -15,6 +16,8 @@ const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg
  * Applies to every Instructor row the caller holds (flagged limitation,
  * same as the backend: can't set different values per School here).
  * Starts from what's already saved (Decision 312), read from the first profile.
+ * Decision 331 adds their photo, bio and the phone number the School sees
+ * (not their sign-in number). Only fields that changed are sent.
  */
 export function CompleteInstructorProfilePage() {
   const t = useT();
@@ -28,6 +31,11 @@ function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorRe
   const t = useT();
   const complete = useCompleteMyInstructorProfile();
   const requestUploadUrl = useRequestCertificationUploadUrl();
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
+
+  const [photoUrl, setPhotoUrl] = useState(current?.photoUrl ?? '');
+  const [bio, setBio] = useState(current?.bio ?? '');
+  const [phone, setPhone] = useState(current?.phone ?? '');
 
   const [initialAddress] = useState(() => postalAddressFromRecord(current, guessDefaultCountry()));
   const [address, setAddress] = useState(initialAddress);
@@ -68,6 +76,9 @@ function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorRe
     try {
       const certificationKey = await uploadCertificationIfAny();
       await complete.mutateAsync({
+        ...(photoUrl !== (current?.photoUrl ?? '') ? { photoUrl: photoUrl || null } : {}),
+        ...(bio.trim() !== (current?.bio ?? '') ? { bio: bio.trim() || null } : {}),
+        ...(phone !== (current?.phone ?? '') ? { phone: phone || null } : {}),
         ...(prepared.postalAddress ? { postalAddress: prepared.postalAddress } : {}),
         // Emptying a saved list clears it; an untouched empty box sends nothing.
         ...(activities.trim() || (current?.activities.length ?? 0) > 0 ? { activities: activities.split(',').map((a) => a.trim()).filter(Boolean) } : {}),
@@ -88,6 +99,28 @@ function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorRe
       {saved ? <SuccessBanner message={t('instructors.completeProfile.saved')} /> : null}
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={handleSubmit}>
+        {current ? (
+          <Field label={t('instructors.form.photo')} htmlFor="complete-profile-photo">
+            <PhotoUploadField
+              value={photoUrl}
+              onChange={setPhotoUrl}
+              requestUpload={(file) =>
+                requestPhotoUpload.mutateAsync({
+                  entityType: 'INSTRUCTOR',
+                  schoolId: current.schoolId,
+                  entityId: current.id,
+                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                })
+              }
+            />
+          </Field>
+        ) : null}
+        <Field label={t('instructors.form.bio')} htmlFor="complete-profile-bio">
+          <TextArea id="complete-profile-bio" value={bio} maxLength={500} onChange={(e) => setBio(e.target.value)} />
+        </Field>
+        <Field label={t('instructors.form.phone')} htmlFor="complete-profile-phone" hint={t('instructors.completeProfile.phoneHint')}>
+          <PhoneField id="complete-profile-phone" value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
+        </Field>
         <AddressFields idPrefix="complete-profile-address" value={address} onChange={setAddress} errors={addressErrors} />
         <Field label={t('instructors.completeProfile.activities')} htmlFor="complete-profile-activities" hint={t('instructors.completeProfile.activitiesHint')}>
           <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />

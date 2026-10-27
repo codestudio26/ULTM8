@@ -222,7 +222,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Request to join declined': 'joinDeclinedTitle',
   'Removed from the Franchise': 'removedFromFranchiseTitle',
   'Franchise closed': 'franchiseClosedTitle',
-  // Decision 366 — apps/api/src/tenants/schools/student-added-notice.ts.
+  // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   'Added to a School': 'studentAddedTitle',
 };
 
@@ -312,7 +312,7 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^(.+) has been closed\. (.+) stays open, and its franchise fees have stopped\.$/s,
     (m, { t }) => n(t, 'franchiseClosedBody', { franchise: m[1], school: m[2] }),
   ],
-  // Decision 366 — apps/api/src/tenants/schools/student-added-notice.ts.
+  // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   [/^You've been added to (.+)\.$/s, (m, { t }) => n(t, 'studentAddedBody', { school: m[1] })],
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),

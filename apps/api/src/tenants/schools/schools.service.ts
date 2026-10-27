@@ -408,7 +408,7 @@ export class SchoolsService {
       return created;
     });
 
-    // Decision 366 — the owner added this student: tell them (Add manually
+    // Decision 371 — the owner added this student: tell them (Add manually
     // passes notify: false, since its email already says so).
     if (isStaffAction && opts.notify !== false) {
       await sendStudentAddedNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, { roleGrantId, schoolId, studentId });
@@ -859,7 +859,7 @@ export class SchoolsService {
     return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id) })) };
   }
 
-  /** Decision 366 (Students Q2) — each student's home branch, for the list's
+  /** Decision 371 (Students Q2) — each student's home branch, for the list's
    * Branch column and filter. Read as the caller under StudentHomeBranch RLS:
    * the owner sees every row, Branch Staff and coaches their own branches'
    * (student_home_branch_staff_read), which are the only students they list.
@@ -1015,7 +1015,7 @@ export class SchoolsService {
     return this.usersService.getProfileFor(callerId, studentId);
   }
 
-  /** Decision 366 (Students Q4) — the names of a student's active Guardians,
+  /** Decision 371 (Students Q4) — the names of a student's active Guardians,
    * for the student's page. Gated like the profile read (staff who cover this
    * enrolled student). The caller can't see the student's Guardian links or a
    * Guardian's User row under RLS, so the links are read on the jobs

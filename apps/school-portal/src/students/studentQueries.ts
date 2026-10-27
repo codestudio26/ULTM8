@@ -115,7 +115,7 @@ export function useUpdateStudentProfile(schoolId: string | null) {
 
 export type AddStudentManuallyInput = components['schemas']['CreateStudentManuallyDto'];
 
-/** Add manually (Decision 366, Students Q1): the owner creates an adult's
+/** Add manually (Decision 371, Students Q1): the owner creates an adult's
  * account and enrols them; they're emailed a temporary passcode
  * (POST /schools/{schoolId}/students/add-manually). */
 export function useAddStudentManually(schoolId: string | null) {
@@ -130,7 +130,7 @@ export function useAddStudentManually(schoolId: string | null) {
 }
 
 /** A student's active Guardians, by name, for the student's page
- * (GET /schools/{id}/students/{studentId}/guardians, Decision 366). */
+ * (GET /schools/{id}/students/{studentId}/guardians, Decision 371). */
 export function useStudentGuardians(schoolId: string | null, studentId: string | null, enabled = true) {
   return useQuery({
     queryKey: ['studentGuardians', schoolId, studentId],

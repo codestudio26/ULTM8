@@ -11,7 +11,7 @@ import { matchesSearch } from './studentSearch';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
-/** Rows per page (Decision 366, Students Q2). Paged here, in the browser: the
+/** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
  * roster is fetched whole, as it was before. */
 export const STUDENTS_PAGE_SIZE = 25;
 /** Branch filter value for students with no home branch. */
@@ -25,7 +25,7 @@ const NO_BRANCH = '__none__';
  * existing-but-unenrolled person they found by email/phone — all three via
  * the STUDENT RoleGrant path (SchoolsService.join()), the last one through
  * the dedicated /students/invite page linked below, not this page itself.
- * Decision 366 adds the owner's Add manually page (/students/add), for an
+ * Decision 371 adds the owner's Add manually page (/students/add), for an
  * adult with no ULTM8 account yet, and search, a Branch column and filter,
  * and paging here.
  */

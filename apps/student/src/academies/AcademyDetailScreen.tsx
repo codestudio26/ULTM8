@@ -135,7 +135,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
           <View style={{ marginTop: 16 }}>
             <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.upcomingClasses')}</Text>
             {academy.upcomingClasses.map((c) => (
-              <ClassBookingRow key={c.id} classItem={c} />
+              <ClassBookingRow key={c.id} classItem={c} schoolId={academyId} />
             ))}
           </View>
         ) : null}

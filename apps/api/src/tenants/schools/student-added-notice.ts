@@ -4,7 +4,7 @@ import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
 
 /**
- * Decision 366 (Students Q5) — when the School owner adds a student (Invite or
+ * Decision 371 (Students Q5) — when the School owner adds a student (Invite or
  * Re-enrol), the student hears "You've been added to [School]".
  * There is no accept step: the enrolment already happened. (Add manually
  * sends none: its email already says so.) A child's active

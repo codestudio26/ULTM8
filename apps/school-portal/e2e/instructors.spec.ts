@@ -141,7 +141,7 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
-  await page.getByLabel('Country').selectOption('GB');
+  await page.getByLabel('Country', { exact: true }).selectOption('GB');
   await page.getByLabel('Address line 1').fill('123 Mat Street');
   // A UK address needs a postcode: the form says so before anything is sent.
   await page.getByLabel('Town/City').fill('Leeds');
@@ -201,6 +201,15 @@ test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled
     // own render).
     await expect(page.getByText(/^1\s+booked$/)).toBeVisible();
 
+    // Still teaching an upcoming class: revoking is refused (Decision 331).
+    await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+    const blocked = page.getByRole('dialog', { name: 'Dana Coach still teaches classes' });
+    await expect(blocked).toBeVisible();
+    await blocked.getByRole('button', { name: 'Cancel' }).click();
+
+    // Once the class is over, it goes through.
+    await db.class.update({ where: { id: cls.id }, data: { startDate: new Date(Date.now() - 25 * 3_600_000), endDate: new Date(Date.now() - 24 * 3_600_000) } });
+    await page.reload();
     await page.getByRole('button', { name: 'Revoke enrollment' }).click();
     const dialog = page.getByRole('dialog', { name: 'Revoke Dana Coach\'s enrollment?' });
     await expect(dialog).toBeVisible();

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** A Guardian linked to a student, by name only (Decision 366, Students Q4). */
+/** A Guardian linked to a student, by name only (Decision 371, Students Q4). */
 export class StudentGuardianDto {
   @ApiProperty()
   id!: string;

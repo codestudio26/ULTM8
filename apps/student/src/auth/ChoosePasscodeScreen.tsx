@@ -10,7 +10,7 @@ import type { AuthStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'ChoosePasscode'>;
 
 /** First sign-in with the temporary passcode a School sent (a student the
- * owner added by hand, Decision 366): choose one's own 6-digit passcode, then
+ * owner added by hand, Decision 371): choose one's own 6-digit passcode, then
  * signed in. */
 export function ChoosePasscodeScreen({ route }: Props) {
   const t = useT();

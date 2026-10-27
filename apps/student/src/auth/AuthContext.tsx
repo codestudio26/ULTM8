@@ -56,7 +56,7 @@ interface AuthContextValue {
    * credential, not a step-up factor alongside OTP. */
   login: (email: string, passcode: string) => Promise<LoginOutcome>;
   /** First sign-in with a temporary passcode the School sent (a student the
-   * owner added by hand, Decision 366): choose one's own, then signed in. */
+   * owner added by hand, Decision 371): choose one's own, then signed in. */
   completeFirstLogin: (passcodeChangeToken: string, newPasscode: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Swap in a fresh access token the API handed back, e.g. after joining a
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, passcode: string) => {
       const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
       // A temporary passcode (Decisions 1/230; a student the owner added by
-      // hand, Decision 366): the caller asks for a new one, then calls
+      // hand, Decision 371): the caller asks for a new one, then calls
       // completeFirstLogin. LoginResponseDto's own header comment confirms
       // accessToken/refreshToken are always present or absent TOGETHER.
       if (result.mustChangePasscode && result.passcodeChangeToken) {

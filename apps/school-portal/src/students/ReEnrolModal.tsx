@@ -6,7 +6,7 @@ import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useInviteStudent } from './studentQueries';
 import { useT } from '../i18n/I18nProvider';
 
-/** Re-enrol (Decision 366, Students Q3) — the owner enrols a former student
+/** Re-enrol (Decision 371, Students Q3) — the owner enrols a former student
  * again, from their page, with a new home branch when the School has branches
  * (revoking removed the old one, Decision 341, S13). The same
  * POST /schools/{id}/join Invite uses, so the student gets the "added" notice. */

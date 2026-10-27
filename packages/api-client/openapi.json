@@ -1780,6 +1780,128 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff": {
+      "get": {
+        "operationId": "RoleGrantsController_listStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Default active. \"removed\" = had a staff role here, holds none now.",
+            "schema": {
+              "enum": [
+                "active",
+                "removed",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SCHOOL_OWNER_MANAGER",
+                "INSTRUCTOR",
+                "BRANCH_STAFF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Part of a name or email, any capitals.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+      "post": {
+        "operationId": "RoleGrantsController_removeFromSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -6421,6 +6543,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateInstructorManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/resend-passcode": {
+      "post": {
+        "operationId": "InstructorsController_resendPasscode",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendPasscodeResponseDto"
                 }
               }
             }
@@ -11139,6 +11296,295 @@
         ]
       }
     },
+    "/v1/bookings/{id}/guests": {
+      "get": {
+        "operationId": "GuestWaiversController_bookingGuests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingGuestsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/guest-waivers": {
+      "get": {
+        "operationId": "GuestWaiversController_classGuests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassGuestWaiversDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/friend-passes/me": {
+      "get": {
+        "operationId": "GuestWaiversController_myFriendPasses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendPassListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures": {
+      "get": {
+        "operationId": "GuestWaiversController_listSignatures",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverSignatureListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures/{signatureId}": {
+      "get": {
+        "operationId": "GuestWaiversController_getSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverSignatureDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guest-waiver-links/{token}": {
+      "get": {
+        "operationId": "GuestWaiverLinksController_page",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ]
+      }
+    },
+    "/v1/guest-waiver-links/{token}/sign": {
+      "post": {
+        "operationId": "GuestWaiverLinksController_sign",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignGuestWaiversDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignGuestWaiversResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ]
+      }
+    },
     "/v1/attendance/scan": {
       "post": {
         "operationId": "AttendanceController_scan",
@@ -15830,6 +16276,131 @@
           "emailSent"
         ]
       },
+      "StaffRoleDto": {
+        "type": "object",
+        "properties": {
+          "grantId": {
+            "type": "string",
+            "description": "The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SCHOOL_OWNER_MANAGER",
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "grantedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "grantId",
+          "role",
+          "grantedAt"
+        ]
+      },
+      "StaffMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Holds at least one active staff, coach or owner role here."
+          },
+          "addedAt": {
+            "type": "string",
+            "description": "When they were first given a staff role here."
+          },
+          "removedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When their last staff role here ended, for removed staff."
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          },
+          "roles": {
+            "description": "Active roles first, then ended ones, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRoleDto"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "active",
+          "addedAt",
+          "canInviteCoaches",
+          "roles"
+        ]
+      },
+      "StaffListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffMemberDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RemoveFromSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "removedRoles": {
+            "type": "number",
+            "description": "How many roles were ended."
+          }
+        },
+        "required": [
+          "removedRoles"
+        ]
+      },
       "CreateFranchiseDto": {
         "type": "object",
         "properties": {
@@ -19714,9 +20285,34 @@
           "emailSent"
         ]
       },
+      "ResendPasscodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the new passcode was set but the email could not be sent."
+          }
+        },
+        "required": [
+          "emailSent"
+        ]
+      },
       "CompleteInstructorProfileDto": {
         "type": "object",
         "properties": {
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "School-facing contact number, E.164 — not the login phone."
+          },
           "address": {
             "type": "string"
           },
@@ -24131,6 +24727,388 @@
             "description": "Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller."
           }
         }
+      },
+      "BookingGuestDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string",
+            "nullable": true,
+            "description": "The guest's signing link. Only for the booker and the School Owner/Manager, and null when the portal address isn't set up."
+          },
+          "waiverStatus": {
+            "type": "string",
+            "enum": [
+              "SIGNED",
+              "UNSIGNED",
+              "NONE"
+            ],
+            "description": "NONE: the School has no current waiver to sign."
+          },
+          "guestFullName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "attendeeId",
+          "waiverStatus"
+        ]
+      },
+      "BookingGuestsDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "waiverRequired": {
+            "type": "boolean",
+            "description": "The class asks for a signed waiver, so its guests should sign one too."
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingGuestDto"
+            }
+          }
+        },
+        "required": [
+          "bookingId",
+          "waiverRequired",
+          "guests"
+        ]
+      },
+      "ClassGuestWaiversDto": {
+        "type": "object",
+        "properties": {
+          "waiverRequired": {
+            "type": "boolean"
+          },
+          "bookings": {
+            "description": "Upcoming bookings with guests.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingGuestsDto"
+            }
+          }
+        },
+        "required": [
+          "waiverRequired",
+          "bookings"
+        ]
+      },
+      "FriendPassDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string"
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Only good for this class."
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "membershipId"
+        ]
+      },
+      "FriendPassListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FriendPassDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuestWaiverSignatureDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guestFullName": {
+            "type": "string"
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signedByGuardian": {
+            "type": "boolean"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signedWaiverVersion": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "signedByGuardian",
+          "classTitle",
+          "classStartsAt",
+          "signedAt",
+          "signedWaiverVersion"
+        ]
+      },
+      "GuestWaiverSignatureListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverSignatureDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuestWaiverSignatureDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guestFullName": {
+            "type": "string"
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signedByGuardian": {
+            "type": "boolean"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signedWaiverVersion": {
+            "type": "number"
+          },
+          "signedWaiverTitle": {
+            "type": "string"
+          },
+          "signedWaiverBody": {
+            "type": "string"
+          },
+          "signedWaiverSha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "signedByGuardian",
+          "classTitle",
+          "classStartsAt",
+          "signedAt",
+          "signedWaiverVersion",
+          "signedWaiverTitle",
+          "signedWaiverBody",
+          "signedWaiverSha256"
+        ]
+      },
+      "GuestWaiverPageWaiverDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number",
+            "description": "Send it back when signing; a waiver changed since is refused."
+          },
+          "signed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "version",
+          "signed"
+        ]
+      },
+      "GuestWaiverPageDto": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ],
+            "description": "CLOSED: the booking was cancelled, the class has ended or the School has closed."
+          },
+          "waivers": {
+            "description": "The School's current waivers.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverPageWaiverDto"
+            }
+          },
+          "guestFullName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The guest named on an earlier signature on this link, if any."
+          }
+        },
+        "required": [
+          "schoolName",
+          "classTitle",
+          "classStartsAt",
+          "classEndsAt",
+          "status",
+          "waivers"
+        ]
+      },
+      "GuestWaiverSignItemDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number",
+            "description": "The version the guest read (GuestWaiverPageWaiverDto.version)."
+          }
+        },
+        "required": [
+          "waiverId",
+          "version"
+        ]
+      },
+      "SignGuestWaiversDto": {
+        "type": "object",
+        "properties": {
+          "guestFullName": {
+            "type": "string",
+            "description": "The guest's full name."
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "The guest's date of birth, YYYY-MM-DD."
+          },
+          "signerFullName": {
+            "type": "string",
+            "description": "Who is signing: the guest, or for a guest under 18 their parent or guardian."
+          },
+          "signatureText": {
+            "type": "string",
+            "description": "Typed signature."
+          },
+          "waivers": {
+            "description": "Every current waiver the guest has not signed yet.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverSignItemDto"
+            }
+          }
+        },
+        "required": [
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "waivers"
+        ]
+      },
+      "SignGuestWaiversResponseDto": {
+        "type": "object",
+        "properties": {
+          "signed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "signed"
+        ]
       },
       "ScanAttendanceDto": {
         "type": "object",

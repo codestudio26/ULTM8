@@ -8,6 +8,8 @@ import { ClassBookingRow } from './ClassBookingRow';
 
 jest.mock('./bookingQueries', () => ({
   useBookClass: jest.fn(),
+  useMyFriendPasses: jest.fn(),
+  useBookingGuests: jest.fn(),
 }));
 jest.mock('./waitlistMutations', () => ({
   useJoinWaitlist: jest.fn(),
@@ -29,6 +31,8 @@ describe('ClassBookingRow — booking refusals', () => {
     book = idleMutation();
     join = idleMutation();
     mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [] } });
+    mocked(bookingQueries.useBookingGuests).mockReturnValue({ isLoading: false, error: null, data: { bookingId: 'booking-1', waiverRequired: false, guests: [] } });
     mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(join);
     mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
   });
@@ -74,6 +78,7 @@ describe('ClassBookingRow — break', () => {
     mocked(bookingQueries.useBookClass).mockReturnValue(idleMutation());
     mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(idleMutation());
     mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [] } });
   });
 
   it('shows the break when the class has one', async () => {
@@ -86,5 +91,49 @@ describe('ClassBookingRow — break', () => {
   it('shows no break line without one', async () => {
     const screen = await render(<ClassBookingRow classItem={classItem} />);
     expect(screen.queryByText(/^Break /)).toBeNull();
+  });
+});
+
+/** Waivers Q9 — guests paid for with the member's own Friend Passes. */
+describe('ClassBookingRow — guests', () => {
+  let book: ReturnType<typeof idleMutation>;
+
+  beforeEach(() => {
+    book = idleMutation();
+    mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+  });
+
+  it('offers no guests without a usable Friend Pass', async () => {
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [{ membershipId: 'p-other', scopedClassId: 'another-class', expiryDate: null }] } });
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    expect(screen.queryByText('Add a guest')).toBeNull();
+  });
+
+  it("books with one guest, using the class's own pass first, then shows the guest's link", async () => {
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({
+      data: {
+        items: [
+          { membershipId: 'p-general', scopedClassId: null, expiryDate: null },
+          { membershipId: 'p-this-class', scopedClassId: 'class-1', expiryDate: null },
+        ],
+      },
+    });
+    mocked(bookingQueries.useBookingGuests).mockReturnValue({
+      isLoading: false,
+      error: null,
+      data: { bookingId: 'booking-1', waiverRequired: true, guests: [{ attendeeId: 'a1', link: 'https://portal.example/guest-waiver/tok', waiverStatus: 'UNSIGNED', guestFullName: null }] },
+    });
+    book.mutateAsync.mockResolvedValue({ id: 'booking-1' });
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    expect(screen.getByText('Friend Passes you can use for this class: 2')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Add a guest'));
+    expect(screen.getByText('Guests: 1')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Booked ✓')).toBeTruthy());
+    expect(book.mutateAsync).toHaveBeenCalledWith({ classId: 'class-1', guestPassIds: ['p-this-class'] });
+    expect(screen.getByText('https://portal.example/guest-waiver/tok')).toBeTruthy();
+    expect(screen.getByText('Share link')).toBeTruthy();
   });
 });

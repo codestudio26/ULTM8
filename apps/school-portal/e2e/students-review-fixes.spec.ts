@@ -175,7 +175,7 @@ async function removeAccount(email: string) {
   await db.user.delete({ where: { id: user.id } });
 }
 
-test('Add manually makes an adult\'s account and enrols them; the list finds them by search and branch (Decision 366)', async ({ page }) => {
+test('Add manually makes an adult\'s account and enrols them; the list finds them by search and branch (Decision 371)', async ({ page }) => {
   const north = await addBranch(s, 'North');
   const email = `add-manually-${randomUUID()}@example.test`;
   try {
@@ -227,7 +227,7 @@ test('the list pages at 25 students', async ({ page }) => {
   expect(await page.locator('tbody tr').count()).toBeLessThan(25);
 });
 
-test('the owner re-enrols a former student from their page, and a child\'s page names their Guardian (Decision 366)', async ({ page }) => {
+test('the owner re-enrols a former student from their page, and a child\'s page names their Guardian (Decision 371)', async ({ page }) => {
   await db.roleGrant.updateMany({ where: { userId: s.student.id, schoolId: s.schoolId, role: 'STUDENT' }, data: { revokedAt: new Date() } });
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Re-enrol' }).click();

@@ -200,6 +200,8 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     deleted += signatureOutcome.deleted;
     skipped += signatureOutcome.skipped;
 
+    deleted += await this.sweepGuestWaiverSignatures(now);
+
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +
         `${waiversSkipped} Waiver row(s) past purgeAt deliberately left un-purged (legal-record exception).`,
@@ -415,5 +417,21 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
     }
     return { deleted, skipped };
+  }
+
+  /** Guest waiver signatures (Waivers Q9), kept like a student who has left
+   * (Decision 354, W16): 7 years after the class, and for a guest under 18
+   * until they turn 24 (18 + 6) if that's later. For a guest who was 18 or
+   * over at the class, 24 comes before class + 7 years, so both dates having
+   * passed is the whole rule. */
+  private async sweepGuestWaiverSignatures(now: Date): Promise<number> {
+    const sevenYearsAgo = new Date(now);
+    sevenYearsAgo.setUTCFullYear(sevenYearsAgo.getUTCFullYear() - 7);
+    const born24YearsAgo = new Date(now);
+    born24YearsAgo.setUTCFullYear(born24YearsAgo.getUTCFullYear() - 24);
+    const result = await this.prismaJobs.guestWaiverSignature.deleteMany({
+      where: { classStartsAt: { lte: sevenYearsAgo }, guestDateOfBirth: { lte: born24YearsAgo } },
+    });
+    return result.count;
   }
 }

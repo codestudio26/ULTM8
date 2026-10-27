@@ -11,7 +11,7 @@ type Form = { firstName: string; surname: string; email: string; dateOfBirth: st
 const EMPTY: Form = { firstName: '', surname: '', email: '', dateOfBirth: '', branchId: '' };
 
 /**
- * Add manually (Decision 366, Students Q1) — the School owner adds an adult
+ * Add manually (Decision 371, Students Q1) — the School owner adds an adult
  * who has no ULTM8 account yet. The API creates the account, enrols them and
  * emails a temporary passcode; the app asks them to choose their own on first
  * sign-in. A child joins through their Guardian's app instead, so a date of

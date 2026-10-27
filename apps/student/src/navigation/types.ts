@@ -14,7 +14,7 @@ export type AuthStackParamList = {
   VerifyOtp: { phone?: string } | undefined;
   ForgotPasscode: undefined;
   ResetPasscode: { phone?: string } | undefined;
-  /** First sign-in with a temporary passcode (Decision 366). */
+  /** First sign-in with a temporary passcode (Decision 371). */
   ChoosePasscode: { passcodeChangeToken: string };
 };
 

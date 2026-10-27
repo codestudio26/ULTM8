@@ -104,7 +104,7 @@ export class SchoolsController {
     return this.schoolsService.getStudentProfile(user.sub, id, studentId);
   }
 
-  /** The student's Guardians, by name, for the student's page (Decision 366).
+  /** The student's Guardians, by name, for the student's page (Decision 371).
    * Same staff who can read the student's profile. */
   @ApiOkResponse({ type: StudentGuardiansResponseDto })
   @Get(':id/students/:studentId/guardians')

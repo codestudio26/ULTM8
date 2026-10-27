@@ -23,6 +23,7 @@ import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booki
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -247,8 +248,16 @@ export class BookingsService {
       // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
       for (const membershipId of attendeeMembershipIds) {
         const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
+        // Waivers Q9: each guest seat gets its own waiver signing link.
+        const attendeeId = randomUUID();
         await tx.bookingAttendee.create({
-          data: { id: randomUUID(), bookingId, schoolId: resolvedClass.schoolId, membershipId: guestMembership.id },
+          data: {
+            id: attendeeId,
+            bookingId,
+            schoolId: resolvedClass.schoolId,
+            membershipId: guestMembership.id,
+            guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
+          },
         });
       }
 

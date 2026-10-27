@@ -48,7 +48,7 @@ export class StudentSummaryResponseDto {
   @ApiProperty({ enum: StudentStatusDto, enumName: 'StudentStatus' })
   status!: StudentStatusDto;
 
-  /** The student's home branch at this School (Decision 366, Students Q2).
+  /** The student's home branch at this School (Decision 371, Students Q2).
    * Null at a School with no branches, for a former student, or for a row the
    * caller can't see the home branch of. */
   @ApiPropertyOptional({ type: String, nullable: true })

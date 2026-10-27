@@ -1,6 +1,6 @@
 import type { StudentSummary } from './studentQueries';
 
-/** Students list search (Decision 366, Students Q2): every word typed must
+/** Students list search (Decision 371, Students Q2): every word typed must
  * start a word of the name, or appear in the email. Case and accents don't
  * matter. */
 export function matchesSearch(student: Pick<StudentSummary, 'firstName' | 'surname' | 'email'>, query: string): boolean {

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** The new student (Decision 366). `emailSent` is false when the temporary
+/** The new student (Decision 371). `emailSent` is false when the temporary
  * passcode email could not be sent: the account and enrolment still exist. */
 export class CreateStudentManuallyResponseDto {
   @ApiProperty()

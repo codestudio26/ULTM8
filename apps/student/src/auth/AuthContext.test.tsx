@@ -226,7 +226,7 @@ describe('AuthProvider — pendingSchoolPick (Decision 266)', () => {
   });
 });
 
-describe('AuthProvider — first sign-in with a temporary passcode (Decision 366)', () => {
+describe('AuthProvider — first sign-in with a temporary passcode (Decision 371)', () => {
   beforeEach(() => {
     secureTokenStore.get.mockReset().mockResolvedValue(null);
     authClient.POST.mockReset();

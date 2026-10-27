@@ -301,7 +301,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       noticeAdd.mockClear();
       const back = await join('owner', schoolId, { studentId: id.leaver, branchId: south });
       expect(back.status).toBe(201);
-      // Decision 366 (Q5): re-enrolling tells the student, no accept step.
+      // Decision 371 (Q5): re-enrolling tells the student, no accept step.
       expect(noticeAdd).toHaveBeenCalledWith(
         'notify',
         expect.objectContaining({ userId: id.leaver, title: 'Added to a School', body: "You've been added to Students Fixes Dojo.", schoolId }),
@@ -427,7 +427,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(after.body).toMatchObject({ upcomingBookings: 0, waitlistPlaces: 0 });
     });
   });
-  describe('Decision 366: Add manually, home branch on the list, Guardian names', () => {
+  describe('Decision 371: Add manually, home branch on the list, Guardian names', () => {
     const addManually = (label: string, body: Record<string, unknown>) => http().post(`/v1/schools/${schoolId}/students/add-manually`).set(as(label)).send(body);
     const adult = () => ({ firstName: ' Ada ', surname: 'Lovelace', email: `Add-Manually-${randomUUID()}@Example.test`, dateOfBirth: '1990-05-01', branchId: north });
 

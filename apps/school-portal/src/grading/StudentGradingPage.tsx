@@ -99,7 +99,7 @@ export function StudentGradingPage() {
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
   const [reEnrolling, setReEnrolling] = useState(false);
   const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
-  // Decision 366 (Q4): who the student's Guardians are. Read for a current
+  // Decision 371 (Q4): who the student's Guardians are. Read for a current
   // student only (the API's own rule, like the profile read).
   const guardians = useStudentGuardians(schoolId, studentId, enrolled);
 

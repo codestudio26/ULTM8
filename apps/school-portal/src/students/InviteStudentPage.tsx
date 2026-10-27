@@ -24,7 +24,7 @@ import { useT } from '../i18n/I18nProvider';
  * removed per direct product feedback (v1.2 backend backlog, "Invite a
  * Student", 28 Sep update) in favor of this narrower shape. A brand-new
  * adult is added from scratch on the owner's Add manually page instead
- * (AddStudentManuallyPage, Decision 366).
+ * (AddStudentManuallyPage, Decision 371).
  */
 export function InviteStudentPage() {
   const t = useT();
