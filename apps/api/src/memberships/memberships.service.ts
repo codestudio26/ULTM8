@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -35,6 +35,19 @@ const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'T
 
 // Re-exported: grading and curriculum import it from here.
 export { isMembershipLive };
+
+/** How long two purchases of the same plan by the same student count as one
+ * (a double click) at Stripe. A later purchase gets a new key. */
+const PURCHASE_KEY_WINDOW_MS = 2 * 60 * 1000;
+
+/** The Stripe idempotency key for a card purchase (see createStripeOrder).
+ * `sent` is what the purchase sends Stripe (price, currency, title...): Stripe
+ * refuses a reused key with different values, so an owner editing the plan
+ * between two clicks gets a new key instead of an error. */
+export function stripePurchaseKey(studentId: string, planId: string, kind: 'subscription' | 'card' | 'checkout', sent: unknown[]): string {
+  const values = createHash('sha256').update(JSON.stringify(sent)).digest('hex').slice(0, 12);
+  return `membership-purchase-${kind}-${studentId}-${planId}-${values}-${Math.floor(Date.now() / PURCHASE_KEY_WINDOW_MS)}`;
+}
 
 @Injectable()
 export class MembershipsService {
@@ -828,8 +841,17 @@ export class MembershipsService {
           plan.stripePriceId ?? undefined,
           // Decision 259 — see PaymentsService.subscribe()'s own header comment.
           plan.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? plan.billingCycleAnchorDay ?? undefined : undefined,
+          stripePurchaseKey(studentId, plan.id, 'subscription', [
+            student.email,
+            plan.price,
+            currency,
+            plan.title,
+            plan.stripePriceId,
+            plan.newMemberBillingStrategy,
+            plan.billingCycleAnchorDay,
+          ]),
         );
-        await this.prismaApp.withTenantContext(studentId, (tx) =>
+        const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
           tx.transaction.create({
             data: {
               id: transactionId,
@@ -849,7 +871,7 @@ export class MembershipsService {
             },
           }),
         );
-        return { outcome: 'requires_payment' as const, clientSecret, transactionId };
+        return { outcome: 'requires_payment' as const, clientSecret, transactionId: orderId };
       }
 
       // Decision 236's own follow-up — reuse the saved card (Decision 238)
@@ -868,8 +890,15 @@ export class MembershipsService {
         return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency);
       }
 
-      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(studentId, plan.schoolId, plan.price, currency, plan.title);
-      await this.prismaApp.withTenantContext(studentId, (tx) =>
+      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
+        studentId,
+        plan.schoolId,
+        plan.price,
+        currency,
+        plan.title,
+        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title]),
+      );
+      const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
         tx.transaction.create({
           data: {
             id: transactionId,
@@ -885,7 +914,7 @@ export class MembershipsService {
           },
         }),
       );
-      return { outcome: 'requires_payment' as const, clientSecret, transactionId };
+      return { outcome: 'requires_payment' as const, clientSecret, transactionId: orderId };
     }
 
     // Cash/Bank Transfer path — Transaction created Pending, Membership created
@@ -1064,12 +1093,13 @@ export class MembershipsService {
       plan.price,
       currency,
       plan.title,
+      stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title]),
     );
-    const transactionId = randomUUID();
-    await this.prismaApp.withTenantContext(studentId, (tx) =>
+    const newId = randomUUID();
+    const transactionId = await this.createStripeOrder(studentId, paymentIntentId, newId, (tx) =>
       tx.transaction.create({
         data: {
-          id: transactionId,
+          id: newId,
           schoolId: plan.schoolId,
           studentId,
           paymentAccountId,
@@ -1083,6 +1113,34 @@ export class MembershipsService {
       }),
     );
     return { outcome: 'requires_checkout' as const, checkoutUrl, transactionId };
+  }
+
+  /**
+   * Saves a card purchase's Pending Transaction. A repeated purchase (a double
+   * click) reaches Stripe with the same idempotency key and gets the same
+   * PaymentIntent back, which already has its Transaction (stripePaymentIntentId
+   * is unique): that one is returned instead of a second. Before, each click
+   * opened its own Stripe subscription or Checkout and its own Pending order
+   * (billing stress test, 26 Oct 2026, B2).
+   */
+  private async createStripeOrder(
+    studentId: string,
+    paymentIntentId: string,
+    transactionId: string,
+    create: (tx: Parameters<Parameters<PrismaAppService['withTenantContext']>[1]>[0]) => Promise<unknown>,
+  ): Promise<string> {
+    try {
+      await this.prismaApp.withTenantContext(studentId, create);
+      return transactionId;
+    } catch (err) {
+      const unique = Boolean(err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002');
+      if (!unique) throw err;
+      const existing = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+      );
+      if (!existing) throw err;
+      return existing.id;
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 # Stress test round 2: everything so far, plus billing — report and backend handover
 
-**Run:** 26 Oct 2026, against `master` at `2da77cb`. **Fixes:** branch `test/stress-round2-billing` (this PR). **Scripts:** `apps/api/scripts/stress/booking-schedule/` (round 1, rerun) and the new `apps/api/scripts/stress/billing/` (see each README to rerun). **Round 1:** `BOOKING-SCHEDULE-STRESS-TEST.md`.
+**Run:** 26 Oct 2026, against `master` at `2da77cb`. **Fixes:** branch `test/stress-round2-billing` (PR #324). **Follow-up run:** 27 Oct 2026, after #318, #321 and #324 merged, with B1 and B2 fixed (branch `fix/billing-confirm-and-double-subscribe`); see "Follow-up run" below. **Scripts:** `apps/api/scripts/stress/booking-schedule/` (round 1, rerun) and the new `apps/api/scripts/stress/billing/` (see each README to rerun). **Round 1:** `BOOKING-SCHEDULE-STRESS-TEST.md`.
 
 ## Summary
 
@@ -12,8 +12,8 @@ The same cast as round 1 went through the real API: 30 Schools and 12,213 studen
   - **Card payments were left waiting.** 5,142 of 6,142 Stripe notices were refused (429), so those payments stayed Pending.
   - **Settled payments in this run:** only 1,154 of 12,213 purchases became memberships. After the fixes, all 12,213 did.
 - **Three bugs fixed here** (F1–F3 below), each pinned by a test that fails without the fix.
-- **Six billing failures are already fixed by open PR #318** (Memberships review, Decision 334). They are listed so nobody fixes them twice.
-- **Handed to the backend team:** 2 new items (B1, B2), plus round 1's open items.
+- **Six billing failures were fixed by PR #318** (Memberships review, Decision 334), now merged.
+- **B1 and B2 are now fixed too** (follow-up run). **All 29 billing checks pass.** Only round 1's two known open items still fail.
 
 ## Environment
 
@@ -72,9 +72,9 @@ Same as round 1: Postgres 16 with RLS, Redis, and the built API on one 4-CPU san
 
 **No database change. No API contract change.**
 
-## Already fixed by open PRs (don't fix twice)
+## Fixed by PR #318
 
-These failed on `master` and are fixed by **PR #318** (Memberships review, Decision 334). Rerun `billing.mjs` after it merges: C1, C10 and C18 should then pass.
+These failed on `master` on 26 Oct and were fixed by **PR #318** (Memberships review, Decision 334). They all pass in the follow-up run.
 
 | Check | What happens on `master` | Fixed by |
 |---|---|---|
@@ -83,9 +83,9 @@ These failed on `master` and are fixed by **PR #318** (Memberships review, Decis
 | C18 | A closed School still takes purchases and confirmations | #318 (M15/M16) |
 | C3, C7 | A student with a subscription can order a week pass. Cash: the owner then can't confirm it. Card: Stripe charges and the payment is refunded. | #318 (M1): the same live check runs before any charge |
 
-## Billing attack results (final run)
+## Billing attack results
 
-23 of 27 pass. The 4 that fail are C1, C10 and C18 (fixed by #318) and C11 (B2 below).
+On 26 Oct, 23 of 27 passed: C1, C10 and C18 failed (fixed by #318), and so did C11 (B2). In the follow-up run, **all 29 pass**: the 27, plus C11b and C14b, added with the B1 and B2 fixes.
 
 | Check | Result |
 |---|---|
@@ -102,14 +102,55 @@ These failed on `master` and are fixed by **PR #318** (Memberships review, Decis
 | A removed student buying; a Guardian for their own child, another child, after unlinking | refused / allowed / refused / refused |
 | A lost chargeback | payment Disputed with the amount; the membership expired |
 | A School whose ULTM8 subscription lapsed | no new payments (403) |
+| Confirming a FAILED order, or one the owner cancelled (C14, C14b) | 409 "can't be marked as paid"; no membership (B1) |
+| 5 clicks on Subscribe; 5 clicks on Buy with Checkout (C11, C11b) | 1 Stripe subscription; 1 Checkout page; 1 Pending order (B2) |
 
 ## For the backend team
 
 | # | Task | Notes |
 |---|---|---|
-| B1 | **Confirming a payment that isn't Pending returns 200** | Confirming a FAILED order (or one cancelled through #321's new Cancel) returns 200 and changes nothing, so the owner thinks it worked. An already-confirmed order returning 200 is fine (a double click). FAILED, REFUNDED or DISPUTED should be 409. Every place this check could go is also edited by #318 or #321. Do it after both merge, in `PaymentsService.confirmTransaction`. |
-| B2 | **Double-clicking Subscribe opens one Stripe subscription per click** | 5 clicks made 5 incomplete Stripe subscriptions and 5 Pending orders (C11). The unpaid ones expire at Stripe after about a day; #321 then marks their orders Failed (`payment_intent.canceled`). If the member pays two (two tabs), the existing refund path refunds the second. The same applies to card packs (one Checkout session per click). Fix after #318 merges: reuse the open order for the same student and plan, as #318 does for cash, or pass Stripe an idempotency key per student and plan. |
+| B1 | **Fixed (27 Oct).** **Confirming a payment that isn't Pending returns 200** | Confirming a FAILED order (or one cancelled through #321's new Cancel) returns 200 and changes nothing, so the owner thinks it worked. An already-confirmed order returning 200 is fine (a double click). FAILED, REFUNDED or DISPUTED should be 409. Every place this check could go is also edited by #318 or #321. Do it after both merge, in `PaymentsService.confirmTransaction`. |
+| B2 | **Fixed (27 Oct).** **Double-clicking Subscribe opens one Stripe subscription per click** | 5 clicks made 5 incomplete Stripe subscriptions and 5 Pending orders (C11). The unpaid ones expire at Stripe after about a day; #321 then marks their orders Failed (`payment_intent.canceled`). If the member pays two (two tabs), the existing refund path refunds the second. The same applies to card packs (one Checkout session per click). Fix after #318 merges: reuse the open order for the same student and plan, as #318 does for cash, or pass Stripe an idempotency key per student and plan. |
 | — | **Round 1 items still open** | H2 (the extreme burst: 1,200 people on one instance get 503 by design) and H4 (10 parallel promotes *without* `expectedCurrentRungId` promote twice; both apps always send it, so no user can trigger it; making it required changes the API) fail again as expected. H3, H5–H10 are unchanged. See `BOOKING-SCHEDULE-STRESS-TEST.md`. |
+
+## Follow-up run (27 Oct 2026): B1 and B2 fixed
+
+**Fixes:**
+
+| # | Fix |
+|---|---|
+| B1 | `PaymentsService.confirmTransaction` answers **409** "This payment was cancelled, failed or refunded, so it can't be marked as paid." for a FAILED (including owner-cancelled), REFUNDED or DISPUTED order, also when another request changed it first. Confirming a SUCCESSFUL order again is still a 200 no-op (a double click). The message is translated in all 15 languages. |
+| B2 | Card purchases send Stripe an **idempotency key** per student, plan, kind (subscription, in-app card payment, Checkout) and 2-minute window, on each Stripe create call these make (customer, product, subscription, PaymentIntent, Checkout session). The off-session saved-card charge has no key, so a declined card can be retried at once. Repeat clicks get Stripe's first answer back, so they share one PaymentIntent. The order is saved once: a repeat finds it by `stripePaymentIntentId` and returns its id. A Stripe 409 (the same key still in flight) is retried. Two purchases more than about 2 minutes apart (two tabs) are still separate payments, and the existing refund path refunds the second (C7). The key also carries a short hash of what is sent (price, currency, title…): Stripe refuses a reused key with different values, so an owner editing the plan between two clicks gives a new key, not an error. |
+
+**Tests:** `billing-stress-fixes.e2e-spec.ts` gains a B1 test (a cancelled and a FAILED order → 409, no membership; a paid one confirmed twice → 200 both times). The memberships unit tests check the key is passed, is the same for a repeat, and changes with the plan, the student or the price. `transactions-review-fixes.e2e-spec.ts` expected the old 200 for confirming a cancelled payment and now expects 409.
+
+- API unit: 525 pass.
+- Billing e2e suites (payments, transactions, transactions review, memberships ×3, Stripe webhooks, billing stress fixes): 139 tests pass.
+- Full e2e suite: 98 suites. Its only other failure, `classes-second-batch` (class-move notices), depends on suite order. It passes on its own and on `master`, and this change doesn't touch it.
+
+**Script updates.** These are not API changes. Rules merged to `master` since 26 Oct changed what the scripts must set up:
+
+- **Decision 345:** a class can't be created already ended. The "ended" probe is now created tomorrow and moved back in the database. One-off classes are now created with "Included in membership" ticked, or only a ticket can pay for them.
+- **Decisions 291–292:** a new School starts on the Manual cancellation policy, where a cancelled seat waits for staff. The seed sets Auto-credit, the policy existing Schools were migrated to, so A4 and A5 still check that a credit comes back exactly once.
+- **Billing checks:**
+  - C7's second payment is a second order, as from a tab opened later; a repeat click now reuses the first Checkout.
+  - C9 uses a student without a subscription (#318 refuses a week pass to one).
+  - C11 counts only the Stripe objects created, not the repeats Stripe answers from the same key.
+  - C14 now expects 409.
+
+**Results** (same 30 Schools and 12,213 students, fresh database):
+
+| Step | Requests | Median | p95 | Result |
+|---|---|---|---|---|
+| Buy a pack, card (hosted Checkout) | 6,142 | 573 ms | 695 ms | all 201 |
+| Buy a pack, cash | 6,071 | 555 ms | 613 ms | all 201 |
+| Owner confirms cash | 6,071 | 330 ms | 439 ms | all 200, 32 s for all |
+| Stripe `payment_intent.succeeded` | 6,142 | — | — | all settled in 76 s |
+| Transactions list, every page, 30 Schools | 135 | 58 ms | 133 ms | every payment listed once |
+
+- **Billing:** 29 of 29 checks pass. 12,213 purchases, 12,213 successful payments, 12,213 packs.
+- **Round 1:** 22 of 24 attacks pass. The two failures are the known open items H2 (A1, the extreme burst gets 503 by design) and H4 (A10b, promote without `expectedCurrentRungId`).
+- **Bursts:** every class filled exactly. Bookings, check-ins (6,929, all 201) and promotions (10,975 promoted, 1,238 refused for no live membership) match 26 Oct.
 
 ## Not covered by this round
 

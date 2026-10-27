@@ -1,5 +1,18 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "학교 소유자/관리자 또는 해당 지점의 지점 직원만 할 수 있습니다.",
+  "This class is already cancelled.": "이 수업은 이미 취소되었습니다.",
+  "This class has already finished.": "이 수업은 이미 끝났습니다.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "학교 소유자/관리자만 돈을 돌려줄 수 있습니다.",
+  "Guest not found on this booking": "이 예약에서 게스트를 찾을 수 없습니다",
+  "This booking has nothing left to resolve.": "이 예약에는 더 이상 처리할 것이 없습니다.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "이 예약에는 이미 지급할 환불이 있습니다. 돈을 돌려준 뒤 환불 완료로 표시하세요.",
+  "There is no cash refund owed on this booking yet.": "이 예약에는 아직 지급할 현금 환불이 없습니다.",
+  "Someone else has already resolved this booking.": "다른 사람이 이미 이 예약을 처리했습니다.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "이 결제는 취소되었거나 실패했거나 환불되어 결제 완료로 표시할 수 없습니다.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "이 예약은 자동으로 환불할 수 없습니다(결제가 분쟁 중이거나, 이미 환불되었거나, 결제된 수업권 패키지가 없음). 대신 수업 횟수를 돌려주거나 유지하세요.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe에서 이 환불을 처리하지 못했습니다. 목록에 그대로 남아 있습니다. 다시 시도하거나 대신 수업 횟수를 돌려주세요.",
+  "This class has been cancelled by the school.": "이 수업은 학교에 의해 취소되었습니다.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "'코치 초대 가능'은 지점 직원 전용입니다. 코치는 코치를 초대할 수 없습니다.",
   "\"Getting There\" must start below \"Ready to Grade\".": "'거의 다 됨'은 '승급 준비 완료'보다 낮은 단계에서 시작해야 합니다.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "보호자는 overrideReason을 입력할 수 없습니다. 급 자격 요건의 예외 처리는 사범 또는 직원만 할 수 있습니다.",

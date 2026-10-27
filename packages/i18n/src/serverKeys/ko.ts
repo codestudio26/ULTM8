@@ -96,6 +96,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{when}의 {class} 수업이 학교에 의해 취소되었습니다.",
+    classCancelledBySchoolBodyWithReason: "{when}의 {class} 수업이 학교에 의해 취소되었습니다. 사유: {reason}",
+    cancellationsTitle: "처리할 취소",
+    cancellationReviewBody: "취소된 예약에 환불 결정 또는 현금 환불 지급이 필요합니다. '처리할 취소'를 확인하세요.",
+    cancellationClassReviewBody: "취소된 수업 {class}의 예약에 환불 결정 또는 현금 환불 지급이 필요합니다({count}). '처리할 취소'를 확인하세요.",
     spotOpenedTitle: "자리가 났습니다",
     spotOpenedBody: "{class}에 자리가 났습니다. 서둘러 신청하세요. 신청하지 않으면 대기자 명단의 다음 사람에게 넘어갑니다.",
     readyToGradeTitle: "심사 준비 완료",

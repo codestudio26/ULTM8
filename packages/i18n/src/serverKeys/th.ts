@@ -96,6 +96,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} เมื่อ {when} ถูกโรงเรียนยกเลิกแล้ว",
+    classCancelledBySchoolBodyWithReason: "{class} เมื่อ {when} ถูกโรงเรียนยกเลิกแล้ว เหตุผล: {reason}",
+    cancellationsTitle: "การยกเลิกที่ต้องจัดการ",
+    cancellationReviewBody: "การจองที่ยกเลิกรายการหนึ่งต้องการการตัดสินใจเรื่องคืนเงินหรือการคืนเงินสด ดูที่การยกเลิกที่ต้องจัดการ",
+    cancellationClassReviewBody: "การจองจากคลาสที่ยกเลิก {class} ต้องการการตัดสินใจเรื่องคืนเงินหรือการคืนเงินสด ({count}) ดูที่การยกเลิกที่ต้องจัดการ",
     spotOpenedTitle: "มีที่ว่างแล้ว",
     spotOpenedBody: "มีที่ว่างใน {class} แล้ว รีบจองเลย — หากคุณไม่จอง ที่นี้จะส่งต่อให้คนถัดไปในรายชื่อรอ",
     readyToGradeTitle: "พร้อมสอบ",

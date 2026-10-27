@@ -279,9 +279,10 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
       const second = await cancel(s, p.body.transactionId);
       expect(second.body.cancelled).toBe(false);
       expect(await noticesFor(s.student.id, 'Payment cancelled')).toHaveLength(1);
-      // A cancelled payment can't then be confirmed into a Membership.
+      // A cancelled payment can't then be confirmed into a Membership, and says
+      // so (billing stress test, B1).
       const late = await confirm(s, p.body.transactionId);
-      expect(late.body.membershipCreated).toBe(false);
+      expect(late.status).toBe(409);
       expect(await su.membership.count({ where: { schoolId: s.school.id } })).toBe(0);
     });
 

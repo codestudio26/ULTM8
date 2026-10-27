@@ -14,6 +14,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { CancellationService, SeatRef, StripeRefundPlan } from './cancellation.service';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
@@ -64,6 +65,7 @@ export class BookingsService {
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
     private readonly paymentsService: PaymentsService,
+    private readonly cancellation: CancellationService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -116,6 +118,10 @@ export class BookingsService {
     // for `let`" limitation MembershipsService.updatePlan() already found and
     // worked around the same way (see its own comment on scopedClassIdToValidate).
     const resolvedClass = cls;
+    // Decision 291 — the School cancelled this class.
+    if (resolvedClass.cancelledAt) {
+      throw new ConflictException('This class has been cancelled by the school.');
+    }
 
     // FOUND ON REVIEW (Phase 11): `dto.studentId !== undefined` alone would wrongly
     // flag an ordinary self-booking as a Staff action whenever a client happens to
@@ -297,37 +303,58 @@ export class BookingsService {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
+    // Decision 291 — only a School Owner/Manager can send money back. A Student
+    // or Guardian cancelling their own booking gets whatever the owner chose;
+    // any other staff member's refund waits for an Owner/Manager instead.
+    const mayRefund = isGuardianAction || resolvedBooking.studentId === callerId
+      ? true
+      : await this.cancellation.isSchoolOwner(callerId, resolvedBooking.schoolId);
+
     let cancellationChargeAmount: number | null = null;
     let cancellationChargeCurrency = 'usd';
+    const refunds: StripeRefundPlan[] = [];
+    let needsStaff = 0;
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
       // Read past RLS: the Booking above already proved the caller may act on it,
       // and a Student can lose sight of their Class (moved to another Branch
       // before Decision 345 blocked that, C14), which left the Booking stuck.
       const cls = await this.prismaJobs.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
+      // Decision 292 — the class's Branch's own settings when it has them.
+      const school = await this.cancellation.settingsFor(resolvedBooking.schoolId, cls.branchId);
       const now = new Date();
-      // Kickoff prompt §1.c: refunds/credits back before the Class's own
-      // refundFeeDate cutoff; withholds on/after it.
-      const pastCutoff = cls.refundFeeDate !== null && now >= cls.refundFeeDate;
+      // Kickoff prompt §1.c: the Class's own refundFeeDate cutoff — or, since
+      // Decision 291, the School's (or Branch's) default cutoff for a class
+      // with none. No cutoff at all means never past it.
+      const cutoff = this.cancellation.effectiveCutoff(cls, school);
+      const pastCutoff = cutoff !== null && now >= cutoff;
       // Once the Class has started, the School's late-cancel setting decides
-      // (product owner, 26 Oct 2026; default: no refund once started). Under the
-      // first two settings an ended Class can't be cancelled: it will be marked a
-      // No-Show instead. Before this, credit always came back, even after the end.
+      // (Decision 322; default: no refund once started). Under the first two
+      // settings an ended Class can't be cancelled: it will be marked a No-Show
+      // instead.
       const policy = (await this.prismaJobs.school.findUnique({ where: { id: cls.schoolId }, select: { lateCancelRefundPolicy: true } }))?.lateCancelRefundPolicy ?? 'NO_REFUND_ONCE_STARTED';
       if (!opts?.schoolCancelled && now >= cls.endDate && policy !== 'ALWAYS_REFUND') {
         throw new ConflictException('This Class has already ended, so the Booking can no longer be cancelled.');
       }
       const startedNoRefund = now >= cls.startDate && policy === 'NO_REFUND_ONCE_STARTED';
-      const resolution: 'REFUNDED' | 'WITHHELD' = !opts?.schoolCancelled && (pastCutoff || startedNoRefund) ? 'WITHHELD' : 'REFUNDED';
+      // Decision 322 — when the School cancels the Class from the Timetable the
+      // credit always comes back. Otherwise a started class under "no refund
+      // once started" keeps the credit, and anything else follows the
+      // cancellation policy (Decision 291).
+      const base = opts?.schoolCancelled
+        ? 'CREDIT'
+        : startedNoRefund
+          ? 'KEEP'
+          : this.cancellation.outcomeForBookingCancel(school, pastCutoff);
 
-      // Decision 234 — a sibling action to credit-withholding above, not a
+      // Decision 234 — a sibling action to credit-withholding, not a
       // replacement: captured here (inside the transaction, where cls/
       // resolvedBooking's sourceMembership are both cheaply available) but the
       // actual Stripe call happens AFTER this transaction commits (no external
       // I/O inside a transaction, same discipline every other Stripe-calling
-      // write in this codebase follows) — see the try/catch below.
-      // The late-cancellation fee stays tied to the refund cut-off itself; the
-      // late-cancel setting above only keeps the credit.
-      if (!opts?.schoolCancelled && pastCutoff && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
+      // write in this codebase follows) — see the try/catch below. The fee
+      // stays tied to the refund cut-off itself (Decision 322), and Decision 291
+      // lets the owner switch it off.
+      if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
         cancellationChargeAmount = cls.cancellationCharge;
         // No currency field on Class itself — reuses the Booking's own
         // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
@@ -346,27 +373,37 @@ export class BookingsService {
       // instead of double-resolving credit.
       const result = await tx.booking.updateMany({
         where: { id: bookingId, status: 'UPCOMING' },
-        data: { status: 'CANCELLED', refundResolution: resolution, resolvedById: callerId },
+        data: { status: 'CANCELLED' },
       });
       if (result.count === 0) {
         throw new ConflictException('This Booking is no longer Upcoming — it may already be Cancelled, Completed, or marked No-Show.');
       }
 
-      if (resolution === 'REFUNDED') {
-        await this.restoreCredit(tx, resolvedBooking.sourceMembershipId);
-      }
-      for (const attendee of resolvedBooking.attendees) {
-        await tx.bookingAttendee.update({
-          where: { id: attendee.id },
-          data: { refundResolution: resolution, resolvedById: callerId },
-        });
-        if (resolution === 'REFUNDED') {
-          await this.restoreCredit(tx, attendee.membershipId);
-        }
+      // Decision 291 — each seat (the Student's own, then each guest's) is
+      // resolved by the School's policy: credit back, nothing back, money back,
+      // or left for staff. See CancellationService.resolveSeat.
+      const seats: SeatRef[] = [
+        { bookingId, attendeeId: null, membershipId: resolvedBooking.sourceMembershipId },
+        ...resolvedBooking.attendees.map((a) => ({ bookingId, attendeeId: a.id, membershipId: a.membershipId })),
+      ];
+      for (const seat of seats) {
+        const seatResult = await this.cancellation.resolveSeat(tx, seat, base, mayRefund);
+        await this.cancellation.writeSeat(tx, seat, seatResult, callerId);
+        if (seatResult.stripeRefund) refunds.push({ seat, studentId: resolvedBooking.studentId, schoolId: resolvedBooking.schoolId });
+        else if (seatResult.resolution === 'PENDING' || seatResult.resolution === 'REFUND_OWED') needsStaff += 1;
       }
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
     });
+
+    const { failed } = await this.cancellation.sendStripeRefunds(refunds);
+    if (needsStaff + failed > 0) {
+      await this.cancellation.alertOwners(
+        resolvedBooking.schoolId,
+        `booking-cancelled-review-${bookingId}`,
+        'A cancelled booking needs a refund decision or a cash refund paid. See Cancellations to resolve.',
+      );
+    }
 
     // Enqueued OUTSIDE the DB transaction, fire-and-logged rather than failing the
     // caller — same precedent WaiversService.createWaiver() established for its own
@@ -446,6 +483,13 @@ export class BookingsService {
       });
     }
 
+    // Re-read when a Stripe refund ran after the cancellation committed, so the
+    // caller sees the seat as MONEY_REFUNDED rather than PENDING.
+    if (refunds.length > 0) {
+      return this.prismaApp.withTenantContext(resolvedBooking.studentId, (tx) =>
+        tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } }),
+      );
+    }
     return booking;
   }
 
@@ -756,42 +800,6 @@ export class BookingsService {
       throw new ConflictException(`Membership ${membershipId} has no remaining credit.`);
     }
     return membership;
-  }
-
-  private async restoreCredit(tx: TenantTx, membershipId: string): Promise<void> {
-    const membership = await tx.membership.findUniqueOrThrow({ where: { id: membershipId } });
-    if (membership.classesRemaining === null) {
-      // General-access (classesRemaining IS NULL) was never decremented at
-      // booking time — nothing to restore.
-      return;
-    }
-
-    // Decision 111 — frozen while this Membership's own purchase Transaction is
-    // under an active Stripe dispute (Decision 55's own confirmed "refund/
-    // credit-restore frozen while disputed" contract): giving back a class
-    // credit while the payment that funded it is contested risks the School
-    // delivering free value if the dispute is later lost. Only the
-    // credit-restore is frozen here, not the Booking cancellation itself —
-    // Decision 55's text freezes the money-adjacent action, not every Booking
-    // action.
-    //
-    // FLAGGED, not fully closed: this reads Transaction through the SAME
-    // tenant-scoped `tx` cancelBooking() already opened for the organizer
-    // (resolvedBooking.studentId) — correct for the organizer's own Membership,
-    // but transaction_school_staff_or_self's RLS policy only admits a
-    // Transaction row to School staff OR that Transaction's own studentId. For
-    // a GUEST's membership (the attendee.membershipId call site below, a
-    // genuinely different Student), this lookup can be silently RLS-blocked if
-    // the organizer isn't School staff at this School — a narrow, real gap not
-    // closed here (needs either a jobs-role read or a broadened RLS policy,
-    // out of this phase's own scope of freezing the two real call sites).
-    const disputedTransaction = await tx.transaction.findFirst({ where: { membershipId, status: 'DISPUTED' } });
-    if (disputedTransaction) {
-      this.logger.warn(`Membership ${membershipId}'s credit-restore skipped — its Transaction ${disputedTransaction.id} is under an active Stripe dispute (Decision 55/111).`);
-      return;
-    }
-
-    await tx.membership.update({ where: { id: membershipId }, data: { classesRemaining: { increment: 1 } } });
   }
 
   private isUniqueConstraintViolation(err: unknown): boolean {

@@ -122,6 +122,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    classCancelledBySchoolBody: "{class} em {when} foi cancelada pela escola.",
+    classCancelledBySchoolBodyWithReason: "{class} em {when} foi cancelada pela escola. Motivo: {reason}",
+    cancellationsTitle: "Cancelamentos a resolver",
+    cancellationReviewBody: "Uma reserva cancelada precisa de uma decisão de reembolso ou de um reembolso em dinheiro. Veja Cancelamentos a resolver.",
+    cancellationClassReviewBody: "Reservas da aula cancelada {class} precisam de uma decisão de reembolso ou de um reembolso em dinheiro ({count}). Veja Cancelamentos a resolver.",
     spotOpenedTitle: "Abriu uma vaga",
     spotOpenedBody: "Abriu uma vaga em {class}. Garanta-a logo — se você não fizer isso, ela vai para a próxima pessoa da lista de espera.",
     readyToGradeTitle: "Pronto para graduar",

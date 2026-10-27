@@ -44,6 +44,7 @@ export const layout = {
     membershipPlans: 'Membership Plans',
     transactions: 'Transactions',
     recordPayment: 'Record a payment',
+    cancellations: 'Cancellations',
     waivers: 'Waivers',
     franchises: 'Franchises',
     notifications: 'Notifications',

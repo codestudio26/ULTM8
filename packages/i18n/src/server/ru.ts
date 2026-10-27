@@ -1,5 +1,18 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Это может сделать только Владелец/Менеджер Школы или сотрудники этого филиала.",
+  "This class is already cancelled.": "Это занятие уже отменено.",
+  "This class has already finished.": "Это занятие уже закончилось.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Возвращать деньги может только Владелец/Менеджер Школы.",
+  "Guest not found on this booking": "Гость не найден в этой записи",
+  "This booking has nothing left to resolve.": "По этой записи больше нечего решать.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "По этой записи уже нужно вернуть деньги — отметьте возврат выплаченным, когда деньги будут возвращены.",
+  "There is no cash refund owed on this booking yet.": "По этой записи пока нет возврата наличными к выплате.",
+  "Someone else has already resolved this booking.": "Эту запись уже обработал кто-то другой.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Этот платёж отменён, не прошёл или возвращён, поэтому его нельзя отметить как оплаченный.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Эту запись нельзя вернуть автоматически (платёж оспорен, уже возвращён или нет оплаченного абонемента на занятия). Верните занятие на баланс или оставьте его.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe не смог обработать этот возврат. Он остаётся в списке — попробуйте ещё раз или верните занятие на баланс.",
+  "This class has been cancelled by the school.": "Это занятие отменено школой.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "Право «Может приглашать тренеров» доступно только сотрудникам филиала. Тренеры не могут приглашать тренеров.",
   "\"Getting There\" must start below \"Ready to Grade\".": "Уровень «Почти готов» должен начинаться ниже уровня «Готов к аттестации».",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Опекун не может указывать overrideReason — обойти требование к рангу могут только инструктор или сотрудники.",

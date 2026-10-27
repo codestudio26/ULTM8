@@ -8,7 +8,9 @@
  *   connections all failed "busy" (503);
  * - a card payment whose first attempt failed and which then succeeded stayed
  *   FAILED with no Membership;
- * - the Stripe webhook was rate-limited per IP.
+ * - the Stripe webhook was rate-limited per IP;
+ * - confirming a payment that had failed or been cancelled returned 200 and
+ *   changed nothing, so the owner thought it had worked (B1).
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET and REDIS_URL.
  */
@@ -153,5 +155,20 @@ describeIfDb('Billing stress-test fixes', () => {
     // A later duplicate success changes nothing.
     await processor.process(job('payment_intent.succeeded'));
     expect(await superuser.membership.count({ where: { studentId: s.id } })).toBe(1);
+  });
+
+  it('confirming a cancelled or failed payment is refused (409); confirming a paid one again is still fine', async () => {
+    const confirm = (id: string) => http().patch(`/v1/transactions/${id}/confirm`).set('Authorization', `Bearer ${owner.token}`);
+    const cancelled = await pending(students[23].id);
+    expect((await http().patch(`/v1/transactions/${cancelled.id}/cancel`).set('Authorization', `Bearer ${owner.token}`)).status).toBe(200);
+    expect((await confirm(cancelled.id)).status).toBe(409);
+    const failed = await pending(students[24].id, { status: 'FAILED' });
+    expect((await confirm(failed.id)).status).toBe(409);
+    expect(await superuser.membership.count({ where: { studentId: { in: [students[23].id, students[24].id] } } })).toBe(0);
+    for (const t of [cancelled, failed]) expect((await superuser.transaction.findUnique({ where: { id: t.id } }))!.status).toBe('FAILED');
+    const paid = await pending(students[24].id);
+    expect((await confirm(paid.id)).status).toBe(200);
+    expect((await confirm(paid.id)).status).toBe(200);
+    expect(await superuser.membership.count({ where: { studentId: students[24].id } })).toBe(1);
   });
 });

@@ -1,5 +1,18 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Das dürfen nur der Inhaber/Manager der Schule oder die Mitarbeiter dieser Filiale.",
+  "This class is already cancelled.": "Dieser Kurs ist bereits abgesagt.",
+  "This class has already finished.": "Dieser Kurs ist bereits vorbei.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Nur der Inhaber/Manager der Schule kann Geld zurückgeben.",
+  "Guest not found on this booking": "Gast in dieser Buchung nicht gefunden",
+  "This booking has nothing left to resolve.": "Bei dieser Buchung ist nichts mehr zu erledigen.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Für diese Buchung ist bereits eine Erstattung offen — markiere sie als bezahlt, sobald das Geld zurück ist.",
+  "There is no cash refund owed on this booking yet.": "Für diese Buchung ist noch keine Barerstattung offen.",
+  "Someone else has already resolved this booking.": "Jemand anderes hat diese Buchung bereits erledigt.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Diese Zahlung wurde storniert, ist fehlgeschlagen oder wurde erstattet und kann daher nicht als bezahlt markiert werden.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Diese Buchung kann nicht automatisch erstattet werden (die Zahlung ist angefochten, bereits erstattet oder es gibt keine bezahlte Kurskarte). Gib das Guthaben zurück oder behalte es.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe konnte diese Erstattung nicht ausführen. Sie bleibt in der Liste — versuche es erneut oder gib das Guthaben zurück.",
+  "This class has been cancelled by the school.": "Dieser Kurs wurde von der Schule abgesagt.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "„Darf Trainer einladen“ gilt nur für Filialmitarbeiter. Trainer können keine Trainer einladen.",
   "\"Getting There\" must start below \"Ready to Grade\".": "„Fast so weit“ muss unterhalb von „Bereit zur Graduierung“ beginnen.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Ein Erziehungsberechtigter darf keinen overrideReason angeben — nur Ausbilder oder Mitarbeiter dürfen die Rang-Voraussetzung übergehen.",

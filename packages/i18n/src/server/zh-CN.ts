@@ -1,5 +1,18 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "只有学校所有者/经理或该分校的员工可以执行此操作。",
+  "This class is already cancelled.": "这节课已被取消。",
+  "This class has already finished.": "这节课已经结束。",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "只有学校所有者/经理可以退款。",
+  "Guest not found on this booking": "此预约中未找到该访客",
+  "This booking has nothing left to resolve.": "此预约已没有需要处理的事项。",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "此预约已有待付退款——退还款项后请标记为已付。",
+  "There is no cash refund owed on this booking yet.": "此预约目前还没有待付的现金退款。",
+  "Someone else has already resolved this booking.": "已有其他人处理了此预约。",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "此付款已取消、失败或已退款，无法标记为已付款。",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "此预约无法自动退款（付款处于争议中、已退款，或没有已付款的课程包）。请改为退回课时或保留。",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe 无法处理此退款。它仍在列表中——请重试，或改为退回课时。",
+  "This class has been cancelled by the school.": "这节课已被学校取消。",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "“可邀请教练”仅适用于分校员工。教练不能邀请教练。",
   "\"Getting There\" must start below \"Ready to Grade\".": "“接近达标”必须从“可以晋级”之下开始。",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "监护人不能提供 overrideReason——只有教练员或员工可以越过段位资格限制。",

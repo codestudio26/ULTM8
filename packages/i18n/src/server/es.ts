@@ -1,5 +1,18 @@
 /** Spanish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Solo el Propietario/Gerente de la Escuela o el Personal de esa sucursal puede hacer esto.",
+  "This class is already cancelled.": "Esta clase ya está cancelada.",
+  "This class has already finished.": "Esta clase ya ha terminado.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Solo el Propietario/Gerente de la Escuela puede devolver dinero.",
+  "Guest not found on this booking": "Invitado no encontrado en esta reserva",
+  "This booking has nothing left to resolve.": "Esta reserva no tiene nada pendiente por resolver.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Ya hay un reembolso pendiente en esta reserva: márcalo como pagado cuando se haya devuelto el dinero.",
+  "There is no cash refund owed on this booking yet.": "Todavía no hay un reembolso en efectivo pendiente en esta reserva.",
+  "Someone else has already resolved this booking.": "Otra persona ya ha resuelto esta reserva.",
+  "This payment was cancelled, failed or refunded, so it can't be marked as paid.": "Este pago se canceló, falló o se reembolsó, así que no se puede marcar como pagado.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Esta reserva no se puede reembolsar automáticamente (el pago está en disputa, ya se reembolsó o no hay un Bono de clases pagado). Devuelve el crédito o mantenlo.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe no pudo procesar este reembolso. Sigue en la lista: inténtalo de nuevo o devuelve el crédito.",
+  "This class has been cancelled by the school.": "Esta clase ha sido cancelada por la escuela.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "\"Puede invitar entrenadores\" es solo para el personal de sede. Los entrenadores no pueden invitar a otros entrenadores.",
   "\"Getting There\" must start below \"Ready to Grade\".": "\"Casi listo\" debe empezar por debajo de \"Listo para evaluar\".",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Un tutor no puede indicar overrideReason: solo los instructores o el personal pueden saltarse la restricción de elegibilidad por grado.",
