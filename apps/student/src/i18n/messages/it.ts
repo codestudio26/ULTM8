@@ -244,6 +244,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     classRow: {
       dateRange: "{start} – {end}",
+      breakLine: "Pausa {start} – {end}",
       bookError: "Impossibile prenotare questo corso — riprova.",
       joinWaitlistError: "Impossibile entrare in lista d’attesa — riprova.",
       leaveWaitlistError: "Impossibile uscire dalla lista d’attesa — riprova.",

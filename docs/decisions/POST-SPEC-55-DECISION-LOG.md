@@ -5628,6 +5628,30 @@ User (Code), 26 Oct 2026: *"Go"*, on the Waivers fix plan after the deep dive.
 
 ---
 
+## Decision 353 — Timetable follow-ups: the calendar shows real classes, Branch Staff get their branch's timetable, the break is shown only, closures come first
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Answers:** the Timetable review's open questions Q4–Q8 (`/mnt/project-files/notes/timetable-section-guide.html`) · **Builds on:** Decisions 319, 322, 332
+
+The product owner answered the Timetable review's remaining questions with "all recommended" (27 Oct 2026).
+
+### Decision
+
+1. **The calendar shows the real Classes (Q5, T7).** Each date shows the Classes that actually exist on it: one-offs, classes kept at old times, moved and cancelled dates, with seats taken and the number waiting. A cancelled class stays on the calendar, marked Cancelled, without Book; a class that has ended shows without Book. An On slot's dates past the 4-week horizon show as "Opens for booking later", without Book. Off and archived slots still show on their weekday, dimmed, so the owner can find and change them. New API call: `GET /schools/:schoolId/timetable/calendar?from&to` (at most 62 days). A class the slot cancels is now also marked cancelled (`cancelledAt`), so it shows as a cancelled date.
+2. **Branch Staff see their own Branch's timetable and book walk-ins from it (Q4).** They see their Branch's classes and School-wide ones, never another Branch's. Only the owner edits slots. The calendar call already enforces this; the portal screen for Branch Staff follows in its own change.
+3. **The break is shown on the class details only (Q6).** It has no effect on bookings, check-in or anything else. Each Class carries its slot's break for that date (`Class.breakStartAt`/`breakEndAt`), which moves with the class's times; a class kept at other times keeps its own. It is shown on the portal's class page and booking dialog and on the student app's class card.
+4. **A class moved to a day this week that has already passed keeps today's behaviour (Q7):** removed if unbooked, cancelled with notice if booked (Decision 322 §5).
+5. **Decision 319 order (Q8):** closure dates first, then the week start day and the timetable filters. Google Calendar and the schedule embed come later.
+
+### Still open
+
+- Decision 319's closures can "freeze every membership" for the closed dates, using Decision 316's freeze. Membership freezing isn't built yet, so closures are built without that option until it is.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, answering the Timetable questions: *"all recommended"*.
+
+---
+
 ## Decision 355 — Notifications: Mark all read, click to open, and a School label
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 277, 333

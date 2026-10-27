@@ -21,6 +21,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261202000100_franchise_join_requests`.
+- **Timetable shows the real classes (Decision 353)** — the calendar now shows
+  each date's actual classes, one-offs included, with seats taken and the
+  waitlist; cancelled and ended classes stay visible without Book, and dates
+  past four weeks say "Opens for booking later". A slot's break is copied onto
+  its classes and shown on the class page, the booking dialog and the student
+  app's class card. Needs a database migration.
+
 - **Check-in and front-desk mode (School Portal)** — a new **Check-in** page
   (a tab next to Students for owners, a menu item for coaches and Branch
   Staff) shows today's classes, checks a student in by scanning the QR in their
