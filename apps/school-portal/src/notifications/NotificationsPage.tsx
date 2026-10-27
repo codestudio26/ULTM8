@@ -20,6 +20,7 @@ import {
 } from './notificationQueries';
 import { BroadcastNotificationModal } from './BroadcastNotificationModal';
 import { SnoozeNotificationModal } from './SnoozeNotificationModal';
+import { SentBroadcastsSection } from './SentBroadcastsSection';
 import { useI18n } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -292,6 +293,9 @@ export function NotificationsPage() {
           </Button>
         </div>
       ) : null}
+
+      {/* Decision 363 — the School's sent broadcasts, Owner only like sending. */}
+      {schoolId ? <SentBroadcastsSection schoolId={schoolId} /> : null}
 
       {snoozing ? (
         <SnoozeNotificationModal

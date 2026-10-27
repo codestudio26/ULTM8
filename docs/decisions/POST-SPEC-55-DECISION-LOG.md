@@ -5623,6 +5623,32 @@ User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all r
 
 ---
 
+## Decision 363 — Notifications: a history of sent broadcasts
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 333, 355
+
+Decision 355 recorded the product owner's choice (*"go with it"*, 27 Oct 2026) to build a sent-broadcast history next, as its own change. Before this a broadcast left nothing a School Owner could read back: its only record was the notification in each Student's own inbox, which is self-only under RLS.
+
+### Decision
+
+1. **Each broadcast is stored** as a `NotificationBroadcast` row, written by `POST /schools/:schoolId/notifications/broadcast` once its notifications are queued, so only broadcasts that actually went out are listed. Its `id` is the `broadcastId` the endpoint returns, which every fanned-out notification's id already starts with.
+2. **What it records:** the School; who sent it, with their name copied at send time; the title and message; the audience (ALL, BRANCH or CLASS); for a Branch its id and name; for a Class its id, title, start time and the groups ticked (Decision 333); how many Students it was queued for; and when it was sent. A broadcast that reached no one is listed too, with 0.
+3. **The names are copies.** A Branch or Class purged later (Decision 226) sets its id to null and keeps its name, so the history still reads correctly. The sender is a required link to their User, which is never deleted.
+4. **Owner only.** `GET /schools/:schoolId/notifications/broadcasts` lists them newest first, 20 per page with a cursor, under the same School Owner check as sending one. RLS on the table allows reads and inserts only to an active SCHOOL_OWNER_MANAGER of that School. Branch Staff and Instructors neither send nor see broadcasts.
+5. **Kept with the School.** The app can't edit or delete a row (SELECT and INSERT grants only). The rows go when the School is purged (ON DELETE CASCADE). No other clean-up applies; automatic clean-up waits until email and push are on (Decision 355).
+6. **Portal:** under the Owner's own notifications, a **Messages sent to students** list shows when and by whom, the title and message, who it went to, and how many it reached, with Load more. A class that still exists links to its page.
+7. **Migration** `20261204000000_notification_broadcast_history` creates the table, its RLS policy and grants.
+
+### What this does NOT resolve
+
+Broadcasts sent before this change were never stored, so they aren't listed. The list shows how many Students a broadcast was queued for, not how many read it: each Student's notification is self-only under RLS. Notification settings and automatic clean-up are still waiting for email and push (Decision 355).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "go with it" on the recommendation to build the broadcast history after Decision 355.
+
+---
+
 ## Decision 362 — Front desk: a tablet sign-up staff reject, and what Find me asks for
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5 "Rejected" and F6
