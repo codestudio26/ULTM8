@@ -5620,3 +5620,29 @@ A sent-broadcast history (next), notification settings and automatic clean-up (a
 ### Recorded by
 
 User (Code), 27 Oct 2026, "go with it" on the recommendation to build Mark all read, click-through and the School label now.
+
+---
+
+## Decision 362 — Front desk: a tablet sign-up staff reject
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 318 (sign-up forms), 351 item 5 (tablet sign-ups wait for staff approval) · **Answers:** `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md` F5, "Rejected"
+
+### Decision
+
+When staff reject a sign-up made on the front-desk tablet:
+
+1. **The person gets a polite email** saying their sign-up wasn't accepted and asking them to talk to the front desk. **No reason is given**, and staff don't type one.
+2. **What they typed is kept for 30 days, then deleted.** During those 30 days staff can still see the rejected sign-up, in case it was a mistake. After that, nothing about it remains.
+
+### Not decided here
+
+- Whether staff can undo a rejection within the 30 days. Ask the product owner before building one.
+- Whether website sign-ups (Decision 318) follow the same rule. This decision covers the tablet only.
+
+### Not built
+
+Nothing here is built yet. The sign-up endpoint is F5 in the front-desk backend handover.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "Agreed" to the recommendation: a polite email with no reason given, and keep the details 30 days, then delete them.
