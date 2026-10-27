@@ -8,6 +8,7 @@ import { useJoinFranchise, useLeaveFranchise, useSchool, useSchoolFranchiseBrand
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
+import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload } from '../cancellations/CancellationSettingsFields';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
@@ -33,7 +34,6 @@ export function SchoolPage() {
     defaultCurrency: string;
     timezone: string;
     description: string;
-    classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
     waitlistClaimWindowMinutes: number;
     checkInOpensMinutesBeforeStart: number;
     lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
@@ -60,7 +60,6 @@ export function SchoolPage() {
       defaultCurrency: school.defaultCurrency ?? '',
       timezone: school.timezone ?? '',
       description: school.description ?? '',
-      classCancellationPolicy: school.classCancellationPolicy,
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
       checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
       lateCancelRefundPolicy: school.lateCancelRefundPolicy,
@@ -101,7 +100,6 @@ export function SchoolPage() {
         defaultCurrency: form.defaultCurrency || null,
         timezone: form.timezone || null,
         description: form.description || null,
-        classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
         checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
         lateCancelRefundPolicy: form.lateCancelRefundPolicy,
@@ -167,17 +165,6 @@ export function SchoolPage() {
           <Field label={t('schools.form.description')} htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
           </Field>
-          <Field label={t('schools.form.cancellationPolicy')} htmlFor="edit-policy">
-            <SelectField
-              value={form.classCancellationPolicy}
-              onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
-              options={[
-                { value: 'MANUAL', label: t('schools.form.policyManual') },
-                { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
-                { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
-              ]}
-            />
-          </Field>
           <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
             <TextField
               type="number"
@@ -219,9 +206,63 @@ export function SchoolPage() {
           </div>
         </form>
       </Card>
+      {schoolId && school ? <CancellationSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
     </>
+  );
+}
+
+/**
+ * Decision 291 — the owner's "Class cancellations" settings: what a cancelled
+ * booking gets back, when that applies, the late and no-show fees, and what
+ * happens when the School cancels a whole class. Its own Card and save, same
+ * pattern as FooterSettingsCard below, so saving the main form never
+ * overwrites these. Two rules are fixed and only explained here: a Friend Pass
+ * always gets its credit back, and only an Owner/Manager can send money back.
+ * Decision 292 — each Branch can override these on its own settings page.
+ */
+function CancellationSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
+  const update = useUpdateSchool(schoolId);
+  const [form, setForm] = useState(() => cancellationSettingsForm(school));
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    try {
+      await update.mutateAsync(cancellationSettingsPayload(form));
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <form id="cancellations" onSubmit={handleSubmit}>
+        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('schools.cancellations.title')}</h2>
+        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('schools.cancellations.subtitle')}</p>
+        {/* Decision 292 — until the owner saves a policy, ask them to. */}
+        {!school.cancellationPolicyChosenAt && !saved ? (
+          <div className="ultm8-banner ultm8-banner--warning" role="status">
+            <strong>{t('schools.cancellations.chooseTitle')}</strong> {t('schools.cancellations.chooseBody')}
+          </div>
+        ) : null}
+        {error ? <ErrorBanner message={error} /> : null}
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <CancellationSettingsFields form={form} onChange={setForm} />
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.branchHint')}</p>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={update.isPending}>
+            {t('schools.profile.saveChanges')}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }
 

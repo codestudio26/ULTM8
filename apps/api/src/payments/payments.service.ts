@@ -1,15 +1,18 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
-import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
@@ -19,6 +22,31 @@ import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceEr
  * the same shape MembershipCollisionError (stripe-webhook-processing.processor.ts)
  * already established for a signal-not-a-generic-failure error in this codebase. */
 export class NoSavedPaymentMethodError extends Error {}
+
+/**
+ * Runs a Stripe create call made with an idempotency key, retrying while
+ * Stripe reports the same key still in use by a request in flight (409): two
+ * clicks at once both get the first request's result instead of an error.
+ */
+async function withIdempotencyRetry<T>(call: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await call();
+    } catch (err) {
+      const status = (err as { statusCode?: number }).statusCode;
+      if (status !== 409 || attempt >= 5) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+    }
+  }
+}
+
+/** Confirming a payment that is no longer Pending: already SUCCESSFUL is a
+ * harmless repeat; any other status is refused. */
+function assertConfirmable(status: string): void {
+  if (status !== 'SUCCESSFUL') {
+    throw new ConflictException("This payment was cancelled, failed or refunded, so it can't be marked as paid.");
+  }
+}
 
 @Injectable()
 export class PaymentsService {
@@ -31,6 +59,8 @@ export class PaymentsService {
     private readonly franchisesService: FranchisesService,
     private readonly stripeClient: StripeClientService,
     @InjectQueue(STRIPE_WEBHOOK_PROCESSING_QUEUE) private readonly webhookQueue: Queue,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -391,15 +421,21 @@ export class PaymentsService {
     amount: number,
     currency: string,
     description: string,
+    idempotencyKey?: string,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const intent = await stripe.paymentIntents.create({
-      amount,
-      currency: currency.toLowerCase(),
-      description,
-      automatic_payment_methods: { enabled: true },
-    });
+    const intent = await withIdempotencyRetry(() =>
+      stripe.paymentIntents.create(
+        {
+          amount,
+          currency: currency.toLowerCase(),
+          description,
+          automatic_payment_methods: { enabled: true },
+        },
+        idempotencyKey ? { idempotencyKey } : undefined,
+      ),
+    );
     return { paymentIntentId: intent.id, clientSecret: intent.client_secret! };
   }
 
@@ -456,10 +492,14 @@ export class PaymentsService {
     // byte-for-byte unchanged below — same "undefined preserves old
     // behavior" convention existingPriceId's own header comment establishes.
     billingCycleAnchorDay?: number,
+    // The purchase's idempotency key (MembershipsService): a repeated purchase
+    // (a double click) gets the same customer, product and subscription back.
+    idempotencyKey?: string,
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const customer = await stripe.customers.create({ email: studentEmail });
+    const key = (part: string) => (idempotencyKey ? { idempotencyKey: `${idempotencyKey}-${part}` } : undefined);
+    const customer = await withIdempotencyRetry(() => stripe.customers.create({ email: studentEmail }, key('customer')));
     const item = existingPriceId
       ? { price: existingPriceId }
       : {
@@ -467,10 +507,10 @@ export class PaymentsService {
             currency: currency.toLowerCase(),
             unit_amount: amount,
             recurring: { interval: 'month' as const },
-            product: (await stripe.products.create({ name: productName })).id,
+            product: (await withIdempotencyRetry(() => stripe.products.create({ name: productName }, key('product')))).id,
           },
         };
-    const subscription = await stripe.subscriptions.create({
+    const subscription = await withIdempotencyRetry(() => stripe.subscriptions.create({
       customer: customer.id,
       items: [item],
       payment_behavior: 'default_incomplete',
@@ -483,7 +523,7 @@ export class PaymentsService {
       // own type definitions, SubscriptionCreateParams.BillingCycleAnchorConfig,
       // before using this rather than computing the anchor date by hand).
       ...(billingCycleAnchorDay ? { billing_cycle_anchor_config: { day_of_month: billingCycleAnchorDay } } : {}),
-    });
+    }, key('subscription')));
     const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
     const paymentIntent = invoice?.payment_intent;
     if (!paymentIntent) {
@@ -746,10 +786,11 @@ export class PaymentsService {
     amount: number,
     currency: string,
     description: string,
+    idempotencyKey?: string,
   ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const session = await stripe.checkout.sessions.create({
+    const session = await withIdempotencyRetry(() => stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [
         {
@@ -771,7 +812,7 @@ export class PaymentsService {
       success_url: 'ultm8-student://membership-purchase/complete',
       cancel_url: 'ultm8-student://membership-purchase/cancel',
       expand: ['payment_intent'],
-    });
+    }, idempotencyKey ? { idempotencyKey } : undefined));
     if (!session.url) {
       throw new Error('Stripe Checkout Session did not return a hosted URL.');
     }
@@ -864,6 +905,20 @@ export class PaymentsService {
   }
 
   /**
+   * Decision 291 — a partial refund of a Student's own Stripe payment (one
+   * class's share of a Class Pack, sent by CancellationService). Same
+   * connected-account scoping as refundOffSessionCharge() above, plus an
+   * idempotency key from the caller (one per cancelled seat) so a retry can
+   * never refund the same seat twice. Returns the Stripe Refund id.
+   */
+  async refundPayment(studentId: string, schoolId: string, paymentIntentId: string, amount: number, idempotencyKey: string): Promise<string> {
+    const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, amount }, { idempotencyKey });
+    return refund.id;
+  }
+
+  /**
    * A School's single configured PaymentAccount must be STRIPE-provider and fully
    * onboarded (stripeConnectedAccountId set) before it can charge/subscribe anyone —
    * derived, not client-chosen (see MembershipPlan's own schema comment for the full
@@ -909,7 +964,11 @@ export class PaymentsService {
    * that same sentence describes for a genuinely competing Cash/Bank purchase).
    */
   async confirmTransaction(callerId: string, transactionId: string) {
-    return this.confirmTransactionInner(callerId, transactionId);
+    const result = await this.confirmTransactionInner(callerId, transactionId);
+    if (result.membershipCreated) {
+      await this.notifyCashPayment(result.transaction, 'confirmed');
+    }
+    return result;
   }
 
   private async confirmTransactionInner(callerId: string, transactionId: string) {
@@ -921,36 +980,31 @@ export class PaymentsService {
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
 
       if (transaction.status !== 'PENDING') {
-        // Already resolved (by an earlier call, or was never Pending to begin with,
-        // e.g. a Stripe-paid Transaction) — idempotent no-op, not an error.
+        // Already confirmed (a double click, or a Stripe-paid Transaction): an
+        // idempotent no-op. Anything else (FAILED, which includes a cancelled
+        // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
+        // there made the owner think it worked (billing stress test, B1).
+        assertConfirmable(transaction.status);
         return { transaction, membershipCreated: false };
       }
       if (transaction.paymentMethod === 'STRIPE') {
         throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
       }
-
-      // Decision 334 (Memberships review M13): a closed School takes no new
-      // payments (Decision 110).
-      await this.tenantAuth.assertSchoolNotArchived(callerId, transaction.schoolId);
-      // Decision 334 (Memberships review M18): a Student removed from the
-      // School since ordering can't be given a Membership there.
-      const studentGrant = await tx.roleGrant.findFirst({
-        where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
-        select: { id: true },
-      });
-      if (!studentGrant) {
-        throw new ConflictException('This Student has been removed from the School, so their payment can\'t be confirmed.');
-      }
+      // A closed School, or a Student who has left it: Decisions 339 (T8, T9)
+      // and 334 (M13, M18) both asked for these two checks.
+      await this.assertCashPaymentCanBeSettled(tx, transaction);
 
       const updateResult = await tx.transaction.updateMany({
         where: { id: transactionId, status: 'PENDING' },
         data: { status: 'SUCCESSFUL' },
       });
       if (updateResult.count === 0) {
-        // Lost a race with a concurrent confirm call between the findUnique above
-        // and this updateMany — the other call already won. No-op, matching the
-        // single-call idempotent case above.
-        return { transaction, membershipCreated: false };
+        // Lost a race between the findUnique above and this updateMany. A
+        // concurrent confirm already won: a no-op, as above. A concurrent
+        // Cancel won: refused, as above.
+        const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+        assertConfirmable(now.status);
+        return { transaction: now, membershipCreated: false };
       }
 
       const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
@@ -983,5 +1037,138 @@ export class PaymentsService {
 
       return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
     });
+  }
+
+  /**
+   * Decision 339 (T8, T9) — checks shared by confirm and cancel. A closed School
+   * takes no new records (Decision 110; the cancelled-ULTM8-subscription state is
+   * deliberately NOT blocked here — the cash was taken before, see Decision 339).
+   * Confirm also needs the Student still at the School: a Membership for someone
+   * who has left makes no sense, and Cancel is the Owner's way out.
+   */
+  private async assertCashPaymentCanBeSettled(
+    tx: Prisma.TransactionClient,
+    transaction: { schoolId: string; studentId: string },
+    action: 'confirm' | 'cancel' = 'confirm',
+  ): Promise<void> {
+    const school = await tx.school.findUnique({ where: { id: transaction.schoolId }, select: { archivedAt: true } });
+    if (school?.archivedAt) {
+      throw new ForbiddenException('This School has been closed and no longer accepts new or updated records.');
+    }
+    if (action === 'cancel') return;
+    const enrolled = await tx.roleGrant.findFirst({
+      where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) {
+      throw new ConflictException('This student has left the School, so this payment cannot be confirmed. Cancel it instead.');
+    }
+  }
+
+  /**
+   * PATCH /transactions/{id}/cancel (Decision 339) — clears a Pending Cash/Bank
+   * Transfer payment that never arrived, marking it FAILED (the nearest of the
+   * five confirmed Transaction statuses; no Membership was ever created for it,
+   * Decision 6). School Owner/Manager only, same gate as confirm. Idempotent: a
+   * row that is no longer Pending is returned unchanged.
+   */
+  async cancelTransaction(callerId: string, transactionId: string) {
+    const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
+      if (!transaction) {
+        throw new NotFoundException('Transaction not found');
+      }
+      await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
+      if (transaction.status !== 'PENDING') {
+        return { transaction, cancelled: false };
+      }
+      if (transaction.paymentMethod === 'STRIPE') {
+        throw new BadRequestException('Card payments are settled by Stripe and cannot be cancelled here.');
+      }
+      await this.assertCashPaymentCanBeSettled(tx, transaction, 'cancel');
+      const updated = await tx.transaction.updateMany({ where: { id: transactionId, status: 'PENDING' }, data: { status: 'FAILED' } });
+      if (updated.count === 0) {
+        return { transaction, cancelled: false };
+      }
+      return { transaction: { ...transaction, status: 'FAILED' as const }, cancelled: true };
+    });
+    if (result.cancelled) {
+      await this.notifyCashPayment(result.transaction, 'cancelled');
+    }
+    return result;
+  }
+
+  /**
+   * Decision 339 (T11) — in-app notices around a Cash/Bank Transfer payment:
+   * `waiting` tells the School's Owners/Managers one has arrived to check;
+   * `confirmed`/`cancelled` tell the Student, or the Guardians of a linked minor
+   * (who never logs in). Read through the jobs connection, since the caller's own
+   * RLS context can see neither the School's other grants nor GuardianLink.
+   * Best-effort: a notice that fails to enqueue never undoes the payment change.
+   * The English shapes are matched in @ultm8/i18n's server/translate.ts.
+   */
+  async notifyCashPayment(
+    transaction: { id: string; schoolId: string; studentId: string; membershipPlanId: string; amount: number; currency: string | null },
+    event: 'waiting' | 'confirmed' | 'cancelled',
+  ): Promise<void> {
+    try {
+      const [plan, student] = await Promise.all([
+        this.prismaJobs.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { title: true } }),
+        this.prismaJobs.user.findUnique({ where: { id: transaction.studentId }, select: { firstName: true, surname: true } }),
+      ]);
+      const amount = `${(transaction.amount / 100).toFixed(2)} ${(transaction.currency ?? 'USD').toUpperCase()}`;
+      const planTitle = plan?.title ?? 'a membership';
+      const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
+      const notices: Array<{ userId: string; title: string; body: string }> = [];
+      if (event === 'waiting') {
+        const owners = await this.prismaJobs.roleGrant.findMany({
+          where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+          select: { userId: true },
+        });
+        for (const o of owners) {
+          notices.push({
+            userId: o.userId,
+            title: 'Cash payment waiting',
+            body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.`,
+          });
+        }
+      } else {
+        const guardians = await this.prismaJobs.guardianLink.findMany({
+          where: { studentId: transaction.studentId, revokedAt: null },
+          select: { guardianId: true },
+        });
+        const title = event === 'confirmed' ? 'Payment confirmed' : 'Payment cancelled';
+        if (guardians.length === 0) {
+          notices.push({
+            userId: transaction.studentId,
+            title,
+            body:
+              event === 'confirmed'
+                ? `Your payment of ${amount} for ${planTitle} was confirmed. Your membership is now active.`
+                : `Your School cancelled your cash or bank payment of ${amount} for ${planTitle}.`,
+          });
+        }
+        for (const g of guardians) {
+          notices.push({
+            userId: g.guardianId,
+            title,
+            body:
+              event === 'confirmed'
+                ? `${name}'s payment of ${amount} for ${planTitle} was confirmed. The membership is now active.`
+                : `The School cancelled ${name}'s cash or bank payment of ${amount} for ${planTitle}.`,
+          });
+        }
+      }
+      for (const notice of notices) {
+        const key = `cash-payment-${event}-${transaction.id}-${notice.userId}`;
+        await this.notificationFanoutQueue.add(
+          'notify',
+          { notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT' } satisfies NotificationFanoutJobData,
+          { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the ${event} cash-payment notices for Transaction ${transaction.id}: ${err}`);
+    }
   }
 }

@@ -94,3 +94,30 @@ export class TransactionReceiptUrlResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Stripe\'s own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet.' })
   receiptUrl!: string | null;
 }
+
+export class TransactionRevenueDto {
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currency!: string | null;
+
+  @ApiProperty({ description: 'Minor units.' })
+  amount!: number;
+}
+
+/** GET /schools/{id}/transactions/summary (Decision 339) — the Transactions
+ * page's tiles, counted over the whole ledger. */
+export class TransactionSummaryResponseDto {
+  @ApiProperty()
+  total!: number;
+
+  @ApiProperty()
+  successful!: number;
+
+  @ApiProperty()
+  pending!: number;
+
+  @ApiProperty()
+  failedOrDisputed!: number;
+
+  @ApiProperty({ type: [TransactionRevenueDto], description: 'Successful rows only, one entry per currency.' })
+  revenue!: TransactionRevenueDto[];
+}

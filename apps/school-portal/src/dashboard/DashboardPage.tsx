@@ -30,6 +30,13 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title={t('dashboard.title')} subtitle={school?.name} />
+      {/* Decision 292 — the owner hasn't chosen a cancellation policy yet. */}
+      {school && !school.cancellationPolicyChosenAt ? (
+        <div className="ultm8-banner ultm8-banner--warning" role="status">
+          <strong>{t('schools.cancellations.chooseTitle')}</strong> {t('schools.cancellations.chooseBody')}{' '}
+          <Link to="/school#cancellations">{t('schools.cancellations.chooseLink')}</Link>
+        </div>
+      ) : null}
       <section
         aria-label={t('dashboard.bookingsAria')}
         style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 16 }}

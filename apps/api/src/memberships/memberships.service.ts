@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -34,6 +34,19 @@ const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'T
 
 // Re-exported: grading and curriculum import it from here.
 export { isMembershipLive };
+
+/** How long two purchases of the same plan by the same student count as one
+ * (a double click) at Stripe. A later purchase gets a new key. */
+const PURCHASE_KEY_WINDOW_MS = 2 * 60 * 1000;
+
+/** The Stripe idempotency key for a card purchase (see createStripeOrder).
+ * `sent` is what the purchase sends Stripe (price, currency, title...): Stripe
+ * refuses a reused key with different values, so an owner editing the plan
+ * between two clicks gets a new key instead of an error. */
+export function stripePurchaseKey(studentId: string, planId: string, kind: 'subscription' | 'card' | 'checkout', sent: unknown[]): string {
+  const values = createHash('sha256').update(JSON.stringify(sent)).digest('hex').slice(0, 12);
+  return `membership-purchase-${kind}-${studentId}-${planId}-${values}-${Math.floor(Date.now() / PURCHASE_KEY_WINDOW_MS)}`;
+}
 
 @Injectable()
 export class MembershipsService {
@@ -827,8 +840,17 @@ export class MembershipsService {
           plan.stripePriceId ?? undefined,
           // Decision 259 — see PaymentsService.subscribe()'s own header comment.
           plan.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? plan.billingCycleAnchorDay ?? undefined : undefined,
+          stripePurchaseKey(studentId, plan.id, 'subscription', [
+            student.email,
+            plan.price,
+            currency,
+            plan.title,
+            plan.stripePriceId,
+            plan.newMemberBillingStrategy,
+            plan.billingCycleAnchorDay,
+          ]),
         );
-        await this.prismaApp.withTenantContext(studentId, (tx) =>
+        const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
           tx.transaction.create({
             data: {
               id: transactionId,
@@ -837,7 +859,7 @@ export class MembershipsService {
               paymentAccountId: paymentAccount.id,
               membershipPlanId: plan.id,
               amount: plan.price,
-              currency,
+              currency: currency.toUpperCase(),
               status: 'PENDING',
               paymentMethod: 'STRIPE',
               stripePaymentIntentId: paymentIntentId,
@@ -848,7 +870,7 @@ export class MembershipsService {
             },
           }),
         );
-        return { outcome: 'requires_payment' as const, clientSecret, transactionId };
+        return { outcome: 'requires_payment' as const, clientSecret, transactionId: orderId };
       }
 
       // Decision 236's own follow-up — reuse the saved card (Decision 238)
@@ -867,8 +889,15 @@ export class MembershipsService {
         return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency);
       }
 
-      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(studentId, plan.schoolId, plan.price, currency, plan.title);
-      await this.prismaApp.withTenantContext(studentId, (tx) =>
+      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
+        studentId,
+        plan.schoolId,
+        plan.price,
+        currency,
+        plan.title,
+        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title]),
+      );
+      const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
         tx.transaction.create({
           data: {
             id: transactionId,
@@ -877,14 +906,14 @@ export class MembershipsService {
             paymentAccountId: paymentAccount.id,
             membershipPlanId: plan.id,
             amount: plan.price,
-            currency,
+            currency: currency.toUpperCase(),
             status: 'PENDING',
             paymentMethod: 'STRIPE',
             stripePaymentIntentId: paymentIntentId,
           },
         }),
       );
-      return { outcome: 'requires_payment' as const, clientSecret, transactionId };
+      return { outcome: 'requires_payment' as const, clientSecret, transactionId: orderId };
     }
 
     // Cash/Bank Transfer path — Transaction created Pending, Membership created
@@ -892,33 +921,39 @@ export class MembershipsService {
     if (!CASH_BANK_ELIGIBLE_TYPES.includes(plan.type as (typeof CASH_BANK_ELIGIBLE_TYPES)[number])) {
       throw new BadRequestException(`${plan.type} is not Cash/Bank Transfer-eligible.`);
     }
-    // Decision 334 (Memberships review M16): one unpaid cash/bank order per
-    // Student per plan. Asking again returns the one already waiting.
-    const waiting = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.transaction.findFirst({
-        where: { studentId, membershipPlanId: plan.id, status: 'PENDING', paymentMethod: { not: 'STRIPE' } },
+    // Decision 339 (T10) — one open Cash/Bank payment per Student per plan: a
+    // second Buy (a double tap, or a retry because nothing seemed to happen)
+    // returns the one already waiting instead of writing another the Owner
+    // could confirm twice. The advisory lock serializes two concurrent taps.
+    const { transactionId, created } = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`cash-purchase:${studentId}:${plan.id}`}))`;
+      const open = await tx.transaction.findFirst({
+        where: { studentId, membershipPlanId: plan.id, status: 'PENDING', paymentMethod: { in: ['CASH', 'BANK_TRANSFER'] } },
         select: { id: true },
-      }),
-    );
-    if (waiting) {
-      return { outcome: 'pending_confirmation' as const, transactionId: waiting.id };
-    }
-    const transactionId = randomUUID();
-    await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.transaction.create({
+      });
+      if (open) return { transactionId: open.id, created: false };
+      const id = randomUUID();
+      await tx.transaction.create({
         data: {
-          id: transactionId,
+          id,
           schoolId: plan.schoolId,
           studentId,
           paymentAccountId: paymentAccount.id,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: paymentAccount.provider,
         },
-      }),
-    );
+      });
+      return { transactionId: id, created: true };
+    });
+    if (created) {
+      await this.paymentsService.notifyCashPayment(
+        { id: transactionId, schoolId: plan.schoolId, studentId, membershipPlanId: plan.id, amount: plan.price, currency },
+        'waiting',
+      );
+    }
     return { outcome: 'pending_confirmation' as const, transactionId };
   }
 
@@ -968,7 +1003,7 @@ export class MembershipsService {
             paymentAccountId,
             membershipPlanId: plan.id,
             amount: plan.price,
-            currency,
+            currency: currency.toUpperCase(),
             status: 'FAILED',
             paymentMethod: 'STRIPE',
             stripePaymentIntentId: chargeResult.paymentIntentId || undefined,
@@ -987,7 +1022,7 @@ export class MembershipsService {
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'SUCCESSFUL',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: chargeResult.paymentIntentId,
@@ -1057,18 +1092,19 @@ export class MembershipsService {
       plan.price,
       currency,
       plan.title,
+      stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title]),
     );
-    const transactionId = randomUUID();
-    await this.prismaApp.withTenantContext(studentId, (tx) =>
+    const newId = randomUUID();
+    const transactionId = await this.createStripeOrder(studentId, paymentIntentId, newId, (tx) =>
       tx.transaction.create({
         data: {
-          id: transactionId,
+          id: newId,
           schoolId: plan.schoolId,
           studentId,
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
-          currency,
+          currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: paymentIntentId,
@@ -1076,6 +1112,34 @@ export class MembershipsService {
       }),
     );
     return { outcome: 'requires_checkout' as const, checkoutUrl, transactionId };
+  }
+
+  /**
+   * Saves a card purchase's Pending Transaction. A repeated purchase (a double
+   * click) reaches Stripe with the same idempotency key and gets the same
+   * PaymentIntent back, which already has its Transaction (stripePaymentIntentId
+   * is unique): that one is returned instead of a second. Before, each click
+   * opened its own Stripe subscription or Checkout and its own Pending order
+   * (billing stress test, 26 Oct 2026, B2).
+   */
+  private async createStripeOrder(
+    studentId: string,
+    paymentIntentId: string,
+    transactionId: string,
+    create: (tx: Parameters<Parameters<PrismaAppService['withTenantContext']>[1]>[0]) => Promise<unknown>,
+  ): Promise<string> {
+    try {
+      await this.prismaApp.withTenantContext(studentId, create);
+      return transactionId;
+    } catch (err) {
+      const unique = Boolean(err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002');
+      if (!unique) throw err;
+      const existing = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+      );
+      if (!existing) throw err;
+      return existing.id;
+    }
   }
 
   /**

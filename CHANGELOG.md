@@ -26,6 +26,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   false" now works on Waivers, Classes, Timetable, Branches and Instructors;
   drawn signature images are deleted with their signature. Needs migration
   `20261130000000_waiver_signed_copy`.
+- **Add student and Cancel booking on a class's page** (Decision 349) — staff
+  can book a student into a class from the class itself (paid from the
+  student's own membership; offered the waitlist when the class is full), and
+  cancel one student's booking, with the school's cancellation settings
+  deciding what goes back.
 - **A member School can show its Franchise's name and logo (Decision 350)** —
   only when both the Franchise Owner (a new switch on the Franchise form) and the
   School Owner (a new switch on the School page) turn it on. It shows as "Part of
@@ -56,6 +61,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Failed with the money taken; and Stripe's payment notices are no longer
   rate-limited, so card purchases settle at once in a busy hour instead of
   waiting on Stripe's retries.
+- **Billing stress-test follow-ups (B1, B2)** — marking a cash payment as paid
+  after it was cancelled or failed now says it can't be done (it used to
+  answer "OK" and change nothing); and clicking Subscribe or Buy several times
+  in a row now makes one card order and one Stripe subscription or Checkout
+  page, not one per click (Stripe idempotency keys per student and plan).
 
 - **Classes: second batch of fixes** (Decision 345, needs a migration) — a
   one-off class now needs its own ticket unless "Included in membership" is
@@ -96,6 +106,34 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   when sending to one class, the Owner ticks who gets it (booked, waitlist,
   cancelled; booked by default); and the payment-restricted alert names the
   student.
+- **Class cancellations, chosen by each academy** (Decision 291) — the
+  School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
+  actually applies, in its own "Class cancellations" section with new
+  settings: whether it applies only before a class's cutoff or any time, a
+  default cutoff for classes without one, whether the late fee is charged, an
+  optional no-show fee, and what students get when the school cancels a whole
+  class. New **Cancel class** button on a class's page (with a reason sent to
+  students), and a new **Cancellations** page where staff resolve cancelled
+  bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
+  Pass always gets its credit back, and only an Owner or Manager can send money
+  back.
+- **Cancellation settings per branch** (Decision 292) — on a branch's
+  settings page, the owner can keep "Same as the school" (the default) or give
+  that branch its own cancellation settings. Existing schools keep giving the
+  class credit back, as before, and the dashboard and School page ask the
+  owner to choose a policy until they save one.
+
+- **Transactions fixes from the 26 Oct review (Decision 339)** — the page now
+  shows every payment newest first with Prev/Next, and its tiles count the
+  whole ledger; revenue no longer splits "GBP" and "gbp"; Pending cash and
+  bank transfer payments get Mark as paid and Cancel buttons; owners are told
+  when a student picks cash, and students or their guardians when it is
+  confirmed or cancelled; choosing cash twice no longer makes two rows;
+  payments can't be confirmed for a student who left or at a closed School;
+  abandoned card checkouts turn Failed; Receipt shows on card payments only;
+  Branch Staff and coaches see a message instead of a blank page. **Needs a
+  database migration** (fixes stored currency codes).
+
 - **Curriculum: fourteen bug fixes** (Decision 324) — editing a lesson can now
   clear its description, duration and instructor; archived lessons are hidden
   from students everywhere (direct links, favourites, playlists, skill lists);

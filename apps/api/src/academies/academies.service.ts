@@ -173,7 +173,8 @@ export class AcademiesService {
         },
         branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
         classes: {
-          where: { startDate: { gte: new Date() } },
+          // Decision 291 — a class the School cancelled isn't bookable.
+          where: { startDate: { gte: new Date() }, cancelledAt: null },
           orderBy: { startDate: 'asc' },
           take: UPCOMING_CLASSES_LIMIT,
           select: CLASS_DISCOVERY_SELECT,
@@ -228,7 +229,8 @@ export class AcademiesService {
         // branch when joining. Ordered by name: createdAt isn't granted.
         branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
         classes: {
-          where: { startDate: { gte: new Date() } },
+          // Decision 291 — a class the School cancelled isn't bookable.
+          where: { startDate: { gte: new Date() }, cancelledAt: null },
           orderBy: { startDate: 'asc' },
           take: UPCOMING_CLASSES_LIMIT,
           select: CLASS_DISCOVERY_SELECT,
