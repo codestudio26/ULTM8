@@ -1,5 +1,10 @@
 /** French — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Votre code d’accès actuel est incorrect.",
+  "Choose a new passcode that is different from your current one.": "Choisissez un nouveau code d’accès différent de l’actuel.",
+  "You must be 18 or over to create a School.": "Vous devez avoir 18 ans ou plus pour créer une École.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Les SMS ne sont pas encore configurés, nous ne pouvons donc pas envoyer de code de vérification. Veuillez réessayer plus tard.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Votre numéro de téléphone n'est pas encore vérifié. Vérifiez-le pour terminer la création de votre compte.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Seul le Propriétaire/Gérant de l'École ou le Personnel de cette agence peut faire cela.",
   "This class is already cancelled.": "Ce cours est déjà annulé.",
   "This class has already finished.": "Ce cours est déjà terminé.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Le paiement avec une carte enregistrée nécessite une école configurée avec Stripe — cette école n’accepte que les espèces ou le virement bancaire.",
   "PaymentAccount has no owner": "La PaymentAccount n’a pas de titulaire",
   "PaymentAccount not found": "PaymentAccount introuvable",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Téléphone non vérifié — terminez l’inscription via POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "L’authentification des administrateurs de la plateforme n’est pas entièrement configurée.",
   "Playlist not found": "Playlist introuvable",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "La promotion ne fait que monter ; choisissez une ceinture ou une barrette supérieure. Utilisez la rétrogradation pour descendre.",

@@ -6136,6 +6136,68 @@ The Dashboard review's Q7 asked when to build the Dashboard items Decisions 317 
 
 User (Code), 27 Oct 2026, choosing "All recommended" on the Dashboard review's decision card (Q7).
 
+## Decision 373 — Sign-in and accounts review fixes
+
+**Date:** 27 Oct 2026 · **Status:** Bug fixes from the Sign-in and accounts review · **Builds on:** Decisions 72, 79, 230/237, 295 and 341
+
+The Sign-in and accounts review (login, sign-up, verify phone, forgot and reset passcode, first sign-in with a temporary passcode, Create your School, My profile) found 13 bugs, A1–A13. This fixes them. No business rule changes; nothing needs a migration.
+
+### Decision
+
+1. **Nothing is saved when text messages aren't set up (A1, A3).** Sign-up and Forgot passcode check Twilio first and answer every phone the same way: "Text messages are not configured yet, so we can't send a verification code. Please try again later." (503, code `SMS_NOT_CONFIGURED`). Before, sign-up saved the account and then failed with a 500, so the person could never sign up again or log in; Forgot passcode failed only for registered phones, which told anyone which numbers have accounts.
+2. **First sign-in with a temporary passcode keeps a real session (A2, A10).** The portal now stores the 30-day refresh token too, and drops anything an earlier session left in the tab. Before, the session died after 15 minutes, or picked up the earlier account's refresh token. It also returns to where Log in was going (the coach invite link) and sets the belts-to-verify notice like a normal login.
+3. **A new login starts clean (A4).** Logging in clears the previous session's cached data and School choice, as Log out already did.
+4. **Create your School has Log out (A5).** It is the home page for anyone without a School, and had no way out.
+5. **An unverified phone gets plain wording and a link (A6, A9).** "Your phone number isn't verified yet. Verify it to finish creating your account." (403, code `PHONE_NOT_VERIFIED`), with a "Verify your phone" link on Log in. After verifying, Log in says "Phone verified. You can log in now."
+6. **Sign-up checks names and date of birth (A7)**, as Decision 341 does for profile edits: names are trimmed and can't be blank; the date of birth must be a real date, not in the future and not more than 120 years ago.
+7. **Usernames ignore capitals and are checked across all accounts (A8).** "Taken" now matches "taken", and a username used at another School gets "This username is already taken." instead of a generic error. Only whether it is taken is read, never the other account.
+8. **My profile can remove the photo (A11).** `profilePhotoUrl: null` clears it. An account with no phone no longer shows a broken phone field.
+9. **Create your School: a cleared waitlist box keeps the default (A12).**
+10. **A Franchise owner who owns no School lands on Franchises (A13)**, not Create your School.
+
+### Still open
+
+The review's five questions (change passcode while signed in, clearing unfinished sign-ups, checking email, changing email or phone, a minimum age to create a School) were answered on 28 Oct 2026: see Decision 375.
+
+### Recorded by
+
+Claude, from the Sign-in and accounts review, 27 Oct 2026.
+
+## Decision 375 — Sign-in and accounts: the five questions answered
+
+**Date:** 28 Oct 2026 · **Status:** Product owner's answers to the Sign-in and accounts review's questions · **Builds on:** Decisions 361 and 373
+
+### Decision
+
+1. **Change passcode on My profile (Q1).** A signed-in person can change their passcode: current passcode, then the new one twice. `POST /v1/auth/passcode-change` checks the current passcode (wrong guesses count toward the same 5-try lockout as Log in), refuses the same passcode again, and signs out every other device: all refresh tokens are revoked and `User.rolesChangedAt` is moved, so other devices' access tokens are refused on their next request (Decision 361's check) instead of up to 15 minutes later. The device that made the change gets a fresh pair and stays signed in.
+2. **An unfinished sign-up can be replaced after 30 minutes (Q2).** When someone signs up with an email or phone that belongs to an account whose phone was never verified, and that account is more than 30 minutes old, the new sign-up replaces it in place: every profile field and the passcode are overwritten and the 30 minutes restart. Only a plain self-registration qualifies: it has a phone, it isn't an account added by staff waiting for its first passcode change, it holds no role anywhere, and the email, phone and username match that one account only. A verified account is never touched; anything else is still "already exists".
+3. **Checking email at sign-up (Q3): v1.3, with Postmark.** Sign-up will also send a 6-digit email code once Postmark email is live. Added to the list to discuss with Gus.
+4. **Changing email or phone (Q4): v1.3, with a code** sent to the new address or number, once email and text messages are live.
+5. **18 or over to create a School (Q5).** Creating a School is refused for anyone under 18 by date of birth: "You must be 18 or over to create a School." (403). Existing Schools are not affected.
+
+No migration.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, answering the five decision cards in the Sign-in and accounts thread: "Add it, sign out other devices", "Replace after 30 minutes", "v1.3, with Postmark", "v1.3, with a code", "18 or over".
+
+---
+
+## Decision 376 — The per-IP limit applies only to callers who aren't signed in
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 17 (per-user/per-IP throttling) · **Found by:** stress test round 3
+
+### Decision
+
+1. **Not signed in:** every route keeps its limit per IP address: 60 requests a minute by default, tighter where the route sets its own (login, sign-up codes, public School search, guest waiver links).
+2. **Signed in** (a valid, unexpired access token): no per-IP limit. Everyone at a School on the same WiFi shares one address, so a busy front desk could otherwise be stopped by the rest of the School's traffic. Each signed-in user keeps their own limits: 1,000 requests a minute overall, plus the per-route limits already set (bookings, waitlist, Add manually, invites, step-up).
+3. **A route with its own tighter limit** keeps it for signed-in callers too, counted per user instead of per address (bulk promote: 30 a minute per person).
+4. Only a token the API itself verifies counts as signed in; a made-up or expired token is treated as not signed in.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "yes, build the per-IP limit change", to the proposal "keep the strict per-IP limit only for unauthenticated requests".
+
 ---
 
 ## Decision 368 — School settings page review: 11 fixes, join code, School logo and colour, currency guard, Franchise name check

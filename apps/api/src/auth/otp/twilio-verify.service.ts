@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Twilio } from 'twilio';
@@ -84,11 +84,14 @@ export class TwilioVerifyService {
     return result.status === 'approved';
   }
 
-  private assertConfigured() {
+  /** Throws a plain 503 when Twilio isn't set up (the live site this round),
+   * so a caller can stop before it saves anything (sign-in review A1, A3). */
+  assertConfigured() {
     if (!this.client || !this.verifyServiceSid) {
-      throw new Error(
-        'TwilioVerifyService is not configured — set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID',
-      );
+      throw new ServiceUnavailableException({
+        code: 'SMS_NOT_CONFIGURED',
+        message: "Text messages are not configured yet, so we can't send a verification code. Please try again later.",
+      });
     }
   }
 }

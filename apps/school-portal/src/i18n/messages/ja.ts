@@ -197,6 +197,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "すべての帯、すべての予約を、ひとつの場所で。",
       newSchool: "新しいスクールですか？{link}",
       forgotPasscode: "パスコードをお忘れですか？",
+      phoneVerified: "電話番号を確認しました。ログインできます。",
+      verifyPhoneLink: "電話番号を確認する",
     },
     forgot: {
       title: "パスコードの再設定",
@@ -2961,6 +2963,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "マイプロフィール",
     loadFailed: "プロフィールを読み込めませんでした。",
     signInNote: "メールアドレスと電話番号はログインに使うため、ここでは変更できません。",
+    removePhoto: "写真を削除",
+    changePasscode: {
+      title: "パスコードを変更",
+      current: "現在のパスコード",
+      hint: "変更すると、他のデバイスからサインアウトされます。",
+      submit: "パスコードを変更",
+      changed: "パスコードを変更しました。他のデバイスからサインアウトされました。",
+    },
   },
   address: {
     legend: "住所",

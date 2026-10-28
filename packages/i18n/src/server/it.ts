@@ -1,5 +1,10 @@
 /** Italian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Il tuo codice di accesso attuale non è corretto.",
+  "Choose a new passcode that is different from your current one.": "Scegli un nuovo codice di accesso diverso da quello attuale.",
+  "You must be 18 or over to create a School.": "Devi avere almeno 18 anni per creare una Scuola.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Gli SMS non sono ancora configurati, quindi non possiamo inviare un codice di verifica. Riprova più tardi.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Il tuo numero di telefono non è ancora verificato. Verificalo per completare la creazione dell'account.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Solo il Titolare/Responsabile della Scuola o lo Staff di quella sede può farlo.",
   "This class is already cancelled.": "Questa lezione è già annullata.",
   "This class has already finished.": "Questa lezione è già terminata.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Il pagamento con una carta salvata richiede una scuola configurata con Stripe: questa scuola accetta solo contanti o bonifico bancario.",
   "PaymentAccount has no owner": "Il PaymentAccount non ha un titolare",
   "PaymentAccount not found": "PaymentAccount non trovato",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Telefono non verificato: completa la registrazione tramite POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "L'autenticazione degli amministratori della piattaforma non è configurata completamente.",
   "Playlist not found": "Playlist non trovata",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "La promozione può solo salire: scegli una cintura o una striscia superiore. Per scendere usa la retrocessione.",

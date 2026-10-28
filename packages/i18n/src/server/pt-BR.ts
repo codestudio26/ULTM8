@@ -1,5 +1,10 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Seu código de acesso atual não está correto.",
+  "Choose a new passcode that is different from your current one.": "Escolha um novo código de acesso diferente do atual.",
+  "You must be 18 or over to create a School.": "Você precisa ter 18 anos ou mais para criar uma Escola.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "As mensagens de texto ainda não estão configuradas, então não podemos enviar um código de verificação. Tente novamente mais tarde.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Seu número de telefone ainda não foi verificado. Verifique-o para concluir a criação da sua conta.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Somente o Proprietário/Gerente da Escola ou a Equipe daquela filial pode fazer isso.",
   "This class is already cancelled.": "Esta aula já foi cancelada.",
   "This class has already finished.": "Esta aula já terminou.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Pagar com cartão salvo exige uma escola configurada com Stripe — esta escola aceita apenas dinheiro/transferência bancária.",
   "PaymentAccount has no owner": "A PaymentAccount não tem titular",
   "PaymentAccount not found": "PaymentAccount não encontrada",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Telefone não verificado — conclua o cadastro via POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "A autenticação de administradores da plataforma não está totalmente configurada.",
   "Playlist not found": "Playlist não encontrada",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "A promoção só sobe; escolha uma faixa ou grau superior. Use o rebaixamento para descer.",

@@ -12,6 +12,7 @@ import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
+import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { StepUpVerifyDto } from './dto/step-up-verify.dto';
 import { AuthMessageResponseDto, LoginResponseDto } from './dto/auth-response.dto';
 import { StepUpResponseDto } from './dto/step-up-response.dto';
@@ -142,5 +143,16 @@ export class AuthController {
   @Post('passcode-change/first-login')
   changePasscodeFirstLogin(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasscodeFirstLoginDto) {
     return this.authService.changePasscodeFirstLogin(user.sub, dto);
+  }
+
+  // Decision 375 (Q1) — "Change passcode" on My profile, for a signed-in
+  // person. Same per-caller throttle as the first-login change.
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: LoginResponseDto })
+  @Throttle(PASSCODE_CHANGE_THROTTLE)
+  @Post('passcode-change')
+  changePasscode(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasscodeDto) {
+    return this.authService.changePasscode(user.sub, dto);
   }
 }

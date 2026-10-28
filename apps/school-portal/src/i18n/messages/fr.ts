@@ -200,6 +200,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "Chaque ceinture, chaque réservation, au même endroit.",
       newSchool: "Nouvelle école ? {link}",
       forgotPasscode: "Code d’accès oublié ?",
+      phoneVerified: "Téléphone vérifié. Vous pouvez maintenant vous connecter.",
+      verifyPhoneLink: "Vérifier votre téléphone",
     },
     forgot: {
       title: "Réinitialiser votre code d’accès",
@@ -3004,6 +3006,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "Mon profil",
     loadFailed: "Impossible de charger votre profil.",
     signInNote: "Vous vous connectez avec votre e-mail et votre numéro de téléphone : ils ne peuvent donc pas être modifiés ici.",
+    removePhoto: "Supprimer la photo",
+    changePasscode: {
+      title: "Changer le code d’accès",
+      current: "Code d’accès actuel",
+      hint: "Le changer vous déconnecte de vos autres appareils.",
+      submit: "Changer le code d’accès",
+      changed: "Code d’accès changé. Vous avez été déconnecté de vos autres appareils.",
+    },
   },
   address: {
     legend: "Adresse",

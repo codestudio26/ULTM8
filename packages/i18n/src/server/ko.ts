@@ -1,5 +1,10 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "현재 패스코드가 올바르지 않습니다.",
+  "Choose a new passcode that is different from your current one.": "현재 패스코드와 다른 새 패스코드를 선택하세요.",
+  "You must be 18 or over to create a School.": "스쿨을 만들려면 만 18세 이상이어야 합니다.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "문자 메시지가 아직 설정되지 않아 인증 코드를 보낼 수 없습니다. 나중에 다시 시도해 주세요.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "전화번호가 아직 인증되지 않았습니다. 인증하여 계정 만들기를 완료하세요.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "학교 소유자/관리자 또는 해당 지점의 지점 직원만 할 수 있습니다.",
   "This class is already cancelled.": "이 수업은 이미 취소되었습니다.",
   "This class has already finished.": "이 수업은 이미 끝났습니다.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "저장된 카드로 결제하려면 Stripe가 설정된 도장이어야 합니다. 이 도장은 현금/계좌이체만 사용하도록 설정되어 있습니다.",
   "PaymentAccount has no owner": "결제 계정에 소유자가 없습니다",
   "PaymentAccount not found": "결제 계정을 찾을 수 없습니다",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "전화번호가 인증되지 않았습니다. POST /auth/otp/verify로 가입을 완료하세요",
   "Platform Admin authentication is not fully configured.": "플랫폼 관리자 인증이 완전히 설정되지 않았습니다.",
   "Playlist not found": "재생목록을 찾을 수 없습니다",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "승급은 위로만 가능합니다. 더 높은 띠나 그랄을 선택하세요. 낮추려면 강등을 사용하세요.",

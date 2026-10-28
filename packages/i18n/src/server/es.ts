@@ -1,5 +1,10 @@
 /** Spanish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Tu código de acceso actual no es correcto.",
+  "Choose a new passcode that is different from your current one.": "Elige un nuevo código de acceso distinto del actual.",
+  "You must be 18 or over to create a School.": "Debes tener 18 años o más para crear una Escuela.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Los mensajes de texto aún no están configurados, así que no podemos enviar un código de verificación. Inténtalo más tarde.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Tu número de teléfono aún no está verificado. Verifícalo para terminar de crear tu cuenta.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Solo el Propietario/Gerente de la Escuela o el Personal de esa sucursal puede hacer esto.",
   "This class is already cancelled.": "Esta clase ya está cancelada.",
   "This class has already finished.": "Esta clase ya ha terminado.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Pagar con tarjeta guardada requiere una escuela configurada con Stripe; esta escuela solo acepta efectivo o transferencia bancaria.",
   "PaymentAccount has no owner": "La PaymentAccount no tiene titular",
   "PaymentAccount not found": "PaymentAccount no encontrada",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Teléfono no verificado: completa el registro mediante POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "La autenticación de administradores de la plataforma no está completamente configurada.",
   "Playlist not found": "Lista de reproducción no encontrada",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "El ascenso solo sube; elige un cinturón o franja superior. Usa el descenso para bajar.",
