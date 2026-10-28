@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
+  and 2, plus four new scripts for everything added since; report in
+  `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
+  `apps/api/scripts/stress/round3/`. Fixes below.
 - **API stress-test fixes: duplicate roles, passcode hashing, Add manually**
   (stress test round 3) — a double click on "Give role" (or two coach invites
   accepted at once) no longer gives someone the same role twice, so revoking
@@ -28,7 +32,8 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 - **Round-3 stress-test fixes (races)** — a booking made while the School
   cancels the class is now either cancelled with the rest or refused ("This
   class has been cancelled by the school"); it used to stay booked on the
-  cancelled class. A class cancel that stopped half way (the server busy) is
+  cancelled class (also when a timetable slot is switched off with its booked
+  classes cancelled). A class cancel that stopped half way (the server busy) is
   finished by cancelling again, instead of answering "already cancelled".
   Closing a Branch while people book its classes no longer fails with a server
   error on both sides, and those bookings move with their class. A style can
