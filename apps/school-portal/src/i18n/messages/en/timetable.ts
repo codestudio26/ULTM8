@@ -125,6 +125,15 @@ export const timetable = {
     cancelled: 'This class has been cancelled, so it can no longer be booked.',
     ended: 'This class has already ended, so it can no longer be booked.',
   },
+  /** Decision 319 §1 — the calendar's filters. */
+  filters: {
+    branch: 'Branch',
+    allBranches: 'All branches',
+    style: 'Style',
+    allStyles: 'All styles',
+    classType: 'Class type',
+    allClassTypes: 'All class types',
+  },
   /** Decision 353 (Q8, Decision 319 §3) — closure dates. */
   closures: {
     button: 'Closures',

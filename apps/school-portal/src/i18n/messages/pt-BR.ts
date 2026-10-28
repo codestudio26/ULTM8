@@ -322,6 +322,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Sempre reembolsar, mesmo depois do fim",
       ranksToggle: "Ativar controle de faixas/graduações",
       branchStaffPayments: "Permitir que a equipe das unidades registre pagamentos recebidos no balcão",
+      weekStart: "A semana da grade começa na",
+      weekStartMonday: "Segunda-feira",
+      weekStartSunday: "Domingo",
+      timetableLayout: "A grade abre como",
+      layoutList: "Lista",
+      layoutGrid: "Grade",
     },
     create: {
       createdTitle: "Escola criada",
@@ -2677,6 +2683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "Não foi possível adicionar este aluno à lista de espera.",
       cancelled: "Esta aula foi cancelada e não pode mais ser reservada.",
       ended: "Esta aula já terminou e não pode mais ser reservada.",
+    },
+    filters: {
+      branch: "Unidade",
+      allBranches: "Todas as unidades",
+      style: "Estilo",
+      allStyles: "Todos os estilos",
+      classType: "Tipo de aula",
+      allClassTypes: "Todos os tipos",
     },
     closures: {
       button: "Fechamentos",

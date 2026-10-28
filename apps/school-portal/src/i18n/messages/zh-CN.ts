@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "始终退款，即使课程已结束",
       ranksToggle: "启用腰带/段位跟踪",
       branchStaffPayments: "允许分校员工记录在前台收到的付款",
+      weekStart: "课程表每周开始于",
+      weekStartMonday: "星期一",
+      weekStartSunday: "星期日",
+      timetableLayout: "课程表默认显示",
+      layoutList: "列表",
+      layoutGrid: "网格",
     },
     create: {
       createdTitle: "学校已创建",
@@ -2636,6 +2642,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "无法将该学员加入候补名单。",
       cancelled: "该课程已取消，无法再预约。",
       ended: "该课程已结束，无法再预约。",
+    },
+    filters: {
+      branch: "分校",
+      allBranches: "全部分校",
+      style: "风格",
+      allStyles: "全部风格",
+      classType: "课程类型",
+      allClassTypes: "全部类型",
     },
     closures: {
       button: "停课日",

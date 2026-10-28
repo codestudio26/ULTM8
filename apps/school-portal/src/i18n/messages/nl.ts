@@ -322,6 +322,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Altijd terugbetalen, ook na afloop",
       ranksToggle: "Band-/gradatievolging inschakelen",
       branchStaffPayments: "Vestigingsmedewerkers betalingen aan de balie laten vastleggen",
+      weekStart: "Roosterweek begint op",
+      weekStartMonday: "Maandag",
+      weekStartSunday: "Zondag",
+      timetableLayout: "Rooster opent als",
+      layoutList: "Lijst",
+      layoutGrid: "Raster",
     },
     create: {
       createdTitle: "School aangemaakt",
@@ -2677,6 +2683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "Deze leerling kan niet aan de wachtlijst worden toegevoegd.",
       cancelled: "Deze les is geannuleerd en kan niet meer worden geboekt.",
       ended: "Deze les is al afgelopen en kan niet meer worden geboekt.",
+    },
+    filters: {
+      branch: "Vestiging",
+      allBranches: "Alle vestigingen",
+      style: "Stijl",
+      allStyles: "Alle stijlen",
+      classType: "Lestype",
+      allClassTypes: "Alle lestypes",
     },
     closures: {
       button: "Sluitingen",

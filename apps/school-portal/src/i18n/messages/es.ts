@@ -322,6 +322,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Reembolsar siempre, incluso después de terminar",
       ranksToggle: "Activar seguimiento de cinturones/grados",
       branchStaffPayments: "Permitir que el personal de sede registre pagos recibidos en recepción",
+      weekStart: "La semana del horario empieza el",
+      weekStartMonday: "Lunes",
+      weekStartSunday: "Domingo",
+      timetableLayout: "El horario se abre como",
+      layoutList: "Lista",
+      layoutGrid: "Cuadrícula",
     },
     create: {
       createdTitle: "Escuela creada",
@@ -2677,6 +2683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "No se pudo añadir a este alumno a la lista de espera.",
       cancelled: "Esta clase se ha cancelado, así que ya no se puede reservar.",
       ended: "Esta clase ya ha terminado, así que ya no se puede reservar.",
+    },
+    filters: {
+      branch: "Sede",
+      allBranches: "Todas las sedes",
+      style: "Estilo",
+      allStyles: "Todos los estilos",
+      classType: "Tipo de clase",
+      allClassTypes: "Todos los tipos",
     },
     closures: {
       button: "Cierres",

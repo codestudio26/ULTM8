@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "คืนเงินเสมอ แม้คลาสจบแล้ว",
       ranksToggle: "เปิดใช้การติดตามสายคาด/ระดับ",
       branchStaffPayments: "อนุญาตให้พนักงานสาขาบันทึกการชำระเงินที่รับที่เคาน์เตอร์",
+      weekStart: "สัปดาห์ในตารางเรียนเริ่มวัน",
+      weekStartMonday: "วันจันทร์",
+      weekStartSunday: "วันอาทิตย์",
+      timetableLayout: "ตารางเรียนเปิดเป็น",
+      layoutList: "รายการ",
+      layoutGrid: "ตาราง",
     },
     create: {
       createdTitle: "สร้างโรงเรียนแล้ว",
@@ -2636,6 +2642,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "ไม่สามารถเพิ่มนักเรียนคนนี้ในรายชื่อรอได้",
       cancelled: "คลาสนี้ถูกยกเลิกแล้ว จึงไม่สามารถจองได้อีก",
       ended: "คลาสนี้สิ้นสุดแล้ว จึงไม่สามารถจองได้อีก",
+    },
+    filters: {
+      branch: "สาขา",
+      allBranches: "ทุกสาขา",
+      style: "สไตล์",
+      allStyles: "ทุกสไตล์",
+      classType: "ประเภทคลาส",
+      allClassTypes: "ทุกประเภท",
     },
     closures: {
       button: "วันปิด",

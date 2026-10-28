@@ -322,6 +322,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelAlwaysRefund: "Ders bittikten sonra bile her zaman iade",
       ranksToggle: "Kuşak/derece takibini etkinleştir",
       branchStaffPayments: "Şube personelinin resepsiyonda alınan ödemeleri kaydetmesine izin ver",
+      weekStart: "Ders programı haftası şu gün başlar",
+      weekStartMonday: "Pazartesi",
+      weekStartSunday: "Pazar",
+      timetableLayout: "Ders programı şu görünümde açılır",
+      layoutList: "Liste",
+      layoutGrid: "Izgara",
     },
     create: {
       createdTitle: "Okul oluşturuldu",
@@ -2677,6 +2683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistFailed: "Bu öğrenci bekleme listesine eklenemedi.",
       cancelled: "Bu ders iptal edildi, artık rezervasyon yapılamaz.",
       ended: "Bu ders zaten sona erdi, artık rezervasyon yapılamaz.",
+    },
+    filters: {
+      branch: "Şube",
+      allBranches: "Tüm şubeler",
+      style: "Stil",
+      allStyles: "Tüm stiller",
+      classType: "Ders türü",
+      allClassTypes: "Tüm ders türleri",
     },
     closures: {
       button: "Kapanışlar",

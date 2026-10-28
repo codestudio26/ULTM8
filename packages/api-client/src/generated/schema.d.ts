@@ -4765,6 +4765,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4822,6 +4832,16 @@ export interface components {
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Branch Staff may record desk payments (Decision 347). */
             branchStaffCanRecordPayments: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4).
+             * @enum {string}
+             */
+            weekStartsOn: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4).
+             * @enum {string}
+             */
+            timetableDefaultLayout: "LIST" | "GRID";
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4890,6 +4910,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;

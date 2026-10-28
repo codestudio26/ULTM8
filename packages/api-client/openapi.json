@@ -14536,6 +14536,22 @@
           "branchStaffCanRecordPayments": {
             "type": "boolean",
             "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
+          },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4). Default MONDAY."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4). Default LIST."
           }
         },
         "required": [
@@ -14735,6 +14751,22 @@
             "type": "boolean",
             "description": "Branch Staff may record desk payments (Decision 347)."
           },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4)."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4)."
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -14782,6 +14814,8 @@
           "checkInOpensMinutesBeforeStart",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
+          "weekStartsOn",
+          "timetableDefaultLayout",
           "createdAt",
           "updatedAt"
         ]
@@ -14941,6 +14975,22 @@
           "branchStaffCanRecordPayments": {
             "type": "boolean",
             "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
+          },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4). Default MONDAY."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4). Default LIST."
           },
           "mobileNumber": {
             "type": "string",

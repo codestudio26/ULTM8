@@ -134,6 +134,12 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Branch Staff may record desk payments (Decision 347).' })
   branchStaffCanRecordPayments!: boolean;
 
+  @ApiProperty({ enum: ['MONDAY', 'SUNDAY'], description: 'First day of the Timetable\'s week (Decision 319 §4).' })
+  weekStartsOn!: 'MONDAY' | 'SUNDAY';
+
+  @ApiProperty({ enum: ['LIST', 'GRID'], description: 'The layout the Timetable opens in (Decision 319 §4).' })
+  timetableDefaultLayout!: 'LIST' | 'GRID';
+
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
 
