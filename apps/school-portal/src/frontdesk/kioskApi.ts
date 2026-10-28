@@ -25,17 +25,6 @@ export interface SignUpInput {
   emergencyRelationship: string;
 }
 
-/** Handover F1: `POST /schools/{schoolId}/front-desk/sessions` { branchId } → a
- * kiosk session token scoped to that School and Branch. */
-export async function startKioskSession(_schoolId: string, _branchId: string): Promise<{ sessionToken: string }> {
-  throw new NotBuiltYetError('Starting a locked front-desk session');
-}
-
-/** Handover F2: `POST /front-desk/sessions/{id}/unlock` { staffCode } → who unlocked it. */
-export async function unlockKiosk(_staffCode: string): Promise<{ unlockedBy: string }> {
-  throw new NotBuiltYetError('Leaving front-desk mode with a staff code');
-}
-
 /** Handover F3: `POST /front-desk/check-in-code` { code } → the student the
  * personal code belongs to, for the welcome card. */
 export async function findByPersonalCode(_code: string): Promise<{ studentId: string; firstName: string; surname: string; profilePhotoUrl: string | null }> {

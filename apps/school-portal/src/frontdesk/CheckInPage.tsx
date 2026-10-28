@@ -17,10 +17,12 @@ import {
   SoonTag,
   WelcomeCard,
   recentCheckIns,
+  timeOf,
   useMinuteTick,
   type CheckInMethod,
   type FrontDeskStudent,
 } from './parts';
+import { useEndKioskSession, useKioskSessions, useMyKioskCode, useNewKioskCode } from './kioskSession';
 import './frontDesk.css';
 
 /**
@@ -98,7 +100,6 @@ export function CheckInPage() {
               bookingsByClass={bookingsByClass}
               bookingsReady={bookingsReady}
               qr={who.qr}
-              short={false}
               onBack={() => setWho(null)}
               onDone={() => {
                 setWho(null);
@@ -136,7 +137,7 @@ export function CheckInPage() {
               ) : method === 'code' ? (
                 <CodePad title={t('frontDesk.code.staffTitle')} onCode={() => undefined} />
               ) : (
-                <NameSearch schoolId={schoolId} short={false} onPick={(student) => setWho({ student, qr: null })} />
+                <NameSearch schoolId={schoolId} onPick={(student) => setWho({ student, qr: null })} />
               )}
               <div className={`fd-msg${msg ? ` fd-msg--${msg.kind}` : ''}`} aria-live="polite">
                 {msg?.text ?? ''}
@@ -152,6 +153,74 @@ export function CheckInPage() {
           <RecentList rows={recent} />
         </Card>
       </div>
+      <FrontDeskTablets schoolId={schoolId} />
     </>
+  );
+}
+
+/**
+ * The tablets in front-desk mode now, which staff can end from here (a lost
+ * tablet, or nobody at the desk with a code), and the caller's own code for
+ * leaving one (Decisions 320, 380).
+ */
+function FrontDeskTablets({ schoolId }: { schoolId: string }) {
+  const t = useT();
+  const sessions = useKioskSessions(schoolId);
+  const end = useEndKioskSession(schoolId);
+  const myCode = useMyKioskCode(schoolId);
+  const newCode = useNewKioskCode(schoolId);
+  const [error, setError] = useState<string | null>(null);
+  const items = sessions.data?.items ?? [];
+  return (
+    <section className="fd-tablets" data-testid="fd-tablets" aria-labelledby="fd-tablets-title">
+      <Card>
+        <h2 id="fd-tablets-title" className="fd-eyebrow" style={{ marginBottom: 8 }}>
+          {t('frontDesk.tablets.title')}
+        </h2>
+        {myCode.data ? (
+          <p className="fd-class__meta" style={{ marginTop: 0 }}>
+            {t('frontDesk.tablets.myCode', { code: myCode.data.code })}{' '}
+            <button
+              type="button"
+              className="fd-link"
+              disabled={newCode.isPending}
+              onClick={() => {
+                if (window.confirm(t('frontDesk.tablets.newCodeConfirm'))) newCode.mutate();
+              }}
+            >
+              {t('frontDesk.tablets.newCode')}
+            </button>
+          </p>
+        ) : null}
+        {items.length === 0 ? (
+          <p className="fd-class__meta">{t('frontDesk.tablets.none')}</p>
+        ) : (
+          items.map((s) => (
+            <div key={s.id} className="fd-recent__row">
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="fd-recent__name">{s.branchName ?? t('frontDesk.kiosk.wholeSchool')}</div>
+                <div className="fd-recent__meta">{t('frontDesk.tablets.startedBy', { name: s.startedByName, time: timeOf(s.startedAt) })}</div>
+              </div>
+              <button
+                type="button"
+                className="fd-pill fd-pill--line"
+                disabled={end.isPending}
+                onClick={() => {
+                  setError(null);
+                  end.mutate(s.id, { onError: (err) => setError(errorText(err, t('frontDesk.tablets.endFailed'))) });
+                }}
+              >
+                {t('frontDesk.tablets.end')}
+              </button>
+            </div>
+          ))
+        )}
+        {error ? (
+          <p className="fd-msg fd-msg--bad" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </Card>
+    </section>
   );
 }

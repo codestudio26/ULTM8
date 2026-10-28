@@ -49,5 +49,7 @@ import { MembershipsService } from './memberships.service';
   imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule],
   controllers: [MembershipsController],
   providers: [MembershipsService],
+  // The locked front-desk tablet's welcome card (FrontDeskModule, Decision 380).
+  exports: [MembershipsService],
 })
 export class MembershipsModule {}
