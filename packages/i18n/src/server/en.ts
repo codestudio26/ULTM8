@@ -26,6 +26,8 @@ export const SERVER_MESSAGES: string[] = [
  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.",
  "This class has been cancelled by the school.",
  "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).",
+ "\"Can manage disciplines\" is for Branch Staff only.",
+ "Only the School owner sets the price of a grade.",
  "\"Getting There\" must start below \"Ready to Grade\".",
  "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.",
  "A coach who teaches these classes has no coach role at the Branch they're moving to. Move staff and coach roles to the same Branch, or give the coach a role there first.",

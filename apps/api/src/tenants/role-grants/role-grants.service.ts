@@ -657,7 +657,7 @@ export class RoleGrantsService {
     });
     if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId, schoolId } });
     if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
-      await tx.staffPermission.updateMany({ where: { userId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
+      await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: { canInviteCoaches: false, canManageDisciplines: false } });
     }
   }
 
@@ -685,7 +685,7 @@ export class RoleGrantsService {
       }),
       main: await mainOwnerGrant(tx, schoolId),
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
-      inviters: await tx.staffPermission.findMany({ where: { schoolId, canInviteCoaches: true }, select: { userId: true } }),
+      inviters: await tx.staffPermission.findMany({ where: { schoolId }, select: { userId: true, canInviteCoaches: true, canManageDisciplines: true } }),
     }));
 
     const userIds = [...new Set(grants.map((g) => g.userId))];
@@ -696,7 +696,8 @@ export class RoleGrantsService {
     });
     const userById = new Map(users.map((u) => [u.id, u]));
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
-    const mayInvite = new Set(inviters.map((p) => p.userId));
+    const mayInvite = new Set(inviters.filter((p) => p.canInviteCoaches).map((p) => p.userId));
+    const mayManageDisciplines = new Set(inviters.filter((p) => p.canManageDisciplines).map((p) => p.userId));
 
     const status = query.status ?? 'active';
     const q = query.q?.toLowerCase();
@@ -730,6 +731,7 @@ export class RoleGrantsService {
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
         canInviteCoaches: mayInvite.has(userId),
+        canManageDisciplines: mayManageDisciplines.has(userId),
         mainOwner: main?.userId === userId,
         roles: roles.map((g) => ({
           grantId: g.id,

@@ -86,6 +86,9 @@ export class StaffMemberDto {
   @ApiProperty()
   canInviteCoaches!: boolean;
 
+  @ApiProperty({ description: 'Branch Staff the owner lets edit styles, belts and skills (Decision 383).' })
+  canManageDisciplines!: boolean;
+
   @ApiProperty({ description: "The School's main owner (Decision 370). Other owners are co-owners." })
   mainOwner!: boolean;
 

@@ -4349,6 +4349,8 @@ model StaffPermission {
   user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
 
   canInviteCoaches Boolean @default(false)
+  /// Decision 383: may edit the School's styles, belts and skills.
+  canManageDisciplines Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

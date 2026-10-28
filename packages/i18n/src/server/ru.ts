@@ -20,6 +20,8 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe не смог обработать этот возврат. Он остаётся в списке — попробуйте ещё раз или верните занятие на баланс.",
   "This class has been cancelled by the school.": "Это занятие отменено школой.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "Право «Может приглашать тренеров» доступно только сотрудникам филиала. Тренеры не могут приглашать тренеров.",
+  "\"Can manage disciplines\" is for Branch Staff only.": "«Может управлять дисциплинами» — только для Сотрудников филиала.",
+  "Only the School owner sets the price of a grade.": "Цену ступени устанавливает только владелец Школы.",
   "\"Getting There\" must start below \"Ready to Grade\".": "Уровень «Почти готов» должен начинаться ниже уровня «Готов к аттестации».",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Опекун не может указывать overrideReason — обойти требование к рангу могут только инструктор или сотрудники.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "Понижение оформляется сегодняшней датой и начинается без занятий; effectiveDate и начальное число занятий используются только при повышении.",

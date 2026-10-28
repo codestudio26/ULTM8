@@ -20,6 +20,8 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe ไม่สามารถดำเนินการคืนเงินนี้ได้ ยังคงรออยู่ในรายการ — ลองอีกครั้ง หรือคืนสิทธิ์เรียนแทน",
   "This class has been cancelled by the school.": "คลาสนี้ถูกโรงเรียนยกเลิกแล้ว",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "สิทธิ์ \"เชิญโค้ชได้\" ใช้ได้กับพนักงานสาขาเท่านั้น โค้ชไม่สามารถเชิญโค้ชคนอื่นได้",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"จัดการประเภทกีฬาได้\" ใช้ได้กับพนักงานสาขาเท่านั้น",
+  "Only the School owner sets the price of a grade.": "มีเพียงเจ้าของโรงเรียนที่กำหนดราคาของระดับได้",
   "\"Getting There\" must start below \"Ready to Grade\".": "ระดับ \"ใกล้พร้อม\" ต้องเริ่มต่ำกว่าระดับ \"พร้อมเลื่อนระดับ\"",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "ผู้ปกครองไม่สามารถระบุ overrideReason ได้ — เฉพาะครูฝึกหรือพนักงานเท่านั้นที่ข้ามเงื่อนไขระดับได้",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "การลดระดับจะลงวันที่วันนี้และเริ่มต้นโดยไม่มีคลาส ส่วน effectiveDate และจำนวนคลาสเริ่มต้นใช้สำหรับการเลื่อนระดับขึ้นเท่านั้น",

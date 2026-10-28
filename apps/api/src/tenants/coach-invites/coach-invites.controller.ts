@@ -76,7 +76,7 @@ export class CoachInvitesController {
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() dto: SetStaffPermissionDto,
   ) {
-    return this.coachInvites.setStaffPermission(user.sub, schoolId, userId, dto.canInviteCoaches);
+    return this.coachInvites.setStaffPermission(user.sub, schoolId, userId, dto);
   }
 }
 

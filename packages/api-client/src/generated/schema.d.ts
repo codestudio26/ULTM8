@@ -4820,6 +4820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HealthController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5628,6 +5644,8 @@ export interface components {
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
             canInviteCoaches: boolean;
+            /** @description Branch Staff the owner lets edit styles, belts and skills (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description The School's main owner (Decision 370). Other owners are co-owners. */
             mainOwner: boolean;
             /** @description Active roles first, then ended ones, newest first. */
@@ -5831,6 +5849,8 @@ export interface components {
         MyStaffPermissionResponseDto: {
             isOwner: boolean;
             canInviteCoaches: boolean;
+            /** @description May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
             branchIds: string[];
         };
@@ -5841,12 +5861,15 @@ export interface components {
             /** @description Branches where they are Branch Staff. */
             branchIds: string[];
             canInviteCoaches: boolean;
+            canManageDisciplines: boolean;
         };
         StaffPermissionListResponseDto: {
             items: components["schemas"]["StaffPermissionResponseDto"][];
         };
         SetStaffPermissionDto: {
-            canInviteCoaches: boolean;
+            canInviteCoaches?: boolean;
+            /** @description May edit the School's styles, belts and skills (Decision 383). */
+            canManageDisciplines?: boolean;
         };
         CoachInvitePreviewDto: {
             schoolName: string;
@@ -17087,6 +17110,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
+            };
+        };
+    };
+    HealthController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Database and Redis are reachable. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

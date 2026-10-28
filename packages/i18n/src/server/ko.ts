@@ -20,6 +20,8 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe에서 이 환불을 처리하지 못했습니다. 목록에 그대로 남아 있습니다. 다시 시도하거나 대신 수업 횟수를 돌려주세요.",
   "This class has been cancelled by the school.": "이 수업은 학교에 의해 취소되었습니다.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "'코치 초대 가능'은 지점 직원 전용입니다. 코치는 코치를 초대할 수 없습니다.",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"종목 관리 가능\"은 지점 직원에게만 줄 수 있습니다.",
+  "Only the School owner sets the price of a grade.": "급의 가격은 스쿨 소유자만 정할 수 있습니다.",
   "\"Getting There\" must start below \"Ready to Grade\".": "'거의 다 됨'은 '승급 준비 완료'보다 낮은 단계에서 시작해야 합니다.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "보호자는 overrideReason을 입력할 수 없습니다. 급 자격 요건의 예외 처리는 사범 또는 직원만 할 수 있습니다.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "강등은 오늘 날짜로 처리되며 수업 횟수 0회로 시작합니다. effectiveDate와 시작 수업 횟수는 승급할 때만 사용합니다.",

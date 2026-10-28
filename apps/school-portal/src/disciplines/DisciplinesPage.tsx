@@ -9,6 +9,7 @@ import {
   useDisciplines,
   useSetDisciplineArchived,
   useUpdateDiscipline,
+  useCanManageDisciplines,
   type DisciplineResponse,
 } from './disciplineQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
@@ -25,14 +26,16 @@ import { useT } from '../i18n/I18nProvider';
  *
  * Decision 309: the owner edits; coaches and Branch Staff see the same page
  * read-only, so they can check what each belt needs. Archived styles are
- * hidden behind "Show archived". */
+ * hidden behind "Show archived". Decision 383: Branch Staff the owner ticked
+ * "Can manage disciplines" for edit it too, and an archived style nobody uses
+ * can be deleted permanently. */
 export function DisciplinesPage() {
   const navigate = useNavigate();
   const t = useT();
   const ownedSchoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
   const schoolId = ownedSchoolId ?? coachSchoolId;
-  const canEdit = !!ownedSchoolId;
+  const canEdit = useCanManageDisciplines(schoolId);
   const [showArchived, setShowArchived] = useState(false);
   const { data, isLoading, error } = useDisciplines(schoolId, { includeArchived: showArchived });
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
@@ -129,7 +132,7 @@ export function DisciplinesPage() {
                     ) : null}
                     {canEdit ? (
                       <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
-                        {t('disciplines.list.delete')}
+                        {d.archivedAt ? t('disciplines.list.deletePermanently') : t('disciplines.list.delete')}
                       </Button>
                     ) : null}
                   </div>

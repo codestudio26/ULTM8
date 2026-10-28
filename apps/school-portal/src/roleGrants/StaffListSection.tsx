@@ -170,6 +170,7 @@ export function StaffListSection({
                       </Badge>
                     ))}
                     {p.canInviteCoaches && p.active ? <Badge>{t('roleGrants.list.canInviteCoaches')}</Badge> : null}
+                    {p.canManageDisciplines && p.active ? <Badge>{t('roleGrants.list.canManageDisciplines')}</Badge> : null}
                   </div>
                 );
               },

@@ -123,13 +123,13 @@ export class RanksService {
 
   async createDiscipline(callerId: string, schoolId: string, dto: CreateDisciplineDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const actor = await this.disciplineManager(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.assertRanksEnabled(callerId, schoolId);
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       await assertDisciplineNameFree(tx, schoolId, dto.name);
       const created = await tx.discipline.create({
         data: { id, schoolId, name: dto.name, classTypesOffered: cleanClassTypes(dto.classTypesOffered ?? []), skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false },
@@ -145,16 +145,16 @@ export class RanksService {
 
   /** A new style from an IBJJF template (Decisions 131, 182): the prototype's
    * belts, rungs, numbers and class types, as the school's own copy to edit
-   * freely. Owner only, like every ladder edit. */
+   * freely. The owner, or Branch Staff who manage disciplines (Decision 383). */
   async createFromTemplate(callerId: string, schoolId: string, dto: CreateStyleFromTemplateDto) {
     await this.schoolsService.findOne(callerId, schoolId);
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const actor = await this.disciplineManager(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.assertRanksEnabled(callerId, schoolId);
     const template = TEMPLATES.find((t) => t.id === dto.templateId)!;
     const belts = buildIbjjfTemplate(dto.templateId);
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       // A name the owner typed must be free; the default one is numbered
       // instead ("IBJJF Adult (2)") so a second copy just works (Decision 308).
       if (dto.name) await assertDisciplineNameFree(tx, schoolId, dto.name);
@@ -204,14 +204,14 @@ export class RanksService {
    * class types, "skills required" switch and board %. Not its students, their
    * ranks, lesson links or coach permissions. Named "… (Copy)", or "… (Copy 2)"
    * and so on when that name is taken, cut to fit 100 characters; archived
-   * belts are left out (Decision 308). Owner only. */
+   * belts are left out (Decision 308). The owner, or Branch Staff who manage disciplines. */
   async duplicateDiscipline(callerId: string, disciplineId: string) {
     const source = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, source.schoolId);
+    const actor = await this.disciplineManager(callerId, source.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, source.schoolId);
     await this.assertRanksEnabled(callerId, source.schoolId);
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       const copy = await tx.discipline.create({
         data: {
           id: randomUUID(),
@@ -301,7 +301,7 @@ export class RanksService {
    * simply be removed. */
   async updateDiscipline(callerId: string, disciplineId: string, dto: UpdateDisciplineDto) {
     const existing = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    const actor = await this.disciplineManager(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
@@ -315,7 +315,7 @@ export class RanksService {
       throw new BadRequestException('Send classTypesOffered (the list after the renames) with renameClassTypes.');
     }
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       const current = await tx.discipline.findUniqueOrThrow({ where: { id: disciplineId } });
       const renamed = dto.name !== undefined && dto.name !== current.name;
@@ -458,14 +458,14 @@ export class RanksService {
 
   /** Archive (retire) a style no live class or timetable slot uses (Decision
    * 309). It drops out of every picker and can't be graded or edited; its
-   * students keep their rank and history. Never purged. Owner only. */
+   * students keep their rank and history. Never purged. The owner, or Branch Staff who manage disciplines. */
   async archiveDiscipline(callerId: string, disciplineId: string) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     if (discipline.archivedAt) return this.getDiscipline(callerId, disciplineId);
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       const match = JSON.stringify([{ disciplineId }]);
       const [{ n: classes }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "Class" WHERE "schoolId" = ${discipline.schoolId} AND "archivedAt" IS NULL AND "endDate" >= now() AND "styles" @> ${match}::jsonb`;
@@ -480,11 +480,11 @@ export class RanksService {
 
   async unarchiveDiscipline(callerId: string, disciplineId: string) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     if (discipline.archivedAt) {
-      await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await this.prismaApp.withTenantContext(actor, async (tx) => {
         await assertDisciplineNameFree(tx, discipline.schoolId, discipline.name, disciplineId);
         await tx.discipline.update({ where: { id: disciplineId }, data: { archivedAt: null } });
       });
@@ -496,13 +496,13 @@ export class RanksService {
    * when nobody has ever held a rank in it, no instructor has declared a belt
    * in it, and no class, timetable slot or lesson uses it; its belts, skills
    * and coach permissions go with it, and it is taken off membership plans and
-   * instructors' styles. Owner only. */
+   * instructors' styles. The owner, or Branch Staff who manage disciplines. */
   async deleteDiscipline(callerId: string, disciplineId: string): Promise<void> {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       const students = await tx.studentRank.count({ where: { disciplineId } });
       if (students > 0) throw new ConflictException(`${students} student${students === 1 ? ' has' : 's have'} a rank in this style, so it can't be deleted.`);
@@ -543,12 +543,12 @@ export class RanksService {
   }
 
   // ---------------------------------------------------------------------------
-  // Rank CRUD (with nested stripe tiers) — School Owner/Manager only.
+  // Rank CRUD (with nested stripe tiers) — the owner, or Branch Staff who manage disciplines (Decision 383).
   // ---------------------------------------------------------------------------
 
   async createRank(callerId: string, disciplineId: string, dto: CreateRankDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
@@ -557,7 +557,7 @@ export class RanksService {
     if (dto.stripeTiers.some((t) => t.id !== undefined)) {
       throw new BadRequestException('A new belt has only new stripes; stripe ids are for updating a belt.');
     }
-    const showPrices = await this.assertPricesAllowed(callerId, discipline.schoolId, dto.stripeTiers);
+    const showPrices = await this.assertPricesAllowed(callerId, actor, discipline.schoolId, disciplineId, dto.stripeTiers);
 
     await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
     const rankName = dto.name ?? `Belt ${dto.order + 1}`;
@@ -571,7 +571,7 @@ export class RanksService {
     // commit-or-rollback together as part of withTenantContext's own outer
     // transaction — no inner one needed.
     const rankId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       // Positions are checked after closing any gap the purge job left
       // (Decision 308), so "add at the end" works again.
       await lockLadder(tx, disciplineId);
@@ -647,7 +647,7 @@ export class RanksService {
 
   async updateRank(callerId: string, rankId: string, dto: UpdateRankDto) {
     const existing = await this.findOneRank(callerId, rankId);
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    const actor = await this.disciplineManager(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
@@ -661,7 +661,7 @@ export class RanksService {
     }
 
     if (dto.order !== undefined) {
-      const siblingOrders = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      const siblingOrders = await this.prismaApp.withTenantContext(actor, (tx) =>
         tx.rank.findMany({ where: { disciplineId: existing.disciplineId, id: { not: rankId } }, select: { order: true } }),
       );
       this.assertContiguousOrder(siblingOrders.map((r) => r.order), dto.order);
@@ -673,12 +673,12 @@ export class RanksService {
     if (dto.stripeTiers) {
       await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
     }
-    const showPrices = await this.assertPricesAllowed(callerId, existing.schoolId, dto.stripeTiers ?? []);
+    const showPrices = await this.assertPricesAllowed(callerId, actor, existing.schoolId, existing.disciplineId, dto.stripeTiers ?? []);
 
     // See createRank's own comment on why this is one flat withTenantContext
     // call (already one transaction), not a nested tx.$transaction — the same
     // fix applies here.
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, existing.disciplineId);
       await tx.rank.update({
         where: { id: rankId },
@@ -813,13 +813,13 @@ export class RanksService {
    * shows who is affected before saving (findRungHolders). */
   async reorderRanks(callerId: string, disciplineId: string, dto: ReorderRanksDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertDisciplineActive(discipline);
 
-    const showPrices = await this.promotionFeeOn(callerId, discipline.schoolId);
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const showPrices = await this.pricesVisible(callerId, discipline.schoolId, disciplineId);
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       const ranks = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
       const ids = new Set(ranks.map((r) => r.id));
@@ -865,16 +865,16 @@ export class RanksService {
 
   /** Deleting a belt (Decision 198): only when nobody holds it or any of its
    * stripes now, it isn't in anyone's grading history, and no instructor has
-   * declared it. The belts after it move up one place. Owner only. */
+   * declared it. The belts after it move up one place. The owner, or Branch Staff who manage disciplines. */
   async deleteRank(callerId: string, rankId: string): Promise<void> {
     const rank = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUnique({ where: { id: rankId }, include: { stripeTiers: { select: { id: true } } } }));
     if (!rank) throw new NotFoundException('Rank not found');
-    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    const actor = await this.disciplineManager(callerId, rank.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
     await this.assertRanksEnabled(callerId, rank.schoolId);
     this.assertDisciplineActive(await this.findOneDiscipline(callerId, rank.disciplineId));
     const tierIds = rank.stripeTiers.map((t) => t.id);
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, rank.disciplineId);
       await this.assertRankSafeToRemove(tx, rankId, tierIds, 'deleted');
 
@@ -902,7 +902,7 @@ export class RanksService {
       tx.rank.findUnique({ where: { id: rankId }, include: { stripeTiers: { select: { id: true } } } }),
     );
     if (!rank) throw new NotFoundException('Rank not found');
-    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    const actor = await this.disciplineManager(callerId, rank.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
     await this.assertRanksEnabled(callerId, rank.schoolId);
     this.assertDisciplineActive(await this.findOneDiscipline(callerId, rank.disciplineId));
@@ -912,7 +912,7 @@ export class RanksService {
     const tierIds = rank.stripeTiers.map((t) => t.id);
     const now = new Date();
     const purgeAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, rank.disciplineId);
       await this.assertRankSafeToRemove(tx, rankId, tierIds, 'archived');
       // TOCTOU-safe conditional update, same pattern every other entity in
@@ -926,7 +926,7 @@ export class RanksService {
   async unarchiveRank(callerId: string, rankId: string) {
     const rank = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUnique({ where: { id: rankId } }));
     if (!rank) throw new NotFoundException('Rank not found');
-    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    const actor = await this.disciplineManager(callerId, rank.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
     await this.assertRanksEnabled(callerId, rank.schoolId);
     this.assertDisciplineActive(await this.findOneDiscipline(callerId, rank.disciplineId));
@@ -936,14 +936,14 @@ export class RanksService {
     if (rank.purgedAt) {
       throw new ConflictException('This Rank has already been purged and cannot be unarchived.');
     }
-    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    const { count } = await this.prismaApp.withTenantContext(actor, (tx) =>
       tx.rank.updateMany({
         where: { id: rankId, archivedAt: { not: null }, purgedAt: null },
         data: { archivedAt: null, purgeAt: null },
       }),
     );
     if (count === 0) {
-      const current = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUniqueOrThrow({ where: { id: rankId } }));
+      const current = await this.prismaApp.withTenantContext(actor, (tx) => tx.rank.findUniqueOrThrow({ where: { id: rankId } }));
       if (current.purgedAt) {
         throw new ConflictException('This Rank has already been purged and cannot be unarchived.');
       }
@@ -981,21 +981,21 @@ export class RanksService {
   }
 
   // ---------------------------------------------------------------------------
-  // Skill CRUD — School Owner/Manager only.
+  // Skill CRUD — the owner, or Branch Staff who manage disciplines (Decision 383).
   // ---------------------------------------------------------------------------
 
   /** A new skill goes at the end of the style's list; no two skills of a
    * style share a name, any capitals (Decision 308). */
   async createSkill(callerId: string, disciplineId: string, dto: CreateSkillDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertDisciplineActive(discipline);
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       await this.assertSkillNameFree(tx, disciplineId, dto.name);
       const last = await tx.skill.findFirst({ where: { disciplineId }, orderBy: { order: 'desc' }, select: { order: true } });
@@ -1022,11 +1022,11 @@ export class RanksService {
   /** Put a style's skills in order (Decision 309): every skill, once. */
   async reorderSkills(callerId: string, disciplineId: string, dto: ReorderSkillsDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const actor = await this.disciplineManager(callerId, discipline.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertDisciplineActive(discipline);
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, disciplineId);
       const ids = new Set((await tx.skill.findMany({ where: { disciplineId }, select: { id: true } })).map((sk) => sk.id));
       if (dto.skillIds.length !== ids.size || dto.skillIds.some((id) => !ids.has(id))) {
@@ -1050,7 +1050,7 @@ export class RanksService {
     if (!existing) {
       throw new NotFoundException('Skill not found');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    const actor = await this.disciplineManager(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
@@ -1058,7 +1058,7 @@ export class RanksService {
     if (dto.name === null) {
       throw new BadRequestException('name cannot be null; omit it to leave it unchanged.');
     }
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    return this.prismaApp.withTenantContext(actor, async (tx) => {
       if (dto.name !== undefined && dto.name.toLowerCase() !== existing.name.toLowerCase()) {
         await lockLadder(tx, existing.disciplineId);
         await this.assertSkillNameFree(tx, existing.disciplineId, dto.name, skillId);
@@ -1071,15 +1071,15 @@ export class RanksService {
   /** Deleting a skill (Decision 198): only when no student has ever had it
    * marked (Learning or Signed off, now or in the sign-off log). It comes off
    * the stripes that required it and the lessons that list it, unless it is a
-   * lesson's only skill. Owner only. */
+   * lesson's only skill. The owner, or Branch Staff who manage disciplines. */
   async deleteSkill(callerId: string, skillId: string): Promise<void> {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.skill.findUnique({ where: { id: skillId } }));
     if (!existing) throw new NotFoundException('Skill not found');
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    const actor = await this.disciplineManager(callerId, existing.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
     this.assertDisciplineActive(await this.findOneDiscipline(callerId, existing.disciplineId));
-    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    await this.prismaApp.withTenantContext(actor, async (tx) => {
       await lockLadder(tx, existing.disciplineId);
       const marked = (await tx.studentRankSkillStatus.count({ where: { skillId } })) + (await tx.skillSignOffLog.count({ where: { skillId } }));
       if (marked > 0) throw new ConflictException('Students have been marked on this skill, so it can\'t be deleted.');
@@ -1164,19 +1164,47 @@ export class RanksService {
   /** Prices per grade (Decisions 300, 307) are set by the owner (the rank
    * endpoints are owner-only already) and only while the promotion fee is on:
    * with it off the belt editor has no price field, so a price sent then is
-   * refused with a 400 rather than stored out of sight. Returns whether
+   * refused with a 400 rather than stored out of sight. Branch Staff who
+   * manage disciplines (Decision 383) leave prices as they are: a price they
+   * send is refused, and the ones already set are kept. Returns whether
    * prices are shown in the response. */
-  private async assertPricesAllowed(callerId: string, schoolId: string, tiers: RankStripeTierInputDto[]): Promise<boolean> {
+  private async assertPricesAllowed(callerId: string, actor: string, schoolId: string, disciplineId: string, tiers: RankStripeTierInputDto[]): Promise<boolean> {
     const on = await this.promotionFeeOn(callerId, schoolId);
-    if (!on && tiers.some((t) => t.promotionFeeMinor !== undefined)) {
+    const priced = tiers.some((t) => t.promotionFeeMinor !== undefined);
+    if (!on && priced) {
       throw new BadRequestException('The promotion fee is off for this School, so grades have no price. The owner can turn it on in Grading settings.');
     }
-    return on;
+    if (actor === callerId) return on;
+    if (priced) throw new ForbiddenException('Only the School owner sets the price of a grade.');
+    return this.pricesVisible(callerId, schoolId, disciplineId);
   }
 
   // ---------------------------------------------------------------------------
   // Shared validation helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Decision 383 — who may change this School's styles, belts and skills, and
+   * whose view of the School the change runs with: the owner, as themselves;
+   * Branch Staff the owner switched "Can manage disciplines" on for, as the
+   * School's main owner. Styles are School-wide, while a Branch Staff
+   * member's own row security shows only their branch's classes and none of
+   * the students' ranks, so in their own view the "still in use" checks would
+   * miss the rest of the School and a rename would reach only their branch.
+   * Every method that uses the returned id has called this first, and it is
+   * used only for the Disciplines writes. The students list on a style stays
+   * owner-only (findRungHolders). The ranks tables keep no record of who made
+   * a change, so nothing is written in the owner's name.
+   */
+  private async disciplineManager(callerId: string, schoolId: string): Promise<string> {
+    const [row] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.$queryRaw<Array<{ actor: string | null }>>`SELECT "discipline_manager_context"(${schoolId}) AS actor`,
+    );
+    if (!row?.actor) {
+      throw new ForbiddenException('Only that School\'s Owner/Manager may perform this action (Spec §8.2).');
+    }
+    return row.actor;
+  }
 
   /**
    * FOUND ON REVIEW (kickoff prompt §1.g, resolved as a product decision
