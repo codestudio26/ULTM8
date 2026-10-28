@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Signed-in users are no longer limited per internet address** (Decision
+  373). Everyone at a School on the same WiFi shares one address, which was
+  limited to 60 requests a minute; a busy front desk could hit it. Signed-in
+  users now have only their own per-user limits; requests from people who
+  aren't signed in keep the per-address limit.
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in

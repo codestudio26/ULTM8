@@ -6110,3 +6110,19 @@ User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students que
 ### Recorded by
 
 User (Code), 28 Oct 2026: Q1 "What happens if we have to remove it, for example the coach has been dismissed", then "agreed" to removing in one step with a choice for the classes, and "agreed" to also allow "No coach for now"; Q2 "yes, if the booking is for the same class"; Q3 "agreed"; Q4 "agreed"; Q5 "raise to 1000 per min", then "ok - 200" after the recommendation; Q6 refund "go ahead with your idea".
+
+## Decision 373 — The per-IP limit applies only to callers who aren't signed in
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 17 (per-user/per-IP throttling) · **Found by:** stress test round 3
+
+### Decision
+
+1. **Not signed in:** every route keeps its limit per IP address: 60 requests a minute by default, tighter where the route sets its own (login, sign-up codes, public School search, guest waiver links).
+2. **Signed in** (a valid, unexpired access token): no per-IP limit. Everyone at a School on the same WiFi shares one address, so a busy front desk could otherwise be stopped by the rest of the School's traffic. Each signed-in user keeps their own limits: 1,000 requests a minute overall, plus the per-route limits already set (bookings, waitlist, Add manually, invites, step-up).
+3. **A route with its own tighter limit** keeps it for signed-in callers too, counted per user instead of per address (bulk promote: 30 a minute per person).
+4. Only a token the API itself verifies counts as signed in; a made-up or expired token is treated as not signed in.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "yes, build the per-IP limit change", to the proposal "keep the strict per-IP limit only for unauthenticated requests".
+
