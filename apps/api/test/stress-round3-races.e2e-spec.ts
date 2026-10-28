@@ -112,6 +112,7 @@ describeIfDb('Round-3 stress-test races', () => {
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.timetableSlot.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.branch.deleteMany({ where: { schoolId: school.id } });
@@ -188,6 +189,35 @@ describeIfDb('Round-3 stress-test races', () => {
         // Whatever got booked moved with its class.
         expect(await superuser.booking.count({ where: { classId: { in: [capped.id, open.id] }, branchId: closing.id } })).toBe(0);
         await superuser.booking.deleteMany({ where: { classId: { in: [capped.id, open.id] } } });
+      }
+    });
+  });
+
+  describe('bookings racing a slot switched off with its booked classes cancelled', () => {
+    it('no booking stays Upcoming on a class the slot change cancelled', async () => {
+      for (let round = 0; round < 4; round++) {
+        const start = at(2 * HOUR);
+        const weekdays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
+        const slot = await superuser.timetableSlot.create({
+          data: {
+            id: randomUUID(), schoolId: school.id, weekday: weekdays[start.getUTCDay()], title: 'Race slot', membershipInclusion: true, capacity: 40,
+            startTime: new Date(Date.UTC(1970, 0, 1, start.getUTCHours(), start.getUTCMinutes())),
+            endTime: new Date(Date.UTC(1970, 0, 1, (start.getUTCHours() + 1) % 24, start.getUTCMinutes())),
+          },
+        });
+        const cls = await mkClass({ capacity: 40, timetableSlotId: slot.id, occurrenceDate: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())) });
+        // Booked, so switching the slot off needs the CANCEL choice.
+        expect((await book(cls.id, students[0])).status).toBe(201);
+        const [off, ...bookings] = await Promise.all([
+          http().patch(`/v1/timetable/${slot.id}`).set('Authorization', `Bearer ${owner.token}`).send({ status: 'OFF', bookedClasses: 'CANCEL' }),
+          ...students.slice(1, 10).map((s) => book(cls.id, s)),
+        ]);
+        expect(off.status).toBe(200);
+        expect(statuses(bookings).filter((st) => st >= 500)).toEqual([]);
+        expect(await superuser.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } })).toBe(0);
+        const after = await superuser.class.findUniqueOrThrow({ where: { id: cls.id } });
+        expect(after.cancelledAt).not.toBeNull();
+        expect(after.archivedAt).not.toBeNull();
       }
     });
   });
