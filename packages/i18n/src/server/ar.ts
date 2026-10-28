@@ -1,5 +1,8 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "رمز الدخول الحالي غير صحيح.",
+  "Choose a new passcode that is different from your current one.": "اختر رمز دخول جديدًا مختلفًا عن رمزك الحالي.",
+  "You must be 18 or over to create a School.": "يجب أن يكون عمرك 18 عامًا أو أكثر لإنشاء مدرسة.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "لم يتم إعداد الرسائل النصية بعد، لذا لا يمكننا إرسال رمز التحقق. يرجى المحاولة لاحقًا.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "لم يتم التحقق من رقم هاتفك بعد. تحقق منه لإكمال إنشاء حسابك.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "لا يمكن القيام بذلك إلا لمالك المدرسة أو مديرها أو موظفي ذلك الفرع.",

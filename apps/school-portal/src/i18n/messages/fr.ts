@@ -2905,6 +2905,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "Impossible de charger votre profil.",
     signInNote: "Vous vous connectez avec votre e-mail et votre numéro de téléphone : ils ne peuvent donc pas être modifiés ici.",
     removePhoto: "Supprimer la photo",
+    changePasscode: {
+      title: "Changer le code d’accès",
+      current: "Code d’accès actuel",
+      hint: "Le changer vous déconnecte de vos autres appareils.",
+      submit: "Changer le code d’accès",
+      changed: "Code d’accès changé. Vous avez été déconnecté de vos autres appareils.",
+    },
   },
   address: {
     legend: "Adresse",

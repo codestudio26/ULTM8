@@ -1,5 +1,8 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "현재 패스코드가 올바르지 않습니다.",
+  "Choose a new passcode that is different from your current one.": "현재 패스코드와 다른 새 패스코드를 선택하세요.",
+  "You must be 18 or over to create a School.": "스쿨을 만들려면 만 18세 이상이어야 합니다.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "문자 메시지가 아직 설정되지 않아 인증 코드를 보낼 수 없습니다. 나중에 다시 시도해 주세요.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "전화번호가 아직 인증되지 않았습니다. 인증하여 계정 만들기를 완료하세요.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "학교 소유자/관리자 또는 해당 지점의 지점 직원만 할 수 있습니다.",

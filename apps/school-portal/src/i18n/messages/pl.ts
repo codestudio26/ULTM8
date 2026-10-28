@@ -2985,6 +2985,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "Nie udało się wczytać Twojego profilu.",
     signInNote: "Logujesz się za pomocą adresu e-mail i numeru telefonu, dlatego nie można ich tu zmienić.",
     removePhoto: "Usuń zdjęcie",
+    changePasscode: {
+      title: "Zmień kod dostępu",
+      current: "Obecny kod dostępu",
+      hint: "Zmiana wyloguje Cię na innych urządzeniach.",
+      submit: "Zmień kod dostępu",
+      changed: "Kod dostępu zmieniony. Wylogowano Cię na innych urządzeniach.",
+    },
   },
   address: {
     legend: "Adres",

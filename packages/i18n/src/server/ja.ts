@@ -1,5 +1,8 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "現在のパスコードが正しくありません。",
+  "Choose a new passcode that is different from your current one.": "現在のパスコードとは異なる新しいパスコードを選んでください。",
+  "You must be 18 or over to create a School.": "スクールを作成するには18歳以上である必要があります。",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMSがまだ設定されていないため、確認コードを送信できません。後でもう一度お試しください。",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "電話番号がまだ確認されていません。確認してアカウントの作成を完了してください。",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "この操作ができるのは、スクールのオーナー/マネージャーまたはその支店のスタッフのみです。",

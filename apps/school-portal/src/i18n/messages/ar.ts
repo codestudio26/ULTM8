@@ -3065,6 +3065,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "تعذّر تحميل ملفك الشخصي.",
     signInNote: "تسجّل الدخول باستخدام بريدك الإلكتروني ورقم هاتفك، لذا لا يمكن تغييرهما هنا.",
     removePhoto: "إزالة الصورة",
+    changePasscode: {
+      title: "تغيير رمز الدخول",
+      current: "رمز الدخول الحالي",
+      hint: "تغييره يسجّل خروجك من أجهزتك الأخرى.",
+      submit: "تغيير رمز الدخول",
+      changed: "تم تغيير رمز الدخول. تم تسجيل خروجك من أجهزتك الأخرى.",
+    },
   },
   address: {
     legend: "العنوان",

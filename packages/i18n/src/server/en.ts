@@ -6,6 +6,9 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Your current passcode is not right.",
+ "Choose a new passcode that is different from your current one.",
+ "You must be 18 or over to create a School.",
  "Text messages are not configured yet, so we can't send a verification code. Please try again later.",
  "Your phone number isn't verified yet. Verify it to finish creating your account.",
  "Only the School Owner/Manager or that branch's Branch Staff may do this.",

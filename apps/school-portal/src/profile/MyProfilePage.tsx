@@ -7,6 +7,7 @@ import {
   ErrorBanner,
   Field,
   PageHeader,
+  PasscodeField,
   PhotoUploadField,
   SelectField,
   Spinner,
@@ -18,7 +19,9 @@ import {
   type PostalAddress,
   type PostalAddressErrors,
 } from '@ultm8/ui';
-import { ApiError } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
+import { apiClient } from '../api';
+import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
@@ -201,6 +204,92 @@ export function MyProfilePage() {
           </div>
         </form>
       </Card>
+      <ChangePasscodeCard />
     </>
+  );
+}
+
+/** "Change passcode" (Decision 375, Q1): the current passcode, then the new one
+ * twice. The API signs out every other browser and phone and hands this one a
+ * new token pair, which is swapped in so this page stays signed in. */
+function ChangePasscodeCard() {
+  const { t } = useI18n();
+  const { replaceTokens } = useAuth();
+  const [currentPasscode, setCurrentPasscode] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setChanged(false);
+    if (newPasscode !== confirmPasscode) {
+      setError(t('auth.newPasscodeMismatch'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await unwrap(apiClient.POST('/v1/auth/passcode-change', { body: { currentPasscode, newPasscode } }));
+      replaceTokens(result.accessToken!, result.refreshToken!);
+      setCurrentPasscode('');
+      setNewPasscode('');
+      setConfirmPasscode('');
+      setChanged(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card>
+      <h2 style={{ marginTop: 0 }}>{t('profile.changePasscode.title')}</h2>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        {changed ? <SuccessBanner message={t('profile.changePasscode.changed')} /> : null}
+        <Field label={t('profile.changePasscode.current')} htmlFor="profile-current-passcode">
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="current-password"
+            required
+            value={currentPasscode}
+            onChange={(e) => setCurrentPasscode(e.target.value)}
+          />
+        </Field>
+        <Field label={t('auth.newPasscodeLabel')} htmlFor="profile-new-passcode" hint={t('profile.changePasscode.hint')}>
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="new-password"
+            required
+            value={newPasscode}
+            onChange={(e) => setNewPasscode(e.target.value)}
+          />
+        </Field>
+        <Field label={t('auth.confirmNewPasscodeLabel')} htmlFor="profile-confirm-passcode">
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="new-password"
+            required
+            value={confirmPasscode}
+            onChange={(e) => setConfirmPasscode(e.target.value)}
+          />
+        </Field>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={submitting}>
+            {t('profile.changePasscode.submit')}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

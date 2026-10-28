@@ -1,5 +1,8 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Je huidige toegangscode klopt niet.",
+  "Choose a new passcode that is different from your current one.": "Kies een nieuwe toegangscode die anders is dan je huidige.",
+  "You must be 18 or over to create a School.": "Je moet 18 jaar of ouder zijn om een School aan te maken.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Sms is nog niet ingesteld, dus we kunnen geen verificatiecode sturen. Probeer het later opnieuw.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "Je telefoonnummer is nog niet geverifieerd. Verifieer het om je account af te maken.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Alleen de Eigenaar/Manager van de School of de medewerkers van die vestiging mogen dit doen.",

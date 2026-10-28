@@ -1,5 +1,8 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Dein aktueller Zugangscode ist nicht richtig.",
+  "Choose a new passcode that is different from your current one.": "Wähle einen neuen Zugangscode, der sich von deinem aktuellen unterscheidet.",
+  "You must be 18 or over to create a School.": "Du musst mindestens 18 Jahre alt sein, um eine Schule zu erstellen.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMS sind noch nicht eingerichtet, daher können wir keinen Bestätigungscode senden. Bitte versuche es später erneut.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "Deine Telefonnummer ist noch nicht bestätigt. Bestätige sie, um dein Konto fertig einzurichten.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Das dürfen nur der Inhaber/Manager der Schule oder die Mitarbeiter dieser Filiale.",

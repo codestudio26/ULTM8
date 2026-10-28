@@ -1,5 +1,8 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Текущий код доступа неверен.",
+  "Choose a new passcode that is different from your current one.": "Выберите новый код доступа, отличный от текущего.",
+  "You must be 18 or over to create a School.": "Чтобы создать Школу, вам должно быть 18 лет или больше.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMS ещё не настроены, поэтому мы не можем отправить код подтверждения. Повторите попытку позже.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "Ваш номер телефона ещё не подтверждён. Подтвердите его, чтобы завершить создание аккаунта.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Это может сделать только Владелец/Менеджер Школы или сотрудники этого филиала.",

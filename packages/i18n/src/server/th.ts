@@ -1,5 +1,8 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "รหัสเข้าใช้ปัจจุบันของคุณไม่ถูกต้อง",
+  "Choose a new passcode that is different from your current one.": "เลือกรหัสเข้าใช้ใหม่ที่ไม่ซ้ำกับรหัสปัจจุบัน",
+  "You must be 18 or over to create a School.": "คุณต้องมีอายุ 18 ปีขึ้นไปจึงจะสร้างโรงเรียนได้",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "ยังไม่ได้ตั้งค่าข้อความ SMS จึงไม่สามารถส่งรหัสยืนยันได้ โปรดลองอีกครั้งภายหลัง",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "หมายเลขโทรศัพท์ของคุณยังไม่ได้รับการยืนยัน โปรดยืนยันเพื่อสร้างบัญชีให้เสร็จสมบูรณ์",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "เฉพาะเจ้าของ/ผู้จัดการโรงเรียน หรือเจ้าหน้าที่ของสาขานั้นเท่านั้นที่ทำได้",

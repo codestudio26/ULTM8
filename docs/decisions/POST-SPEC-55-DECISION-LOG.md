@@ -6070,8 +6070,26 @@ The Sign-in and accounts review (login, sign-up, verify phone, forgot and reset 
 
 ### Still open
 
-The review's five questions (change passcode while signed in, clearing unfinished sign-ups, checking email, changing email or phone, a minimum age to create a School) wait for the product owner.
+The review's five questions (change passcode while signed in, clearing unfinished sign-ups, checking email, changing email or phone, a minimum age to create a School) were answered on 28 Oct 2026: see Decision 375.
 
 ### Recorded by
 
 Claude, from the Sign-in and accounts review, 27 Oct 2026.
+
+## Decision 375 — Sign-in and accounts: the five questions answered
+
+**Date:** 28 Oct 2026 · **Status:** Product owner's answers to the Sign-in and accounts review's questions · **Builds on:** Decisions 361 and 373
+
+### Decision
+
+1. **Change passcode on My profile (Q1).** A signed-in person can change their passcode: current passcode, then the new one twice. `POST /v1/auth/passcode-change` checks the current passcode (wrong guesses count toward the same 5-try lockout as Log in), refuses the same passcode again, and signs out every other device: all refresh tokens are revoked and `User.rolesChangedAt` is moved, so other devices' access tokens are refused on their next request (Decision 361's check) instead of up to 15 minutes later. The device that made the change gets a fresh pair and stays signed in.
+2. **An unfinished sign-up can be replaced after 30 minutes (Q2).** When someone signs up with an email or phone that belongs to an account whose phone was never verified, and that account is more than 30 minutes old, the new sign-up replaces it in place: every profile field and the passcode are overwritten and the 30 minutes restart. Only a plain self-registration qualifies: it has a phone, it isn't an account added by staff waiting for its first passcode change, it holds no role anywhere, and the email, phone and username match that one account only. A verified account is never touched; anything else is still "already exists".
+3. **Checking email at sign-up (Q3): v1.3, with Postmark.** Sign-up will also send a 6-digit email code once Postmark email is live. Added to the list to discuss with Gus.
+4. **Changing email or phone (Q4): v1.3, with a code** sent to the new address or number, once email and text messages are live.
+5. **18 or over to create a School (Q5).** Creating a School is refused for anyone under 18 by date of birth: "You must be 18 or over to create a School." (403). Existing Schools are not affected.
+
+No migration.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, answering the five decision cards in the Sign-in and accounts thread: "Add it, sign out other devices", "Replace after 30 minutes", "v1.3, with Postmark", "v1.3, with a code", "18 or over".

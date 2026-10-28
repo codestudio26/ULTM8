@@ -2865,6 +2865,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "无法加载你的资料。",
     signInNote: "你使用电子邮箱和电话号码登录，因此无法在此修改。",
     removePhoto: "移除照片",
+    changePasscode: {
+      title: "更改登录码",
+      current: "当前登录码",
+      hint: "更改后，你会在其他设备上退出登录。",
+      submit: "更改登录码",
+      changed: "登录码已更改。你已在其他设备上退出登录。",
+    },
   },
   address: {
     legend: "地址",

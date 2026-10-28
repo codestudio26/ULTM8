@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/passcode-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_changePasscode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools": {
         parameters: {
             query?: never;
@@ -4639,6 +4655,12 @@ export interface components {
             /** @description Exactly 6 digits */
             newPasscode: string;
         };
+        ChangePasscodeDto: {
+            /** @description The current passcode, exactly 6 digits */
+            currentPasscode: string;
+            /** @description Exactly 6 digits */
+            newPasscode: string;
+        };
         CreateSchoolDto: {
             name: string;
             mobileNumber?: string;
@@ -8669,6 +8691,29 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChangePasscodeFirstLoginDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_changePasscode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasscodeDto"];
             };
         };
         responses: {

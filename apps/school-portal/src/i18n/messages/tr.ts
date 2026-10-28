@@ -2905,6 +2905,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "Profiliniz yüklenemedi.",
     signInNote: "Giriş yaparken e-posta adresinizi ve telefon numaranızı kullanırsınız, bu yüzden burada değiştirilemezler.",
     removePhoto: "Fotoğrafı kaldır",
+    changePasscode: {
+      title: "Giriş kodunu değiştir",
+      current: "Mevcut giriş kodu",
+      hint: "Değiştirmek diğer cihazlarınızdaki oturumu kapatır.",
+      submit: "Giriş kodunu değiştir",
+      changed: "Giriş kodu değiştirildi. Diğer cihazlarınızdaki oturum kapatıldı.",
+    },
   },
   address: {
     legend: "Adres",

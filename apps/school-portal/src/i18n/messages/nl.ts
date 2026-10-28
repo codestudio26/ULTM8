@@ -2905,6 +2905,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "Je profiel kon niet worden geladen.",
     signInNote: "Je logt in met je e-mailadres en telefoonnummer, daarom kunnen die hier niet worden gewijzigd.",
     removePhoto: "Foto verwijderen",
+    changePasscode: {
+      title: "Toegangscode wijzigen",
+      current: "Huidige toegangscode",
+      hint: "Als je deze wijzigt, word je op je andere apparaten afgemeld.",
+      submit: "Toegangscode wijzigen",
+      changed: "Toegangscode gewijzigd. Je bent op je andere apparaten afgemeld.",
+    },
   },
   address: {
     legend: "Adres",

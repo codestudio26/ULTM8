@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Change passcode, unfinished sign-ups, 18+ to create a School**
+  (Decision 375) — My profile can change the passcode (current one, then the
+  new one twice), which signs out every other device; a sign-up whose phone
+  was never verified can be replaced by a new sign-up after 30 minutes;
+  creating a School needs the person to be 18 or over.
 - **Sign-in and accounts fixes** (Decision 373) — sign-up and Forgot passcode
   no longer half-save an account or fail with a server error when text
   messages aren't set up; a first sign-in with a temporary passcode stays

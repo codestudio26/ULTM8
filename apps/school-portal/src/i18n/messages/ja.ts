@@ -2865,6 +2865,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     loadFailed: "プロフィールを読み込めませんでした。",
     signInNote: "メールアドレスと電話番号はログインに使うため、ここでは変更できません。",
     removePhoto: "写真を削除",
+    changePasscode: {
+      title: "パスコードを変更",
+      current: "現在のパスコード",
+      hint: "変更すると、他のデバイスからサインアウトされます。",
+      submit: "パスコードを変更",
+      changed: "パスコードを変更しました。他のデバイスからサインアウトされました。",
+    },
   },
   address: {
     legend: "住所",

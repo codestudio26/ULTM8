@@ -1,5 +1,8 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Mevcut giriş kodunuz doğru değil.",
+  "Choose a new passcode that is different from your current one.": "Mevcut kodunuzdan farklı yeni bir giriş kodu seçin.",
+  "You must be 18 or over to create a School.": "Okul oluşturmak için 18 yaşında veya daha büyük olmalısınız.",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "Kısa mesajlar henüz ayarlanmadı, bu yüzden doğrulama kodu gönderemiyoruz. Lütfen daha sonra tekrar dene.",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "Telefon numaran henüz doğrulanmadı. Hesabını oluşturmayı tamamlamak için doğrula.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Bunu yalnızca Okul Sahibi/Yöneticisi veya o şubenin Şube Personeli yapabilir.",

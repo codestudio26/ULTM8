@@ -1,5 +1,8 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "你当前的登录码不正确。",
+  "Choose a new passcode that is different from your current one.": "请选择一个与当前不同的新登录码。",
+  "You must be 18 or over to create a School.": "你必须年满 18 岁才能创建学校。",
   "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "短信尚未设置，因此无法发送验证码。请稍后再试。",
   "Your phone number isn't verified yet. Verify it to finish creating your account.": "你的手机号尚未验证。请完成验证以创建账户。",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "只有学校所有者/经理或该分校的员工可以执行此操作。",

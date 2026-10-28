@@ -126,6 +126,13 @@ export class SchoolsService {
     const roleGrantId = randomUUID();
 
     const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Decision 375 (Q5): only someone 18 or over may create a School and
+      // become its owner. Read from the caller's own row, in the same
+      // transaction; an unknown date of birth counts as under 18.
+      const caller = await tx.user.findUnique({ where: { id: callerId }, select: { dateOfBirth: true } });
+      if (!isAdultOn(caller?.dateOfBirth)) {
+        throw new ForbiddenException('You must be 18 or over to create a School.');
+      }
       // joinCode is NOT set here — the column's own DB-function default
       // (migration 20261115000001) generates it; the created row below
       // already carries the real value Postgres assigned, same as any
