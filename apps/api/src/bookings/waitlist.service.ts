@@ -14,6 +14,7 @@ import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -86,6 +87,7 @@ export class WaitlistService {
       // First, before any row lock (see lockStudentClass): a Student who has
       // already attended this Class can't queue for it again.
       await lockStudentClass(tx, studentId, classId);
+      await lockSchoolOpen(tx, resolvedClass.schoolId);
       await assertNotAlreadyAttended(tx, studentId, classId);
       // FOUND ON REVIEW: reading the current max position then computing +1 is a
       // TOCTOU race — two Students joining the same Class's waitlist concurrently
@@ -253,6 +255,7 @@ export class WaitlistService {
       const studentId = resolvedEntry.studentId;
       // First, before any row lock (see lockStudentClass).
       await lockStudentClass(tx, studentId, resolvedEntry.classId);
+      await lockSchoolOpen(tx, resolvedEntry.schoolId);
       await assertNotAlreadyAttended(tx, studentId, resolvedEntry.classId);
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       if (cls.cancelledAt) {

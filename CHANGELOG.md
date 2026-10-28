@@ -46,6 +46,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   no longer be archived while a class using it is being saved. Booking and
   checking in the same student from two desks at once no longer fails with a
   server error; the second booking gets the usual "already has a booking".
+  A desk sale, a cash payment marked as paid, a booking or a waitlist place
+  sent while the owner closes the School is now refused ("This School has been
+  closed"); one of them could still be saved just after the close.
 - **Round-3 stress-test fixes (billing and waivers)** — a payment that
   arrives after its School closed no longer starts a Subscription: it is
   refunded and the Stripe subscription cancelled, and closing a School also

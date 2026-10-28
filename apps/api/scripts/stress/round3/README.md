@@ -24,3 +24,5 @@ The scripts behind `docs/handover/STRESS-TEST-ROUND3.md`. Like `../booking-sched
    ```
 
 Run them before `../billing/billing.mjs`: billing makes every student buy a pack, which changes the membership kinds these scripts pick students by. `SCHOOLS=0` (or `0-3`, `1,2`) and `CAST=path/to/cast.json` point a script at other schools or another cast.
+
+Re-running on a cast that billing has already run on works: the checks read a student's live memberships and total pack credits from the database rather than trusting the seed's kind. Each `staff-students.mjs` run uses up some students in its schools (it revokes them), so point a repeat run at other schools, for example `SCHOOLS=10-13`.

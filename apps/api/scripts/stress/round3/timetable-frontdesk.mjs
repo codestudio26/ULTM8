@@ -14,6 +14,16 @@
 import { createRequire } from 'module';
 import { cast, pick, checks, codes, call, pool, db, token, grant, report, randomUUID } from './common.mjs';
 
+// Classes left across all of a student's packs at the School. After the
+// billing script has run, students hold more than one membership, and the
+// booking may take its credit from any of them.
+async function packCredits(schoolId, studentIds) {
+  const rows = await db.membership.findMany({ where: { schoolId, studentId: { in: studentIds }, classesRemaining: { not: null } }, select: { studentId: true, classesRemaining: true } });
+  const sum = new Map(studentIds.map((id) => [id, 0]));
+  for (const r of rows) sum.set(r.studentId, sum.get(r.studentId) + r.classesRemaining);
+  return sum;
+}
+
 const require = createRequire(new URL('../../../package.json', import.meta.url));
 const { JwtService } = require('@nestjs/jwt');
 
@@ -173,8 +183,15 @@ const staleAt = Date.now();
   ok('FD1 front-desk rush: every ACTIVE member checked in once, nobody without a membership booked',
     missed.length === 0 && leaked.length === 0 && dup === 0 && notFound === 0,
     `${rushN} students, ${desks.length} desks, ${nRushClasses} classes, ${secs.toFixed(1)}s (${(rushN / secs).toFixed(1)} students/s); pre-booked ${pre.filter((r) => r.status === 201).length}/${preBook.length}; ACTIVE ${active.length}, checked-in ${active.length - missed.length}; EXPIRED/NONE ${notActive.length} (booked anyway: ${leaked.length}, book codes ${JSON.stringify(codes(notActive.map(([, o]) => ({ status: o.book }))))}); not found by search ${notFound}; duplicate bookings ${dup}; check-in methods ${JSON.stringify(methods)}; 429s retried ${stat.throttled}${missed.length ? '; missed ' + JSON.stringify(missed.slice(0, 5).map(([id, o]) => ({ id: id.slice(0, 8), ...o }))) : ''}`);
-  const statusMismatch = [...outcome].filter(([, o]) => o.status && ((eligibleKind(o) && o.status !== 'ACTIVE') || (!eligibleKind(o) && o.status === 'ACTIVE')));
-  ok('FD2 membership-status matches the seeded membership (ACTIVE for subscription/pack, not ACTIVE for expired/none)', statusMismatch.length === 0,
+  // Expected from the database, not the seed's kind: after the billing script
+  // has run, "expired" and "none" students hold a pack too.
+  const now = new Date();
+  const live = new Set((await db.membership.findMany({
+    where: { schoolId: X.id, studentId: { in: [...outcome.keys()] }, status: 'ACTIVE', OR: [{ expiryDate: null }, { expiryDate: { gt: now } }], AND: [{ OR: [{ classesRemaining: null }, { classesRemaining: { gt: 0 } }] }] },
+    select: { studentId: true },
+  })).map((m) => m.studentId));
+  const statusMismatch = [...outcome].filter(([id, o]) => o.status && (live.has(id) !== (o.status === 'ACTIVE')));
+  ok('FD2 membership-status matches the student\'s live memberships (ACTIVE only with an unexpired membership that has classes left)', statusMismatch.length === 0,
     `${statusMismatch.length} mismatches${statusMismatch.length ? ' e.g. ' + JSON.stringify(statusMismatch.slice(0, 3).map(([, o]) => o)) : ''}`);
   globalThis.rushRefs = { allRs };
 }
@@ -182,7 +199,7 @@ const staleAt = Date.now();
 // ---------------------------------------------------------------- FD3 same student, two desks
 {
   const cls = await mkClass(X, { title: `R3TF ${RUN} two desks` });
-  const before = new Map((await db.membership.findMany({ where: { schoolId: X.id, studentId: { in: dblStudents.map((s) => s.id) } } })).map((m) => [m.studentId, m.classesRemaining]));
+  const before = await packCredits(X.id, dblStudents.map((s) => s.id));
   const stat = { throttled: 0 };
   const res = await Promise.all(dblStudents.map((s, i) => Promise.all([dblDesks[(2 * i) % 4], dblDesks[(2 * i + 1) % 4]].map(async (desk) => {
     const b = await bookWithRetry('dbl:book', cls, desk.tok, { studentId: s.id }, stat);
@@ -193,8 +210,7 @@ const staleAt = Date.now();
   for (const [i, s] of dblStudents.entries()) {
     const rows = await liveBooking(s.id, cls);
     const scans = res[i].filter((r) => r.scan < 300).length;
-    const m = await db.membership.findFirst({ where: { schoolId: X.id, studentId: s.id } });
-    const credit = s.kind === 'pack' ? before.get(s.id) - m.classesRemaining : 1;
+    const credit = s.kind === 'pack' ? before.get(s.id) - (await packCredits(X.id, [s.id])).get(s.id) : 1;
     if (rows.length !== 1 || rows[0].status !== 'COMPLETED' || scans !== 1 || credit !== 1) bad.push({ kind: s.kind, rows: rows.length, status: rows[0]?.status, scans, credit, codes: res[i] });
   }
   const flat = res.flat();
@@ -263,7 +279,7 @@ const staleAt = Date.now();
   const cls = await mkClass(X, { title: `R3TF ${RUN} rebook` });
   const st = rest.slice(42, 60).find((s) => s.kind === 'pack') ?? rest.slice(42, 60).find(eligibleKind);
   const rank0 = await db.studentRank.findFirst({ where: { studentId: st.id, disciplineId: X.disciplineId } });
-  const m0 = await db.membership.findFirst({ where: { schoolId: X.id, studentId: st.id } });
+  const m0 = { classesRemaining: (await packCredits(X.id, [st.id])).get(st.id) };
   const steps = [];
   for (let i = 0; i < 2; i++) {
     steps.push((await call('rebook:book', 'POST', `/classes/${cls}/book`, staffB0.tok, { studentId: st.id })).status);
@@ -272,7 +288,7 @@ const staleAt = Date.now();
   const self = await call('rebook:self', 'POST', `/classes/${cls}/book`, st.tok, {});
   const rows = await db.booking.findMany({ where: { studentId: st.id, classId: cls }, select: { status: true } });
   const rank1 = await db.studentRank.findFirst({ where: { studentId: st.id, disciplineId: X.disciplineId } });
-  const m1 = await db.membership.findFirst({ where: { schoolId: X.id, studentId: st.id } });
+  const m1 = { classesRemaining: (await packCredits(X.id, [st.id])).get(st.id) };
   const attended = rank0 && rank1 ? rank1.classesAttendedTowardCheckpoint - rank0.classesAttendedTowardCheckpoint : 'no rank';
   ok('FD5 a student already checked in to a class cannot be booked and checked in to it again', rows.length === 1,
     `${st.kind} student: book/scan/book/scan ${steps.join('/')}, then self-book ${self.status}; bookings for the one class ${JSON.stringify(codes(rows))}; class credits ${m0.classesRemaining}→${m1.classesRemaining}; classesAttendedTowardCheckpoint +${attended}`);

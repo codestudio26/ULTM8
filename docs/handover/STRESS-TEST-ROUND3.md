@@ -10,8 +10,9 @@ The same cast as rounds 1 and 2 went through the real API: 30 Schools and 12,213
 
 **Results:**
 - **Round 1 and 2 still hold.** The load gives the same results as before: 12,213 declarations, 18,667 bookings and 10,975 promotions, with 1,238 promotions refused for no live membership. No class was ever overbooked, every burst filled exactly and billing passed 29 of 29. 22 of 24 attacks pass; the two that fail are round 1's known open items H2 and H4.
-- **New features: 12 bugs found, all fixed in this PR**, each with a regression test that fails without the fix. Three were High: bookings landing on a class the School just cancelled (in two places), a whole-class cancel that couldn't be finished, and closing a Branch deadlocking with bookings.
-- **After the fixes:** 132 of 134 new checks pass on the full cast. The other 2 wait on a product decision (Q2 below). The full API suite passes: 110 suites, 1,383 tests. No request returned a 500 anywhere in the final run.
+- **New features: 13 bugs found, all fixed in this PR**, each with a regression test that fails without the fix. Three were High: bookings landing on a class the School just cancelled (in two places), a whole-class cancel that couldn't be finished, and closing a Branch deadlocking with bookings.
+- **After the fixes:** all 134 new checks pass on the full cast (re-run on 28 Oct 2026 with every fix and Decision 372 built in). FD3 and FD5 were a product question; the product owner answered it and the rule is now built (Decision 372, below). The full API suite passes: 111 suites, 1,404 tests (plus 525 unit tests). No request returned a 500 anywhere in the final run.
+- **The product owner's answers (Decision 372) are built in this PR too:** Remove from School asks what happens to the coach's classes, one attendance per student per class, double-click protection for desk sales and Friend Passes, Friend Pass for guests only, and a higher booking limit for staff.
 
 **Needs action on deploy:**
 - One migration, `20261212000100_role_grant_one_live_per_scope`. It first revokes any live duplicate role grants (keeping the oldest), then adds a unique index. Read the migration before deploying if production may hold duplicates.
@@ -36,7 +37,7 @@ The same cast as rounds 1 and 2 went through the real API: 30 Schools and 12,213
 | Promote one rung | 12,213 | 715 ms | 798 ms | 10,975 promoted; 1,238 refused for no live membership (correct) |
 | Grading Board, one School | 30 | 372 ms | 477 ms | all 200 |
 
-Capacity races: 60 classes, none over or under. Bursts: 40, 100, 200 and 400 people booking at once filled every class exactly, with no errors (400 people: p50 4.2 s, slowest 6.0 s).
+Capacity races: 60 classes, none over or under. Bursts: 40, 100, 200 and 400 people booking at once filled every class exactly, with no errors (400 people: p50 4.2 s, slowest 6.0 s). Re-run after fix 13, which adds a share lock on the School row to every booking: still exact, 400 people p50 3.8 s, slowest 5.7 s.
 
 ## Findings fixed in this PR
 
@@ -54,21 +55,24 @@ Capacity races: 60 classes, none over or under. Bursts: 40, 100, 200 and 400 peo
 | 10 | Medium | A Subscription paid after its School closed started billing and was never cancelled | Membership ACTIVE, renewing | The payment is refunded and the Stripe subscription cancelled; closing a School also cancels Subscriptions still waiting for their first payment |
 | 11 | Medium | New waiver terms saved while students sign left signatures on the old terms | 0–18 per round | Signing and editing take turns on the waiver; no signature stays on retired terms |
 | 12 | Low | Double-clicked waiver signature saved several times; "Remind everyone" pressed at once reminded everyone several times (and could deadlock); Subscription cancel pressed at once called Stripe each time | 4×201; 5,210 reminders for 1,042; up to 10 Stripe calls | One signature; each student reminded once a day; one Stripe call |
+| 13 | Medium | A desk sale, a cash confirm, a booking or a waitlist place sent while the owner closes the School could still be saved just after the close answered (found on the final re-run; timing-dependent, so earlier runs passed) | Desk sale saved 43 ms after the close | Each takes a share lock on the School row inside its own transaction and re-reads it: a close in flight is waited for and then refuses the write; a later close waits for the write to commit |
 
-The regression tests are in `test/stress-round3-races.e2e-spec.ts` (fixes 1–6), `test/staff-fixes.e2e-spec.ts`, `test/auth.e2e-spec.ts` and `test/students-review-fixes.e2e-spec.ts` (7–9), and `test/school-self-close-and-franchise-notices.e2e-spec.ts`, `test/memberships-desk-and-cancel.e2e-spec.ts` and `test/waivers-settings.e2e-spec.ts` (10–12).
+The regression tests are in `test/stress-round3-races.e2e-spec.ts` (fixes 1–6 and 13), `test/staff-fixes.e2e-spec.ts`, `test/auth.e2e-spec.ts` and `test/students-review-fixes.e2e-spec.ts` (7–9), and `test/school-self-close-and-franchise-notices.e2e-spec.ts`, `test/memberships-desk-and-cancel.e2e-spec.ts` and `test/waivers-settings.e2e-spec.ts` (10–12).
 
-## Waiting on the product owner
+## Product decisions (Decision 372), built in this PR
 
-These were found but not changed, because no confirmed rule covers them. They were asked on 28 Oct 2026.
+These were found with no confirmed rule covering them. The product owner answered them on 28 Oct 2026.
 
-| # | Question | What happens today | Suggested |
+| # | Question | Before | Now |
 |---|---|---|---|
-| Q1 | "Remove from School" for a coach who still teaches upcoming classes | Removed; the classes keep them as instructor. Revoking a single Instructor role is refused in that case (Decision 331) | Refuse until the classes are handed over, like revoke |
-| Q2 | A student booked and checked in again to a class they already attended (FD3, FD5) | Allowed: the one-booking index covers Upcoming bookings only. Two desks can attend one student twice and spend two pack credits | One attendance per student per class |
-| Q3 | A desk sale or Friend Pass clicked twice | Two packs and two payments, or two passes | Refuse an identical one for the same student within a minute |
-| Q4 | A Friend Pass paying for its holder's own seat | Allowed | A Friend Pass covers a guest only |
-| Q5 | One staff login booking walk-ins | Limited to 20 bookings a minute per user | 60 a minute for staff booking on someone's behalf |
-| Q6 | A payment that arrives after its School closed | Refunded (fix 10) | Confirm, or create it and cancel at period end instead |
+| Q1 | "Remove from School" for a coach who still teaches upcoming classes | Removed; the classes kept them as instructor | The owner chooses what happens to the classes: give them to another coach, keep them with no coach for now, or cancel them. Removing always works. Without a choice the API answers 409 `STAFF_STILL_TEACHING` with the classes; the portal's Remove dialog asks |
+| Q2 | A student booked and checked in again to a class they already attended (FD3, FD5) | Allowed: two attendances, two pack credits | One attendance per student per class: booking, joining the waitlist or claiming a place again answers 409 "This student has already attended this class." |
+| Q3 | A desk sale, Record a payment or Friend Pass clicked twice | Two packs and two payments, or two passes | An identical one for the same student within a minute answers 409 "This was just recorded. Check before adding another." |
+| Q4 | A Friend Pass paying for its holder's own seat | Allowed | A Friend Pass covers a guest only; the holder's own booking uses their own membership |
+| Q5 | One staff login booking walk-ins | 20 bookings a minute per user | 200 a minute for staff booking on someone's behalf; a student's own limit is unchanged |
+| Q6 | A payment that arrives after its School closed | Refunded (fix 10) | Confirmed: refund it and cancel the Stripe subscription |
+
+Tests: `test/staff-remove-teaching.e2e-spec.ts` and `e2e/staff-remove-teaching.spec.ts` (Q1), `test/stress-round3-races.e2e-spec.ts`, `test/memberships-desk-and-cancel.e2e-spec.ts`, `test/guest-waivers.e2e-spec.ts` and `test/class-cancellation-policy.e2e-spec.ts` (Q2–Q4), `test/booking-throttle.e2e-spec.ts` (Q5).
 
 ## Still open from earlier rounds
 

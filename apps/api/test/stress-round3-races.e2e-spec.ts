@@ -9,6 +9,8 @@
  * - the same Student booked and checked in from two desks at once deadlocked
  *   (HTTP 500).
  *
+ * - a desk sale created its Membership after the School's close had answered.
+ *
  * Plus the product owner's rules of 28 Oct 2026: one attendance per Student per
  * Class, a desk sale or Friend Pass clicked twice, and a Friend Pass covering
  * only a guest.
@@ -437,6 +439,76 @@ describeIfDb('Round-3 stress-test races', () => {
         data: { id: randomUUID(), schoolId: school.id, studentId: s.id, paymentAccountId, membershipPlanId: packPlanId, membershipId: own.id, amount: 3000, currency: 'gbp', status: 'SUCCESSFUL', paymentMethod: 'STRIPE' },
       });
       expect((await sell(s, packPlanId)).status).toBe(201);
+    });
+  });
+
+  describe('writes racing the School\'s close', () => {
+    const closing = { id: randomUUID() };
+    const CLOSED = 'This School has been closed and no longer accepts new or updated records.';
+    let closingOwner: U;
+    let pupil: U;
+    let planId: string;
+    let classId: string;
+    let pendingId: string;
+
+    beforeAll(async () => {
+      await superuser.school.create({ data: { id: closing.id, name: 'Round 3 Closing School', timezone: 'UTC' } });
+      const grant = async (label: string, role: 'SCHOOL_OWNER_MANAGER' | 'STUDENT'): Promise<U> => {
+        const u = await mkUser(label, role);
+        await superuser.roleGrant.updateMany({ where: { userId: u.id }, data: { schoolId: closing.id } });
+        return { ...u, token: jwt.sign({ sub: u.id, email: u.email, grants: [{ role, franchiseId: null, schoolId: closing.id, branchId: null }] }) };
+      };
+      closingOwner = await grant('closing-owner', 'SCHOOL_OWNER_MANAGER');
+      pupil = await grant('closing-pupil', 'STUDENT');
+      const account = await superuser.paymentAccount.create({
+        data: { id: randomUUID(), schoolId: closing.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_closing' },
+      });
+      planId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: closing.id, type: 'CLASS_PACK', title: 'Pack', price: 3000, currency: 'GBP', classesIncluded: 10 } })).id;
+      // The pack the booking below uses.
+      await superuser.membership.create({
+        data: { id: randomUUID(), studentId: pupil.id, schoolId: closing.id, membershipPlanId: planId, frequency: 'ONE_TIME', classesRemaining: 10, createdAt: new Date(Date.now() - 5 * MIN) },
+      });
+      pendingId = (await superuser.transaction.create({
+        data: { id: randomUUID(), schoolId: closing.id, studentId: pupil.id, paymentAccountId: account.id, membershipPlanId: planId, amount: 3000, currency: 'gbp', status: 'PENDING', paymentMethod: 'CASH' },
+      })).id;
+      classId = (await superuser.class.create({ data: { membershipInclusion: true, id: randomUUID(), schoolId: closing.id, title: 'Closing class', startDate: at(2 * HOUR), endDate: at(3 * HOUR) } })).id;
+    });
+
+    afterAll(async () => {
+      await superuser.booking.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.transaction.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.membership.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.paymentAccount.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.membershipPlan.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.class.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: closing.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [closingOwner.id, pupil.id] } } });
+      await superuser.school.delete({ where: { id: closing.id } });
+    });
+
+    it('a desk sale, a cash confirm and a booking sent while the close commits are refused, and write nothing', async () => {
+      const membershipsBefore = await superuser.membership.count({ where: { schoolId: closing.id } });
+      // The close in flight: the School row is updated but not yet committed.
+      // Each write already passed its check before the transaction (the School
+      // still looked open), so only a check inside its own transaction can see it.
+      let racing: Array<Promise<{ status: number; body: { error?: { message?: string } } }>> = [];
+      await superuser.$transaction(async (tx) => {
+        await tx.school.update({ where: { id: closing.id }, data: { archivedAt: new Date() } });
+        racing = [
+          post(`/schools/${closing.id}/desk-payments`, closingOwner, { studentId: pupil.id, membershipPlanId: planId, paymentMethod: 'CASH' }).then((r) => r),
+          http().patch(`/v1/transactions/${pendingId}/confirm`).set('Authorization', `Bearer ${closingOwner.token}`).send({}).then((r) => r),
+          book(classId, pupil).then((r) => r),
+        ];
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }, { timeout: 10_000 });
+      const [desk, confirm, booking] = await Promise.all(racing);
+      for (const r of [desk, confirm, booking]) {
+        expect(r.status).toBe(403);
+        expect(r.body.error?.message).toBe(CLOSED);
+      }
+      expect(await superuser.membership.count({ where: { schoolId: closing.id } })).toBe(membershipsBefore);
+      expect((await superuser.transaction.findUniqueOrThrow({ where: { id: pendingId } })).status).toBe('PENDING');
+      expect(await superuser.booking.count({ where: { schoolId: closing.id } })).toBe(0);
     });
   });
 });

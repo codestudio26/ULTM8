@@ -29,6 +29,7 @@ import { CURRENCIES } from '../settings/constants/currencies';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -1255,6 +1256,7 @@ export class MembershipsService {
 
     try {
       return await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
@@ -1296,6 +1298,7 @@ export class MembershipsService {
     }
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
         return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });

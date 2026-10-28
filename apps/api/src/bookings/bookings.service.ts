@@ -25,6 +25,7 @@ import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -170,6 +171,7 @@ export class BookingsService {
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // First, before any row lock (see lockStudentClass).
       await lockStudentClass(tx, studentId, classId);
+      await lockSchoolOpen(tx, resolvedClass.schoolId);
       await assertNotAlreadyAttended(tx, studentId, classId);
       if (resolvedClass.termsWaiverRequired) {
         if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {

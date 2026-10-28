@@ -257,7 +257,10 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   const fillers = take('sub', 14);
   const racers = take('sub', 30);
   const waiter = take('sub')[0];
-  await db.membership.updateMany({ where: { studentId: t1.id, schoolId: S.id }, data: { classesRemaining: 5 } });
+  // After the billing script, T1 may hold more than one pack; the bookings
+  // can take credits from any of them, so the checks below use the total.
+  const { count: t1Packs } = await db.membership.updateMany({ where: { studentId: t1.id, schoolId: S.id }, data: { classesRemaining: 5 } });
+  const packTotal = async () => (await db.membership.findMany({ where: { studentId: t1.id, schoolId: S.id, classesRemaining: { not: null } }, select: { classesRemaining: true } })).reduce((n, m) => n + m.classesRemaining, 0);
   const cap = 5;
   const classes = [await mkClass(cap), await mkClass(cap), await mkClass(cap)];
   const wl = await mkClass(2);
@@ -271,7 +274,7 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   const wlJoin = await call('SR:setup-waitlist', 'POST', `/classes/${wl}/waitlist`, t1.tok, {});
   await call('SR:setup-waitlist', 'POST', `/classes/${wl}/waitlist`, waiter.tok, {});
   const full = await Promise.all(classes.map((c) => db.booking.count({ where: { classId: c, status: 'UPCOMING' } })));
-  const credits0 = (await db.membership.findFirst({ where: { studentId: t1.id, schoolId: S.id, classesRemaining: { not: null } } })).classesRemaining;
+  const credits0 = await packTotal();
   // Bookings T1 already had (the load phase books everyone) are cancelled and refunded by the revoke too.
   const t1Earlier = await db.booking.count({ where: { studentId: t1.id, schoolId: S.id, status: 'UPCOMING', classId: { notIn: classes } } });
   if (t1Books.some((b) => b.status !== 201) || wlJoin.status !== 201 || full.some((n) => n !== cap)) throw new Error(`setup: t1 bookings ${t1Books.map((b) => b.status)} wl ${wlJoin.status} ${JSON.stringify(wlJoin.body)} full ${full}`);
@@ -314,7 +317,7 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   const upcoming = await Promise.all(classes.map((c) => db.booking.count({ where: { classId: c, status: 'UPCOMING' } })));
   const t1Live = await db.booking.count({ where: { studentId: t1.id, classId: { in: classes }, status: 'UPCOMING' } });
   const t1Cancelled = await db.booking.findMany({ where: { studentId: t1.id, classId: { in: classes } }, select: { status: true, refundResolution: true } });
-  const credits1 = (await db.membership.findFirst({ where: { studentId: t1.id, schoolId: S.id, classesRemaining: { not: null } } })).classesRemaining;
+  const credits1 = await packTotal();
   const wlT1 = await db.waitlistEntry.findFirst({ where: { classId: wl, studentId: t1.id }, orderBy: { createdAt: 'desc' } });
   const wlWaiter = await db.waitlistEntry.findFirst({ where: { classId: wl, studentId: waiter.id }, orderBy: { createdAt: 'desc' } });
   const g1After = await db.roleGrant.findUnique({ where: { id: g1.id } });
@@ -322,8 +325,8 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   ok('SR2 revoke ×20 in parallel: no 5xx, grant revoked once, idempotent replies', no5xx(revs) && revs.every((r) => r.status === 200) && !!g1After.revokedAt, `revoke codes ${JSON.stringify(codes(revs))}`);
   ok('SR3 seats freed exactly once and never overbooked while 30 others book the same classes', upcoming.every((n) => n <= cap) && t1Live === 0 && won === 3 && t1Cancelled.every((b) => b.status === 'CANCELLED') && no5xx(races),
     `upcoming per class ${upcoming.join('/')} (cap ${cap}); racers booked ${won} (3 seats freed); race codes ${JSON.stringify(codes(races))}; T1 bookings ${t1Cancelled.map((b) => `${b.status}/${b.refundResolution}`).join(', ')}`);
-  ok('SR4 credits come back once per cancelled booking (before the refund cut-off, Decision 343)', credits0 === 2 && credits1 === 5 + t1Earlier && t1Cancelled.every((b) => b.refundResolution === 'REFUNDED'),
-    `pack credits ${credits0} after booking 3 → ${credits1} after revoke (want ${5 + t1Earlier}: 3 test bookings and ${t1Earlier} earlier ones back)`);
+  ok('SR4 credits come back once per cancelled booking (before the refund cut-off, Decision 343)', credits0 === 5 * t1Packs - 3 && credits1 === 5 * t1Packs + t1Earlier && t1Cancelled.every((b) => b.refundResolution === 'REFUNDED'),
+    `pack credits (${t1Packs} pack${t1Packs === 1 ? '' : 's'} set to 5 each) ${credits0} after booking 3 → ${credits1} after revoke (want ${5 * t1Packs + t1Earlier}: 3 test bookings and ${t1Earlier} earlier ones back)`);
   ok('SR5 the waitlist place is removed; the next person keeps theirs', wlT1?.status === 'CANCELLED' && ['WAITING', 'NOTIFIED'].includes(wlWaiter?.status), `T1 entry ${wlT1?.status}; next person ${wlWaiter?.status}`);
   if (subId) {
     const m2 = await db.membership.findUnique({ where: { id: t2m.id } });

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -14,6 +14,7 @@ import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../j
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
  * payment method (or their Customer has no default one set) at this School —
@@ -1054,10 +1055,7 @@ export class PaymentsService {
     transaction: { schoolId: string; studentId: string },
     action: 'confirm' | 'cancel' = 'confirm',
   ): Promise<void> {
-    const school = await tx.school.findUnique({ where: { id: transaction.schoolId }, select: { archivedAt: true } });
-    if (school?.archivedAt) {
-      throw new ForbiddenException('This School has been closed and no longer accepts new or updated records.');
-    }
+    await lockSchoolOpen(tx, transaction.schoolId);
     if (action === 'cancel') return;
     const enrolled = await tx.roleGrant.findFirst({
       where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
