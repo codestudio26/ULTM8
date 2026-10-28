@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsPhoneNumber, IsString, IsUUID, MaxLength } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+/** Trimmed; an empty string clears the field (null). */
+const trimToNull = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value);
 
 export const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'INSTRUCTOR', 'BRANCH_STAFF'] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
@@ -92,6 +94,12 @@ export class StaffMemberDto {
   @ApiProperty({ description: "The School's main owner (Decision 370). Other owners are co-owners." })
   mainOwner!: boolean;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 381: the School's own name for them, set by an owner. Null = not set." })
+  displayName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 381: their work phone at this School (E.164), set by an owner. Null = not set.' })
+  workPhone!: string | null;
+
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];
 }
@@ -163,4 +171,32 @@ export class HandOverMainOwnerDto {
 export class MainOwnerResponseDto {
   @ApiProperty()
   mainOwnerUserId!: string;
+}
+
+/** PATCH /schools/{schoolId}/staff/{userId}/details (Decision 381). A field
+ * left out is unchanged; null or an empty string clears it. */
+export class UpdateStaffDetailsDto {
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 80 })
+  @IsOptional()
+  @Transform(trimToNull)
+  @IsString()
+  @MaxLength(80)
+  displayName?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'E.164, e.g. +447700900123.' })
+  @IsOptional()
+  @Transform(trimToNull)
+  @IsPhoneNumber(undefined, { message: 'workPhone must be a valid E.164 number' })
+  workPhone?: string | null;
+}
+
+export class StaffDetailsResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  displayName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  workPhone!: string | null;
 }

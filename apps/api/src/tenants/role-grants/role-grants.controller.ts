@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../../common/throttle/identity-trackers';
@@ -15,7 +15,14 @@ import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStaffManuallyResponseDto } from './dto/create-staff-manually-response.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-response.dto';
-import { HandOverMainOwnerDto, MainOwnerResponseDto, StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
+import {
+  HandOverMainOwnerDto,
+  MainOwnerResponseDto,
+  StaffDetailsResponseDto,
+  StaffListQueryDto,
+  StaffListResponseDto,
+  UpdateStaffDetailsDto,
+} from './dto/staff-list.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * InstructorsController's own add-manually throttle (ADD_MANUALLY_THROTTLE). */
@@ -110,6 +117,19 @@ export class RoleGrantsController {
   @Get('schools/:schoolId/staff')
   listStaff(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: StaffListQueryDto) {
     return this.roleGrantsService.listStaff(user.sub, schoolId, query);
+  }
+
+  /** Decision 381 — the School's own display name and work phone for a staff
+   * member. See RoleGrantsService.updateStaffDetails. */
+  @ApiOkResponse({ type: StaffDetailsResponseDto })
+  @Patch('schools/:schoolId/staff/:userId/details')
+  updateStaffDetails(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateStaffDetailsDto,
+  ) {
+    return this.roleGrantsService.updateStaffDetails(user.sub, schoolId, userId, dto);
   }
 
   // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in

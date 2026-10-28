@@ -1938,6 +1938,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/{userId}/details": {
+      "patch": {
+        "operationId": "RoleGrantsController_updateStaffDetails",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffDetailsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/main-owner": {
       "post": {
         "operationId": "RoleGrantsController_handOverMainOwner",
@@ -17294,6 +17347,16 @@
             "type": "boolean",
             "description": "The School's main owner (Decision 370). Other owners are co-owners."
           },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 381: the School's own name for them, set by an owner. Null = not set."
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 381: their work phone at this School (E.164), set by an owner. Null = not set."
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -17327,6 +17390,40 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "UpdateStaffDetailsDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 80
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "E.164, e.g. +447700900123."
+          }
+        }
+      },
+      "StaffDetailsResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "userId"
         ]
       },
       "HandOverMainOwnerDto": {

@@ -6331,6 +6331,27 @@ The API already let a Guardian book, cancel and join the waitlist for a linked c
 
 User (Code), 28 Oct 2026, Waivers thread.
 
+---
+
+## Decision 381 — Staff page: the School's display name and work phone for a staff member
+
+**Date:** 28 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 5, "hybrid"), order of work (c)
+
+### Decision
+
+1. **Stored per School, never on the account.** `StaffPermission` (the School's one row per staff member, already readable by the School's owners and by the person themselves under RLS) gains `displayName` and `workPhone`, both optional. The person's `User` row (real name, login email, personal phone) is never written. Migration `20261216000000_staff_details`.
+2. **Who sets them.** `PATCH /schools/:schoolId/staff/:userId/details` with `{ displayName?, workPhone? }`, owner only (main owner or co-owner), not on an archived School, and only for someone who holds an owner, Instructor or Branch Staff role at the School now (404 otherwise). A field left out is unchanged; `null` or an empty string clears it. `displayName` is trimmed, at most 80 characters; `workPhone` must be a valid E.164 number. The person can't set their own.
+3. **Where they show.** The Staff page list (`GET /schools/:schoolId/staff` returns both): the display name replaces the account name in the first line, with "Account name: …" underneath; the work phone shows first, marked "Work", with the personal phone underneath. The list's search also matches the display name. The person's menu gets **Edit details** (active staff only).
+4. **Kept on removal.** Removing someone keeps the values (they are School records, like the removed person's roles), so they reappear if the person is given a role again.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether the display name should also replace the account name anywhere else (class and timetable instructor names, grading, the Student app, notifications). Decision 360 item 5 only says the owner sets it; nothing confirms where else it is used, so it is shown on the Staff page only.
+- **[UNRESOLVED]** Instructor profiles already have their own School-facing phone that the coach sets themselves (Decision 331). Whether the owner's work phone should replace, feed or sit beside it is not decided; today they are separate.
+
+### Recorded by
+
+User (Code), 27 Oct 2026 "all recommended" on the Staff build plan (Q5 hybrid); built 28 Oct 2026, Staff thread.
 
 ## Decision 383 — Disciplines: Branch Staff the owner allows can manage styles
 
