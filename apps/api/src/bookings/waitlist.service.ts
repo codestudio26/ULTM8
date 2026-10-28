@@ -12,7 +12,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
-import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { assertClassBookable, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -92,7 +92,7 @@ export class WaitlistService {
       // BookingsService.bookClass — see that method's own comment for why this
       // codebase's usual updateMany+count-guard pattern doesn't apply to an
       // aggregate read like this one.
-      await lockClassSeats(tx, classId);
+      const locked = await lockClassSeats(tx, classId);
       // Only a full Class, or one others are already queued for, takes a waitlist
       // entry, and never from a Student already booked into it (stress test, 26 Oct
       // 2026: both were accepted).
@@ -140,7 +140,7 @@ export class WaitlistService {
             studentId,
             classId,
             schoolId: resolvedClass.schoolId,
-            branchId: resolvedClass.branchId,
+            branchId: locked ? locked.branchId : resolvedClass.branchId,
             position,
           },
         });
@@ -246,8 +246,10 @@ export class WaitlistService {
     await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       const studentId = resolvedEntry.studentId;
+      // First, before any row lock (see lockStudentClass).
+      await lockStudentClass(tx, studentId, resolvedEntry.classId);
+      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       if (cls.cancelledAt) {
         throw new ConflictException('This class has been cancelled by the school.');
       }
@@ -263,10 +265,11 @@ export class WaitlistService {
 
       await this.assertRankEligible(tx, studentId, cls);
 
+      let locked: LockedClass;
       if (cls.capacity !== null) {
         // Same explicit-row-lock fix as BookingsService.bookClass's own capacity
         // check — see that comment for the full reasoning.
-        await lockClassSeats(tx, cls.id);
+        locked = await lockClassSeats(tx, cls.id);
         // Same PrismaJobsService fix as BookingsService.countOccupiedSeats — `tx`
         // (the claiming Student's own tenant context) can never see another
         // Student's Booking/BookingAttendee rows under Decision 89's RLS shape.
@@ -281,6 +284,10 @@ export class WaitlistService {
         if (bookingCount + attendeeCount + 1 > cls.capacity) {
           throw new ConflictException('This Class filled up again before the claim completed — please try the next opening.');
         }
+      } else {
+        // Re-checks the Class under a lock a whole-class cancel waits for (see
+        // BookingsService.bookClass).
+        locked = await lockClassShared(tx, cls.id);
       }
 
       const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls);
@@ -293,7 +300,7 @@ export class WaitlistService {
             studentId,
             classId: cls.id,
             schoolId: cls.schoolId,
-            branchId: cls.branchId,
+            branchId: locked ? locked.branchId : cls.branchId,
             sourceMembershipId: sourceMembership.id,
           },
         });
