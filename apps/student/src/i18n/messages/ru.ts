@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "На этом занятии нет мест.",
       joinWaitlist: "Встать в лист ожидания",
       waitlistPosition: "Вы №{position} в листе ожидания.",
+      childWaitlistPosition: "Ваш ребёнок №{position} в листе ожидания.",
       leaveWaitlist: "Выйти из листа ожидания",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Добавить гостя",
       remove: "Убрать гостя",
       passesLeft: "Гостевые абонементы, которые можно использовать на этом занятии: {count}",
+      childPassesLeft: "Гостевые абонементы вашего ребёнка для этого занятия: {count}",
       linksIntro: "Отправьте каждому гостю его ссылку, чтобы он подписал отказ от ответственности до занятия.",
       guestNumber: "Гость {number}",
       signed: "Отказ подписан: {name}",
@@ -590,6 +592,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Запись: {name}",
+      upcomingTitle: "Предстоящие записи",
+      noBookings: "У {name} нет предстоящих записей.",
+      bookTitle: "Записать на занятие",
+      noSchools: "{name} пока не учится ни в одной школе.",
+      noClasses: "В этой школе нет предстоящих занятий.",
+      loadError: "Не удалось загрузить школы ребёнка — попробуйте ещё раз.",
+      bookingsLoadError: "Не удалось загрузить записи ребёнка — попробуйте ещё раз.",
+      classesLoadError: "Не удалось загрузить занятия — попробуйте ещё раз.",
+    },
     myMinors: {
       empty: "Привязанных подопечных пока нет.",
       loadError: "Не удалось загрузить ваших подопечных — попробуйте ещё раз.",
@@ -604,6 +617,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Не удалось добавить этого подопечного — попробуйте ещё раз.",
       addMinor: "Добавить подопечного",
       addAMinor: "Добавить подопечного",
+      bookAClass: "Записать на занятие",
     },
     minorConsent: {
       loadError: "Не удалось загрузить настройки этого подопечного — попробуйте ещё раз.",

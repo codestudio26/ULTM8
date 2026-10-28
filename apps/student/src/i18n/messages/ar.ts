@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "هذه الحصة ممتلئة.",
       joinWaitlist: "الانضمام إلى قائمة الانتظار",
       waitlistPosition: "أنت رقم {position} في قائمة الانتظار.",
+      childWaitlistPosition: "طفلك رقم {position} في قائمة الانتظار.",
       leaveWaitlist: "مغادرة قائمة الانتظار",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "إضافة ضيف",
       remove: "إزالة ضيف",
       passesLeft: "تذاكر الصديق التي يمكنك استخدامها لهذا الصف: {count}",
+      childPassesLeft: "تذاكر الصديق الخاصة بطفلك لهذا الصف: {count}",
       linksIntro: "أرسل لكل ضيف رابطه ليوقّع الإقرار قبل الصف.",
       guestNumber: "الضيف {number}",
       signed: "تم توقيع الإقرار: {name}",
@@ -602,6 +604,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "احجز لـ {name}",
+      upcomingTitle: "الحجوزات القادمة",
+      noBookings: "لا توجد حجوزات قادمة لـ {name}.",
+      bookTitle: "احجز صفًا",
+      noSchools: "{name} ليس طالبًا في أي مدرسة بعد.",
+      noClasses: "لا توجد صفوف قادمة في هذه المدرسة.",
+      loadError: "تعذّر تحميل مدارس طفلك — يُرجى المحاولة مرة أخرى.",
+      bookingsLoadError: "تعذّر تحميل حجوزات طفلك — يُرجى المحاولة مرة أخرى.",
+      classesLoadError: "تعذّر تحميل الصفوف — يُرجى المحاولة مرة أخرى.",
+    },
     myMinors: {
       empty: "لا يوجد قاصرون مرتبطون بعد.",
       loadError: "تعذّر تحميل القاصرين التابعين لك، يُرجى المحاولة مرة أخرى.",
@@ -616,6 +629,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "تعذّرت إضافة هذا القاصر، يُرجى المحاولة مرة أخرى.",
       addMinor: "إضافة قاصر",
       addAMinor: "إضافة قاصر",
+      bookAClass: "احجز صفًا",
     },
     minorConsent: {
       loadError: "تعذّر تحميل إعدادات هذا القاصر، يُرجى المحاولة مرة أخرى.",

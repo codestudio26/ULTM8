@@ -16,6 +16,7 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
+import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -777,8 +778,8 @@ export class TimetableService {
     const seats = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: classId }, select: { capacity: true } });
       const [bookings, guests, waiting, notified] = await Promise.all([
-        tx.booking.count({ where: { classId, status: 'UPCOMING' } }),
-        tx.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+        tx.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
+        tx.bookingAttendee.count({ where: { booking: { classId, status: SEAT_HOLDING_STATUSES } } }),
         tx.waitlistEntry.count({ where: { classId, status: 'WAITING' } }),
         tx.waitlistEntry.count({ where: { classId, status: 'NOTIFIED' } }),
       ]);

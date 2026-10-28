@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Esta aula está lotada.",
       joinWaitlist: "Entrar na lista de espera",
       waitlistPosition: "Você é o nº {position} na lista de espera.",
+      childWaitlistPosition: "Seu filho é o nº {position} na lista de espera.",
       leaveWaitlist: "Sair da lista de espera",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Adicionar um convidado",
       remove: "Remover um convidado",
       passesLeft: "Passes de convidado que você pode usar nesta aula: {count}",
+      childPassesLeft: "Passes de convidado do seu filho para esta aula: {count}",
       linksIntro: "Envie a cada convidado o link dele, para que assine o termo antes da aula.",
       guestNumber: "Convidado {number}",
       signed: "Termo assinado: {name}",
@@ -575,6 +577,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Reservar para {name}",
+      upcomingTitle: "Próximas reservas",
+      noBookings: "{name} não tem reservas futuras.",
+      bookTitle: "Reservar uma aula",
+      noSchools: "{name} ainda não é aluno de nenhuma escola.",
+      noClasses: "Nenhuma aula futura nesta escola.",
+      loadError: "Não foi possível carregar as escolas do seu filho — tente novamente.",
+      bookingsLoadError: "Não foi possível carregar as reservas do seu filho — tente novamente.",
+      classesLoadError: "Não foi possível carregar as aulas — tente novamente.",
+    },
     myMinors: {
       empty: "Nenhum menor vinculado ainda.",
       loadError: "Não foi possível carregar seus menores — tente novamente.",
@@ -589,6 +602,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Não foi possível adicionar este menor — tente novamente.",
       addMinor: "Adicionar menor",
       addAMinor: "Adicionar um menor",
+      bookAClass: "Reservar uma aula",
     },
     minorConsent: {
       loadError: "Não foi possível carregar as configurações deste menor — tente novamente.",

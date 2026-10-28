@@ -967,6 +967,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/franchise-preview": {
+      "get": {
+        "operationId": "SchoolsController_previewFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchisePreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/franchise-join-request": {
       "get": {
         "operationId": "SchoolsController_findFranchiseJoinRequest",
@@ -1880,6 +1923,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StaffListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/main-owner": {
+      "post": {
+        "operationId": "RoleGrantsController_handOverMainOwner",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify — the main owner re-enters their passcode first.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandOverMainOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MainOwnerResponseDto"
                 }
               }
             }
@@ -4155,6 +4252,86 @@
         ]
       }
     },
+    "/v1/platform-admin/schools/{id}/owners": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_listOwners",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolOwnersResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/main-owner": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_changeMainOwner",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSchoolMainOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeSchoolMainOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/platform-admin/franchises/{id}": {
       "get": {
         "operationId": "PlatformAdminFranchisesController_findOne",
@@ -5556,6 +5733,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/schools": {
+      "get": {
+        "operationId": "BookingsController_findMinorSchools",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorSchoolListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findMinorBookings",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorBookingListDto"
                 }
               }
             }
@@ -11119,6 +11366,49 @@
         ]
       }
     },
+    "/v1/students/{id}/waiver-status": {
+      "get": {
+        "operationId": "WaiversController_getStudentWaiverStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentWaiverStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -11509,6 +11799,92 @@
         ]
       }
     },
+    "/v1/guardians/me/minors/{studentId}/friend-passes": {
+      "get": {
+        "operationId": "GuestWaiversController_minorFriendPasses",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendPassListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/bookings/{id}/guests": {
+      "get": {
+        "operationId": "GuestWaiversController_minorBookingGuests",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingGuestsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers/{id}/guest-signatures": {
       "get": {
         "operationId": "GuestWaiversController_listSignatures",
@@ -11856,6 +12232,139 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/qr-lookups": {
+      "post": {
+        "operationId": "AttendanceController_deskQrLookup",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskQrLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskQrLookupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/guests/{attendeeId}/check-in": {
+      "post": {
+        "operationId": "AttendanceController_checkInGuest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attendeeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/check-ins": {
+      "post": {
+        "operationId": "AttendanceController_deskCheckIn",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
                 }
               }
             }
@@ -15126,6 +15635,10 @@
           "showFranchiseBranding": {
             "type": "boolean",
             "description": "Show this School's Franchise name and logo (the Franchise Owner must also allow it)."
+          },
+          "confirmCurrencyChange": {
+            "type": "boolean",
+            "description": "Confirms a currency change that moves plans without their own currency to the new one."
           }
         }
       },
@@ -15667,6 +16180,21 @@
           "schoolName",
           "status",
           "createdAt"
+        ]
+      },
+      "FranchisePreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ]
       },
       "SchoolFranchiseJoinRequestResponseDto": {
@@ -16744,6 +17272,10 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "mainOwner": {
+            "type": "boolean",
+            "description": "The School's main owner (Decision 370). Other owners are co-owners."
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -16760,6 +17292,7 @@
           "active",
           "addedAt",
           "canInviteCoaches",
+          "mainOwner",
           "roles"
         ]
       },
@@ -16775,6 +17308,29 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "HandOverMainOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "A co-owner of this School, who becomes its main owner."
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "MainOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "mainOwnerUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mainOwnerUserId"
         ]
       },
       "CreateFranchiseDto": {
@@ -18589,6 +19145,85 @@
           "subRole"
         ]
       },
+      "SchoolOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "mainOwner": {
+            "type": "boolean",
+            "description": "The School's main owner. Every other owner is a co-owner."
+          },
+          "ownerSince": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "mainOwner",
+          "ownerSince"
+        ]
+      },
+      "SchoolOwnersResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Main owner first, then co-owners, earliest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolOwnerDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ChangeSchoolMainOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "A co-owner of this School, who becomes its main owner."
+          },
+          "removeFormerMainOwner": {
+            "type": "boolean",
+            "description": "Also end the former main owner's owner role at this School. Default false."
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "ChangeSchoolMainOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "mainOwnerUserId": {
+            "type": "string"
+          },
+          "formerMainOwnerRemoved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mainOwnerUserId",
+          "formerMainOwnerRemoved"
+        ]
+      },
       "CreateAdminUserDto": {
         "type": "object",
         "properties": {
@@ -19659,6 +20294,11 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -19795,6 +20435,83 @@
         },
         "required": [
           "overrideReason"
+        ]
+      },
+      "MinorSchoolDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId",
+          "name"
+        ]
+      },
+      "MinorSchoolListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorSchoolDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MinorBookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "guestCount": {
+            "type": "number",
+            "description": "Guests on the booking, one Friend Pass each."
+          }
+        },
+        "required": [
+          "id",
+          "classId",
+          "classTitle",
+          "classStartsAt",
+          "schoolId",
+          "guestCount"
+        ]
+      },
+      "MinorBookingListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Upcoming bookings, soonest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorBookingDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "BookingListResponseDto": {
@@ -25262,6 +25979,39 @@
           "imageKey"
         ]
       },
+      "WaiverToSignDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "waiverId",
+          "title"
+        ]
+      },
+      "StudentWaiverStatusDto": {
+        "type": "object",
+        "properties": {
+          "signed": {
+            "type": "boolean"
+          },
+          "toSign": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaiverToSignDto"
+            }
+          }
+        },
+        "required": [
+          "signed",
+          "toSign"
+        ]
+      },
       "UpdateWaiverDto": {
         "type": "object",
         "properties": {
@@ -25338,6 +26088,12 @@
           "guestFullName": {
             "type": "string",
             "nullable": true
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the guest was checked in at the desk (Decision 377); null if not yet."
           }
         },
         "required": [
@@ -25756,10 +26512,195 @@
           "studentToken": {
             "type": "string",
             "description": "The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation."
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN."
           }
         },
         "required": [
           "studentId"
+        ]
+      },
+      "DeskQrLookupDto": {
+        "type": "object",
+        "properties": {
+          "studentToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentToken"
+        ]
+      },
+      "DeskQrLookupResponseDto": {
+        "type": "object",
+        "properties": {
+          "lookupToken": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "lookupToken",
+          "expiresAt",
+          "studentId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "GuestCheckInResponseDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "attendeeId",
+          "checkedInAt"
+        ]
+      },
+      "DeskGuestRefDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "attendeeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookingId",
+          "attendeeId"
+        ]
+      },
+      "DeskCheckInDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL."
+          },
+          "classIds": {
+            "description": "Classes to check the Student into (booked first where needed). Up to 10.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guests": {
+            "description": "Guests on the Student's bookings to check in. Up to 20.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskGuestRefDto"
+            }
+          }
+        },
+        "required": [
+          "studentId",
+          "classIds"
+        ]
+      },
+      "DeskCheckInClassResultDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "False when this Class is why nothing was done."
+          },
+          "bookingId": {
+            "type": "string",
+            "description": "The checked-in booking, when done."
+          },
+          "code": {
+            "type": "string",
+            "description": "Why this Class could not be done, e.g. CHECK_IN_NOT_OPEN or CLASS_FULL."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "classId",
+          "ok"
+        ]
+      },
+      "DeskCheckInGuestResultDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attendeeId",
+          "ok"
+        ]
+      },
+      "DeskCheckInResponseDto": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "description": "True when everything was checked in. False when something could not be: then nothing was saved, and the item(s) with ok false say why."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskCheckInClassResultDto"
+            }
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskCheckInGuestResultDto"
+            }
+          }
+        },
+        "required": [
+          "done",
+          "classes",
+          "guests"
         ]
       },
       "AcademySummaryDto": {
@@ -27191,7 +28132,8 @@
               "USER",
               "BRANCH",
               "FRANCHISE",
-              "CLASS"
+              "CLASS",
+              "SCHOOL"
             ]
           },
           "contentType": {

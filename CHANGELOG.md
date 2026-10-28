@@ -27,6 +27,87 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Cancellations. The Arabic booked count on the Dashboard has all its plural
   forms. New tests fail CI when a screen text or an API error message is missing
   in any language, or a plural form is missing.
+- **Front desk: one-step check-in** (Decision 378) — the welcome card's
+  confirm now books, checks in and checks in the ticked guests in one go. If
+  one class can't be done (full, not open yet, no membership…), nothing is
+  checked in, and the card says which class and why.
+- **Staging deploy readiness (Render + Supabase + Vercel):**
+  - **api — the API refuses to start when misconfigured.** With
+    `NODE_ENV=production` (every deployed environment), it won't start unless
+    all of these hold:
+    - Every scoped `DATABASE_URL_*` is set, is not the superuser, and doesn't
+      use the dev password `changeme`. Before, an unset one silently fell back
+      to the superuser and bypassed RLS.
+    - `REDIS_URL`, `CORS_ALLOWED_ORIGINS` and `PORTAL_BASE_URL` are set.
+    - The four signing secrets are each 32+ characters and all different.
+
+    Missing vendor keys are only logged. Local dev and CI are unchanged.
+  - **api — new `GET /v1/health`:** public and unthrottled. It reports the
+    database (as `ultm8_app`) and Redis as ok/down, with a 503 if either is
+    down.
+  - **api — one shared Redis connection for all job queues.**
+    - Every BullMQ Queue and Worker now shares one connection instead of
+      opening its own. Only each Worker's blocking connection is separate.
+    - Measured against Redis 7: one API process went from 52 connections
+      to 18.
+    - 52 was over the 50 a free Render Key Value allows. The staging API
+      crashed with "Connection is closed" on every redeploy, while the old
+      and new instances overlapped.
+  - **api — dev seed scripts refuse non-local databases.** They create logins
+    with passcode `123456`. To seed a throwaway staging database on purpose,
+    set `ULTM8_ALLOW_DEV_SEED_HOST=<host>`. They always refuse under
+    `NODE_ENV=production`.
+  - **api — `scripts/rotate-role-passwords.js`** sets all six scoped role
+    passwords from their connection strings. It runs on each Render build,
+    after `prisma migrate deploy`.
+  - **`render.yaml` rewritten for the current API:**
+    - Adds migrations and role-password rotation to the build, the health
+      check, and the two newer DB roles.
+    - Adds the QR and refresh/step-up settings, `PORTAL_BASE_URL`, and every
+      vendor key as `sync: false`.
+    - Removes the dummy Stripe keys.
+  - **school-portal, platform-admin: `vercel.json`** for monorepo builds, SPA
+    routing and basic security headers.
+  - **New guide `docs/deploy/STAGING-RUNBOOK.md`.**
+  - **api — migration `20260904000000_fix_rolegrant_rls_recursion` now runs on
+    Supabase.**
+    - It restores the two GRANTs that had been fixed only on the old Track B
+      staging branch: `GRANT ultm8_rls_helper TO CURRENT_USER` and
+      `GRANT CREATE ON SCHEMA public TO ultm8_rls_helper`.
+    - Without them, a fresh database whose deploy role isn't a true superuser
+      (Supabase's `postgres`) stopped at "permission denied for schema public".
+    - The file is now byte-identical to the version already applied on the
+      live staging database. On CI's superuser both GRANTs change nothing.
+
+- **Parents can bring guests on their child's booking** (Decision 379) — new
+  API for the Student app's parent booking screen: a parent sees their child's
+  Schools, Friend Passes and upcoming bookings, books with guests on the
+  child's Friend Passes, and gets each guest's waiver link. Kid Mode bookings
+  can't add guests. No migration.
+- **Guests are checked in one by one at the desk** (Decision 377) — the
+  welcome card lists each guest under the member's class with their waiver
+  status; staff tick the guests who came, and each guest's check-in is
+  recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: main owner and co-owners** (Decision 370) — every School has
+  one main owner; other owners are co-owners. "Give role" can now make someone
+  a co-owner. Any owner can remove a co-owner, but nobody in the School can
+  remove the main owner. The main owner can make a co-owner the main owner
+  after re-entering their passcode, and stays on as a co-owner. ULTM8 support
+  sees a School's owners on the Platform Admin School page and (Full Admin
+  only) can move the main owner role, optionally removing the former main
+  owner; both are audit-logged. Existing Schools: the earliest owner becomes
+  the main owner. Needs the migration `20261213000100_school_main_owner`.
+- **School settings review** (Decision 368) — the School page shows the
+  School's join code (copy, make a new one), a logo upload and colour for the
+  student app, and asks before a currency change moves membership plans to a
+  new currency. "Ask to join" a Franchise shows its name first. Fixed: an
+  Owner with two Schools could save one School's cancellation and footer
+  settings onto the other; saving one card wiped another's typing; the
+  no-show fee was typed in cents; a closed School's forms still showed;
+  footer links without https:// opened broken pages; endless spinners on a
+  load error or for non-owners; plain messages for blank names, waitlist
+  window and footer fields; the School reply no longer carries Stripe ids.
+  School details is split into three groups. No migration.
 - **Signed-in users are no longer limited per internet address** (Decision
   376). Everyone at a School on the same WiFi shares one address, which was
   limited to 60 requests a minute; a busy front desk could hit it. Signed-in
@@ -51,6 +132,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   coach dashboard; and a setup checklist for new Schools (Branch, style and
   belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
   hidden. **Needs a database migration.**
+
+- **Check-in and front desk review fixes** (Decision 377) — a checked-in
+  student keeps their seat, so a full class can't be booked past its limit; the
+  welcome card no longer books a class whose check-in hasn't opened ("Check-in
+  opens at …"); a scanned app QR is checked once and stays good for 5 minutes;
+  the card shows which waivers are still to sign; Whole School classes show at
+  every Branch; a School with no Branches can start front-desk mode; the page
+  moves to the new day at midnight; a QR of someone who isn't a student here is
+  refused instead of opening a blank card; places left count guests; the card
+  waits for bookings before ticking; closed Branches are hidden; name search
+  says when there are more matches. New text in all 15 languages.
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in

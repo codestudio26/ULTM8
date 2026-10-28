@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -10,7 +10,10 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { EnterAttendanceCodeDto } from './dto/enter-attendance-code.dto';
 import { QrTokenResponseDto } from './dto/qr-token-response.dto';
+import { DeskQrLookupDto, DeskQrLookupResponseDto, GuestCheckInResponseDto } from './dto/desk-qr-lookup.dto';
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
+import { DeskCheckInDto, DeskCheckInResponseDto } from './dto/desk-check-in.dto';
+import { FrontDeskCheckInService } from './front-desk-check-in.service';
 
 // Decision 235's own explicit mandate: "mandatory server-side rate limiting
 // on wrong code submissions — 6 digits is brute-forceable in hours without
@@ -34,7 +37,10 @@ const ENTER_CODE_THROTTLE = {
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(
+    private readonly attendanceService: AttendanceService,
+    private readonly frontDeskCheckIn: FrontDeskCheckInService,
+  ) {}
 
   @ApiOkResponse({ type: BookingResponseDto })
   @Post('attendance/scan')
@@ -75,5 +81,33 @@ export class AttendanceController {
   @Post('classes/:id/attendance-scan')
   instructorScan(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: InstructorScanDto) {
     return this.attendanceService.instructorScan(user.sub, id, dto);
+  }
+
+  /** Staff at the desk — check a scanned app QR once and get a five-minute
+   * lookup token to check that Student in with. See
+   * AttendanceService.deskQrLookup. */
+  @ApiCreatedResponse({ type: DeskQrLookupResponseDto })
+  @Post('schools/:schoolId/front-desk/qr-lookups')
+  deskQrLookup(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: DeskQrLookupDto) {
+    return this.attendanceService.deskQrLookup(user.sub, schoolId, dto.studentToken);
+  }
+
+  /** Staff at the desk — check one guest on a booking in (Decision 377). See
+   * AttendanceService.checkInGuest. */
+  @ApiCreatedResponse({ type: GuestCheckInResponseDto })
+  @Post('bookings/:id/guests/:attendeeId/check-in')
+  checkInGuest(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Param('attendeeId', ParseUUIDPipe) attendeeId: string) {
+    return this.attendanceService.checkInGuest(user.sub, id, attendeeId);
+  }
+
+  /** Staff at the desk — the welcome card's confirm in one step: book where
+   * needed, check in, and check in the ticked guests, all or nothing
+   * (Decision 378). Always 200: `done` says whether it happened, and when it
+   * didn't, the items with `ok: false` say why. See FrontDeskCheckInService. */
+  @ApiOkResponse({ type: DeskCheckInResponseDto })
+  @HttpCode(200)
+  @Post('schools/:schoolId/front-desk/check-ins')
+  deskCheckIn(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: DeskCheckInDto) {
+    return this.frontDeskCheckIn.checkIn(user.sub, schoolId, dto);
   }
 }

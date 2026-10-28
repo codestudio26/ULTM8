@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -15,8 +16,17 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../../common/address/postal-address.dto';
+
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+/** School Settings review (S5, S10) — a footer social link must be a full web
+ * address. Without `require_protocol` "instagram.com/x" passed, and the footer
+ * then linked to a page inside the portal. One plain message for every link. */
+export const FOOTER_URL_OPTIONS = { protocols: ['http', 'https'], require_protocol: true };
+export const FOOTER_URL_MESSAGE = 'Social links must be full web addresses starting with https://.';
+export const FOOTER_EMAIL_MESSAGE = 'Enter a valid contact email address.';
 
 /**
  * Mirrors the confirmed School.classCancellationPolicy enum (schema.prisma /
@@ -66,8 +76,11 @@ export enum SchoolCancelledClassResolutionDto {
  * drift apart.
  */
 export class CreateSchoolDto {
+  // School Settings review (S9) — trimmed, and a name of only spaces is rejected.
   @ApiProperty()
+  @Transform(trim)
   @IsString()
+  @IsNotEmpty({ message: "School name can't be empty." })
   @MaxLength(100)
   name!: string;
 
@@ -176,7 +189,7 @@ export class CreateSchoolDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: FOOTER_EMAIL_MESSAGE })
   @MaxLength(254)
   footerContactEmail?: string;
 
@@ -190,35 +203,35 @@ export class CreateSchoolDto {
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerFacebookUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerInstagramUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerTiktokUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerYoutubeUrl?: string;
 
   @ApiPropertyOptional({ description: 'X (formerly Twitter).' })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerTwitterUrl?: string;
 
   // No `default:` in the Swagger metadata on purpose: openapi-typescript would
@@ -234,8 +247,9 @@ export class CreateSchoolDto {
   // description instead.
   @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279).' })
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  // School Settings review (S8) — a plain message instead of the field name.
+  @IsInt({ message: 'The waitlist claim window must be a whole number of minutes, at least 1.' })
+  @Min(1, { message: 'The waitlist claim window must be a whole number of minutes, at least 1.' })
   waitlistClaimWindowMinutes?: number;
 
   // Decision 291 — the rest of the owner's "Class cancellations" settings.

@@ -2,6 +2,7 @@ import React from 'react';
 import { Checkbox, Field, SelectField, TextField } from '@ultm8/ui';
 import type { components } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { parseMoney, toText } from '../lib/MoneyField';
 
 type School = components['schemas']['SchoolResponseDto'];
 
@@ -17,7 +18,9 @@ export type CancellationSettings = Pick<
   | 'noShowFee'
 >;
 
-/** The form's own shape: the two optional numbers as text, so a blank box means "none". */
+/** The form's own shape: the two optional numbers as text, so a blank box means
+ * "none". The no-show fee is typed in normal units ("10.50"), not hundredths
+ * (School Settings review, S3 — "10" used to mean 0.10). */
 export type CancellationSettingsForm = Omit<CancellationSettings, 'defaultRefundCutoffHours' | 'noShowFee'> & {
   defaultRefundCutoffHours: string;
   noShowFee: string;
@@ -30,8 +33,13 @@ export function cancellationSettingsForm(source: CancellationSettings): Cancella
     chargeLateCancellationFee: source.chargeLateCancellationFee,
     schoolCancelledClassResolution: source.schoolCancelledClassResolution,
     defaultRefundCutoffHours: source.defaultRefundCutoffHours?.toString() ?? '',
-    noShowFee: source.noShowFee?.toString() ?? '',
+    noShowFee: toText(source.noShowFee ?? null),
   };
+}
+
+/** False while the no-show fee box holds something that isn't an amount. */
+export function isCancellationSettingsValid(form: CancellationSettingsForm): boolean {
+  return parseMoney(form.noShowFee).valid;
 }
 
 export function cancellationSettingsPayload(form: CancellationSettingsForm) {
@@ -41,7 +49,7 @@ export function cancellationSettingsPayload(form: CancellationSettingsForm) {
     chargeLateCancellationFee: form.chargeLateCancellationFee,
     schoolCancelledClassResolution: form.schoolCancelledClassResolution,
     defaultRefundCutoffHours: form.defaultRefundCutoffHours === '' ? null : Number(form.defaultRefundCutoffHours),
-    noShowFee: form.noShowFee === '' || Number(form.noShowFee) === 0 ? null : Number(form.noShowFee),
+    noShowFee: parseMoney(form.noShowFee).minorUnits || null,
   };
 }
 
@@ -49,10 +57,13 @@ export function CancellationSettingsFields({
   form,
   onChange,
   disabled = false,
+  currency,
 }: {
   form: CancellationSettingsForm;
   onChange: (next: CancellationSettingsForm) => void;
   disabled?: boolean;
+  /** Shown after the no-show fee box, e.g. "BRL". */
+  currency?: string | null;
 }) {
   const t = useT();
   function set<K extends keyof CancellationSettingsForm>(key: K, value: CancellationSettingsForm[K]) {
@@ -102,8 +113,13 @@ export function CancellationSettingsFields({
         checked={form.chargeLateCancellationFee}
         onChange={(e) => set('chargeLateCancellationFee', e.target.checked)}
       />
-      <Field label={t('schools.cancellations.noShowFeeLabel')} htmlFor="cancel-no-show-fee" hint={t('schools.cancellations.noShowFeeHint')}>
-        <TextField id="cancel-no-show-fee" type="number" min={0} disabled={disabled} value={form.noShowFee} onChange={(e) => set('noShowFee', e.target.value)} />
+      <Field
+        label={t('schools.cancellations.noShowFeeLabel')}
+        htmlFor="cancel-no-show-fee"
+        hint={t('schools.cancellations.noShowFeeHint')}
+        error={parseMoney(form.noShowFee).valid ? undefined : t('schools.cancellations.noShowFeeInvalid')}
+      >
+        <AmountInput value={form.noShowFee} onChange={(v) => set('noShowFee', v)} currency={currency} disabled={disabled} />
       </Field>
       <Field label={t('schools.cancellations.classCancelledLabel')} htmlFor="cancel-class-resolution">
         <SelectField
@@ -120,5 +136,30 @@ export function CancellationSettingsFields({
       </Field>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.fixedRules')}</p>
     </>
+  );
+}
+
+/** A money amount typed as text, with the currency after it. `Field` hands it
+ * the input's id and aria props. */
+function AmountInput({
+  value,
+  onChange,
+  currency,
+  disabled,
+  ...inputProps
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  currency?: string | null;
+  disabled?: boolean;
+  id?: string;
+  'aria-invalid'?: 'true';
+  'aria-describedby'?: string;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <TextField {...inputProps} inputMode="decimal" disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} />
+      {currency ? <span className="ultm8-field__hint">{currency.toUpperCase()}</span> : null}
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -33,5 +33,28 @@ export function useSchoolPaymentAccount(schoolId: string | null) {
       unwrap(apiClient.GET('/v1/platform-admin/schools/{schoolId}/payment-account', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
     retry: false,
+  });
+}
+
+/** GET /platform-admin/schools/:id/owners (Decision 370) — the School's
+ * owners, main owner first. Audit-logged server-side (VIEW_SCHOOL_OWNERS). */
+export function useSchoolOwners(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['platform-admin-school-owners', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/platform-admin/schools/{id}/owners', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+    retry: false,
+  });
+}
+
+/** POST /platform-admin/schools/:id/main-owner (Decision 370) — FULL_ADMIN
+ * only server-side: moves the main owner role to a co-owner, optionally
+ * ending the former main owner's owner role. */
+export function useChangeSchoolMainOwner(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { userId: string; removeFormerMainOwner: boolean }) =>
+      unwrap(apiClient.POST('/v1/platform-admin/schools/{id}/main-owner', { params: { path: { id: schoolId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['platform-admin-school-owners', schoolId] }),
   });
 }

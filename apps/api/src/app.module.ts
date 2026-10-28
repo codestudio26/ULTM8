@@ -33,10 +33,14 @@ import { SubscriptionPlansModule } from './subscription-plans/subscription-plans
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StaffRemovalModule } from './tenants/staff-removal/staff-removal.module';
+import { HealthModule } from './health/health.module';
+import { validateEnv } from './common/config/validate-env';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // A deployed (NODE_ENV=production) API refuses to start without its scoped
+    // DB roles and signing secrets — see validate-env.ts.
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot({
       throttlers: [
         // Per IP for callers who aren't signed in (see defaultIpLimit); auth and
@@ -81,6 +85,7 @@ import { StaffRemovalModule } from './tenants/staff-removal/staff-removal.module
     UploadsModule,
     DashboardModule,
     StaffRemovalModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

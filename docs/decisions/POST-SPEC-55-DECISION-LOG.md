@@ -6197,3 +6197,137 @@ User (Code), 28 Oct 2026, answering the five decision cards in the Sign-in and a
 ### Recorded by
 
 User (Code), 28 Oct 2026: "yes, build the per-IP limit change", to the proposal "keep the strict per-IP limit only for unauthenticated requests".
+
+---
+
+## Decision 377 — Check-in and front desk review: seats after check-in, QR checked on scan, waiver status at the desk, guests one by one
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 107 (QR check-in), 315/317/320/351 (front desk), 366 (guest waivers) · **Review:** the "Check-in and front desk review" doc (bugs CI1–CI10, questions Q1–Q4); `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`
+
+### Decision
+
+1. **A checked-in booking still holds its seat.** Seats taken = Upcoming and Completed bookings, each with their guests, everywhere seats are counted (booking, waitlist join and claim, capacity changes). Before, each check-in freed a seat, so a full class could be booked past its limit (CI1).
+2. **The desk never books a class it can't check into yet.** The welcome card shows a class whose check-in hasn't opened (the School's "check-in opens N minutes before") with "Check-in opens at …" and it can't be ticked (CI2).
+3. **The app QR is checked once, when it's scanned (Q2).** `POST /schools/{schoolId}/front-desk/qr-lookups` verifies the ~20-second QR and returns who it is plus a lookup token valid for 5 minutes, for that student, School and staff member only. `POST /classes/{id}/attendance-scan` accepts `lookupToken` in place of `studentToken`, recorded as `INSTRUCTOR_SCAN`. The QR of someone who isn't a current student at the School is refused (CI6).
+4. **Waiver status on the welcome card (Q4, handover F4).** `GET /students/{id}/waiver-status?schoolId=` (any staff at the School) → `{ signed, toSign: [{ waiverId, title }] }`: whether they hold a waiver that counts for booking, and the School's current waivers they haven't signed. The other "Soon" parts (personal code, tablet sign-up, Find me, open mat) stay in v1.3.
+5. **Exit stays as it is until the locked session (Q1).** Front-desk mode keeps running in the staff member's own login with its warning banner until v1.3's locked session.
+6. **Guests are checked in one by one (Q3).** The welcome card lists each guest under their member's class, with their own tick and waiver status, unticked until staff tick the ones who came. `POST /bookings/{id}/guests/{attendeeId}/check-in` (staff at the School or Branch, same check-in window as the member, booking Upcoming or checked in) records `BookingAttendee.checkedInAt` and `checkedInById`. The member's own check-in no longer counts for their guests. A guest has no account, so nothing is credited toward grading. Built in its own PR (migration `20261215000000_guest_check_in`).
+
+### Recorded by
+
+User (Code), 28 Oct 2026, on the decision cards: "Fix all 10 in one PR", "Leave until v1.3" (Exit), "Check QR once on scan", "Tick each guest separately", "Only waiver status now".
+
+---
+
+## Decision 368 — School settings page review: 11 fixes, join code, School logo and colour, currency guard, Franchise name check
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision (fixes and Q1–Q5, "All recommended") · **Builds on:** Decisions 257 (footer), 266 (join code, School colour), 291/292 (cancellation settings), 322 (late cancel), 334 (plan currency), 350/352 (Franchise branding and join requests), 364 (School self-close) · **Number note:** 367 is taken by the Dashboard review (PR #347).
+
+### Fixes
+
+1. **S1** — Switching School in the header now starts every card on the School page afresh. Before, the Class cancellations and Footer cards kept the first School's values, and saving wrote them onto the second School.
+2. **S2** — Saving one card no longer wipes what's typed but unsaved in the School details card.
+3. **S3** — The no-show fee (School and Branch) is typed in normal units ("10.50"), not hundredths, with the currency shown; a wrong amount says so.
+4. **S4** — A closed School's page is read-only: the closed notice sits at the top; forms are disabled; join code, Franchise actions and Close School are hidden.
+5. **S5** — Footer social links must start with http(s)://. The portal adds https:// when it's missing; the API refuses links without it.
+6. **S6** — See Q3.
+7. **S7** — A load error shows the error; a non-owner opening /school is told the page is for School Owners (both used to spin for ever).
+8. **S8, S9, S10** — The waitlist window is required, with a plain message; the School name is trimmed and can't be blank; footer email/link errors are plain messages, in all 15 languages.
+9. **S11** — GET/PATCH /schools/:id (seen by every member) no longer include the Stripe subscription ids or the platform subscription status. Nothing read them.
+
+### Answers (all the recommendations)
+
+1. **Q1 Join code.** The School page shows the join code with Copy and "Make a new code", which asks first (the old code stops working; joined students stay).
+2. **Q2 Logo and colour.** School details gets a logo upload (new `SCHOOL` upload type, Owner/Manager only, not at a closed School) and a colour picker for `School.accentColor`; both show in the student app (Decision 266).
+3. **Q3 Currency.** A plan with no currency of its own is charged in the School's (Decision 334). While any live, paid plan does, changing the School currency asks first (409 `SCHOOL_CURRENCY_CHANGE_CONFIRM`, then `confirmCurrencyChange: true`), saying how many plans move, and clearing it is refused (409 `SCHOOL_CURRENCY_IN_USE`).
+4. **Q4 Franchise name check.** "Ask to join" first shows "You're asking to join <name>" (GET /schools/:id/franchise-preview, School Owner only, same checks as joining); "Send request" sends it. Showing the Franchise on the School itself stays "both must allow" (Decision 350).
+5. **Q5 Layout.** Visual only: School details is split into three headed groups (School details, Bookings and check-in, Staff and ranks), and the late-cancel setting (Decision 322, School-wide) moves into the Class cancellations card.
+
+### Not changed
+
+- Who can close a School: still any Owner/Manager, until the main-owner role from the Staff work lands.
+- No migration.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "All recommended", after the School settings review (S1–S11, Q1–Q5).
+
+---
+
+## Decision 370 — Main owner and co-owners
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 3), Decision 270 (an owner may make another person an owner of their own School)
+**Numbering:** 367–369 are in use on other open branches; this takes 370.
+
+### Decision
+
+1. **One main owner per School.** `RoleGrant.isMainOwner` marks it, with a database rule that a School has at most one live, flagged owner grant. Whoever creates a School is its main owner. Existing Schools: the migration flags the earliest live owner grant (the product owner's rule). Where no live grant is flagged (the main owner's account was deleted, or rows written outside the API), the earliest live owner grant counts as the main owner, so a School with owners always has one.
+2. **Co-owners.** Every other owner is a co-owner, with the same powers as the main owner except the two below. "Give role" on the Staff page can now give the owner role ("Co-owner"); the API already allowed it (Decision 270).
+3. **Removing owners.** Any owner can remove a co-owner, including themselves, through the existing revoke (`DELETE /users/:userId/role-grants/:id`). Nobody in the School can remove the main owner: that answers `403` with code `MAIN_OWNER` and tells them to contact ULTM8 support. "Remove from School" still ends coach and Branch Staff roles only.
+4. **Handing over.** `POST /schools/:schoolId/main-owner` `{ userId }`: only the main owner, only to a current co-owner, and only with a passcode check (the existing step-up token, `x-step-up-token`, from `POST /auth/step-up/verify`). The former main owner stays an owner, as a co-owner.
+5. **ULTM8 support.** `GET /platform-admin/schools/:id/owners` (any admin tier, audit-logged `VIEW_SCHOOL_OWNERS`) lists the owners. `POST /platform-admin/schools/:id/main-owner` `{ userId, removeFormerMainOwner? }` moves the main owner role to a current co-owner and can end the former main owner's owner role in the same step (Full Admin only, like closing a School; audit-logged `CHANGE_SCHOOL_MAIN_OWNER` with who it moved from and to). Shown as an Owners card on the Platform Admin School page.
+6. **No forced sign-in refresh.** Which owner is main doesn't change anyone's access, and access tokens don't carry it, so Decision 361's trigger skips an update that changes only `isMainOwner` (and Prisma's `updatedAt`).
+
+### Choices made here, not by the product owner
+
+- The support action is Full Admin only, matching the other School-level account changes (close and reactivate).
+- Support can move the main owner role only to someone who is already a co-owner. A School whose only owner has lost their account has no co-owner to move it to, and support can't add an owner here. That case is **[UNRESOLVED]**: not built, for the product owner to decide.
+
+### Recorded by
+
+User (Code), 26–27 Oct 2026, Staff thread (Decision 360 item 3).
+
+## Decision 378 — Front desk: one all-or-nothing check-in for several classes
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F7 · **Follows:** Decision 377 (QR checked on scan, guests one by one)
+
+The product owner asked for the front-desk items whose rules are already decided to be built ("build them", 28 Oct 2026). F7, the handover's recommended single check-in call, comes first because the locked tablet session (F1) uses it.
+
+### Decision
+
+1. **One call for the welcome card's confirm.** `POST /schools/{schoolId}/front-desk/check-ins` `{ studentId, lookupToken?, classIds[], guests?: [{ bookingId, attendeeId }] }`, for staff at the School (Branch Staff only for their Branch's classes and Whole School classes). For each ticked class it books the place where the student has none (a staff booking, with every booking rule: membership, waiver, belt, seats), then checks the student in. Then it checks in the ticked guests.
+2. **All or nothing.** Everything that can be checked first is: the class exists, is not cancelled, check-in is open, the guest is on the student's booking and not already in. Then all of it happens in one transaction. If any item can't be done, nothing is saved: no booking, no credit spent, no check-in.
+3. **The reply says which item stopped it.** It is always `200` with `{ done, classes: [{ classId, ok, bookingId?, code?, message? }], guests: [{ attendeeId, ok, checkedInAt?, code?, message? }] }`. The card shows each reason next to the class's name, in the screen's language.
+4. **How the check-in is recorded doesn't change:** `INSTRUCTOR_SCAN` with a scanned QR's lookup (Decision 377), otherwise `INSTRUCTOR_MANUAL`, with the staff member as `checkedInById`. The per-class `POST /classes/{id}/book` and `POST /classes/{id}/attendance-scan`, and `POST /bookings/{id}/guests/{attendeeId}/check-in`, stay for the other screens.
+
+### Not in this decision
+
+- The School's check-in rules (handover F9) aren't defined yet. When they are, their reasons come back in the same `code`/`message` shape.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.
+
+---
+
+## Decision 379 — A parent books a class for their child, with guests
+
+**Date:** 28 Oct 2026 · **Status:** Approved by product owner (Waivers decision card "How should guests on a child's booking work?": "Build a parent booking screen"; earlier "go" to guests on a parent's booking but not in Kid Mode)
+**Resolves:** Decision 366's open item "Guests on a booking a Guardian makes for a child, or through Kid Mode". No database change.
+
+### Background
+
+The API already let a Guardian book, cancel and join the waitlist for a linked child (`studentId` on the booking, cancel and waitlist requests), and let a booking carry guests on the organizing student's Friend Passes. The Student app had no screen for a parent to book their child, so a parent could not bring guests on a child's booking. Kid Mode (Decision 123) books the child from the parent's device.
+
+### Decision
+
+1. **Parent booking screen in the Student app.** My Minors has a "Book a class" button per child. The screen lists the child's upcoming bookings, lets the parent pick one of the child's Schools, and shows that School's upcoming classes with the same booking row a member uses: book in the child's name, add guests, and join the waitlist for the child when a class is full.
+2. **Guests are paid with the child's own Friend Passes**, as the booking's organizer is the child (SKILL.md §10, unchanged API rule). A pass for this class only is used first, as for members.
+3. **The parent shares each guest's signing link** (Decision 366) after booking and from the child's upcoming bookings, and can cancel the child's booking (with the existing `studentId` cancel path).
+4. **New Guardian reads**, each checking the caller is the child's Guardian (`assertGuardianOfStudent`) and reading under the child's tenant context (Decision 92):
+   - `GET /guardians/me/minors/:studentId/schools`: the Schools the child has a current Student role at (School not archived), by name.
+   - `GET /guardians/me/minors/:studentId/bookings`: the child's Upcoming bookings for classes that haven't ended, soonest first (up to 100), with class title, start and guest count.
+   - `GET /guardians/me/minors/:studentId/friend-passes?schoolId=`: the child's usable Friend Passes at that School.
+   - `GET /guardians/me/minors/:studentId/bookings/:id/guests`: the guests and their links on the child's booking (404 when the booking isn't the child's).
+5. **No guests in Kid Mode.** A Kid Mode booking with guests is refused with `NO_GUESTS_IN_KID_MODE` (403); Kid Mode booking alone is unchanged.
+6. Every new text is translated into all 15 languages, including the new API message.
+
+### What this does NOT resolve
+
+- Per-guest check-in stays with the Check-in work (Decision 377).
+- The class list is the School's public upcoming classes, the same list the Academy page shows a member.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, Waivers thread.
+

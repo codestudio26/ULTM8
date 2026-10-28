@@ -16,6 +16,20 @@ export const guardians = {
     addError: 'Could not add this minor — please try again.',
     addMinor: 'Add minor',
     addAMinor: 'Add a minor',
+    bookAClass: 'Book a class',
+  },
+  /** Decision 379: a parent books classes, with guests, for their child. */
+  childBooking: {
+    /** Screen title; {name} is the child's first name. */
+    title: 'Book for {name}',
+    upcomingTitle: 'Upcoming bookings',
+    noBookings: '{name} has no upcoming bookings.',
+    bookTitle: 'Book a class',
+    noSchools: "{name} isn't a student at any School yet.",
+    noClasses: 'No upcoming classes at this School.',
+    loadError: "Could not load your child's Schools — please try again.",
+    bookingsLoadError: "Could not load your child's bookings — please try again.",
+    classesLoadError: 'Could not load the classes — please try again.',
   },
   minorConsent: {
     loadError: "Failed to load this minor's settings — please try again.",

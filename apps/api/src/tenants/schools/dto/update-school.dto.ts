@@ -1,6 +1,6 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
-import { CreateSchoolDto } from './create-school.dto';
+import { CreateSchoolDto, FOOTER_EMAIL_MESSAGE, FOOTER_URL_MESSAGE, FOOTER_URL_OPTIONS } from './create-school.dto';
 
 const NULLABLE_ON_UPDATE = [
   'mobileNumber',
@@ -117,7 +117,7 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: FOOTER_EMAIL_MESSAGE })
   @MaxLength(254)
   footerContactEmail?: string | null;
 
@@ -131,35 +131,35 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerFacebookUrl?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerInstagramUrl?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerTiktokUrl?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerYoutubeUrl?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'X (formerly Twitter).' })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
-  @IsUrl()
+  @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerTwitterUrl?: string | null;
 
   /** Decision 350 — show the Franchise's name and logo on this School. Shown only
@@ -168,4 +168,12 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsOptional()
   @IsBoolean()
   showFranchiseBranding?: boolean;
+
+  /** School Settings review (Q3) — changing the School's currency while
+   * membership plans without their own currency follow it needs this set to
+   * true; without it the change is refused with SCHOOL_CURRENCY_CHANGE_CONFIRM. */
+  @ApiPropertyOptional({ description: "Confirms a currency change that moves plans without their own currency to the new one." })
+  @IsOptional()
+  @IsBoolean()
+  confirmCurrencyChange?: boolean;
 }

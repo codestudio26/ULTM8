@@ -1,6 +1,13 @@
 import { ConflictException, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { BookingStatus, PrismaClient } from '@prisma/client';
 import { Queue } from 'bullmq';
+
+/**
+ * The bookings that hold a seat: Upcoming, and Completed (checked in, so the
+ * student is in the room). Before, only Upcoming counted, so each check-in freed
+ * a seat for someone else to book (front-desk review CI1, 27 Oct 2026).
+ */
+export const SEAT_HOLDING_STATUSES: { in: BookingStatus[] } = { in: ['UPCOMING', 'COMPLETED'] };
 
 type Tx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -26,8 +33,8 @@ export async function applyCapacityChange(tx: Tx, classId: string, capacity: num
     return waiting;
   }
   const [bookings, guests] = await Promise.all([
-    tx.booking.count({ where: { classId, status: 'UPCOMING' } }),
-    tx.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+    tx.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
+    tx.bookingAttendee.count({ where: { booking: { classId, status: SEAT_HOLDING_STATUSES } } }),
   ]);
   const taken = bookings + guests;
   if (capacity < taken) {

@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "このクラスは満員です。",
       joinWaitlist: "キャンセル待ちに登録",
       waitlistPosition: "キャンセル待ちの{position}番目です。",
+      childWaitlistPosition: "お子さまはキャンセル待ちの{position}番目です。",
       leaveWaitlist: "キャンセル待ちをやめる",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "ゲストを追加",
       remove: "ゲストを減らす",
       passesLeft: "このクラスで使えるフレンドパス：{count}枚",
+      childPassesLeft: "このクラスで使えるお子さまのフレンドパス：{count}枚",
       linksIntro: "クラスの前に免責同意書に署名できるよう、各ゲストにリンクを送ってください。",
       guestNumber: "ゲスト{number}",
       signed: "免責同意書に署名済み：{name}",
@@ -570,6 +572,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "{name}さんの予約",
+      upcomingTitle: "今後の予約",
+      noBookings: "{name}さんの今後の予約はありません。",
+      bookTitle: "クラスを予約",
+      noSchools: "{name}さんはまだどのスクールにも在籍していません。",
+      noClasses: "このスクールには今後のクラスがありません。",
+      loadError: "お子さまのスクールを読み込めませんでした。もう一度お試しください。",
+      bookingsLoadError: "お子さまの予約を読み込めませんでした。もう一度お試しください。",
+      classesLoadError: "クラスを読み込めませんでした。もう一度お試しください。",
+    },
     myMinors: {
       empty: "連携しているお子さまはまだいません。",
       loadError: "お子さまの情報を読み込めませんでした。もう一度お試しください。",
@@ -584,6 +597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "お子さまを追加できませんでした。もう一度お試しください。",
       addMinor: "お子さまを追加",
       addAMinor: "お子さまを追加",
+      bookAClass: "クラスを予約",
     },
     minorConsent: {
       loadError: "お子さまの設定を読み込めませんでした。もう一度お試しください。",

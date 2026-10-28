@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CheckInMethod } from '@prisma/client';
+import { CheckInMethod, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -50,6 +50,9 @@ import { queueReadyCheck } from '../jobs/grading-notifications.types';
  * `qr-attendance-processing` remains a synchronous request handler, not a
  * literal BullMQ job — unchanged from Phase 13's own Decision 93.
  */
+// Same shape PrismaAppService#withTenantContext hands its callback.
+type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -167,7 +170,16 @@ export class AttendanceService {
     await this.tenantAuth.assertStaffAtSchool(instructorId, cls.schoolId, cls.branchId);
 
     let method: CheckInMethod;
-    if (dto.studentToken) {
+    if (dto.lookupToken) {
+      // The QR was checked when it was scanned (deskQrLookup); the lookup only
+      // works for that student, School and staff member.
+      const lookup = this.qrTokenService.verifyDeskLookup(dto.lookupToken);
+      if (lookup.deskStudentId !== dto.studentId || lookup.schoolId !== cls.schoolId || lookup.staffId !== instructorId) {
+        throw new BadRequestException('This scan belongs to a different Student.');
+      }
+      await this.assertCameraConsentNotWithdrawn(dto.studentId);
+      method = 'INSTRUCTOR_SCAN';
+    } else if (dto.studentToken) {
       const tokenStudentId = this.qrTokenService.verifyStudentToken(dto.studentToken);
       if (tokenStudentId !== dto.studentId) {
         throw new BadRequestException('This QR code belongs to a different Student.');
@@ -189,6 +201,70 @@ export class AttendanceService {
     return this.completeBooking(dto.studentId, booking, method, instructorId);
   }
 
+  /** POST /schools/{schoolId}/front-desk/qr-lookups — staff at the desk scan a
+   * Student's app QR. The QR lasts about 20 seconds, too short to tick classes
+   * and confirm, so it's checked here once and the desk gets a lookup token for
+   * five minutes (front-desk check-in review Q2, product owner 28 Oct 2026).
+   * Also says who it is, and refuses a QR of someone who isn't a current
+   * Student here (CI6: before, the desk opened a card with no name). */
+  async deskQrLookup(callerId: string, schoolId: string, studentToken: string) {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const studentId = this.qrTokenService.verifyStudentToken(studentToken);
+    // Read via ultm8_jobs: Branch Staff and coaches can't see every RoleGrant.
+    const enrolled = await this.prismaJobs.roleGrant.findFirst({
+      where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) {
+      throw new NotFoundException({ code: 'NOT_A_STUDENT_HERE', message: "This person isn't a Student at this School." });
+    }
+    await this.assertCameraConsentNotWithdrawn(studentId);
+    const user = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { firstName: true, surname: true, profilePhotoUrl: true } }),
+    );
+    const { token, expiresAt } = this.qrTokenService.signDeskLookup({ deskStudentId: studentId, schoolId, staffId: callerId });
+    return {
+      lookupToken: token,
+      expiresAt: expiresAt.toISOString(),
+      studentId,
+      firstName: user.firstName,
+      surname: user.surname,
+      profilePhotoUrl: user.profilePhotoUrl,
+    };
+  }
+
+  /** POST /bookings/{id}/guests/{attendeeId}/check-in — staff at the desk check
+   * one guest in, when they actually come (Decision 377). The member's own
+   * check-in no longer speaks for their guests. Same check-in window as the
+   * member's; the booking must be Upcoming or already checked in. Recorded on
+   * the guest's seat only: a guest has no account, so nothing is credited
+   * toward grading. Written in the booker's own context, as the member's
+   * check-in is (booking_attendee_write). */
+  async checkInGuest(callerId: string, bookingId: string, attendeeId: string) {
+    const booking = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findUnique({ where: { id: bookingId }, include: { class: true, attendees: { select: { id: true } } } }),
+    );
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, booking.schoolId, booking.branchId);
+    if (!booking.attendees.some((a) => a.id === attendeeId)) {
+      throw new NotFoundException('Guest not found on this booking');
+    }
+    if (booking.status !== 'UPCOMING' && booking.status !== 'COMPLETED') {
+      throw new ConflictException('This booking was cancelled, so its guests can no longer be checked in.');
+    }
+    await this.assertWithinWindow(booking.class);
+    const checkedInAt = new Date();
+    const result = await this.prismaApp.withTenantContext(booking.studentId, (tx) =>
+      tx.bookingAttendee.updateMany({ where: { id: attendeeId, bookingId, checkedInAt: null }, data: { checkedInAt, checkedInById: callerId } }),
+    );
+    if (result.count === 0) {
+      throw new ConflictException('This guest is already checked in.');
+    }
+    return { attendeeId, checkedInAt: checkedInAt.toISOString() };
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -199,7 +275,7 @@ export class AttendanceService {
   // methods (Decision 107) — exempting INSTRUCTOR_MANUAL would turn "just say
   // manual" into an easy bypass of the one anti-fraud/no-show boundary the
   // whole check-in system is built around.
-  private async assertWithinWindow(cls: { schoolId: string; startDate: Date; qrAttendanceEndAt: Date | null; endDate: Date }): Promise<void> {
+  async assertWithinWindow(cls: { schoolId: string; startDate: Date; qrAttendanceEndAt: Date | null; endDate: Date }): Promise<void> {
     const now = new Date();
     // Check-in opens the School's set number of minutes before the Class starts
     // (product owner, 26 Oct 2026; 30 by default). Before this, a Student could be
@@ -226,7 +302,7 @@ export class AttendanceService {
   // Student) has no ConsentRecord at all and must not be blocked by that
   // absence. Unchanged from Phase 13's own reasoning, now shared by both
   // scan() and instructorScan()'s own INSTRUCTOR_SCAN mode.
-  private async assertCameraConsentNotWithdrawn(studentId: string): Promise<void> {
+  async assertCameraConsentNotWithdrawn(studentId: string): Promise<void> {
     const withdrawn = await this.prismaJobs.consentRecord.findFirst({
       where: { studentId, tier: 'CAMERA', status: 'WITHDRAWN' },
       select: { id: true },
@@ -248,36 +324,50 @@ export class AttendanceService {
       // Taken before any row lock, the same as a booking for this Student and
       // Class (lockStudentClass: a booking and a check-in otherwise deadlocked).
       await lockStudentClass(tx, studentId, booking.classId);
-      // Optimistic-concurrency guard, same established pattern as every other
-      // status transition in this codebase — guards against a double-scan
-      // race (any combination of the three methods) or a race against the
-      // no-show sweep.
-      const result = await tx.booking.updateMany({
-        where: { id: booking.id, status: 'UPCOMING' },
-        data: { status: 'COMPLETED', checkInMethod: method, checkedInById },
-      });
-      if (result.count === 0) {
-        throw new ConflictException(
-          'This Booking is no longer Upcoming — it may already have been checked into, cancelled, or marked No-Show.',
-        );
-      }
-
-      // Credit toward the student's next rung in each style the class lists
-      // (roadmap Phase 2b; Decisions 140, 149, 170, 171). This replaces Decision
-      // 90's activities <-> Discipline.name bridge for attendance. Attendance
-      // check-in happens regardless of ranking: a style the student has no rank
-      // in is skipped.
-      await creditAttendance(tx, studentId, booking);
-
-      // Hours trained (Decisions 301 item 1, 306): the class's scheduled
-      // length, per style, as a record only. Separate from the class count
-      // above and never read by grading.
-      await recordCheckInMinutes(tx, studentId, booking);
-
-      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+      return this.completeInTx(tx, studentId, booking, method, checkedInById);
     });
     // The class may have made the student ready to grade (Decision 178).
-    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
+    await this.afterCheckIn(studentId);
     return completed;
+  }
+
+  /** The check-in itself, inside the caller's transaction (in the Student's own
+   * context, after lockStudentClass). completeBooking runs it alone; the front
+   * desk's one-step check-in (Decision 378) runs it for several Classes in one
+   * transaction. Call afterCheckIn once the transaction has committed. */
+  async completeInTx(tx: TenantTx, studentId: string, booking: { id: string; classId: string }, method: CheckInMethod, checkedInById: string | null) {
+    // Optimistic-concurrency guard, same established pattern as every other
+    // status transition in this codebase — guards against a double-scan
+    // race (any combination of the three methods) or a race against the
+    // no-show sweep.
+    const result = await tx.booking.updateMany({
+      where: { id: booking.id, status: 'UPCOMING' },
+      data: { status: 'COMPLETED', checkInMethod: method, checkedInById },
+    });
+    if (result.count === 0) {
+      throw new ConflictException(
+        'This Booking is no longer Upcoming — it may already have been checked into, cancelled, or marked No-Show.',
+      );
+    }
+
+    // Credit toward the student's next rung in each style the class lists
+    // (roadmap Phase 2b; Decisions 140, 149, 170, 171). This replaces Decision
+    // 90's activities <-> Discipline.name bridge for attendance. Attendance
+    // check-in happens regardless of ranking: a style the student has no rank
+    // in is skipped.
+    await creditAttendance(tx, studentId, booking);
+
+    // Hours trained (Decisions 301 item 1, 306): the class's scheduled
+    // length, per style, as a record only. Separate from the class count
+    // above and never read by grading.
+    await recordCheckInMinutes(tx, studentId, booking);
+
+    return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+  }
+
+  /** After a check-in commits: the class may have made the student ready to
+   * grade (Decision 178). */
+  async afterCheckIn(studentId: string): Promise<void> {
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
   }
 }

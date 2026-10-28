@@ -6,6 +6,7 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Guests can only be added by a parent, not in Kid Mode.",
  "Your current passcode is not right.",
  "Choose a new passcode that is different from your current one.",
  "You must be 18 or over to create a School.",
@@ -494,6 +495,15 @@ export const SERVER_MESSAGES: string[] = [
  "Give the closure a reason, e.g. \"Christmas\".",
  "Closure not found",
  "cursor is not valid.",
+ "This booking was cancelled, so its guests can no longer be checked in.",
+ "This guest is already checked in.",
+ "Only a Full Platform Admin may change a School’s main owner.",
+ "This person is already the main owner.",
+ "This person is not a co-owner of this School. They need to be made a co-owner first.",
+ "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.",
+ "You are already the main owner.",
+ "This person is not a co-owner of this School.",
+ "entityId must equal schoolId for entityType SCHOOL.",
 ];
 
 export const SERVER_PATTERNS: string[] = [
@@ -564,6 +574,11 @@ export const SERVER_PATTERNS: string[] = [
   "This style already has a skill called \"{v1}\".",
  "Type the School's name exactly as it is to close it.",
  "Closing a School is not available during an impersonation session (Decision 39).",
+  "School name can't be empty.",
+  "Social links must be full web addresses starting with https://.",
+  "Enter a valid contact email address.",
+  "The waitlist claim window must be a whole number of minutes, at least 1.",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.",
  "This student has already attended this class.",
  "This was just recorded. Check before adding another.",
   "The date range can be at most {v1} days.",
@@ -576,4 +591,9 @@ export const SERVER_PATTERNS: string[] = [
   "This fee is already {v1}.",
   "{v1} must be a valid UUID",
   "A discipline called \"{v1}\" already exists{v2}.",
+ "This person isn't a Student at this School.",
+ "This scan has expired. Ask the Student to show their QR again.",
+ "This scan belongs to a different Student.",
+ "Pick at least one class or guest to check in.",
+ "The same guest was listed more than once.",
 ];

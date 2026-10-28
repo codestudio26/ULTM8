@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, unwrap } from '@ultm8/api-client';
+import { ApiError, translateApiErrorMessage, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
@@ -19,15 +19,20 @@ export function todayWindow(now: Date = new Date()): { startsFrom: string; start
   return { startsFrom: start.toISOString(), startsTo: end.toISOString() };
 }
 
-/** Today's Classes at the School (or one Branch), in start order, without the
- * cancelled ones. The API has no Branch filter, so it's applied here. */
-export function useTodayClasses(schoolId: string | null, branchId: string | null) {
-  const window = useMemo(() => todayWindow(), []);
+/** Today's Classes at the School (or one Branch, with the School-wide ones), in
+ * start order, without the cancelled ones. The API has no Branch filter, so
+ * it's applied here. `now` moves "today" on at midnight, for a tablet left on
+ * overnight (check-in review CI5). */
+export function useTodayClasses(schoolId: string | null, branchId: string | null, now: number) {
+  const day = new Date(now).toDateString();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `day` stands for `now`, so the window moves only at midnight.
+  const window = useMemo(() => todayWindow(new Date(now)), [day]);
   const query = useClasses(schoolId, { ...window, when: 'all', limit: 100 });
   const classes = useMemo(
     () =>
       (query.data?.items ?? [])
-        .filter((c) => !c.cancelledAt && (!branchId || c.branchId === branchId))
+        // A Whole School class (no Branch) is on at every Branch (CI3).
+        .filter((c) => !c.cancelledAt && (!branchId || !c.branchId || c.branchId === branchId))
         .sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [query.data, branchId],
   );
@@ -35,8 +40,9 @@ export function useTodayClasses(schoolId: string | null, branchId: string | null
 }
 
 /** Every booking of today's Classes, read with the same cache key and request
- * as `useClassBookings`, so the roll call and the Class page share it. */
-export function useTodayBookings(classes: ClassResponse[]) {
+ * as `useClassBookings`, so the roll call and the Class page share it.
+ * `ready` once every Class's bookings have loaded. */
+export function useTodayBookings(classes: ClassResponse[]): { byClass: Map<string, BookingResponse[]>; ready: boolean } {
   const results = useQueries({
     queries: classes.map((c) => ({
       queryKey: ['classBookings', c.id],
@@ -50,12 +56,14 @@ export function useTodayBookings(classes: ClassResponse[]) {
   });
   // `results` is a new array every render; when each query last changed is what matters.
   const version = results.map((r) => r.dataUpdatedAt).join(',');
-  return useMemo(() => {
-    const byClass = new Map<string, BookingResponse[]>();
-    classes.forEach((c, i) => byClass.set(c.id, results[i]?.data?.items ?? []));
-    return byClass;
+  const ready = results.every((r) => !r.isPending);
+  const byClass = useMemo(() => {
+    const map = new Map<string, BookingResponse[]>();
+    classes.forEach((c, i) => map.set(c.id, results[i]?.data?.items ?? []));
+    return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` stands for `results`.
   }, [classes, version]);
+  return { byClass, ready };
 }
 
 /** Students whose name matches `term` (two letters or more). */
@@ -80,22 +88,41 @@ export function useMembershipStatus(studentId: string | null, schoolId: string |
   });
 }
 
-/**
- * The student id inside the QR the ULTM8 app shows (`GET /attendance/my-qr-token`,
- * a signed JWT). Read without checking the signature, only to know whose
- * welcome card to open: the API checks the token itself when the check-in is
- * sent. Returns null for anything that isn't one of these tokens.
- */
-export function readStudentQr(token: string): { studentId: string; expiresAt: number } | null {
-  const part = token.split('.')[1];
-  if (!part) return null;
-  try {
-    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
-    if (typeof json?.studentId !== 'string' || typeof json?.exp !== 'number') return null;
-    return { studentId: json.studentId, expiresAt: json.exp * 1000 };
-  } catch {
-    return null;
-  }
+/** Students' waivers at this School, for the welcome card (check-in review Q4). */
+export function useWaiverStatus(studentId: string | null, schoolId: string | null) {
+  return useQuery({
+    queryKey: ['waiverStatus', studentId, schoolId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/students/{id}/waiver-status', { params: { path: { id: studentId! }, query: { schoolId: schoolId! } } })),
+    enabled: !!studentId && !!schoolId,
+  });
+}
+
+/** A scanned app QR lasts about 20 seconds. The API checks it once here and
+ * gives a lookup that checks this student in for five minutes, so ticking
+ * classes isn't a race (check-in review Q2). It also says who it is, and
+ * refuses someone who isn't a student here (CI6). */
+export function useQrLookup(schoolId: string | null) {
+  return useMutation({
+    mutationFn: (studentToken: string) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/qr-lookups', { params: { path: { schoolId: schoolId! } }, body: { studentToken } })),
+  });
+}
+
+/** One booking's guests, with their waiver and whether they're checked in
+ * (Decision 377). */
+export function useBookingGuests(bookingId: string | null) {
+  return useQuery({
+    queryKey: ['bookingGuests', bookingId],
+    queryFn: () => unwrap(apiClient.GET('/v1/bookings/{id}/guests', { params: { path: { id: bookingId! } } })),
+    enabled: !!bookingId,
+  });
+}
+
+/** What the welcome card checks a scanned student in with. */
+export interface QrLookup {
+  lookupToken: string;
+  expiresAt: number;
 }
 
 export class QrExpiredError extends Error {
@@ -104,51 +131,59 @@ export class QrExpiredError extends Error {
   }
 }
 
+/** Why the one-step check-in did nothing: each item that stopped it, with its
+ * reason already in the screen's language. */
+export class DeskCheckInError extends Error {
+  constructor(readonly items: Array<{ classId?: string; attendeeId?: string; message: string }>) {
+    super('desk-check-in-not-done');
+  }
+}
+
 /**
- * Checks one student in to the ticked Classes. Each Class needs a booking: an
- * existing Upcoming one is used, otherwise staff book the place for the
- * student first (`POST /classes/{id}/book`, the staff-on-behalf booking every
- * booking rule still applies to). Then `POST /classes/{id}/attendance-scan`
- * records the check-in: with the scanned QR when there is one (INSTRUCTOR_SCAN),
- * otherwise as staff confirming by name (INSTRUCTOR_MANUAL).
+ * Checks one student in to the ticked Classes and guests in one step
+ * (`POST /schools/{schoolId}/front-desk/check-ins`, Decision 378). The API
+ * books the place first where the student has none (a staff booking, with
+ * every booking rule), records each check-in (INSTRUCTOR_SCAN with the scanned
+ * QR's lookup, otherwise INSTRUCTOR_MANUAL) and checks in the ticked guests.
+ * All or nothing: when one item can't be done, nothing is, and the error says
+ * which items stopped it.
  */
-export function useFrontDeskCheckIn() {
+export function useFrontDeskCheckIn(schoolId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       studentId,
       classIds,
-      bookingsByClass,
       qr,
+      guests,
     }: {
       studentId: string;
       classIds: string[];
-      bookingsByClass: Map<string, BookingResponse[]>;
-      qr: { token: string; expiresAt: number } | null;
+      qr: QrLookup | null;
+      /** Decision 377: the guests ticked at the desk. */
+      guests?: Array<{ bookingId: string; attendeeId: string }>;
     }) => {
-      const done: string[] = [];
-      for (const classId of classIds) {
-        if (qr && qr.expiresAt <= Date.now()) throw new QrExpiredError();
-        const mine = (bookingsByClass.get(classId) ?? []).filter((b) => b.studentId === studentId);
-        if (mine.some((b) => b.status === 'COMPLETED')) {
-          done.push(classId);
-          continue;
-        }
-        if (!mine.some((b) => b.status === 'UPCOMING')) {
-          await unwrap(apiClient.POST('/v1/classes/{id}/book', { params: { path: { id: classId } }, body: { studentId } }));
-        }
-        await unwrap(
-          apiClient.POST('/v1/classes/{id}/attendance-scan', {
-            params: { path: { id: classId } },
-            body: qr ? { studentId, studentToken: qr.token } : { studentId },
-          }),
+      if (qr && qr.expiresAt <= Date.now()) throw new QrExpiredError();
+      const result = await unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/front-desk/check-ins', {
+          params: { path: { schoolId: schoolId! } },
+          body: { studentId, classIds, guests: guests ?? [], ...(qr ? { lookupToken: qr.lookupToken } : {}) },
+        }),
+      );
+      if (!result.done) {
+        const failed = [
+          ...result.classes.filter((c) => !c.ok).map((c) => ({ classId: c.classId, code: c.code, message: c.message })),
+          ...result.guests.filter((g) => !g.ok).map((g) => ({ attendeeId: g.attendeeId, code: g.code, message: g.message })),
+        ];
+        throw new DeskCheckInError(
+          await Promise.all(failed.map(async ({ code, message, ...item }) => ({ ...item, message: await translateApiErrorMessage(409, code ?? 'CONFLICT', message ?? '') }))),
         );
-        done.push(classId);
       }
-      return done;
+      return classIds;
     },
-    onSettled: (_data, _err, { classIds }) => {
+    onSettled: (_data, _err, { classIds, guests }) => {
       classIds.forEach((id) => queryClient.invalidateQueries({ queryKey: ['classBookings', id] }));
+      (guests ?? []).forEach((g) => queryClient.invalidateQueries({ queryKey: ['bookingGuests', g.bookingId] }));
     },
   });
 }
