@@ -2884,6 +2884,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Самостоятельная отметка",
       methodInstructorScan: "Отсканировано вами",
       methodInstructorManual: "Подтверждено вами",
+      methodPersonalCode: "Личный код на ресепшене",
       present: "Присутствует ✓",
       scan: "Сканировать",
       confirmPresent: "Подтвердить присутствие",
@@ -3220,7 +3221,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Введите код ученика",
       kioskTitle: "Введите свой код отметки",
-      hint: "4 цифры, на карте участника и в приложении ULTM8",
+      hint: "Ваш код отметки из {digits} цифр. Если не знаете его, спросите на ресепшене.",
+      staffHint: "Код ученика из {digits} цифр, указан на его странице.",
+      checking: "Проверяем код…",
       soonHint: "Личные коды отметки скоро появятся. Пока используйте Скан или Имя.",
       delete: "Удалить",
       submit: "Отметиться",
@@ -3378,6 +3381,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Не удалось отправить заявку. Обратитесь на ресепшен.",
       sentTitle: "Спасибо",
       sentBody: "Ваша заявка у сотрудников. Вы получите письмо, когда её подтвердят.",
+    },
+    studentCode: {
+      title: "Код отметки",
+      hint: "Вводится на ресепшене, когда нельзя показать QR из приложения. Ученик не может его изменить.",
+      renew: "Выдать новый код",
+      confirm: "Старый код перестанет работать. Выдать новый?",
+      confirmYes: "Да, новый код",
+      failed: "Не удалось выдать новый код. Попробуйте ещё раз.",
     },
     findMe: {
       title: "Найти меня",

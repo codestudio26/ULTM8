@@ -8,6 +8,7 @@ import { FrontDeskSession, FrontDeskSessionGuard } from './front-desk-session.gu
 import { FrontDeskSessionContext, FrontDeskSessionsService } from './front-desk-sessions.service';
 import { FrontDeskKioskService } from './front-desk-kiosk.service';
 import {
+  CheckInCodeLookupDto,
   KioskQrLookupResponseDto,
   KioskSessionInfoDto,
   KioskStudentCardDto,
@@ -21,6 +22,8 @@ import {
 
 // Per session: the tablet's token buckets as `front-desk:<sessionId>` (handover F1, F2).
 const UNLOCK_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker } };
+// A code is short, so wrong guesses are kept few (handover F3: per device).
+const CODE_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
 const SEARCH_THROTTLE = { identity: { limit: 30, ttl: 60_000, getTracker: jwtSubTracker } };
 
 /**
@@ -67,6 +70,14 @@ export class FrontDeskKioskController {
   @Post('qr-lookups')
   qrLookup(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: DeskQrLookupDto) {
     return this.kiosk.qrLookup(session, dto.studentToken);
+  }
+
+  @ApiOkResponse({ type: KioskQrLookupResponseDto })
+  @Throttle(CODE_THROTTLE)
+  @HttpCode(200)
+  @Post('code-lookups')
+  codeLookup(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: CheckInCodeLookupDto) {
+    return this.kiosk.codeLookup(session, dto.code);
   }
 
   @ApiOkResponse({ type: DeskCheckInResponseDto })

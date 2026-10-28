@@ -2802,6 +2802,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Check-in autonomo",
       methodInstructorScan: "Scansionato da te",
       methodInstructorManual: "Confermato da te",
+      methodPersonalCode: "Codice personale alla reception",
       present: "Presente ✓",
       scan: "Scansiona",
       confirmPresent: "Conferma presenza",
@@ -3124,7 +3125,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Inserisci il codice dell'allievo",
       kioskTitle: "Inserisci il tuo codice di check-in",
-      hint: "4 cifre, sulla tessera di iscrizione e nell'app ULTM8",
+      hint: "Il tuo codice di check-in di {digits} cifre. Chiedi alla reception se non lo conosci.",
+      staffHint: "Il codice di {digits} cifre dell'allievo, nella sua pagina allievo.",
+      checking: "Controllo del codice…",
       soonHint: "I codici di check-in personali sono in arrivo. Per ora usa Scansiona o Nome.",
       delete: "Cancella",
       submit: "Fai il check-in",
@@ -3272,6 +3275,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Impossibile inviare la tua iscrizione. Chiedi alla reception.",
       sentTitle: "Grazie",
       sentBody: "La tua iscrizione è stata inviata allo staff. Riceverai un'email quando l'avranno approvata.",
+    },
+    studentCode: {
+      title: "Codice di check-in",
+      hint: "Si digita alla reception quando non si può mostrare il QR dell'app. L'allievo non può cambiarlo.",
+      renew: "Dai un nuovo codice",
+      confirm: "Il vecchio codice smetterà di funzionare. Dare un nuovo codice?",
+      confirmYes: "Sì, nuovo codice",
+      failed: "Impossibile dare un nuovo codice. Riprova.",
     },
     findMe: {
       title: "Trovami",

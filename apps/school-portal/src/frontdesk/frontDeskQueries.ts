@@ -109,6 +109,35 @@ export function useQrLookup(schoolId: string | null) {
   });
 }
 
+/** A student's personal check-in code typed at the desk (Decision 384): who
+ * it is, and a lookup token to check them in with, as for a scanned QR. */
+export function useCodeLookup(schoolId: string | null) {
+  return useMutation({
+    mutationFn: (code: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/code-lookups', { params: { path: { schoolId: schoolId! } }, body: { code } })),
+  });
+}
+
+/** A student's personal check-in code, for their page (Decision 384). Made
+ * the first time it's asked for. */
+export function useStudentCheckInCode(schoolId: string | null, studentId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['studentCheckInCode', schoolId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/check-in-code', { params: { path: { schoolId: schoolId!, studentId: studentId! } } })),
+    enabled: enabled && !!schoolId && !!studentId,
+    retry: false,
+  });
+}
+
+export function useNewStudentCheckInCode(schoolId: string | null, studentId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/check-in-code', { params: { path: { schoolId: schoolId!, studentId: studentId! } } })),
+    onSuccess: (data) => queryClient.setQueryData(['studentCheckInCode', schoolId, studentId], data),
+  });
+}
+
 /** One booking's guests, with their waiver and whether they're checked in
  * (Decision 377). */
 export function useBookingGuests(bookingId: string | null) {
@@ -156,7 +185,8 @@ type DeskCheckInResult = components['schemas']['DeskCheckInResponseDto'];
  * (Decision 378), through `post`: the staff endpoint or the locked tablet's.
  * The API books the place first where the student has none (a staff booking,
  * with every booking rule), records each check-in (INSTRUCTOR_SCAN with the
- * scanned QR's lookup, otherwise INSTRUCTOR_MANUAL) and checks in the ticked
+ * scanned QR's lookup, PERSONAL_CODE with a typed code's, otherwise
+ * INSTRUCTOR_MANUAL) and checks in the ticked
  * guests. All or nothing: when one item can't be done, nothing is, and the
  * error says which items stopped it.
  */
@@ -194,4 +224,9 @@ export function useFrontDeskCheckIn(schoolId: string | null) {
 
 export function errorText(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
+}
+
+/** A typed code that isn't anyone's gets the desk's own friendlier line. */
+export function codeErrorText(err: unknown, notFound: string): string {
+  return err instanceof ApiError && err.code === 'CHECK_IN_CODE_NOT_FOUND' ? notFound : errorText(err, notFound);
 }

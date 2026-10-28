@@ -2802,6 +2802,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Pointage autonome",
       methodInstructorScan: "Scanné par vous",
       methodInstructorManual: "Confirmé par vous",
+      methodPersonalCode: "Code personnel à l'accueil",
       present: "Présent ✓",
       scan: "Scanner",
       confirmPresent: "Confirmer la présence",
@@ -3124,7 +3125,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Saisissez le code de l'élève",
       kioskTitle: "Saisissez votre code de pointage",
-      hint: "4 chiffres, sur la carte d'adhérent et dans l'app ULTM8",
+      hint: "Votre code d'enregistrement à {digits} chiffres. Demandez à l'accueil si vous ne le connaissez pas.",
+      staffHint: "Le code à {digits} chiffres de l'élève, affiché sur sa page élève.",
+      checking: "Vérification du code…",
       soonHint: "Les codes de pointage personnels arrivent bientôt. Pour l'instant, utilisez Scanner ou Nom.",
       delete: "Effacer",
       submit: "Pointer",
@@ -3272,6 +3275,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Impossible d'envoyer votre inscription. Veuillez demander à l'accueil.",
       sentTitle: "Merci",
       sentBody: "Votre inscription a été transmise à l'équipe. Vous recevrez un e-mail une fois qu'elle sera validée.",
+    },
+    studentCode: {
+      title: "Code d'enregistrement",
+      hint: "Saisi à l'accueil quand le QR de l'app ne peut pas être montré. L'élève ne peut pas le changer.",
+      renew: "Donner un nouveau code",
+      confirm: "L'ancien code ne fonctionnera plus. Donner un nouveau code ?",
+      confirmYes: "Oui, nouveau code",
+      failed: "Impossible de donner un nouveau code. Veuillez réessayer.",
     },
     findMe: {
       title: "Me retrouver",

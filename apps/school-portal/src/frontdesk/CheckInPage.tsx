@@ -6,7 +6,8 @@ import { useBranches } from '../branches/branchQueries';
 import { StudentsTabs } from '../students/StudentsTabs';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
-import { errorText, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
+import { codeErrorText, errorText, useCodeLookup, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
+import { useSchool } from '../schools/schoolQueries';
 import {
   ClassList,
   CodePad,
@@ -43,6 +44,9 @@ export function CheckInPage() {
   const today = useTodayClasses(schoolId, branchId || null, now);
   const { byClass: bookingsByClass, ready: bookingsReady } = useTodayBookings(today.classes);
   const qrLookup = useQrLookup(schoolId);
+  const codeLookup = useCodeLookup(schoolId);
+  const school = useSchool(schoolId);
+  const codeDigits = school.data?.checkInCodeDigits === 6 ? 6 : 4;
 
   const [method, setMethod] = useState<CheckInMethod>('scan');
   const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
@@ -135,7 +139,24 @@ export function CheckInPage() {
                   }}
                 />
               ) : method === 'code' ? (
-                <CodePad title={t('frontDesk.code.staffTitle')} onCode={() => undefined} />
+                <CodePad
+                  title={t('frontDesk.code.staffTitle')}
+                  hint={t('frontDesk.code.staffHint', { digits: codeDigits })}
+                  length={codeDigits}
+                  onCode={(code) => {
+                    setMsg({ kind: 'ok', text: t('frontDesk.code.checking') });
+                    codeLookup.mutate(code, {
+                      onSuccess: (r) => {
+                        setMsg(null);
+                        setWho({
+                          student: { id: r.studentId, firstName: r.firstName, surname: r.surname, profilePhotoUrl: r.profilePhotoUrl },
+                          qr: { lookupToken: r.lookupToken, expiresAt: Date.parse(r.expiresAt) },
+                        });
+                      },
+                      onError: (err) => setMsg({ kind: 'bad', text: codeErrorText(err, t('frontDesk.code.notFound')) }),
+                    });
+                  }}
+                />
               ) : (
                 <NameSearch schoolId={schoolId} onPick={(student) => setWho({ student, qr: null })} />
               )}

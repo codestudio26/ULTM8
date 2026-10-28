@@ -28,7 +28,7 @@ export class InstructorScanDto {
   @MinLength(1)
   studentToken?: string;
 
-  @ApiPropertyOptional({ description: 'From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN.' })
+  @ApiPropertyOptional({ description: 'From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN (PERSONAL_CODE for a lookup from .../code-lookups).' })
   @IsOptional()
   @IsString()
   @MinLength(1)

@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "受付セッションが見つからないか、すでに終了しています。",
   "This front-desk session has ended. Ask a member of staff to start it again.": "この受付セッションは終了しました。スタッフに再開してもらってください。",
   "That staff code isn't right.": "そのスタッフコードは正しくありません。",
+  "That check-in code isn't right.": "そのチェックインコードは正しくありません。",
   "This class is at another Branch.": "このクラスは別の支店です。",
   "The tablet's day is out of range. Check the tablet's date and time.": "タブレットの日付が範囲外です。タブレットの日付と時刻を確認してください。",
   "This booking was cancelled, so its guests can no longer be checked in.": "この予約はキャンセルされたため、ゲストのチェックインはできません。",

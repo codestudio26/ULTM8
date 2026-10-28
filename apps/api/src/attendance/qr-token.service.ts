@@ -20,6 +20,9 @@ interface DeskLookupPayload {
   deskStudentId: string;
   schoolId: string;
   staffId: string;
+  /** 'CODE': the student typed their personal check-in code (Decision 384),
+   * recorded as PERSONAL_CODE. Absent: they showed their app QR. */
+  via?: 'CODE';
 }
 
 /**
@@ -155,8 +158,8 @@ export class QrTokenService {
 
   verifyDeskLookup(token: string): DeskLookupPayload {
     try {
-      const { deskStudentId, schoolId, staffId } = this.deskJwt.verify<DeskLookupPayload>(token);
-      return { deskStudentId, schoolId, staffId };
+      const { deskStudentId, schoolId, staffId, via } = this.deskJwt.verify<DeskLookupPayload>(token);
+      return { deskStudentId, schoolId, staffId, ...(via === 'CODE' ? { via } : {}) };
     } catch {
       throw new BadRequestException({ code: 'QR_LOOKUP_EXPIRED', message: 'This scan has expired. Ask the Student to show their QR again.' });
     }

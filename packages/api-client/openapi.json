@@ -14914,6 +14914,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/front-desk/code-lookups": {
+      "post": {
+        "operationId": "FrontDeskSessionsController_codeLookup",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInCodeLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskQrLookupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/session": {
       "get": {
         "operationId": "FrontDeskKioskController_info",
@@ -15110,6 +15155,42 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/code-lookups": {
+      "post": {
+        "operationId": "FrontDeskKioskController_codeLookup",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInCodeLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskQrLookupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/check-ins": {
       "post": {
         "operationId": "FrontDeskKioskController_checkIn",
@@ -15167,6 +15248,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KioskUnlockedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/check-in-code": {
+      "get": {
+        "operationId": "StudentCheckInCodesController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCheckInCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentCheckInCodesController_renew",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCheckInCodeDto"
                 }
               }
             }
@@ -27123,7 +27288,7 @@
           },
           "lookupToken": {
             "type": "string",
-            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN."
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN (PERSONAL_CODE for a lookup from .../code-lookups)."
           }
         },
         "required": [
@@ -27211,7 +27376,7 @@
           },
           "lookupToken": {
             "type": "string",
-            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL."
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR (recorded as INSTRUCTOR_SCAN), or from .../code-lookups when they typed their personal code (PERSONAL_CODE). Without it, INSTRUCTOR_MANUAL."
           },
           "classIds": {
             "description": "Classes to check the Student into (booked first where needed). Up to 10.",
@@ -29089,6 +29254,18 @@
           "code"
         ]
       },
+      "CheckInCodeLookupDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "A Student's personal check-in code (4 or 6 digits)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
       "KioskSessionInfoDto": {
         "type": "object",
         "properties": {
@@ -29469,6 +29646,18 @@
         },
         "required": [
           "unlockedBy"
+        ]
+      },
+      "StudentCheckInCodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The personal check-in code, typed at the front desk in place of the app QR."
+          }
+        },
+        "required": [
+          "code"
         ]
       }
     }

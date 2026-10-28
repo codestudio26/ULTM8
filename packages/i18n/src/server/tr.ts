@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "Resepsiyon oturumu bulunamadı veya zaten bitti.",
   "This front-desk session has ended. Ask a member of staff to start it again.": "Bu resepsiyon oturumu bitti. Bir personelden yeniden başlatmasını isteyin.",
   "That staff code isn't right.": "Bu personel kodu doğru değil.",
+  "That check-in code isn't right.": "Bu giriş kodu doğru değil.",
   "This class is at another Branch.": "Bu ders başka bir Şubede.",
   "The tablet's day is out of range. Check the tablet's date and time.": "Tabletin günü aralık dışında. Tabletin tarih ve saatini kontrol edin.",
   "This booking was cancelled, so its guests can no longer be checked in.": "Bu rezervasyon iptal edildi, bu yüzden misafirlerinin girişi artık yapılamaz.",

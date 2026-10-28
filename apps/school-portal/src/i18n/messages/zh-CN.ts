@@ -2761,6 +2761,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "自助签到",
       methodInstructorScan: "由你扫描",
       methodInstructorManual: "由你确认",
+      methodPersonalCode: "前台个人签到码",
       present: "出席 ✓",
       scan: "扫描",
       confirmPresent: "确认出席",
@@ -3081,7 +3082,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "输入学员的签到码",
       kioskTitle: "输入你的签到码",
-      hint: "4 位数字，见会员卡和 ULTM8 应用",
+      hint: "你的{digits}位签到码。如果不知道，请到前台咨询。",
+      staffHint: "学员的{digits}位签到码，显示在学员页面上。",
+      checking: "正在核对签到码…",
       soonHint: "个人签到码即将推出。目前请使用扫码或姓名。",
       delete: "删除",
       submit: "签到",
@@ -3229,6 +3232,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "报名提交失败。请到前台咨询。",
       sentTitle: "谢谢",
       sentBody: "你的报名已交给工作人员。审核通过后你会收到一封邮件。",
+    },
+    studentCode: {
+      title: "签到码",
+      hint: "无法出示应用二维码时，在前台输入。学员不能自行更改。",
+      renew: "发放新签到码",
+      confirm: "旧签到码将失效。要发放新的吗？",
+      confirmYes: "是，发放新码",
+      failed: "无法发放新签到码，请重试。",
     },
     findMe: {
       title: "找到我",

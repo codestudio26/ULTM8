@@ -2802,6 +2802,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Kendi girişi",
       methodInstructorScan: "Sizin tarafınızdan tarandı",
       methodInstructorManual: "Sizin tarafınızdan onaylandı",
+      methodPersonalCode: "Resepsiyonda kişisel kod",
       present: "Burada ✓",
       scan: "Tara",
       confirmPresent: "Katılımı onayla",
@@ -3124,7 +3125,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Öğrencinin kodunu girin",
       kioskTitle: "Giriş kodunuzu girin",
-      hint: "4 haneli, üyelik kartında ve ULTM8 uygulamasında",
+      hint: "{digits} haneli giriş kodunuz. Bilmiyorsanız resepsiyona sorun.",
+      staffHint: "Öğrencinin {digits} haneli kodu, öğrenci sayfasında görünür.",
+      checking: "Kod kontrol ediliyor…",
       soonHint: "Kişisel giriş kodları yakında geliyor. Şimdilik Tara veya Ad'ı kullanın.",
       delete: "Sil",
       submit: "Giriş yap",
@@ -3272,6 +3275,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Kaydınız gönderilemedi. Lütfen resepsiyona sorun.",
       sentTitle: "Teşekkürler",
       sentBody: "Kaydınız personele iletildi. Onaylandığında bir e-posta alacaksınız.",
+    },
+    studentCode: {
+      title: "Giriş kodu",
+      hint: "Uygulamadaki QR gösterilemediğinde resepsiyonda girilir. Öğrenci bunu değiştiremez.",
+      renew: "Yeni kod ver",
+      confirm: "Eski kod artık çalışmayacak. Yeni kod verilsin mi?",
+      confirmYes: "Evet, yeni kod",
+      failed: "Yeni kod verilemedi. Lütfen tekrar deneyin.",
     },
     findMe: {
       title: "Beni bul",
