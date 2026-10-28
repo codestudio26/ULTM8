@@ -513,6 +513,7 @@ model User {
   bookingsOverridden                Booking[]                   @relation("BookingOverriddenBy")
   bookingsResolved                  Booking[]                   @relation("BookingResolvedBy")
   bookingsCheckedIn                 Booking[]                   @relation("BookingCheckedInBy")
+  bookingAttendeesCheckedIn         BookingAttendee[]           @relation("BookingAttendeeCheckedInBy")
   bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
   waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
@@ -710,16 +711,16 @@ model RoleGrant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Two partial unique indexes live in the migrations only (Prisma's DSL has
+  // no partial/expression index): RoleGrant_one_active_student_per_school, and
+  // RoleGrant_one_live_per_scope — at most one live grant per user, role and
+  // exact franchise/school/branch scope (20261212000000).
 
   // Composite indexes leading with the tenant column (Decision 30).
   @@index([schoolId, revokedAt])
   @@index([franchiseId, revokedAt])
   @@index([branchId, revokedAt])
   @@index([userId])
-  // Two partial unique indexes live in the migrations only (Prisma's DSL has
-  // no partial/expression index): RoleGrant_one_active_student_per_school, and
-  // RoleGrant_one_live_per_scope — at most one live grant per user, role and
-  // exact franchise/school/branch scope (20261212000000).
 }
 
 // ---------------------------------------------------------------------------
@@ -3788,6 +3789,13 @@ model BookingAttendee {
   // the token from the seat id, so only the hash is kept.
   guestTokenHash        String?                @unique
   guestWaiverSignatures GuestWaiverSignature[]
+
+  // Decision 377: each guest is checked in on their own at the desk, when they
+  // actually come. Null = not checked in (the member's own check-in no longer
+  // speaks for their guests). Who did it, as Booking.checkedInById.
+  checkedInAt   DateTime?
+  checkedInById String?
+  checkedInBy   User?     @relation("BookingAttendeeCheckedInBy", fields: [checkedInById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -16,6 +16,7 @@ import {
   errorText,
   useFrontDeskCheckIn,
   useMembershipStatus,
+  useBookingGuests,
   useStudentSearch,
   useWaiverStatus,
   type QrLookup,
@@ -75,7 +76,8 @@ export function SoonTag() {
 export function ClassCard({ cls, bookings, coach, next }: { cls: ClassResponse; bookings: BookingResponse[]; coach?: string; next: boolean }) {
   const t = useT();
   const taken = seatsTaken(bookings);
-  const checkedIn = bookings.filter((b) => b.status === 'COMPLETED').length;
+  // Guests count once checked in on their own (Decision 377).
+  const checkedIn = bookings.reduce((n, b) => n + (b.status === 'COMPLETED' ? 1 : 0) + (b.attendees ?? []).filter((a) => a.checkedInAt).length, 0);
   const left = cls.capacity == null ? null : Math.max(0, cls.capacity - taken);
   return (
     <div className={`fd-class${next ? ' fd-class--next' : ''}`} data-testid="fd-class">
@@ -360,13 +362,19 @@ function WelcomeCardBody({
   const progress = (eligibility.data?.items ?? []).map((i) => i.progressBreakdown?.classes).find((c) => c && c.required > 0);
   const tag = status.data ? STATUS_TAG[status.data.status] : null;
   const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  // Guests are ticked one by one, only those who came (Decision 377).
+  const [guestPicks, setGuestPicks] = useState<Array<{ bookingId: string; attendeeId: string }>>([]);
+  const toggleGuest = (bookingId: string, attendeeId: string) =>
+    setGuestPicks((p) => (p.some((g) => g.attendeeId === attendeeId) ? p.filter((g) => g.attendeeId !== attendeeId) : [...p, { bookingId, attendeeId }]));
+  const myBooking = (c: ClassResponse) =>
+    (bookingsByClass.get(c.id) ?? []).find((b) => b.studentId === student.id && (b.status === 'UPCOMING' || b.status === 'COMPLETED'));
   // Only Classes that can still be checked into right now are sent.
   const sendable = picks.filter((id) => open.some((c) => c.id === id && canTick(c)));
 
   function confirm() {
     setError(null);
     checkIn.mutate(
-      { studentId: student.id, classIds: sendable, bookingsByClass, qr },
+      { studentId: student.id, classIds: sendable, bookingsByClass, qr, guests: guestPicks },
       {
         onSuccess: (ids) => {
           queryClient.invalidateQueries({ queryKey: ['membershipStatus', student.id, schoolId] });
@@ -412,8 +420,10 @@ function WelcomeCardBody({
             const booked = mineIn(c, 'UPCOMING');
             const notYet = !already && !canTick(c);
             const on = picks.includes(c.id) && !notYet;
+            const booking = myBooking(c);
             return (
-              <button key={c.id} type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already || notYet}>
+              <React.Fragment key={c.id}>
+              <button type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already || notYet}>
                 <span className="fd-tick__box" aria-hidden="true">
                   {on || already ? '✓' : ''}
                 </span>
@@ -431,6 +441,10 @@ function WelcomeCardBody({
                         : t('frontDesk.welcome.willBook')}
                 </span>
               </button>
+              {booking && (booking.attendees ?? []).length > 0 ? (
+                <GuestTicks bookingId={booking.id} disabled={notYet} picked={guestPicks.map((g) => g.attendeeId)} onToggle={(attendeeId) => toggleGuest(booking.id, attendeeId)} />
+              ) : null}
+              </React.Fragment>
             );
           })}
         </div>
@@ -448,10 +462,50 @@ function WelcomeCardBody({
         <button type="button" className="fd-pill fd-pill--line" onClick={onBack}>
           {short ? t('frontDesk.welcome.notMe') : t('frontDesk.welcome.notThisStudent')}
         </button>
-        <button type="button" className="fd-pill fd-pill--go" onClick={confirm} disabled={sendable.length === 0 || checkIn.isPending}>
-          {sendable.length ? t('frontDesk.welcome.confirm', { count: sendable.length }) : t('frontDesk.welcome.tickOne')}
+        <button type="button" className="fd-pill fd-pill--go" onClick={confirm} disabled={sendable.length + guestPicks.length === 0 || checkIn.isPending}>
+          {sendable.length && guestPicks.length
+            ? `${t('frontDesk.welcome.confirm', { count: sendable.length })} + ${t('frontDesk.welcome.guestCount', { count: guestPicks.length })}`
+            : sendable.length
+              ? t('frontDesk.welcome.confirm', { count: sendable.length })
+              : guestPicks.length
+                ? t('frontDesk.welcome.confirmGuests', { count: guestPicks.length })
+                : t('frontDesk.welcome.tickOne')}
         </button>
       </div>
+    </div>
+  );
+}
+
+/** A booking's guests under its class on the welcome card, each with their own
+ * tick and waiver (Decision 377). A guest has no account: they're named once
+ * they've signed their waiver, otherwise "Guest 1", "Guest 2"… */
+function GuestTicks({ bookingId, disabled, picked, onToggle }: { bookingId: string; disabled: boolean; picked: string[]; onToggle: (attendeeId: string) => void }) {
+  const t = useT();
+  const { data } = useBookingGuests(bookingId);
+  if (!data) return null;
+  return (
+    <div className="fd-guests" data-testid="fd-guests">
+      {data.guests.map((g, i) => {
+        const inAlready = !!g.checkedInAt;
+        const on = inAlready || picked.includes(g.attendeeId);
+        return (
+          <button key={g.attendeeId} type="button" className="fd-tick fd-tick--guest" aria-pressed={on} disabled={disabled || inAlready} onClick={() => onToggle(g.attendeeId)}>
+            <span className="fd-tick__box" aria-hidden="true">
+              {on ? '✓' : ''}
+            </span>
+            <span className="fd-tick__name">{g.guestFullName ?? t('frontDesk.welcome.guestN', { n: i + 1 })}</span>
+            <span className="fd-tick__meta">
+              {inAlready
+                ? t('frontDesk.welcome.alreadyIn')
+                : g.waiverStatus === 'SIGNED'
+                  ? t('frontDesk.welcome.guestWaiverSigned')
+                  : g.waiverStatus === 'UNSIGNED'
+                    ? t('frontDesk.welcome.guestWaiverUnsigned')
+                    : t('frontDesk.welcome.guest')}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

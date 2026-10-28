@@ -230,6 +230,38 @@ export class AttendanceService {
     };
   }
 
+  /** POST /bookings/{id}/guests/{attendeeId}/check-in — staff at the desk check
+   * one guest in, when they actually come (Decision 377). The member's own
+   * check-in no longer speaks for their guests. Same check-in window as the
+   * member's; the booking must be Upcoming or already checked in. Recorded on
+   * the guest's seat only: a guest has no account, so nothing is credited
+   * toward grading. Written in the booker's own context, as the member's
+   * check-in is (booking_attendee_write). */
+  async checkInGuest(callerId: string, bookingId: string, attendeeId: string) {
+    const booking = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findUnique({ where: { id: bookingId }, include: { class: true, attendees: { select: { id: true } } } }),
+    );
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, booking.schoolId, booking.branchId);
+    if (!booking.attendees.some((a) => a.id === attendeeId)) {
+      throw new NotFoundException('Guest not found on this booking');
+    }
+    if (booking.status !== 'UPCOMING' && booking.status !== 'COMPLETED') {
+      throw new ConflictException('This booking was cancelled, so its guests can no longer be checked in.');
+    }
+    await this.assertWithinWindow(booking.class);
+    const checkedInAt = new Date();
+    const result = await this.prismaApp.withTenantContext(booking.studentId, (tx) =>
+      tx.bookingAttendee.updateMany({ where: { id: attendeeId, bookingId, checkedInAt: null }, data: { checkedInAt, checkedInById: callerId } }),
+    );
+    if (result.count === 0) {
+      throw new ConflictException('This guest is already checked in.');
+    }
+    return { attendeeId, checkedInAt: checkedInAt.toISOString() };
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------

@@ -3151,6 +3151,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "Não sou eu",
       notThisStudent: "Não é este aluno",
       tickOne: "Marque uma aula",
+      guest: "Convidado",
+      guestN: "Convidado {n}",
+      guestWaiverSigned: "Termo assinado",
+      guestWaiverUnsigned: "Termo não assinado",
+      guestCount: { one: "{count} convidado", other: "{count} convidados" },
+      confirmGuests: { one: "Fazer check-in de {count} convidado", other: "Fazer check-in de {count} convidados" },
       confirm: { one: "Fazer check-in em {count} aula", other: "Fazer check-in em {count} aulas" },
     },
     recent: {

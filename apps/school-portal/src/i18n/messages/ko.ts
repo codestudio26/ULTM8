@@ -3108,6 +3108,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "제가 아니에요",
       notThisStudent: "이 수련생이 아님",
       tickOne: "수업을 선택하세요",
+      guest: "게스트",
+      guestN: "게스트 {n}",
+      guestWaiverSigned: "동의서 서명 완료",
+      guestWaiverUnsigned: "동의서 미서명",
+      guestCount: { other: "게스트 {count}명" },
+      confirmGuests: { other: "게스트 {count}명 출석 체크" },
       confirm: { other: "수업 {count}개 출석 체크" },
     },
     recent: {

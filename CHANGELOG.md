@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Guests are checked in one by one at the desk** (Decision 377) — the
+  welcome card lists each guest under the member's class with their waiver
+  status; staff tick the guests who came, and each guest's check-in is
+  recorded. Needs migration `20261215000000_guest_check_in`.
 - **Staff page: main owner and co-owners** (Decision 370) — every School has
   one main owner; other owners are co-owners. "Give role" can now make someone
   a co-owner. Any owner can remove a co-owner, but nobody in the School can

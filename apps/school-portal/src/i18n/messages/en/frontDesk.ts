@@ -74,6 +74,12 @@ export const frontDesk = {
     notMe: 'Not me',
     notThisStudent: 'Not this student',
     tickOne: 'Tick a class',
+    guest: 'Guest',
+    guestN: 'Guest {n}',
+    guestWaiverSigned: 'Waiver signed',
+    guestWaiverUnsigned: 'Waiver not signed',
+    guestCount: { one: '{count} guest', other: '{count} guests' },
+    confirmGuests: { one: 'Check in {count} guest', other: 'Check in {count} guests' },
     confirm: { one: 'Check in to {count} class', other: 'Check in to {count} classes' },
   },
   recent: {

@@ -110,6 +110,9 @@ export class BookingGuestDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   guestFullName!: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true, description: 'When the guest was checked in at the desk (Decision 377); null if not yet.' })
+  checkedInAt!: string | null;
 }
 
 export class BookingGuestsDto {

@@ -3339,6 +3339,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "لست أنا",
       notThisStudent: "ليس هذا الطالب",
       tickOne: "اختر حصة",
+      guest: "ضيف",
+      guestN: "الضيف {n}",
+      guestWaiverSigned: "الإقرار موقّع",
+      guestWaiverUnsigned: "الإقرار غير موقّع",
+      guestCount: { zero: "{count} ضيف", one: "ضيف واحد", two: "ضيفان", few: "{count} ضيوف", many: "{count} ضيفًا", other: "{count} ضيف" },
+      confirmGuests: { zero: "تسجيل حضور {count} ضيف", one: "تسجيل حضور ضيف واحد", two: "تسجيل حضور ضيفين", few: "تسجيل حضور {count} ضيوف", many: "تسجيل حضور {count} ضيفًا", other: "تسجيل حضور {count} ضيف" },
       confirm: {
         zero: "تسجيل الحضور في {count} حصة",
         one: "تسجيل الحضور في حصة واحدة",

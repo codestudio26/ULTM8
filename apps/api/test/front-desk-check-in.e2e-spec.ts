@@ -5,6 +5,7 @@
  * - Q2: POST /schools/{schoolId}/front-desk/qr-lookups checks a scanned app QR
  *   once and gives the desk a lookup token to check that Student in with.
  * - Q4: GET /students/{id}/waiver-status for the welcome card.
+ * - Decision 377: each guest on a booking is checked in on their own.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -98,6 +99,7 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.trainingLog.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.bookingAttendee.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.booking.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
@@ -183,5 +185,56 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
 
     const byStudent = await http().get(`/v1/students/${users.ana.id}/waiver-status`).query({ schoolId: school.id }).set('Authorization', `Bearer ${tokens.ben}`);
     expect(byStudent.status).toBe(403);
+  });
+
+  it('Decision 377: a guest is checked in on their own, once, only by staff, and not by the member\'s check-in', async () => {
+    const cls = await classNow(10);
+    const m = await member(users.ana.id);
+    const booking = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ana.id, classId: cls.id, schoolId: school.id, sourceMembershipId: m.id } });
+    // A is older, so the guest list (by createdAt) is A then B.
+    const guestA = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: school.id, membershipId: m.id, createdAt: new Date(Date.now() - 1000) } });
+    const guestB = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: school.id, membershipId: m.id } });
+
+    const host = await http().post(`/v1/classes/${cls.id}/attendance-scan`).set('Authorization', `Bearer ${tokens.coach}`).send({ studentId: users.ana.id });
+    expect(host.status).toBe(201);
+    expect(host.body.attendees.every((a: { checkedInAt: string | null }) => a.checkedInAt === null)).toBe(true);
+
+    const byStudent = await http().post(`/v1/bookings/${booking.id}/guests/${guestA.id}/check-in`).set('Authorization', `Bearer ${tokens.ana}`);
+    expect(byStudent.status).toBe(403);
+
+    const res = await http().post(`/v1/bookings/${booking.id}/guests/${guestA.id}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(res.status).toBe(201);
+    expect(res.body.attendeeId).toBe(guestA.id);
+    const again = await http().post(`/v1/bookings/${booking.id}/guests/${guestA.id}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(again.status).toBe(409);
+
+    const rows = await superuser.bookingAttendee.findMany({ where: { bookingId: booking.id } });
+    expect(rows.find((r) => r.id === guestA.id)?.checkedInById).toBe(users.coach.id);
+    expect(rows.find((r) => r.id === guestB.id)?.checkedInAt).toBeNull();
+
+    const guests = await http().get(`/v1/bookings/${booking.id}/guests`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(guests.status).toBe(200);
+    expect(guests.body.guests.map((g: { checkedInAt: string | null }) => g.checkedInAt !== null)).toEqual([true, false]);
+
+    const notOnBooking = await http().post(`/v1/bookings/${booking.id}/guests/${randomUUID()}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(notOnBooking.status).toBe(404);
+  });
+
+  it('Decision 377: a guest can\'t be checked in before check-in opens or on a cancelled booking', async () => {
+    const later = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Evening', startDate: new Date(Date.now() + 180 * MIN), endDate: new Date(Date.now() + 240 * MIN) },
+    });
+    const m = await member(users.ben.id);
+    const booking = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ben.id, classId: later.id, schoolId: school.id, sourceMembershipId: m.id } });
+    const guest = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: school.id, membershipId: m.id } });
+    const early = await http().post(`/v1/bookings/${booking.id}/guests/${guest.id}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(early.status).toBe(400);
+    expect(early.body.error.code).toBe('CHECK_IN_NOT_OPEN');
+
+    const now = await classNow();
+    const cancelled = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ben.id, classId: now.id, schoolId: school.id, sourceMembershipId: m.id, status: 'CANCELLED' } });
+    const cancelledGuest = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: cancelled.id, schoolId: school.id, membershipId: m.id } });
+    const res = await http().post(`/v1/bookings/${cancelled.id}/guests/${cancelledGuest.id}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
+    expect(res.status).toBe(409);
   });
 });

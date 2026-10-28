@@ -172,11 +172,11 @@ describeIfDb('Guest waivers (Waivers Q9)', () => {
     expect(stored.guestTokenHash).toBe(hashGuestWaiverToken(tokenOf(link)));
 
     const mine = await http().get(`/v1/bookings/${bookingId}/guests`).set(auth(booker));
-    expect(mine.body).toEqual({ bookingId, waiverRequired: true, guests: [{ attendeeId, link, waiverStatus: 'UNSIGNED', guestFullName: null }] });
+    expect(mine.body).toEqual({ bookingId, waiverRequired: true, guests: [{ attendeeId, link, waiverStatus: 'UNSIGNED', guestFullName: null, checkedInAt: null }] });
     expect((await http().get(`/v1/bookings/${bookingId}/guests`).set(auth(owner))).body.guests[0].link).toBe(link);
     const coachView = await http().get(`/v1/bookings/${bookingId}/guests`).set(auth(coach));
     expect(coachView.status).toBe(200);
-    expect(coachView.body.guests[0]).toEqual({ attendeeId, link: null, waiverStatus: 'UNSIGNED', guestFullName: null });
+    expect(coachView.body.guests[0]).toEqual({ attendeeId, link: null, waiverStatus: 'UNSIGNED', guestFullName: null, checkedInAt: null });
     expect((await http().get(`/v1/bookings/${bookingId}/guests`).set(auth(other))).status).toBe(404);
 
     const classView = await http().get(`/v1/classes/${cls.id}/guest-waivers`).set(auth(coach));

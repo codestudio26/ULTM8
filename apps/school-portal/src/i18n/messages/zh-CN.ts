@@ -3108,6 +3108,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "不是我",
       notThisStudent: "不是这位学员",
       tickOne: "勾选一节课",
+      guest: "访客",
+      guestN: "访客 {n}",
+      guestWaiverSigned: "已签署免责声明",
+      guestWaiverUnsigned: "未签署免责声明",
+      guestCount: { other: "{count} 位访客" },
+      confirmGuests: { other: "为 {count} 位访客签到" },
       confirm: { other: "签到 {count} 节课" },
     },
     recent: {

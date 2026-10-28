@@ -19,6 +19,10 @@ export class BookingAttendeeResponseDto {
 
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   resolvedAt!: string | null;
+
+  /** Decision 377: when this guest was checked in at the desk; null if not yet. */
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  checkedInAt!: string | null;
 }
 
 export class BookingResponseDto {
