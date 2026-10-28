@@ -1,5 +1,10 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "現在のパスコードが正しくありません。",
+  "Choose a new passcode that is different from your current one.": "現在のパスコードとは異なる新しいパスコードを選んでください。",
+  "You must be 18 or over to create a School.": "スクールを作成するには18歳以上である必要があります。",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMSがまだ設定されていないため、確認コードを送信できません。後でもう一度お試しください。",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "電話番号がまだ確認されていません。確認してアカウントの作成を完了してください。",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "この操作ができるのは、スクールのオーナー/マネージャーまたはその支店のスタッフのみです。",
   "This class is already cancelled.": "このクラスはすでにキャンセルされています。",
   "This class has already finished.": "このクラスはすでに終了しています。",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "保存済みカードでのお支払いには Stripe が設定されたスクールが必要です。このスクールは現金／銀行振込のみに設定されています。",
   "PaymentAccount has no owner": "決済アカウントに所有者がいません",
   "PaymentAccount not found": "決済アカウントが見つかりません",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "電話番号が確認されていません。POST /auth/otp/verify で登録を完了してください",
   "Platform Admin authentication is not fully configured.": "プラットフォーム管理者の認証が完全には設定されていません。",
   "Playlist not found": "プレイリストが見つかりません",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "昇級は上位方向にのみ可能です。より高い帯またはストライプを選択してください。下げる場合は降級を使用してください。",

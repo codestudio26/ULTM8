@@ -197,6 +197,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "모든 띠, 모든 예약을 한곳에서.",
       newSchool: "새 도장인가요? {link}",
       forgotPasscode: "패스코드를 잊으셨나요?",
+      phoneVerified: "전화번호가 인증되었습니다. 이제 로그인할 수 있습니다.",
+      verifyPhoneLink: "전화번호 인증하기",
     },
     forgot: {
       title: "패스코드 재설정",
@@ -2935,6 +2937,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "내 프로필",
     loadFailed: "프로필을 불러올 수 없습니다.",
     signInNote: "이메일과 전화번호는 로그인에 사용되므로 여기서 변경할 수 없습니다.",
+    removePhoto: "사진 삭제",
+    changePasscode: {
+      title: "패스코드 변경",
+      current: "현재 패스코드",
+      hint: "변경하면 다른 기기에서 로그아웃됩니다.",
+      submit: "패스코드 변경",
+      changed: "패스코드가 변경되었습니다. 다른 기기에서 로그아웃되었습니다.",
+    },
   },
   address: {
     legend: "주소",

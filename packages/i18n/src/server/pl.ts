@@ -1,5 +1,10 @@
 /** Polish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Twój obecny kod dostępu jest nieprawidłowy.",
+  "Choose a new passcode that is different from your current one.": "Wybierz nowy kod dostępu, inny niż obecny.",
+  "You must be 18 or over to create a School.": "Aby utworzyć Szkołę, musisz mieć co najmniej 18 lat.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMS-y nie są jeszcze skonfigurowane, więc nie możemy wysłać kodu weryfikacyjnego. Spróbuj ponownie później.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Twój numer telefonu nie jest jeszcze zweryfikowany. Zweryfikuj go, aby dokończyć zakładanie konta.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Może to zrobić tylko Właściciel/Menedżer Szkoły lub Personel tego oddziału.",
   "This class is already cancelled.": "Te zajęcia są już odwołane.",
   "This class has already finished.": "Te zajęcia już się zakończyły.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Płatność zapisaną kartą wymaga szkoły skonfigurowanej w Stripe — ta szkoła przyjmuje tylko gotówkę lub przelew bankowy.",
   "PaymentAccount has no owner": "PaymentAccount nie ma właściciela",
   "PaymentAccount not found": "Nie znaleziono PaymentAccount",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Numer telefonu nie został zweryfikowany — dokończ rejestrację przez POST /auth/otp/verify",
   "Platform Admin authentication is not fully configured.": "Uwierzytelnianie administratorów platformy nie jest w pełni skonfigurowane.",
   "Playlist not found": "Nie znaleziono playlisty",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "Awans działa tylko w górę — wybierz wyższy pas lub belkę. Aby zejść niżej, użyj obniżenia stopnia.",

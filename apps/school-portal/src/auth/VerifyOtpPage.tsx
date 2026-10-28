@@ -22,7 +22,7 @@ export function VerifyOtpPage() {
     setSubmitting(true);
     try {
       await unwrap(apiClient.POST('/v1/auth/otp/verify', { body: { phone, code } }));
-      navigate('/login');
+      navigate('/login', { state: { phoneVerified: true } });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {

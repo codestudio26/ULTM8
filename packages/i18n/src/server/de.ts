@@ -1,5 +1,10 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "Dein aktueller Zugangscode ist nicht richtig.",
+  "Choose a new passcode that is different from your current one.": "Wähle einen neuen Zugangscode, der sich von deinem aktuellen unterscheidet.",
+  "You must be 18 or over to create a School.": "Du musst mindestens 18 Jahre alt sein, um eine Schule zu erstellen.",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "SMS sind noch nicht eingerichtet, daher können wir keinen Bestätigungscode senden. Bitte versuche es später erneut.",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "Deine Telefonnummer ist noch nicht bestätigt. Bestätige sie, um dein Konto fertig einzurichten.",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Das dürfen nur der Inhaber/Manager der Schule oder die Mitarbeiter dieser Filiale.",
   "This class is already cancelled.": "Dieser Kurs ist bereits abgesagt.",
   "This class has already finished.": "Dieser Kurs ist bereits vorbei.",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "Die Zahlung mit gespeicherter Karte erfordert eine Schule mit Stripe — diese Schule akzeptiert nur Barzahlung/Banküberweisung.",
   "PaymentAccount has no owner": "Die PaymentAccount hat keinen Inhaber",
   "PaymentAccount not found": "PaymentAccount nicht gefunden",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "Telefonnummer nicht bestätigt — schließe die Registrierung über POST /auth/otp/verify ab",
   "Platform Admin authentication is not fully configured.": "Die Anmeldung für Plattformadministratoren ist nicht vollständig eingerichtet.",
   "Playlist not found": "Playlist nicht gefunden",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "Eine Beförderung geht nur nach oben; wähle einen höheren Gürtel oder Streifen. Nutze die Rückstufung, um nach unten zu gehen.",
