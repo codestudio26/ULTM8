@@ -139,37 +139,32 @@ export class DeskCheckInError extends Error {
   }
 }
 
+/** What the welcome card sends to check one student in. */
+export interface DeskCheckInVars {
+  studentId: string;
+  classIds: string[];
+  qr: QrLookup | null;
+  /** Decision 377: the guests ticked at the desk. */
+  guests?: Array<{ bookingId: string; attendeeId: string }>;
+}
+
+type DeskCheckInBody = components['schemas']['DeskCheckInDto'];
+type DeskCheckInResult = components['schemas']['DeskCheckInResponseDto'];
+
 /**
  * Checks one student in to the ticked Classes and guests in one step
- * (`POST /schools/{schoolId}/front-desk/check-ins`, Decision 378). The API
- * books the place first where the student has none (a staff booking, with
- * every booking rule), records each check-in (INSTRUCTOR_SCAN with the scanned
- * QR's lookup, otherwise INSTRUCTOR_MANUAL) and checks in the ticked guests.
- * All or nothing: when one item can't be done, nothing is, and the error says
- * which items stopped it.
+ * (Decision 378), through `post`: the staff endpoint or the locked tablet's.
+ * The API books the place first where the student has none (a staff booking,
+ * with every booking rule), records each check-in (INSTRUCTOR_SCAN with the
+ * scanned QR's lookup, otherwise INSTRUCTOR_MANUAL) and checks in the ticked
+ * guests. All or nothing: when one item can't be done, nothing is, and the
+ * error says which items stopped it.
  */
-export function useFrontDeskCheckIn(schoolId: string | null) {
-  const queryClient = useQueryClient();
+export function useDeskCheckIn(post: (body: DeskCheckInBody) => Promise<DeskCheckInResult>, onSettled: (vars: DeskCheckInVars) => void) {
   return useMutation({
-    mutationFn: async ({
-      studentId,
-      classIds,
-      qr,
-      guests,
-    }: {
-      studentId: string;
-      classIds: string[];
-      qr: QrLookup | null;
-      /** Decision 377: the guests ticked at the desk. */
-      guests?: Array<{ bookingId: string; attendeeId: string }>;
-    }) => {
+    mutationFn: async ({ studentId, classIds, qr, guests }: DeskCheckInVars) => {
       if (qr && qr.expiresAt <= Date.now()) throw new QrExpiredError();
-      const result = await unwrap(
-        apiClient.POST('/v1/schools/{schoolId}/front-desk/check-ins', {
-          params: { path: { schoolId: schoolId! } },
-          body: { studentId, classIds, guests: guests ?? [], ...(qr ? { lookupToken: qr.lookupToken } : {}) },
-        }),
-      );
+      const result = await post({ studentId, classIds, guests: guests ?? [], ...(qr ? { lookupToken: qr.lookupToken } : {}) });
       if (!result.done) {
         const failed = [
           ...result.classes.filter((c) => !c.ok).map((c) => ({ classId: c.classId, code: c.code, message: c.message })),
@@ -181,11 +176,20 @@ export function useFrontDeskCheckIn(schoolId: string | null) {
       }
       return classIds;
     },
-    onSettled: (_data, _err, { classIds, guests }) => {
+    onSettled: (_data, _err, vars) => onSettled(vars),
+  });
+}
+
+/** The staff screens' check-in (`POST /schools/{schoolId}/front-desk/check-ins`). */
+export function useFrontDeskCheckIn(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useDeskCheckIn(
+    (body) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/check-ins', { params: { path: { schoolId: schoolId! } }, body })),
+    ({ classIds, guests }) => {
       classIds.forEach((id) => queryClient.invalidateQueries({ queryKey: ['classBookings', id] }));
       (guests ?? []).forEach((g) => queryClient.invalidateQueries({ queryKey: ['bookingGuests', g.bookingId] }));
     },
-  });
+  );
 }
 
 export function errorText(err: unknown, fallback: string): string {

@@ -396,7 +396,7 @@ export class BookingsService {
       // I/O inside a transaction, same discipline every other Stripe-calling
       // write in this codebase follows) — see the try/catch below. The fee
       // stays tied to the refund cut-off itself (Decision 322), and Decision 291
-      // lets the owner switch it off. Decision 381: the Class's own charge
+      // lets the owner switch it off. Decision 389: the Class's own charge
       // first; a Class with none falls back to the charge on the plan the
       // Booking used. One fee per Booking, never both.
       if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {

@@ -35,8 +35,10 @@ test('the owner makes someone a co-owner, then hands them the main owner role af
   await page.goto('/staff');
 
   await expect(listRow(page, ownerName).getByText('Main owner')).toBeVisible();
-  // The main owner has no remove action on their own owner role.
-  await expect(listRow(page, ownerName).getByRole('button', { name: `Actions for ${ownerName}` })).toHaveCount(0);
+  // The main owner has no remove action on their own owner role (only "Edit details").
+  await listRow(page, ownerName).getByRole('button', { name: `Actions for ${ownerName}` }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Edit details']);
+  await page.keyboard.press('Escape');
 
   await giveCard(page).getByLabel('Email').fill(cara.email);
   await page.getByRole('button', { name: 'Find' }).click();
@@ -63,7 +65,8 @@ test('the owner makes someone a co-owner, then hands them the main owner role af
   await expect(listRow(page, ownerName).getByText('Co-owner')).toBeVisible();
   expect((await db.roleGrant.findFirstOrThrow({ where: { userId: cara.id, role: 'SCHOOL_OWNER_MANAGER' } })).isMainOwner).toBe(true);
   // Now a co-owner, they can't hand over or remove the new main owner.
-  await expect(listRow(page, 'Cara Partner').getByRole('button', { name: 'Actions for Cara Partner' })).toHaveCount(0);
+  await listRow(page, 'Cara Partner').getByRole('button', { name: 'Actions for Cara Partner' }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Edit details']);
 });
 
 test('an owner removes a co-owner after confirming', async ({ page }) => {

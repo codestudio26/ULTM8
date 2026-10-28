@@ -9,7 +9,7 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { PaymentsService } from '../src/payments/payments.service';
 
 /**
- * Decision 381 — a late cancellation charges the Class's own cancellation
+ * Decision 389 — a late cancellation charges the Class's own cancellation
  * charge, or, when the Class has none, the charge on the plan the Booking
  * used. One fee per Booking. Stripe's off-session charge is stubbed; the rest
  * runs against a real Postgres.
@@ -28,7 +28,7 @@ if (!hasDb) {
 
 const HOUR = 60 * 60 * 1000;
 
-describeIfDb('Late-cancellation fee from the plan (Decision 381)', () => {
+describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

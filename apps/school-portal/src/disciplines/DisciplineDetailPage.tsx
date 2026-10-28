@@ -4,7 +4,7 @@ import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Tabl
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useOwnedSchoolIds } from '../auth/AuthContext';
-import { useDiscipline } from './disciplineQueries';
+import { useCanManageDisciplines, useDiscipline } from './disciplineQueries';
 import { useCreateSkill, useDeleteSkill, useReorderSkills, useSkills, useUpdateSkill, type SkillResponse } from '../skills/skillQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { SkillFormModal } from '../skills/SkillFormModal';
@@ -22,7 +22,9 @@ import { useT } from '../i18n/I18nProvider';
  * Decision 309: read-only for coaches and Branch Staff, and for everyone
  * while the style is archived. Skills are in the owner's order and show which
  * rungs require them and how many lessons teach them; the owner also sees
- * the students on each belt. */
+ * the students on each belt. Decision 383: Branch Staff the owner ticked "Can
+ * manage disciplines" for edit it like the owner, except grade prices, and
+ * still don't see the students. */
 export function DisciplineDetailPage() {
   const t = useT();
   const { id } = useParams<{ id: string }>();
@@ -32,7 +34,8 @@ export function DisciplineDetailPage() {
   const { data: rankData, isLoading: ranksLoading, error: ranksError } = useRanks(disciplineId);
   const ownedSchoolIds = useOwnedSchoolIds();
   const isOwner = !!discipline && ownedSchoolIds.includes(discipline.schoolId);
-  const canEdit = isOwner && !discipline?.archivedAt;
+  const canManage = useCanManageDisciplines(discipline?.schoolId);
+  const canEdit = canManage && !discipline?.archivedAt;
   const createSkill = useCreateSkill(disciplineId ?? '');
   const reorderSkills = useReorderSkills(disciplineId ?? '');
   const [creatingSkill, setCreatingSkill] = useState(false);
@@ -92,7 +95,7 @@ export function DisciplineDetailPage() {
         <div style={{ marginBottom: 16 }}>
           <Badge variant="default">{t('disciplines.list.archived')}</Badge> <span className="ultm8-field__hint">{t('disciplines.detail.archivedNote')}</span>
         </div>
-      ) : !isOwner ? (
+      ) : !canManage ? (
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
           {t('disciplines.detail.readOnlyNote')}
         </p>
@@ -159,7 +162,7 @@ export function DisciplineDetailPage() {
         </Card>
       </div>
 
-      {discipline ? <LadderSection discipline={discipline} skills={skills} ranks={ranks} readOnly={!canEdit} showHolders={isOwner} /> : null}
+      {discipline ? <LadderSection discipline={discipline} skills={skills} ranks={ranks} readOnly={!canEdit} showHolders={isOwner} canSetPrices={isOwner} /> : null}
 
       {discipline && isOwner ? <StudentsSection disciplineId={discipline.id} ranks={ranks} /> : null}
 

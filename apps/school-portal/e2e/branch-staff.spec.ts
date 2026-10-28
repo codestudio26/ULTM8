@@ -40,7 +40,7 @@ test('with "Can invite coaches" they invite to their own branches only', async (
   await page.goto('/coach');
   await page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' }).click();
   await expect(page.getByRole('heading', { name: 'Invite coaches' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Who can invite coaches' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'What Branch Staff can do' })).toHaveCount(0);
 
   const branch = page.getByLabel('Branch');
   await expect(branch.locator('option')).toHaveText(['Select a branch…', 'North']);

@@ -1,6 +1,6 @@
 import { lateCancellationFee } from './late-cancellation-fee';
 
-describe('lateCancellationFee (Decision 381)', () => {
+describe('lateCancellationFee (Decision 389)', () => {
   it("charges the Class's own fee, even when the plan has one too", () => {
     expect(lateCancellationFee(500, 900)).toBe(500);
   });

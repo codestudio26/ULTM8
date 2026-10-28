@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { addPerson, addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addPerson, addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Disciplines review (Decisions 308, 309), against the real API: class types
  * edited as a list (a rename carries over), archiving a style, the skills'
  * context columns and the students list, and the read-only page for coaches.
  * Then the leftovers (Decision 310): a student's rank in an archived style,
- * and students who left the School.
+ * and students who left the School. Then Decision 383: Branch Staff the owner
+ * lets manage disciplines, and deleting an archived style permanently.
  */
 let s: GradingSchool;
 
@@ -143,4 +144,43 @@ test('a student who left is not counted or listed on the style (Decision 310)', 
   await expect(page.getByText('Lea Left')).toHaveCount(0);
   await page.goto('/disciplines');
   await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: '1', exact: true })).toBeVisible();
+});
+
+test('the owner lets a Branch Staff member manage disciplines (Decision 383)', async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  await page.goto('/staff');
+  const tick = page.getByLabel('Bea Desk can manage disciplines');
+  await expect(tick).not.toBeChecked();
+  await tick.check();
+  await expect(tick).toBeEnabled(); // saved
+  await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canManageDisciplines).toBe(true);
+  // The other switch stays off.
+  await expect(page.getByLabel('Bea Desk can invite coaches')).not.toBeChecked();
+
+  // Signed in as them (the later sign-in wins), the page is theirs to edit.
+  await signIn(page, staff.token);
+  await page.goto('/disciplines');
+  await expect(page.getByRole('button', { name: 'Add discipline' })).toBeVisible();
+  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Skills and belts of BJJ' }).click();
+  await expect(page.getByRole('button', { name: 'Add skill' })).toBeVisible();
+  await expect(page.getByText('Only the School owner can change them', { exact: false })).toHaveCount(0);
+  // They still don't see who trains the style.
+  await expect(page.getByRole('heading', { name: /^Students \(/ })).toHaveCount(0);
+
+  // An archived style nobody uses can be deleted permanently.
+  await page.goto('/disciplines');
+  await page.getByRole('button', { name: 'Add discipline' }).click();
+  const add = page.getByRole('dialog', { name: 'Add discipline' });
+  await add.getByLabel('Discipline name').fill('Old Karate');
+  await add.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Archive Old Karate' }).click();
+  await page.getByRole('dialog', { name: 'Archive Old Karate?' }).getByRole('button', { name: 'Archive' }).click();
+  await page.getByLabel('Show archived').check();
+  const row = page.getByRole('row', { name: /Old Karate/ });
+  await expect(row.getByRole('button', { name: 'Delete Old Karate' })).toHaveText('Delete permanently');
+  await row.getByRole('button', { name: 'Delete Old Karate' }).click();
+  await page.getByRole('dialog', { name: 'Delete Old Karate?' }).getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('row', { name: /Old Karate/ })).toHaveCount(0);
+  expect(await db.discipline.findFirst({ where: { schoolId: s.schoolId, name: 'Old Karate' } })).toBeNull();
 });

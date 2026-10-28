@@ -292,11 +292,15 @@ export class CoachInvitesService {
         where: { userId: callerId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
         select: { role: true, branchId: true },
       });
-      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, canInviteCoaches: true, branchIds: [] };
-      const permission = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canInviteCoaches: true } });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, canInviteCoaches: true, canManageDisciplines: true, branchIds: [] };
+      const permission = await tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId: callerId } },
+        select: { canInviteCoaches: true, canManageDisciplines: true },
+      });
       const branchIds = [...new Set(grants.map((g) => g.branchId).filter((id): id is string => !!id))];
       const canInviteCoaches = !!permission?.canInviteCoaches && branchIds.length > 0;
-      return { isOwner: false, canInviteCoaches, branchIds: canInviteCoaches ? branchIds : [] };
+      const canManageDisciplines = !!permission?.canManageDisciplines && grants.some((g) => g.role === 'BRANCH_STAFF');
+      return { isOwner: false, canInviteCoaches, canManageDisciplines, branchIds: canInviteCoaches ? branchIds : [] };
     });
   }
 
@@ -310,36 +314,46 @@ export class CoachInvitesService {
     const byUser = new Map<string, string[]>();
     for (const g of grants) byUser.set(g.userId, [...(byUser.get(g.userId) ?? []), ...(g.branchId ? [g.branchId] : [])]);
     const names = await resolveUserNames(this.prismaAuth, [...byUser.keys()]);
-    const allowed = new Map(permissions.map((p) => [p.userId, p.canInviteCoaches]));
+    const byPerson = new Map(permissions.map((p) => [p.userId, p]));
     const items = [...byUser.entries()].map(([userId, branchIds]) => ({
       userId,
       firstName: names.get(userId)?.firstName ?? '',
       surname: names.get(userId)?.surname ?? '',
       branchIds,
-      canInviteCoaches: allowed.get(userId) ?? false,
+      canInviteCoaches: byPerson.get(userId)?.canInviteCoaches ?? false,
+      canManageDisciplines: byPerson.get(userId)?.canManageDisciplines ?? false,
     }));
     items.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`));
     return { items };
   }
 
-  /** Give or take "Can invite coaches". Owner only; Branch Staff only. */
-  async setStaffPermission(callerId: string, schoolId: string, userId: string, canInviteCoaches: boolean) {
+  /** Give or take "Can invite coaches" or "Can manage disciplines" (Decision
+   * 383). Owner only; Branch Staff only. A switch left out keeps its value. */
+  async setStaffPermission(callerId: string, schoolId: string, userId: string, change: { canInviteCoaches?: boolean; canManageDisciplines?: boolean }) {
+    const { canInviteCoaches, canManageDisciplines } = change;
+    if (canInviteCoaches === undefined && canManageDisciplines === undefined) {
+      throw new BadRequestException('Send canInviteCoaches, canManageDisciplines or both.');
+    }
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const isStaff = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
     );
     if (!isStaff) {
-      throw new BadRequestException('"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches (Spec 55 §8.2).');
+      throw new BadRequestException(
+        canInviteCoaches === undefined
+          ? '"Can manage disciplines" is for Branch Staff only.'
+          : '"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches (Spec 55 §8.2).',
+      );
     }
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
-        create: { id: randomUUID(), schoolId, userId, canInviteCoaches, grantedById: callerId },
-        update: { canInviteCoaches, grantedById: callerId },
+        create: { id: randomUUID(), schoolId, userId, canInviteCoaches: canInviteCoaches ?? false, canManageDisciplines: canManageDisciplines ?? false, grantedById: callerId },
+        update: { canInviteCoaches, canManageDisciplines, grantedById: callerId },
       }),
     );
-    if (!canInviteCoaches) await this.cancelOpenInvitesFrom(callerId, schoolId, userId);
+    if (canInviteCoaches === false) await this.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return (await this.listStaffPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
   }
 

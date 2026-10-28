@@ -6,10 +6,11 @@ import {
   useCancelCoachInvite,
   useCoachInvites,
   useSendCoachInvite,
-  useSetCanInviteCoaches,
+  useSetStaffPermission,
   useStaffPermissions,
   type CoachInvite,
   type StaffPermission,
+  type StaffSwitch,
 } from './coachInviteQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -160,27 +161,38 @@ export function CoachInvitesSection({
   );
 }
 
-/** "Can invite coaches", per Branch Staff member, for their own branches.
- * Coaches can't be given it (Spec 55 §8.2). */
+/** The owner's switches per Branch Staff member: "Can invite coaches" to
+ * their own branches, and "Can manage disciplines" (Decision 383), both off
+ * until ticked. Coaches can't be given them (Spec 55 §8.2). */
 function InviterPermissions({ schoolId, branchName }: { schoolId: string; branchName: (id: string | null) => string }) {
   const t = useT();
   const staff = useStaffPermissions(schoolId);
-  const setAllowed = useSetCanInviteCoaches(schoolId);
+  const setAllowed = useSetStaffPermission(schoolId);
   const [error, setError] = useState<string | null>(null);
-  // Shows the new state at once; it goes back if saving fails.
+  // Shows the new state at once; it goes back if saving fails. Keyed by
+  // person and switch.
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
-  async function toggle(person: StaffPermission, canInviteCoaches: boolean) {
+  async function toggle(person: StaffPermission, field: StaffSwitch, on: boolean) {
+    const key = `${person.userId}:${field}`;
     setError(null);
-    setSaving((m) => ({ ...m, [person.userId]: canInviteCoaches }));
+    setSaving((m) => ({ ...m, [key]: on }));
     try {
-      await setAllowed.mutateAsync({ userId: person.userId, canInviteCoaches });
+      await setAllowed.mutateAsync({ userId: person.userId, field, on });
     } catch (err) {
       setError(errorText(err, t('roleGrants.permissions.saveFailed')));
     } finally {
-      setSaving(({ [person.userId]: _done, ...rest }) => rest);
+      setSaving(({ [key]: _done, ...rest }) => rest);
     }
   }
+  const tick = (p: StaffPermission, field: StaffSwitch, label: string) => (
+    <Checkbox
+      label={label}
+      checked={saving[`${p.userId}:${field}`] ?? p[field]}
+      disabled={`${p.userId}:${field}` in saving}
+      onChange={(e) => toggle(p, field, e.target.checked)}
+    />
+  );
 
   return (
     <Card className="ultm8-field">
@@ -208,14 +220,12 @@ function InviterPermissions({ schoolId, branchName }: { schoolId: string; branch
             {
               key: 'allowed',
               header: t('roleGrants.permissions.columnAllowed'),
-              render: (p) => (
-                <Checkbox
-                  label={t('roleGrants.permissions.checkboxLabel', { name: `${p.firstName} ${p.surname}` })}
-                  checked={saving[p.userId] ?? p.canInviteCoaches}
-                  disabled={p.userId in saving}
-                  onChange={(e) => toggle(p, e.target.checked)}
-                />
-              ),
+              render: (p) => tick(p, 'canInviteCoaches', t('roleGrants.permissions.checkboxLabel', { name: `${p.firstName} ${p.surname}` })),
+            },
+            {
+              key: 'disciplines',
+              header: t('roleGrants.permissions.columnDisciplines'),
+              render: (p) => tick(p, 'canManageDisciplines', t('roleGrants.permissions.disciplinesCheckboxLabel', { name: `${p.firstName} ${p.surname}` })),
             },
           ]}
         />

@@ -15,11 +15,38 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Memberships: the plan's cancellation charge is now taken** (Decision 381,
+- **Memberships: the plan's cancellation charge is now taken** (Decision 389,
   no migration) — when a student cancels a class too late and the class has no
   cancellation charge of its own, the charge set on their membership plan is
   taken from their saved card, the same way a class's charge already is. One
   fee per cancellation, never both.
+- **Front desk: a locked tablet, left with your own staff code** (Decision
+  380) — starting front-desk mode signs you out of the device, so it holds no
+  staff login; it shows only its Branch's classes and short names, and only
+  check-in and sign-up work on it. Leaving takes a staff member's own code
+  (shown on the start screen and the Check-in page, with "Get a new code").
+  The Check-in page lists tablets in front-desk mode and can end one. New
+  School setting: check-in code length (4 or 6 digits). Needs migration
+  `20261216000000_front_desk_sessions`.
+- **Disciplines: Branch Staff the owner allows can manage styles** (Decision
+  383) — a new "Can manage disciplines" switch per Branch Staff member on the
+  Staff page, off by default. With it on, they edit styles, belts and skills
+  like the owner, with every safety check covering the whole School; grade
+  prices and the students list stay the owner's. An archived style nobody
+  uses shows "Delete permanently". Migration
+  `20261217000000_staff_manage_disciplines`.
+- **Translations review** — 83 newer API error messages (desk sales, cancelling
+  a Subscription, promotion fees, timetable breaks and closures, waitlist, staff
+  removal) are now translated into all 14 languages, so a non-English screen
+  shows the real reason instead of the generic one. Eleven of them are reworded
+  in English too, without field names or API paths ("Leave the number of
+  classes empty" instead of "omit classesIncluded"). Mixed terms made consistent:
+  Korean uses 수련생 for Student throughout, the Friend Pass has one name in
+  Portuguese (BR), Spanish, French, Russian, Chinese and Arabic, Japanese and
+  Russian name Activities one way, and Italian calls a Class "Corso" in
+  Cancellations. The Arabic booked count on the Dashboard has all its plural
+  forms. New tests fail CI when a screen text or an API error message is missing
+  in any language, or a plural form is missing.
 - **Front desk: one-step check-in** (Decision 378) — the welcome card's
   confirm now books, checks in and checks in the ticked guests in one go. If
   one class can't be done (full, not open yet, no membership…), nothing is
@@ -81,6 +108,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: display name and work phone** (Decision 381) — an owner can
+  set the name and work phone the School uses for a staff member ("Edit
+  details" in the person's menu). The Staff list shows them first, with the
+  person's own account name and phone underneath, and search finds the
+  display name too. The person's own account (real name, login email,
+  personal phone) never changes. Needs the migration
+  `20261216000000_staff_details`.
 - **Staff page: main owner and co-owners** (Decision 370) — every School has
   one main owner; other owners are co-owners. "Give role" can now make someone
   a co-owner. Any owner can remove a co-owner, but nobody in the School can

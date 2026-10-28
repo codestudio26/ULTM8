@@ -20,11 +20,12 @@ type Holder = { studentId: string; firstName: string; surname: string };
  * order, each with its rungs. Belts are reordered by dragging or with ↑/↓ and saved after a
  * confirmation that lists the students on the belts that move; their rung
  * stays the same, only its place in the ladder changes. Add and edit open the
- * belt editor. Owner only, like every ladder edit.
+ * belt editor. The owner, or Branch Staff who manage disciplines (Decision 383).
  *
  * `readOnly` (Decision 309): coaches, Branch Staff and an archived style see
  * the ladder without any edit controls. `showHolders`: the student counts,
- * which only the owner may read.
+ * which only the owner may read. `canSetPrices`: grade prices, which only the
+ * owner sets (Branch Staff who manage disciplines don't, Decision 383).
  */
 export function LadderSection({
   discipline,
@@ -32,12 +33,14 @@ export function LadderSection({
   ranks,
   readOnly = false,
   showHolders = true,
+  canSetPrices = true,
 }: {
   discipline: DisciplineResponse;
   skills: SkillResponse[];
   ranks: RankResponse[];
   readOnly?: boolean;
   showHolders?: boolean;
+  canSetPrices?: boolean;
 }) {
   const holdersQuery = useRungHolders(showHolders ? discipline.id : null);
   const reorder = useReorderRanks(discipline.id);
@@ -49,8 +52,9 @@ export function LadderSection({
   const [editing, setEditing] = useState<RankResponse | null>(null);
   const [duplicating, setDuplicating] = useState<RankResponse | null>(null);
   // Prices per grade show only while the School's promotion fee is on, and only to the owner (Decision 307).
-  const feeSettings = usePromotionFeeSettings(readOnly ? null : discipline.schoolId);
-  const fee = !readOnly && feeSettings.data?.promotionFeeEnabled ? { currency: feeSettings.data.currency ?? null } : null;
+  const priced = !readOnly && canSetPrices;
+  const feeSettings = usePromotionFeeSettings(priced ? discipline.schoolId : null);
+  const fee = priced && feeSettings.data?.promotionFeeEnabled ? { currency: feeSettings.data.currency ?? null } : null;
   const [deleting, setDeleting] = useState<RankResponse | null>(null);
   const deleteRank = useDeleteRank(discipline.id);
   // Decision 226 — reversible alternative to Delete. Shown INLINE (badged),
