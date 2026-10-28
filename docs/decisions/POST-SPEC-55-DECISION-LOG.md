@@ -6216,3 +6216,64 @@ User (Code), 28 Oct 2026: "yes, build the per-IP limit change", to the proposal 
 ### Recorded by
 
 User (Code), 28 Oct 2026, on the decision cards: "Fix all 10 in one PR", "Leave until v1.3" (Exit), "Check QR once on scan", "Tick each guest separately", "Only waiver status now".
+
+---
+
+## Decision 368 — School settings page review: 11 fixes, join code, School logo and colour, currency guard, Franchise name check
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision (fixes and Q1–Q5, "All recommended") · **Builds on:** Decisions 257 (footer), 266 (join code, School colour), 291/292 (cancellation settings), 322 (late cancel), 334 (plan currency), 350/352 (Franchise branding and join requests), 364 (School self-close) · **Number note:** 367 is taken by the Dashboard review (PR #347).
+
+### Fixes
+
+1. **S1** — Switching School in the header now starts every card on the School page afresh. Before, the Class cancellations and Footer cards kept the first School's values, and saving wrote them onto the second School.
+2. **S2** — Saving one card no longer wipes what's typed but unsaved in the School details card.
+3. **S3** — The no-show fee (School and Branch) is typed in normal units ("10.50"), not hundredths, with the currency shown; a wrong amount says so.
+4. **S4** — A closed School's page is read-only: the closed notice sits at the top; forms are disabled; join code, Franchise actions and Close School are hidden.
+5. **S5** — Footer social links must start with http(s)://. The portal adds https:// when it's missing; the API refuses links without it.
+6. **S6** — See Q3.
+7. **S7** — A load error shows the error; a non-owner opening /school is told the page is for School Owners (both used to spin for ever).
+8. **S8, S9, S10** — The waitlist window is required, with a plain message; the School name is trimmed and can't be blank; footer email/link errors are plain messages, in all 15 languages.
+9. **S11** — GET/PATCH /schools/:id (seen by every member) no longer include the Stripe subscription ids or the platform subscription status. Nothing read them.
+
+### Answers (all the recommendations)
+
+1. **Q1 Join code.** The School page shows the join code with Copy and "Make a new code", which asks first (the old code stops working; joined students stay).
+2. **Q2 Logo and colour.** School details gets a logo upload (new `SCHOOL` upload type, Owner/Manager only, not at a closed School) and a colour picker for `School.accentColor`; both show in the student app (Decision 266).
+3. **Q3 Currency.** A plan with no currency of its own is charged in the School's (Decision 334). While any live, paid plan does, changing the School currency asks first (409 `SCHOOL_CURRENCY_CHANGE_CONFIRM`, then `confirmCurrencyChange: true`), saying how many plans move, and clearing it is refused (409 `SCHOOL_CURRENCY_IN_USE`).
+4. **Q4 Franchise name check.** "Ask to join" first shows "You're asking to join <name>" (GET /schools/:id/franchise-preview, School Owner only, same checks as joining); "Send request" sends it. Showing the Franchise on the School itself stays "both must allow" (Decision 350).
+5. **Q5 Layout.** Visual only: School details is split into three headed groups (School details, Bookings and check-in, Staff and ranks), and the late-cancel setting (Decision 322, School-wide) moves into the Class cancellations card.
+
+### Not changed
+
+- Who can close a School: still any Owner/Manager, until the main-owner role from the Staff work lands.
+- No migration.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: "All recommended", after the School settings review (S1–S11, Q1–Q5).
+
+---
+
+## Decision 370 — Main owner and co-owners
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 3), Decision 270 (an owner may make another person an owner of their own School)
+**Numbering:** 367–369 are in use on other open branches; this takes 370.
+
+### Decision
+
+1. **One main owner per School.** `RoleGrant.isMainOwner` marks it, with a database rule that a School has at most one live, flagged owner grant. Whoever creates a School is its main owner. Existing Schools: the migration flags the earliest live owner grant (the product owner's rule). Where no live grant is flagged (the main owner's account was deleted, or rows written outside the API), the earliest live owner grant counts as the main owner, so a School with owners always has one.
+2. **Co-owners.** Every other owner is a co-owner, with the same powers as the main owner except the two below. "Give role" on the Staff page can now give the owner role ("Co-owner"); the API already allowed it (Decision 270).
+3. **Removing owners.** Any owner can remove a co-owner, including themselves, through the existing revoke (`DELETE /users/:userId/role-grants/:id`). Nobody in the School can remove the main owner: that answers `403` with code `MAIN_OWNER` and tells them to contact ULTM8 support. "Remove from School" still ends coach and Branch Staff roles only.
+4. **Handing over.** `POST /schools/:schoolId/main-owner` `{ userId }`: only the main owner, only to a current co-owner, and only with a passcode check (the existing step-up token, `x-step-up-token`, from `POST /auth/step-up/verify`). The former main owner stays an owner, as a co-owner.
+5. **ULTM8 support.** `GET /platform-admin/schools/:id/owners` (any admin tier, audit-logged `VIEW_SCHOOL_OWNERS`) lists the owners. `POST /platform-admin/schools/:id/main-owner` `{ userId, removeFormerMainOwner? }` moves the main owner role to a current co-owner and can end the former main owner's owner role in the same step (Full Admin only, like closing a School; audit-logged `CHANGE_SCHOOL_MAIN_OWNER` with who it moved from and to). Shown as an Owners card on the Platform Admin School page.
+6. **No forced sign-in refresh.** Which owner is main doesn't change anyone's access, and access tokens don't carry it, so Decision 361's trigger skips an update that changes only `isMainOwner` (and Prisma's `updatedAt`).
+
+### Choices made here, not by the product owner
+
+- The support action is Full Admin only, matching the other School-level account changes (close and reactivate).
+- Support can move the main owner role only to someone who is already a co-owner. A School whose only owner has lost their account has no co-owner to move it to, and support can't add an owner here. That case is **[UNRESOLVED]**: not built, for the product owner to decide.
+
+### Recorded by
+
+User (Code), 26–27 Oct 2026, Staff thread (Decision 360 item 3).
+

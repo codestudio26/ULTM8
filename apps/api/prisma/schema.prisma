@@ -703,6 +703,12 @@ model RoleGrant {
   grantedAt DateTime  @default(now())
   revokedAt DateTime?
 
+  /// Decision 370 — set on the School's one main owner (a SCHOOL_OWNER_MANAGER
+  /// grant). Nobody in the School can remove the main owner; only a Platform
+  /// Admin can. At most one live main owner per School (partial unique index in
+  /// migration 20261213000100_school_main_owner).
+  isMainOwner Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   // Two partial unique indexes live in the migrations only (Prisma's DSL has

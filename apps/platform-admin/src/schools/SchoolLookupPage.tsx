@@ -5,6 +5,7 @@ import { useSchool, useSchoolPaymentAccount } from './schoolQueries';
 import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
 import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
 import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleControls';
+import { SchoolOwnersCard } from './SchoolOwnersCard';
 
 /** Look-up-by-id — see schoolQueries.ts's own header comment for why there's no
  * list here. Mostly read-only: School fields themselves have no Platform Admin
@@ -77,6 +78,8 @@ export function SchoolLookupPage() {
               </dl>
             </Card>
           ) : null}
+
+          {school.data ? <SchoolOwnersCard schoolId={school.data.id} /> : null}
 
           {school.data ? (
             <TenantLifecycleControls

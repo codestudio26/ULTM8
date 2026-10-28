@@ -19,6 +19,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: main owner and co-owners** (Decision 370) — every School has
+  one main owner; other owners are co-owners. "Give role" can now make someone
+  a co-owner. Any owner can remove a co-owner, but nobody in the School can
+  remove the main owner. The main owner can make a co-owner the main owner
+  after re-entering their passcode, and stays on as a co-owner. ULTM8 support
+  sees a School's owners on the Platform Admin School page and (Full Admin
+  only) can move the main owner role, optionally removing the former main
+  owner; both are audit-logged. Existing Schools: the earliest owner becomes
+  the main owner. Needs the migration `20261213000100_school_main_owner`.
+- **School settings review** (Decision 368) — the School page shows the
+  School's join code (copy, make a new one), a logo upload and colour for the
+  student app, and asks before a currency change moves membership plans to a
+  new currency. "Ask to join" a Franchise shows its name first. Fixed: an
+  Owner with two Schools could save one School's cancellation and footer
+  settings onto the other; saving one card wiped another's typing; the
+  no-show fee was typed in cents; a closed School's forms still showed;
+  footer links without https:// opened broken pages; endless spinners on a
+  load error or for non-owners; plain messages for blank names, waitlist
+  window and footer fields; the School reply no longer carries Stripe ids.
+  School details is split into three groups. No migration.
 - **Signed-in users are no longer limited per internet address** (Decision
   376). Everyone at a School on the same WiFi shares one address, which was
   limited to 60 requests a minute; a busy front desk could hit it. Signed-in

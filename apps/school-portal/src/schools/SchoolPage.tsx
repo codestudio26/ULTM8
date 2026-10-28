@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import React, { useState } from 'react';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -7,8 +7,10 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import {
   useCancelFranchiseJoinRequest,
   useCloseSchool,
+  useFranchisePreview,
   useJoinFranchise,
   useLeaveFranchise,
+  useRegenerateJoinCode,
   useSchool,
   useSchoolFranchiseBranding,
   useSchoolFranchiseJoinRequest,
@@ -18,77 +20,120 @@ import {
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
-import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload } from '../cancellations/CancellationSettingsFields';
+import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid } from '../cancellations/CancellationSettingsFields';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
- * their own School"). Field list matches UpdateSchoolDto exactly, same as
- * CreateSchoolPage. No delete action — general tenant offboarding is [UNRESOLVED]
- * (ultm8-domain-rules §2), and apps/api has no DELETE /schools endpoint to call. */
+ * their own School"). Each card has its own form and Save, and each is keyed by
+ * the School's id, so switching School in the header starts every card afresh
+ * (Decision 368, S1 — the cards used to keep the previous School's values, and
+ * saving wrote them onto the new one). Once the School is closed the whole page
+ * is read-only (S4): every write is refused by then (Decision 110). */
 export function SchoolPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
-  const updateSchool = useUpdateSchool(schoolId ?? '');
+
+  // Decision 368 (S7) — a Branch Staff member or Instructor has no owned School;
+  // the query never runs, so this used to spin for ever.
+  if (!schoolId) {
+    return (
+      <>
+        <PageHeader title={t('schools.profile.title')} />
+        <Card>
+          <p data-testid="school-owners-only">{t('schools.profile.ownersOnly')}</p>
+        </Card>
+      </>
+    );
+  }
+  // The error first: with no School loaded there is nothing for the spinner to wait for.
+  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('schools.profile.loadFailed')} />;
+  if (isLoading || !school) return <Spinner />;
+
+  const closed = !!school.archivedAt;
+  return (
+    <>
+      <PageHeader title={t('schools.profile.title')} subtitle={school.name} />
+      {closed ? <ClosedSchoolNotice school={school} /> : null}
+      <fieldset disabled={closed} data-testid="school-settings" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <SchoolDetailsCard key={schoolId} schoolId={schoolId} school={school} />
+        {closed ? null : <JoinCodeCard key={`join-${schoolId}`} schoolId={schoolId} joinCode={school.joinCode} />}
+        <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
+        <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
+        <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
+      </fieldset>
+      {closed ? null : <CloseSchoolCard key={`close-${schoolId}`} schoolId={schoolId} school={school} />}
+    </>
+  );
+}
+
+type DetailsForm = {
+  name: string;
+  mobileNumber: string;
+  address: PostalAddress;
+  businessType: string;
+  activities: string;
+  facilities: string;
+  ranksToggle: boolean;
+  defaultLanguage: string;
+  defaultCurrency: string;
+  timezone: string;
+  description: string;
+  logoUrl: string;
+  accentColor: string;
+  waitlistClaimWindowMinutes: string;
+  checkInOpensMinutesBeforeStart: string;
+  branchStaffCanRecordPayments: boolean;
+  weekStartsOn: 'MONDAY' | 'SUNDAY';
+  timetableDefaultLayout: 'LIST' | 'GRID';
+};
+
+function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsForm {
+  return {
+    name: school.name,
+    mobileNumber: school.mobileNumber ?? '',
+    address,
+    businessType: school.businessType ?? '',
+    activities: school.activities.join(', '),
+    facilities: school.facilities.join(', '),
+    ranksToggle: school.ranksToggle,
+    defaultLanguage: school.defaultLanguage ?? '',
+    defaultCurrency: school.defaultCurrency ?? '',
+    timezone: school.timezone ?? '',
+    description: school.description ?? '',
+    logoUrl: school.logoUrl ?? '',
+    accentColor: school.accentColor ?? '',
+    waitlistClaimWindowMinutes: String(school.waitlistClaimWindowMinutes),
+    checkInOpensMinutesBeforeStart: String(school.checkInOpensMinutesBeforeStart),
+    branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
+    weekStartsOn: school.weekStartsOn,
+    timetableDefaultLayout: school.timetableDefaultLayout,
+  };
+}
+
+/** The School's own details, in three headed groups (Decision 368, Q5 — visual
+ * only, still one Save). The form is filled once per School and after its own
+ * Save, never on a background reload (S2: saving another card used to wipe
+ * what was typed here). */
+function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
+  const updateSchool = useUpdateSchool(schoolId);
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
   const { data: languages } = useLanguages();
   const { data: currencies } = useCurrencies();
-
-  const [form, setForm] = useState<{
-    name: string;
-    mobileNumber: string;
-    address: PostalAddress;
-    businessType: string;
-    activities: string;
-    facilities: string;
-    ranksToggle: boolean;
-    defaultLanguage: string;
-    defaultCurrency: string;
-    timezone: string;
-    description: string;
-    waitlistClaimWindowMinutes: number;
-    checkInOpensMinutesBeforeStart: number;
-    lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
-    branchStaffCanRecordPayments: boolean;
-    weekStartsOn: 'MONDAY' | 'SUNDAY';
-    timetableDefaultLayout: 'LIST' | 'GRID';
-  } | null>(null);
-  const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
+  const [initialAddress, setInitialAddress] = useState(() => postalAddressFromRecord(school, guessDefaultCountry()));
+  const [form, setForm] = useState<DetailsForm>(() => detailsForm(school, initialAddress));
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Decision 368 (Q3) — the API's message, shown in the confirm step.
+  const [currencyConfirm, setCurrencyConfirm] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!school) return;
-    const address = postalAddressFromRecord(school, guessDefaultCountry());
-    setInitialAddress(address);
-    setAddressErrors({});
-    setForm({
-      name: school.name,
-      mobileNumber: school.mobileNumber ?? '',
-      address,
-      businessType: school.businessType ?? '',
-      activities: school.activities.join(', '),
-      facilities: school.facilities.join(', '),
-      ranksToggle: school.ranksToggle,
-      defaultLanguage: school.defaultLanguage ?? '',
-      defaultCurrency: school.defaultCurrency ?? '',
-      timezone: school.timezone ?? '',
-      description: school.description ?? '',
-      waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
-      checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
-      lateCancelRefundPolicy: school.lateCancelRefundPolicy,
-      branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
-      weekStartsOn: school.weekStartsOn,
-      timetableDefaultLayout: school.timetableDefaultLayout,
-    });
-  }, [school]);
-
-  function set<K extends keyof NonNullable<typeof form>>(key: K, value: NonNullable<typeof form>[K]) {
-    setForm((f) => (f ? { ...f, [key]: value } : f));
+  function set<K extends keyof DetailsForm>(key: K, value: DetailsForm[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form) return;
+  async function save(confirmCurrencyChange: boolean) {
     setSaveError(null);
     setSaved(false);
     const prepared = preparePostalAddress(form.address, initialAddress);
@@ -104,7 +149,7 @@ export function SchoolPage() {
       // Phase 3, see that DTO's own header comment). SchoolPage is edit-only
       // (School creation is CreateSchoolPage's own separate flow), so there's
       // no create-path mapping to undefined needed here.
-      await updateSchool.mutateAsync({
+      const updated = await updateSchool.mutateAsync({
         name: form.name,
         mobileNumber: form.mobileNumber || null,
         postalAddress: prepared.postalAddress,
@@ -116,155 +161,293 @@ export function SchoolPage() {
         defaultCurrency: form.defaultCurrency || null,
         timezone: form.timezone || null,
         description: form.description || null,
-        waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
-        checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
-        lateCancelRefundPolicy: form.lateCancelRefundPolicy,
+        logoUrl: form.logoUrl || null,
+        accentColor: form.accentColor || null,
+        waitlistClaimWindowMinutes: Number(form.waitlistClaimWindowMinutes),
+        checkInOpensMinutesBeforeStart: Number(form.checkInOpensMinutesBeforeStart),
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
         weekStartsOn: form.weekStartsOn,
         timetableDefaultLayout: form.timetableDefaultLayout,
+        ...(confirmCurrencyChange ? { confirmCurrencyChange: true } : {}),
       });
+      const address = postalAddressFromRecord(updated, guessDefaultCountry());
+      setInitialAddress(address);
+      setForm(detailsForm(updated, address));
       setSaved(true);
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'SCHOOL_CURRENCY_CHANGE_CONFIRM') {
+        setCurrencyConfirm(err.message);
+        return;
+      }
       setSaveError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
-  if (isLoading || !form) return <Spinner />;
-  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('schools.profile.loadFailed')} />;
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void save(false);
+  }
 
   return (
-    <>
-      <PageHeader title={t('schools.profile.title')} subtitle={school?.name} />
-      <Card>
-        <form onSubmit={handleSubmit}>
-          {saveError ? <ErrorBanner message={saveError} /> : null}
-          {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-          <Field label={t('schools.form.schoolName')} htmlFor="edit-name">
-            <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
-          </Field>
-          <Field label={t('schools.form.mobileNumber')} htmlFor="edit-mobile">
-            <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
-          </Field>
-          <AddressFields
-            idPrefix="edit-address"
-            value={form.address}
-            onChange={(v) => set('address', v)}
-            errors={addressErrors}
-            legacy={hasLegacyAddressOnly(school) && !form.address.country}
+    <Card>
+      <form onSubmit={handleSubmit}>
+        {saveError ? <ErrorBanner message={saveError} /> : null}
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>{t('schools.profile.groupProfile')}</h2>
+        <Field label={t('schools.form.schoolName')} htmlFor="edit-name">
+          <TextField required maxLength={100} value={form.name} onChange={(e) => set('name', e.target.value)} />
+        </Field>
+        <Field label={t('schools.form.logo')} htmlFor="edit-logo" hint={t('schools.form.logoHint')}>
+          <PhotoUploadField
+            value={form.logoUrl}
+            onChange={(logoUrl) => set('logoUrl', logoUrl)}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({ entityType: 'SCHOOL', schoolId, entityId: schoolId, contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp' })
+            }
           />
-          <Field label={t('schools.form.businessType')} htmlFor="edit-businessType">
-            <TextField value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
-          </Field>
-          <Field label={t('schools.form.activities')} htmlFor="edit-activities" hint={t('schools.form.commaSeparated')}>
-            <TextField value={form.activities} onChange={(e) => set('activities', e.target.value)} />
-          </Field>
-          <Field label={t('schools.form.facilities')} htmlFor="edit-facilities" hint={t('schools.form.commaSeparated')}>
-            <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
-          </Field>
-          <Field label={t('schools.form.defaultLanguage')} htmlFor="edit-language">
-            <SelectField
-              id="edit-language"
-              value={form.defaultLanguage}
-              onChange={(e) => set('defaultLanguage', e.target.value)}
-              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
-            />
-          </Field>
-          <Field label={t('schools.form.defaultCurrency')} htmlFor="edit-currency">
-            <CurrencyField
-              id="edit-currency"
-              value={form.defaultCurrency}
-              onChange={(code) => set('defaultCurrency', code)}
-              options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
-              placeholder={t('schools.form.notSet')}
-            />
-          </Field>
-          <Field label={t('schools.form.timezone')} htmlFor="edit-timezone" hint={t('schools.form.timezoneHint')}>
-            <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
-          </Field>
-          <Field label={t('schools.form.description')} htmlFor="edit-description">
-            <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
-          </Field>
-          <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
-            <TextField
-              type="number"
-              min={1}
-              value={form.waitlistClaimWindowMinutes}
-              onChange={(e) => set('waitlistClaimWindowMinutes', Number(e.target.value))}
-            />
-          </Field>
-          <Field label={t('schools.form.checkInOpens')} htmlFor="edit-checkin-opens" hint={t('schools.form.checkInOpensHint')}>
-            <TextField
-              type="number"
-              min={0}
-              max={1440}
-              required
-              value={form.checkInOpensMinutesBeforeStart}
-              onChange={(e) => set('checkInOpensMinutesBeforeStart', Number(e.target.value))}
-            />
-          </Field>
-          <Field label={t('schools.form.lateCancel')} htmlFor="edit-late-cancel" hint={t('schools.form.lateCancelHint')}>
-            <SelectField
-              value={form.lateCancelRefundPolicy}
-              onChange={(e) => set('lateCancelRefundPolicy', e.target.value as typeof form.lateCancelRefundPolicy)}
-              options={[
-                { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
-                { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
-                { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
-              ]}
-            />
-          </Field>
-          {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
-          <Field label={t('schools.form.weekStart')} htmlFor="edit-week-start">
-            <SelectField
-              id="edit-week-start"
-              value={form.weekStartsOn}
-              onChange={(e) => set('weekStartsOn', e.target.value as typeof form.weekStartsOn)}
-              options={[
-                { value: 'MONDAY', label: t('schools.form.weekStartMonday') },
-                { value: 'SUNDAY', label: t('schools.form.weekStartSunday') },
-              ]}
-            />
-          </Field>
-          <Field label={t('schools.form.timetableLayout')} htmlFor="edit-timetable-layout">
-            <SelectField
-              id="edit-timetable-layout"
-              value={form.timetableDefaultLayout}
-              onChange={(e) => set('timetableDefaultLayout', e.target.value as typeof form.timetableDefaultLayout)}
-              options={[
-                { value: 'LIST', label: t('schools.form.layoutList') },
-                { value: 'GRID', label: t('schools.form.layoutGrid') },
-              ]}
-            />
-          </Field>
-          <Checkbox
-            label={t('schools.form.ranksToggle')}
-            checked={form.ranksToggle}
-            onChange={(e) => set('ranksToggle', e.target.checked)}
+        </Field>
+        <Field label={t('schools.form.accentColour')} htmlFor="edit-accent" hint={t('schools.form.accentColourHint')}>
+          <ColourInput value={form.accentColor} onChange={(v) => set('accentColor', v)} />
+        </Field>
+        <Field label={t('schools.form.mobileNumber')} htmlFor="edit-mobile">
+          <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
+        </Field>
+        <AddressFields
+          idPrefix="edit-address"
+          value={form.address}
+          onChange={(v) => set('address', v)}
+          errors={addressErrors}
+          legacy={hasLegacyAddressOnly(school) && !form.address.country}
+        />
+        <Field label={t('schools.form.businessType')} htmlFor="edit-businessType">
+          <TextField maxLength={100} value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
+        </Field>
+        <Field label={t('schools.form.activities')} htmlFor="edit-activities" hint={t('schools.form.commaSeparated')}>
+          <TextField value={form.activities} onChange={(e) => set('activities', e.target.value)} />
+        </Field>
+        <Field label={t('schools.form.facilities')} htmlFor="edit-facilities" hint={t('schools.form.commaSeparated')}>
+          <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
+        </Field>
+        <Field label={t('schools.form.description')} htmlFor="edit-description">
+          <TextField maxLength={500} value={form.description} onChange={(e) => set('description', e.target.value)} />
+        </Field>
+        <Field label={t('schools.form.defaultLanguage')} htmlFor="edit-language">
+          <SelectField
+            id="edit-language"
+            value={form.defaultLanguage}
+            onChange={(e) => set('defaultLanguage', e.target.value)}
+            options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
-          {/* Decision 347: off by default; Branch Staff still never see the ledger. */}
-          <Checkbox
-            label={t('schools.form.branchStaffPayments')}
-            checked={form.branchStaffCanRecordPayments}
-            onChange={(e) => set('branchStaffCanRecordPayments', e.target.checked)}
+        </Field>
+        <Field label={t('schools.form.defaultCurrency')} htmlFor="edit-currency">
+          <CurrencyField
+            id="edit-currency"
+            value={form.defaultCurrency}
+            onChange={(code) => set('defaultCurrency', code)}
+            options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+            placeholder={t('schools.form.notSet')}
           />
-          <div style={{ marginTop: 16 }}>
-            <Button type="submit" loading={updateSchool.isPending}>
-              {t('schools.profile.saveChanges')}
+        </Field>
+        <Field label={t('schools.form.timezone')} htmlFor="edit-timezone" hint={t('schools.form.timezoneHint')}>
+          <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
+        </Field>
+
+        <h2 style={{ fontSize: 18, margin: '24px 0 12px' }}>{t('schools.profile.groupBookings')}</h2>
+        <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
+          <TextField
+            type="number"
+            min={1}
+            step={1}
+            required
+            value={form.waitlistClaimWindowMinutes}
+            onChange={(e) => set('waitlistClaimWindowMinutes', e.target.value)}
+          />
+        </Field>
+        <Field label={t('schools.form.checkInOpens')} htmlFor="edit-checkin-opens" hint={t('schools.form.checkInOpensHint')}>
+          <TextField
+            type="number"
+            min={0}
+            max={1440}
+            step={1}
+            required
+            value={form.checkInOpensMinutesBeforeStart}
+            onChange={(e) => set('checkInOpensMinutesBeforeStart', e.target.value)}
+          />
+        </Field>
+        {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
+        <Field label={t('schools.form.weekStart')} htmlFor="edit-week-start">
+          <SelectField
+            id="edit-week-start"
+            value={form.weekStartsOn}
+            onChange={(e) => set('weekStartsOn', e.target.value as DetailsForm['weekStartsOn'])}
+            options={[
+              { value: 'MONDAY', label: t('schools.form.weekStartMonday') },
+              { value: 'SUNDAY', label: t('schools.form.weekStartSunday') },
+            ]}
+          />
+        </Field>
+        <Field label={t('schools.form.timetableLayout')} htmlFor="edit-timetable-layout">
+          <SelectField
+            id="edit-timetable-layout"
+            value={form.timetableDefaultLayout}
+            onChange={(e) => set('timetableDefaultLayout', e.target.value as DetailsForm['timetableDefaultLayout'])}
+            options={[
+              { value: 'LIST', label: t('schools.form.layoutList') },
+              { value: 'GRID', label: t('schools.form.layoutGrid') },
+            ]}
+          />
+        </Field>
+
+        <h2 style={{ fontSize: 18, margin: '24px 0 12px' }}>{t('schools.profile.groupStaff')}</h2>
+        <Checkbox
+          label={t('schools.form.ranksToggle')}
+          checked={form.ranksToggle}
+          onChange={(e) => set('ranksToggle', e.target.checked)}
+        />
+        {/* Decision 347: off by default; Branch Staff still never see the ledger. */}
+        <Checkbox
+          label={t('schools.form.branchStaffPayments')}
+          checked={form.branchStaffCanRecordPayments}
+          onChange={(e) => set('branchStaffCanRecordPayments', e.target.checked)}
+        />
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={updateSchool.isPending}>
+            {t('schools.profile.saveChanges')}
+          </Button>
+        </div>
+      </form>
+      {currencyConfirm ? (
+        <Modal title={t('schools.form.currencyConfirmTitle')} onClose={() => setCurrencyConfirm(null)}>
+          <p data-testid="currency-confirm-body">{currencyConfirm}</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <Button
+              loading={updateSchool.isPending}
+              onClick={async () => {
+                await save(true);
+                setCurrencyConfirm(null);
+              }}
+            >
+              {t('schools.form.currencyConfirmButton')}
+            </Button>
+            <Button variant="secondary" onClick={() => setCurrencyConfirm(null)}>
+              {t('common.cancel')}
             </Button>
           </div>
-        </form>
-      </Card>
-      {schoolId && school ? <CancellationSettingsCard schoolId={schoolId} school={school} /> : null}
-      {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
-      {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
-      {schoolId && school ? <CloseSchoolCard schoolId={schoolId} school={school} /> : null}
-    </>
+        </Modal>
+      ) : null}
+    </Card>
+  );
+}
+
+/** Decision 368 (Q2) — the School's colour for the student app (School.accentColor,
+ * Decision 266): a colour picker and its hex code, or blank for the app's own colour.
+ * `Field` hands it the id and aria props. */
+function ColourInput({ value, onChange, ...inputProps }: { value: string; onChange: (value: string) => void; id?: string; 'aria-describedby'?: string }) {
+  const t = useT();
+  const valid = /^#[0-9a-fA-F]{6}$/.test(value);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <TextField
+        {...inputProps}
+        type="color"
+        value={valid ? value : '#1a73e8'}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: 56, padding: 2 }}
+      />
+      <span data-testid="accent-colour-value">{valid ? value.toUpperCase() : t('schools.form.accentColourDefault')}</span>
+      {value ? (
+        <Button variant="secondary" onClick={() => onChange('')}>
+          {t('schools.form.accentColourClear')}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Decision 368 (S4) — a closed School's page is read-only; this says why, at the top. */
+function ClosedSchoolNotice({ school }: { school: SchoolResponse }) {
+  const t = useT();
+  return (
+    <Card>
+      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+        {t('schools.close.closedTitle')}
+      </h2>
+      <p data-testid="school-closed-notice">
+        {t('schools.close.closedBody', { date: school.purgeAt ? new Date(school.purgeAt).toLocaleDateString(formatLocale()) : '—' })}
+      </p>
+    </Card>
+  );
+}
+
+/** Decision 368 (Q1) — the join code students type in the app to find and join
+ * this School (Decision 266), with Copy and "Make a new code", which asks first:
+ * the old code stops working at once. */
+function JoinCodeCard({ schoolId, joinCode }: { schoolId: string; joinCode: string }) {
+  const t = useT();
+  const regenerate = useRegenerateJoinCode(schoolId);
+  const [copied, setCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(joinCode);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    setError(null);
+    try {
+      await regenerate.mutateAsync();
+      setCopied(false);
+      setConfirming(false);
+    } catch (err) {
+      setConfirming(false);
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+        {t('schools.joinCode.title')}
+      </h2>
+      <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.joinCode.explanation')}</p>
+      {error ? <ErrorBanner message={error} /> : null}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <code data-testid="school-join-code" style={{ fontSize: 22, letterSpacing: 3, fontWeight: 600 }}>
+          {joinCode}
+        </code>
+        <Button variant="secondary" onClick={handleCopy}>
+          {copied ? t('schools.joinCode.copied') : t('schools.joinCode.copy')}
+        </Button>
+        <Button variant="secondary" onClick={() => setConfirming(true)}>
+          {t('schools.joinCode.regenerate')}
+        </Button>
+      </div>
+      {confirming ? (
+        <Modal title={t('schools.joinCode.regenerateConfirmTitle')} onClose={() => setConfirming(false)}>
+          <p>{t('schools.joinCode.regenerateConfirmBody')}</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <Button onClick={handleRegenerate} loading={regenerate.isPending}>
+              {t('schools.joinCode.regenerate')}
+            </Button>
+            <Button variant="secondary" onClick={() => setConfirming(false)}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
+    </Card>
   );
 }
 
 /** Decision 364 — the School Owner closes their own School: the name re-typed
  * plus their passcode, the same 90-day close as Decision 110's. Once closed,
- * the card says when the School is deleted and who can reopen it. */
+ * ClosedSchoolNotice says when the School is deleted and who can reopen it. */
 function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
   const t = useT();
   const close = useCloseSchool(schoolId);
@@ -272,19 +455,6 @@ function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: Schoo
   const [confirmName, setConfirmName] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  if (school.archivedAt) {
-    return (
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          {t('schools.close.closedTitle')}
-        </h2>
-        <p data-testid="school-closed-notice">
-          {t('schools.close.closedBody', { date: school.purgeAt ? new Date(school.purgeAt).toLocaleDateString(formatLocale()) : '—' })}
-        </p>
-      </Card>
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -355,6 +525,9 @@ function CancellationSettingsCard({ schoolId, school }: { schoolId: string; scho
   const t = useT();
   const update = useUpdateSchool(schoolId);
   const [form, setForm] = useState(() => cancellationSettingsForm(school));
+  // Decision 322's late-cancel setting, moved here from the School's details
+  // (Decision 368, Q5). It's School-wide: Branches don't override it.
+  const [lateCancelRefundPolicy, setLateCancelRefundPolicy] = useState(school.lateCancelRefundPolicy);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -362,8 +535,9 @@ function CancellationSettingsCard({ schoolId, school }: { schoolId: string; scho
     e.preventDefault();
     setError(null);
     setSaved(false);
+    if (!isCancellationSettingsValid(form)) return;
     try {
-      await update.mutateAsync(cancellationSettingsPayload(form));
+      await update.mutateAsync({ ...cancellationSettingsPayload(form), lateCancelRefundPolicy });
       setSaved(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -383,7 +557,22 @@ function CancellationSettingsCard({ schoolId, school }: { schoolId: string; scho
         ) : null}
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-        <CancellationSettingsFields form={form} onChange={setForm} />
+        <CancellationSettingsFields form={form} onChange={setForm} currency={school.defaultCurrency} />
+        <Field
+          label={t('schools.form.lateCancel')}
+          htmlFor="edit-late-cancel"
+          hint={`${t('schools.form.lateCancelHint')} ${t('schools.cancellations.lateCancelAllBranches')}`}
+        >
+          <SelectField
+            value={lateCancelRefundPolicy}
+            onChange={(e) => setLateCancelRefundPolicy(e.target.value as typeof lateCancelRefundPolicy)}
+            options={[
+              { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
+              { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
+              { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
+            ]}
+          />
+        </Field>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.branchHint')}</p>
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>
@@ -430,16 +619,26 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
     e.preventDefault();
     setSaveError(null);
     setSaved(false);
+    // Decision 368 (S5) — "instagram.com/x" becomes "https://instagram.com/x",
+    // shown back in the box, so the footer icon opens the real page.
+    const links = {
+      footerFacebookUrl: withHttps(form.footerFacebookUrl),
+      footerInstagramUrl: withHttps(form.footerInstagramUrl),
+      footerTiktokUrl: withHttps(form.footerTiktokUrl),
+      footerYoutubeUrl: withHttps(form.footerYoutubeUrl),
+      footerTwitterUrl: withHttps(form.footerTwitterUrl),
+    };
+    setForm((f) => ({ ...f, ...links }));
     try {
       await updateFooter.mutateAsync({
-        footerAboutUs: form.footerAboutUs || null,
-        footerContactEmail: form.footerContactEmail || null,
+        footerAboutUs: form.footerAboutUs.trim() || null,
+        footerContactEmail: form.footerContactEmail.trim() || null,
         footerContactPhone: form.footerContactPhone || null,
-        footerFacebookUrl: form.footerFacebookUrl || null,
-        footerInstagramUrl: form.footerInstagramUrl || null,
-        footerTiktokUrl: form.footerTiktokUrl || null,
-        footerYoutubeUrl: form.footerYoutubeUrl || null,
-        footerTwitterUrl: form.footerTwitterUrl || null,
+        footerFacebookUrl: links.footerFacebookUrl || null,
+        footerInstagramUrl: links.footerInstagramUrl || null,
+        footerTiktokUrl: links.footerTiktokUrl || null,
+        footerYoutubeUrl: links.footerYoutubeUrl || null,
+        footerTwitterUrl: links.footerTwitterUrl || null,
       });
       setSaved(true);
     } catch (err) {
@@ -492,6 +691,13 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
   );
 }
 
+/** A web address typed without its scheme gets https:// in front; blank stays blank. */
+export function withHttps(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 /**
  * Decision 232 — leave/switch-Franchise, on top of Decision 98's own one-way-only
  * join-franchise endpoint. "Switch" is deliberately not a separate action here
@@ -501,15 +707,18 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
  * this phase) — a School Owner enters the Franchise's id directly, same shape the
  * API itself has always taken.
  */
-function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string; franchiseId: string | null }) {
+function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId: string; franchiseId: string | null; closed: boolean }) {
   const t = useT();
   const joinFranchise = useJoinFranchise(schoolId);
+  // Decision 368 (Q4) — the Franchise's name, checked before the request goes out.
+  const preview = useFranchisePreview(schoolId);
+  const [confirmingJoin, setConfirmingJoin] = useState<{ id: string; name: string } | null>(null);
   const leaveFranchise = useLeaveFranchise(schoolId);
   // Decision 350 — the Franchise's name and logo show only when both owners allow it.
   const updateSchool = useUpdateSchool(schoolId);
   const { data: branding } = useSchoolFranchiseBranding(franchiseId ? schoolId : null);
   // Decision 352 — joining is a request the Franchise Owner accepts or declines.
-  const { data: joinRequestData } = useSchoolFranchiseJoinRequest(franchiseId ? null : schoolId);
+  const { data: joinRequestData } = useSchoolFranchiseJoinRequest(franchiseId || closed ? null : schoolId);
   const cancelJoinRequest = useCancelFranchiseJoinRequest(schoolId);
   const joinRequest = joinRequestData?.request ?? null;
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
@@ -517,13 +726,25 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
   // Decision 337 (F6) — Leave asks first: it ends the School's franchise-fee billing.
   const [confirmingLeave, setConfirmingLeave] = useState(false);
 
-  async function handleJoin(e: React.FormEvent) {
+  async function handleCheck(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await joinFranchise.mutateAsync(franchiseIdInput);
-      setFranchiseIdInput('');
+      setConfirmingJoin(await preview.mutateAsync(franchiseIdInput.trim()));
     } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  async function handleJoin() {
+    if (!confirmingJoin) return;
+    setError(null);
+    try {
+      await joinFranchise.mutateAsync(confirmingJoin.id);
+      setFranchiseIdInput('');
+      setConfirmingJoin(null);
+    } catch (err) {
+      setConfirmingJoin(null);
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
@@ -570,7 +791,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.leaveExplanation')}
           </p>
-          {branding ? (
+          {branding && !closed ? (
             <div style={{ marginBottom: 16 }}>
               <Switch
                 id="school-show-franchise-branding"
@@ -592,9 +813,11 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
               ) : null}
             </div>
           ) : null}
-          <Button variant="danger" onClick={() => setConfirmingLeave(true)} loading={leaveFranchise.isPending}>
-            {t('schools.franchise.leave')}
-          </Button>
+          {closed ? null : (
+            <Button variant="danger" onClick={() => setConfirmingLeave(true)} loading={leaveFranchise.isPending}>
+              {t('schools.franchise.leave')}
+            </Button>
+          )}
           {confirmingLeave ? (
             <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
               <p>{t('schools.franchise.leaveConfirmBody')}</p>
@@ -614,7 +837,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
             {t('schools.franchise.independent')}
           </p>
-          {joinRequest?.status === 'PENDING' ? (
+          {closed ? null : joinRequest?.status === 'PENDING' ? (
             <div data-testid="franchise-join-pending">
               <p>
                 <Trans k="schools.franchise.requestPending" nodes={{ id: <Badge>{joinRequest.franchiseId}</Badge> }} />
@@ -631,14 +854,27 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
                 </p>
               ) : null}
               <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.franchise.joinExplanation')}</p>
-              <form onSubmit={handleJoin}>
+              <form onSubmit={handleCheck}>
                 <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
                   <TextField id="join-franchise-id" required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
                 </Field>
-                <Button type="submit" loading={joinFranchise.isPending}>
+                <Button type="submit" loading={preview.isPending}>
                   {t('schools.franchise.join')}
                 </Button>
               </form>
+              {confirmingJoin ? (
+                <Modal title={t('schools.franchise.confirmTitle')} onClose={() => setConfirmingJoin(null)}>
+                  <p data-testid="franchise-join-confirm">{t('schools.franchise.confirmBody', { name: confirmingJoin.name })}</p>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                    <Button onClick={handleJoin} loading={joinFranchise.isPending}>
+                      {t('schools.franchise.sendRequest')}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setConfirmingJoin(null)}>
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </Modal>
+              ) : null}
             </>
           )}
         </>

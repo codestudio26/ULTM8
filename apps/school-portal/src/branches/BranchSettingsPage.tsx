@@ -7,7 +7,7 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useBranch, useUpdateBranch, type BranchResponse } from './branchQueries';
 import { useSchool } from '../schools/schoolQueries';
-import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, type CancellationSettingsForm } from '../cancellations/CancellationSettingsFields';
+import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid, type CancellationSettingsForm } from '../cancellations/CancellationSettingsFields';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 
@@ -247,6 +247,7 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
     e.preventDefault();
     setError(null);
     setSaved(false);
+    if (override && !isCancellationSettingsValid(shown)) return;
     try {
       await update.mutateAsync(
         override ? { cancellationSettingsOverride: true, ...cancellationSettingsPayload(shown) } : { cancellationSettingsOverride: false },
@@ -275,7 +276,7 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
             ]}
           />
         </Field>
-        <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} />
+        <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} currency={branch.currencyOverride || school.defaultCurrency} />
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>
             {t('schools.profile.saveChanges')}
