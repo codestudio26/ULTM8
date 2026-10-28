@@ -137,3 +137,44 @@ describe('ClassBookingRow — guests', () => {
     expect(screen.getByText('Share link')).toBeTruthy();
   });
 });
+
+/** Decision 379 — a parent booking their child: every call names the child,
+ * and the passes shown are the child's. */
+describe('ClassBookingRow — for a child', () => {
+  let book: ReturnType<typeof idleMutation>;
+  let join: ReturnType<typeof idleMutation>;
+
+  beforeEach(() => {
+    book = idleMutation();
+    join = idleMutation();
+    mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(join);
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [{ membershipId: 'child-pass', scopedClassId: null, expiryDate: null }] } });
+    mocked(bookingQueries.useBookingGuests).mockReturnValue({ isLoading: false, error: null, data: { bookingId: 'booking-1', waiverRequired: false, guests: [] } });
+  });
+
+  it("uses the child's passes and books in the child's name", async () => {
+    book.mutateAsync.mockResolvedValue({ id: 'booking-1' });
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" studentId="child-1" />);
+    expect(bookingQueries.useMyFriendPasses).toHaveBeenCalledWith('school-1', 'child-1');
+    expect(bookingQueries.useBookClass).toHaveBeenCalledWith('child-1');
+    expect(screen.getByText("Your child's Friend Passes for this class: 1")).toBeTruthy();
+    await fireEvent.press(screen.getByText('Add a guest'));
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Booked ✓')).toBeTruthy());
+    expect(book.mutateAsync).toHaveBeenCalledWith({ classId: 'class-1', guestPassIds: ['child-pass'] });
+    expect(bookingQueries.useBookingGuests).toHaveBeenCalledWith('booking-1', 'child-1');
+  });
+
+  it('puts the child on the waitlist when the class is full', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'CLASS_FULL', 'full'));
+    join.mutateAsync.mockResolvedValue({ id: 'entry-1', position: 2 });
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" studentId="child-1" />);
+    expect(waitlistMutations.useJoinWaitlist).toHaveBeenCalledWith('child-1');
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Join waitlist')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Join waitlist'));
+    await waitFor(() => expect(screen.getByText('Your child is #2 on the waitlist.')).toBeTruthy());
+  });
+});

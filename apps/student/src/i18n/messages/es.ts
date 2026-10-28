@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Esta clase está completa.",
       joinWaitlist: "Entrar en la lista de espera",
       waitlistPosition: "Eres el n.º {position} en la lista de espera.",
+      childWaitlistPosition: "Tu hijo/a es el n.º {position} en la lista de espera.",
       leaveWaitlist: "Salir de la lista de espera",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Añadir un invitado",
       remove: "Quitar un invitado",
       passesLeft: "Pases de invitado que puedes usar en esta clase: {count}",
+      childPassesLeft: "Pases de invitado de tu hijo/a para esta clase: {count}",
       linksIntro: "Envía a cada invitado su enlace para que firme la exención antes de la clase.",
       guestNumber: "Invitado {number}",
       signed: "Exención firmada: {name}",
@@ -575,6 +577,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Reservar para {name}",
+      upcomingTitle: "Próximas reservas",
+      noBookings: "{name} no tiene próximas reservas.",
+      bookTitle: "Reservar una clase",
+      noSchools: "{name} aún no es alumno/a de ninguna escuela.",
+      noClasses: "No hay próximas clases en esta escuela.",
+      loadError: "No se pudieron cargar las escuelas de tu hijo/a — inténtalo de nuevo.",
+      bookingsLoadError: "No se pudieron cargar las reservas de tu hijo/a — inténtalo de nuevo.",
+      classesLoadError: "No se pudieron cargar las clases — inténtalo de nuevo.",
+    },
     myMinors: {
       empty: "Aún no hay menores vinculados.",
       loadError: "No se pudieron cargar tus menores — inténtalo de nuevo.",
@@ -589,6 +602,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "No se pudo añadir a este menor — inténtalo de nuevo.",
       addMinor: "Añadir menor",
       addAMinor: "Añadir un menor",
+      bookAClass: "Reservar una clase",
     },
     minorConsent: {
       loadError: "No se pudieron cargar los ajustes de este menor — inténtalo de nuevo.",

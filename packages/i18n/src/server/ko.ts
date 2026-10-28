@@ -1,5 +1,6 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "게스트는 보호자만 추가할 수 있으며, 키즈 모드에서는 추가할 수 없습니다.",
   "Your current passcode is not right.": "현재 패스코드가 올바르지 않습니다.",
   "Choose a new passcode that is different from your current one.": "현재 패스코드와 다른 새 패스코드를 선택하세요.",
   "You must be 18 or over to create a School.": "스쿨을 만들려면 만 18세 이상이어야 합니다.",

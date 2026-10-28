@@ -38,21 +38,30 @@ type RowState =
  * slice (surfaced as-is via the real error message), the third gets a real "Join
  * waitlist" follow-up action, since apps/api's own error message for it literally
  * names that as the next step. */
-export function ClassBookingRow({ classItem, schoolId = null }: { classItem: ClassSummary; schoolId?: string | null }) {
+export function ClassBookingRow({
+  classItem,
+  schoolId = null,
+  studentId,
+}: {
+  classItem: ClassSummary;
+  schoolId?: string | null;
+  /** Decision 379: a parent booking for this child; guests use the child's Friend Passes. */
+  studentId?: string;
+}) {
   const t = useT();
   const [state, setState] = useState<RowState>({ kind: 'idle' });
   // Waivers Q9: guests, one of the member's Friend Passes each. A pass for
   // this class only is used before a general one.
-  const friendPasses = useMyFriendPasses(schoolId);
+  const friendPasses = useMyFriendPasses(schoolId, studentId);
   const usablePasses = (friendPasses.data?.items ?? [])
     .filter((p) => !p.scopedClassId || p.scopedClassId === classItem.id)
     .sort((a, b) => Number(!!b.scopedClassId) - Number(!!a.scopedClassId));
   const [guestCount, setGuestCount] = useState(0);
   const guests = Math.min(guestCount, usablePasses.length);
   const [actionError, setActionError] = useState<string | null>(null);
-  const bookClass = useBookClass();
-  const joinWaitlist = useJoinWaitlist();
-  const withdrawWaitlist = useWithdrawWaitlist();
+  const bookClass = useBookClass(studentId);
+  const joinWaitlist = useJoinWaitlist(studentId);
+  const withdrawWaitlist = useWithdrawWaitlist(studentId);
 
   async function handleBook() {
     // Re-entrancy guard: Button disables on `loading`, but that only takes effect on
@@ -120,7 +129,7 @@ export function ClassBookingRow({ classItem, schoolId = null }: { classItem: Cla
 
       {state.kind === 'idle' && usablePasses.length > 0 ? (
         <View style={{ marginTop: 6 }}>
-          <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('bookings.guests.passesLeft', { count: usablePasses.length })}</Text>
+          <Text style={{ color: '#5F6368', fontSize: 12 }}>{t(studentId ? 'bookings.guests.childPassesLeft' : 'bookings.guests.passesLeft', { count: usablePasses.length })}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
             <View style={{ flex: 1 }}>
               <Button title={t('bookings.guests.remove')} variant="secondary" onPress={() => setGuestCount(Math.max(0, guests - 1))} disabled={guests === 0} />
@@ -138,7 +147,7 @@ export function ClassBookingRow({ classItem, schoolId = null }: { classItem: Cla
       {state.kind === 'booked' ? (
         <>
           <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.booked')}</Text>
-          <BookingGuests bookingId={state.bookingId} />
+          <BookingGuests bookingId={state.bookingId} studentId={studentId} />
         </>
       ) : null}
 
@@ -153,7 +162,7 @@ export function ClassBookingRow({ classItem, schoolId = null }: { classItem: Cla
 
       {state.kind === 'waitlisted' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.waitlistPosition', { position: state.position })}</Text>
+          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t(studentId ? 'bookings.classRow.childWaitlistPosition' : 'bookings.classRow.waitlistPosition', { position: state.position })}</Text>
           <Button
             title={t('bookings.classRow.leaveWaitlist')}
             variant="secondary"

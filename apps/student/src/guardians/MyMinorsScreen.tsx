@@ -86,6 +86,12 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
             {t('guardians.myMinors.born', { date: formatDateOnly(minor.dateOfBirth) })}
           </Text>
+          {/* Book them into a class, with guests on their Friend Passes (Decision 379). */}
+          <Button
+            title={t('guardians.myMinors.bookAClass')}
+            variant="secondary"
+            onPress={() => navigation.navigate('ChildBooking', { studentId: minor.studentId, name: minor.firstName })}
+          />
           {/* Their ranks, progress, skills and history, read-only (Decision 132). */}
           <Button
             title={t('guardians.myMinors.grading')}

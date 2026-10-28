@@ -1,5 +1,6 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "ゲストを追加できるのは保護者だけです。キッズモードでは追加できません。",
   "Your current passcode is not right.": "現在のパスコードが正しくありません。",
   "Choose a new passcode that is different from your current one.": "現在のパスコードとは異なる新しいパスコードを選んでください。",
   "You must be 18 or over to create a School.": "スクールを作成するには18歳以上である必要があります。",
