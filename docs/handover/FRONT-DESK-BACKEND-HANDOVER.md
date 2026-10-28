@@ -125,6 +125,8 @@ The design's "Pack used up" card is in DESIGN.md and on board 5b.
 The screen already shows any refusal reason the API returns. When the rules exist, return their reasons in the same error shape. No frontend change is needed beyond F7's per-class reasons.
 
 ### F10. Start an open mat `openMat` (Decision 304)
+**Built 28 Oct 2026 (Decision 386):** `POST /schools/{schoolId}/open-mats` `{ branchId, disciplineId, startsAt, minutes }` makes a one-off "Open mat" class and tells matching students in the app; `GET .../open-mats/me`, and the owner's per-person switch at `GET`/`PUT .../open-mats/permissions`. Still to do: the "Open mat uses a class credit" setting, and the student app's banner and push alerts. The note below is the original ask.
+
 The **+ Open mat session** button on the staff tab is shown switched off. It needs the Decision 304 endpoint: style, start time and length; students told in the app.
 
 ## Notes for whoever picks this up

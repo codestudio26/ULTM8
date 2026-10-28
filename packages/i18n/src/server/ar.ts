@@ -600,4 +600,11 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "أنت المالك الرئيسي بالفعل.",
   "This person is not a co-owner of this School.": "هذا الشخص ليس مالكًا مشاركًا في هذه المدرسة.",
   "entityId must equal schoolId for entityType SCHOOL.": "يجب أن يساوي entityId قيمة schoolId عندما يكون entityType هو SCHOOL.",
+  "Pick one of the School's open Branches for this open mat.": "اختر أحد الفروع المفتوحة للمدرسة لجلسة التدريب الحر هذه.",
+  "This School has no Branches: start the open mat for the whole School.": "هذه المدرسة ليس لها فروع: ابدأ جلسة التدريب الحر للمدرسة كلها.",
+  "Only the School owner, and staff the owner allows, can start an open mat.": "لا يمكن بدء جلسة تدريب حر إلا لمالك المدرسة والموظفين الذين يسمح لهم المالك.",
+  "You can start an open mat only at your own Branches.": "يمكنك بدء جلسة تدريب حر في فروعك فقط.",
+  "Pick one of the School's styles for this open mat.": "اختر أحد أنماط المدرسة لجلسة التدريب الحر هذه.",
+  "An open mat starts from 30 minutes ago to 24 hours ahead.": "تبدأ جلسة التدريب الحر من قبل 30 دقيقة حتى 24 ساعة قادمة.",
+  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "«يمكنه بدء جلسات تدريب حر» مخصص لموظفي الفروع والمدربين في هذه المدرسة.",
 };

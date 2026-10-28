@@ -600,4 +600,11 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "你已经是主所有者。",
   "This person is not a co-owner of this School.": "此人不是这所学校的共同所有者。",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType 为 SCHOOL 时，entityId 必须等于 schoolId。",
+  "Pick one of the School's open Branches for this open mat.": "请为这次自由练习选择学校一个开放中的分校。",
+  "This School has no Branches: start the open mat for the whole School.": "这所学校没有分校：请为整所学校开始自由练习。",
+  "Only the School owner, and staff the owner allows, can start an open mat.": "只有学校所有者以及所有者允许的员工才能开始自由练习。",
+  "You can start an open mat only at your own Branches.": "你只能在自己的分校开始自由练习。",
+  "Pick one of the School's styles for this open mat.": "请为这次自由练习选择学校的一种风格。",
+  "An open mat starts from 30 minutes ago to 24 hours ahead.": "自由练习的开始时间须在 30 分钟前到 24 小时后之间。",
+  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "“可以开始自由练习”仅适用于本校的分校员工和教练。",
 };

@@ -6480,3 +6480,28 @@ User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules
 ### Recorded by
 
 User (Code), 28 Oct 2026: *"start all three"*, which includes the Memberships cancellation charge; merged on the user's *"merge it"*, Memberships thread.
+
+---
+
+## Decision 386 — Front desk: starting an unplanned open mat
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F10 · **Rules from:** Decision 304 items 1, 2, 4, 5 · **Follows:** Decision 385
+
+Part of "build them" (28 Oct 2026). The "+ Open mat session" button on the Check-in page was switched off, waiting for this.
+
+### Decision
+
+1. **`POST /schools/{schoolId}/open-mats`** `{ branchId, disciplineId, startsAt, minutes }` makes a one-off Class titled "Open mat", with the class type **"Open mat"** for its style (Decision 304 item 1), so booking, check-in, attendance and hours work as for any class, and the hours switch (Decision 301) applies. Length defaults to 60 minutes. Membership covers it, like any class (Decision 304 item 3's "uses a class credit", on by default).
+2. **Who can start one** (Decision 304 item 4): the School owner, always; Branch Staff and coaches only with the owner's per-person **"Can start open mat sessions"** switch (off by default), and only at their own Branches. The owner sets it in a new "Open mat sessions" card on the Staff page (`GET`/`PUT /schools/{schoolId}/open-mats/permissions[/{userId}]`); `GET /schools/{schoolId}/open-mats/me` tells the Check-in page whether to show the button.
+3. **Students are told in their Notifications** (Decision 304 item 5): those with a live membership at the School, whose home Branch is that Branch, and who train that style, i.e. hold a rank in it. In the app only: no email, and no push until the "Open mat alerts" setting exists.
+4. **The start time** is today, from 30 minutes ago to 24 hours ahead, and the length 15 minutes to 8 hours (the screen offers 30, 45, 60, 90 and 120 minutes).
+
+### Not in this decision (open, to confirm)
+
+- **"Who train that style"** is read as "holds a rank in that style". Product owner to confirm.
+- **The time limits** (point 4) are this build's choice.
+- **Not built yet from Decision 304:** the School setting "Open mat uses a class credit" (item 3; today it always does, which is the default), the home-screen banner and the "Open mat alerts" push setting in the student app (item 5, Track B; push also needs the Firebase/APNs credentials, v1.3).
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.

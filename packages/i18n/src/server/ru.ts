@@ -600,4 +600,11 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "Вы уже главный владелец.",
   "This person is not a co-owner of this School.": "Этот человек не совладелец этой школы.",
   "entityId must equal schoolId for entityType SCHOOL.": "Для entityType SCHOOL entityId должен совпадать со schoolId.",
+  "Pick one of the School's open Branches for this open mat.": "Выберите один из открытых филиалов школы для этого открытого ковра.",
+  "This School has no Branches: start the open mat for the whole School.": "У этой школы нет филиалов: начните открытый ковёр для всей школы.",
+  "Only the School owner, and staff the owner allows, can start an open mat.": "Начать открытый ковёр может только владелец школы и сотрудники, которым он это разрешил.",
+  "You can start an open mat only at your own Branches.": "Вы можете начать открытый ковёр только в своих филиалах.",
+  "Pick one of the School's styles for this open mat.": "Выберите один из стилей школы для этого открытого ковра.",
+  "An open mat starts from 30 minutes ago to 24 hours ahead.": "Открытый ковёр начинается не раньше чем 30 минут назад и не позже чем через 24 часа.",
+  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "«Может начинать открытый ковёр» — для сотрудников филиалов и тренеров этой школы.",
 };

@@ -609,4 +609,11 @@ export const SERVER_PATTERNS: string[] = [
  "That check-in code isn't right.",
  "This class is at another Branch.",
  "The tablet's day is out of range. Check the tablet's date and time.",
+ "Pick one of the School's open Branches for this open mat.",
+ "This School has no Branches: start the open mat for the whole School.",
+ "Only the School owner, and staff the owner allows, can start an open mat.",
+ "You can start an open mat only at your own Branches.",
+ "Pick one of the School's styles for this open mat.",
+ "An open mat starts from 30 minutes ago to 24 hours ahead.",
+ "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.",
 ];

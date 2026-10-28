@@ -31,6 +31,10 @@ export interface NotificationFanoutJobData {
   schoolId?: string;
   targetType?: NotificationTargetType;
   targetId?: string;
+  /** In the app's Notifications only: no push and no email (Decision 386:
+   * an unplanned open mat, whose push alert is a student's opt-in). Copied
+   * onto a parent's copy. */
+  inAppOnly?: boolean;
 }
 
 /** Decision 355 — what a notification opens when clicked. CLASS and WAIVER

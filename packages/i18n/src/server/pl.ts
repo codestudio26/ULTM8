@@ -600,4 +600,11 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "Jesteś już głównym właścicielem.",
   "This person is not a co-owner of this School.": "Ta osoba nie jest współwłaścicielem tej szkoły.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityId musi być równe schoolId dla entityType SCHOOL.",
+  "Pick one of the School's open Branches for this open mat.": "Wybierz jeden z otwartych oddziałów szkoły dla tego open mata.",
+  "This School has no Branches: start the open mat for the whole School.": "Ta szkoła nie ma oddziałów: rozpocznij open mat dla całej szkoły.",
+  "Only the School owner, and staff the owner allows, can start an open mat.": "Open mat może rozpocząć tylko właściciel szkoły i personel, któremu na to pozwoli.",
+  "You can start an open mat only at your own Branches.": "Open mat możesz rozpocząć tylko w swoich oddziałach.",
+  "Pick one of the School's styles for this open mat.": "Wybierz jeden ze stylów szkoły dla tego open mata.",
+  "An open mat starts from 30 minutes ago to 24 hours ahead.": "Open mat zaczyna się od 30 minut temu do 24 godzin w przód.",
+  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "„Może rozpoczynać open maty” jest dla personelu oddziałów i trenerów tej szkoły.",
 };

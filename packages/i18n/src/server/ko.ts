@@ -600,4 +600,11 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "이미 대표 소유자입니다.",
   "This person is not a co-owner of this School.": "이 사람은 이 학교의 공동 소유자가 아닙니다.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType이 SCHOOL이면 entityId는 schoolId와 같아야 합니다.",
+  "Pick one of the School's open Branches for this open mat.": "이 오픈 매트를 위해 학교의 운영 중인 지점 중 하나를 선택하세요.",
+  "This School has no Branches: start the open mat for the whole School.": "이 학교에는 지점이 없습니다. 학교 전체로 오픈 매트를 시작하세요.",
+  "Only the School owner, and staff the owner allows, can start an open mat.": "오픈 매트는 학교 소유자와 소유자가 허락한 직원만 시작할 수 있습니다.",
+  "You can start an open mat only at your own Branches.": "오픈 매트는 본인의 지점에서만 시작할 수 있습니다.",
+  "Pick one of the School's styles for this open mat.": "이 오픈 매트를 위해 학교의 스타일 중 하나를 선택하세요.",
+  "An open mat starts from 30 minutes ago to 24 hours ahead.": "오픈 매트는 30분 전부터 24시간 후 사이에 시작해야 합니다.",
+  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "\"오픈 매트 시작 가능\"은 이 학교의 지점 직원과 코치용입니다.",
 };

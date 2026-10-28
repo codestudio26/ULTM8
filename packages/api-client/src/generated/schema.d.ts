@@ -5076,6 +5076,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/open-mats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpenMatsController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpenMatsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpenMatsController_listPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["OpenMatsController_setPermission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9414,6 +9478,48 @@ export interface components {
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
             code: string;
+        };
+        StartOpenMatDto: {
+            /** @description One of the School's open Branches; null when it has none. */
+            branchId?: string | null;
+            /** @description The style. Required when the School has styles. */
+            disciplineId?: string | null;
+            /**
+             * Format: date-time
+             * @description From 30 minutes ago to 24 hours ahead.
+             */
+            startsAt: string;
+            /** @default 60 */
+            minutes: number;
+        };
+        OpenMatStartedDto: {
+            classId: string;
+            title: string;
+            branchId: string | null;
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** @description How many students were told in the app. */
+            notified: number;
+        };
+        MyOpenMatPermissionDto: {
+            canStart: boolean;
+            /** @description The Branches the caller can start one at; null for any. */
+            branchIds: string[] | null;
+        };
+        OpenMatPermissionDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            roles: ("BRANCH_STAFF" | "INSTRUCTOR")[];
+            canStartOpenMat: boolean;
+        };
+        OpenMatPermissionListDto: {
+            items: components["schemas"]["OpenMatPermissionDto"][];
+        };
+        SetOpenMatPermissionDto: {
+            canStartOpenMat: boolean;
         };
     };
     responses: never;
@@ -17969,6 +18075,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartOpenMatDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatStartedDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyOpenMatPermissionDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_listPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatPermissionListDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_setPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOpenMatPermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatPermissionDto"];
                 };
             };
         };
