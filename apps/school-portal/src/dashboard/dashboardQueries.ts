@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -7,6 +7,9 @@ export type BookingsSummaryResponse = components['schemas']['BookingsSummaryResp
 export type BookingsSummaryDay = components['schemas']['BookingsSummaryDayDto'];
 export type BookingsSummaryActivity = components['schemas']['BookingsSummaryActivityDto'];
 export type BookingsSummaryClass = components['schemas']['BookingsSummaryClassDto'];
+export type DashboardOverview = components['schemas']['DashboardOverviewDto'];
+export type SetupStepKey = components['schemas']['SetupStepDto']['key'];
+export type Birthday = components['schemas']['BirthdayDto'];
 
 export interface BookingsSummaryRange {
   from: string;
@@ -39,5 +42,36 @@ export function useBookingsSummary(schoolId: string | null, range?: BookingsSumm
     enabled: !!schoolId && enabled,
     refetchOnWindowFocus: true,
     refetchInterval: 5 * 60_000,
+  });
+}
+
+/** GET /schools/:schoolId/dashboard — Decision 374: Active students and the
+ * setup checklist (School Owner only). */
+export function useDashboardOverview(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard-overview', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/dashboard', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useSetSetupChecklistHidden(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (hidden: boolean) =>
+      unwrap(apiClient.PATCH('/v1/schools/{schoolId}/dashboard/setup-checklist', { params: { path: { schoolId } }, body: { hidden } })),
+    onSuccess: (data) => queryClient.setQueryData(['dashboard-overview', schoolId], data),
+  });
+}
+
+/** GET /schools/:schoolId/birthdays — Decision 374: this week's birthdays,
+ * for every member of staff (the students each may see). */
+export function useBirthdays(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['birthdays', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/birthdays', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+    staleTime: 60 * 60_000,
   });
 }
