@@ -356,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/franchise-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_previewFranchise"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/franchise-join-request": {
         parameters: {
             query?: never;
@@ -5000,6 +5016,8 @@ export interface components {
             footerTwitterUrl?: string | null;
             /** @description Show this School's Franchise name and logo (the Franchise Owner must also allow it). */
             showFranchiseBranding?: boolean;
+            /** @description Confirms a currency change that moves plans without their own currency to the new one. */
+            confirmCurrencyChange?: boolean;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -5155,6 +5173,10 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             decidedAt?: string | null;
+        };
+        FranchisePreviewResponseDto: {
+            id: string;
+            name: string;
         };
         SchoolFranchiseJoinRequestResponseDto: {
             request?: components["schemas"]["FranchiseJoinRequestResponseDto"] | null;
@@ -8613,7 +8635,7 @@ export interface components {
         };
         RequestPublicPhotoUploadUrlDto: {
             /** @enum {string} */
-            entityType: "INSTRUCTOR" | "USER" | "BRANCH" | "FRANCHISE" | "CLASS";
+            entityType: "INSTRUCTOR" | "USER" | "BRANCH" | "FRANCHISE" | "CLASS" | "SCHOOL";
             /** @enum {string} */
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
@@ -9274,6 +9296,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_previewFranchise: {
+        parameters: {
+            query: {
+                franchiseId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchisePreviewResponseDto"];
                 };
             };
         };

@@ -47,7 +47,8 @@ test('the owner chooses the class cancellation settings on the School page', asy
   await card.getByLabel('When the policy applies').selectOption('ANY_TIME');
   await card.getByLabel('Default cutoff (hours before class)').fill('12');
   await card.getByLabel("Charge the class's late-cancellation fee after the cutoff").uncheck();
-  await card.getByLabel('No-show fee').fill('500');
+  // Decision 368 (S3) — typed in normal units: 5 means 5.00, stored as 500.
+  await card.getByLabel('No-show fee').fill('5');
   await card.getByLabel('When the school cancels a whole class').selectOption('FOLLOW_POLICY');
   await card.getByRole('button', { name: 'Save changes' }).click();
 
@@ -119,7 +120,7 @@ test('a branch can use its own cancellation settings instead of the school\'s', 
   await expect(card.getByLabel('Class cancellation policy')).toBeDisabled();
   await card.getByLabel('Settings for this branch').selectOption('OWN');
   await card.getByLabel('Class cancellation policy').selectOption('AUTO_REFUND');
-  await card.getByLabel('No-show fee').fill('250');
+  await card.getByLabel('No-show fee').fill('2.50');
   await card.getByRole('button', { name: 'Save changes' }).click();
   await expect(card.getByText('Branch settings saved.')).toBeVisible();
 

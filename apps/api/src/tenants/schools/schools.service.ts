@@ -666,7 +666,29 @@ export class SchoolsService {
       }
     }
 
-    return this.findOne(callerId, schoolId);
+    return withoutBillingIds(await this.findOne(callerId, schoolId));
+  }
+
+  /**
+   * Decision 368 (School Settings review, Q4) — the Franchise's name for a
+   * School Owner about to ask to join it, so a mistyped ID doesn't ask the
+   * wrong Franchise. Same checks, same order and same messages as
+   * joinFranchise() (owner, open School, Franchise exists and isn't closed),
+   * read on the jobs connection for the same RLS reason. Only the name leaves
+   * this method; showing the Franchise on the School itself stays "both must
+   * allow" (Decision 350).
+   */
+  async previewFranchise(callerId: string, schoolId: string, franchiseId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { id: true, name: true, archivedAt: true } });
+    if (!target) {
+      throw new NotFoundException('Franchise not found');
+    }
+    if (target.archivedAt) {
+      throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
+    }
+    return { id: target.id, name: target.name };
   }
 
   /** Schools visible to the caller — RLS already restricts this to Schools where the
@@ -889,6 +911,9 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (dto.defaultCurrency !== undefined) {
+      await this.assertCurrencyChangeAllowed(callerId, schoolId, dto.defaultCurrency, dto.confirmCurrencyChange === true);
+    }
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -934,7 +959,37 @@ export class SchoolsService {
         },
       }),
     );
-    return updated;
+    return withoutBillingIds(updated);
+  }
+
+  /**
+   * Decision 368 (School Settings review, Q3/S6) — a membership plan with no
+   * currency of its own is charged in the School's (resolveChargeCurrency), so
+   * changing the School's currency silently moved those plans to the new one,
+   * same number (150 BRL became 150 USD), and clearing it made them impossible
+   * to buy. Free plans need no currency and archived ones can't be bought, so
+   * neither counts. Clearing is refused while any plan relies on it; changing
+   * needs `confirmCurrencyChange`, so the portal can say how many plans move.
+   */
+  private async assertCurrencyChangeAllowed(callerId: string, schoolId: string, next: string | null, confirmed: boolean) {
+    const { current, reliant } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
+      const count = await tx.membershipPlan.count({ where: { schoolId, currency: null, archivedAt: null, price: { gt: 0 } } });
+      return { current: school?.defaultCurrency ?? null, reliant: count };
+    });
+    if ((current ?? '').toUpperCase() === (next ?? '').toUpperCase() || reliant === 0) return;
+    if (!next) {
+      throw new ConflictException({
+        code: 'SCHOOL_CURRENCY_IN_USE',
+        message: `${reliant} membership plan(s) are charged in the School's currency, so it can't be cleared. Give those plans their own currency first.`,
+      });
+    }
+    if (!confirmed) {
+      throw new ConflictException({
+        code: 'SCHOOL_CURRENCY_CHANGE_CONFIRM',
+        message: `${reliant} membership plan(s) are charged in the School's currency and will be charged in ${next.toUpperCase()} from now on, with the same amounts. Send confirmCurrencyChange to go ahead.`,
+      });
+    }
   }
 
   /**
@@ -948,9 +1003,10 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const joinCode = await this.generateUniqueJoinCode(callerId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({ where: { id: schoolId }, data: { joinCode } }),
     );
+    return withoutBillingIds(updated);
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
@@ -1108,6 +1164,20 @@ export class SchoolsService {
     }
     await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
+}
+
+/**
+ * Decision 368 (School Settings review, S11) — GET/PATCH /schools/:id hands
+ * the School row to every member (Students, Instructors, Branch Staff). The
+ * Stripe subscription ids and the platform subscription status are billing
+ * internals no screen reads, so they're left out of those replies. Internal
+ * callers (leaveFranchise) still use findOne()'s full row.
+ */
+export function withoutBillingIds<T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown }>(
+  school: T,
+): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
+  const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: _status, ...rest } = school;
+  return rest;
 }
 
 function homeBranchOf(homes: Map<string, { id: string; name: string }>, studentId: string) {

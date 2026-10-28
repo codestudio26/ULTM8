@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School settings review** (Decision 368) — the School page shows the
+  School's join code (copy, make a new one), a logo upload and colour for the
+  student app, and asks before a currency change moves membership plans to a
+  new currency. "Ask to join" a Franchise shows its name first. Fixed: an
+  Owner with two Schools could save one School's cancellation and footer
+  settings onto the other; saving one card wiped another's typing; the
+  no-show fee was typed in cents; a closed School's forms still showed;
+  footer links without https:// opened broken pages; endless spinners on a
+  load error or for non-owners; plain messages for blank names, waitlist
+  window and footer fields; the School reply no longer carries Stripe ids.
+  School details is split into three groups. No migration.
 - **Signed-in users are no longer limited per internet address** (Decision
   376). Everyone at a School on the same WiFi shares one address, which was
   limited to 60 requests a minute; a busy front desk could hit it. Signed-in

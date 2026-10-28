@@ -55,6 +55,16 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.classMovedToPast');
     case 'CLASS_ALREADY_ENDED':
       return t('server.codes.classAlreadyEnded');
+    // School Settings review (Decision 368, Q3) — the count and currency come from the API's English text.
+    case 'SCHOOL_CURRENCY_CHANGE_CONFIRM': {
+      const n = Number(message.match(/^(\d+) membership plan/)?.[1]);
+      const currency = message.match(/charged in ([A-Z]{3}) from now on/)?.[1];
+      return Number.isFinite(n) && currency ? t('server.codes.schoolCurrencyChange', { count: n, currency }) : null;
+    }
+    case 'SCHOOL_CURRENCY_IN_USE': {
+      const n = Number(message.match(/^(\d+) membership plan/)?.[1]);
+      return Number.isFinite(n) ? t('server.codes.schoolCurrencyInUse', { count: n }) : null;
+    }
     default:
       return null;
   }

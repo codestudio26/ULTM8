@@ -967,6 +967,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/franchise-preview": {
+      "get": {
+        "operationId": "SchoolsController_previewFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchisePreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/franchise-join-request": {
       "get": {
         "operationId": "SchoolsController_findFranchiseJoinRequest",
@@ -15214,6 +15257,10 @@
           "showFranchiseBranding": {
             "type": "boolean",
             "description": "Show this School's Franchise name and logo (the Franchise Owner must also allow it)."
+          },
+          "confirmCurrencyChange": {
+            "type": "boolean",
+            "description": "Confirms a currency change that moves plans without their own currency to the new one."
           }
         }
       },
@@ -15755,6 +15802,21 @@
           "schoolName",
           "status",
           "createdAt"
+        ]
+      },
+      "FranchisePreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ]
       },
       "SchoolFranchiseJoinRequestResponseDto": {
@@ -27358,7 +27420,8 @@
               "USER",
               "BRANCH",
               "FRANCHISE",
-              "CLASS"
+              "CLASS",
+              "SCHOOL"
             ]
           },
           "contentType": {
