@@ -70,6 +70,27 @@ export class GuestWaiversController {
     return this.guestWaivers.myFriendPasses(user.sub, schoolId);
   }
 
+  /** Decision 379 — a parent adding guests to their child's booking. */
+  @ApiOkResponse({ type: FriendPassListDto })
+  @Get('guardians/me/minors/:studentId/friend-passes')
+  minorFriendPasses(
+    @CurrentUser() user: JwtPayload,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Query('schoolId', ParseUUIDPipe) schoolId: string,
+  ) {
+    return this.guestWaivers.minorFriendPasses(user.sub, studentId, schoolId);
+  }
+
+  @ApiOkResponse({ type: BookingGuestsDto })
+  @Get('guardians/me/minors/:studentId/bookings/:id/guests')
+  minorBookingGuests(
+    @CurrentUser() user: JwtPayload,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.guestWaivers.minorBookingGuests(user.sub, studentId, id);
+  }
+
   @ApiOkResponse({ type: GuestWaiverSignatureListDto })
   @Get('schools/:schoolId/waivers/:id/guest-signatures')
   listSignatures(

@@ -1,5 +1,6 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "Misafirleri yalnızca ebeveyn ekleyebilir, Çocuk Modunda eklenemez.",
   "Your current passcode is not right.": "Mevcut giriş kodunuz doğru değil.",
   "Choose a new passcode that is different from your current one.": "Mevcut kodunuzdan farklı yeni bir giriş kodu seçin.",
   "You must be 18 or over to create a School.": "Okul oluşturmak için 18 yaşında veya daha büyük olmalısınız.",

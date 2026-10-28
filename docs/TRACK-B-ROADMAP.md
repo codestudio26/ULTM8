@@ -512,6 +512,18 @@ A class row lets a member add guests, one of their own Friend Passes each
 guest's waiver signing link with Share. My Bookings shows the same for an
 upcoming booking with guests. Not offered for Guardian or Kid Mode bookings.
 
+### Parent booking screen (28 Oct 2026, Decision 379)
+
+My Minors has a "Book a class" button per child (`ChildBookingScreen`). The
+parent picks one of the child's Schools (`GET /guardians/me/minors/:studentId/schools`),
+books a class in the child's name, and can add guests paid for with the child's
+own Friend Passes (`GET /guardians/me/minors/:studentId/friend-passes?schoolId=`).
+A full class offers the waitlist for the child. The screen lists the child's
+upcoming bookings (`GET /guardians/me/minors/:studentId/bookings`), with each
+guest's signing link (`GET /guardians/me/minors/:studentId/bookings/:id/guests`)
+and Cancel. Kid Mode still has no guests; the API refuses them
+(`NO_GUESTS_IN_KID_MODE`).
+
 ---
 
 ## Slice 3 — Rank & Grading (read-only) — DONE

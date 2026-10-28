@@ -8,11 +8,12 @@ import { useT } from '../i18n/I18nProvider';
  * A booking's guests (Waivers Q9): when the class asks for a waiver, each
  * guest's signing link to share and whether they have signed. The link text
  * is always shown and selectable, since sharing isn't available everywhere
- * (React Native Web without navigator.share).
+ * (React Native Web without navigator.share). With `studentId`, a booking of
+ * the parent's child (Decision 379).
  */
-export function BookingGuests({ bookingId }: { bookingId: string }) {
+export function BookingGuests({ bookingId, studentId }: { bookingId: string; studentId?: string }) {
   const t = useT();
-  const query = useBookingGuests(bookingId);
+  const query = useBookingGuests(bookingId, studentId);
   const [shareFailed, setShareFailed] = useState(false);
 
   if (query.isLoading) return null;

@@ -115,6 +115,6 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
     expect(getByText('https://portal.example/guest-waiver/tok1')).toBeTruthy();
     expect(getByText('Waiver signed: Gina Guest')).toBeTruthy();
     expect(queryByText('https://portal.example/guest-waiver/tok2')).toBeNull();
-    expect(mocked(bookingQueries.useBookingGuests)).toHaveBeenCalledWith('b1');
+    expect(mocked(bookingQueries.useBookingGuests)).toHaveBeenCalledWith('b1', undefined);
   });
 });

@@ -1,5 +1,6 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "Gäste kann nur ein Elternteil hinzufügen, nicht im Kindermodus.",
   "Your current passcode is not right.": "Dein aktueller Zugangscode ist nicht richtig.",
   "Choose a new passcode that is different from your current one.": "Wähle einen neuen Zugangscode, der sich von deinem aktuellen unterscheidet.",
   "You must be 18 or over to create a School.": "Du musst mindestens 18 Jahre alt sein, um eine Schule zu erstellen.",

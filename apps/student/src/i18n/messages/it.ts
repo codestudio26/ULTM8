@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Questo corso è pieno.",
       joinWaitlist: "Entra in lista d’attesa",
       waitlistPosition: "Sei n. {position} in lista d’attesa.",
+      childWaitlistPosition: "Tuo figlio/a è n. {position} in lista d’attesa.",
       leaveWaitlist: "Esci dalla lista d’attesa",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Aggiungi un ospite",
       remove: "Togli un ospite",
       passesLeft: "Pass amico che puoi usare per questa lezione: {count}",
+      childPassesLeft: "Pass amico di tuo figlio/a per questa lezione: {count}",
       linksIntro: "Manda a ogni ospite il suo link, così può firmare la liberatoria prima della lezione.",
       guestNumber: "Ospite {number}",
       signed: "Liberatoria firmata: {name}",
@@ -584,6 +586,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Prenota per {name}",
+      upcomingTitle: "Prossime prenotazioni",
+      noBookings: "{name} non ha prenotazioni in programma.",
+      bookTitle: "Prenota una lezione",
+      noSchools: "{name} non è ancora allievo/a di nessuna scuola.",
+      noClasses: "Nessuna lezione in programma in questa scuola.",
+      loadError: "Impossibile caricare le scuole di tuo figlio/a — riprova.",
+      bookingsLoadError: "Impossibile caricare le prenotazioni di tuo figlio/a — riprova.",
+      classesLoadError: "Impossibile caricare le lezioni — riprova.",
+    },
     myMinors: {
       empty: "Ancora nessun minore collegato.",
       loadError: "Impossibile caricare i tuoi minori — riprova.",
@@ -598,6 +611,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Impossibile aggiungere questo minore — riprova.",
       addMinor: "Aggiungi minore",
       addAMinor: "Aggiungi un minore",
+      bookAClass: "Prenota una lezione",
     },
     minorConsent: {
       loadError: "Impossibile caricare le impostazioni di questo minore — riprova.",

@@ -165,6 +165,11 @@ export class BookingsService {
     // guest (Classes review C13: one Subscription sent three times booked three
     // free guests).
     const guestIds = dto.attendeeMembershipIds ?? [];
+    // Decision 379: Kid Mode books the child only. Guests and their signing
+    // links stay with the parent, who adds them from their own session.
+    if (viaKidMode && guestIds.length > 0) {
+      throw new ForbiddenException({ code: 'NO_GUESTS_IN_KID_MODE', message: 'Guests can only be added by a parent, not in Kid Mode.' });
+    }
     if (new Set(guestIds).size !== guestIds.length) {
       throw new BadRequestException({ code: 'GUEST_PASS_REPEATED', message: 'Each guest needs their own Friend Pass: the same pass was listed more than once.' });
     }
@@ -533,6 +538,48 @@ export class BookingsService {
   }
 
   /** GET /bookings/me. */
+  /** Decision 379 — the Schools a parent's child is a student at, for the
+   * parent's "Book a class" screen. Read under the child's own context, as
+   * every other Guardian-on-behalf-of read does (the parent holds no
+   * RoleGrant, Decision 92). */
+  async findMinorSchools(guardianId: string, studentId: string) {
+    await this.guardiansService.assertGuardianOfStudent(guardianId, studentId);
+    const grants = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: studentId, role: 'STUDENT', revokedAt: null, school: { archivedAt: null } },
+        select: { schoolId: true, school: { select: { name: true } } },
+        distinct: ['schoolId'],
+      }),
+    );
+    const items = grants.filter((g) => g.schoolId && g.school).map((g) => ({ schoolId: g.schoolId!, name: g.school!.name }));
+    items.sort((a, b) => a.name.localeCompare(b.name));
+    return { items };
+  }
+
+  /** Decision 379 — the child's upcoming bookings, soonest first, so the
+   * parent can share guest links and cancel. */
+  async findMinorUpcomingBookings(guardianId: string, studentId: string) {
+    await this.guardiansService.assertGuardianOfStudent(guardianId, studentId);
+    const bookings = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.booking.findMany({
+        where: { studentId, status: 'UPCOMING', class: { endDate: { gt: new Date() } } },
+        select: { id: true, classId: true, schoolId: true, class: { select: { title: true, startDate: true } }, _count: { select: { attendees: true } } },
+        orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
+        take: 100,
+      }),
+    );
+    return {
+      items: bookings.map((b) => ({
+        id: b.id,
+        classId: b.classId,
+        classTitle: b.class.title,
+        classStartsAt: b.class.startDate.toISOString(),
+        schoolId: b.schoolId,
+        guestCount: b._count.attendees,
+      })),
+    };
+  }
+
   async findMyBookings(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
