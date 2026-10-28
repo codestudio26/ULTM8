@@ -14,6 +14,15 @@ let s: GradingSchool;
 const MIN = 60_000;
 const at = (ms: number) => new Date(Date.now() + ms);
 
+/** A fixed-offset time zone where the local time is about 10:00 now. */
+function morningTimezone(): string {
+  let offset = 10 - new Date().getUTCHours();
+  if (offset < -12) offset += 24;
+  if (offset > 14) offset -= 24;
+  // Etc/GMT names have the sign the other way round: Etc/GMT-3 is UTC+3.
+  return offset === 0 ? 'Etc/UTC' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}`;
+}
+
 async function subscribe(studentId: string) {
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: `Unlimited ${randomUUID().slice(0, 4)}`, price: 5000 } });
   return db.membership.create({ data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'RECURRING' } });
@@ -225,36 +234,44 @@ test('staff see a tablet on the Check-in page and can end it there (Decision 380
   await staff.context().close();
 });
 
-test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {
-  await classNow();
-  const later = await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
-  await subscribe(s.newStudent.id);
-  await signIn(page, s.ownerToken);
-  await page.goto('/check-in');
-  await page.getByRole('tab', { name: 'Name' }).click();
-  await page.getByLabel('First or last name').fill('Nia');
-  await page.getByRole('button', { name: /Nia Park/ }).click();
-  const card = page.getByTestId('fd-welcome');
-  const evening = card.getByRole('button', { name: /Evening class/ });
-  await expect(evening).toBeDisabled();
-  await expect(evening).toContainText('Check-in opens at');
-  await expect(card.getByRole('button', { name: /Fundamentals/ })).toHaveAttribute('aria-pressed', 'true');
-  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
-  await expect(page.getByText('Checked in ✓')).toBeVisible();
-  expect(await db.booking.count({ where: { classId: later.id } })).toBe(0);
-});
+// These two put a class 3 hours from now and expect it on today's list, so
+// late in the UTC evening it fell on tomorrow and the tests failed. The
+// browser runs in a time zone where it's about 10:00 now, so "3 hours from
+// now" is always still today.
+test.describe('later classes today', () => {
+  test.use({ timezoneId: morningTimezone() });
 
-test('only a later class today: nothing is ticked and Confirm stays off', async ({ page }) => {
-  await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
-  await subscribe(s.newStudent.id);
-  await signIn(page, s.ownerToken);
-  await page.goto('/check-in');
-  await page.getByRole('tab', { name: 'Name' }).click();
-  await page.getByLabel('First or last name').fill('Nia');
-  await page.getByRole('button', { name: /Nia Park/ }).click();
-  const card = page.getByTestId('fd-welcome');
-  await expect(card.getByRole('button', { name: /Evening class/ })).toHaveAttribute('aria-pressed', 'false');
-  await expect(card.getByRole('button', { name: 'Tick a class' })).toBeDisabled();
+  test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {
+    await classNow();
+    const later = await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+    await subscribe(s.newStudent.id);
+    await signIn(page, s.ownerToken);
+    await page.goto('/check-in');
+    await page.getByRole('tab', { name: 'Name' }).click();
+    await page.getByLabel('First or last name').fill('Nia');
+    await page.getByRole('button', { name: /Nia Park/ }).click();
+    const card = page.getByTestId('fd-welcome');
+    const evening = card.getByRole('button', { name: /Evening class/ });
+    await expect(evening).toBeDisabled();
+    await expect(evening).toContainText('Check-in opens at');
+    await expect(card.getByRole('button', { name: /Fundamentals/ })).toHaveAttribute('aria-pressed', 'true');
+    await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+    await expect(page.getByText('Checked in ✓')).toBeVisible();
+    expect(await db.booking.count({ where: { classId: later.id } })).toBe(0);
+  });
+
+  test('only a later class today: nothing is ticked and Confirm stays off', async ({ page }) => {
+    await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+    await subscribe(s.newStudent.id);
+    await signIn(page, s.ownerToken);
+    await page.goto('/check-in');
+    await page.getByRole('tab', { name: 'Name' }).click();
+    await page.getByLabel('First or last name').fill('Nia');
+    await page.getByRole('button', { name: /Nia Park/ }).click();
+    const card = page.getByTestId('fd-welcome');
+    await expect(card.getByRole('button', { name: /Evening class/ })).toHaveAttribute('aria-pressed', 'false');
+    await expect(card.getByRole('button', { name: 'Tick a class' })).toBeDisabled();
+  });
 });
 
 test('the welcome card shows which waivers are still to sign (Q4)', async ({ page }) => {
