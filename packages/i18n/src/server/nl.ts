@@ -1,5 +1,6 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "Alleen een ouder kan gasten toevoegen, niet in de Kindermodus.",
   "Your current passcode is not right.": "Je huidige toegangscode klopt niet.",
   "Choose a new passcode that is different from your current one.": "Kies een nieuwe toegangscode die anders is dan je huidige.",
   "You must be 18 or over to create a School.": "Je moet 18 jaar of ouder zijn om een School aan te maken.",

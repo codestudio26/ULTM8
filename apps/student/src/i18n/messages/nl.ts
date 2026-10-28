@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Deze les is vol.",
       joinWaitlist: "Op de wachtlijst",
       waitlistPosition: "Je staat op plek {position} op de wachtlijst.",
+      childWaitlistPosition: "Je kind staat op plek {position} op de wachtlijst.",
       leaveWaitlist: "Wachtlijst verlaten",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Gast toevoegen",
       remove: "Gast weghalen",
       passesLeft: "Vriendenpassen die je voor deze les kunt gebruiken: {count}",
+      childPassesLeft: "Vriendenpassen van je kind voor deze les: {count}",
       linksIntro: "Stuur elke gast zijn link, zodat hij de vrijwaring vóór de les kan ondertekenen.",
       guestNumber: "Gast {number}",
       signed: "Vrijwaring ondertekend: {name}",
@@ -575,6 +577,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Boeken voor {name}",
+      upcomingTitle: "Komende boekingen",
+      noBookings: "{name} heeft geen komende boekingen.",
+      bookTitle: "Les boeken",
+      noSchools: "{name} is nog bij geen enkele school leerling.",
+      noClasses: "Geen komende lessen bij deze school.",
+      loadError: "De scholen van je kind konden niet worden geladen — probeer het opnieuw.",
+      bookingsLoadError: "De boekingen van je kind konden niet worden geladen — probeer het opnieuw.",
+      classesLoadError: "De lessen konden niet worden geladen — probeer het opnieuw.",
+    },
     myMinors: {
       empty: "Nog geen gekoppelde minderjarigen.",
       loadError: "Je minderjarigen konden niet worden geladen — probeer het opnieuw.",
@@ -589,6 +602,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Deze minderjarige kon niet worden toegevoegd — probeer het opnieuw.",
       addMinor: "Minderjarige toevoegen",
       addAMinor: "Een minderjarige toevoegen",
+      bookAClass: "Les boeken",
     },
     minorConsent: {
       loadError: "De instellingen van deze minderjarige konden niet worden geladen — probeer het opnieuw.",

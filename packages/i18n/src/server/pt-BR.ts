@@ -1,5 +1,6 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "Somente um responsável pode adicionar convidados, não no Modo Criança.",
   "Your current passcode is not right.": "Seu código de acesso atual não está correto.",
   "Choose a new passcode that is different from your current one.": "Escolha um novo código de acesso diferente do atual.",
   "You must be 18 or over to create a School.": "Você precisa ter 18 anos ou mais para criar uma Escola.",

@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "이 수업은 정원이 찼습니다.",
       joinWaitlist: "대기자 명단 등록",
       waitlistPosition: "대기자 명단 {position}번째입니다.",
+      childWaitlistPosition: "자녀는 대기자 명단 {position}번째입니다.",
       leaveWaitlist: "대기자 명단에서 나가기",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "게스트 추가",
       remove: "게스트 빼기",
       passesLeft: "이 수업에 쓸 수 있는 친구 패스: {count}개",
+      childPassesLeft: "이 수업에 쓸 수 있는 자녀의 친구 패스: {count}개",
       linksIntro: "수업 전에 면책 동의서에 서명할 수 있도록 각 게스트에게 링크를 보내세요.",
       guestNumber: "게스트 {number}",
       signed: "면책 동의서 서명 완료: {name}",
@@ -570,6 +572,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "{name} 예약",
+      upcomingTitle: "예정된 예약",
+      noBookings: "{name}의 예정된 예약이 없습니다.",
+      bookTitle: "수업 예약",
+      noSchools: "{name}은(는) 아직 어떤 학교에도 등록되어 있지 않습니다.",
+      noClasses: "이 학교에 예정된 수업이 없습니다.",
+      loadError: "자녀의 학교를 불러오지 못했습니다. 다시 시도해 주세요.",
+      bookingsLoadError: "자녀의 예약을 불러오지 못했습니다. 다시 시도해 주세요.",
+      classesLoadError: "수업을 불러오지 못했습니다. 다시 시도해 주세요.",
+    },
     myMinors: {
       empty: "아직 연결된 자녀가 없습니다.",
       loadError: "자녀 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -584,6 +597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "자녀를 추가하지 못했습니다. 다시 시도해 주세요.",
       addMinor: "자녀 추가",
       addAMinor: "자녀 추가하기",
+      bookAClass: "수업 예약",
     },
     minorConsent: {
       loadError: "자녀의 설정을 불러오지 못했습니다. 다시 시도해 주세요.",

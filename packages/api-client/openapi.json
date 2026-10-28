@@ -5748,6 +5748,76 @@
         ]
       }
     },
+    "/v1/guardians/me/minors/{studentId}/schools": {
+      "get": {
+        "operationId": "BookingsController_findMinorSchools",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorSchoolListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findMinorBookings",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorBookingListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/bookings/me": {
       "get": {
         "operationId": "BookingsController_findMyBookings",
@@ -11714,6 +11784,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FriendPassListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/friend-passes": {
+      "get": {
+        "operationId": "GuestWaiversController_minorFriendPasses",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendPassListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/bookings/{id}/guests": {
+      "get": {
+        "operationId": "GuestWaiversController_minorBookingGuests",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingGuestsDto"
                 }
               }
             }
@@ -20279,6 +20435,83 @@
         },
         "required": [
           "overrideReason"
+        ]
+      },
+      "MinorSchoolDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId",
+          "name"
+        ]
+      },
+      "MinorSchoolListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorSchoolDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MinorBookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "guestCount": {
+            "type": "number",
+            "description": "Guests on the booking, one Friend Pass each."
+          }
+        },
+        "required": [
+          "id",
+          "classId",
+          "classTitle",
+          "classStartsAt",
+          "schoolId",
+          "guestCount"
+        ]
+      },
+      "MinorBookingListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Upcoming bookings, soonest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorBookingDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "BookingListResponseDto": {

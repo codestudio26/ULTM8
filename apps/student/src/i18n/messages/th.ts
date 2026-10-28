@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "คลาสนี้เต็มแล้ว",
       joinWaitlist: "เข้ารายชื่อรอ",
       waitlistPosition: "คุณอยู่ลำดับที่ {position} ในรายชื่อรอ",
+      childWaitlistPosition: "บุตรหลานของคุณอยู่ลำดับที่ {position} ในรายชื่อรอ",
       leaveWaitlist: "ออกจากรายชื่อรอ",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "เพิ่มแขก",
       remove: "ลดแขก",
       passesLeft: "บัตรเพื่อนที่ใช้กับคลาสนี้ได้: {count} ใบ",
+      childPassesLeft: "บัตรเพื่อนของบุตรหลานที่ใช้กับคลาสนี้ได้: {count} ใบ",
       linksIntro: "ส่งลิงก์ให้แขกแต่ละคน เพื่อให้ลงนามเอกสารสละสิทธิ์ก่อนคลาส",
       guestNumber: "แขก {number}",
       signed: "ลงนามเอกสารสละสิทธิ์แล้ว: {name}",
@@ -570,6 +572,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "จองให้ {name}",
+      upcomingTitle: "การจองที่กำลังจะมาถึง",
+      noBookings: "{name} ไม่มีการจองที่กำลังจะมาถึง",
+      bookTitle: "จองคลาส",
+      noSchools: "{name} ยังไม่ได้เป็นนักเรียนของโรงเรียนใด",
+      noClasses: "ไม่มีคลาสที่กำลังจะมาถึงในโรงเรียนนี้",
+      loadError: "โหลดโรงเรียนของบุตรหลานไม่ได้ — โปรดลองอีกครั้ง",
+      bookingsLoadError: "โหลดการจองของบุตรหลานไม่ได้ — โปรดลองอีกครั้ง",
+      classesLoadError: "โหลดคลาสไม่ได้ — โปรดลองอีกครั้ง",
+    },
     myMinors: {
       empty: "ยังไม่มีผู้เยาว์ที่เชื่อมโยงไว้",
       loadError: "ไม่สามารถโหลดผู้เยาว์ของคุณได้ โปรดลองอีกครั้ง",
@@ -584,6 +597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "ไม่สามารถเพิ่มผู้เยาว์คนนี้ได้ โปรดลองอีกครั้ง",
       addMinor: "เพิ่มผู้เยาว์",
       addAMinor: "เพิ่มผู้เยาว์",
+      bookAClass: "จองคลาส",
     },
     minorConsent: {
       loadError: "ไม่สามารถโหลดการตั้งค่าของผู้เยาว์คนนี้ได้ โปรดลองอีกครั้ง",

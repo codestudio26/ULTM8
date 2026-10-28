@@ -32,6 +32,8 @@ export const bookings = {
     joinWaitlist: 'Join waitlist',
     /** {position} is the Student's place in the waitlist queue (1, 2, 3…). */
     waitlistPosition: "You're #{position} on the waitlist.",
+    /** Decision 379: a parent put their child on the waitlist. */
+    childWaitlistPosition: 'Your child is #{position} on the waitlist.',
     leaveWaitlist: 'Leave waitlist',
   },
   /** Guests on a booking, each paid for with one of the member's Friend
@@ -43,6 +45,8 @@ export const bookings = {
     remove: 'Remove a guest',
     /** {count} is how many of the member's Friend Passes can pay for a guest in this class. */
     passesLeft: 'Friend Passes you can use for this class: {count}',
+    /** Decision 379: a parent booking their child; the passes are the child's. */
+    childPassesLeft: "Your child's Friend Passes for this class: {count}",
     linksIntro: 'Send each guest their link, so they can sign the waiver before the class.',
     /** {number} is 1, 2, 3… in booking order. */
     guestNumber: 'Guest {number}',

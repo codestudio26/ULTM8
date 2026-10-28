@@ -6297,3 +6297,37 @@ The product owner asked for the front-desk items whose rules are already decided
 ### Recorded by
 
 User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.
+
+---
+
+## Decision 379 — A parent books a class for their child, with guests
+
+**Date:** 28 Oct 2026 · **Status:** Approved by product owner (Waivers decision card "How should guests on a child's booking work?": "Build a parent booking screen"; earlier "go" to guests on a parent's booking but not in Kid Mode)
+**Resolves:** Decision 366's open item "Guests on a booking a Guardian makes for a child, or through Kid Mode". No database change.
+
+### Background
+
+The API already let a Guardian book, cancel and join the waitlist for a linked child (`studentId` on the booking, cancel and waitlist requests), and let a booking carry guests on the organizing student's Friend Passes. The Student app had no screen for a parent to book their child, so a parent could not bring guests on a child's booking. Kid Mode (Decision 123) books the child from the parent's device.
+
+### Decision
+
+1. **Parent booking screen in the Student app.** My Minors has a "Book a class" button per child. The screen lists the child's upcoming bookings, lets the parent pick one of the child's Schools, and shows that School's upcoming classes with the same booking row a member uses: book in the child's name, add guests, and join the waitlist for the child when a class is full.
+2. **Guests are paid with the child's own Friend Passes**, as the booking's organizer is the child (SKILL.md §10, unchanged API rule). A pass for this class only is used first, as for members.
+3. **The parent shares each guest's signing link** (Decision 366) after booking and from the child's upcoming bookings, and can cancel the child's booking (with the existing `studentId` cancel path).
+4. **New Guardian reads**, each checking the caller is the child's Guardian (`assertGuardianOfStudent`) and reading under the child's tenant context (Decision 92):
+   - `GET /guardians/me/minors/:studentId/schools`: the Schools the child has a current Student role at (School not archived), by name.
+   - `GET /guardians/me/minors/:studentId/bookings`: the child's Upcoming bookings for classes that haven't ended, soonest first (up to 100), with class title, start and guest count.
+   - `GET /guardians/me/minors/:studentId/friend-passes?schoolId=`: the child's usable Friend Passes at that School.
+   - `GET /guardians/me/minors/:studentId/bookings/:id/guests`: the guests and their links on the child's booking (404 when the booking isn't the child's).
+5. **No guests in Kid Mode.** A Kid Mode booking with guests is refused with `NO_GUESTS_IN_KID_MODE` (403); Kid Mode booking alone is unchanged.
+6. Every new text is translated into all 15 languages, including the new API message.
+
+### What this does NOT resolve
+
+- Per-guest check-in stays with the Check-in work (Decision 377).
+- The class list is the School's public upcoming classes, the same list the Academy page shows a member.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, Waivers thread.
+

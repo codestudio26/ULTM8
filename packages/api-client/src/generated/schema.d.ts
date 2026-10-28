@@ -2004,6 +2004,38 @@ export interface paths {
         patch: operations["BookingsController_updateOverrideReason"];
         trace?: never;
     };
+    "/v1/guardians/me/minors/{studentId}/schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findMinorSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findMinorBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/me": {
         parameters: {
             query?: never;
@@ -3868,6 +3900,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GuestWaiversController_myFriendPasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/friend-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_minorFriendPasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/bookings/{id}/guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuestWaiversController_minorBookingGuests"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6531,6 +6595,27 @@ export interface components {
         };
         UpdateBookingOverrideDto: {
             overrideReason: string;
+        };
+        MinorSchoolDto: {
+            schoolId: string;
+            name: string;
+        };
+        MinorSchoolListDto: {
+            items: components["schemas"]["MinorSchoolDto"][];
+        };
+        MinorBookingDto: {
+            id: string;
+            classId: string;
+            classTitle: string;
+            /** Format: date-time */
+            classStartsAt: string;
+            schoolId: string;
+            /** @description Guests on the booking, one Friend Pass each. */
+            guestCount: number;
+        };
+        MinorBookingListDto: {
+            /** @description Upcoming bookings, soonest first. */
+            items: components["schemas"]["MinorBookingDto"][];
         };
         BookingListResponseDto: {
             items: components["schemas"]["BookingResponseDto"][];
@@ -12160,6 +12245,48 @@ export interface operations {
             };
         };
     };
+    BookingsController_findMinorSchools: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinorSchoolListDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findMinorBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinorBookingListDto"];
+                };
+            };
+        };
+    };
     BookingsController_findMyBookings: {
         parameters: {
             query?: {
@@ -15382,6 +15509,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FriendPassListDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_minorFriendPasses: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendPassListDto"];
+                };
+            };
+        };
+    };
+    GuestWaiversController_minorBookingGuests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingGuestsDto"];
                 };
             };
         };
