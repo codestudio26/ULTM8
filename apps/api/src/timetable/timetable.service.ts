@@ -326,10 +326,10 @@ export class TimetableService {
     }
     const switchingOff = dto.status === 'OFF' && existing.status === 'ON';
     if (switchingOff && dto.bookedClasses === 'MOVE') {
-      throw new BadRequestException('A slot that is switched off has nowhere to move its classes to. Use CANCEL or KEEP.');
+      throw new BadRequestException('A slot that is switched off has nowhere to move its classes to. Cancel them or keep them instead.');
     }
     if (!moves && dto.bookedClasses === 'CANCEL') {
-      throw new BadRequestException('CANCEL is only for a change that moves classes or switches the slot off. Use MOVE or KEEP.');
+      throw new BadRequestException('Cancelling is only for a change that moves classes or switches the slot off. Move them or keep them instead.');
     }
     // Decision 332, T5 (Decision 322 §6): capacity is never cut below the seats
     // already booked. Without a choice the cut is refused with the count; with one,

@@ -202,7 +202,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       intro: "Pesquise pelo nome ou digite o código de entrada que sua Escola lhe deu.",
       searchTab: "Pesquisar",
       joinCodeTab: "Código de entrada",
-      schoolName: "Nome da Escola",
+      schoolName: "Nome da escola",
       schoolNamePlaceholder: "ex.: Jiu-Jítsu Centro",
       searchFailed: "Não foi possível pesquisar — tente novamente.",
       noMatch: "Nenhuma Escola corresponde a “{query}”.",

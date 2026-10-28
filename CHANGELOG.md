@@ -15,13 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Translations review** — 83 newer API error messages (desk sales, cancelling
+  a Subscription, promotion fees, timetable breaks and closures, waitlist, staff
+  removal) are now translated into all 14 languages, so a non-English screen
+  shows the real reason instead of the generic one. Eleven of them are reworded
+  in English too, without field names or API paths ("Leave the number of
+  classes empty" instead of "omit classesIncluded"). Mixed terms made consistent:
+  Korean uses 수련생 for Student throughout, the Friend Pass has one name in
+  Portuguese (BR), Spanish, French, Russian, Chinese and Arabic, Japanese and
+  Russian name Activities one way, and Italian calls a Class "Corso" in
+  Cancellations. The Arabic booked count on the Dashboard has all its plural
+  forms. New tests fail CI when a screen text or an API error message is missing
+  in any language, or a plural form is missing.
 - **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
   — an Active students card (students with a membership in effect); this
   week's birthdays, children included, with no ages, on the Dashboard and the
   coach dashboard; and a setup checklist for new Schools (Branch, style and
   belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
   hidden. **Needs a database migration.**
-
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in

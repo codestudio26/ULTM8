@@ -2930,7 +2930,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyTitle: "Niente da gestire",
     emptyDescription: "Qui compariranno le prenotazioni cancellate che richiedono una decisione.",
     columnStudent: "Allievo",
-    columnClass: "Lezione",
+    columnClass: "Corso",
     columnPlan: "Abbonamento",
     columnMethod: "Pagato con",
     columnAmount: "Rimborso",
