@@ -6087,3 +6087,27 @@ After the Students review fixes, five questions were left: whether the owner can
 ### Recorded by
 
 User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students questions listed in the status report (add manually for adults only with a sign-in code, list search/branch filter/paging, a Re-enrol button, the Guardian's name on a child's page, and a "You've been added" notice with no accept step).
+
+---
+
+## Decision 374 — Dashboard: Active students, this week's birthdays and the setup checklist
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** Decision 317 item 5, Decision 318 items 1 and 2 · **Follows:** Decision 367 (Dashboard review, Q7)
+
+The Dashboard review's Q7 asked when to build the Dashboard items Decisions 317 and 318 had already decided. The owner chose the recommendation: Active students, Birthdays and the Setup checklist now, as their own PR; "What's new" (Decision 318 item 3) waits for Platform Admin.
+
+### Decision
+
+1. **Active students** (Decision 317 item 5): a card on the Dashboard counting enrolled students (active STUDENT grant) who hold a membership in effect now: a Subscription, a Class Pack with credits left, a Weekly Pass, or a Trial (the same "in effect" rule as everywhere else, `isMembershipLive`). A Friend Pass (a guest) doesn't count. Memberships aren't tied to a Branch, so the card is always the whole School, and says so when a Branch filter is on.
+   - Visitors and frozen members, which Decision 317 shows as separate numbers, don't exist in ULTM8 yet; their numbers come with those features.
+2. **This week's birthdays** (Decision 318 item 2): Monday to Sunday in the School's time zone, children included, with the day but never the year or age. The owner sees every enrolled student, on the Dashboard (names link to the student). Instructors and Branch Staff see them on the coach dashboard, for the same students they see elsewhere: their own Branches' students, or everyone in a School without Branches. A 29 February birthday shows on 28 February in other years.
+3. **Setup checklist** (Decision 318 item 1): seven steps, each ticked automatically once the School has it: a Branch, a style with at least one belt, a class or a weekly timetable slot, a membership plan, a waiver, a connected Stripe account, and staff (a member of staff, or an invite still open). Unfinished steps link to their page. The owner can hide it and bring it back.
+   - **Stripe has no screen in the School Portal yet**, so the step says ULTM8 support connects it and has no link.
+
+### Built
+
+`GET /schools/:schoolId/dashboard` (owner only: Active students and the checklist), `PATCH /schools/:schoolId/dashboard/setup-checklist` (`{ hidden }`, owner only), `GET /schools/:schoolId/birthdays` (owner, Instructors, Branch Staff). Migration `20261213000000_dashboard_overview` adds `School.setupChecklistHiddenAt` and the `school_student_birthdays` helper, which returns only a student's name and month/day of birth.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, choosing "All recommended" on the Dashboard review's decision card (Q7).

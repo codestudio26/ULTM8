@@ -29,6 +29,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 /** Requests per minute per IP on every route (THROTTLE_IP_LIMIT_PER_MINUTE,
@@ -82,6 +83,7 @@ function ipLimitPerMinute(): number {
     TranslationsModule,
     SubscriptionPlansModule,
     UploadsModule,
+    DashboardModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

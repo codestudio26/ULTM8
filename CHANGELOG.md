@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
+  — an Active students card (students with a membership in effect); this
+  week's birthdays, children included, with no ages, on the Dashboard and the
+  coach dashboard; and a setup checklist for new Schools (Branch, style and
+  belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
+  hidden. **Needs a database migration.**
 - **Dashboard review fixes** (Decision 367) — "Bookings this week" leaves
   cancelled bookings out and shows them as their own number; a new Attendance
   card shows this week's present and absent; a Branch filter for Schools with

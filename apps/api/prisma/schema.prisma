@@ -1010,6 +1010,9 @@ model School {
   /// Decision 292 — when the owner last saved the cancellation policy. Null
   /// until they do: the portal asks them to choose until then.
   cancellationPolicyChosenAt     DateTime?
+  /// Decision 374 — when the owner hid the Dashboard's setup checklist (Decision
+  /// 318 item 1). Null: shown.
+  setupChecklistHiddenAt         DateTime?
   waitlistClaimWindowMinutes     Int                             @default(60)
   /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
   checkInOpensMinutesBeforeStart Int                             @default(30)
