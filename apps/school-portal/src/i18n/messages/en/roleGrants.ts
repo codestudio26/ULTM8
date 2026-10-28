@@ -78,6 +78,18 @@ export const roleGrants = {
       'You stay an owner, as a co-owner. Only the main owner can hand this role over, and nobody in the School can remove the main owner. Enter your passcode to confirm.',
     passcodeLabel: 'Your passcode',
     handOverDone: '{name} is now the main owner.',
+    teachingLoadFailed: "Could not check which classes they teach. If they teach any, you'll be asked when you remove them.",
+    teachingIntro: '{name} still teaches here: upcoming classes {classes}, weekly timetable slots {slots}. What should happen to them?',
+    teachingChoiceAria: 'What happens to their classes',
+    choiceReassign: 'Give them to another coach',
+    choiceReassignDesc: 'Their upcoming classes and weekly slots go to the coach you pick.',
+    choiceNone: 'No coach for now',
+    choiceNoneDesc: 'The classes still run with no instructor. You can pick a coach later on each class or slot.',
+    choiceCancel: 'Cancel the classes',
+    choiceCancelDesc:
+      'Like any class the School cancels: students are told, and credit is given back per your cancellation settings. Their weekly slots stay on the timetable with no coach.',
+    reassignTo: 'New coach',
+    reassignPlaceholder: 'Select a coach…',
   },
   addManually: {
     title: 'Add staff manually',

@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Hay alumnos reservados o en espera para esta clase. Cancela sus reservas antes de moverla a otra sede.",
     classMovedToPast: "Hay alumnos reservados o en espera para esta clase, así que solo puede moverse a una hora que aún no haya pasado.",
     classAlreadyEnded: "Esta clase ya terminó. Elige una hora de fin en el futuro.",
+    schoolCurrencyChange: "Planes cobrados en la moneda de la escuela: {count}. A partir de ahora se cobran en {currency}, con los mismos importes.",
+    schoolCurrencyInUse: "Planes cobrados en la moneda de la escuela: {count}. Dales una moneda propia antes de borrarla.",
   },
   errors: {
     beltInHistoryDelete: "Este cinturón está en el historial de grados de los alumnos, así que no se puede eliminar.",
@@ -195,6 +197,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} quitó a {school} de la franquicia. Sus cuotas de franquicia se han detenido.",
     franchiseClosedTitle: "Franquicia cerrada",
     franchiseClosedBody: "{franchise} ha sido cerrada. {school} sigue abierta y sus cuotas de franquicia se han detenido.",
+    studentAddedTitle: "Añadido a una escuela",
+    studentAddedBody: "Te han añadido a {school}.",
     toDecideBody: "La promoción de {name} a {rank} ({style}) espera tu decisión. Promuévelo o decide no hacerlo.",
     promotionFeeBody: "Tu promoción a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
     childPromotionFeeBody: "La promoción de {name} a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",

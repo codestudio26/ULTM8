@@ -35,6 +35,16 @@ export async function resolveClassStyles(
   activities: string[] | undefined,
   keepDisciplineIds: string[] = [],
 ): Promise<ResolvedClassStyles> {
+  // The styles picked are share-locked until the class or slot is saved, so
+  // archiving one (RanksService.archiveDiscipline, which locks it and counts
+  // the classes and slots using it) waits for this save and then counts it,
+  // or finishes first and is seen below. Before, a style could be archived
+  // while a class using it was being created (stress test, 27 Oct 2026).
+  // In id order, so two saves never lock in opposite orders.
+  const pickedIds = [...new Set((styles ?? []).map((s) => s.disciplineId))].sort();
+  if (pickedIds.length > 0) {
+    await tx.$queryRaw`SELECT id FROM "Discipline" WHERE "schoolId" = ${schoolId} AND id = ANY(${pickedIds}::text[]) ORDER BY id FOR SHARE`;
+  }
   const disciplines = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, classTypesOffered: true, archivedAt: true } });
 
   if (disciplines.length === 0) {

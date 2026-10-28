@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "На это занятие записаны или ждут ученики. Отмените их бронирования, прежде чем переносить занятие в другой филиал.",
     classMovedToPast: "На это занятие записаны или ждут ученики, поэтому его можно перенести только на время, которое ещё не прошло.",
     classAlreadyEnded: "Это занятие уже закончилось. Выберите время окончания в будущем.",
+    schoolCurrencyChange: "Тарифы, оплачиваемые в валюте школы: {count}. Теперь они оплачиваются в {currency}, с теми же суммами.",
+    schoolCurrencyInUse: "Тарифы, оплачиваемые в валюте школы: {count}. Задайте этим тарифам свою валюту, прежде чем очищать её.",
   },
   errors: {
     beltInHistoryDelete: "Этот пояс есть в истории аттестаций учеников, поэтому его нельзя удалить.",
@@ -209,6 +211,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} удаляет {school} из франшизы. Франшизные взносы больше не начисляются.",
     franchiseClosedTitle: "Франшиза закрыта",
     franchiseClosedBody: "{franchise} закрыта. {school} продолжает работать, франшизные взносы больше не начисляются.",
+    studentAddedTitle: "Добавлены в школу",
+    studentAddedBody: "Вас добавили в {school}.",
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     childPromotionFeeBody: "За повышение {name} до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",

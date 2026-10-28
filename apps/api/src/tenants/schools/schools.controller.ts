@@ -4,7 +4,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { SchoolsService } from './schools.service';
+import { SchoolsService, withoutBillingIds } from './schools.service';
+import { FranchisePreviewQueryDto, FranchisePreviewResponseDto } from './dto/franchise-preview.dto';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
@@ -18,6 +19,8 @@ import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
+import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
+import { StudentGuardiansResponseDto } from './dto/student-guardians-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -44,8 +47,8 @@ export class SchoolsController {
 
   @ApiOkResponse({ type: SchoolResponseDto })
   @Get(':id')
-  findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.findOne(user.sub, id);
+  async findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return withoutBillingIds(await this.schoolsService.findOne(user.sub, id));
   }
 
   /** FOUND ON REVIEW — see SchoolsService.findTheme's own header comment. */
@@ -90,6 +93,42 @@ export class SchoolsController {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
   }
 
+  /** The Student's full profile, for the staff edit form (Decision 341) — same
+   * access as the PATCH below. */
+  @ApiOkResponse({ type: UserResponseDto })
+  @Get(':id/students/:studentId/profile')
+  getStudentProfile(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentProfile(user.sub, id, studentId);
+  }
+
+  /** The student's Guardians, by name, for the student's page (Decision 371).
+   * Same staff who can read the student's profile. */
+  @ApiOkResponse({ type: StudentGuardiansResponseDto })
+  @Get(':id/students/:studentId/guardians')
+  getStudentGuardians(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentGuardians(user.sub, id, studentId);
+  }
+
+  /** What revoking this Student's enrolment will cancel, and the memberships
+   * it leaves running — for the owner's Revoke dialog (Decision 343). */
+  @ApiOkResponse({ type: StudentLeavingSummaryResponseDto })
+  @Get(':id/students/:studentId/leaving-summary')
+  getStudentLeavingSummary(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentLeavingSummary(user.sub, id, studentId);
+  }
+
   /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
    * own profile on their behalf — see SchoolsService.updateStudentProfile's own
    * header comment for the full authorization/field-scope account. */
@@ -116,6 +155,14 @@ export class SchoolsController {
   @Post(':id/join-franchise')
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
+  }
+
+  /** Decision 368 — the Franchise's name, so the School Owner can check it
+   * before asking to join; see SchoolsService.previewFranchise. */
+  @ApiOkResponse({ type: FranchisePreviewResponseDto })
+  @Get(':id/franchise-preview')
+  previewFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: FranchisePreviewQueryDto) {
+    return this.schoolsService.previewFranchise(user.sub, id, query.franchiseId);
   }
 
   /** Decision 352 — the School's latest request to join a Franchise. */

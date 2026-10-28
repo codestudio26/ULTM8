@@ -212,8 +212,13 @@ export class BranchesService {
     }
 
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      // Same row lock as a concurrent close/archive; re-read under it.
-      await tx.$queryRaw`SELECT id FROM "Branch" WHERE id = ${branchId} FOR UPDATE`;
+      // Same row lock as a concurrent close/archive; re-read under it. NO KEY
+      // UPDATE, not UPDATE: a booking (or any row naming this Branch) takes a
+      // key-share lock on it for its foreign key, which FOR UPDATE blocks. A
+      // booking holding its Class's lock then waited for this close, and this
+      // close waited for that Class to move it: a deadlock, HTTP 500 on both
+      // (stress test, 27 Oct 2026). Two closes still take turns.
+      await tx.$queryRaw`SELECT id FROM "Branch" WHERE id = ${branchId} FOR NO KEY UPDATE`;
       const locked = await tx.branch.findUnique({ where: { id: branchId }, select: { archivedAt: true } });
       if (!locked || locked.archivedAt) return; // lost the race to a concurrent close — idempotent either way.
 

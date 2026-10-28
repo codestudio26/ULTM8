@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { addressWriteData } from '../common/address/postal-address.dto';
 
@@ -39,7 +40,10 @@ const SELF_PROFILE_SELECT = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prismaApp: PrismaAppService) {}
+  constructor(
+    private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
+  ) {}
 
   /**
    * `user_self_or_shared_school`'s existing self-visibility clause ("id" = the
@@ -54,6 +58,23 @@ export class UsersService {
     // Should be unreachable in practice — a valid JWT implies the User row exists — but
     // checked explicitly rather than assumed, same defensive convention every other
     // service's findOne uses.
+    if (!found) {
+      throw new NotFoundException('User not found');
+    }
+    return found;
+  }
+
+  /**
+   * A Student's full profile for a Staff member editing it on their behalf
+   * (SchoolsService.getStudentProfile, Decision 341 S9). Read under the
+   * caller's own context: `user_self_or_shared_school` shows staff the User
+   * rows of the students whose STUDENT grant they can see. Authorization is
+   * the caller's job, as for updateProfileFor.
+   */
+  async getProfileFor(callerId: string, targetUserId: string) {
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.findUnique({ where: { id: targetUserId }, select: SELF_PROFILE_SELECT }),
+    );
     if (!found) {
       throw new NotFoundException('User not found');
     }
@@ -117,13 +138,17 @@ export class UsersService {
     // to HttpExceptionFilter's generic P2002 "A record with this value already
     // exists." Only checked when a real value is supplied — null/undefined never
     // collide with anything.
+    //
+    // Checked through prismaAuth, like AuthService.register()'s own duplicate check,
+    // and ignoring capitals (sign-in review A8): under the caller's RLS context a
+    // username held at another School was invisible, so it fell through to the
+    // generic P2002 message, and "Taken" never matched "taken". Only an id comes
+    // back, never another account's details.
     if (dto.username) {
-      const duplicate = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.user.findFirst({
-          where: { username: dto.username, id: { not: targetUserId } },
-          select: { id: true },
-        }),
-      );
+      const duplicate = await this.prismaAuth.user.findFirst({
+        where: { username: { equals: dto.username, mode: 'insensitive' }, id: { not: targetUserId } },
+        select: { id: true },
+      });
       if (duplicate) {
         throw new ConflictException('This username is already taken.');
       }

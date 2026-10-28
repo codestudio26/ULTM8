@@ -370,22 +370,44 @@ export class CancellationService {
    * booking is cancelled and resolved by School.schoolCancelledClassResolution
    * (no late fee: the student didn't cancel), the waitlist is closed, and
    * everyone booked or waiting is told, with the staff member's reason.
+   *
+   * Stress test, 27 Oct 2026:
+   * - The class is marked under a blocking row lock, the one every booking takes
+   *   on it (lockClassSeats/lockClassShared in booking-gates.ts). A booking in
+   *   flight commits first and is in the list below, or sees the mark and is
+   *   refused; before, 5 to 10 of 10 such bookings stayed Upcoming.
+   * - Each booking is cancelled in its own transaction, so one failing (the
+   *   server busy) used to leave the rest Upcoming, and calling again only said
+   *   "already cancelled". Calling again now finishes the job; "already
+   *   cancelled" means nothing is left to do. The notices use the reason given
+   *   the first time, and their ids make sending one twice harmless.
    */
   async cancelClass(callerId: string, classId: string, reason: string | undefined) {
-    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
-    if (!cls) throw new NotFoundException('Class not found');
-    const { isOwner } = await this.assertCancellationStaff(callerId, cls.schoolId, cls.branchId);
-    if (cls.cancelledAt) throw new ConflictException('This class is already cancelled.');
-    if (cls.endDate <= new Date()) throw new BadRequestException('This class has already finished.');
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!found) throw new NotFoundException('Class not found');
+    const { isOwner } = await this.assertCancellationStaff(callerId, found.schoolId, found.branchId);
 
-    const trimmedReason = reason?.trim() || null;
-    const marked = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.updateMany({
-        where: { id: classId, cancelledAt: null },
-        data: { cancelledAt: new Date(), cancelledById: callerId, cancellationReason: trimmedReason },
-      }),
-    );
-    if (marked.count === 0) throw new ConflictException('This class is already cancelled.');
+    let cls = found;
+    const resuming = found.cancelledAt !== null;
+    if (resuming) {
+      if (!(await this.hasCancelWorkLeft(classId))) throw new ConflictException('This class is already cancelled.');
+    } else {
+      if (found.endDate <= new Date()) throw new BadRequestException('This class has already finished.');
+      const trimmedReason = reason?.trim() || null;
+      const marked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+        const updated = await tx.class.updateMany({
+          where: { id: classId, cancelledAt: null },
+          data: { cancelledAt: new Date(), cancelledById: callerId, cancellationReason: trimmedReason },
+        });
+        return updated.count === 1 ? tx.class.findUniqueOrThrow({ where: { id: classId } }) : null;
+      }, { timeoutMs: 15_000 });
+      // Cancelled by someone else meanwhile: that call does the work.
+      if (!marked) throw new ConflictException('This class is already cancelled.');
+      cls = marked;
+    }
+    const cancelledAt = cls.cancelledAt!;
+    const trimmedReason = cls.cancellationReason;
 
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: cls.schoolId } });
     const base = this.outcomeForClassCancel(await this.settingsFor(cls.schoolId, cls.branchId));
@@ -395,8 +417,22 @@ export class CancellationService {
       select: { id: true, studentId: true, sourceMembershipId: true, attendees: { select: { id: true, membershipId: true } } },
     });
 
+    // Resuming: bookings an earlier, unfinished call already cancelled. Their
+    // Students weren't told yet, and their open seats count for the Owners' alert.
+    const earlier = resuming
+      ? await this.prismaJobs.booking.findMany({
+        where: { classId, status: 'CANCELLED', updatedAt: { gte: cancelledAt }, id: { notIn: bookings.map((b) => b.id) } },
+        select: { studentId: true, refundResolution: true, attendees: { select: { refundResolution: true } } },
+      })
+      : [];
+
     const refunds: StripeRefundPlan[] = [];
     let needsStaff = 0;
+    for (const b of earlier) {
+      for (const resolution of [b.refundResolution, ...b.attendees.map((a) => a.refundResolution)]) {
+        if (resolution && OPEN_RESOLUTIONS.includes(resolution)) needsStaff += 1;
+      }
+    }
     for (const booking of bookings) {
       const results = await this.prismaApp.withTenantContext(booking.studentId, async (tx) => {
         const updated = await tx.booking.updateMany({ where: { id: booking.id, status: 'UPCOMING' }, data: { status: 'CANCELLED' } });
@@ -434,7 +470,7 @@ export class CancellationService {
     const when = formatClassTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
     // The portal translates these exact shapes (i18n/server/translate.ts) — keep them in step.
     const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
-    const recipients = new Set([...bookings.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);
+    const recipients = new Set([...bookings.map((b) => b.studentId), ...earlier.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);
     for (const userId of recipients) {
       await this.notify({
         notificationId: `class-cancelled-${classId}-${userId}`, userId, title: 'Class cancelled', body, type: 'CLASS_CANCELLED', schoolId: cls.schoolId, targetType: 'CLASS', targetId: classId,
@@ -445,6 +481,16 @@ export class CancellationService {
     }
 
     return this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUniqueOrThrow({ where: { id: classId } }));
+  }
+
+  /** Whether a cancelled class still has bookings or waitlist places its cancel
+   * didn't get to (see cancelClass). */
+  private async hasCancelWorkLeft(classId: string): Promise<boolean> {
+    const [bookings, waiting] = await Promise.all([
+      this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
+      this.prismaJobs.waitlistEntry.count({ where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } } }),
+    ]);
+    return bookings + waiting > 0;
   }
 
   /**

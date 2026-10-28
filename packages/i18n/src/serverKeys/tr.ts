@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Bu derse kayıtlı veya bekleyen öğrenciler var. Başka bir şubeye taşımadan önce rezervasyonlarını iptal et.",
     classMovedToPast: "Bu derse kayıtlı veya bekleyen öğrenciler var, bu yüzden yalnızca henüz geçmemiş bir saate taşınabilir.",
     classAlreadyEnded: "Bu ders zaten bitti. Gelecekte bir bitiş saati seç.",
+    schoolCurrencyChange: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Artık aynı tutarlarla {currency} cinsinden ücretlendirilecekler.",
+    schoolCurrencyInUse: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Temizlemeden önce bu planlara kendi para birimlerini verin.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",
@@ -181,6 +183,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise}, {school} okulunu franchise'tan çıkardı. Franchise ücretleri durduruldu.",
     franchiseClosedTitle: "Franchise kapatıldı",
     franchiseClosedBody: "{franchise} kapatıldı. {school} açık kalıyor ve franchise ücretleri durduruldu.",
+    studentAddedTitle: "Bir okula eklendiniz",
+    studentAddedBody: "{school} okuluna eklendiniz.",
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
     childPromotionFeeBody: "{name} için {rank} ({style}) terfisinin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",

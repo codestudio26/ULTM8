@@ -57,6 +57,9 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
   await expect(page.getByText('Branch settings saved.')).toBeVisible();
+  // Save sits at the bottom of a long form; the confirmation above it is
+  // scrolled into view rather than left off-screen.
+  await expect(page.getByText('Branch settings saved.')).toBeInViewport();
 
   const updated = await db.branch.findUniqueOrThrow({ where: { id: branchId } });
   expect(updated.type).toBe('Dojo');

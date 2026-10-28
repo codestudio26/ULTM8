@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Er zijn leerlingen geboekt of wachtend voor deze les. Annuleer hun boekingen voordat je hem naar een andere vestiging verplaatst.",
     classMovedToPast: "Er zijn leerlingen geboekt of wachtend voor deze les, dus hij kan alleen naar een tijd die nog niet voorbij is.",
     classAlreadyEnded: "Deze les is al afgelopen. Kies een eindtijd in de toekomst.",
+    schoolCurrencyChange: "Lidmaatschappen in de valuta van de school: {count}. Vanaf nu worden ze in {currency} afgerekend, met dezelfde bedragen.",
+    schoolCurrencyInUse: "Lidmaatschappen in de valuta van de school: {count}. Geef deze een eigen valuta voordat je hem leegmaakt.",
   },
   errors: {
     beltInHistoryDelete: "Deze band staat in de graderingsgeschiedenis van leerlingen, dus hij kan niet worden verwijderd.",
@@ -181,6 +183,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} heeft {school} uit de franchise verwijderd. De franchisekosten zijn gestopt.",
     franchiseClosedTitle: "Franchise gesloten",
     franchiseClosedBody: "{franchise} is gesloten. {school} blijft open en de franchisekosten zijn gestopt.",
+    studentAddedTitle: "Toegevoegd aan een school",
+    studentAddedBody: "Je bent toegevoegd aan {school}.",
     toDecideBody: "De promotie van {name} naar {rank} ({style}) wacht op je beslissing. Promoveer, of besluit het niet te doen.",
     promotionFeeBody: "Je promotie naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
     childPromotionFeeBody: "De promotie van {name} naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",

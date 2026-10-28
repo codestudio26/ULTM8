@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { StepUpVerifyDto } from './dto/step-up-verify.dto';
 

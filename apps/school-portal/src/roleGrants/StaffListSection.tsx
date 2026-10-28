@@ -4,11 +4,11 @@ import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import type { BranchResponse } from '../branches/branchQueries';
 import { Avatar } from '../lib/Avatar';
-import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
-import { useHandOverMainOwner, useRemoveFromSchool, useStaffList, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
+import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
+import { useHandOverMainOwner, useStaffList, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
 
 /** Table rows need an `id`. */
 type StaffRow = StaffMember & { id: string };
@@ -21,7 +21,8 @@ type StaffRow = StaffMember & { id: string };
  *
  * Each person's menu removes one role (the existing Revoke, confirmed by the
  * page's own dialog) or, with "Remove from School", every coach and Branch
- * Staff role they hold here at once.
+ * Staff role they hold here at once (RemoveFromSchoolModal, which asks what
+ * happens to the classes they teach).
  *
  * Decision 370 — owners show as "Main owner" or "Co-owner". Any owner can
  * remove a co-owner (the same Revoke); nobody here can remove the main owner,
@@ -50,7 +51,6 @@ export function StaffListSection({
     q: q || undefined,
   };
   const { data, isLoading, error } = useStaffList(schoolId, filters);
-  const removeFromSchool = useRemoveFromSchool(schoolId);
   const [confirmingRemove, setConfirmingRemove] = useState<StaffMember | null>(null);
   const { claims } = useAuth();
   const [handingOver, setHandingOver] = useState<StaffMember | null>(null);
@@ -209,14 +209,11 @@ export function StaffListSection({
       )}
 
       {confirmingRemove ? (
-        <ConfirmDeleteModal
-          title={t('roleGrants.list.removeTitle', { name: `${confirmingRemove.firstName} ${confirmingRemove.surname}`.trim() })}
+        <RemoveFromSchoolModal
+          schoolId={schoolId}
+          userId={confirmingRemove.userId}
+          name={`${confirmingRemove.firstName} ${confirmingRemove.surname}`.trim()}
           description={t('roleGrants.list.removeDescription', { roles: coachRoles(confirmingRemove).map((r) => roleText(r)).join(', ') })}
-          confirmLabel={t('roleGrants.list.removeFromSchool')}
-          genericErrorMessage={t('roleGrants.list.removeFailed')}
-          onConfirm={async () => {
-            await removeFromSchool.mutateAsync(confirmingRemove.userId);
-          }}
           onClose={() => setConfirmingRemove(null)}
         />
       ) : null}

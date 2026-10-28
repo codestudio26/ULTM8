@@ -12,8 +12,10 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
-import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -83,6 +85,11 @@ export class WaitlistService {
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // First, before any row lock (see lockStudentClass): a Student who has
+      // already attended this Class can't queue for it again.
+      await lockStudentClass(tx, studentId, classId);
+      await lockSchoolOpen(tx, resolvedClass.schoolId);
+      await assertNotAlreadyAttended(tx, studentId, classId);
       // FOUND ON REVIEW: reading the current max position then computing +1 is a
       // TOCTOU race — two Students joining the same Class's waitlist concurrently
       // can both read the same highest position and collide, breaking the FCFS
@@ -92,7 +99,7 @@ export class WaitlistService {
       // BookingsService.bookClass — see that method's own comment for why this
       // codebase's usual updateMany+count-guard pattern doesn't apply to an
       // aggregate read like this one.
-      await lockClassSeats(tx, classId);
+      const locked = await lockClassSeats(tx, classId);
       // Only a full Class, or one others are already queued for, takes a waitlist
       // entry, and never from a Student already booked into it (stress test, 26 Oct
       // 2026: both were accepted).
@@ -111,8 +118,8 @@ export class WaitlistService {
         }
       }
       const [booked, guests, queued] = await Promise.all([
-        this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
-        this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+        this.prismaJobs.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
+        this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: SEAT_HOLDING_STATUSES } } }),
         this.prismaJobs.waitlistEntry.count({ where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } } }),
       ]);
       if (queued === 0 && booked + guests < resolvedClass.capacity) {
@@ -140,7 +147,7 @@ export class WaitlistService {
             studentId,
             classId,
             schoolId: resolvedClass.schoolId,
-            branchId: resolvedClass.branchId,
+            branchId: locked ? locked.branchId : resolvedClass.branchId,
             position,
           },
         });
@@ -246,8 +253,12 @@ export class WaitlistService {
     await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       const studentId = resolvedEntry.studentId;
+      // First, before any row lock (see lockStudentClass).
+      await lockStudentClass(tx, studentId, resolvedEntry.classId);
+      await lockSchoolOpen(tx, resolvedEntry.schoolId);
+      await assertNotAlreadyAttended(tx, studentId, resolvedEntry.classId);
+      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       if (cls.cancelledAt) {
         throw new ConflictException('This class has been cancelled by the school.');
       }
@@ -263,10 +274,11 @@ export class WaitlistService {
 
       await this.assertRankEligible(tx, studentId, cls);
 
+      let locked: LockedClass;
       if (cls.capacity !== null) {
         // Same explicit-row-lock fix as BookingsService.bookClass's own capacity
         // check — see that comment for the full reasoning.
-        await lockClassSeats(tx, cls.id);
+        locked = await lockClassSeats(tx, cls.id);
         // Same PrismaJobsService fix as BookingsService.countOccupiedSeats — `tx`
         // (the claiming Student's own tenant context) can never see another
         // Student's Booking/BookingAttendee rows under Decision 89's RLS shape.
@@ -275,12 +287,16 @@ export class WaitlistService {
         // other holds here could leave a seat nobody may claim when the cascade has
         // offered it twice.
         const [bookingCount, attendeeCount] = await Promise.all([
-          this.prismaJobs.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
-          this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
+          this.prismaJobs.booking.count({ where: { classId: cls.id, status: SEAT_HOLDING_STATUSES } }),
+          this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: SEAT_HOLDING_STATUSES } } }),
         ]);
         if (bookingCount + attendeeCount + 1 > cls.capacity) {
           throw new ConflictException('This Class filled up again before the claim completed — please try the next opening.');
         }
+      } else {
+        // Re-checks the Class under a lock a whole-class cancel waits for (see
+        // BookingsService.bookClass).
+        locked = await lockClassShared(tx, cls.id);
       }
 
       const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls);
@@ -293,7 +309,7 @@ export class WaitlistService {
             studentId,
             classId: cls.id,
             schoolId: cls.schoolId,
-            branchId: cls.branchId,
+            branchId: locked ? locked.branchId : cls.branchId,
             sourceMembershipId: sourceMembership.id,
           },
         });

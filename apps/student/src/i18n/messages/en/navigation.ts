@@ -5,6 +5,7 @@ export const navigation = {
     verifyPhone: 'Verify phone',
     resetPasscode: 'Reset passcode',
     newPasscode: 'New passcode',
+    choosePasscode: "Choose passcode",
   },
   app: {
     home: 'ULTM8 Student',

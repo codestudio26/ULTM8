@@ -23,7 +23,109 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sees a School's owners on the Platform Admin School page and (Full Admin
   only) can move the main owner role, optionally removing the former main
   owner; both are audit-logged. Existing Schools: the earliest owner becomes
-  the main owner. Needs the migration `20261212000000_school_main_owner`.
+  the main owner. Needs the migration `20261213000100_school_main_owner`.
+- **School settings review** (Decision 368) — the School page shows the
+  School's join code (copy, make a new one), a logo upload and colour for the
+  student app, and asks before a currency change moves membership plans to a
+  new currency. "Ask to join" a Franchise shows its name first. Fixed: an
+  Owner with two Schools could save one School's cancellation and footer
+  settings onto the other; saving one card wiped another's typing; the
+  no-show fee was typed in cents; a closed School's forms still showed;
+  footer links without https:// opened broken pages; endless spinners on a
+  load error or for non-owners; plain messages for blank names, waitlist
+  window and footer fields; the School reply no longer carries Stripe ids.
+  School details is split into three groups. No migration.
+- **Signed-in users are no longer limited per internet address** (Decision
+  376). Everyone at a School on the same WiFi shares one address, which was
+  limited to 60 requests a minute; a busy front desk could hit it. Signed-in
+  users now have only their own per-user limits; requests from people who
+  aren't signed in keep the per-address limit.
+- **Change passcode, unfinished sign-ups, 18+ to create a School**
+  (Decision 375) — My profile can change the passcode (current one, then the
+  new one twice), which signs out every other device; a sign-up whose phone
+  was never verified can be replaced by a new sign-up after 30 minutes;
+  creating a School needs the person to be 18 or over.
+- **Sign-in and accounts fixes** (Decision 373) — sign-up and Forgot passcode
+  no longer half-save an account or fail with a server error when text
+  messages aren't set up; a first sign-in with a temporary passcode stays
+  signed in past 15 minutes; logging in clears the previous person's data;
+  Create your School has Log out; an unverified phone gets a plain message and
+  a Verify link; sign-up refuses blank names and impossible birth dates;
+  usernames ignore capitals; My profile can remove its photo; a Franchise
+  owner without a School lands on Franchises.
+- **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
+  — an Active students card (students with a membership in effect); this
+  week's birthdays, children included, with no ages, on the Dashboard and the
+  coach dashboard; and a setup checklist for new Schools (Branch, style and
+  belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
+  hidden. **Needs a database migration.**
+
+- **Check-in and front desk review fixes** (Decision 377) — a checked-in
+  student keeps their seat, so a full class can't be booked past its limit; the
+  welcome card no longer books a class whose check-in hasn't opened ("Check-in
+  opens at …"); a scanned app QR is checked once and stays good for 5 minutes;
+  the card shows which waivers are still to sign; Whole School classes show at
+  every Branch; a School with no Branches can start front-desk mode; the page
+  moves to the new day at midnight; a QR of someone who isn't a student here is
+  refused instead of opening a blank card; places left count guests; the card
+  waits for bookings before ticking; closed Branches are hidden; name search
+  says when there are more matches. New text in all 15 languages.
+- **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
+  and 2, plus four new scripts for everything added since; report in
+  `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
+  `apps/api/scripts/stress/round3/`. Fixes below.
+- **Remove from School works for a coach who still teaches** (product owner,
+  28 Oct 2026) — the dialog shows how many upcoming classes and weekly slots
+  they teach and asks what happens to them: give them to another coach, no
+  coach for now, or cancel the classes (students told, credit per the
+  School's cancellation settings; their weekly slots stay with no coach).
+  The coach loses access at once either way.
+- **API stress-test fixes: duplicate roles, passcode hashing, Add manually**
+  (stress test round 3) — a double click on "Give role" (or two coach invites
+  accepted at once) no longer gives someone the same role twice, so revoking
+  it really ends the access; the database now allows one live grant per
+  person, role and scope, and existing duplicates are revoked (the oldest is
+  kept). Passcode hashing and checking no longer slow down every other
+  request during a burst of logins or Add manually (native `bcrypt`, same
+  hashes). A student "Add manually" that fails part-way no longer leaves an
+  account behind, so the owner can just try again. Needs the migration
+  `20261212000100_role_grant_one_live_per_scope`.
+- **Round-3 stress-test fixes (races)** — a booking made while the School
+  cancels the class is now either cancelled with the rest or refused ("This
+  class has been cancelled by the school"); it used to stay booked on the
+  cancelled class (also when a timetable slot is switched off with its booked
+  classes cancelled). A class cancel that stopped half way (the server busy) is
+  finished by cancelling again, instead of answering "already cancelled".
+  Closing a Branch while people book its classes no longer fails with a server
+  error on both sides, and those bookings move with their class. A style can
+  no longer be archived while a class using it is being saved. Booking and
+  checking in the same student from two desks at once no longer fails with a
+  server error; the second booking gets the usual "already has a booking".
+  A desk sale, a cash payment marked as paid, a booking or a waitlist place
+  sent while the owner closes the School is now refused ("This School has been
+  closed"); one of them could still be saved just after the close.
+- **Round-3 stress-test fixes (billing and waivers)** — a payment that
+  arrives after its School closed no longer starts a Subscription: it is
+  refunded and the Stripe subscription cancelled, and closing a School also
+  cancels Subscriptions still waiting for their first payment. Cancelling a
+  Subscription several times at once calls Stripe once. A signature can no
+  longer land on waiver terms the owner has just replaced, a double-clicked
+  signature is saved once, and "Remind everyone" pressed several times at
+  once reminds each student once.
+- **Booking and desk rules (product owner, 28 Oct 2026)** — a student checked
+  in to a class can't be booked into it again ("This student has already
+  attended this class"); a cancelled booking still can. The same desk sale or
+  Friend Pass for the same student within a minute is refused ("This was just
+  recorded. Check before adding another."). A Friend Pass only covers a guest,
+  never its holder's own seat. Staff booking for students can now book 200 a
+  minute (students' own limit stays 20).
+- **Dashboard review fixes** (Decision 367) — "Bookings this week" leaves
+  cancelled bookings out and shows them as their own number; a new Attendance
+  card shows this week's present and absent; a Branch filter for Schools with
+  several Branches. The Bookings page groups by Style, lists each day's
+  classes (time, booked / seats, link to the class), names each day correctly
+  in the Americas, limits a range to 92 days with a clear message, counts
+  each class on its Branch's local day, and keeps the dates in the address.
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own
@@ -79,6 +181,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261204000100_franchise_join_requests`.
+- **Timetable settings and filters (Decision 353, Q8)** — the School page
+  sets the Timetable's week start (Monday or Sunday) and whether it opens as
+  Rows or Grid; the Timetable filters by branch, style and class type. Needs a
+  database migration.
+- **Closures (Decision 353, Q8)** — the owner can close the School or one
+  branch for some dates from the Timetable's Closures button; classes on those
+  dates are cancelled under the normal cancellation rule and students are told,
+  new classes skip them, and the calendar shows "Closed". Needs a database
+  migration.
 - **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
   Timetable item in the Branch Staff menu opens the calendar read-only, with
   their branch's and School-wide classes, to book walk-ins; only the owner
@@ -334,6 +445,47 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     "Promotion to decide" first among the tags; the owner waives or cancels; a
     coach promotes or doesn't. A student waiting for a fee has no Grade button
     and no "Ready" tag.
+- **Students section fixes** (Decision 341):
+  - **Branch Staff and coaches see their own branch's students** on the
+    Students list and can open and edit them; before, the list was empty and
+    editing failed for anyone tied to a branch.
+  - **A revoked student can be enrolled again**, and their old branch can be
+    archived. Revoking now clears their home branch.
+  - **Enrolling is refused at a closed School**, and an archived branch can't
+    be picked as a home branch. Staff who aren't the owner are told "Only the
+    School owner can enrol students."
+  - **Edit profile opens with the student's saved details**, emptying a field
+    clears it, and Language and Currency are lists. A date of birth in the
+    future, over 120 years ago or that doesn't exist (30 February) is
+    refused, as is a name made of spaces. Only the owner can change a birth
+    date that turns a child into an adult or the reverse (Decision 342).
+  - **Children enrolled by a Guardian show "Managed by a Guardian"** instead
+    of an internal placeholder email.
+  - **A former student's page shows their name and "Inactive"**, with no
+    grading buttons.
+  - **Revoking a student now cancels their upcoming bookings and removes
+    their waitlist places** (Decision 343), so the seats go to someone else.
+    Class credits come back under the usual cancellation rules, with no
+    late-cancellation fee. The Revoke dialog first lists what they still
+    have: bookings, waitlist places and memberships. Memberships aren't
+    refunded. A Subscription stops renewing and ends when the period already
+    paid for runs out; if Stripe can't be reached, nothing is revoked and the
+    owner is asked to try again.
+  - **"Upcoming Booking" shows the real next class**, however many bookings
+    the student has.
+  - **Coaches opening /students or /students/invite** go to their home screen
+    instead of a blank page.
+  - **Add manually** (Decision 371): the owner can add an adult (18 or over)
+    who has no ULTM8 account yet. They're emailed a temporary passcode and
+    choose their own the first time they sign in to the app. If the email
+    can't be sent, the owner is shown the passcode once to hand over.
+  - **The Students list has a search box, a Branch column and filter, and
+    pages of 25.**
+  - **Re-enrol**: a former student's page has a Re-enrol button for the owner.
+  - **A child's page names their Guardians.**
+  - **"You've been added to [School]"**: a student added by Invite or
+    Re-enrol gets an in-app notice (a child's Guardians get a copy). There is
+    nothing to accept.
 - **Instructors search box is labelled "Search instructors"** — it was
   just "Search", the same name as the header search, so screen readers
   announced two identical boxes on the page. It now matches "Search classes"

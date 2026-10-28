@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "มีนักเรียนจองหรือรอคิวคลาสนี้อยู่ ยกเลิกการจองของพวกเขาก่อนย้ายไปสาขาอื่น",
     classMovedToPast: "มีนักเรียนจองหรือรอคิวคลาสนี้อยู่ จึงย้ายได้เฉพาะไปยังเวลาที่ยังไม่ผ่านไป",
     classAlreadyEnded: "คลาสนี้จบไปแล้ว เลือกเวลาสิ้นสุดในอนาคต",
+    schoolCurrencyChange: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน ต่อจากนี้จะเรียกเก็บเป็น {currency} ด้วยจำนวนเงินเท่าเดิม",
+    schoolCurrencyInUse: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน กำหนดสกุลเงินของแผนเหล่านั้นเองก่อนล้างค่า",
   },
   errors: {
     beltInHistoryDelete: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงลบไม่ได้",
@@ -167,6 +169,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} นำ {school} ออกจากแฟรนไชส์แล้ว ค่าแฟรนไชส์หยุดเรียกเก็บแล้ว",
     franchiseClosedTitle: "แฟรนไชส์ปิดแล้ว",
     franchiseClosedBody: "{franchise} ถูกปิดแล้ว {school} ยังคงเปิดอยู่ และค่าแฟรนไชส์หยุดเรียกเก็บแล้ว",
+    studentAddedTitle: "ถูกเพิ่มเข้าโรงเรียน",
+    studentAddedBody: "คุณถูกเพิ่มเข้า {school} แล้ว",
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     childPromotionFeeBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",

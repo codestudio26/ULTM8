@@ -22,6 +22,7 @@ import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const hasDb = Boolean(
@@ -51,6 +52,7 @@ function makeFakeStripe() {
   const calls = {
     update: [] as Array<{ account: string; subscriptionId: string; params: unknown }>,
     cancel: [] as Array<{ account: string; subscriptionId: string; params: unknown }>,
+    refund: [] as Array<{ account: string; paymentIntentId: string }>,
   };
   const subscriptions = (account: string) => ({
     update: jest.fn(async (subscriptionId: string, params: unknown) => {
@@ -61,9 +63,16 @@ function makeFakeStripe() {
       calls.cancel.push({ account, subscriptionId, params });
       return { id: subscriptionId, status: 'canceled' };
     }),
+    retrieve: jest.fn(async (subscriptionId: string) => ({ id: subscriptionId, status: 'canceled' })),
+  });
+  const refunds = (account: string) => ({
+    create: jest.fn(async (params: { payment_intent: string }) => {
+      calls.refund.push({ account, paymentIntentId: params.payment_intent });
+      return { id: `re_${randomUUID()}` };
+    }),
   });
   const fake = {
-    scopedClient: jest.fn((account: string) => ({ subscriptions: subscriptions(account) })),
+    scopedClient: jest.fn((account: string) => ({ subscriptions: subscriptions(account), refunds: refunds(account) })),
     platformClient: jest.fn(() => ({ subscriptions: subscriptions('platform') })),
     constructWebhookEvent: jest.fn(),
   };
@@ -98,6 +107,7 @@ describeIfDb('School self-close and Franchise notices (Decision 364)', () => {
   afterAll(async () => {
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.franchiseJoinRequest.deleteMany({ where: { OR: [{ schoolId: { in: schoolIds } }, { franchiseId: { in: franchiseIds } }] } });
+    await superuser.transaction.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
@@ -281,6 +291,79 @@ describeIfDb('School self-close and Franchise notices (Decision 364)', () => {
       const m = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
       expect(m.cancelAt).not.toBeNull();
       expect(m.cancelledById).toBeNull();
+    });
+  });
+
+  describe('a Subscription paid after its School closed (stress test round 3)', () => {
+    /** A Subscription bought but not paid yet: its Pending Transaction holds the
+     * PaymentIntent and the incomplete Stripe subscription (Decision 6). */
+    async function mkPendingSubscription(schoolId: string) {
+      const student = await mkUser('payer');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: student.id, schoolId } });
+      const plan = await superuser.membershipPlan.create({
+        data: { id: randomUUID(), schoolId, title: `Monthly ${randomUUID().slice(0, 6)}`, type: 'SUBSCRIPTION', price: 5000, currency: 'GBP' },
+      });
+      const account = await superuser.paymentAccount.findUniqueOrThrow({ where: { schoolId } });
+      return superuser.transaction.create({
+        data: {
+          id: randomUUID(),
+          schoolId,
+          studentId: student.id,
+          paymentAccountId: account.id,
+          membershipPlanId: plan.id,
+          amount: 5000,
+          currency: 'GBP',
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: `pi_${randomUUID()}`,
+          stripeSubscriptionId: `sub_${randomUUID()}`,
+        },
+      });
+    }
+
+    const paid = (paymentIntentId: string) =>
+      app.get(StripeWebhookProcessingProcessor).process({
+        data: { stripeEventId: `evt_${randomUUID()}`, eventType: 'payment_intent.succeeded', objectId: paymentIntentId },
+        attemptsMade: 1,
+        opts: { attempts: 3 },
+      } as never);
+
+    it('closing cancels the unpaid Subscription, and a payment that still arrives is refunded with no Membership', async () => {
+      const { school, token, connectedAccountId } = await seedSchool({ name: 'Late Payment School' }, { stripeAccount: true });
+      const pending = await mkPendingSubscription(school.id);
+
+      const res = await closeSchool(school.id, token, 'Late Payment School', await stepUp(token));
+      expect(res.status).toBe(200);
+      expect(stripe.calls.cancel).toContainEqual({ account: connectedAccountId, subscriptionId: pending.stripeSubscriptionId, params: undefined });
+
+      await paid(pending.stripePaymentIntentId!);
+      expect(await superuser.membership.count({ where: { schoolId: school.id } })).toBe(0);
+      const t = await superuser.transaction.findUniqueOrThrow({ where: { id: pending.id } });
+      expect(t.status).toBe('REFUNDED');
+      expect(t.refundedAmount).toBe(5000);
+      expect(stripe.calls.refund).toContainEqual({ account: connectedAccountId, paymentIntentId: pending.stripePaymentIntentId });
+    });
+
+    it('a payment landing while the School closes never leaves a Subscription billing on', async () => {
+      for (let i = 0; i < 6; i++) {
+        const name = `Racing School ${i} ${randomUUID().slice(0, 6)}`;
+        const { school, token } = await seedSchool({ name }, { stripeAccount: true });
+        const pending = await mkPendingSubscription(school.id);
+        const proof = await stepUp(token);
+        const [closed] = await Promise.all([closeSchool(school.id, token, name, proof), paid(pending.stripePaymentIntentId!)]);
+        expect(closed.status).toBe(200);
+
+        const t = await superuser.transaction.findUniqueOrThrow({ where: { id: pending.id } });
+        const memberships = await superuser.membership.findMany({ where: { schoolId: school.id } });
+        if (t.status === 'SUCCESSFUL') {
+          // Paid before the close committed: the close then ended it with its paid period.
+          expect(memberships).toHaveLength(1);
+          expect(memberships[0].cancelAt).not.toBeNull();
+        } else {
+          expect(t.status).toBe('REFUNDED');
+          expect(memberships).toHaveLength(0);
+        }
+      }
     });
   });
 

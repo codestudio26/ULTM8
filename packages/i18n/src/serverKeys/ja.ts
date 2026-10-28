@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "このクラスには予約中またはキャンセル待ちの生徒がいます。別の拠点に移す前に、予約をキャンセルしてください。",
     classMovedToPast: "このクラスには予約中またはキャンセル待ちの生徒がいるため、まだ過ぎていない時間にしか移動できません。",
     classAlreadyEnded: "このクラスはすでに終了しています。未来の終了時刻を選んでください。",
+    schoolCurrencyChange: "スクールの通貨で請求される会員プラン：{count}件。今後は同じ金額のまま {currency} で請求されます。",
+    schoolCurrencyInUse: "スクールの通貨で請求される会員プラン：{count}件。通貨を空にする前に、それらのプランに個別の通貨を設定してください。",
   },
   errors: {
     beltInHistoryDelete: "この帯は生徒の昇級履歴に含まれているため、削除できません。",
@@ -167,6 +169,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} が {school} をフランチャイズから削除しました。フランチャイズ料金は停止しました。",
     franchiseClosedTitle: "フランチャイズが閉鎖されました",
     franchiseClosedBody: "{franchise} は閉鎖されました。{school} は営業を続け、フランチャイズ料金は停止しました。",
+    studentAddedTitle: "スクールに追加されました",
+    studentAddedBody: "{school} に追加されました。",
     toDecideBody: "{name}さんの{rank}（{style}）への昇級があなたの判断を待っています。昇級させるか、見送るかを決めてください。",
     promotionFeeBody: "{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
     childPromotionFeeBody: "{name}さんの{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",

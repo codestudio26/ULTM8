@@ -1,4 +1,4 @@
-import type { TimetableCalendarClass, TimetableCalendarResponse, TimetableSlotResponse } from './timetableQueries';
+import type { ClosureResponse, TimetableCalendarClass, TimetableCalendarResponse, TimetableSlotResponse } from './timetableQueries';
 
 /** Same order TimetablePage.tsx's original weekday-grouped table used. */
 export const WEEKDAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
@@ -37,12 +37,26 @@ export function weekdayOf(date: Date): Weekday {
   return WEEKDAY_ORDER[(date.getDay() + 6) % 7];
 }
 
-/** Monday of the week containing `date`. */
-export function startOfWeek(date: Date): Date {
+/** The first day of the week containing `date`: Monday, or Sunday when the
+ * School starts its week on Sunday (Decision 319 §4). */
+export function startOfWeek(date: Date, weekStartsOn: 'MONDAY' | 'SUNDAY' = 'MONDAY'): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const offset = weekStartsOn === 'SUNDAY' ? d.getDay() : (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - offset);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+/** The weekdays in the School's week order (Decision 319 §4). */
+export function weekdaysFrom(weekStartsOn: 'MONDAY' | 'SUNDAY'): Weekday[] {
+  return weekStartsOn === 'SUNDAY' ? ['SUNDAY', ...WEEKDAY_ORDER.slice(0, 6)] : [...WEEKDAY_ORDER];
+}
+
+/** The style and class type filters (Decision 319 §1): an entry matches when one
+ * of its styles is the chosen style (and, when chosen, class type). */
+export function entryMatchesFilters(styles: Array<{ disciplineId: string; classType?: string | null }>, disciplineId: string, classType: string): boolean {
+  if (!disciplineId) return true;
+  return styles.some((s) => s.disciplineId === disciplineId && (!classType || s.classType === classType));
 }
 
 export function startOfMonth(date: Date): Date {
@@ -67,6 +81,8 @@ export interface DayOccurrences {
   date: string; // YYYY-MM-DD
   weekday: Weekday;
   entries: CalendarEntry[];
+  /** Closures covering this date (Decision 353, Q8). */
+  closures: ClosureResponse[];
 }
 
 /** The start time an entry sorts by. */
@@ -111,7 +127,8 @@ export function occurrencesForRange(
       ...slots.filter((s) => s.weekday === weekday && (s.status !== 'ON' || s.archivedAt)).map((slot) => ({ kind: 'template' as const, slot })),
     ];
     entries.sort((a, b) => entryStart(a).localeCompare(entryStart(b)));
-    days.push({ date, weekday, entries });
+    const closures = (calendar?.closures ?? []).filter((c) => c.startDate <= date && date <= c.endDate);
+    days.push({ date, weekday, entries, closures });
     cursor = addDays(cursor, 1);
   }
   return days;

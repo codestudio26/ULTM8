@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 describe('AuthService', () => {
@@ -9,10 +9,12 @@ describe('AuthService', () => {
   let twilio: any;
   let jwt: any;
   let loginAttempts: any;
+  let tx: any;
+  let rolesChanged: any;
 
   beforeEach(() => {
     prismaAuth = {
-      user: { findFirst: jest.fn(), findUnique: jest.fn() },
+      user: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
       // Backs issueRefreshToken()'s create() (login()/refresh()) and
       // confirmPasscodeReset()'s mass-revoke updateMany() — both now called
       // unconditionally on their respective success paths.
@@ -21,23 +23,23 @@ describe('AuthService', () => {
       // mock runs it against the same client.
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prismaAuth)),
     };
-    prismaApp = {
-      withTenantContext: jest.fn((_id: string, fn: any) =>
-        fn({
-          // findUnique backs AuthService.issueAccessToken()'s own email lookup
-          // (factored out of login(), also used by SchoolsService.create()'s
-          // token-remint) — mocked to resolve the same email login()'s own
-          // prismaAuth mock already uses below, so the two stay consistent.
-          user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ email: 'a@example.test' }) },
-          roleGrant: { findMany: jest.fn().mockResolvedValue([]) },
-        }),
-      ),
+    tx = {
+      // findUnique backs AuthService.issueAccessToken()'s own email lookup
+      // (factored out of login(), also used by SchoolsService.create()'s
+      // token-remint) — mocked to resolve the same email login()'s own
+      // prismaAuth mock already uses below, so the two stay consistent.
+      user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ email: 'a@example.test' }) },
+      roleGrant: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
     };
-    twilio = { sendOtp: jest.fn(), checkOtp: jest.fn() };
+    prismaApp = {
+      withTenantContext: jest.fn((_id: string, fn: any) => fn(tx)),
+    };
+    twilio = { sendOtp: jest.fn(), checkOtp: jest.fn(), assertConfigured: jest.fn() };
     jwt = { sign: jest.fn().mockReturnValue('signed.jwt.token') };
+    rolesChanged = { forget: jest.fn() };
     loginAttempts = { isLocked: jest.fn().mockReturnValue(false), recordFailure: jest.fn(), recordSuccess: jest.fn() };
 
-    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts);
+    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts, rolesChanged);
   });
 
   describe('register', () => {
@@ -55,16 +57,112 @@ describe('AuthService', () => {
       await expect(service.register({ ...dto, passcodeConfirm: '654321' })).rejects.toThrow(BadRequestException);
     });
 
+    const longAgo = new Date(Date.now() - 31 * 60 * 1000);
+    const unfinished = { id: 'old', phone: dto.phone, phoneVerifiedAt: null, mustChangePasscode: false, createdAt: longAgo };
+
     it('rejects a duplicate email/phone/username', async () => {
-      prismaAuth.user.findFirst.mockResolvedValue({ id: 'existing' });
+      prismaAuth.user.findMany.mockResolvedValue([{ ...unfinished, phoneVerifiedAt: new Date() }]);
       await expect(service.register(dto)).rejects.toThrow(ConflictException);
     });
 
     it('creates the user and sends an OTP on success', async () => {
-      prismaAuth.user.findFirst.mockResolvedValue(null);
       const result = await service.register(dto);
+      expect(tx.user.create).toHaveBeenCalled();
       expect(twilio.sendOtp).toHaveBeenCalledWith(dto.phone);
       expect(result.message).toMatch(/verification code sent/i);
+    });
+
+    it('replaces an unverified sign-up older than 30 minutes (Decision 375, Q2)', async () => {
+      prismaAuth.user.findMany.mockResolvedValue([unfinished]);
+      await service.register({ ...dto, firstName: 'New' });
+      expect(tx.user.create).not.toHaveBeenCalled();
+      expect(tx.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'old' }, data: expect.objectContaining({ firstName: 'New', username: null, createdAt: expect.any(Date) }) }),
+      );
+      expect(twilio.sendOtp).toHaveBeenCalledWith(dto.phone);
+    });
+
+    it.each([
+      ['younger than 30 minutes', { createdAt: new Date() }],
+      ['verified', { phoneVerifiedAt: new Date() }],
+      ['added by staff and waiting for its first passcode', { mustChangePasscode: true }],
+      ['without a phone', { phone: null }],
+    ])('keeps an existing account that is %s', async (_label, override) => {
+      prismaAuth.user.findMany.mockResolvedValue([{ ...unfinished, ...override }]);
+      await expect(service.register(dto)).rejects.toThrow(ConflictException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('keeps an unverified account that holds a role, or when the email and phone match two accounts', async () => {
+      prismaAuth.user.findMany.mockResolvedValue([unfinished]);
+      tx.roleGrant.count.mockResolvedValue(1);
+      await expect(service.register(dto)).rejects.toThrow(ConflictException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+
+      tx.roleGrant.count.mockResolvedValue(0);
+      prismaAuth.user.findMany.mockResolvedValue([unfinished, { ...unfinished, id: 'other' }]);
+      await expect(service.register(dto)).rejects.toThrow(ConflictException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+      expect(twilio.sendOtp).not.toHaveBeenCalled();
+    });
+
+    it('saves nothing when text messages are not set up (sign-in review A1)', async () => {
+      twilio.assertConfigured.mockImplementation(() => {
+        throw new ServiceUnavailableException('not configured');
+      });
+      await expect(service.register(dto)).rejects.toThrow(ServiceUnavailableException);
+      expect(prismaApp.withTenantContext).not.toHaveBeenCalled();
+      expect(prismaAuth.user.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('changePasscode (Decision 375, Q1)', () => {
+    let hash: string;
+    beforeEach(async () => {
+      hash = await bcrypt.hash('123456', 4);
+      prismaAuth.user.findUnique.mockResolvedValue({ email: 'a@example.test', passcodeHash: hash });
+    });
+
+    it('refuses a wrong current passcode and counts it toward the lockout', async () => {
+      await expect(service.changePasscode('u1', { currentPasscode: '000000', newPasscode: '246810' })).rejects.toThrow('Your current passcode is not right.');
+      expect(loginAttempts.recordFailure).toHaveBeenCalledWith('a@example.test');
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses while the account is locked', async () => {
+      loginAttempts.isLocked.mockReturnValue(true);
+      await expect(service.changePasscode('u1', { currentPasscode: '123456', newPasscode: '246810' })).rejects.toThrow(ForbiddenException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses the same passcode again', async () => {
+      await expect(service.changePasscode('u1', { currentPasscode: '123456', newPasscode: '123456' })).rejects.toThrow(BadRequestException);
+      expect(tx.user.update).not.toHaveBeenCalled();
+    });
+
+    it('saves the new passcode, signs out every other device and returns a fresh pair', async () => {
+      const result = await service.changePasscode('u1', { currentPasscode: '123456', newPasscode: '246810' });
+      const data = tx.user.update.mock.calls[0][0].data;
+      expect(await bcrypt.compare('246810', data.passcodeHash)).toBe(true);
+      expect(data.rolesChangedAt).toBeInstanceOf(Date);
+      expect(rolesChanged.forget).toHaveBeenCalledWith('u1');
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ userId: 'u1' }) }));
+      expect(result.accessToken).toBe('signed.jwt.token');
+      expect(typeof result.refreshToken).toBe('string');
+      expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
+    });
+  });
+
+  describe('requestPasscodeReset', () => {
+    it('answers every phone the same when text messages are not set up (sign-in review A3)', async () => {
+      twilio.assertConfigured.mockImplementation(() => {
+        throw new ServiceUnavailableException('not configured');
+      });
+      prismaAuth.user.findUnique.mockResolvedValue(null);
+      await expect(service.requestPasscodeReset({ phone: '+15551234567' })).rejects.toThrow(ServiceUnavailableException);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1' });
+      await expect(service.requestPasscodeReset({ phone: '+15551234567' })).rejects.toThrow(ServiceUnavailableException);
+      expect(prismaAuth.user.findUnique).not.toHaveBeenCalled();
     });
   });
 

@@ -23,9 +23,12 @@ export function ConfirmDeleteModal({
   genericErrorMessage,
   onConfirm,
   onClose,
+  children,
 }: {
   title: string;
   description: string;
+  /** Shown under the description, e.g. what Revoke will also end. */
+  children?: React.ReactNode;
   confirmLabel?: string;
   genericErrorMessage?: string;
   onConfirm: () => Promise<unknown>;
@@ -50,6 +53,7 @@ export function ConfirmDeleteModal({
     <Modal title={title} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <p style={{ marginTop: 0 }}>{description}</p>
+      {children}
       <div style={{ display: 'flex', gap: 8 }}>
         <Button variant="danger" onClick={confirm} loading={busy} disabled={!!error}>
           {confirmLabel ?? t('lib.confirmDelete.delete')}

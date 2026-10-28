@@ -62,3 +62,15 @@ export function daysInRange(from: string, to: string): string[] {
   }
   return days;
 }
+
+/** Decision 367 (D2) — the longest range the summary answers, in days. Typing a
+ * year into a date box passes through years like 0202; without a limit each of
+ * those built hundreds of thousands of empty days. */
+export const MAX_SUMMARY_RANGE_DAYS = 92;
+
+/** `zone` when Luxon knows it, else UTC — a mistyped stored time zone never
+ * breaks the whole summary. */
+export function safeZone(zone: string | null | undefined): string {
+  if (!zone) return 'UTC';
+  return DateTime.local().setZone(zone).isValid ? zone : 'UTC';
+}

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsUUID, Matches } from 'class-validator';
 import { ClassStyleResponseDto } from '../../classes/dto/class-style.dto';
+import { ClosureResponseDto } from './closure.dto';
 
 /** GET /schools/:schoolId/timetable/calendar query (Decision 353, T7): the
  * local calendar dates on screen, at most 62 days. */
@@ -51,4 +52,5 @@ export class TimetableCalendarLaterDto {
 export class TimetableCalendarResponseDto {
   @ApiProperty({ type: [TimetableCalendarClassDto] }) classes!: TimetableCalendarClassDto[];
   @ApiProperty({ type: [TimetableCalendarLaterDto], description: 'Dates On slots reach that have no class yet because they are past the 4-week horizon.' }) later!: TimetableCalendarLaterDto[];
+  @ApiProperty({ type: [ClosureResponseDto], description: 'Closures overlapping the dates shown that the caller covers (Decision 353, Q8).' }) closures!: ClosureResponseDto[];
 }

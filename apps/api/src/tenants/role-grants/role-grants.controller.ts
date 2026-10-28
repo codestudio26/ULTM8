@@ -13,13 +13,9 @@ import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-que
 import { InviteCandidateResponseDto } from './dto/invite-candidate-response.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStaffManuallyResponseDto } from './dto/create-staff-manually-response.dto';
-import {
-  HandOverMainOwnerDto,
-  MainOwnerResponseDto,
-  RemoveFromSchoolResponseDto,
-  StaffListQueryDto,
-  StaffListResponseDto,
-} from './dto/staff-list.dto';
+import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
+import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-response.dto';
+import { HandOverMainOwnerDto, MainOwnerResponseDto, StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * InstructorsController's own add-manually throttle (ADD_MANUALLY_THROTTLE). */
@@ -96,6 +92,19 @@ export class RoleGrantsController {
     return this.roleGrantsService.createStaffManually(user.sub, schoolId, dto);
   }
 
+  // Decision 371 — Students "Add manually": an adult with no account yet. See
+  // RoleGrantsService.createStudentManually. Same throttle tier as Staff's.
+  @ApiCreatedResponse({ type: CreateStudentManuallyResponseDto })
+  @Throttle(ADD_MANUALLY_THROTTLE)
+  @Post('schools/:schoolId/students/add-manually')
+  createStudentManually(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Body() dto: CreateStudentManuallyDto,
+  ) {
+    return this.roleGrantsService.createStudentManually(user.sub, schoolId, dto);
+  }
+
   /** Decision 361 — the Staff page's list. See RoleGrantsService.listStaff. */
   @ApiOkResponse({ type: StaffListResponseDto })
   @Get('schools/:schoolId/staff')
@@ -103,12 +112,9 @@ export class RoleGrantsController {
     return this.roleGrantsService.listStaff(user.sub, schoolId, query);
   }
 
-  /** Decision 361 — "Remove from School". See RoleGrantsService.removeFromSchool. */
-  @ApiCreatedResponse({ type: RemoveFromSchoolResponseDto })
-  @Post('schools/:schoolId/staff/:userId/remove')
-  removeFromSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('userId') userId: string) {
-    return this.roleGrantsService.removeFromSchool(user.sub, schoolId, userId);
-  }
+  // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in
+  // StaffRemovalController: it may cancel classes, which needs BookingsModule,
+  // and BookingsModule already imports this module.
 
   /** Decision 370 — the main owner hands the main role to a co-owner. See
    * RoleGrantsService.handOverMainOwner. */

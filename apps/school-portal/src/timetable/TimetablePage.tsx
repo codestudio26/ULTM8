@@ -8,8 +8,10 @@ import {
   Checkbox,
   EmptyState,
   ErrorBanner,
+  Field,
   PageHeader,
   RowActionsMenu,
+  SelectField,
   Spinner,
   SuccessBanner,
   ViewToggle,
@@ -21,6 +23,7 @@ import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useStudents } from '../students/studentQueries';
+import { useSchool } from '../schools/schoolQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useI18n, useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import {
@@ -39,6 +42,7 @@ import { TimetableSlotFormModal } from './TimetableSlotFormModal';
 import { BookedClassesDialog, type BookedClassesMode } from './BookedClassesDialog';
 import { changedSlotFields, slotChangeMovesClasses, slotChangeTouchesBookingRules } from './slotChanges';
 import { TimetableBookingDialog } from './TimetableBookingDialog';
+import { ClosuresDialog } from './ClosuresDialog';
 import {
   addDays,
   colorForSlot,
@@ -47,7 +51,8 @@ import {
   startOfMonth,
   startOfWeek,
   toDateKey,
-  WEEKDAY_ORDER,
+  entryMatchesFilters,
+  weekdaysFrom,
   weekdayName,
   type CalendarEntry,
   type DayOccurrences,
@@ -128,15 +133,24 @@ export function TimetablePage() {
   // Archived styles too: the forms show one a record already has (Decision 310).
   const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
   const { data: studentData } = useStudents(schoolId);
+  const { data: school } = useSchool(schoolId);
+  const weekStartsOn = school?.weekStartsOn ?? 'MONDAY';
   const createSlot = useCreateTimetableSlot(schoolId ?? '');
   const archiveSlot = useArchiveTimetableSlot(schoolId ?? '');
   const unarchiveSlot = useUnarchiveTimetableSlot(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<TimetableSlotResponse | null>(null);
   const [rangeMode, setRangeMode] = useState<RangeMode>('week');
-  const [viewMode, setViewMode] = useState<ViewMode>('rows');
+  // Null until changed here: the School's default layout (Decision 319 §4).
+  const [chosenViewMode, setViewMode] = useState<ViewMode | null>(null);
+  // Decision 319 §1 filters: Branch, style and class type.
+  const [branchFilter, setBranchFilter] = useState('');
+  const [styleFilter, setStyleFilter] = useState('');
+  const [classTypeFilter, setClassTypeFilter] = useState('');
+  const viewMode: ViewMode = chosenViewMode ?? (school?.timetableDefaultLayout === 'GRID' ? 'grid' : 'rows');
   const [anchor, setAnchor] = useState(() => new Date());
   const [booking, setBooking] = useState<BookingTarget | null>(null);
+  const [closuresOpen, setClosuresOpen] = useState(false);
   const [bookedMessage, setBookedMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   // Decision 226 — archived TimetableSlots are excluded by default (hidden
@@ -160,11 +174,11 @@ export function TimetablePage() {
       return { rangeStart: d, rangeEnd: d };
     }
     if (rangeMode === 'week') {
-      const start = startOfWeek(anchor);
+      const start = startOfWeek(anchor, weekStartsOn);
       return { rangeStart: start, rangeEnd: addDays(start, 6) };
     }
     return { rangeStart: startOfMonth(anchor), rangeEnd: endOfMonth(anchor) };
-  }, [anchor, rangeMode]);
+  }, [anchor, rangeMode, weekStartsOn]);
 
   // This used to come after the isLoading/error returns below, so it only ran
   // once data existed: the moment a render's hook count differed from the
@@ -176,9 +190,20 @@ export function TimetablePage() {
   const calendar = useTimetableCalendar(schoolId, toDateKey(rangeStart), toDateKey(rangeEnd));
   const days = useMemo(() => {
     const all = occurrencesForRange(slots, calendar.data, rangeStart, rangeEnd);
-    // Off slots are only there for the owner to switch back on (Q4).
-    return canEdit ? all : all.map((day) => ({ ...day, entries: day.entries.filter((e) => e.kind !== 'template') }));
-  }, [slots, calendar.data, rangeStart, rangeEnd, canEdit]);
+    const keep = (e: CalendarEntry) => {
+      // Off slots are only there for the owner to switch back on (Q4).
+      if (!canEdit && e.kind === 'template') return false;
+      const branchId = e.kind === 'class' ? e.cls.branchId : e.slot.branchId;
+      // A Branch's timetable shows its own and School-wide classes (Decision 319 §1).
+      if (branchFilter && branchId && branchId !== branchFilter) return false;
+      return entryMatchesFilters(e.kind === 'class' ? e.cls.styles : e.slot.styles, styleFilter, classTypeFilter);
+    };
+    return all.map((day) => ({
+      ...day,
+      entries: day.entries.filter(keep),
+      closures: branchFilter ? day.closures.filter((c) => !c.branchId || c.branchId === branchFilter) : day.closures,
+    }));
+  }, [slots, calendar.data, rangeStart, rangeEnd, canEdit, branchFilter, styleFilter, classTypeFilter]);
   const slotActions: SlotActions | null = canEdit ? { onEdit: setEditing, onArchive: setArchiving, unarchiveSlot, setActionError } : null;
 
   // Instructors have no Timetable screen (Decision 353 gave it to Branch Staff
@@ -192,7 +217,8 @@ export function TimetablePage() {
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
   const students = studentData?.items ?? [];
-  const hasAnything = (canEdit ? slots.length > 0 : days.some((day) => day.entries.length > 0)) || (calendar.data?.classes.length ?? 0) > 0;
+  const chosenStyle = disciplines.find((d) => d.id === styleFilter);
+  const hasAnything = (canEdit ? slots.length > 0 : days.some((day) => day.entries.length > 0)) || (calendar.data?.classes.length ?? 0) > 0 || (calendar.data?.closures.length ?? 0) > 0;
 
   function shiftAnchor(direction: 1 | -1) {
     if (rangeMode === 'day') setAnchor((a) => addDays(a, direction));
@@ -212,7 +238,16 @@ export function TimetablePage() {
       <PageHeader
         title={t('timetable.title')}
         subtitle={canEdit ? t('timetable.subtitle') : t('timetable.staffSubtitle')}
-        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button> : undefined}
+        actions={
+          canEdit ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={() => setClosuresOpen(true)}>
+                {t('timetable.closures.button')}
+              </Button>
+              <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>
+            </div>
+          ) : undefined
+        }
       />
 
       {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
@@ -250,6 +285,39 @@ export function TimetablePage() {
             {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('timetable.viewAria')} /> : null}
           </div>
         </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+          {branches.length > 1 ? (
+            <Field label={t('timetable.filters.branch')} htmlFor="tt-filter-branch">
+              <SelectField
+                id="tt-filter-branch"
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                options={[{ value: '', label: t('timetable.filters.allBranches') }, ...branches.filter((b) => !b.archivedAt).map((b) => ({ value: b.id, label: b.name }))]}
+              />
+            </Field>
+          ) : null}
+          <Field label={t('timetable.filters.style')} htmlFor="tt-filter-style">
+            <SelectField
+              id="tt-filter-style"
+              value={styleFilter}
+              onChange={(e) => {
+                setStyleFilter(e.target.value);
+                setClassTypeFilter('');
+              }}
+              options={[{ value: '', label: t('timetable.filters.allStyles') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
+            />
+          </Field>
+          {chosenStyle && chosenStyle.classTypesOffered.length > 0 ? (
+            <Field label={t('timetable.filters.classType')} htmlFor="tt-filter-type">
+              <SelectField
+                id="tt-filter-type"
+                value={classTypeFilter}
+                onChange={(e) => setClassTypeFilter(e.target.value)}
+                options={[{ value: '', label: t('timetable.filters.allClassTypes') }, ...chosenStyle.classTypesOffered.map((c) => ({ value: c, label: c }))]}
+              />
+            </Field>
+          ) : null}
+        </div>
       </Card>
 
       {actionError ? <ErrorBanner message={actionError} /> : null}
@@ -261,6 +329,7 @@ export function TimetablePage() {
       ) : rangeMode === 'month' ? (
         <MonthGrid
           days={days}
+          weekStartsOn={weekStartsOn}
           onBook={(target) => setBooking(target)}
         />
       ) : viewMode === 'grid' ? (
@@ -287,6 +356,8 @@ export function TimetablePage() {
           onClose={() => setArchiving(null)}
         />
       ) : null}
+
+      {closuresOpen && canEdit ? <ClosuresDialog schoolId={schoolId} branches={branches} onClose={() => setClosuresOpen(false)} /> : null}
 
       {creating && canEdit ? (
         <TimetableSlotFormModal
@@ -440,6 +511,24 @@ function OccurrenceCard({
   );
 }
 
+/** "Closed — Christmas" on a closed date (Decision 353, Q8); a Branch closure
+ * names its Branch, since the School's other Branches stay open. */
+function ClosedBanner({ day, branches }: { day: DayOccurrences; branches: BranchResponse[] }) {
+  const t = useT();
+  if (day.closures.length === 0) return null;
+  return (
+    <>
+      {day.closures.map((c) => (
+        <p key={c.id} role="note" style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
+          {c.branchId
+            ? t('timetable.closures.closedBranch', { reason: c.reason, branch: branches.find((b) => b.id === c.branchId)?.name ?? '' })
+            : t('timetable.closures.closed', { reason: c.reason })}
+        </p>
+      ))}
+    </>
+  );
+}
+
 function entryKey(entry: CalendarEntry): string {
   return entry.kind === 'class' ? entry.cls.id : `${entry.kind}-${entry.slot.id}`;
 }
@@ -466,6 +555,7 @@ function DayAgendaCard({
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
         {dayHeading(day)}
       </h2>
+      <ClosedBanner day={day} branches={branches} />
       {day.entries.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('timetable.nothingScheduled')}</p>
       ) : (
@@ -496,6 +586,7 @@ function DayColumn({
         <h2 className="ultm8-page-header__title" style={{ fontSize: 14, marginBottom: 8 }}>
           {dayHeading(day)}
         </h2>
+        <ClosedBanner day={day} branches={branches} />
         {day.entries.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>—</p>
         ) : (
@@ -514,14 +605,15 @@ function DayColumn({
  * under its real weekday), each day a dot per Class that can still be booked;
  * clicking a dot opens the same booking dialog as every other view. Cancelled,
  * ended and later dates aren't dotted (nothing to book); Day/Week show them. */
-function MonthGrid({ days, onBook }: { days: DayOccurrences[]; onBook: (target: BookingTarget) => void }) {
+function MonthGrid({ days, weekStartsOn, onBook }: { days: DayOccurrences[]; weekStartsOn: 'MONDAY' | 'SUNDAY'; onBook: (target: BookingTarget) => void }) {
   const { t, locale } = useI18n();
-  const leadingBlanks = WEEKDAY_ORDER.indexOf(days[0]?.weekday ?? 'MONDAY');
+  const order = weekdaysFrom(weekStartsOn);
+  const leadingBlanks = order.indexOf(days[0]?.weekday ?? order[0]);
   const now = new Date();
   return (
     <Card>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
-        {WEEKDAY_ORDER.map((wd) => (
+        {order.map((wd) => (
           <div key={wd} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
             {weekdayName(wd, locale, 'short')}
           </div>
@@ -547,6 +639,11 @@ function MonthGrid({ days, onBook }: { days: DayOccurrences[]; onBook: (target: 
               }}
             >
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(`${day.date}T00:00:00`).getDate()}</span>
+              {day.closures.length > 0 ? (
+                <span role="note" title={day.closures.map((c) => c.reason).join(', ')} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
+                  {t('timetable.closures.closedShort')}
+                </span>
+              ) : null}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 {bookable.map((cls) => (
                   <button

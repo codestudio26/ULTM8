@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { useStudents } from '../students/studentQueries';
+import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
+import { ReEnrolModal } from '../students/ReEnrolModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
 import { useLessons } from '../curriculum/curriculumQueries';
 import { useInstructors } from '../instructors/instructorQueries';
-import { useStudentBookings, type StudentBookingResponse } from '../bookings/bookingQueries';
+import { useNextStudentBooking, type StudentBookingResponse } from '../bookings/bookingQueries';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
@@ -73,10 +74,12 @@ export function StudentGradingPage() {
   const navigate = useNavigate();
   const t = useT();
   const { claims } = useAuth();
-  // The board passes the name along: a coach can't list the School's students.
+  // The board passes the name along, for a student a coach's list doesn't
+  // include.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
   const my = useMyGrading(schoolId);
-  const students = useStudents(schoolId);
+  // Former students too, so their page still shows their name (Decision 341).
+  const students = useStudents(schoolId, 'ALL');
   // Archived styles too: a student keeps their rank and history in one (Decision 310).
   const disciplines = useDisciplines(schoolId, { includeArchived: true });
   const eligibility = useStudentEligibility(studentId, schoolId);
@@ -90,10 +93,15 @@ export function StudentGradingPage() {
   // additions to this real page (the de facto Student Detail screen at
   // /students/:id — no separate mockup-matching page exists in this app; see
   // the backlog's own "Student Detail (new mockup, not yet built)" entry).
-  const bookings = useStudentBookings(studentId, schoolId);
+  const nextBooking = useNextStudentBooking(studentId, schoolId);
   const roleGrants = useUserRoleGrants(studentId);
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+  const [reEnrolling, setReEnrolling] = useState(false);
+  const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
+  // Decision 371 (Q4): who the student's Guardians are. Read for a current
+  // student only (the API's own rule, like the profile read).
+  const guardians = useStudentGuardians(schoolId, studentId, enrolled);
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -113,6 +121,9 @@ export function StudentGradingPage() {
   const ranks = eligibility.data?.items ?? [];
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id) && (!d.archivedAt || ranks.some((r) => r.disciplineId === d.id)));
   const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? t('grading.studentFallback');
+  // A former student's grading history stays readable, but nothing can be
+  // changed: the API refuses grading a student who isn't enrolled.
+  const inactive = student?.status === 'INACTIVE';
   const performerName = (userId: string | null | undefined) =>
     !userId
       ? t('grading.student.formerInstructor')
@@ -133,9 +144,10 @@ export function StudentGradingPage() {
       </p>
       <PageHeader
         title={studentName}
-        subtitle={t('grading.student.subtitle')}
+        subtitle={inactive ? t('grading.student.inactiveSubtitle') : t('grading.student.subtitle')}
         actions={
           <>
+            {inactive ? <Badge>{t('students.statusInactive')}</Badge> : null}
             {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
               * reaching this page (School Owner/Manager, Branch Staff, or
               * Instructor) may use it, matching the backend's own
@@ -144,10 +156,13 @@ export function StudentGradingPage() {
               * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
               * /students/:id/edit), not a Modal — see that page's own header
               * comment for why. */}
-            {student ? (
+            {student && !inactive ? (
               <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
                 {t('grading.student.editProfile')}
               </Button>
+            ) : null}
+            {my.isOwner && inactive ? (
+              <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button>
             ) : null}
             {my.isOwner && activeStudentGrant ? (
               <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
@@ -158,17 +173,26 @@ export function StudentGradingPage() {
         }
       />
 
+      {guardians.data && guardians.data.items.length > 0 ? (
+        <p data-testid="student-guardians" style={{ margin: '0 0 16px' }}>
+          {t('students.guardians', {
+            count: guardians.data.items.length,
+            names: guardians.data.items.map((g) => `${g.firstName} ${g.surname}`.trim()).join(', '),
+          })}
+        </p>
+      ) : null}
+
       <div style={{ marginBottom: 24 }}>
         <Card>
           <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
             {t('grading.student.upcomingBooking')}
           </h2>
-          {bookings.isLoading ? (
+          {nextBooking.isLoading ? (
             <Spinner />
-          ) : bookings.error ? (
-            <ErrorBanner message={bookings.error instanceof ApiError ? bookings.error.message : t('grading.student.bookingsLoadFailed')} />
+          ) : nextBooking.error ? (
+            <ErrorBanner message={nextBooking.error instanceof ApiError ? nextBooking.error.message : t('grading.student.bookingsLoadFailed')} />
           ) : (
-            <UpcomingBooking bookings={bookings.data?.items ?? []} />
+            <UpcomingBooking next={nextBooking.data?.next ?? null} moreUpcoming={nextBooking.data?.moreUpcoming ?? 0} />
           )}
         </Card>
       </div>
@@ -197,7 +221,7 @@ export function StudentGradingPage() {
             history={history.data?.items ?? []}
             historyLoading={history.isLoading}
             performerName={performerName}
-            can={(toggle) => my.can(discipline.id, toggle)}
+            can={(toggle) => !inactive && my.can(discipline.id, toggle)}
             isOwner={my.isOwner}
             archived={!!discipline.archivedAt}
             firstName={student?.firstName || studentName}
@@ -208,6 +232,8 @@ export function StudentGradingPage() {
         ))
       )}
       <Checkbox label={t('grading.student.showVoided')} checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+
+      {reEnrolling ? <ReEnrolModal schoolId={schoolId} studentId={studentId} studentName={studentName} onClose={() => setReEnrolling(false)} /> : null}
 
       {confirmingRevoke && activeStudentGrant ? (
         <ConfirmDeleteModal
@@ -220,23 +246,65 @@ export function StudentGradingPage() {
             navigate('/students');
           }}
           onClose={() => setConfirmingRevoke(false)}
-        />
+        >
+          <RevokeLiveItems schoolId={schoolId} studentId={studentId} />
+        </ConfirmDeleteModal>
       ) : null}
     </>
   );
 }
 
-/** The nearest Upcoming Booking, if any — id-ordered pagination (Decision 22)
- * means this list isn't date-sorted server-side, so the nearest is found
- * client-side across whatever page loaded. Good enough for this page's scale
- * (no pagination UI exists here yet, same convention as every other list on
- * this page). */
-function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
+/** What Revoke will also end, and the memberships it leaves running, so the
+ * owner knows before confirming (Decision 343, S2). */
+function RevokeLiveItems({ schoolId, studentId }: { schoolId: string; studentId: string }) {
   const t = useT();
-  const upcoming = bookings
-    .filter((b) => b.status === 'UPCOMING')
-    .sort((a, b) => new Date(a.classStartDate).getTime() - new Date(b.classStartDate).getTime());
-  const next = upcoming[0];
+  const summary = useStudentLeavingSummary(schoolId, studentId, true);
+  if (summary.isLoading) return <p className="ultm8-field__hint">{t('grading.student.revokeLiveLoading')}</p>;
+  if (summary.error || !summary.data) return <p className="ultm8-field__hint">{t('grading.student.revokeLiveFailed')}</p>;
+  const { upcomingBookings, waitlistPlaces, memberships } = summary.data;
+  if (upcomingBookings === 0 && waitlistPlaces === 0 && memberships.length === 0) {
+    return <p>{t('grading.student.revokeNothingLive')}</p>;
+  }
+  return (
+    <div data-testid="revoke-live-items">
+      {upcomingBookings > 0 || waitlistPlaces > 0 ? (
+        <>
+          <p style={{ marginBottom: 4 }}>{t('grading.student.revokeWillCancel')}</p>
+          <ul style={{ marginTop: 0 }}>
+            {upcomingBookings > 0 ? <li>{t('grading.student.revokeBookings', { count: upcomingBookings })}</li> : null}
+            {waitlistPlaces > 0 ? <li>{t('grading.student.revokeWaitlist', { count: waitlistPlaces })}</li> : null}
+          </ul>
+          {upcomingBookings > 0 ? <p className="ultm8-field__hint">{t('grading.student.revokeCreditNote')}</p> : null}
+        </>
+      ) : null}
+      {memberships.length > 0 ? (
+        <>
+          <p style={{ marginBottom: 4 }}>{t('grading.student.revokeMembershipsTitle')}</p>
+          <ul style={{ marginTop: 0 }}>
+            {memberships.map((m) => (
+              <li key={m.id}>{membershipLine(t, m)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function membershipLine(t: ReturnType<typeof useT>, m: StudentLeavingSummary['memberships'][number]): string {
+  if (m.renews) return t('grading.student.revokeSubscriptionStops', { plan: m.planTitle });
+  if (m.cancelAt) return t('grading.student.revokeSubscriptionEnds', { plan: m.planTitle, date: formatDay(m.cancelAt) });
+  if (m.classesRemaining != null) return t('grading.student.revokeMembershipClasses', { plan: m.planTitle, count: m.classesRemaining });
+  if (m.expiryDate) {
+    return t('grading.student.revokeMembershipUntil', { plan: m.planTitle, date: formatDay(m.expiryDate) });
+  }
+  return m.planTitle;
+}
+
+/** The soonest upcoming booking whose class hasn't started, as the API picks
+ * it across all of the student's bookings (Decision 341). */
+function UpcomingBooking({ next, moreUpcoming }: { next: StudentBookingResponse | null; moreUpcoming: number }) {
+  const t = useT();
   if (!next) {
     return <p className="ultm8-field__hint" style={{ margin: 0 }}>{t('grading.student.noUpcomingBooking')}</p>;
   }
@@ -244,7 +312,7 @@ function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       <strong>{next.classTitle}</strong>
       <span className="ultm8-field__hint">{formatDay(next.classStartDate)}</span>
-      {upcoming.length > 1 ? <Badge>{t('grading.student.moreBookings', { count: upcoming.length - 1 })}</Badge> : null}
+      {moreUpcoming > 0 ? <Badge>{t('grading.student.moreBookings', { count: moreUpcoming })}</Badge> : null}
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -12,6 +12,7 @@ import { TimetableQueryDto } from './dto/timetable-query.dto';
 import { UpcomingImpactResponseDto } from './dto/upcoming-impact-response.dto';
 import { TimetableCalendarQueryDto, TimetableCalendarResponseDto } from './dto/timetable-calendar.dto';
 import { ClassResponseDto } from '../classes/dto/class-response.dto';
+import { ClosureCreatedResponseDto, ClosureListResponseDto, CreateClosureDto } from './dto/closure.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
 // tenant offboarding is [UNRESOLVED]). The class-occurrence-generation job that
@@ -52,6 +53,26 @@ export class TimetableController {
     @Query() query: TimetableCalendarQueryDto,
   ) {
     return this.timetableService.calendar(user.sub, schoolId, query);
+  }
+
+  /** Decision 353 (Q8, Decision 319 §3) — closure dates. Any School staff read; the owner adds and removes. */
+  @ApiOkResponse({ type: ClosureListResponseDto })
+  @Get('schools/:schoolId/closures')
+  listClosures(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.timetableService.listClosures(user.sub, schoolId);
+  }
+
+  @ApiCreatedResponse({ type: ClosureCreatedResponseDto })
+  @Post('schools/:schoolId/closures')
+  createClosure(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: CreateClosureDto) {
+    return this.timetableService.createClosure(user.sub, schoolId, dto);
+  }
+
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  @Delete('closures/:id')
+  deleteClosure(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.timetableService.deleteClosure(user.sub, id);
   }
 
   @ApiOkResponse({ type: TimetableSlotResponseDto })

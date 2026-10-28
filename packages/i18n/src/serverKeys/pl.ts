@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Na te zajęcia są zapisani lub czekający uczniowie. Anuluj ich rezerwacje, zanim przeniesiesz zajęcia do innej filii.",
     classMovedToPast: "Na te zajęcia są zapisani lub czekający uczniowie, więc można je przenieść tylko na termin, który jeszcze nie minął.",
     classAlreadyEnded: "Te zajęcia już się skończyły. Wybierz godzinę zakończenia w przyszłości.",
+    schoolCurrencyChange: "Plany rozliczane w walucie szkoły: {count}. Od teraz są rozliczane w {currency}, z tymi samymi kwotami.",
+    schoolCurrencyInUse: "Plany rozliczane w walucie szkoły: {count}. Nadaj im własną walutę, zanim ją wyczyścisz.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",
@@ -209,6 +211,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} usunęła {school} z franczyzy. Opłaty franczyzowe zostały wstrzymane.",
     franchiseClosedTitle: "Franczyza zamknięta",
     franchiseClosedBody: "{franchise} została zamknięta. {school} pozostaje otwarta, a opłaty franczyzowe zostały wstrzymane.",
+    studentAddedTitle: "Dodano do szkoły",
+    studentAddedBody: "Dodano Cię do {school}.",
     toDecideBody: "Awans {name} na {rank} ({style}) czeka na twoją decyzję. Awansuj lub zdecyduj, że nie.",
     promotionFeeBody: "Twój awans na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
     childPromotionFeeBody: "Awans {name} na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",

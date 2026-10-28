@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "هناك طلاب محجوزون أو في قائمة الانتظار لهذا الصف. ألغِ حجوزاتهم قبل نقله إلى فرع آخر.",
     classMovedToPast: "هناك طلاب محجوزون أو في قائمة الانتظار لهذا الصف، لذا لا يمكن نقله إلا إلى وقت لم يمضِ بعد.",
     classAlreadyEnded: "انتهى هذا الصف بالفعل. اختر وقت انتهاء في المستقبل.",
+    schoolCurrencyChange: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. من الآن تُحصَّل بعملة {currency} بالمبالغ نفسها.",
+    schoolCurrencyInUse: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. حدّد لهذه الخطط عملتها الخاصة قبل مسح العملة.",
   },
   errors: {
     beltInHistoryDelete: "هذا الحزام موجود في سجل ترقيات الطلاب، لذا لا يمكن حذفه.",
@@ -237,6 +239,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "أزال {franchise} {school} من الامتياز. توقفت رسوم الامتياز.",
     franchiseClosedTitle: "تم إغلاق الامتياز",
     franchiseClosedBody: "تم إغلاق {franchise}. تبقى {school} مفتوحة، وتوقفت رسوم الامتياز.",
+    studentAddedTitle: "تمت إضافتك إلى مدرسة",
+    studentAddedBody: "تمت إضافتك إلى {school}.",
     toDecideBody: "ترقية {name} إلى {rank} ({style}) بانتظار قرارك. قم بالترقية أو قرر عدم الترقية.",
     promotionFeeBody: "ترقيتك إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     childPromotionFeeBody: "ترقية {name} إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",

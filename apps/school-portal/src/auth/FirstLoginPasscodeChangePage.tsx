@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthCard, Button, ErrorBanner, Field, PasscodeField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -22,8 +22,8 @@ import { useT } from '../i18n/I18nProvider';
 export function FirstLoginPasscodeChangePage() {
   const t = useT();
   const navigate = useNavigate();
-  const location = useLocation() as { state?: { passcodeChangeToken?: string } };
-  const { setAccessToken } = useAuth();
+  const location = useLocation() as { state?: { passcodeChangeToken?: string; from?: { pathname: string } } };
+  const { startSession } = useAuth();
   const passcodeChangeToken = location.state?.passcodeChangeToken;
 
   const [newPasscode, setNewPasscode] = useState('');
@@ -32,8 +32,7 @@ export function FirstLoginPasscodeChangePage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (!passcodeChangeToken) {
-    navigate('/login', { replace: true });
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,9 +53,12 @@ export function FirstLoginPasscodeChangePage() {
       // This endpoint always returns real tokens, never the mustChangePasscode
       // shape — LoginResponseDto's fields are all optional only because it's
       // shared with /auth/login's own two possible shapes (see that DTO's
-      // header comment).
-      setAccessToken(result.accessToken!);
-      navigate(takeReturnTo() ?? '/', { replace: true });
+      // header comment). Both are kept, as a normal login keeps them: with only
+      // the access token the session died after 15 minutes, or picked up an
+      // earlier account's refresh token left in this tab (sign-in review A2).
+      startSession(result.accessToken!, result.refreshToken!);
+      // Back to where Log in was going, e.g. the coach invite link (A10).
+      navigate(location.state?.from?.pathname ?? takeReturnTo() ?? '/', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {

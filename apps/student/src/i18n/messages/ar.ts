@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "التحقق من الهاتف",
       resetPasscode: "إعادة تعيين رمز الدخول",
       newPasscode: "رمز الدخول الجديد",
+      choosePasscode: "اختيار الرمز",
     },
     app: {
       home: "ULTM8 للطلاب",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "رمز الدخول الجديد",
       confirmNewPasscode: "تأكيد رمز الدخول الجديد",
       submit: "تعيين رمز الدخول الجديد",
+    },
+    choosePasscode: {
+      title: "اختر رمز الدخول",
+      intro: "أعطتك مدرستك رمز دخول مؤقتًا. اختر رمزك المكوّن من 6 أرقام لإكمال تسجيل الدخول.",
+      submit: "حفظ وتسجيل الدخول",
     },
     stepUp: {
       prompt: "أعد إدخال رمز الدخول للتأكيد.",

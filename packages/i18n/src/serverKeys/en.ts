@@ -42,6 +42,9 @@ export const server = {
     classBranchBooked: "Students are booked or waiting for this class. Cancel their bookings before moving it to another branch.",
     classMovedToPast: "Students are booked or waiting for this class, so it can only move to a time that hasn't passed yet.",
     classAlreadyEnded: "This class has already ended. Pick an end time in the future.",
+    // School Settings review (Decision 368, Q3).
+    schoolCurrencyChange: "Membership plans charged in the School's currency: {count}. From now on they're charged in {currency}, with the same amounts.",
+    schoolCurrencyInUse: "Membership plans charged in the School's currency: {count}. Give those plans their own currency before clearing it.",
   },
   errors: {
     slotHasBookings: {
@@ -164,6 +167,8 @@ export const server = {
     removedFromFranchiseBody: '{franchise} removed {school} from the Franchise. Its franchise fees have stopped.',
     franchiseClosedTitle: 'Franchise closed',
     franchiseClosedBody: '{franchise} has been closed. {school} stays open, and its franchise fees have stopped.',
+    studentAddedTitle: 'Added to a School',
+    studentAddedBody: "You've been added to {school}.",
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",

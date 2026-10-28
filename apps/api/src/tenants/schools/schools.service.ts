@@ -9,7 +9,7 @@ import { JOIN_REQUEST_SELECT } from '../franchises/franchises.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
-import { GuardiansService } from '../../guardians/guardians.service';
+import { GUARDIAN_MANAGED_EMAIL_DOMAIN, GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
 import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
 import { UsersService } from '../../users/users.service';
@@ -26,11 +26,15 @@ import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
+import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
+import { LIVE_WAITLIST_STATUSES, leavingStudentBookingsWhere } from '../../bookings/leaving-student-cancellation';
+import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
 import { StepUpService } from '../../auth/step-up.service';
 import { stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
 import { stopSchoolBilling } from '../stop-tenant-billing';
 import { sendFranchiseNotice } from '../franchises/franchise-notifications';
+import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
@@ -122,6 +126,13 @@ export class SchoolsService {
     const roleGrantId = randomUUID();
 
     const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Decision 375 (Q5): only someone 18 or over may create a School and
+      // become its owner. Read from the caller's own row, in the same
+      // transaction; an unknown date of birth counts as under 18.
+      const caller = await tx.user.findUnique({ where: { id: callerId }, select: { dateOfBirth: true } });
+      if (!isAdultOn(caller?.dateOfBirth)) {
+        throw new ForbiddenException('You must be 18 or over to create a School.');
+      }
       // joinCode is NOT set here — the column's own DB-function default
       // (migration 20261115000001) generates it; the created row below
       // already carries the real value Postgres assigned, same as any
@@ -165,6 +176,8 @@ export class SchoolsService {
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
+          weekStartsOn: dto.weekStartsOn,
+          timetableDefaultLayout: dto.timetableDefaultLayout,
         },
       });
 
@@ -281,7 +294,7 @@ export class SchoolsService {
    * roles enum would be a second, divergent creation path for the exact
    * same role, not a fix.
    */
-  async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
+  async join(callerId: string, schoolId: string, dto?: JoinSchoolDto, opts: { notify?: boolean } = {}) {
     const studentId = dto?.studentId ?? callerId;
     const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
     let isGuardianAction = false;
@@ -292,7 +305,17 @@ export class SchoolsService {
         isStaffAction = true;
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
-        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+        try {
+          await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+        } catch (guardianErr) {
+          // Staff here who aren't the owner (and aren't this child's
+          // Guardian) get the reason that applies to them, not the Guardian
+          // one (Decision 341, S11).
+          if (guardianErr instanceof ForbiddenException && (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))) {
+            throw new ForbiddenException('Only the School owner can enrol students.');
+          }
+          throw guardianErr;
+        }
         isGuardianAction = true;
       }
     }
@@ -328,17 +351,32 @@ export class SchoolsService {
         throw err;
       }
 
+      // A closed School takes no new students, however they join: the
+      // student app, a Guardian or the owner's Invite (Decisions 110, 324).
+      // Read after the grant above, which is what lets this context see the
+      // School; the refusal rolls the grant back.
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { archivedAt: true } });
+      if (school?.archivedAt) {
+        throw new ForbiddenException('This School has been closed and no longer accepts new or updated records.');
+      }
+
       // Home branch (Decisions 139, 168): chosen when joining a School that
       // has branches; a School with none is one branch, so there is nothing
       // to choose. Checked after the STUDENT grant above, in the same
       // transaction: that grant is what lets this context see the School's
-      // branches (Branch RLS), and any refusal here rolls it back.
-      const branches = await tx.branch.findMany({ where: { schoolId }, select: { id: true } });
-      if (branches.length > 0) {
+      // branches (Branch RLS), and any refusal here rolls it back. Only open
+      // branches count and can be chosen (Decisions 226, 324): a School whose
+      // branches are all archived has none to choose from.
+      const branches = await tx.branch.findMany({ where: { schoolId }, select: { id: true, archivedAt: true } });
+      const chosen = dto?.branchId ? branches.find((b) => b.id === dto.branchId) : undefined;
+      if (chosen?.archivedAt) {
+        throw new BadRequestException('This branch has been archived. Choose another branch.');
+      }
+      if (branches.some((b) => !b.archivedAt)) {
         if (!dto?.branchId) {
           throw new BadRequestException('This School has branches: choose your home branch (branchId).');
         }
-        if (!branches.some((b) => b.id === dto.branchId)) {
+        if (!chosen) {
           throw new BadRequestException('branchId must be a branch of this School.');
         }
         await tx.studentHomeBranch.create({
@@ -368,8 +406,8 @@ export class SchoolsService {
       // Decision 354 (Q8): tell the new member which waivers to sign, unless
       // the School turned that off. Only waivers still unsigned (a returning
       // member's earlier signature still stands).
-      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverNoticeOnJoin: true } });
-      const toSign = school?.waiverNoticeOnJoin
+      const noticeSetting = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverNoticeOnJoin: true } });
+      const toSign = noticeSetting?.waiverNoticeOnJoin
         ? await tx.waiverSignature.findMany({
             where: { schoolId, studentId, waiverId: { in: waivers.map((w) => w.id) }, status: { in: ['UNSIGNED', 'PENDING'] } },
             select: { waiverId: true },
@@ -379,6 +417,12 @@ export class SchoolsService {
 
       return created;
     });
+
+    // Decision 371 — the owner added this student: tell them (Add manually
+    // passes notify: false, since its email already says so).
+    if (isStaffAction && opts.notify !== false) {
+      await sendStudentAddedNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, { roleGrantId, schoolId, studentId });
+    }
 
     for (const waiverId of joinWaiverIds) {
       const data: WaiverSignatureRequestJobData = { waiverId, schoolId, studentIds: [studentId], reason: 'assigned', batchId: roleGrant.id };
@@ -623,7 +667,29 @@ export class SchoolsService {
       }
     }
 
-    return this.findOne(callerId, schoolId);
+    return withoutBillingIds(await this.findOne(callerId, schoolId));
+  }
+
+  /**
+   * Decision 368 (School Settings review, Q4) — the Franchise's name for a
+   * School Owner about to ask to join it, so a mistyped ID doesn't ask the
+   * wrong Franchise. Same checks, same order and same messages as
+   * joinFranchise() (owner, open School, Franchise exists and isn't closed),
+   * read on the jobs connection for the same RLS reason. Only the name leaves
+   * this method; showing the Franchise on the School itself stays "both must
+   * allow" (Decision 350).
+   */
+  async previewFranchise(callerId: string, schoolId: string, franchiseId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const target = await this.prismaJobs.franchise.findUnique({ where: { id: franchiseId }, select: { id: true, name: true, archivedAt: true } });
+    if (!target) {
+      throw new NotFoundException('Franchise not found');
+    }
+    if (target.archivedAt) {
+      throw new ForbiddenException('This Franchise has been closed and no longer accepts new Schools.');
+    }
+    return { id: target.id, name: target.name };
   }
 
   /** Schools visible to the caller — RLS already restricts this to Schools where the
@@ -702,9 +768,11 @@ export class SchoolsService {
    * same set Bookings/Waitlist's own roster reads already use via
    * assertStaffAtSchool), not School-Owner-only, since seeing who's enrolled is a
    * read any Staff member legitimately needs, unlike Instructors' eligible-users
-   * endpoint (which gates an Owner-only write flow). No branchId scoping — a
-   * School-wide roster, matching how Student enrollment itself has no Branch
-   * dimension (SchoolsService.join() grants schoolId-only, no branchId).
+   * endpoint (which gates an Owner-only write flow). The owner sees the whole
+   * School; Branch Staff and Instructors see the current students they cover,
+   * by the Grading Board's rule (Decisions 168, 177, 324) — enforced by
+   * RoleGrant RLS (rolegrant_branchless_staff_student_read,
+   * rolegrant_branch_staff_student_read), so the same queries below serve both.
    *
    * Safe from the RLS name-join gap (Decision 117) by construction, same reasoning
    * as InstructorsService.findEligibleInstructorUsers: the RoleGrant row being read
@@ -754,10 +822,10 @@ export class SchoolsService {
       );
       const seen = new Set(items.map((i) => i.id));
       items.push(...covered.filter((c) => !seen.has(c.id)));
+      const matched = items.filter((g) => !search || matchesPersonName(g.firstName, g.surname, search));
+      const homes = await this.homeBranchesOf(callerId, schoolId, matched.map((g) => g.id));
       return {
-        items: items
-          .filter((g) => !search || matchesPersonName(g.firstName, g.surname, search))
-          .map((g) => ({ ...g, status: StudentStatusDto.ACTIVE })),
+        items: matched.map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id) })),
       };
     }
 
@@ -819,7 +887,24 @@ export class SchoolsService {
     }
     rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
 
-    return { items: rows };
+    const homes = await this.homeBranchesOf(callerId, schoolId, rows.map((r) => r.id));
+    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id) })) };
+  }
+
+  /** Decision 371 (Students Q2) — each student's home branch, for the list's
+   * Branch column and filter. Read as the caller under StudentHomeBranch RLS:
+   * the owner sees every row, Branch Staff and coaches their own branches'
+   * (student_home_branch_staff_read), which are the only students they list.
+   * A former student has none (revoke removes it, Decision 341, S13). */
+  private async homeBranchesOf(callerId: string, schoolId: string, studentIds: string[]) {
+    if (studentIds.length === 0) return new Map<string, { id: string; name: string }>();
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentHomeBranch.findMany({
+        where: { schoolId, studentId: { in: studentIds } },
+        select: { studentId: true, branch: { select: { id: true, name: true } } },
+      }),
+    );
+    return new Map(rows.map((r) => [r.studentId, r.branch]));
   }
 
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
@@ -827,6 +912,9 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (dto.defaultCurrency !== undefined) {
+      await this.assertCurrencyChangeAllowed(callerId, schoolId, dto.defaultCurrency, dto.confirmCurrencyChange === true);
+    }
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -867,10 +955,42 @@ export class SchoolsService {
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
+          weekStartsOn: dto.weekStartsOn,
+          timetableDefaultLayout: dto.timetableDefaultLayout,
         },
       }),
     );
-    return updated;
+    return withoutBillingIds(updated);
+  }
+
+  /**
+   * Decision 368 (School Settings review, Q3/S6) — a membership plan with no
+   * currency of its own is charged in the School's (resolveChargeCurrency), so
+   * changing the School's currency silently moved those plans to the new one,
+   * same number (150 BRL became 150 USD), and clearing it made them impossible
+   * to buy. Free plans need no currency and archived ones can't be bought, so
+   * neither counts. Clearing is refused while any plan relies on it; changing
+   * needs `confirmCurrencyChange`, so the portal can say how many plans move.
+   */
+  private async assertCurrencyChangeAllowed(callerId: string, schoolId: string, next: string | null, confirmed: boolean) {
+    const { current, reliant } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
+      const count = await tx.membershipPlan.count({ where: { schoolId, currency: null, archivedAt: null, price: { gt: 0 } } });
+      return { current: school?.defaultCurrency ?? null, reliant: count };
+    });
+    if ((current ?? '').toUpperCase() === (next ?? '').toUpperCase() || reliant === 0) return;
+    if (!next) {
+      throw new ConflictException({
+        code: 'SCHOOL_CURRENCY_IN_USE',
+        message: `${reliant} membership plan(s) are charged in the School's currency, so it can't be cleared. Give those plans their own currency first.`,
+      });
+    }
+    if (!confirmed) {
+      throw new ConflictException({
+        code: 'SCHOOL_CURRENCY_CHANGE_CONFIRM',
+        message: `${reliant} membership plan(s) are charged in the School's currency and will be charged in ${next.toUpperCase()} from now on, with the same amounts. Send confirmCurrencyChange to go ahead.`,
+      });
+    }
   }
 
   /**
@@ -884,9 +1004,10 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const joinCode = await this.generateUniqueJoinCode(callerId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({ where: { id: schoolId }, data: { joinCode } }),
     );
+    return withoutBillingIds(updated);
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
@@ -923,15 +1044,11 @@ export class SchoolsService {
    * profile on their behalf. `PATCH /users/me` (UsersController) is self-service
    * only and obviously can't serve this.
    *
-   * Authorization is the SAME `assertStaffAtSchool` gate findAllStudentsForSchool/
-   * BookingsService.findAllForStudent/getWeeklySummary already use for a Staff
-   * member acting on a specific Student at this School — not the narrower
-   * `assertSchoolOwner` setStudentHomeBranch above uses, since editing a Student's
-   * contact details is an ordinary Staff action (any School Owner/Manager, Branch
-   * Staff, or Instructor), not a School-Owner-gated one like assigning a home
-   * Branch. No `targetBranchId` passed to assertStaffAtSchool — same reasoning as
-   * findAllStudentsForSchool's own comment: Student enrollment has no Branch
-   * dimension, so there's nothing to scope a Branch Staff grant against here.
+   * Authorization: any staff member at the School (Owner/Manager, Branch Staff or
+   * Instructor), not only the owner, since editing a Student's contact details is
+   * an ordinary Staff action. Staff other than the owner may edit only the students
+   * they cover by the Grading Board's branch rule (Decision 341) — see
+   * assertStaffCanEditStudent.
    *
    * Field scope: UpdateStudentProfileDto reuses UpdateUserDto outright — see that
    * DTO's own header comment for why `email`/`phone` stay excluded here too (they're
@@ -941,23 +1058,103 @@ export class SchoolsService {
    *
    * The actual write is delegated to UsersService.updateProfileFor (shared with
    * `updateMe`, see its own header comment) rather than duplicated here — this
-   * method's own job is purely the Staff-on-behalf-of authorization layer:
-   * confirming the caller is Staff at this School (not just anyone who can see it —
-   * findOne() below only 404s a School invisible/non-existent to the caller at all,
-   * same two-step order findAllStudentsForSchool already uses) and that `studentId`
-   * is an actual, currently-enrolled Student at this same School (same
-   * `RoleGrant`-lookup shape setStudentHomeBranch above already uses, deliberately
-   * copied rather than factored out purely for this: the business logic is simple
-   * enough — and setStudentHomeBranch's own check is School-Owner-gated,
-   * inapplicable here as a shared helper — that extracting a third method solely to
-   * avoid five duplicated lines would cost more clarity than it saves).
+   * method's own job is purely the Staff-on-behalf-of authorization layer.
    */
   async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
+    await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // A birth date that turns a child into an adult, or an adult into a
+    // child, changes whether a Guardian must consent (Decision 67): only the
+    // School owner may make that change (Decision 342).
+    if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
+      const current = await this.usersService.getProfileFor(callerId, studentId);
+      if (isAdultOn(current.dateOfBirth) !== isAdultOn(new Date(dto.dateOfBirth))) {
+        throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
+      }
+    }
+    return this.usersService.updateProfileFor(callerId, studentId, dto);
+  }
+
+  /** `GET /schools/{schoolId}/students/{studentId}/profile` — the profile the
+   * edit form opens with (Decision 341, S9). Same access as
+   * updateStudentProfile. */
+  async getStudentProfile(callerId: string, schoolId: string, studentId: string) {
+    await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    return this.usersService.getProfileFor(callerId, studentId);
+  }
+
+  /** Decision 371 (Students Q4) — the names of a student's active Guardians,
+   * for the student's page. Gated like the profile read (staff who cover this
+   * enrolled student). The caller can't see the student's Guardian links or a
+   * Guardian's User row under RLS, so the links are read on the jobs
+   * connection and the names through resolveUserNames, after that check;
+   * nothing but the names leaves. */
+  async getStudentGuardians(callerId: string, schoolId: string, studentId: string) {
+    await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    const links = await this.prismaJobs.guardianLink.findMany({
+      where: { studentId, revokedAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: { guardianId: true },
+    });
+    const names = await resolveUserNames(this.prismaAuth, links.map((l) => l.guardianId));
+    return {
+      items: links.map((l) => ({ id: l.guardianId, firstName: names.get(l.guardianId)?.firstName ?? '', surname: names.get(l.guardianId)?.surname ?? '' })),
+    };
+  }
+
+  /** What Revoke will end for this student, and the memberships it leaves
+   * running, for the owner's Revoke dialog (Decision 343, S2). Owner only,
+   * like Revoke itself. A membership counts while it is in effect: the same
+   * test as MembershipsService's isMembershipLive (not imported: that file
+   * imports this one). */
+  async getStudentLeavingSummary(callerId: string, schoolId: string, studentId: string): Promise<StudentLeavingSummaryResponseDto> {
+    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const now = new Date();
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [upcomingBookings, waitlistPlaces, memberships] = await Promise.all([
+        tx.booking.count({ where: leavingStudentBookingsWhere(schoolId, studentId, now) }),
+        tx.waitlistEntry.count({ where: { schoolId, studentId, status: { in: [...LIVE_WAITLIST_STATUSES] } } }),
+        tx.membership.findMany({
+          where: {
+            schoolId,
+            studentId,
+            status: 'ACTIVE',
+            AND: [
+              { OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
+              { OR: [{ classesRemaining: null }, { classesRemaining: { gt: 0 } }] },
+            ],
+          },
+          select: { id: true, classesRemaining: true, expiryDate: true, stripeSubscriptionId: true, cancelAt: true, membershipPlan: { select: { title: true, type: true } } },
+          orderBy: { startDate: 'asc' },
+        }),
+      ]);
+      return {
+        upcomingBookings,
+        waitlistPlaces,
+        memberships: memberships.map((m) => ({
+          id: m.id,
+          planTitle: m.membershipPlan.title,
+          type: m.membershipPlan.type,
+          classesRemaining: m.classesRemaining,
+          expiryDate: m.expiryDate,
+          renews: m.membershipPlan.type === 'SUBSCRIPTION' && m.stripeSubscriptionId !== null && m.cancelAt === null,
+          cancelAt: m.cancelAt,
+        })),
+      };
+    });
+  }
+
+  /** Staff at this School, `studentId` currently enrolled here, and — for
+   * anyone but the owner — one of the students the caller covers, by the
+   * Grading Board's branch rule (Decision 341, S1; Decisions 168, 177).
+   * Enrolment is read under the student's own context, as grading's
+   * assertEnrolledStudent does, so a student outside the caller's branches
+   * gets the branch message rather than "not a Student". */
+  private async assertStaffCanEditStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-
-    const enrolled = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.roleGrant.findFirst({
         where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
         select: { id: true },
@@ -966,7 +1163,33 @@ export class SchoolsService {
     if (!enrolled) {
       throw new NotFoundException('This person is not a Student at this School.');
     }
-
-    return this.usersService.updateProfileFor(callerId, studentId, dto);
+    await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
+}
+
+/**
+ * Decision 368 (School Settings review, S11) — GET/PATCH /schools/:id hands
+ * the School row to every member (Students, Instructors, Branch Staff). The
+ * Stripe subscription ids and the platform subscription status are billing
+ * internals no screen reads, so they're left out of those replies. Internal
+ * callers (leaveFranchise) still use findOne()'s full row.
+ */
+export function withoutBillingIds<T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown }>(
+  school: T,
+): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
+  const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: _status, ...rest } = school;
+  return rest;
+}
+
+function homeBranchOf(homes: Map<string, { id: string; name: string }>, studentId: string) {
+  const home = homes.get(studentId);
+  return { homeBranchId: home?.id ?? null, homeBranchName: home?.name ?? null };
+}
+
+/** A roster row as the Students page shows it. A Guardian-managed child's
+ * account has a placeholder email nobody reads (GuardiansService.createMinor):
+ * it is blanked and flagged instead (Decision 341, S10). */
+function rosterRow<T extends { email: string }>(row: T): T & { guardianManaged: boolean } {
+  const guardianManaged = row.email.toLowerCase().endsWith(`@${GUARDIAN_MANAGED_EMAIL_DOMAIN}`);
+  return { ...row, email: guardianManaged ? '' : row.email, guardianManaged };
 }

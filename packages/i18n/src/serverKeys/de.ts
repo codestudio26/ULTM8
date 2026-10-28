@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste. Storniere ihre Buchungen, bevor du ihn an einen anderen Standort verlegst.",
     classMovedToPast: "Für diesen Kurs sind Schüler gebucht oder auf der Warteliste, daher kann er nur auf eine Zeit verlegt werden, die noch nicht vorbei ist.",
     classAlreadyEnded: "Dieser Kurs ist bereits vorbei. Wähle eine Endzeit in der Zukunft.",
+    schoolCurrencyChange: "Mitgliedschaftstarife in der Währung der Schule: {count}. Ab jetzt werden sie in {currency} abgerechnet, mit denselben Beträgen.",
+    schoolCurrencyInUse: "Mitgliedschaftstarife in der Währung der Schule: {count}. Gib diesen Tarifen eine eigene Währung, bevor du sie leerst.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",
@@ -181,6 +183,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} hat {school} aus dem Franchise entfernt. Die Franchise-Gebühren wurden beendet.",
     franchiseClosedTitle: "Franchise geschlossen",
     franchiseClosedBody: "{franchise} wurde geschlossen. {school} bleibt geöffnet, und die Franchise-Gebühren wurden beendet.",
+    studentAddedTitle: "Zu einer Schule hinzugefügt",
+    studentAddedBody: "Du wurdest zu {school} hinzugefügt.",
     toDecideBody: "Die Beförderung von {name} zu {rank} ({style}) wartet auf deine Entscheidung. Befördere oder entscheide dich dagegen.",
     promotionFeeBody: "Deine Beförderung zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     childPromotionFeeBody: "Die Beförderung von {name} zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
