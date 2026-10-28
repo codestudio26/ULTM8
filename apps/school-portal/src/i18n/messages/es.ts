@@ -3294,6 +3294,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Por tu privacidad, este dispositivo nunca muestra los datos que ya tenemos sobre ti.",
       goCheckIn: "Ir al check-in",
       signUp: "Inscribirse",
+      failed: "No hemos podido comprobarlo ahora. Inténtalo de nuevo o pregunta en recepción.",
     },
   },
 };

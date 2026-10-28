@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Front desk: Find me on the tablet** (Decision 385) — someone about to
+  sign up types their full name and date of birth; the tablet says only
+  whether they're already a member (both must match), and shows nothing
+  stored about them.
 - **Front desk: personal check-in codes** (Decision 384) — each student has
   a 4- or 6-digit code, shown on their page with "Give a new code". Typing it
   on the Check-in page's or the tablet's Code tab opens their welcome card,

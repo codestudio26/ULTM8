@@ -3400,6 +3400,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Dla Twojej prywatności to urządzenie nigdy nie pokazuje danych, które już o Tobie mamy.",
       goCheckIn: "Przejdź do meldowania",
       signUp: "Zapisz się",
+      failed: "Nie udało się teraz sprawdzić. Spróbuj ponownie lub zapytaj w recepcji.",
     },
   },
 };
