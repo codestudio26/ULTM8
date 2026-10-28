@@ -484,4 +484,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "Er bestaat al een account met dit e-mailadres — gebruik in plaats daarvan ‘Uitnodigen’.",
   "This student has already attended this class.": "Deze leerling heeft deze les al bijgewoond.",
   "This was just recorded. Check before adding another.": "Dit is net vastgelegd. Controleer het voordat je er nog een toevoegt.",
+  "This person isn't a Student at this School.": "Deze persoon is geen leerling van deze school.",
+  "This scan has expired. Ask the Student to show their QR again.": "Deze scan is verlopen. Vraag de leerling de QR opnieuw te laten zien.",
+  "This scan belongs to a different Student.": "Deze scan hoort bij een andere leerling.",
 };

@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -10,6 +10,7 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { EnterAttendanceCodeDto } from './dto/enter-attendance-code.dto';
 import { QrTokenResponseDto } from './dto/qr-token-response.dto';
+import { DeskQrLookupDto, DeskQrLookupResponseDto } from './dto/desk-qr-lookup.dto';
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
 
 // Decision 235's own explicit mandate: "mandatory server-side rate limiting
@@ -75,5 +76,14 @@ export class AttendanceController {
   @Post('classes/:id/attendance-scan')
   instructorScan(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: InstructorScanDto) {
     return this.attendanceService.instructorScan(user.sub, id, dto);
+  }
+
+  /** Staff at the desk — check a scanned app QR once and get a five-minute
+   * lookup token to check that Student in with. See
+   * AttendanceService.deskQrLookup. */
+  @ApiCreatedResponse({ type: DeskQrLookupResponseDto })
+  @Post('schools/:schoolId/front-desk/qr-lookups')
+  deskQrLookup(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: DeskQrLookupDto) {
+    return this.attendanceService.deskQrLookup(user.sub, schoolId, dto.studentToken);
   }
 }

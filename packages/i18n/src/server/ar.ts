@@ -484,4 +484,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "يوجد حساب بهذا البريد الإلكتروني بالفعل — استخدم «دعوة» بدلًا من ذلك.",
   "This student has already attended this class.": "حضر هذا الطالب هذه الحصة بالفعل.",
   "This was just recorded. Check before adding another.": "تم تسجيل هذا للتو. تحقّق قبل إضافة آخر.",
+  "This person isn't a Student at this School.": "هذا الشخص ليس طالبًا في هذه المدرسة.",
+  "This scan has expired. Ask the Student to show their QR again.": "انتهت صلاحية هذا المسح. اطلب من الطالب إظهار رمز QR مرة أخرى.",
+  "This scan belongs to a different Student.": "هذا المسح يخص طالبًا آخر.",
 };

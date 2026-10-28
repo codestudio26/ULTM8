@@ -30,6 +30,9 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
+  await db.waiverSignature.deleteMany({ where });
+  await db.waiver.deleteMany({ where });
+  await db.trainingLog.deleteMany({ where });
   await db.booking.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
@@ -107,7 +110,10 @@ test('the personal code waits for its backend', async ({ page }) => {
 test('front-desk mode: pick the branch, short names, recent check-ins, sign-up waits, exit', async ({ page }) => {
   const branch = await addBranch(s, 'Riverside');
   const cls = await classNow({ branchId: branch.id, title: 'Riverside Fundamentals' });
-  await classNow({ title: 'Other branch class' });
+  const other = await addBranch(s, 'Hilltop');
+  await classNow({ branchId: other.id, title: 'Other branch class' });
+  // A Whole School class is on at every Branch (CI3).
+  await classNow({ title: 'Whole School class', startDate: at(-5 * MIN) });
   const m = await subscribe(s.student.id);
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id, status: 'COMPLETED', checkInMethod: 'SELF_SERVICE' } });
   await signIn(page, s.ownerToken);
@@ -119,8 +125,9 @@ test('front-desk mode: pick the branch, short names, recent check-ins, sign-up w
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
   await expect(page.getByRole('status').filter({ hasText: /locked yet/ })).toBeVisible();
-  await expect(page.getByTestId('fd-class')).toHaveCount(1);
-  await expect(page.getByTestId('fd-class')).toContainText('Riverside Fundamentals');
+  await expect(page.getByTestId('fd-class')).toHaveCount(2);
+  await expect(page.getByTestId('fd-class').first()).toContainText('Riverside Fundamentals');
+  await expect(page.getByTestId('fd-class').nth(1)).toContainText('Whole School class');
   await expect(page.getByTestId('fd-strip')).toContainText('Sam L.');
 
   await page.getByRole('tab', { name: 'Name' }).click();
@@ -139,3 +146,60 @@ test('front-desk mode: pick the branch, short names, recent check-ins, sign-up w
   await page.getByRole('button', { name: 'Leave' }).click();
   await expect(page).toHaveURL(/\/check-in$/);
 });
+
+test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {
+  await classNow();
+  const later = await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+  await subscribe(s.newStudent.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia Park/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  const evening = card.getByRole('button', { name: /Evening class/ });
+  await expect(evening).toBeDisabled();
+  await expect(evening).toContainText('Check-in opens at');
+  await expect(card.getByRole('button', { name: /Fundamentals/ })).toHaveAttribute('aria-pressed', 'true');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('Checked in ✓')).toBeVisible();
+  expect(await db.booking.count({ where: { classId: later.id } })).toBe(0);
+});
+
+test('only a later class today: nothing is ticked and Confirm stays off', async ({ page }) => {
+  await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+  await subscribe(s.newStudent.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia Park/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await expect(card.getByRole('button', { name: /Evening class/ })).toHaveAttribute('aria-pressed', 'false');
+  await expect(card.getByRole('button', { name: 'Tick a class' })).toBeDisabled();
+});
+
+test('the welcome card shows which waivers are still to sign (Q4)', async ({ page }) => {
+  await classNow();
+  const signedOne = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Photo consent', body: 'Text' } });
+  await db.waiverSignature.create({
+    data: { id: randomUUID(), waiverId: signedOne.id, studentId: s.student.id, schoolId: s.schoolId, status: 'SIGNED', signerFullName: 'Sam Lee', signatureText: 'Sam Lee', signedDate: new Date() },
+  });
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  await expect(page.getByTestId('fd-welcome')).toContainText('Waiver to sign: Photo consent');
+});
+
+test('a School with no Branches starts front-desk mode for the whole School (CI4)', async ({ page }) => {
+  await classNow({ title: 'Whole School class' });
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await expect(page.getByText('Whole School')).toBeVisible();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page.getByTestId('fd-class')).toContainText('Whole School class');
+});
+

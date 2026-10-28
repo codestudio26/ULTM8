@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { Card, ErrorBanner, Field, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { useGradingSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
-import { useStudents } from '../students/studentQueries';
 import { StudentsTabs } from '../students/StudentsTabs';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
-import { errorText, useTodayBookings, useTodayClasses } from './frontDeskQueries';
+import { errorText, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
 import {
   ClassList,
   CodePad,
@@ -19,7 +18,6 @@ import {
   WelcomeCard,
   recentCheckIns,
   useMinuteTick,
-  useQrStudent,
   type CheckInMethod,
   type FrontDeskStudent,
 } from './parts';
@@ -33,19 +31,19 @@ import './frontDesk.css';
  */
 export function CheckInPage() {
   const t = useT();
-  useMinuteTick();
+  const now = useMinuteTick();
   const schoolId = useGradingSchoolId();
   const isCoachOnly = useIsCoachOnly();
   const { data: branchData } = useBranches(schoolId);
-  const branches = branchData?.items ?? [];
+  // Closed Branches have no classes to check into (CI9).
+  const branches = (branchData?.items ?? []).filter((b) => !b.archivedAt);
   const [branchId, setBranchId] = useState<string>('');
-  const today = useTodayClasses(schoolId, branchId || null);
-  const bookingsByClass = useTodayBookings(today.classes);
-  const roster = useStudents(schoolId).data?.items;
-  const fromQr = useQrStudent(roster);
+  const today = useTodayClasses(schoolId, branchId || null, now);
+  const { byClass: bookingsByClass, ready: bookingsReady } = useTodayBookings(today.classes);
+  const qrLookup = useQrLookup(schoolId);
 
   const [method, setMethod] = useState<CheckInMethod>('scan');
-  const [who, setWho] = useState<{ student: FrontDeskStudent; qr: { token: string; expiresAt: number } | null } | null>(null);
+  const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'bad'; text: string } | null>(null);
   const recent = useMemo(() => recentCheckIns(today.classes, bookingsByClass, 10), [today.classes, bookingsByClass]);
 
@@ -98,6 +96,7 @@ export function CheckInPage() {
               schoolId={schoolId}
               classes={today.classes}
               bookingsByClass={bookingsByClass}
+              bookingsReady={bookingsReady}
               qr={who.qr}
               short={false}
               onBack={() => setWho(null)}
@@ -121,9 +120,17 @@ export function CheckInPage() {
                   title={t('frontDesk.scan.staffTitle')}
                   hint={t('frontDesk.scan.staffHint')}
                   onQr={(token) => {
-                    const found = fromQr(token);
-                    if (found) setWho(found);
-                    else setMsg({ kind: 'bad', text: t('frontDesk.scan.notOurs') });
+                    setMsg({ kind: 'ok', text: t('frontDesk.scan.checking') });
+                    qrLookup.mutate(token, {
+                      onSuccess: (r) => {
+                        setMsg(null);
+                        setWho({
+                          student: { id: r.studentId, firstName: r.firstName, surname: r.surname, profilePhotoUrl: r.profilePhotoUrl },
+                          qr: { lookupToken: r.lookupToken, expiresAt: Date.parse(r.expiresAt) },
+                        });
+                      },
+                      onError: (err) => setMsg({ kind: 'bad', text: errorText(err, t('frontDesk.scan.notOurs')) }),
+                    });
                   }}
                 />
               ) : method === 'code' ? (

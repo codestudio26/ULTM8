@@ -11119,6 +11119,49 @@
         ]
       }
     },
+    "/v1/students/{id}/waiver-status": {
+      "get": {
+        "operationId": "WaiversController_getStudentWaiverStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentWaiverStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -11856,6 +11899,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/qr-lookups": {
+      "post": {
+        "operationId": "AttendanceController_deskQrLookup",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskQrLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskQrLookupResponseDto"
                 }
               }
             }
@@ -25262,6 +25350,39 @@
           "imageKey"
         ]
       },
+      "WaiverToSignDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "waiverId",
+          "title"
+        ]
+      },
+      "StudentWaiverStatusDto": {
+        "type": "object",
+        "properties": {
+          "signed": {
+            "type": "boolean"
+          },
+          "toSign": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaiverToSignDto"
+            }
+          }
+        },
+        "required": [
+          "signed",
+          "toSign"
+        ]
+      },
       "UpdateWaiverDto": {
         "type": "object",
         "properties": {
@@ -25756,10 +25877,56 @@
           "studentToken": {
             "type": "string",
             "description": "The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation."
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN."
           }
         },
         "required": [
           "studentId"
+        ]
+      },
+      "DeskQrLookupDto": {
+        "type": "object",
+        "properties": {
+          "studentToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentToken"
+        ]
+      },
+      "DeskQrLookupResponseDto": {
+        "type": "object",
+        "properties": {
+          "lookupToken": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "lookupToken",
+          "expiresAt",
+          "studentId",
+          "firstName",
+          "surname"
         ]
       },
       "AcademySummaryDto": {

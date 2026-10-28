@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -15,6 +15,7 @@ import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-respon
 import { WaiversQueryDto } from './dto/waivers-query.dto';
 import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto, RemindResponseDto } from './dto/paper-signature.dto';
 import { UpdateWaiverSettingsDto, WaiverSettingsDto } from './dto/waiver-settings.dto';
+import { StudentWaiverStatusDto } from './dto/student-waiver-status.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
 // capture as of Phase 34), plus Guardian-on-behalf-of-a-linked-minor signing as
@@ -125,6 +126,15 @@ export class WaiversController {
     @Body() dto: RecordPaperSignatureDto,
   ) {
     return this.waiversService.recordPaperSignature(user.sub, schoolId, id, signatureId, dto);
+  }
+
+  /** The front desk's welcome card: has this Student signed? Any staff at the
+   * School. See WaiversService.getStudentWaiverStatus. */
+  @ApiOkResponse({ type: StudentWaiverStatusDto })
+  @ApiQuery({ name: 'schoolId', required: true })
+  @Get('students/:id/waiver-status')
+  getStudentWaiverStatus(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.waiversService.getStudentWaiverStatus(user.sub, id, schoolId);
   }
 
   @ApiOkResponse({ type: WaiverSignatureListResponseDto })

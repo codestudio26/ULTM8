@@ -15,6 +15,7 @@ import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -117,8 +118,8 @@ export class WaitlistService {
         }
       }
       const [booked, guests, queued] = await Promise.all([
-        this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
-        this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+        this.prismaJobs.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
+        this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: SEAT_HOLDING_STATUSES } } }),
         this.prismaJobs.waitlistEntry.count({ where: { classId, status: { in: ['WAITING', 'NOTIFIED'] } } }),
       ]);
       if (queued === 0 && booked + guests < resolvedClass.capacity) {
@@ -286,8 +287,8 @@ export class WaitlistService {
         // other holds here could leave a seat nobody may claim when the cascade has
         // offered it twice.
         const [bookingCount, attendeeCount] = await Promise.all([
-          this.prismaJobs.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
-          this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
+          this.prismaJobs.booking.count({ where: { classId: cls.id, status: SEAT_HOLDING_STATUSES } }),
+          this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: SEAT_HOLDING_STATUSES } } }),
         ]);
         if (bookingCount + attendeeCount + 1 > cls.capacity) {
           throw new ConflictException('This Class filled up again before the claim completed — please try the next opening.');
