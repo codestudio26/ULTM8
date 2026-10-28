@@ -48,6 +48,11 @@ export function assertClassBookable(
  * scoped to that Class, unless the School ticked "Included in membership" on it
  * (SKILL.md §6, Classes review C1, Decision 345). Timetable Classes are always
  * covered by general access, whatever the flag says.
+ *
+ * A Friend Pass never pays for its holder's own seat: it only covers a guest
+ * (product owner, 28 Oct 2026; guests go through consumeGuestMembership). A
+ * Student whose only plan is a Friend Pass gets the usual "no Active
+ * Membership" refusal.
  */
 export async function selectAndConsumeMembership(
   tx: TenantTx,
@@ -63,6 +68,7 @@ export async function selectAndConsumeMembership(
       studentId,
       schoolId,
       status: 'ACTIVE',
+      membershipPlan: { type: { not: 'FRIEND_PASS' } },
       AND: [
         ticketOnly ? { scopedClassId: classId } : { OR: [{ scopedClassId: null }, { scopedClassId: classId }] },
         { OR: [{ expiryDate: null }, { expiryDate: { gt: now } }] },
@@ -190,6 +196,20 @@ async function lockOpenClass(tx: TenantTx, classId: string, mode: 'seats' | 'sha
  */
 export async function lockStudentClass(tx: Pick<TenantTx, '$executeRaw'>, studentId: string, classId: string): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`booking:${studentId}:${classId}`}, 0))`;
+}
+
+/**
+ * A Student attends a Class once (product owner, 28 Oct 2026): once checked in
+ * (Booking COMPLETED), a second Booking or waitlist place for the same Class is
+ * refused. A cancelled Booking doesn't count. The unique index only covers
+ * UPCOMING Bookings, so this runs after lockStudentClass, which also holds
+ * every check-in of this Student into this Class: two desks can't both pass it.
+ */
+export async function assertNotAlreadyAttended(tx: Pick<TenantTx, 'booking'>, studentId: string, classId: string): Promise<void> {
+  const attended = await tx.booking.findFirst({ where: { studentId, classId, status: 'COMPLETED' }, select: { id: true } });
+  if (attended) {
+    throw new ConflictException({ code: 'ALREADY_ATTENDED', message: 'This student has already attended this class.' });
+  }
 }
 
 /**

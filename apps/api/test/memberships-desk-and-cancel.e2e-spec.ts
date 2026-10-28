@@ -233,7 +233,13 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       const mine = await http().get('/v1/memberships/me').set('Authorization', `Bearer ${token}`);
       expect(mine.body.items.map((m: { id: string }) => m.id)).toContain(res.body.membership.id);
 
-      // A second friend gets a second, separate pass (Spec 55 §6.1).
+      // A second friend gets a second, separate pass (Spec 55 §6.1), though not
+      // within a minute of the first: that is taken for a double click
+      // (product owner, 28 Oct 2026).
+      const again = await gift(user.id, { membershipPlanId: plan.id });
+      expect(again.status).toBe(409);
+      expect(again.body.error.message).toBe('This was just recorded. Check before adding another.');
+      await superuser.membership.updateMany({ where: { studentId: user.id, membershipPlanId: plan.id }, data: { createdAt: new Date(Date.now() - 61_000) } });
       expect((await gift(user.id, { membershipPlanId: plan.id })).status).toBe(201);
     });
 

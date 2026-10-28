@@ -478,4 +478,6 @@ export const serverMessages: Record<string, string> = {
   "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe ไม่สามารถหยุดการสมัครสมาชิกของนักเรียนคนนี้ได้ จึงยังไม่ได้นำออก โปรดลองอีกครั้งในอีกสักครู่",
   "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "การเพิ่มด้วยตนเองใช้สำหรับผู้ใหญ่ (อายุ 18 ปีขึ้นไป) เด็กจะเข้าร่วมผ่านแอปของผู้ปกครอง",
   "An account with this email already exists — use \"Invite\" instead.": "มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว — ใช้ \"เชิญ\" แทน",
+  "This student has already attended this class.": "นักเรียนคนนี้เข้าเรียนคลาสนี้แล้ว",
+  "This was just recorded. Check before adding another.": "เพิ่งบันทึกรายการนี้ไป โปรดตรวจสอบก่อนเพิ่มอีกรายการ",
 };
