@@ -125,13 +125,71 @@ export class SeatLockBusyError extends Error {
  * instead; withSeatLockRetry() then retries it after a short random pause, with no
  * connection held while waiting.
  */
-export async function lockClassSeats(tx: TenantTx, classId: string): Promise<void> {
+export async function lockClassSeats(tx: TenantTx, classId: string): Promise<LockedClass> {
+  return lockOpenClass(tx, classId, 'seats');
+}
+
+/**
+ * The lock an uncapped Class's booking takes instead of lockClassSeats: a shared
+ * one, so its bookers don't queue behind each other, but which still makes a
+ * whole-class cancel (CancellationService.cancelClass) wait for them and them
+ * wait for it. Same NOWAIT-and-retry shape as lockClassSeats.
+ */
+export async function lockClassShared(tx: TenantTx, classId: string): Promise<LockedClass> {
+  return lockOpenClass(tx, classId, 'shared');
+}
+
+/** The Class as it stands under the lock: its Branch now (a Branch close may
+ * have moved it since the caller read it), or null when the row isn't visible. */
+export type LockedClass = { branchId: string | null } | null;
+
+/**
+ * Locks the Class row and re-reads it under the lock. Found by the stress test of
+ * 27 Oct 2026: the cancelled/archived check ran on a read taken before the
+ * transaction, so a Class the School cancelled meanwhile still took Bookings that
+ * the cancel's own sweep never saw (5 to 10 of 10 left UPCOMING). The re-read is
+ * the row's latest committed version, so a cancel either finished first (refused
+ * here) or waits for this booking and then cancels it with the rest. The same goes
+ * for the Class's Branch: a Booking or waitlist place copies it, and a Branch close
+ * that moved the Class meanwhile left new Bookings at the closed Branch.
+ *
+ * A row the caller's context can't see (none of the paths using this expect that)
+ * takes no lock and is left to the checks the caller already made.
+ */
+async function lockOpenClass(tx: TenantTx, classId: string, mode: 'seats' | 'shared'): Promise<LockedClass> {
+  let rows: Array<{ cancelledAt: Date | null; archivedAt: Date | null; branchId: string | null }>;
   try {
-    await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE NOWAIT`;
+    rows = mode === 'seats'
+      ? await tx.$queryRaw`SELECT "cancelledAt", "archivedAt", "branchId" FROM "Class" WHERE id = ${classId} FOR UPDATE NOWAIT`
+      : await tx.$queryRaw`SELECT "cancelledAt", "archivedAt", "branchId" FROM "Class" WHERE id = ${classId} FOR SHARE NOWAIT`;
   } catch (err) {
     if (isLockNotAvailable(err)) throw new SeatLockBusyError();
     throw err;
   }
+  const cls = rows[0];
+  if (cls?.cancelledAt) {
+    throw new ConflictException('This class has been cancelled by the school.');
+  }
+  if (cls?.archivedAt) {
+    throw new BadRequestException('This Class is archived and can no longer be booked.');
+  }
+  return cls ? { branchId: cls.branchId } : null;
+}
+
+/**
+ * Serializes everything that creates or checks in one Student's Booking for one
+ * Class, until the transaction ends. Found by the stress test of 27 Oct 2026 (two
+ * front desks booking and checking in the same Student at once, 2 of 32 bookings
+ * HTTP 500): a booking held the Class's seat lock and waited, at the "one Upcoming
+ * Booking per Student per Class" unique index, for a check-in of the same
+ * Student's earlier Booking; that check-in's training log needed a key-share lock
+ * on the same Class row, so Postgres found a deadlock (40P01). Taken first, before
+ * any row lock, by bookings, waitlist claims and check-ins, so the second of two
+ * such requests waits here holding nothing, and a duplicate booking is refused
+ * with the usual 409.
+ */
+export async function lockStudentClass(tx: Pick<TenantTx, '$executeRaw'>, studentId: string, classId: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`booking:${studentId}:${classId}`}, 0))`;
 }
 
 /**

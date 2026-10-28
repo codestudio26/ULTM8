@@ -8,6 +8,7 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
 import { recordCheckInMinutes } from '../ranks/hours-trained';
+import { lockStudentClass } from '../bookings/booking-gates';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
@@ -244,6 +245,9 @@ export class AttendanceService {
     checkedInById: string | null,
   ) {
     const completed = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // Taken before any row lock, the same as a booking for this Student and
+      // Class (lockStudentClass: a booking and a check-in otherwise deadlocked).
+      await lockStudentClass(tx, studentId, booking.classId);
       // Optimistic-concurrency guard, same established pattern as every other
       // status transition in this codebase — guards against a double-scan
       // race (any combination of the three methods) or a race against the

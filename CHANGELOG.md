@@ -25,6 +25,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   hashes). A student "Add manually" that fails part-way no longer leaves an
   account behind, so the owner can just try again. Needs the migration
   `20261212000100_role_grant_one_live_per_scope`.
+- **Round-3 stress-test fixes (races)** — a booking made while the School
+  cancels the class is now either cancelled with the rest or refused ("This
+  class has been cancelled by the school"); it used to stay booked on the
+  cancelled class. A class cancel that stopped half way (the server busy) is
+  finished by cancelling again, instead of answering "already cancelled".
+  Closing a Branch while people book its classes no longer fails with a server
+  error on both sides, and those bookings move with their class. A style can
+  no longer be archived while a class using it is being saved. Booking and
+  checking in the same student from two desks at once no longer fails with a
+  server error; the second booking gets the usual "already has a booking".
+
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own
