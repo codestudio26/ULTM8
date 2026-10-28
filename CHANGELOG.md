@@ -19,6 +19,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
   `apps/api/scripts/stress/round3/`. Fixes below.
+- **Remove from School works for a coach who still teaches** (product owner,
+  28 Oct 2026) — the dialog shows how many upcoming classes and weekly slots
+  they teach and asks what happens to them: give them to another coach, no
+  coach for now, or cancel the classes (students told, credit per the
+  School's cancellation settings; their weekly slots stay with no coach).
+  The coach loses access at once either way.
 - **API stress-test fixes: duplicate roles, passcode hashing, Add manually**
   (stress test round 3) — a double click on "Give role" (or two coach invites
   accepted at once) no longer gives someone the same role twice, so revoking

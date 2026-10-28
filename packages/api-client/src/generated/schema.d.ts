@@ -612,22 +612,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/schools/{schoolId}/staff/{userId}/remove": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["RoleGrantsController_removeFromSchool"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -4548,6 +4532,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/{userId}/teaching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffRemovalController_teaching"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffRemovalController_removeFromSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5318,10 +5334,6 @@ export interface components {
         };
         StaffListResponseDto: {
             items: components["schemas"]["StaffMemberDto"][];
-        };
-        RemoveFromSchoolResponseDto: {
-            /** @description How many roles were ended. */
-            removedRoles: number;
         };
         CreateFranchiseDto: {
             name: string;
@@ -8441,6 +8453,35 @@ export interface components {
             /** @description The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing. */
             publicUrl: string;
         };
+        StaffTeachingResponseDto: {
+            /** @description Upcoming classes they teach here (not ended, cancelled or archived). */
+            upcomingClasses: number;
+            /** @description Active weekly timetable slots they teach here (on, not archived). */
+            activeSlots: number;
+        };
+        RemoveFromSchoolDto: {
+            /**
+             * @description REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor.
+             * @enum {string}
+             */
+            classes?: "REASSIGN" | "NONE" | "CANCEL";
+            /** @description With REASSIGN only: the coach at this School who takes them over (a User id). */
+            toUserId?: string;
+        };
+        RemoveFromSchoolResponseDto: {
+            /** @description How many roles were ended. */
+            removedRoles: number;
+            /** @description Upcoming classes given to the other coach. */
+            classesReassigned: number;
+            /** @description Upcoming classes left with no instructor. */
+            classesCleared: number;
+            /** @description Upcoming classes cancelled. */
+            classesCancelled: number;
+            /** @description Weekly timetable slots given to the other coach. */
+            slotsReassigned: number;
+            /** @description Weekly timetable slots left with no instructor. */
+            slotsCleared: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -9485,28 +9526,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffListResponseDto"];
-                };
-            };
-        };
-    };
-    RoleGrantsController_removeFromSchool: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                schoolId: string;
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
             };
         };
@@ -16173,6 +16192,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPhotoUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    StaffRemovalController_teaching: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTeachingResponseDto"];
+                };
+            };
+        };
+    };
+    StaffRemovalController_removeFromSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveFromSchoolDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
             };
         };

@@ -1859,49 +1859,6 @@
         ]
       }
     },
-    "/v1/schools/{schoolId}/staff/{userId}/remove": {
-      "post": {
-        "operationId": "RoleGrantsController_removeFromSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "role-grants"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -13935,6 +13892,102 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/teaching": {
+      "get": {
+        "operationId": "StaffRemovalController_teaching",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTeachingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+      "post": {
+        "operationId": "StaffRemovalController_removeFromSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveFromSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -16493,18 +16546,6 @@
         },
         "required": [
           "items"
-        ]
-      },
-      "RemoveFromSchoolResponseDto": {
-        "type": "object",
-        "properties": {
-          "removedRoles": {
-            "type": "number",
-            "description": "How many roles were ended."
-          }
-        },
-        "required": [
-          "removedRoles"
         ]
       },
       "CreateFranchiseDto": {
@@ -26885,6 +26926,78 @@
         "required": [
           "uploadUrl",
           "publicUrl"
+        ]
+      },
+      "StaffTeachingResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Upcoming classes they teach here (not ended, cancelled or archived)."
+          },
+          "activeSlots": {
+            "type": "number",
+            "description": "Active weekly timetable slots they teach here (on, not archived)."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "activeSlots"
+        ]
+      },
+      "RemoveFromSchoolDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "string",
+            "enum": [
+              "REASSIGN",
+              "NONE",
+              "CANCEL"
+            ],
+            "description": "REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor."
+          },
+          "toUserId": {
+            "type": "string",
+            "description": "With REASSIGN only: the coach at this School who takes them over (a User id)."
+          }
+        }
+      },
+      "RemoveFromSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "removedRoles": {
+            "type": "number",
+            "description": "How many roles were ended."
+          },
+          "classesReassigned": {
+            "type": "number",
+            "description": "Upcoming classes given to the other coach."
+          },
+          "classesCleared": {
+            "type": "number",
+            "description": "Upcoming classes left with no instructor."
+          },
+          "classesCancelled": {
+            "type": "number",
+            "description": "Upcoming classes cancelled."
+          },
+          "slotsReassigned": {
+            "type": "number",
+            "description": "Weekly timetable slots given to the other coach."
+          },
+          "slotsCleared": {
+            "type": "number",
+            "description": "Weekly timetable slots left with no instructor."
+          }
+        },
+        "required": [
+          "removedRoles",
+          "classesReassigned",
+          "classesCleared",
+          "classesCancelled",
+          "slotsReassigned",
+          "slotsCleared"
         ]
       }
     }

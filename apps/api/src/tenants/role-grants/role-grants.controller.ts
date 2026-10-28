@@ -15,7 +15,7 @@ import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStaffManuallyResponseDto } from './dto/create-staff-manually-response.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-response.dto';
-import { RemoveFromSchoolResponseDto, StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
+import { StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * InstructorsController's own add-manually throttle (ADD_MANUALLY_THROTTLE). */
@@ -112,10 +112,7 @@ export class RoleGrantsController {
     return this.roleGrantsService.listStaff(user.sub, schoolId, query);
   }
 
-  /** Decision 361 — "Remove from School". See RoleGrantsService.removeFromSchool. */
-  @ApiCreatedResponse({ type: RemoveFromSchoolResponseDto })
-  @Post('schools/:schoolId/staff/:userId/remove')
-  removeFromSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('userId') userId: string) {
-    return this.roleGrantsService.removeFromSchool(user.sub, schoolId, userId);
-  }
+  // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in
+  // StaffRemovalController: it may cancel classes, which needs BookingsModule,
+  // and BookingsModule already imports this module.
 }
