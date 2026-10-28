@@ -269,6 +269,18 @@ enum PaymentAccountMode {
 /// the skill file is needed; it was already right.
 /// What cancelling after a Class has started gives back, when the Class has no
 /// refund cut-off of its own (product owner, 26 Oct 2026).
+/// Decision 319 §4 / Decision 353 (Q8) — the first day of the Timetable's week.
+enum WeekStartDay {
+  MONDAY
+  SUNDAY
+}
+
+/// Decision 319 §4 / Decision 353 (Q8) — the Timetable's layout when it opens.
+enum TimetableLayout {
+  LIST
+  GRID
+}
+
 enum LateCancelRefundPolicy {
   NO_REFUND_ONCE_STARTED
   REFUND_UNTIL_END
@@ -501,6 +513,7 @@ model User {
   bookingsOverridden                Booking[]                   @relation("BookingOverriddenBy")
   bookingsResolved                  Booking[]                   @relation("BookingResolvedBy")
   bookingsCheckedIn                 Booking[]                   @relation("BookingCheckedInBy")
+  bookingAttendeesCheckedIn         BookingAttendee[]           @relation("BookingAttendeeCheckedInBy")
   bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
   waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
@@ -690,8 +703,18 @@ model RoleGrant {
   grantedAt DateTime  @default(now())
   revokedAt DateTime?
 
+  /// Decision 370 — set on the School's one main owner (a SCHOOL_OWNER_MANAGER
+  /// grant). Nobody in the School can remove the main owner; only a Platform
+  /// Admin can. At most one live main owner per School (partial unique index in
+  /// migration 20261213000100_school_main_owner).
+  isMainOwner Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Two partial unique indexes live in the migrations only (Prisma's DSL has
+  // no partial/expression index): RoleGrant_one_active_student_per_school, and
+  // RoleGrant_one_live_per_scope — at most one live grant per user, role and
+  // exact franchise/school/branch scope (20261212000000).
 
   // Composite indexes leading with the tenant column (Decision 30).
   @@index([schoolId, revokedAt])
@@ -1010,6 +1033,9 @@ model School {
   /// Decision 292 — when the owner last saved the cancellation policy. Null
   /// until they do: the portal asks them to choose until then.
   cancellationPolicyChosenAt     DateTime?
+  /// Decision 374 — when the owner hid the Dashboard's setup checklist (Decision
+  /// 318 item 1). Null: shown.
+  setupChecklistHiddenAt         DateTime?
   waitlistClaimWindowMinutes     Int                             @default(60)
   /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
   checkInOpensMinutesBeforeStart Int                             @default(30)
@@ -1019,6 +1045,10 @@ model School {
   /// bank transfer taken at the desk). Off by default; Spec 55 §8.2 amended for
   /// this one action only.
   branchStaffCanRecordPayments   Boolean                         @default(false)
+  /// Decision 319 §4 (Decision 353, Q8): the Timetable's week start and the
+  /// layout it opens in. Monday and list are what it always did.
+  weekStartsOn                   WeekStartDay                    @default(MONDAY)
+  timetableDefaultLayout         TimetableLayout                 @default(LIST)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -3759,6 +3789,13 @@ model BookingAttendee {
   // the token from the seat id, so only the hash is kept.
   guestTokenHash        String?                @unique
   guestWaiverSignatures GuestWaiverSignature[]
+
+  // Decision 377: each guest is checked in on their own at the desk, when they
+  // actually come. Null = not checked in (the member's own check-in no longer
+  // speaks for their guests). Who did it, as Booking.checkedInById.
+  checkedInAt   DateTime?
+  checkedInById String?
+  checkedInBy   User?     @relation("BookingAttendeeCheckedInBy", fields: [checkedInById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

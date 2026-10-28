@@ -10,9 +10,15 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
+import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
+
+/** Names and username are trimmed before validation, so one made only of
+ * spaces is refused as blank (sign-in review A7, as Decision 341 does for
+ * profile edits). */
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 /** Confirmed base User fields (ultm8-domain-rules §3, Spec §6.1) collected at registration. */
 export class RegisterDto {
@@ -26,19 +32,22 @@ export class RegisterDto {
   phone!: string;
 
   @ApiProperty()
+  @Transform(trim)
   @IsString()
-  @MinLength(1)
+  @MinLength(1, { message: "First name can't be blank." })
   @MaxLength(100)
   firstName!: string;
 
   @ApiProperty()
+  @Transform(trim)
   @IsString()
-  @MinLength(1)
+  @MinLength(1, { message: "Surname can't be blank." })
   @MaxLength(100)
   surname!: string;
 
   @ApiProperty({ required: false, description: 'Mobile-only per confirmed field list' })
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || undefined : value))
   @IsString()
   @MaxLength(50)
   username?: string;
@@ -51,8 +60,9 @@ export class RegisterDto {
   @Matches(/^\d{6}$/, { message: 'passcodeConfirm must be exactly 6 digits' })
   passcodeConfirm!: string;
 
-  @ApiProperty({ description: 'ISO 8601 date, no time component' })
+  @ApiProperty({ description: 'ISO 8601 date, no time component. Not in the future, not more than 120 years ago.' })
   @IsDateString()
+  @IsBirthDate()
   dateOfBirth!: string;
 
   @ApiProperty({ required: false })

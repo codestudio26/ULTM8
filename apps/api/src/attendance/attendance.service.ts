@@ -8,6 +8,7 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
 import { recordCheckInMinutes } from '../ranks/hours-trained';
+import { lockStudentClass } from '../bookings/booking-gates';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
@@ -166,7 +167,16 @@ export class AttendanceService {
     await this.tenantAuth.assertStaffAtSchool(instructorId, cls.schoolId, cls.branchId);
 
     let method: CheckInMethod;
-    if (dto.studentToken) {
+    if (dto.lookupToken) {
+      // The QR was checked when it was scanned (deskQrLookup); the lookup only
+      // works for that student, School and staff member.
+      const lookup = this.qrTokenService.verifyDeskLookup(dto.lookupToken);
+      if (lookup.deskStudentId !== dto.studentId || lookup.schoolId !== cls.schoolId || lookup.staffId !== instructorId) {
+        throw new BadRequestException('This scan belongs to a different Student.');
+      }
+      await this.assertCameraConsentNotWithdrawn(dto.studentId);
+      method = 'INSTRUCTOR_SCAN';
+    } else if (dto.studentToken) {
       const tokenStudentId = this.qrTokenService.verifyStudentToken(dto.studentToken);
       if (tokenStudentId !== dto.studentId) {
         throw new BadRequestException('This QR code belongs to a different Student.');
@@ -186,6 +196,70 @@ export class AttendanceService {
     await this.assertWithinWindow(booking.class);
 
     return this.completeBooking(dto.studentId, booking, method, instructorId);
+  }
+
+  /** POST /schools/{schoolId}/front-desk/qr-lookups — staff at the desk scan a
+   * Student's app QR. The QR lasts about 20 seconds, too short to tick classes
+   * and confirm, so it's checked here once and the desk gets a lookup token for
+   * five minutes (front-desk check-in review Q2, product owner 28 Oct 2026).
+   * Also says who it is, and refuses a QR of someone who isn't a current
+   * Student here (CI6: before, the desk opened a card with no name). */
+  async deskQrLookup(callerId: string, schoolId: string, studentToken: string) {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const studentId = this.qrTokenService.verifyStudentToken(studentToken);
+    // Read via ultm8_jobs: Branch Staff and coaches can't see every RoleGrant.
+    const enrolled = await this.prismaJobs.roleGrant.findFirst({
+      where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) {
+      throw new NotFoundException({ code: 'NOT_A_STUDENT_HERE', message: "This person isn't a Student at this School." });
+    }
+    await this.assertCameraConsentNotWithdrawn(studentId);
+    const user = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { firstName: true, surname: true, profilePhotoUrl: true } }),
+    );
+    const { token, expiresAt } = this.qrTokenService.signDeskLookup({ deskStudentId: studentId, schoolId, staffId: callerId });
+    return {
+      lookupToken: token,
+      expiresAt: expiresAt.toISOString(),
+      studentId,
+      firstName: user.firstName,
+      surname: user.surname,
+      profilePhotoUrl: user.profilePhotoUrl,
+    };
+  }
+
+  /** POST /bookings/{id}/guests/{attendeeId}/check-in — staff at the desk check
+   * one guest in, when they actually come (Decision 377). The member's own
+   * check-in no longer speaks for their guests. Same check-in window as the
+   * member's; the booking must be Upcoming or already checked in. Recorded on
+   * the guest's seat only: a guest has no account, so nothing is credited
+   * toward grading. Written in the booker's own context, as the member's
+   * check-in is (booking_attendee_write). */
+  async checkInGuest(callerId: string, bookingId: string, attendeeId: string) {
+    const booking = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findUnique({ where: { id: bookingId }, include: { class: true, attendees: { select: { id: true } } } }),
+    );
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, booking.schoolId, booking.branchId);
+    if (!booking.attendees.some((a) => a.id === attendeeId)) {
+      throw new NotFoundException('Guest not found on this booking');
+    }
+    if (booking.status !== 'UPCOMING' && booking.status !== 'COMPLETED') {
+      throw new ConflictException('This booking was cancelled, so its guests can no longer be checked in.');
+    }
+    await this.assertWithinWindow(booking.class);
+    const checkedInAt = new Date();
+    const result = await this.prismaApp.withTenantContext(booking.studentId, (tx) =>
+      tx.bookingAttendee.updateMany({ where: { id: attendeeId, bookingId, checkedInAt: null }, data: { checkedInAt, checkedInById: callerId } }),
+    );
+    if (result.count === 0) {
+      throw new ConflictException('This guest is already checked in.');
+    }
+    return { attendeeId, checkedInAt: checkedInAt.toISOString() };
   }
 
   // ---------------------------------------------------------------------------
@@ -244,6 +318,9 @@ export class AttendanceService {
     checkedInById: string | null,
   ) {
     const completed = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // Taken before any row lock, the same as a booking for this Student and
+      // Class (lockStudentClass: a booking and a check-in otherwise deadlocked).
+      await lockStudentClass(tx, studentId, booking.classId);
       // Optimistic-concurrency guard, same established pattern as every other
       // status transition in this codebase — guards against a double-scan
       // race (any combination of the three methods) or a race against the

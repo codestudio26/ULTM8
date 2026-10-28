@@ -27,11 +27,16 @@ export async function cancelSubscriptionAtPeriodEnd(
   if (!membership.stripeSubscriptionId) {
     throw new BadRequestException('Only a Subscription can be cancelled. Other plans end on their own.');
   }
-  if (membership.status !== 'ACTIVE') {
+  // Cancels at once (a double click, owner and Student together) queue on the
+  // row and each re-reads it, so only the first calls Stripe and records who
+  // asked; the rest return what it saved (stress test round 3, 27 Oct 2026).
+  await tx.$queryRaw`SELECT id FROM "Membership" WHERE id = ${membership.id} FOR UPDATE`;
+  const current = await tx.membership.findUniqueOrThrow({ where: { id: membership.id } });
+  if (current.status !== 'ACTIVE') {
     throw new BadRequestException('This Subscription has already ended.');
   }
-  if (membership.cancelAt) {
-    return tx.membership.findUniqueOrThrow({ where: { id: membership.id } });
+  if (current.cancelAt) {
+    return current;
   }
   const account = await tx.paymentAccount.findUnique({ where: { schoolId: membership.schoolId }, select: { stripeConnectedAccountId: true } });
   if (!account?.stripeConnectedAccountId) {

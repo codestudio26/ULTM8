@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -34,6 +34,12 @@ async function acceptLatestRequest(schoolId: string) {
   await db.school.update({ where: { id: schoolId }, data: { franchiseId: req.franchiseId } });
 }
 
+/** Decision 368 (Q4) — "Ask to join" shows the Franchise's name first; "Send request" sends it. */
+async function askToJoin(page: Page) {
+  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await page.getByRole('dialog', { name: 'Ask to join this Franchise?' }).getByRole('button', { name: 'Send request' }).click();
+}
+
 test('School Owner asks to join, leaves, then switches Franchise from the School profile page', async ({ page }) => {
   const franchiseA = await db.franchise.create({ data: { id: randomUUID(), name: 'Affiliation Test Franchise A' } });
   franchiseIds.push(franchiseA.id);
@@ -44,7 +50,7 @@ test('School Owner asks to join, leaves, then switches Franchise from the School
 
   // Decision 352 — asking does not join; the School can withdraw the request.
   await page.getByLabel('Franchise ID').fill(franchiseA.id);
-  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await askToJoin(page);
   const pending = page.getByTestId('franchise-join-pending');
   await expect(pending).toContainText(`Waiting for Franchise ${franchiseA.id} to accept your request to join.`);
   expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).franchiseId).toBeNull();
@@ -54,14 +60,14 @@ test('School Owner asks to join, leaves, then switches Franchise from the School
 
   // A declined request says so, and the School can ask again.
   await page.getByLabel('Franchise ID').fill(franchiseA.id);
-  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await askToJoin(page);
   await expect(pending).toBeVisible();
   await db.franchiseJoinRequest.updateMany({ where: { schoolId: s.schoolId, status: 'PENDING' }, data: { status: 'DECLINED', decidedAt: new Date() } });
   await page.reload();
   await expect(page.getByTestId('franchise-join-declined')).toContainText(`Franchise ${franchiseA.id} declined your request to join.`);
 
   await page.getByLabel('Franchise ID').fill(franchiseA.id);
-  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await askToJoin(page);
   await expect(pending).toBeVisible();
   await acceptLatestRequest(s.schoolId);
   await page.reload();
@@ -90,7 +96,7 @@ test('School Owner asks to join, leaves, then switches Franchise from the School
   franchiseIds.push(franchiseB.id);
 
   await page.getByLabel('Franchise ID').fill(franchiseB.id);
-  await page.getByRole('button', { name: 'Ask to join' }).click();
+  await askToJoin(page);
   await expect(pending).toContainText(franchiseB.id);
   await acceptLatestRequest(s.schoolId);
   await page.reload();

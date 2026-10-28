@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/passcode-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_changePasscode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools": {
         parameters: {
             query?: never;
@@ -334,6 +350,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SchoolsController_joinFranchise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/franchise-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_previewFranchise"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -612,7 +644,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+    "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
             header?: never;
@@ -621,7 +653,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["RoleGrantsController_removeFromSchool"];
+        post: operations["RoleGrantsController_handOverMainOwner"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1422,6 +1454,38 @@ export interface paths {
         get: operations["PlatformAdminSchoolsController_findOne"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminSchoolsController_listOwners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/main-owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_changeMainOwner"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3652,6 +3716,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/waiver-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_getStudentWaiverStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -3934,6 +4014,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AttendanceController_instructorScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/qr-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_deskQrLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/guests/{attendeeId}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_checkInGuest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4548,6 +4660,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DashboardController_getOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/dashboard/setup-checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["DashboardController_setSetupChecklistHidden"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/birthdays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DashboardController_getBirthdays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/teaching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffRemovalController_teaching"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffRemovalController_removeFromSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4577,7 +4769,7 @@ export interface components {
             /** @description Exactly 6 digits — the account's sole login credential (Decision 72) */
             passcode: string;
             passcodeConfirm: string;
-            /** @description ISO 8601 date, no time component */
+            /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth: string;
             gender?: string;
             nationality?: string;
@@ -4636,6 +4828,12 @@ export interface components {
             expiresAt: string;
         };
         ChangePasscodeFirstLoginDto: {
+            /** @description Exactly 6 digits */
+            newPasscode: string;
+        };
+        ChangePasscodeDto: {
+            /** @description The current passcode, exactly 6 digits */
+            currentPasscode: string;
             /** @description Exactly 6 digits */
             newPasscode: string;
         };
@@ -4701,6 +4899,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4758,6 +4966,16 @@ export interface components {
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Branch Staff may record desk payments (Decision 347). */
             branchStaffCanRecordPayments: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4).
+             * @enum {string}
+             */
+            weekStartsOn: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4).
+             * @enum {string}
+             */
+            timetableDefaultLayout: "LIST" | "GRID";
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4826,6 +5044,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -4852,6 +5080,8 @@ export interface components {
             footerTwitterUrl?: string | null;
             /** @description Show this School's Franchise name and logo (the Franchise Owner must also allow it). */
             showFranchiseBranding?: boolean;
+            /** @description Confirms a currency change that moves plans without their own currency to the new one. */
+            confirmCurrencyChange?: boolean;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -4959,7 +5189,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
@@ -5006,6 +5237,10 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             decidedAt?: string | null;
+        };
+        FranchisePreviewResponseDto: {
+            id: string;
+            name: string;
         };
         SchoolFranchiseJoinRequestResponseDto: {
             request?: components["schemas"]["FranchiseJoinRequestResponseDto"] | null;
@@ -5313,15 +5548,20 @@ export interface components {
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
             canInviteCoaches: boolean;
+            /** @description The School's main owner (Decision 370). Other owners are co-owners. */
+            mainOwner: boolean;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
         StaffListResponseDto: {
             items: components["schemas"]["StaffMemberDto"][];
         };
-        RemoveFromSchoolResponseDto: {
-            /** @description How many roles were ended. */
-            removedRoles: number;
+        HandOverMainOwnerDto: {
+            /** @description A co-owner of this School, who becomes its main owner. */
+            userId: string;
+        };
+        MainOwnerResponseDto: {
+            mainOwnerUserId: string;
         };
         CreateFranchiseDto: {
             name: string;
@@ -5691,7 +5931,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
@@ -5869,6 +6110,30 @@ export interface components {
             name: string;
             /** @enum {string} */
             subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
+        };
+        SchoolOwnerDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description The School's main owner. Every other owner is a co-owner. */
+            mainOwner: boolean;
+            /** Format: date-time */
+            ownerSince: string;
+        };
+        SchoolOwnersResponseDto: {
+            /** @description Main owner first, then co-owners, earliest first. */
+            items: components["schemas"]["SchoolOwnerDto"][];
+        };
+        ChangeSchoolMainOwnerDto: {
+            /** @description A co-owner of this School, who becomes its main owner. */
+            userId: string;
+            /** @description Also end the former main owner's owner role at this School. Default false. */
+            removeFormerMainOwner?: boolean;
+        };
+        ChangeSchoolMainOwnerResponseDto: {
+            mainOwnerUserId: string;
+            formerMainOwnerRemoved: boolean;
         };
         CreateAdminUserDto: {
             email: string;
@@ -6213,6 +6478,8 @@ export interface components {
             refundAmount?: number | null;
             /** Format: date-time */
             resolvedAt?: string | null;
+            /** Format: date-time */
+            checkedInAt?: string | null;
         };
         BookingResponseDto: {
             id: string;
@@ -6281,25 +6548,46 @@ export interface components {
             nextCursor?: string | null;
         };
         BookingsSummaryActivityDto: {
-            /** @description The raw Class.activities tag this bucket is for, or "Unspecified" for a Class with no tags. */
-            activity: string;
+            /** @description The Style name (or, for a Class with no Styles, its free-text activity tag) this row is for; null for a Class with neither. */
+            activity: string | null;
             totalBookings: number;
             upcomingBookings: number;
         };
+        BookingsSummaryClassDto: {
+            classId: string;
+            title: string;
+            /** Format: date-time */
+            startDate: string;
+            /** @description The IANA time zone the Class runs in (Branch, else School, else UTC). */
+            timeZone: string;
+            branchName: string | null;
+            /** @description null = unlimited. */
+            capacity: number | null;
+            bookedCount: number;
+            cancelledCount: number;
+            cancelled: boolean;
+        };
         BookingsSummaryDayDto: {
-            /** @description YYYY-MM-DD, the School's own local calendar day. */
+            /** @description YYYY-MM-DD, the Classes' own local calendar day. */
             date: string;
             totalBookings: number;
             upcomingBookings: number;
+            cancelledBookings: number;
             activities: components["schemas"]["BookingsSummaryActivityDto"][];
+            classes: components["schemas"]["BookingsSummaryClassDto"][];
         };
         BookingsSummaryResponseDto: {
             /** @description Inclusive range start actually used, YYYY-MM-DD. */
             from: string;
             /** @description Inclusive range end actually used, YYYY-MM-DD. */
             to: string;
+            /** @description The Branch filter applied, if any. */
+            branchId: string | null;
             totalBookings: number;
             upcomingBookings: number;
+            cancelledBookings: number;
+            attendedBookings: number;
+            noShowBookings: number;
             days: components["schemas"]["BookingsSummaryDayDto"][];
         };
         CancelClassDto: {
@@ -7877,6 +8165,14 @@ export interface components {
             /** @description objectKey from paper-upload-url, after the photo was uploaded. */
             imageKey: string;
         };
+        WaiverToSignDto: {
+            waiverId: string;
+            title: string;
+        };
+        StudentWaiverStatusDto: {
+            signed: boolean;
+            toSign: components["schemas"]["WaiverToSignDto"][];
+        };
         UpdateWaiverDto: {
             title?: string;
             /** @description The waiver document body text. */
@@ -7909,6 +8205,11 @@ export interface components {
              */
             waiverStatus: "SIGNED" | "UNSIGNED" | "NONE";
             guestFullName?: string | null;
+            /**
+             * Format: date-time
+             * @description When the guest was checked in at the desk (Decision 377); null if not yet.
+             */
+            checkedInAt?: string | null;
         };
         BookingGuestsDto: {
             bookingId: string;
@@ -8034,6 +8335,24 @@ export interface components {
             studentId: string;
             /** @description The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation. */
             studentToken?: string;
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN. */
+            lookupToken?: string;
+        };
+        DeskQrLookupDto: {
+            studentToken: string;
+        };
+        DeskQrLookupResponseDto: {
+            lookupToken: string;
+            expiresAt: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            profilePhotoUrl?: string | null;
+        };
+        GuestCheckInResponseDto: {
+            attendeeId: string;
+            /** Format: date-time */
+            checkedInAt: string;
         };
         AcademySummaryDto: {
             id: string;
@@ -8425,7 +8744,7 @@ export interface components {
         };
         RequestPublicPhotoUploadUrlDto: {
             /** @enum {string} */
-            entityType: "INSTRUCTOR" | "USER" | "BRANCH" | "FRANCHISE" | "CLASS";
+            entityType: "INSTRUCTOR" | "USER" | "BRANCH" | "FRANCHISE" | "CLASS" | "SCHOOL";
             /** @enum {string} */
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
@@ -8440,6 +8759,65 @@ export interface components {
             uploadUrl: string;
             /** @description The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing. */
             publicUrl: string;
+        };
+        /** @enum {string} */
+        SetupStepKey: "BRANCH" | "STYLE_AND_BELTS" | "CLASS" | "MEMBERSHIP_PLAN" | "WAIVER" | "STRIPE" | "STAFF";
+        SetupStepDto: {
+            key: components["schemas"]["SetupStepKey"];
+            done: boolean;
+        };
+        SetupChecklistDto: {
+            hidden: boolean;
+            steps: components["schemas"]["SetupStepDto"][];
+        };
+        DashboardOverviewDto: {
+            activeStudents: number;
+            setupChecklist: components["schemas"]["SetupChecklistDto"];
+        };
+        UpdateSetupChecklistDto: {
+            hidden: boolean;
+        };
+        BirthdayDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            date: string;
+        };
+        BirthdaysResponseDto: {
+            /** @description The week, YYYY-MM-DD, Monday to Sunday in the School's time zone. */
+            from: string;
+            to: string;
+            today: string;
+            items: components["schemas"]["BirthdayDto"][];
+        };
+        StaffTeachingResponseDto: {
+            /** @description Upcoming classes they teach here (not ended, cancelled or archived). */
+            upcomingClasses: number;
+            /** @description Active weekly timetable slots they teach here (on, not archived). */
+            activeSlots: number;
+        };
+        RemoveFromSchoolDto: {
+            /**
+             * @description REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor.
+             * @enum {string}
+             */
+            classes?: "REASSIGN" | "NONE" | "CANCEL";
+            /** @description With REASSIGN only: the coach at this School who takes them over (a User id). */
+            toUserId?: string;
+        };
+        RemoveFromSchoolResponseDto: {
+            /** @description How many roles were ended. */
+            removedRoles: number;
+            /** @description Upcoming classes given to the other coach. */
+            classesReassigned: number;
+            /** @description Upcoming classes left with no instructor. */
+            classesCleared: number;
+            /** @description Upcoming classes cancelled. */
+            classesCancelled: number;
+            /** @description Weekly timetable slots given to the other coach. */
+            slotsReassigned: number;
+            /** @description Weekly timetable slots left with no instructor. */
+            slotsCleared: number;
         };
     };
     responses: never;
@@ -8667,6 +9045,29 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChangePasscodeFirstLoginDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_changePasscode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasscodeDto"];
             };
         };
         responses: {
@@ -9004,6 +9405,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseJoinRequestResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_previewFranchise: {
+        parameters: {
+            query: {
+                franchiseId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchisePreviewResponseDto"];
                 };
             };
         };
@@ -9489,24 +9913,30 @@ export interface operations {
             };
         };
     };
-    RoleGrantsController_removeFromSchool: {
+    RoleGrantsController_handOverMainOwner: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify — the main owner re-enters their passcode first. */
+                "x-step-up-token": string;
+            };
             path: {
                 schoolId: string;
-                userId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandOverMainOwnerDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
+                    "application/json": components["schemas"]["MainOwnerResponseDto"];
                 };
             };
         };
@@ -10804,6 +11234,52 @@ export interface operations {
             };
         };
     };
+    PlatformAdminSchoolsController_listOwners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolOwnersResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_changeMainOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeSchoolMainOwnerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
+                };
+            };
+        };
+    };
     PlatformAdminFranchisesController_findOne: {
         parameters: {
             query?: never;
@@ -11735,6 +12211,8 @@ export interface operations {
                 from?: string;
                 /** @description Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted. */
                 to?: string;
+                /** @description Only Classes held at this Branch of the School. */
+                branchId?: string;
             };
             header?: never;
             path: {
@@ -14608,6 +15086,29 @@ export interface operations {
             };
         };
     };
+    WaiversController_getStudentWaiverStatus: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentWaiverStatusDto"];
+                };
+            };
+        };
+    };
     WaiversController_findMySignatures: {
         parameters: {
             query?: {
@@ -15034,6 +15535,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_deskQrLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeskQrLookupDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_checkInGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                attendeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestCheckInResponseDto"];
                 };
             };
         };
@@ -16173,6 +16721,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPhotoUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    DashboardController_getOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOverviewDto"];
+                };
+            };
+        };
+    };
+    DashboardController_setSetupChecklistHidden: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSetupChecklistDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOverviewDto"];
+                };
+            };
+        };
+    };
+    DashboardController_getBirthdays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BirthdaysResponseDto"];
+                };
+            };
+        };
+    };
+    StaffRemovalController_teaching: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffTeachingResponseDto"];
+                };
+            };
+        };
+    };
+    StaffRemovalController_removeFromSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveFromSchoolDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
             };
         };

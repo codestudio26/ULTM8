@@ -7,11 +7,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes, createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { RolesChangedService } from '../common/prisma/roles-changed.service';
 import { TwilioVerifyService } from './otp/twilio-verify.service';
 import { LoginAttemptTracker } from './login-attempt-tracker.service';
 import { RegisterDto } from './dto/register.dto';
@@ -22,10 +23,21 @@ import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
+import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 import { addressWriteData } from '../common/address/postal-address.dto';
 
+// Native `bcrypt`, not `bcryptjs`, everywhere in src/: each hash/compare at
+// cost 12 runs on the libuv threadpool instead of the event loop, so a burst
+// of logins or Add-Manually passcodes no longer stalls every other request
+// (stress test round 3). Same $2a/$2b format: hashes written by bcryptjs
+// (seeds, older rows) still verify.
 const BCRYPT_ROUNDS = 12;
+
+/** Decision 375 (Q2): how old an unverified sign-up must be before a new
+ * sign-up with the same email or phone may replace it — long enough that a
+ * person still waiting for their code isn't overwritten. */
+export const UNFINISHED_SIGN_UP_MINUTES = 30;
 
 // ultm8-nestjs-module §7's own confirmed gap, now built. 32 random bytes (256
 // bits) — the token's entropy is what resists guessing, not a slow hash (see
@@ -55,7 +67,7 @@ const REFRESH_TOKEN_TTL_DAYS = Number.isFinite(parsedRefreshTokenTtlDays) && par
  * hardcoded here — a hand-typed placeholder previously used here
  * (`$2a$12$invalidinvalidinvalidinvalidinvalidinva`) was the wrong length for a real
  * bcrypt hash (39 chars after the cost prefix instead of the required 22-char salt +
- * 31-char hash = 53), which risked bcryptjs's malformed-input handling itself taking a
+ * 31-char hash = 53), which risked the library's malformed-input handling itself taking a
  * different amount of time than a well-formed comparison — this hash is real output
  * from the library, guaranteed correct shape.
  */
@@ -69,6 +81,7 @@ export class AuthService {
     private readonly twilioVerify: TwilioVerifyService,
     private readonly jwt: JwtService,
     private readonly loginAttempts: LoginAttemptTracker,
+    private readonly rolesChanged: RolesChangedService,
   ) {}
 
   /**
@@ -80,43 +93,90 @@ export class AuthService {
     if (dto.passcode !== dto.passcodeConfirm) {
       throw new BadRequestException('passcode and passcodeConfirm must match');
     }
+    // Before anything is saved: with Twilio unset the account used to be created
+    // and then the OTP send failed with a 500, leaving an account that could
+    // never be verified or registered again (sign-in review A1).
+    this.twilioVerify.assertConfigured();
 
-    const existing = await this.prismaAuth.user.findFirst({
+    const existing = await this.prismaAuth.user.findMany({
       where: {
         OR: [
           { email: dto.email },
           { phone: dto.phone },
-          ...(dto.username ? [{ username: dto.username }] : []),
+          ...(dto.username ? [{ username: { equals: dto.username, mode: 'insensitive' as const } }] : []),
         ],
       },
-      select: { id: true },
+      select: { id: true, phone: true, phoneVerifiedAt: true, mustChangePasscode: true, createdAt: true },
     });
-    if (existing) {
+    // Decision 375 (Q2): a sign-up whose phone was never verified can be
+    // replaced by a new one once it is UNFINISHED_SIGN_UP_MINUTES old, so a
+    // person who never got (or never typed) the code isn't locked out of their
+    // own email and phone for good. Only a plain self-registration qualifies:
+    // it has a phone, isn't a manually added account waiting for its first
+    // passcode change, and holds no role anywhere (checked below). Exactly one
+    // such row is overwritten in place; anything else is still a conflict.
+    const cutoff = new Date(Date.now() - UNFINISHED_SIGN_UP_MINUTES * 60 * 1000);
+    const replaceable =
+      existing.length === 1 &&
+      existing[0]!.phone !== null &&
+      existing[0]!.phoneVerifiedAt === null &&
+      !existing[0]!.mustChangePasscode &&
+      existing[0]!.createdAt < cutoff
+        ? existing[0]!
+        : null;
+    if (existing.length > 0 && !replaceable) {
       throw new ConflictException('An account with this email, phone, or username already exists');
     }
 
     const passcodeHash = await bcrypt.hash(dto.passcode, BCRYPT_ROUNDS);
-    const id = randomUUID();
+    const profile = {
+      email: dto.email,
+      phone: dto.phone,
+      firstName: dto.firstName,
+      surname: dto.surname,
+      passcodeHash,
+      dateOfBirth: new Date(dto.dateOfBirth),
+      language: dto.language,
+      currency: dto.currency,
+    };
 
-    await this.prismaApp.withTenantContext(id, (tx) =>
-      tx.user.create({
-        data: {
-          id,
-          email: dto.email,
-          phone: dto.phone,
-          firstName: dto.firstName,
-          surname: dto.surname,
-          username: dto.username,
-          passcodeHash,
-          dateOfBirth: new Date(dto.dateOfBirth),
-          gender: dto.gender,
-          nationality: dto.nationality,
-          language: dto.language,
-          currency: dto.currency,
-          ...addressWriteData(dto),
-        },
-      }),
-    );
+    if (replaceable) {
+      await this.prismaApp.withTenantContext(replaceable.id, async (tx) => {
+        const grants = await tx.roleGrant.count({ where: { userId: replaceable.id } });
+        if (grants > 0) {
+          throw new ConflictException('An account with this email, phone, or username already exists');
+        }
+        // Every field the new sign-up didn't send is cleared, so nothing typed
+        // in the abandoned one survives; createdAt restarts the 30 minutes.
+        await tx.user.update({
+          where: { id: replaceable.id },
+          data: {
+            ...profile,
+            username: dto.username ?? null,
+            gender: dto.gender ?? null,
+            nationality: dto.nationality ?? null,
+            language: dto.language ?? null,
+            currency: dto.currency ?? null,
+            ...addressWriteData(dto.postalAddress !== undefined || dto.address !== undefined ? dto : { postalAddress: null }),
+            createdAt: new Date(),
+          },
+        });
+      });
+    } else {
+      const id = randomUUID();
+      await this.prismaApp.withTenantContext(id, (tx) =>
+        tx.user.create({
+          data: {
+            id,
+            ...profile,
+            username: dto.username,
+            gender: dto.gender,
+            nationality: dto.nationality,
+            ...addressWriteData(dto),
+          },
+        }),
+      );
+    }
 
     await this.twilioVerify.sendOtp(dto.phone);
 
@@ -206,7 +266,11 @@ export class AuthService {
     // This is the one documented exception — every other account still has a
     // phone and still must verify it.
     if (user.phone && !user.phoneVerifiedAt) {
-      throw new ForbiddenException('Phone not verified — complete registration via POST /auth/otp/verify');
+      // The portal links PHONE_NOT_VERIFIED to its Verify phone page (A6).
+      throw new ForbiddenException({
+        code: 'PHONE_NOT_VERIFIED',
+        message: "Your phone number isn't verified yet. Verify it to finish creating your account.",
+      });
     }
 
     this.loginAttempts.recordSuccess(dto.email);
@@ -256,6 +320,47 @@ export class AuthService {
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.update({ where: { id: callerId }, data: { passcodeHash, mustChangePasscode: false } }),
     );
+    await this.revokeAllRefreshTokensForUser(callerId);
+
+    const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(callerId), this.issueRefreshToken(callerId)]);
+    return { accessToken, refreshToken };
+  }
+
+  /**
+   * POST /auth/passcode-change (Decision 375, Q1) — "Change passcode" on My
+   * profile. The current passcode must match; wrong guesses count toward the
+   * same per-email lockout as login, so this can't be used to try passcodes
+   * faster than the login form allows. Every refresh token for the account is
+   * revoked (other browsers and phones are signed out when their 15-minute
+   * access token next expires), and a fresh pair is returned so the device
+   * that made the change stays signed in.
+   */
+  async changePasscode(callerId: string, dto: ChangePasscodeDto): Promise<{ accessToken: string; refreshToken: string }> {
+    const user = await this.prismaAuth.user.findUnique({ where: { id: callerId }, select: { email: true, passcodeHash: true } });
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or passcode');
+    }
+    if (this.loginAttempts.isLocked(user.email)) {
+      throw new ForbiddenException('Too many failed attempts — account temporarily locked. Try again later.');
+    }
+    if (!(await bcrypt.compare(dto.currentPasscode, user.passcodeHash))) {
+      this.loginAttempts.recordFailure(user.email);
+      throw new BadRequestException('Your current passcode is not right.');
+    }
+    this.loginAttempts.recordSuccess(user.email);
+    if (dto.newPasscode === dto.currentPasscode) {
+      throw new BadRequestException('Choose a new passcode that is different from your current one.');
+    }
+
+    const passcodeHash = await bcrypt.hash(dto.newPasscode, BCRYPT_ROUNDS);
+    // rolesChangedAt is moved too, so every access token issued before now is
+    // refused on its next request (JwtStrategy's Decision 361 check); the app
+    // then tries to refresh, the refresh token is revoked below, and that
+    // device is signed out straight away instead of up to 15 minutes later.
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.update({ where: { id: callerId }, data: { passcodeHash, rolesChangedAt: new Date() } }),
+    );
+    this.rolesChanged.forget(callerId);
     await this.revokeAllRefreshTokensForUser(callerId);
 
     const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(callerId), this.issueRefreshToken(callerId)]);
@@ -558,6 +663,9 @@ export class AuthService {
    * account enumeration — standard security hygiene, not a new business rule.
    */
   async requestPasscodeReset(dto: RequestPasscodeResetDto) {
+    // Checked before the lookup, so every phone gets the same answer when text
+    // messages aren't set up; it used to 500 only for registered ones (A3).
+    this.twilioVerify.assertConfigured();
     const user = await this.prismaAuth.user.findUnique({
       where: { phone: dto.phone },
       select: { id: true },

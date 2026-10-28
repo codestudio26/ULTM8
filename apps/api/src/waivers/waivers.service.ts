@@ -18,6 +18,8 @@ import { UpdateWaiverSettingsDto } from './dto/waiver-settings.dto';
 import type { WaiverSignatureRequestJobData } from '../jobs/waiver-signature-requests.processor';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { WaiverAssignmentService } from './waiver-assignment.service';
+import { hasCountingWaiverSignature } from './waiver-signed-check';
+import { StudentWaiverStatusDto } from './dto/student-waiver-status.dto';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -176,6 +178,10 @@ export class WaiversService {
     // students are asked to sign the new version.
     const resign = wordingChanged && dto.resign === true;
     const { updated, toNotify } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // The Waiver row lock comes first: sign() holds FOR SHARE on it while it
+      // checks the version, so a signature either commits before this (and is
+      // expired below) or sees the new version (stress test round 3).
+      await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiverId} FOR UPDATE`;
       const updated = await tx.waiver.update({
         where: { id: waiverId },
         data: { title: dto.title, body: dto.body, ...(wordingChanged ? { version: { increment: 1 } } : {}) },
@@ -423,20 +429,29 @@ export class WaiversService {
       throw new ConflictException('This waiver is archived, so no one can be reminded to sign it.');
     }
     const now = new Date();
+    // lastRemindedAt is a UTC timestamp without time zone; ::timestamp keeps
+    // the ISO string's UTC wall time.
+    const at = now.toISOString();
+    const cutoff = new Date(now.getTime() - REMIND_AGAIN_AFTER_MS).toISOString();
     const studentIds = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const active = await this.activeStudentIds(tx, schoolId);
-      const due = await tx.waiverSignature.findMany({
-        where: {
-          waiverId,
-          schoolId,
-          status: { in: ['UNSIGNED', 'PENDING'] },
-          studentId: { in: active },
-          OR: [{ lastRemindedAt: null }, { lastRemindedAt: { lt: new Date(now.getTime() - REMIND_AGAIN_AFTER_MS) } }],
-        },
-        select: { id: true, studentId: true },
-      });
-      await tx.waiverSignature.updateMany({ where: { id: { in: due.map((d) => d.id) } }, data: { lastRemindedAt: now } });
-      return [...new Set(due.map((d) => d.studentId))];
+      // Claimed in one statement, rows locked in id order: presses at the same
+      // moment queue on the rows and the later ones find them already
+      // reminded, so each student is reminded once (at most once a day,
+      // Decision 354 §5) and two presses can't deadlock (stress test round 3).
+      const claimed = await tx.$queryRaw<{ studentId: string }[]>`
+        UPDATE "WaiverSignature" SET "lastRemindedAt" = ${at}::timestamp
+        WHERE id IN (
+          SELECT id FROM "WaiverSignature"
+          WHERE "waiverId" = ${waiverId} AND "schoolId" = ${schoolId}
+            AND status IN ('UNSIGNED', 'PENDING') AND "studentId" = ANY(${active})
+            AND ("lastRemindedAt" IS NULL OR "lastRemindedAt" < ${cutoff}::timestamp)
+          ORDER BY id
+          FOR UPDATE
+        )
+        AND ("lastRemindedAt" IS NULL OR "lastRemindedAt" < ${cutoff}::timestamp)
+        RETURNING "studentId"`;
+      return [...new Set(claimed.map((d) => d.studentId))];
     });
     if (studentIds.length > 0) {
       await this.enqueueNotice({ waiverId, schoolId, studentIds, reason: 'reminder', batchId: String(now.getTime()) });
@@ -539,6 +554,8 @@ export class WaiversService {
       throw new BadRequestException('Upload the photo of the signed paper first.');
     }
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Same Waiver lock as sign(): new terms saved meanwhile expire this too.
+      await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiverId} FOR SHARE`;
       const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiverId }, select: { title: true, body: true, version: true } });
       const { count } = await tx.waiverSignature.updateMany({
         where: { id: signatureId, status: { in: ['UNSIGNED', 'PENDING'] } },
@@ -728,6 +745,9 @@ export class WaiversService {
       created = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         // Waivers review W3: copy the wording being signed, read in this same
         // transaction. A signer who read an older version is sent back to it.
+        // FOR SHARE holds off new terms (updateWaiver) until this signature is
+        // saved, so it is expired with the rest, never left on the old version.
+        await tx.$queryRaw`SELECT id FROM "Waiver" WHERE id = ${waiver.id} FOR SHARE`;
         const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiver.id }, select: { title: true, body: true, version: true } });
         if (dto.waiverVersion !== undefined && dto.waiverVersion !== current.version) {
           throw new ConflictException('This waiver was changed while you were reading it. Please read it again before signing.');
@@ -751,8 +771,17 @@ export class WaiversService {
           }
           // UNSIGNED or PENDING — the assignment-time row this Student was
           // always going to sign. Update in place rather than create a
-          // second row for the same (waiverId, studentId) pair.
-          return tx.waiverSignature.update({ where: { id: existing.id }, data: signedData });
+          // second row for the same (waiverId, studentId) pair. Only while it
+          // is still unsigned: of two signings at once (a double click) one
+          // wins and the other gets the same 409 as signing twice.
+          const { count } = await tx.waiverSignature.updateMany({
+            where: { id: existing.id, status: { in: ['UNSIGNED', 'PENDING'] } },
+            data: signedData,
+          });
+          if (count === 0) {
+            throw new ConflictException('This Student already holds a non-Expired signature for this Waiver.');
+          }
+          return tx.waiverSignature.findUniqueOrThrow({ where: { id: existing.id } });
         }
         return tx.waiverSignature.create({
           data: { id: randomUUID(), waiverId: waiver.id, studentId, schoolId: waiver.schoolId, ...signedData },
@@ -805,6 +834,27 @@ export class WaiversService {
         "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
       );
     }
+  }
+
+  /** GET /students/{id}/waiver-status?schoolId= — any staff at the School
+   * (Owner/Manager, Branch Staff, Instructor), for a current Student there.
+   * Read in the Student's own tenant context, as booking's waiver check is:
+   * Branch Staff and coaches can't read other people's signatures. */
+  async getStudentWaiverStatus(callerId: string, studentId: string, schoolId: string): Promise<StudentWaiverStatusDto> {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const enrolled = await tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+      if (!enrolled) {
+        throw new NotFoundException("This person isn't a Student at this School.");
+      }
+      const [signed, waivers, signatures] = await Promise.all([
+        hasCountingWaiverSignature(tx, studentId, schoolId),
+        tx.waiver.findMany({ where: { schoolId, archivedAt: null }, orderBy: { createdAt: 'asc' }, select: { id: true, title: true } }),
+        tx.waiverSignature.findMany({ where: { studentId, schoolId, status: 'SIGNED' }, select: { waiverId: true } }),
+      ]);
+      const done = new Set(signatures.map((sig) => sig.waiverId));
+      return { signed, toSign: waivers.filter((w) => !done.has(w.id)).map((w) => ({ waiverId: w.id, title: w.title })) };
+    });
   }
 
   async findMySignatures(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {

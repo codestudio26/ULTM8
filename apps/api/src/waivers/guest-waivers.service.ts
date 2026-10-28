@@ -201,7 +201,7 @@ export class GuestWaiversService {
   }
 
   private shape(
-    booking: { id: string; studentId: string; attendees: Array<{ id: string; guestTokenHash: string | null }> },
+    booking: { id: string; studentId: string; attendees: Array<{ id: string; guestTokenHash: string | null; checkedInAt: Date | null }> },
     waiverRequired: boolean,
     statuses: Map<string, { waiverStatus: WaiverStatus; guestFullName: string | null }>,
     showLinks: boolean,
@@ -215,6 +215,7 @@ export class GuestWaiversService {
         link: showLinks && a.guestTokenHash ? guestWaiverLink(a.id) : null,
         waiverStatus: statuses.get(a.id)?.waiverStatus ?? 'NONE',
         guestFullName: statuses.get(a.id)?.guestFullName ?? null,
+        checkedInAt: a.checkedInAt?.toISOString() ?? null,
       })),
     };
   }
@@ -224,7 +225,7 @@ export class GuestWaiversService {
     const booking = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findUnique({
         where: { id: bookingId },
-        include: { attendees: { select: { id: true, guestTokenHash: true }, orderBy: { createdAt: 'asc' } }, class: { select: { termsWaiverRequired: true } } },
+        include: { attendees: { select: { id: true, guestTokenHash: true, checkedInAt: true }, orderBy: { createdAt: 'asc' } }, class: { select: { termsWaiverRequired: true } } },
       }),
     );
     if (!booking) throw new NotFoundException('Booking not found');
@@ -243,7 +244,7 @@ export class GuestWaiversService {
     const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findMany({
         where: { classId, status: 'UPCOMING', attendees: { some: {} } },
-        include: { attendees: { select: { id: true, guestTokenHash: true }, orderBy: { createdAt: 'asc' } } },
+        include: { attendees: { select: { id: true, guestTokenHash: true, checkedInAt: true }, orderBy: { createdAt: 'asc' } } },
         orderBy: { createdAt: 'asc' },
       }),
     );

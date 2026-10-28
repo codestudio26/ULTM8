@@ -4,12 +4,11 @@ import { Spinner } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
 import { useSchool } from '../schools/schoolQueries';
-import { useStudents } from '../students/studentQueries';
 import { Avatar } from '../lib/Avatar';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { hasBackend } from './frontDeskFeatures';
-import { useTodayBookings, useTodayClasses } from './frontDeskQueries';
+import { errorText, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
 import { findByPersonalCode, findMe, submitSignUp, type SignUpInput } from './kioskApi';
 import {
   ClassList,
@@ -24,7 +23,6 @@ import {
   shortName,
   timeOf,
   useMinuteTick,
-  useQrStudent,
   type CheckInMethod,
   type FrontDeskStudent,
 } from './parts';
@@ -63,15 +61,17 @@ export function FrontDeskModePage() {
   const navigate = useNavigate();
   const schoolId = useGradingSchoolId();
   const school = useSchool(schoolId).data;
-  const branches = (useBranches(schoolId).data?.items ?? []).filter((b) => !b.archivedAt);
+  const branchQuery = useBranches(schoolId);
+  const branches = (branchQuery.data?.items ?? []).filter((b) => !b.archivedAt);
+  // A School with no Branches runs front-desk mode for the whole School (CI4).
+  const wholeSchool = branchQuery.isSuccess && branches.length === 0;
   const [screen, setScreen] = useState<Screen>('start');
   const [branchId, setBranchId] = useState<string | null>(null);
-  const today = useTodayClasses(schoolId, screen === 'start' ? null : branchId);
-  const bookingsByClass = useTodayBookings(today.classes);
-  const roster = useStudents(schoolId).data?.items;
-  const fromQr = useQrStudent(roster);
+  const today = useTodayClasses(schoolId, screen === 'start' ? null : branchId, now);
+  const { byClass: bookingsByClass, ready: bookingsReady } = useTodayBookings(today.classes);
+  const qrLookup = useQrLookup(schoolId);
   const [method, setMethod] = useState<CheckInMethod>('scan');
-  const [who, setWho] = useState<{ student: FrontDeskStudent; qr: { token: string; expiresAt: number } | null } | null>(null);
+  const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
   const [done, setDone] = useState<{ first: string; classes: string } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [exiting, setExiting] = useState(false);
@@ -84,7 +84,7 @@ export function FrontDeskModePage() {
   }, [done]);
 
   const recent = useMemo(() => recentCheckIns(today.classes, bookingsByClass, 10), [today.classes, bookingsByClass]);
-  const branchName = branches.find((b) => b.id === branchId)?.name ?? '';
+  const branchName = wholeSchool ? t('frontDesk.kiosk.wholeSchool') : (branches.find((b) => b.id === branchId)?.name ?? '');
   const next = today.classes.find((c) => c.id === nextClassId(today.classes, now));
 
   if (!schoolId) return null;
@@ -98,7 +98,15 @@ export function FrontDeskModePage() {
             {t('frontDesk.kiosk.startBody')}
           </p>
           <div role="radiogroup" aria-label={t('frontDesk.kiosk.branch')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {branches.length === 0 ? <Spinner /> : null}
+            {branchQuery.isPending ? <Spinner /> : null}
+            {wholeSchool ? (
+              <div className="fd-tick" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 0 0 2px #9fd3b2' }}>
+                <span className="fd-tick__box" aria-hidden="true">
+                  ●
+                </span>
+                <span className="fd-tick__name">{t('frontDesk.kiosk.wholeSchool')}</span>
+              </div>
+            ) : null}
             {branches.map((b) => (
               <button
                 key={b.id}
@@ -119,7 +127,7 @@ export function FrontDeskModePage() {
           <p className="fd-class__meta" style={{ margin: 0 }}>
             {hasBackend('kioskSession') ? t('frontDesk.kiosk.startLocked') : t('frontDesk.kiosk.startNotLocked')}
           </p>
-          <button type="button" className="fd-pill fd-pill--go" disabled={!branchId} onClick={() => setScreen('home')}>
+          <button type="button" className="fd-pill fd-pill--go" disabled={!branchId && !wholeSchool} onClick={() => setScreen('home')}>
             {t('frontDesk.kiosk.start')}
           </button>
           <button type="button" className="fd-pill fd-pill--line" onClick={() => navigate('/check-in')}>
@@ -162,7 +170,7 @@ export function FrontDeskModePage() {
             </span>
             <div>
               <div className="fd-class__name">{school?.name}</div>
-              <div className="fd-class__meta">{t('frontDesk.kiosk.branchLine', { branch: branchName })}</div>
+              <div className="fd-class__meta">{wholeSchool ? branchName : t('frontDesk.kiosk.branchLine', { branch: branchName })}</div>
             </div>
           </div>
           <div>
@@ -203,9 +211,15 @@ export function FrontDeskModePage() {
                 title={t('frontDesk.scan.kioskTitle')}
                 hint={t('frontDesk.scan.kioskHint')}
                 onQr={(token) => {
-                  const found = fromQr(token);
-                  if (found) setWho(found);
-                  else setMsg(t('frontDesk.scan.notOurs'));
+                  setMsg(null);
+                  qrLookup.mutate(token, {
+                    onSuccess: (r) =>
+                      setWho({
+                        student: { id: r.studentId, firstName: r.firstName, surname: r.surname, profilePhotoUrl: r.profilePhotoUrl },
+                        qr: { lookupToken: r.lookupToken, expiresAt: Date.parse(r.expiresAt) },
+                      }),
+                    onError: (err) => setMsg(errorText(err, t('frontDesk.scan.notOurs'))),
+                  });
                 }}
               />
             ) : method === 'code' ? (
@@ -245,6 +259,7 @@ export function FrontDeskModePage() {
               schoolId={schoolId}
               classes={today.classes}
               bookingsByClass={bookingsByClass}
+              bookingsReady={bookingsReady}
               qr={who.qr}
               short
               onBack={() => setWho(null)}

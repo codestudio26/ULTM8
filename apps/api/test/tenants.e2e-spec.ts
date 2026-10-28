@@ -332,6 +332,30 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(patchRes.body.description).toBe('Updated by owner A');
   });
 
+  it('only someone 18 or over can create a School (Decision 375, Q5)', async () => {
+    const teen = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-teen-${randomUUID()}@example.test`,
+        firstName: 'Teen',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date(Date.UTC(new Date().getUTCFullYear() - 17, 0, 1)),
+      },
+    });
+    try {
+      const res = await request(app.getHttpServer())
+        .post('/v1/schools')
+        .set('Authorization', `Bearer ${signAccessToken(teen, [])}`)
+        .send({ name: 'Teen School' });
+      expect(res.status).toBe(403);
+      expect(res.body.error.message).toBe('You must be 18 or over to create a School.');
+      expect(await superuser.school.count({ where: { name: 'Teen School' } })).toBe(0);
+    } finally {
+      await superuser.user.delete({ where: { id: teen.id } });
+    }
+  });
+
   it('a School has its own time zone, like a Branch: set on create, kept when omitted, cleared with null (Decision 172)', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')

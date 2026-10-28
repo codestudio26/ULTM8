@@ -36,6 +36,8 @@ export const server: PartialMessages<ServerKeys> = {
     classBranchBooked: "Bu derse kayıtlı veya bekleyen öğrenciler var. Başka bir şubeye taşımadan önce rezervasyonlarını iptal et.",
     classMovedToPast: "Bu derse kayıtlı veya bekleyen öğrenciler var, bu yüzden yalnızca henüz geçmemiş bir saate taşınabilir.",
     classAlreadyEnded: "Bu ders zaten bitti. Gelecekte bir bitiş saati seç.",
+    schoolCurrencyChange: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Artık aynı tutarlarla {currency} cinsinden ücretlendirilecekler.",
+    schoolCurrencyInUse: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Temizlemeden önce bu planlara kendi para birimlerini verin.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",

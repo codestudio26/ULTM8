@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../../common/throttle/identity-trackers';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -15,7 +15,7 @@ import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStaffManuallyResponseDto } from './dto/create-staff-manually-response.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-response.dto';
-import { RemoveFromSchoolResponseDto, StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
+import { HandOverMainOwnerDto, MainOwnerResponseDto, StaffListQueryDto, StaffListResponseDto } from './dto/staff-list.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * InstructorsController's own add-manually throttle (ADD_MANUALLY_THROTTLE). */
@@ -112,10 +112,25 @@ export class RoleGrantsController {
     return this.roleGrantsService.listStaff(user.sub, schoolId, query);
   }
 
-  /** Decision 361 — "Remove from School". See RoleGrantsService.removeFromSchool. */
-  @ApiCreatedResponse({ type: RemoveFromSchoolResponseDto })
-  @Post('schools/:schoolId/staff/:userId/remove')
-  removeFromSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('userId') userId: string) {
-    return this.roleGrantsService.removeFromSchool(user.sub, schoolId, userId);
+  // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in
+  // StaffRemovalController: it may cancel classes, which needs BookingsModule,
+  // and BookingsModule already imports this module.
+
+  /** Decision 370 — the main owner hands the main role to a co-owner. See
+   * RoleGrantsService.handOverMainOwner. */
+  @ApiCreatedResponse({ type: MainOwnerResponseDto })
+  @ApiHeader({
+    name: 'x-step-up-token',
+    required: true,
+    description: 'From POST /auth/step-up/verify — the main owner re-enters their passcode first.',
+  })
+  @Post('schools/:schoolId/main-owner')
+  handOverMainOwner(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Body() dto: HandOverMainOwnerDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    return this.roleGrantsService.handOverMainOwner(user.sub, schoolId, dto.userId, stepUpToken);
   }
 }

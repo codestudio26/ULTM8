@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { BirthdaysCard } from '../dashboard/BirthdaysCard';
 import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId } from '../auth/AuthContext';
@@ -72,6 +73,8 @@ export function CoachDashboardPage() {
       <PageHeader title={t('coach.dashboard.title')} subtitle={school.data?.name} />
       <GradingSection schoolId={schoolId} />
       <ClassesSection schoolId={schoolId} me={claims?.sub ?? ''} />
+      {/* Decision 374 (Decision 318 item 2): every member of staff sees this week's birthdays. */}
+      <BirthdaysCard schoolId={schoolId} linkToStudent={false} />
       <NotificationsSection />
       {isStudentHere ? <MyTrainingSection schoolId={schoolId} me={claims?.sub ?? ''} /> : null}
     </>

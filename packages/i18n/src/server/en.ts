@@ -6,6 +6,11 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Your current passcode is not right.",
+ "Choose a new passcode that is different from your current one.",
+ "You must be 18 or over to create a School.",
+ "Text messages are not configured yet, so we can't send a verification code. Please try again later.",
+ "Your phone number isn't verified yet. Verify it to finish creating your account.",
  "Only the School Owner/Manager or that branch's Branch Staff may do this.",
  "This class is already cancelled.",
  "This class has already finished.",
@@ -129,7 +134,6 @@ export const SERVER_MESSAGES: string[] = [
  "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.",
  "PaymentAccount has no owner",
  "PaymentAccount not found",
- "Phone not verified — complete registration via POST /auth/otp/verify",
  "Platform Admin authentication is not fully configured.",
  "Playlist not found",
  "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.",
@@ -487,4 +491,14 @@ export const SERVER_PATTERNS: string[] = [
   "This style already has a skill called \"{v1}\".",
  "Type the School's name exactly as it is to close it.",
  "Closing a School is not available during an impersonation session (Decision 39).",
+  "School name can't be empty.",
+  "Social links must be full web addresses starting with https://.",
+  "Enter a valid contact email address.",
+  "The waitlist claim window must be a whole number of minutes, at least 1.",
+  "Enter the Franchise ID exactly as the Franchise Owner gave it.",
+ "This student has already attended this class.",
+ "This was just recorded. Check before adding another.",
+ "This person isn't a Student at this School.",
+ "This scan has expired. Ask the Student to show their QR again.",
+ "This scan belongs to a different Student.",
 ];

@@ -24,6 +24,7 @@ import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import { monitorEventLoopDelay } from 'perf_hooks';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
@@ -120,10 +121,10 @@ describeIfDb('AuthController — /auth/login + per-user/per-IP throttling (Decis
   });
 
   it('the identity throttle is phone-keyed and Twilio-independent on /auth/forgot-password (Decision 12/17)', async () => {
-    // An unregistered phone never reaches TwilioVerifyService — AuthService.
-    // requestPasscodeReset only calls it once a matching User is found — so this is
-    // safe to throttle-test without a Twilio double. Same 5/60s identity-bucket shape
-    // as /auth/login's email bucket, just keyed by `phone` instead.
+    // No Twilio double needed: with Twilio unset every phone gets the same 503
+    // before any lookup (Decision 373), and the throttle runs before that. Same
+    // 5/60s identity-bucket shape as /auth/login's email bucket, just keyed by
+    // `phone` instead.
     const phone = randomPhone();
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++) {
@@ -321,5 +322,114 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     expect(right.status).toBe(201);
     expect(typeof right.body.stepUpToken).toBe('string');
     expect(typeof right.body.expiresAt).toBe('string');
+  });
+  // Decision 375 (Q1): Change passcode on My profile signs out every other device.
+  it('POST /auth/passcode-change needs the current passcode, then signs out other devices and keeps this one', async () => {
+    const { user, accessToken, refreshToken: thisDevice } = await mkLoggedInUser('change');
+    const other = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
+    expect(other.status).toBe(201);
+
+    const wrong = await request(app.getHttpServer())
+      .post('/v1/auth/passcode-change')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPasscode: '000000', newPasscode: '135790' });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error.message).toBe('Your current passcode is not right.');
+
+    const same = await request(app.getHttpServer())
+      .post('/v1/auth/passcode-change')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPasscode: PASSCODE, newPasscode: PASSCODE });
+    expect(same.status).toBe(400);
+
+    const ok = await request(app.getHttpServer())
+      .post('/v1/auth/passcode-change')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPasscode: PASSCODE, newPasscode: '135790' });
+    expect(ok.status).toBe(201);
+    expect(typeof ok.body.accessToken).toBe('string');
+    expect(typeof ok.body.refreshToken).toBe('string');
+
+    // The other device: its access token is refused now, and its refresh token is dead.
+    const otherMe = await request(app.getHttpServer()).get('/v1/users/me').set('Authorization', `Bearer ${other.body.accessToken}`);
+    expect(otherMe.status).toBe(401);
+    const otherRefresh = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: other.body.refreshToken });
+    expect(otherRefresh.status).toBe(401);
+    const oldRefresh = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: thisDevice });
+    expect(oldRefresh.status).toBe(401);
+
+    // This device carries on with the pair it was given.
+    const me = await request(app.getHttpServer()).get('/v1/users/me').set('Authorization', `Bearer ${ok.body.accessToken}`);
+    expect(me.status).toBe(200);
+    const refreshed = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: ok.body.refreshToken });
+    expect(refreshed.status).toBe(201);
+
+    const oldLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
+    expect(oldLogin.status).toBe(401);
+    const newLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: '135790' });
+    expect(newLogin.status).toBe(201);
+  });
+});
+
+/**
+ * Stress test round 3: passcode hashing ran on the event loop (bcryptjs, pure
+ * JS, ~0.7 s per cost-12 hash), so a burst of logins froze every other request
+ * for seconds. The API now uses native `bcrypt` (libuv threadpool). Own block
+ * and own users, for the same throttle-isolation reason as the block above.
+ * The users' hashes are written by bcryptjs here, so this also proves hashes
+ * from the old library still verify.
+ */
+describeIfDb('AuthController — passcode checks off the event loop (stress round 3)', () => {
+  let app: INestApplication;
+  const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  const userIds: string[] = [];
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('v1');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await superuser.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.$disconnect();
+    await app.close();
+  });
+
+  it('8 parallel logins all succeed and never block the event loop for long', async () => {
+    const passcodeHash = await bcrypt.hash(PASSCODE, 12);
+    const users = await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `burst-${i}-${randomUUID()}@example.test`,
+            phone: randomPhone(),
+            firstName: 'Auth',
+            surname: 'Burst',
+            passcodeHash,
+            dateOfBirth: new Date('2000-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        }),
+      ),
+    );
+    userIds.push(...users.map((u) => u.id));
+
+    const delay = monitorEventLoopDelay({ resolution: 10 });
+    delay.enable();
+    const results = await Promise.all(
+      users.map((u) => request(app.getHttpServer()).post('/v1/auth/login').send({ email: u.email, passcode: PASSCODE })),
+    );
+    delay.disable();
+
+    expect(results.map((r) => r.status)).toEqual(users.map(() => 201));
+    // bcryptjs blocked the loop for 1–2 s in this burst; native bcrypt stays
+    // in the tens of milliseconds. 300 ms leaves room for a slow CI machine.
+    expect(delay.max / 1e6).toBeLessThan(300);
   });
 });

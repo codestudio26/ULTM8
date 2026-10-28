@@ -56,7 +56,8 @@ export function MoneyField({
   );
 }
 
-function toText(minorUnits: number | null): string {
+/** Hundredths as the text a money box shows: 1250 → "12.50", 1000 → "10", null → "". */
+export function toText(minorUnits: number | null): string {
   if (minorUnits === null) return '';
   return minorUnits % 100 === 0 ? String(minorUnits / 100) : (minorUnits / 100).toFixed(2);
 }

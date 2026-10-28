@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
@@ -81,11 +82,14 @@ export class InstructorsService {
         select: { id: true },
       }),
     );
+    const duplicateMessage = 'This user already has an Instructor profile at this School.';
     if (duplicate) {
-      throw new ConflictException('This user already has an Instructor profile at this School.');
+      throw new ConflictException(duplicateMessage);
     }
 
     const instructorId = randomUUID();
+    // The schoolId+userId unique index stops a twin request the check above
+    // couldn't see yet; it gets the same answer.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const specs = await resolveInstructorSpecializations(tx, schoolId, dto.specializationStyleIds, dto.specializations);
       return tx.instructor.create({
@@ -102,6 +106,9 @@ export class InstructorsService {
           bio: dto.bio,
         },
       });
+    }).catch((err) => {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') throw new ConflictException(duplicateMessage);
+      throw err;
     });
   }
 

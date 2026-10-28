@@ -123,3 +123,20 @@ export function useCloseSchool(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
   });
 }
+
+/** Decision 266/367 — a new join code; the old one stops working at once. */
+export function useRegenerateJoinCode(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/schools/{id}/join-code/regenerate', { params: { path: { id: schoolId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}
+
+/** Decision 368 (Q4) — the Franchise's name, to confirm before asking to join. */
+export function useFranchisePreview(schoolId: string) {
+  return useMutation({
+    mutationFn: (franchiseId: string) =>
+      unwrap(apiClient.GET('/v1/schools/{id}/franchise-preview', { params: { path: { id: schoolId }, query: { franchiseId } } })),
+  });
+}

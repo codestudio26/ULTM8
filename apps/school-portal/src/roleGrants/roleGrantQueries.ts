@@ -10,6 +10,7 @@ export type CreateStaffManuallyInput = components['schemas']['CreateStaffManuall
 export type CreateStaffManuallyResponse = components['schemas']['CreateStaffManuallyResponseDto'];
 export type StaffMember = components['schemas']['StaffMemberDto'];
 export type StaffRoleEntry = components['schemas']['StaffRoleDto'];
+export type RemoveFromSchoolInput = components['schemas']['RemoveFromSchoolDto'];
 export type StaffListFilters = { status: 'active' | 'removed' | 'all'; role?: StaffRoleEntry['role']; branchId?: string; q?: string };
 
 /** One user's grants (GET /users/{userId}/role-grants) — what Instructor and
@@ -77,17 +78,54 @@ export function useStaffList(schoolId: string | null, filters: StaffListFilters)
   });
 }
 
+/** GET /schools/{schoolId}/staff/{userId}/teaching: the upcoming classes and
+ * weekly slots the person still teaches here, which "Remove from School" asks
+ * about. Fetched fresh each time the dialog opens. */
+export function useStaffTeaching(schoolId: string, userId: string) {
+  return useQuery({
+    queryKey: ['staff', schoolId, 'teaching', userId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/staff/{userId}/teaching', { params: { path: { schoolId, userId } } })),
+    staleTime: 0,
+  });
+}
+
 /** "Remove from School" (Decision 361): ends every coach and Branch Staff
- * role the person holds here. */
+ * role the person holds here, and gives their classes to another coach,
+ * leaves them with no coach, or cancels them (`body`, needed only when they
+ * teach). Classes, the timetable and instructors change with it. */
 export function useRemoveFromSchool(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) =>
-      unwrap(apiClient.POST('/v1/schools/{schoolId}/staff/{userId}/remove', { params: { path: { schoolId, userId } } })),
-    onSuccess: (_data, userId) => {
+    mutationFn: ({ userId, body }: { userId: string; body?: RemoveFromSchoolInput }) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/staff/{userId}/remove', { params: { path: { schoolId, userId } }, body: body ?? {} })),
+    onSuccess: (_data, { userId }) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', userId] });
+      queryClient.invalidateQueries({ queryKey: ['instructors', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['classes', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['class'] });
+      queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['openCancellations', schoolId] });
       return invalidateStaffLists(queryClient);
     },
+  });
+}
+
+/** Decision 370 — the main owner hands the main owner role to a co-owner:
+ * re-checks their passcode first (POST /auth/step-up/verify), then hands over
+ * with that proof. */
+export function useHandOverMainOwner(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, passcode }: { userId: string; passcode: string }) => {
+      const { stepUpToken } = await unwrap(apiClient.POST('/v1/auth/step-up/verify', { body: { passcode } }));
+      return unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/main-owner', {
+          params: { path: { schoolId }, header: { 'x-step-up-token': stepUpToken } },
+          body: { userId },
+        }),
+      );
+    },
+    onSuccess: () => invalidateStaffLists(queryClient),
   });
 }
 

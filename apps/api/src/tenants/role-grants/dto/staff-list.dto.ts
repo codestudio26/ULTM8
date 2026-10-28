@@ -86,6 +86,9 @@ export class StaffMemberDto {
   @ApiProperty()
   canInviteCoaches!: boolean;
 
+  @ApiProperty({ description: "The School's main owner (Decision 370). Other owners are co-owners." })
+  mainOwner!: boolean;
+
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];
 }
@@ -95,7 +98,66 @@ export class StaffListResponseDto {
   items!: StaffMemberDto[];
 }
 
+export const REMOVE_CLASSES_CHOICES = ['REASSIGN', 'NONE', 'CANCEL'] as const;
+export type RemoveClassesChoice = (typeof REMOVE_CLASSES_CHOICES)[number];
+
+/** POST /schools/{schoolId}/staff/{userId}/remove body: what happens to the
+ * classes the person still teaches here. Needed only when they teach some. */
+export class RemoveFromSchoolDto {
+  @ApiPropertyOptional({
+    enum: REMOVE_CLASSES_CHOICES,
+    description:
+      'REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. ' +
+      'CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor.',
+  })
+  @IsOptional()
+  @IsIn(REMOVE_CLASSES_CHOICES)
+  classes?: RemoveClassesChoice;
+
+  @ApiPropertyOptional({ description: 'With REASSIGN only: the coach at this School who takes them over (a User id).' })
+  @IsOptional()
+  @IsUUID()
+  toUserId?: string;
+}
+
 export class RemoveFromSchoolResponseDto {
   @ApiProperty({ description: 'How many roles were ended.' })
   removedRoles!: number;
+
+  @ApiProperty({ description: 'Upcoming classes given to the other coach.' })
+  classesReassigned!: number;
+
+  @ApiProperty({ description: 'Upcoming classes left with no instructor.' })
+  classesCleared!: number;
+
+  @ApiProperty({ description: 'Upcoming classes cancelled.' })
+  classesCancelled!: number;
+
+  @ApiProperty({ description: 'Weekly timetable slots given to the other coach.' })
+  slotsReassigned!: number;
+
+  @ApiProperty({ description: 'Weekly timetable slots left with no instructor.' })
+  slotsCleared!: number;
+}
+
+/** GET /schools/{schoolId}/staff/{userId}/teaching: what "Remove from School"
+ * would ask about. */
+export class StaffTeachingResponseDto {
+  @ApiProperty({ description: 'Upcoming classes they teach here (not ended, cancelled or archived).' })
+  upcomingClasses!: number;
+
+  @ApiProperty({ description: 'Active weekly timetable slots they teach here (on, not archived).' })
+  activeSlots!: number;
+}
+
+/** POST /schools/{schoolId}/main-owner (Decision 370). */
+export class HandOverMainOwnerDto {
+  @ApiProperty({ description: 'A co-owner of this School, who becomes its main owner.' })
+  @IsUUID()
+  userId!: string;
+}
+
+export class MainOwnerResponseDto {
+  @ApiProperty()
+  mainOwnerUserId!: string;
 }

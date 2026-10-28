@@ -12,6 +12,16 @@ interface StudentQrPayload {
   studentId: string;
 }
 
+/** Front-desk check-in review Q2 (28 Oct 2026): a scanned app QR is checked
+ * once, and the desk gets this for the next few minutes instead. */
+const DESK_LOOKUP_TTL_SECONDS = 300;
+
+interface DeskLookupPayload {
+  deskStudentId: string;
+  schoolId: string;
+  staffId: string;
+}
+
 /**
  * Phase 51 (Decision 107, docs/decisions/POST-SPEC-55-DECISION-LOG.md) — mints
  * and verifies the two short-lived, rotating, signed tokens the QR check-in
@@ -43,6 +53,13 @@ interface StudentQrPayload {
 export class QrTokenService {
   private readonly classJwt = new JwtService({ secret: process.env.QR_CLASS_TOKEN_SECRET });
   private readonly studentJwt = new JwtService({ secret: process.env.QR_STUDENT_TOKEN_SECRET });
+  // Its own key, derived from the student one, so a desk lookup can never be
+  // replayed as a student QR or the other way round (same reasoning as above).
+  private readonly deskJwt = new JwtService({
+    secret: process.env.QR_STUDENT_TOKEN_SECRET
+      ? createHmac('sha256', process.env.QR_STUDENT_TOKEN_SECRET).update('front-desk-lookup').digest('hex')
+      : undefined,
+  });
 
   signClassToken(classId: string): { token: string; expiresAt: Date } {
     const token = this.classJwt.sign({ classId } satisfies ClassQrPayload, { expiresIn: TTL_SECONDS });
@@ -126,6 +143,22 @@ export class QrTokenService {
       return this.studentJwt.verify<StudentQrPayload>(token).studentId;
     } catch {
       throw new BadRequestException('This QR code has expired or is invalid — ask the Student to refresh it.');
+    }
+  }
+
+  /** A desk lookup: which student a scanned QR belonged to, for this School and
+   * this staff member only, valid for DESK_LOOKUP_TTL_SECONDS. */
+  signDeskLookup(payload: DeskLookupPayload): { token: string; expiresAt: Date } {
+    const token = this.deskJwt.sign(payload, { expiresIn: DESK_LOOKUP_TTL_SECONDS });
+    return { token, expiresAt: new Date(Date.now() + DESK_LOOKUP_TTL_SECONDS * 1000) };
+  }
+
+  verifyDeskLookup(token: string): DeskLookupPayload {
+    try {
+      const { deskStudentId, schoolId, staffId } = this.deskJwt.verify<DeskLookupPayload>(token);
+      return { deskStudentId, schoolId, staffId };
+    } catch {
+      throw new BadRequestException({ code: 'QR_LOOKUP_EXPIRED', message: 'This scan has expired. Ask the Student to show their QR again.' });
     }
   }
 }
