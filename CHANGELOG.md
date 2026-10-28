@@ -48,6 +48,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   longer land on waiver terms the owner has just replaced, a double-clicked
   signature is saved once, and "Remind everyone" pressed several times at
   once reminds each student once.
+- **Booking and desk rules (product owner, 28 Oct 2026)** — a student checked
+  in to a class can't be booked into it again ("This student has already
+  attended this class"); a cancelled booking still can. The same desk sale or
+  Friend Pass for the same student within a minute is refused ("This was just
+  recorded. Check before adding another."). A Friend Pass only covers a guest,
+  never its holder's own seat. Staff booking for students can now book 200 a
+  minute (students' own limit stays 20).
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own

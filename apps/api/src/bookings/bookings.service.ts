@@ -21,7 +21,7 @@ import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
 import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
 import { localDay } from '../ranks/engine';
-import { assertClassBookable, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
+import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 
@@ -169,6 +169,7 @@ export class BookingsService {
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // First, before any row lock (see lockStudentClass).
       await lockStudentClass(tx, studentId, classId);
+      await assertNotAlreadyAttended(tx, studentId, classId);
       if (resolvedClass.termsWaiverRequired) {
         if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');

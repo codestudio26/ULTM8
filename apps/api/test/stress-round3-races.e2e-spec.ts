@@ -9,6 +9,10 @@
  * - the same Student booked and checked in from two desks at once deadlocked
  *   (HTTP 500).
  *
+ * Plus the product owner's rules of 28 Oct 2026: one attendance per Student per
+ * Class, a desk sale or Friend Pass clicked twice, and a Friend Pass covering
+ * only a guest.
+ *
  * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET (and REDIS_URL for the queues).
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -43,6 +47,7 @@ describeIfDb('Round-3 stress-test races', () => {
   let owner: U;
   const students: U[] = [];
   let packPlanId: string;
+  let paymentAccountId: string;
 
   const http = () => request(app.getHttpServer());
   const at = (ms: number) => new Date(Date.now() + ms);
@@ -88,6 +93,10 @@ describeIfDb('Round-3 stress-test races', () => {
 
     await superuser.school.create({ data: { id: school.id, name: 'Round 3 Races School', timezone: 'UTC', ranksToggle: true } });
     owner = await mkUser('owner', 'SCHOOL_OWNER_MANAGER');
+    // For the paid desk sales below.
+    paymentAccountId = (await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+    })).id;
     const subscriptionPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 } })).id;
     packPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: 'Pack', price: 3000, classesIncluded: 50 } })).id;
     for (let i = 0; i < 12; i++) {
@@ -109,7 +118,9 @@ describeIfDb('Round-3 stress-test races', () => {
     await superuser.waitlistEntry.deleteMany({ where: { schoolId: school.id } });
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
+    await superuser.transaction.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
+    await superuser.paymentAccount.deleteMany({ where: { schoolId: school.id } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
     await superuser.timetableSlot.deleteMany({ where: { schoolId: school.id } });
@@ -241,7 +252,7 @@ describeIfDb('Round-3 stress-test races', () => {
   });
 
   describe('the same Student booked and checked in from two desks at once', () => {
-    it('never a 5xx; a duplicate booking is the usual 409', async () => {
+    it('never a 5xx; a duplicate booking is a 409; each Student attends once', async () => {
       // A class with a style: its check-in writes a training log, whose key-share
       // lock on the Class was half of the deadlock.
       const style = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: `Desk style ${randomUUID().slice(0, 8)}`, classTypesOffered: [] } });
@@ -260,13 +271,172 @@ describeIfDb('Round-3 stress-test races', () => {
         expect(statuses(flat.map((r) => r.scan)).filter((st) => st >= 500)).toEqual([]);
         for (const r of flat) {
           expect([201, 409]).toContain(r.book.status);
-          if (r.book.status === 409) expect(r.book.body.error.message).toBe('This Student already has an active Booking for this Class.');
+          // Refused while the other desk's booking is Upcoming, or once it's checked in.
+          if (r.book.status === 409) {
+            expect(['This Student already has an active Booking for this Class.', 'This student has already attended this class.']).toContain(r.book.body.error.message);
+          }
         }
         for (const s of students) {
-          // Every Student ends up checked in.
-          expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id, status: 'COMPLETED' } })).toBeGreaterThanOrEqual(1);
+          // Every Student ends up checked in, exactly once.
+          expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id, status: 'COMPLETED' } })).toBe(1);
+          expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id } })).toBe(1);
         }
       }
+    });
+  });
+
+  describe('one attendance per Student per Class (product owner, 28 Oct 2026)', () => {
+    const ATTENDED = 'This student has already attended this class.';
+    let desk: U;
+    beforeAll(async () => {
+      desk = await mkUser('attend-desk', 'BRANCH_STAFF');
+    });
+    // Started 5 minutes ago, so check-in is open.
+    const startedClass = () => mkClass({ capacity: 40, startDate: at(-5 * MIN), endDate: at(55 * MIN) });
+    const checkIn = (classId: string, s: U) => post(`/classes/${classId}/attendance-scan`, desk, { studentId: s.id });
+
+    it('after check-in, a second booking, waitlist place or claim is refused', async () => {
+      const s = students[0];
+      const cls = await startedClass();
+      expect((await book(cls.id, desk, { studentId: s.id })).status).toBe(201);
+      expect((await checkIn(cls.id, s)).status).toBe(201);
+
+      for (const res of [await book(cls.id, desk, { studentId: s.id }), await book(cls.id, s), await post(`/classes/${cls.id}/waitlist`, desk, { studentId: s.id })]) {
+        expect(res.status).toBe(409);
+        expect(res.body.error.message).toBe(ATTENDED);
+      }
+      const offered = await superuser.waitlistEntry.create({
+        data: { id: randomUUID(), classId: cls.id, studentId: s.id, schoolId: school.id, position: 1, status: 'NOTIFIED', claimByDeadline: at(HOUR) },
+      });
+      const claim = await post(`/waitlist/${offered.id}/claim`, s);
+      expect(claim.status).toBe(409);
+      expect(claim.body.error.message).toBe(ATTENDED);
+      expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id } })).toBe(1);
+    });
+
+    it('two desks booking the checked-in Student again at once: both refused, one attendance', async () => {
+      const s = students[1];
+      const cls = await startedClass();
+      expect((await book(cls.id, desk, { studentId: s.id })).status).toBe(201);
+      const [scan, ...again] = await Promise.all([checkIn(cls.id, s), ...Array.from({ length: 4 }, () => book(cls.id, owner, { studentId: s.id }))]);
+      expect(scan.status).toBe(201);
+      for (const r of again) expect(r.status).toBe(409);
+      expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id } })).toBe(1);
+      expect(await superuser.booking.count({ where: { classId: cls.id, studentId: s.id, status: 'COMPLETED' } })).toBe(1);
+    });
+
+    it('a cancelled booking does not block booking again', async () => {
+      const s = students[2];
+      const cls = await mkClass({ capacity: 40 });
+      const first = await book(cls.id, desk, { studentId: s.id });
+      expect(first.status).toBe(201);
+      const cancelled = await http().patch(`/v1/bookings/${first.body.id}/cancel`).set('Authorization', `Bearer ${owner.token}`).send({});
+      expect(cancelled.status).toBe(200);
+      expect((await book(cls.id, desk, { studentId: s.id })).status).toBe(201);
+    });
+  });
+
+  describe('a Friend Pass covers a guest, never its holder (product owner, 28 Oct 2026)', () => {
+    let friendPassPlanId: string;
+    beforeAll(async () => {
+      friendPassPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'FRIEND_PASS', title: 'Friend Pass', price: 0, classesIncluded: 1 } })).id;
+    });
+    const mkFriendPass = (studentId: string, expiryDate?: Date) => superuser.membership.create({
+      data: { id: randomUUID(), studentId, schoolId: school.id, membershipPlanId: friendPassPlanId, frequency: 'ONE_TIME', classesRemaining: 1, expiryDate, giftedById: owner.id },
+    });
+
+    it('a Student with only a Friend Pass can\'t book or claim their own seat with it', async () => {
+      const s = await mkUser('fp-only', 'STUDENT');
+      const pass = await mkFriendPass(s.id);
+      const cls = await mkClass({ capacity: 40 });
+      for (const res of [await book(cls.id, s), await book(cls.id, owner, { studentId: s.id })]) {
+        expect(res.status).toBe(400);
+        expect(res.body.error.message).toBe('This Student has no Active Membership eligible to fund this Booking.');
+      }
+      const offered = await superuser.waitlistEntry.create({
+        data: { id: randomUUID(), classId: cls.id, studentId: s.id, schoolId: school.id, position: 1, status: 'NOTIFIED', claimByDeadline: at(HOUR) },
+      });
+      const claim = await post(`/waitlist/${offered.id}/claim`, s);
+      expect(claim.status).toBe(400);
+      expect(claim.body.error.message).toBe('This Student has no Active Membership eligible to fund this Booking.');
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pass.id } })).classesRemaining).toBe(1);
+    });
+
+    it('still covers a guest, while the holder\'s own seat uses their other plan', async () => {
+      const s = await mkUser('fp-guest', 'STUDENT');
+      const pack = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: s.id, schoolId: school.id, membershipPlanId: packPlanId, frequency: 'ONE_TIME', classesRemaining: 5, expiryDate: at(30 * 24 * HOUR) },
+      });
+      // Expires first, so it would have been picked first for the own seat.
+      const pass = await mkFriendPass(s.id, at(24 * HOUR));
+      const cls = await mkClass({ capacity: 40 });
+      const res = await book(cls.id, s, { attendeeMembershipIds: [pass.id] });
+      expect(res.status).toBe(201);
+      const booking = await superuser.booking.findUniqueOrThrow({ where: { id: res.body.id }, include: { attendees: true } });
+      expect(booking.sourceMembershipId).toBe(pack.id);
+      expect(booking.attendees.map((a) => a.membershipId)).toEqual([pass.id]);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(4);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pass.id } })).classesRemaining).toBe(0);
+    });
+  });
+
+  describe('a desk sale or Friend Pass clicked twice (product owner, 28 Oct 2026)', () => {
+    const JUST_RECORDED = 'This was just recorded. Check before adding another.';
+    let otherPackPlanId: string;
+    let friendPassPlanId: string;
+    beforeAll(async () => {
+      // A paid desk sale needs a currency.
+      await superuser.membershipPlan.update({ where: { id: packPlanId }, data: { currency: 'GBP' } });
+      otherPackPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: 'Pack of 10', price: 9000, currency: 'GBP', classesIncluded: 10 } })).id;
+      friendPassPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'FRIEND_PASS', title: 'Desk Friend Pass', price: 0, classesIncluded: 1 } })).id;
+    });
+    const sell = (s: U, planId: string) => post(`/schools/${school.id}/students/${s.id}/memberships/sell`, owner, { membershipPlanId: planId, paymentMethod: 'CASH' });
+    const gift = (s: U) => post(`/schools/${school.id}/students/${s.id}/memberships/gift`, owner, { membershipPlanId: friendPassPlanId });
+    const deskPayment = (s: U, planId: string) => post(`/schools/${school.id}/desk-payments`, owner, { studentId: s.id, membershipPlanId: planId, paymentMethod: 'CASH' });
+    const expectOneAndRepeat = (rs: Array<{ status: number; body: { error?: { message?: string } } }>) => {
+      expect(statuses(rs).sort()).toEqual([201, 409]);
+      expect(rs.find((r) => r.status === 409)!.body.error?.message).toBe(JUST_RECORDED);
+    };
+    const backdate = (studentId: string, planId: string) =>
+      superuser.membership.updateMany({ where: { studentId, membershipPlanId: planId }, data: { createdAt: new Date(Date.now() - 61_000) } });
+
+    it('Sell at the desk: one sale and a 409; another plan, or the same after a minute, is fine', async () => {
+      const s = await mkUser('sell-twice', 'STUDENT');
+      expectOneAndRepeat(await Promise.all([sell(s, packPlanId), sell(s, packPlanId)]));
+      expect(await superuser.membership.count({ where: { studentId: s.id, membershipPlanId: packPlanId } })).toBe(1);
+      expect(await superuser.transaction.count({ where: { studentId: s.id, membershipPlanId: packPlanId } })).toBe(1);
+      expect((await sell(s, otherPackPlanId)).status).toBe(201);
+      await backdate(s.id, packPlanId);
+      expect((await sell(s, packPlanId)).status).toBe(201);
+    });
+
+    it('Record a payment: one payment and a 409', async () => {
+      const s = await mkUser('pay-twice', 'STUDENT');
+      expectOneAndRepeat(await Promise.all([deskPayment(s, packPlanId), deskPayment(s, packPlanId)]));
+      expect(await superuser.transaction.count({ where: { studentId: s.id, membershipPlanId: packPlanId } })).toBe(1);
+      // The Student's page and Record a payment are the same desk sale.
+      const viaPage = await sell(s, packPlanId);
+      expect(viaPage.status).toBe(409);
+      expect(viaPage.body.error.message).toBe(JUST_RECORDED);
+    });
+
+    it('Give a Friend Pass: one pass and a 409; another after a minute is fine', async () => {
+      const s = await mkUser('gift-twice', 'STUDENT');
+      expectOneAndRepeat(await Promise.all([gift(s), gift(s)]));
+      expect(await superuser.membership.count({ where: { studentId: s.id, membershipPlanId: friendPassPlanId } })).toBe(1);
+      await backdate(s.id, friendPassPlanId);
+      expect((await gift(s)).status).toBe(201);
+    });
+
+    it('the Student\'s own purchase a moment ago doesn\'t block a desk sale', async () => {
+      const s = await mkUser('own-then-desk', 'STUDENT');
+      const own = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: s.id, schoolId: school.id, membershipPlanId: packPlanId, frequency: 'ONE_TIME', classesRemaining: 50 },
+      });
+      await superuser.transaction.create({
+        data: { id: randomUUID(), schoolId: school.id, studentId: s.id, paymentAccountId, membershipPlanId: packPlanId, membershipId: own.id, amount: 3000, currency: 'gbp', status: 'SUCCESSFUL', paymentMethod: 'STRIPE' },
+      });
+      expect((await sell(s, packPlanId)).status).toBe(201);
     });
   });
 });

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -28,6 +29,10 @@ import { CURRENCIES } from '../settings/constants/currencies';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+
+/** A second identical desk sale or Friend Pass within this long is refused
+ * (assertNotJustRecorded). */
+const DESK_REPEAT_WINDOW_MS = 60_000;
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
@@ -1251,6 +1256,7 @@ export class MembershipsService {
     try {
       return await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
+        await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
@@ -1291,11 +1297,41 @@ export class MembershipsService {
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
+        await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
         return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });
       });
       return { membership, transactionId: null };
     } catch (err) {
       throw this.toCreationConflict(err);
+    }
+  }
+
+  /**
+   * A desk sale or Friend Pass clicked twice (product owner, 28 Oct 2026): the
+   * same plan for the same Student, sold or given at the desk in the last
+   * minute, is refused. Runs after assertCanCreateMembership, whose advisory
+   * lock (this Student at this School) serializes every Membership created for
+   * them until the transaction ends, so two clicks at once can't both pass.
+   *
+   * The Student's own purchases don't count: a gift is told apart by
+   * giftedById, a paid desk sale by its Transaction's recordedById. A £0 plan
+   * leaves no Transaction either way, so a £0 one the Student claimed in the
+   * app in the last minute also counts (nothing tells the two apart).
+   */
+  private async assertNotJustRecorded(tx: Pick<Prisma.TransactionClient, 'membership'>, studentId: string, planId: string, kind: 'SALE' | 'GIFT'): Promise<void> {
+    const recent = await tx.membership.findFirst({
+      where: {
+        studentId,
+        membershipPlanId: planId,
+        createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) },
+        ...(kind === 'GIFT'
+          ? { giftedById: { not: null } }
+          : { OR: [{ transactions: { some: { recordedById: { not: null } } } }, { transactions: { none: {} }, giftedById: null, stripeSubscriptionId: null }] }),
+      },
+      select: { id: true },
+    });
+    if (recent) {
+      throw new ConflictException({ code: 'DESK_REPEAT', message: 'This was just recorded. Check before adding another.' });
     }
   }
 

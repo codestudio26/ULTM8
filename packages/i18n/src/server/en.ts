@@ -487,4 +487,6 @@ export const SERVER_PATTERNS: string[] = [
   "This style already has a skill called \"{v1}\".",
  "Type the School's name exactly as it is to close it.",
  "Closing a School is not available during an impersonation session (Decision 39).",
+ "This student has already attended this class.",
+ "This was just recorded. Check before adding another.",
 ];
