@@ -1,5 +1,10 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Your current passcode is not right.": "你当前的登录码不正确。",
+  "Choose a new passcode that is different from your current one.": "请选择一个与当前不同的新登录码。",
+  "You must be 18 or over to create a School.": "你必须年满 18 岁才能创建学校。",
+  "Text messages are not configured yet, so we can't send a verification code. Please try again later.": "短信尚未设置，因此无法发送验证码。请稍后再试。",
+  "Your phone number isn't verified yet. Verify it to finish creating your account.": "你的手机号尚未验证。请完成验证以创建账户。",
   "Only the School Owner/Manager or that branch's Branch Staff may do this.": "只有学校所有者/经理或该分校的员工可以执行此操作。",
   "This class is already cancelled.": "这节课已被取消。",
   "This class has already finished.": "这节课已经结束。",
@@ -112,7 +117,6 @@ export const serverMessages: Record<string, string> = {
   "Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.": "使用已保存的卡付款需要学校已配置 Stripe——此学校仅支持现金/银行转账。",
   "PaymentAccount has no owner": "支付账户没有所有者",
   "PaymentAccount not found": "未找到支付账户",
-  "Phone not verified — complete registration via POST /auth/otp/verify": "手机号未验证——请通过 POST /auth/otp/verify 完成注册",
   "Platform Admin authentication is not fully configured.": "平台管理员认证尚未完全配置。",
   "Playlist not found": "未找到播放列表",
   "Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.": "晋级只能向上；请选择更高的腰带或条纹。如需向下调整，请使用降级。",

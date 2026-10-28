@@ -17,6 +17,8 @@ export const auth = {
     railTagline: 'Every belt, every booking, one place.',
     newSchool: 'New School? {link}',
     forgotPasscode: 'Forgot your passcode?',
+    phoneVerified: 'Phone verified. You can log in now.',
+    verifyPhoneLink: 'Verify your phone',
   },
   forgot: {
     title: 'Reset your passcode',
