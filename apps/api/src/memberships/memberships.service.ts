@@ -538,13 +538,13 @@ export class MembershipsService {
     const usesCredits = type === 'CLASS_PACK' || type === 'FRIEND_PASS';
     const usesExpiry = type !== 'SUBSCRIPTION';
     if (!usesCredits && explicit.classesIncluded != null) {
-      throw new BadRequestException(`A ${type} plan gives general access, so it has no class count — omit classesIncluded.`);
+      throw new BadRequestException('This plan type gives general access, so it has no class count. Leave the number of classes empty.');
     }
     if (!usesCredits && explicit.scopedClassId != null) {
-      throw new BadRequestException('Only a CLASS_PACK or FRIEND_PASS plan can be limited to one class — omit scopedClassId.');
+      throw new BadRequestException('Only a Class Pack or a Friend Pass can be limited to one class.');
     }
     if (!usesExpiry && explicit.expiryDurationDays != null) {
-      throw new BadRequestException('A SUBSCRIPTION renews every month until cancelled, so it has no expiry — omit expiryDurationDays.');
+      throw new BadRequestException('A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.');
     }
     const scopedClassId = usesCredits ? values.scopedClassId : null;
     const classesIncluded = usesCredits
@@ -552,13 +552,13 @@ export class MembershipsService {
       : null;
     const expiryDurationDays = usesExpiry ? values.expiryDurationDays : null;
     if (check.credits && type === 'CLASS_PACK' && classesIncluded === null) {
-      throw new BadRequestException('A CLASS_PACK plan needs classesIncluded (how many classes it gives).');
+      throw new BadRequestException('A Class Pack needs the number of classes it gives.');
     }
     if (check.expiry && type === 'WEEKLY_PASS' && expiryDurationDays === null) {
-      throw new BadRequestException('A WEEKLY_PASS plan needs expiryDurationDays (how many days it lasts).');
+      throw new BadRequestException('A Weekly Pass needs the number of days it lasts.');
     }
     if (check.expiry && type === 'TRIAL_MEMBERSHIP' && (expiryDurationDays === null || expiryDurationDays > TRIAL_MAX_DAYS)) {
-      throw new BadRequestException(`A TRIAL_MEMBERSHIP plan must last between 1 and ${TRIAL_MAX_DAYS} days (expiryDurationDays).`);
+      throw new BadRequestException(`A Trial Membership must last between 1 and ${TRIAL_MAX_DAYS} days.`);
     }
     return { expiryDurationDays, classesIncluded, scopedClassId };
   }
@@ -567,7 +567,7 @@ export class MembershipsService {
   private normalizeTitle(title: string): string {
     const trimmed = title.trim();
     if (!trimmed) {
-      throw new BadRequestException('title cannot be blank.');
+      throw new BadRequestException('The title cannot be blank.');
     }
     return trimmed;
   }
@@ -579,7 +579,7 @@ export class MembershipsService {
     if (currency === undefined || currency === null) return currency;
     const code = currency.trim().toUpperCase();
     if (!CURRENCIES.some((c) => c.code === code)) {
-      throw new BadRequestException(`${currency} is not a supported currency — pick one from GET /settings/currencies.`);
+      throw new BadRequestException(`${currency} is not a supported currency. Pick one from the list.`);
     }
     return code;
   }
@@ -1355,7 +1355,7 @@ export class MembershipsService {
       throw new NotFoundException('MembershipPlan not found');
     }
     if (plan.archivedAt) {
-      throw new BadRequestException('This MembershipPlan has been archived and can no longer be sold.');
+      throw new BadRequestException('This plan has been archived and can no longer be sold.');
     }
     if (plan.scopedClassId) {
       await this.assertScopedClassSellable(studentId, schoolId, plan.scopedClassId);

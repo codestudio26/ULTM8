@@ -3155,8 +3155,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       guestN: "Misafir {n}",
       guestWaiverSigned: "Feragatname imzalı",
       guestWaiverUnsigned: "Feragatname imzasız",
-      guestCount: { other: "{count} misafir" },
-      confirmGuests: { other: "{count} misafirin girişini yap" },
+      guestCount: { one: "{count} misafir", other: "{count} misafir" },
+      confirmGuests: { one: "{count} misafirin girişini yap", other: "{count} misafirin girişini yap" },
       confirm: { one: "{count} derse giriş yap", other: "{count} derse giriş yap" },
     },
     recent: {
