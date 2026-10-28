@@ -11959,6 +11959,49 @@
         ]
       }
     },
+    "/v1/bookings/{id}/guests/{attendeeId}/check-in": {
+      "post": {
+        "operationId": "AttendanceController_checkInGuest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attendeeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -19747,6 +19790,11 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -25459,6 +25507,12 @@
           "guestFullName": {
             "type": "string",
             "nullable": true
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the guest was checked in at the desk (Decision 377); null if not yet."
           }
         },
         "required": [
@@ -25927,6 +25981,22 @@
           "studentId",
           "firstName",
           "surname"
+        ]
+      },
+      "GuestCheckInResponseDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "attendeeId",
+          "checkedInAt"
         ]
       },
       "AcademySummaryDto": {

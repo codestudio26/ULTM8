@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Guests are checked in one by one at the desk** (Decision 377) — the
+  welcome card lists each guest under the member's class with their waiver
+  status; staff tick the guests who came, and each guest's check-in is
+  recorded. Needs migration `20261215000000_guest_check_in`.
 - **Signed-in users are no longer limited per internet address** (Decision
   376). Everyone at a School on the same WiFi shares one address, which was
   limited to 60 requests a minute; a busy front desk could hit it. Signed-in

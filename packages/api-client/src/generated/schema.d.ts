@@ -3972,6 +3972,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{id}/guests/{attendeeId}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_checkInGuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -6359,6 +6375,8 @@ export interface components {
             refundAmount?: number | null;
             /** Format: date-time */
             resolvedAt?: string | null;
+            /** Format: date-time */
+            checkedInAt?: string | null;
         };
         BookingResponseDto: {
             id: string;
@@ -8084,6 +8102,11 @@ export interface components {
              */
             waiverStatus: "SIGNED" | "UNSIGNED" | "NONE";
             guestFullName?: string | null;
+            /**
+             * Format: date-time
+             * @description When the guest was checked in at the desk (Decision 377); null if not yet.
+             */
+            checkedInAt?: string | null;
         };
         BookingGuestsDto: {
             bookingId: string;
@@ -8222,6 +8245,11 @@ export interface components {
             firstName: string;
             surname: string;
             profilePhotoUrl?: string | null;
+        };
+        GuestCheckInResponseDto: {
+            attendeeId: string;
+            /** Format: date-time */
+            checkedInAt: string;
         };
         AcademySummaryDto: {
             id: string;
@@ -15332,6 +15360,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_checkInGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                attendeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestCheckInResponseDto"];
                 };
             };
         };

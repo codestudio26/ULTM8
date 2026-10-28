@@ -3070,6 +3070,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "自分ではない",
       notThisStudent: "この生徒ではない",
       tickOne: "クラスを選択",
+      guest: "ゲスト",
+      guestN: "ゲスト{n}",
+      guestWaiverSigned: "同意書に署名済み",
+      guestWaiverUnsigned: "同意書に未署名",
+      guestCount: { other: "ゲスト{count}人" },
+      confirmGuests: { other: "ゲスト{count}人をチェックイン" },
       confirm: { other: "{count}クラスにチェックイン" },
     },
     recent: {

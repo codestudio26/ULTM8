@@ -109,6 +109,16 @@ export function useQrLookup(schoolId: string | null) {
   });
 }
 
+/** One booking's guests, with their waiver and whether they're checked in
+ * (Decision 377). */
+export function useBookingGuests(bookingId: string | null) {
+  return useQuery({
+    queryKey: ['bookingGuests', bookingId],
+    queryFn: () => unwrap(apiClient.GET('/v1/bookings/{id}/guests', { params: { path: { id: bookingId! } } })),
+    enabled: !!bookingId,
+  });
+}
+
 /** What the welcome card checks a scanned student in with. */
 export interface QrLookup {
   lookupToken: string;
@@ -137,11 +147,14 @@ export function useFrontDeskCheckIn() {
       classIds,
       bookingsByClass,
       qr,
+      guests,
     }: {
       studentId: string;
       classIds: string[];
       bookingsByClass: Map<string, BookingResponse[]>;
       qr: QrLookup | null;
+      /** Decision 377: guests ticked at the desk, checked in after the classes. */
+      guests?: Array<{ bookingId: string; attendeeId: string }>;
     }) => {
       const done: string[] = [];
       for (const classId of classIds) {
@@ -162,10 +175,16 @@ export function useFrontDeskCheckIn() {
         );
         done.push(classId);
       }
+      for (const g of guests ?? []) {
+        await unwrap(
+          apiClient.POST('/v1/bookings/{id}/guests/{attendeeId}/check-in', { params: { path: { id: g.bookingId, attendeeId: g.attendeeId } } }),
+        );
+      }
       return done;
     },
-    onSettled: (_data, _err, { classIds }) => {
+    onSettled: (_data, _err, { classIds, guests }) => {
       classIds.forEach((id) => queryClient.invalidateQueries({ queryKey: ['classBookings', id] }));
+      (guests ?? []).forEach((g) => queryClient.invalidateQueries({ queryKey: ['bookingGuests', g.bookingId] }));
     },
   });
 }

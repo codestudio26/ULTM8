@@ -31,3 +31,12 @@ export class DeskQrLookupResponseDto {
   @ApiPropertyOptional({ nullable: true, type: String })
   profilePhotoUrl!: string | null;
 }
+
+/** POST /bookings/{id}/guests/{attendeeId}/check-in (Decision 377). */
+export class GuestCheckInResponseDto {
+  @ApiProperty()
+  attendeeId!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  checkedInAt!: string;
+}

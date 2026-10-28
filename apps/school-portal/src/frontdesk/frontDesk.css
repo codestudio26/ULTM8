@@ -162,6 +162,9 @@
 .fd-note__title { font-weight: var(--font-weight-strong); letter-spacing: 0.04em; }
 .fd-note__body { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
 .fd-ticks { display: flex; flex-direction: column; gap: 8px; }
+/* A booking's guests sit under its class (Decision 377). */
+.fd-guests { display: flex; flex-direction: column; gap: 6px; padding-left: 28px; }
+.fd-tick--guest { min-height: 44px; }
 .fd-tick {
   min-height: 52px;
   display: flex;

@@ -10,7 +10,7 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { EnterAttendanceCodeDto } from './dto/enter-attendance-code.dto';
 import { QrTokenResponseDto } from './dto/qr-token-response.dto';
-import { DeskQrLookupDto, DeskQrLookupResponseDto } from './dto/desk-qr-lookup.dto';
+import { DeskQrLookupDto, DeskQrLookupResponseDto, GuestCheckInResponseDto } from './dto/desk-qr-lookup.dto';
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
 
 // Decision 235's own explicit mandate: "mandatory server-side rate limiting
@@ -85,5 +85,13 @@ export class AttendanceController {
   @Post('schools/:schoolId/front-desk/qr-lookups')
   deskQrLookup(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: DeskQrLookupDto) {
     return this.attendanceService.deskQrLookup(user.sub, schoolId, dto.studentToken);
+  }
+
+  /** Staff at the desk — check one guest on a booking in (Decision 377). See
+   * AttendanceService.checkInGuest. */
+  @ApiCreatedResponse({ type: GuestCheckInResponseDto })
+  @Post('bookings/:id/guests/:attendeeId/check-in')
+  checkInGuest(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Param('attendeeId', ParseUUIDPipe) attendeeId: string) {
+    return this.attendanceService.checkInGuest(user.sub, id, attendeeId);
   }
 }

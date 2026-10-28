@@ -3113,6 +3113,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notMe: "Ben değilim",
       notThisStudent: "Bu öğrenci değil",
       tickOne: "Bir ders işaretleyin",
+      guest: "Misafir",
+      guestN: "Misafir {n}",
+      guestWaiverSigned: "Feragatname imzalı",
+      guestWaiverUnsigned: "Feragatname imzasız",
+      guestCount: { other: "{count} misafir" },
+      confirmGuests: { other: "{count} misafirin girişini yap" },
       confirm: { one: "{count} derse giriş yap", other: "{count} derse giriş yap" },
     },
     recent: {
