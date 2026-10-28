@@ -107,9 +107,11 @@ in-scope is deliberately deferred, not forgotten.
   reuses an already-proven pattern (`PaginatedListScreen`'s own identical
   fetchNextPage/hasNextPage/isFetchingNextPage usage, and `Button`'s already-used
   `loading` prop) rather than new logic. Flagged here rather than silently assumed.
-- A real staging deployment of `apps/api` + Postgres (+ Redis) on Railway, so V1 is
+- A real staging deployment of `apps/api` + Postgres (+ Redis), so V1 is
   verified against the genuine backend, not indefinitely against throwaway mocks.
-  Pending: the user creating a Railway account and connecting the GitHub repo — this
+  Now on Render (API + Redis) + Supabase (Postgres), with the portals on Vercel —
+  see `render.yaml` and `docs/deploy/STAGING-RUNBOOK.md` (originally planned for
+  Railway). Pending: the user creating the accounts and connecting the GitHub repo — this
   can't be done on their behalf (account creation / payment details are always the
   user's own action).
 - Offline (Phase 7) ✅ **DONE (2026-09-22)** — scoped to **light read-only caching**:

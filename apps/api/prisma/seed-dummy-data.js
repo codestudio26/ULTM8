@@ -19,6 +19,9 @@
  * on top of owning "Dev Test School"), or coach.alex@ultm8.local / 123456
  * (Instructor), or jamie.lee@ultm8.local / 123456 (Student).
  */
+// Refuses to run against a non-local database — see dev-seed-guard.js.
+require('./dev-seed-guard').assertDevDatabase('seed-dummy-data.js');
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
