@@ -26,6 +26,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   load error or for non-owners; plain messages for blank names, waitlist
   window and footer fields; the School reply no longer carries Stripe ids.
   School details is split into three groups. No migration.
+- **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
+  — an Active students card (students with a membership in effect); this
+  week's birthdays, children included, with no ages, on the Dashboard and the
+  coach dashboard; and a setup checklist for new Schools (Branch, style and
+  belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
+  hidden. **Needs a database migration.**
+
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
@@ -137,6 +144,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261204000100_franchise_join_requests`.
+- **Timetable settings and filters (Decision 353, Q8)** — the School page
+  sets the Timetable's week start (Monday or Sunday) and whether it opens as
+  Rows or Grid; the Timetable filters by branch, style and class type. Needs a
+  database migration.
 - **Closures (Decision 353, Q8)** — the owner can close the School or one
   branch for some dates from the Timetable's Closures button; classes on those
   dates are cancelled under the normal cancellation rule and students are told,

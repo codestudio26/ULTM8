@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. Confirms the
@@ -181,4 +181,43 @@ test('Decision 367 (Q5): with two Branches the Owner can narrow the Dashboard to
   } finally {
     await db.branch.deleteMany({ where: { id: { in: branches.map((b) => b.id) } } });
   }
+});
+
+test('Decision 374: Active students, the setup checklist (hide and show again) and this week\'s birthdays', async ({ page }) => {
+  const now = new Date();
+  await db.user.update({ where: { id: s.student.id }, data: { dateOfBirth: new Date(Date.UTC(2014, now.getUTCMonth(), now.getUTCDate())) } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+
+  // The fixture student holds a live Subscription.
+  await expect(page.locator('.ultm8-card', { hasText: 'Active students' })).toContainText('1');
+
+  // The fixture School has a style with belts, a class and a plan: 3 of 7.
+  const checklist = page.getByRole('region', { name: 'Get your School ready' });
+  await expect(checklist).toContainText('3 of 7 done');
+  await expect(checklist.locator('[data-step="WAIVER"]')).toHaveAttribute('data-done', 'false');
+  await expect(checklist.getByRole('link', { name: 'Add a waiver' })).toHaveAttribute('href', '/waivers');
+  await expect(checklist.locator('[data-step="STRIPE"]')).toContainText('ULTM8 support connects your Stripe account');
+  await checklist.getByRole('button', { name: 'Hide' }).click();
+  await expect(checklist).toHaveCount(0);
+  await page.reload();
+  await page.getByRole('button', { name: 'Show the setup checklist' }).click();
+  await expect(page.getByRole('region', { name: 'Get your School ready' })).toBeVisible();
+
+  // Birthday today, shown as "Today", with no age.
+  const birthdays = page.getByRole('region', { name: 'Birthdays this week' });
+  await expect(birthdays).toContainText('Today');
+  await expect(birthdays.getByRole('link', { name: s.student.name })).toHaveAttribute('href', `/students/${s.student.id}`);
+  await expect(birthdays).not.toContainText('2014');
+});
+
+test('Decision 374: a coach sees this week\'s birthdays on the coach dashboard', async ({ page }) => {
+  const now = new Date();
+  await db.user.update({ where: { id: s.student.id }, data: { dateOfBirth: new Date(Date.UTC(2014, now.getUTCMonth(), now.getUTCDate())) } });
+  const coach = await addPerson('Cory', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+  const birthdays = page.getByRole('region', { name: 'Birthdays this week' });
+  await expect(birthdays).toContainText(s.student.name);
+  await expect(birthdays.getByRole('link')).toHaveCount(0);
 });

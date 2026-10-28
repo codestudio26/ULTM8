@@ -84,6 +84,8 @@ type DetailsForm = {
   waitlistClaimWindowMinutes: string;
   checkInOpensMinutesBeforeStart: string;
   branchStaffCanRecordPayments: boolean;
+  weekStartsOn: 'MONDAY' | 'SUNDAY';
+  timetableDefaultLayout: 'LIST' | 'GRID';
 };
 
 function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsForm {
@@ -104,6 +106,8 @@ function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsFor
     waitlistClaimWindowMinutes: String(school.waitlistClaimWindowMinutes),
     checkInOpensMinutesBeforeStart: String(school.checkInOpensMinutesBeforeStart),
     branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
+    weekStartsOn: school.weekStartsOn,
+    timetableDefaultLayout: school.timetableDefaultLayout,
   };
 }
 
@@ -162,6 +166,8 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
         waitlistClaimWindowMinutes: Number(form.waitlistClaimWindowMinutes),
         checkInOpensMinutesBeforeStart: Number(form.checkInOpensMinutesBeforeStart),
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
+        weekStartsOn: form.weekStartsOn,
+        timetableDefaultLayout: form.timetableDefaultLayout,
         ...(confirmCurrencyChange ? { confirmCurrencyChange: true } : {}),
       });
       const address = postalAddressFromRecord(updated, guessDefaultCountry());
@@ -266,6 +272,29 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
             required
             value={form.checkInOpensMinutesBeforeStart}
             onChange={(e) => set('checkInOpensMinutesBeforeStart', e.target.value)}
+          />
+        </Field>
+        {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
+        <Field label={t('schools.form.weekStart')} htmlFor="edit-week-start">
+          <SelectField
+            id="edit-week-start"
+            value={form.weekStartsOn}
+            onChange={(e) => set('weekStartsOn', e.target.value as DetailsForm['weekStartsOn'])}
+            options={[
+              { value: 'MONDAY', label: t('schools.form.weekStartMonday') },
+              { value: 'SUNDAY', label: t('schools.form.weekStartSunday') },
+            ]}
+          />
+        </Field>
+        <Field label={t('schools.form.timetableLayout')} htmlFor="edit-timetable-layout">
+          <SelectField
+            id="edit-timetable-layout"
+            value={form.timetableDefaultLayout}
+            onChange={(e) => set('timetableDefaultLayout', e.target.value as DetailsForm['timetableDefaultLayout'])}
+            options={[
+              { value: 'LIST', label: t('schools.form.layoutList') },
+              { value: 'GRID', label: t('schools.form.layoutGrid') },
+            ]}
           />
         </Field>
 

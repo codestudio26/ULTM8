@@ -301,4 +301,14 @@ export class CreateSchoolDto {
   @IsOptional()
   @IsBoolean()
   branchStaffCanRecordPayments?: boolean;
+
+  @ApiPropertyOptional({ enum: ['MONDAY', 'SUNDAY'], description: 'First day of the Timetable\'s week (Decision 319 §4). Default MONDAY.' })
+  @IsOptional()
+  @IsEnum(['MONDAY', 'SUNDAY'])
+  weekStartsOn?: 'MONDAY' | 'SUNDAY';
+
+  @ApiPropertyOptional({ enum: ['LIST', 'GRID'], description: 'The layout the Timetable opens in (Decision 319 §4). Default LIST.' })
+  @IsOptional()
+  @IsEnum(['LIST', 'GRID'])
+  timetableDefaultLayout?: 'LIST' | 'GRID';
 }

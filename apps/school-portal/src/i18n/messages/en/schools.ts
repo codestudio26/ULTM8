@@ -36,6 +36,12 @@ export const schools = {
     accentColourClear: 'Use the default',
     currencyConfirmTitle: 'Change the currency?',
     currencyConfirmButton: 'Change currency',
+    weekStart: 'Timetable week starts on',
+    weekStartMonday: 'Monday',
+    weekStartSunday: 'Sunday',
+    timetableLayout: 'Timetable opens as',
+    layoutList: 'Rows',
+    layoutGrid: 'Grid',
   },
   create: {
     createdTitle: 'School created',
