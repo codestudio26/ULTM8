@@ -6352,3 +6352,30 @@ User (Code), 28 Oct 2026, Waivers thread.
 ### Recorded by
 
 User (Code), 27 Oct 2026 "all recommended" on the Staff build plan (Q5 hybrid); built 28 Oct 2026, Staff thread.
+
+## Decision 383 — Disciplines: Branch Staff the owner allows can manage styles
+
+**Date:** 28 Oct 2026 · **Status:** Approved by product owner ("start all three", 28 Oct 2026, confirming the reading of "the School owner gives Branch Staff access to choose this")
+**Resolves:** Decision 310's two open items, "Whether Branch Staff can be allowed to manage disciplines" and "Permanently deleting an archived style nobody uses". Adds to Decisions 184, 198, 307, 309.
+
+### Background
+
+Decision 309 made the Disciplines page read-only for everyone but the School owner. The product owner asked for the owner to be able to let Branch Staff edit styles too, and to delete archived styles nobody uses. Styles, belts and skills belong to the whole School, while a Branch Staff member's row security shows only their own branch's classes, slots and instructors and none of the students' ranks.
+
+### Decision
+
+1. **A new owner switch, "Can manage disciplines", per Branch Staff member, off by default.** It sits next to "Can invite coaches" (Decision 184) on the Staff page, in a card now called "What Branch Staff can do", and shows as a badge in the staff list. Only the owner sets it, only for Branch Staff (`StaffPermission.canManageDisciplines`). It is cleared when they lose their last Branch Staff role at the School, like "Can invite coaches".
+2. **With it on, they can do on the Disciplines page what the owner can:** add, edit, duplicate, archive, unarchive and delete styles (also from a template), and add, edit, reorder, archive and delete belts and skills.
+3. **Their changes run with the owner's view of the School.** Every safety check covers all branches: a belt a student holds anywhere can't be removed, a class in another branch blocks archiving, and a rename reaches every branch's classes, slots and instructors. The API asks the database (`discipline_manager_context`) whose view to use: the caller's own when they own the School, the School's main owner's (Decision 370) when they are Branch Staff with the switch, otherwise the request is refused. This is used only for the Disciplines changes. The ranks tables record no author, so nothing is written in the owner's name.
+4. **What stays the owner's:** grade prices (Decisions 300, 307) are set by the owner only; a price sent by Branch Staff is refused, and prices already set are kept when they edit a belt. The students list on a style stays owner-only (Decision 309 item 5).
+5. **"Delete permanently" for an archived style.** On an archived style the Delete button now says "Delete permanently". It keeps Decision 198's rule: a style goes only when nobody has ever held a rank in it, no instructor has declared a belt in it, and no class, timetable slot or lesson uses it. An archived style with history stays archived.
+6. Every new text is translated into all 15 languages, including the two new API messages.
+
+### What this does NOT resolve
+
+- Deleting an archived style that still has history (past ranks, past classes). It stays archived and is never purged (Decision 309).
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, Disciplines thread.

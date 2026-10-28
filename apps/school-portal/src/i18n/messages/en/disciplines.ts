@@ -27,6 +27,7 @@ export const disciplines = {
     duplicate: 'Duplicate',
     delete: 'Delete',
     deleteAria: 'Delete {name}',
+    deletePermanently: 'Delete permanently',
     addTitle: 'Add discipline',
     editTitle: 'Edit discipline',
     deleteTitle: 'Delete {name}?',

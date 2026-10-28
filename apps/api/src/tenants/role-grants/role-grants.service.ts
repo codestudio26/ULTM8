@@ -657,7 +657,7 @@ export class RoleGrantsService {
     });
     if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId, schoolId } });
     if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
-      await tx.staffPermission.updateMany({ where: { userId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
+      await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: { canInviteCoaches: false, canManageDisciplines: false } });
     }
   }
 
@@ -687,7 +687,7 @@ export class RoleGrantsService {
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       permissions: await tx.staffPermission.findMany({
         where: { schoolId },
-        select: { userId: true, canInviteCoaches: true, displayName: true, workPhone: true },
+        select: { userId: true, canInviteCoaches: true, canManageDisciplines: true, displayName: true, workPhone: true },
       }),
     }));
 
@@ -734,6 +734,7 @@ export class RoleGrantsService {
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
         canInviteCoaches: permission?.canInviteCoaches ?? false,
+        canManageDisciplines: permission?.canManageDisciplines ?? false,
         mainOwner: main?.userId === userId,
         displayName: permission?.displayName ?? null,
         workPhone: permission?.workPhone ?? null,

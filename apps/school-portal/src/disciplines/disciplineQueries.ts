@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { useOwnedSchoolIds } from '../auth/AuthContext';
+import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 
 export type DisciplineResponse = components['schemas']['DisciplineResponseDto'];
 export type CreateDisciplineInput = components['schemas']['CreateDisciplineDto'];
@@ -120,4 +122,13 @@ export function useDuplicateDiscipline(schoolId: string) {
     mutationFn: (disciplineId: string) => unwrap(apiClient.POST('/v1/disciplines/{id}/duplicate', { params: { path: { id: disciplineId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disciplines', schoolId] }),
   });
+}
+
+/** May the caller change this School's styles, belts and skills (Decision
+ * 383): the owner, or Branch Staff the owner ticked "Can manage disciplines"
+ * for. A display hint only; the API checks again. */
+export function useCanManageDisciplines(schoolId: string | null | undefined): boolean {
+  const isOwner = useOwnedSchoolIds().includes(schoolId ?? '');
+  const mine = useMyStaffPermission(!isOwner && schoolId ? schoolId : null);
+  return isOwner || !!mine.data?.canManageDisciplines;
 }

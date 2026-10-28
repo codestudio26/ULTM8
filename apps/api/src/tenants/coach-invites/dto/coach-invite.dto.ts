@@ -96,10 +96,17 @@ export class AcceptCoachInviteResponseDto {
   accessToken!: string;
 }
 
+/** Either switch, or both; one left out keeps its value (Decision 383). */
 export class SetStaffPermissionDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
-  canInviteCoaches!: boolean;
+  canInviteCoaches?: boolean;
+
+  @ApiPropertyOptional({ description: 'May edit the School\'s styles, belts and skills (Decision 383).' })
+  @IsOptional()
+  @IsBoolean()
+  canManageDisciplines?: boolean;
 }
 
 export class StaffPermissionResponseDto {
@@ -117,6 +124,9 @@ export class StaffPermissionResponseDto {
 
   @ApiProperty()
   canInviteCoaches!: boolean;
+
+  @ApiProperty()
+  canManageDisciplines!: boolean;
 }
 
 /** The caller's own "Can invite coaches" at a School (Decision 184): the
@@ -128,6 +138,9 @@ export class MyStaffPermissionResponseDto {
 
   @ApiProperty()
   canInviteCoaches!: boolean;
+
+  @ApiProperty({ description: 'May edit the School\'s styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383).' })
+  canManageDisciplines!: boolean;
 
   @ApiProperty({ type: [String], description: 'Branches they may invite to; empty for the owner (any branch) or when they can\'t invite.' })
   branchIds!: string[];
