@@ -10,7 +10,7 @@ import {
 import { randomInt, randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
@@ -194,23 +194,35 @@ export class RoleGrantsService {
         select: { id: true },
       }),
     );
+    const duplicateMessage = 'This user already holds an active grant of this role at this scope.';
     if (duplicate) {
-      throw new ConflictException('This user already holds an active grant of this role at this scope.');
+      throw new ConflictException(duplicateMessage);
     }
 
     const roleGrantId = randomUUID();
-    const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.create({
-        data: {
-          id: roleGrantId,
-          role: dto.role,
-          userId: targetUserId,
-          schoolId: dto.schoolId,
-          branchId: dto.branchId,
-          grantedById: callerId,
-        },
-      }),
-    );
+    let grant;
+    try {
+      grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.create({
+          data: {
+            id: roleGrantId,
+            role: dto.role,
+            userId: targetUserId,
+            schoolId: dto.schoolId,
+            branchId: dto.branchId,
+            grantedById: callerId,
+          },
+        }),
+      );
+    } catch (err) {
+      // The check above can't see a twin request that is still inserting (a
+      // double click on "Give role"); RoleGrant_one_live_per_scope stops the
+      // second one, and it gets the same answer the check gives.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException(duplicateMessage);
+      }
+      throw err;
+    }
     // Decision 361: their current access token is refused on its next use and
     // the app refreshes it with the new grant, so the role works straight away.
     this.rolesChanged.forget(targetUserId);
@@ -422,7 +434,21 @@ export class RoleGrantsService {
         throw err;
       }
     });
-    await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
+    try {
+      await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
+    } catch (err) {
+      // join() runs its own transaction, so a failure there (a timeout under
+      // load, a branch archived meanwhile) left an account with no enrolment
+      // and no passcode email, and retrying the same email got "use Invite".
+      // Remove the account just made, then rethrow. Only if it holds no
+      // grant at all: if the enrolment did commit, the account stays.
+      await this.prismaApp
+        .withTenantContext(userId, (tx) => tx.user.deleteMany({ where: { id: userId, roleGrants: { none: {} } } }))
+        .catch((cleanupErr) =>
+          this.logger.error(`Student ${userId}: enrolment failed and the new account could not be removed — ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`),
+        );
+      throw err;
+    }
 
     let emailSent = true;
     try {

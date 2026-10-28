@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **API stress-test fixes: duplicate roles, passcode hashing, Add manually**
+  (stress test round 3) — a double click on "Give role" (or two coach invites
+  accepted at once) no longer gives someone the same role twice, so revoking
+  it really ends the access; the database now allows one live grant per
+  person, role and scope, and existing duplicates are revoked (the oldest is
+  kept). Passcode hashing and checking no longer slow down every other
+  request during a burst of logins or Add manually (native `bcrypt`, same
+  hashes). A student "Add manually" that fails part-way no longer leaves an
+  account behind, so the owner can just try again. Needs the migration
+  `20261212000000_role_grant_one_live_per_scope`.
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own
