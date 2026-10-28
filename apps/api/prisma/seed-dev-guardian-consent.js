@@ -15,6 +15,9 @@
  * Run once against the local dev DB: node prisma/seed-dev-guardian-consent.js
  * Login as the Guardian with: guardian-dev@ultm8.local / 123456
  */
+// Refuses to run against a non-local database — see dev-seed-guard.js.
+require('./dev-seed-guard').assertDevDatabase('seed-dev-guardian-consent.js');
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 

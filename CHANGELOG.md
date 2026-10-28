@@ -15,6 +15,54 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staging deploy readiness (Render + Supabase + Vercel):**
+  - **api — the API refuses to start when misconfigured.** With
+    `NODE_ENV=production` (every deployed environment), it won't start unless
+    all of these hold:
+    - Every scoped `DATABASE_URL_*` is set, is not the superuser, and doesn't
+      use the dev password `changeme`. Before, an unset one silently fell back
+      to the superuser and bypassed RLS.
+    - `REDIS_URL`, `CORS_ALLOWED_ORIGINS` and `PORTAL_BASE_URL` are set.
+    - The four signing secrets are each 32+ characters and all different.
+
+    Missing vendor keys are only logged. Local dev and CI are unchanged.
+  - **api — new `GET /v1/health`:** public and unthrottled. It reports the
+    database (as `ultm8_app`) and Redis as ok/down, with a 503 if either is
+    down.
+  - **api — one shared Redis connection for all job queues.**
+    - Every BullMQ Queue and Worker now shares one connection instead of
+      opening its own. Only each Worker's blocking connection is separate.
+    - Measured against Redis 7: one API process went from 52 connections
+      to 18.
+    - 52 was over the 50 a free Render Key Value allows. The staging API
+      crashed with "Connection is closed" on every redeploy, while the old
+      and new instances overlapped.
+  - **api — dev seed scripts refuse non-local databases.** They create logins
+    with passcode `123456`. To seed a throwaway staging database on purpose,
+    set `ULTM8_ALLOW_DEV_SEED_HOST=<host>`. They always refuse under
+    `NODE_ENV=production`.
+  - **api — `scripts/rotate-role-passwords.js`** sets all six scoped role
+    passwords from their connection strings. It runs on each Render build,
+    after `prisma migrate deploy`.
+  - **`render.yaml` rewritten for the current API:**
+    - Adds migrations and role-password rotation to the build, the health
+      check, and the two newer DB roles.
+    - Adds the QR and refresh/step-up settings, `PORTAL_BASE_URL`, and every
+      vendor key as `sync: false`.
+    - Removes the dummy Stripe keys.
+  - **school-portal, platform-admin: `vercel.json`** for monorepo builds, SPA
+    routing and basic security headers.
+  - **New guide `docs/deploy/STAGING-RUNBOOK.md`.**
+  - **api — migration `20260904000000_fix_rolegrant_rls_recursion` now runs on
+    Supabase.**
+    - It restores the two GRANTs that had been fixed only on the old Track B
+      staging branch: `GRANT ultm8_rls_helper TO CURRENT_USER` and
+      `GRANT CREATE ON SCHEMA public TO ultm8_rls_helper`.
+    - Without them, a fresh database whose deploy role isn't a true superuser
+      (Supabase's `postgres`) stopped at "permission denied for schema public".
+    - The file is now byte-identical to the version already applied on the
+      live staging database. On CI's superuser both GRANTs change nothing.
+
 - **Parents can bring guests on their child's booking** (Decision 379) — new
   API for the Student app's parent booking screen: a parent sees their child's
   Schools, Friend Passes and upcoming bookings, books with guests on the
