@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Parents can bring guests on their child's booking** (Decision 379) — new
+  API for the Student app's parent booking screen: a parent sees their child's
+  Schools, Friend Passes and upcoming bookings, books with guests on the
+  child's Friend Passes, and gets each guest's waiver link. Kid Mode bookings
+  can't add guests. No migration.
 - **Guests are checked in one by one at the desk** (Decision 377) — the
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is

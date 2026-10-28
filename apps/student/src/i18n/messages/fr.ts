@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Ce cours est complet.",
       joinWaitlist: "Rejoindre la liste d’attente",
       waitlistPosition: "Vous êtes n° {position} sur la liste d’attente.",
+      childWaitlistPosition: "Votre enfant est n° {position} sur la liste d’attente.",
       leaveWaitlist: "Quitter la liste d’attente",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Ajouter un invité",
       remove: "Retirer un invité",
       passesLeft: "Pass invités utilisables pour ce cours : {count}",
+      childPassesLeft: "Pass invités de votre enfant pour ce cours : {count}",
       linksIntro: "Envoyez à chaque invité son lien pour qu’il signe la décharge avant le cours.",
       guestNumber: "Invité {number}",
       signed: "Décharge signée : {name}",
@@ -584,6 +586,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Réserver pour {name}",
+      upcomingTitle: "Réservations à venir",
+      noBookings: "{name} n’a aucune réservation à venir.",
+      bookTitle: "Réserver un cours",
+      noSchools: "{name} n’est encore élève d’aucune école.",
+      noClasses: "Aucun cours à venir dans cette école.",
+      loadError: "Impossible de charger les écoles de votre enfant — veuillez réessayer.",
+      bookingsLoadError: "Impossible de charger les réservations de votre enfant — veuillez réessayer.",
+      classesLoadError: "Impossible de charger les cours — veuillez réessayer.",
+    },
     myMinors: {
       empty: "Aucun mineur lié pour le moment.",
       loadError: "Impossible de charger vos mineurs — veuillez réessayer.",
@@ -598,6 +611,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Impossible d’ajouter ce mineur — veuillez réessayer.",
       addMinor: "Ajouter le mineur",
       addAMinor: "Ajouter un mineur",
+      bookAClass: "Réserver un cours",
     },
     minorConsent: {
       loadError: "Impossible de charger les paramètres de ce mineur — veuillez réessayer.",

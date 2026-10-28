@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "此课程已满员。",
       joinWaitlist: "加入候补名单",
       waitlistPosition: "你在候补名单中排第 {position} 位。",
+      childWaitlistPosition: "你的孩子在候补名单中排第 {position} 位。",
       leaveWaitlist: "退出候补名单",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "添加嘉宾",
       remove: "减少嘉宾",
       passesLeft: "本课可使用的好友卡：{count} 张",
+      childPassesLeft: "孩子本课可使用的好友卡：{count} 张",
       linksIntro: "把链接发给每位嘉宾，让他们在课前签署免责声明。",
       guestNumber: "嘉宾 {number}",
       signed: "免责声明已签署：{name}",
@@ -570,6 +572,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "为 {name} 预约",
+      upcomingTitle: "即将到来的预约",
+      noBookings: "{name} 没有即将到来的预约。",
+      bookTitle: "预约课程",
+      noSchools: "{name} 还不是任何道馆的学员。",
+      noClasses: "这家道馆没有即将开始的课程。",
+      loadError: "无法加载孩子的道馆，请重试。",
+      bookingsLoadError: "无法加载孩子的预约，请重试。",
+      classesLoadError: "无法加载课程，请重试。",
+    },
     myMinors: {
       empty: "还没有关联的未成年人。",
       loadError: "无法加载你的未成年人，请重试。",
@@ -584,6 +597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "无法添加此未成年人，请重试。",
       addMinor: "添加未成年人",
       addAMinor: "添加一名未成年人",
+      bookAClass: "预约课程",
     },
     minorConsent: {
       loadError: "无法加载此未成年人的设置，请重试。",

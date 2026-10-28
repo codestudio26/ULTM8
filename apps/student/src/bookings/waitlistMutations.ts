@@ -8,12 +8,13 @@ import { apiClient } from '../api';
  * other way to look an entry back up later (verified: apps/api's WaitlistController
  * only exposes join/withdraw/claim, no list), so the caller must hold onto the
  * returned id itself for the rest of this screen session. */
-export function useJoinWaitlist() {
+export function useJoinWaitlist(studentId?: string) {
   return useMutation({
-    // Self-join only — an empty body. `studentId` on JoinWaitlistDto is the same
-    // Staff/Guardian on-behalf-of field as BookClassDto's (see bookingQueries.ts);
-    // a Student joining their own waitlist entry never sends it.
-    mutationFn: (classId: string) => unwrap(apiClient.POST('/v1/classes/{id}/waitlist', { params: { path: { id: classId } }, body: {} })),
+    // Self-join sends an empty body. `studentId` on JoinWaitlistDto is the same
+    // Staff/Guardian on-behalf-of field as BookClassDto's (see bookingQueries.ts):
+    // sent only when a parent puts their child on the waitlist (Decision 379).
+    mutationFn: (classId: string) =>
+      unwrap(apiClient.POST('/v1/classes/{id}/waitlist', { params: { path: { id: classId } }, body: studentId ? { studentId } : {} })),
   });
 }
 
@@ -26,9 +27,11 @@ export function useJoinWaitlist() {
  * reported as succeeding. Fixed at the source instead — unwrap() now branches on the
  * real HTTP status (see its own header comment) — so this goes back through the same
  * shared helper every other call in this app uses. */
-export function useWithdrawWaitlist() {
+export function useWithdrawWaitlist(studentId?: string) {
   return useMutation({
-    mutationFn: (waitlistEntryId: string) => unwrap(apiClient.DELETE('/v1/waitlist/{id}', { params: { path: { id: waitlistEntryId } } })),
+    // `?studentId=` lets a parent take their child off the waitlist (Decision 379).
+    mutationFn: (waitlistEntryId: string) =>
+      unwrap(apiClient.DELETE('/v1/waitlist/{id}', { params: { path: { id: waitlistEntryId }, query: studentId ? { studentId } : {} } })),
   });
 }
 

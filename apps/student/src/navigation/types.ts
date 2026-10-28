@@ -49,6 +49,8 @@ export type AppStackParamList = {
   PlaylistDetail: { playlistId: string; name: string };
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
+  /** Decision 379: a parent books classes (with guests) for this child. */
+  ChildBooking: { studentId: string; name: string };
   KidModePin: undefined;
   KidModeBooking: undefined;
   PendingReview: undefined;

@@ -6,6 +6,7 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Guests can only be added by a parent, not in Kid Mode.",
  "Your current passcode is not right.",
  "Choose a new passcode that is different from your current one.",
  "You must be 18 or over to create a School.",

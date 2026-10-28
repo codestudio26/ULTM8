@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Bu ders dolu.",
       joinWaitlist: "Bekleme listesine katıl",
       waitlistPosition: "Bekleme listesinde {position}. sıradasınız.",
+      childWaitlistPosition: "Çocuğun bekleme listesinde {position}. sırada.",
       leaveWaitlist: "Bekleme listesinden çık",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Misafir ekle",
       remove: "Misafir çıkar",
       passesLeft: "Bu derste kullanabileceğin arkadaş kartları: {count}",
+      childPassesLeft: "Çocuğunun bu derste kullanabileceği arkadaş kartları: {count}",
       linksIntro: "Her misafire kendi bağlantısını gönder, böylece dersten önce feragatnameyi imzalayabilir.",
       guestNumber: "Misafir {number}",
       signed: "Feragatname imzalandı: {name}",
@@ -575,6 +577,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "{name} için rezervasyon",
+      upcomingTitle: "Yaklaşan rezervasyonlar",
+      noBookings: "{name} için yaklaşan rezervasyon yok.",
+      bookTitle: "Ders rezervasyonu yap",
+      noSchools: "{name} henüz hiçbir okulda öğrenci değil.",
+      noClasses: "Bu okulda yaklaşan ders yok.",
+      loadError: "Çocuğunun okulları yüklenemedi — lütfen tekrar dene.",
+      bookingsLoadError: "Çocuğunun rezervasyonları yüklenemedi — lütfen tekrar dene.",
+      classesLoadError: "Dersler yüklenemedi — lütfen tekrar dene.",
+    },
     myMinors: {
       empty: "Henüz bağlı reşit olmayan yok.",
       loadError: "Reşit olmayanlarınız yüklenemedi — lütfen tekrar deneyin.",
@@ -589,6 +602,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Bu reşit olmayan kişi eklenemedi — lütfen tekrar deneyin.",
       addMinor: "Reşit olmayan ekle",
       addAMinor: "Reşit olmayan bir kişi ekleyin",
+      bookAClass: "Ders rezervasyonu yap",
     },
     minorConsent: {
       loadError: "Bu reşit olmayan kişinin ayarları yüklenemedi — lütfen tekrar deneyin.",

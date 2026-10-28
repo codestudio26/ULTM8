@@ -16,6 +16,7 @@ import { LessonDetailScreen } from '../curriculum/LessonDetailScreen';
 import { PlaylistsScreen } from '../curriculum/PlaylistsScreen';
 import { PlaylistDetailScreen } from '../curriculum/PlaylistDetailScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
+import { ChildBookingScreen } from '../guardians/ChildBookingScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
@@ -91,6 +92,11 @@ export function AppNavigator() {
       />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: t('navigation.app.myMinors') }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
+      <Stack.Screen
+        name="ChildBooking"
+        component={ChildBookingScreen}
+        options={({ route }) => ({ title: t('guardians.childBooking.title', { name: route.params.name }) })}
+      />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />
       <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: t('navigation.app.kidMode') }} />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: t('navigation.app.needsReview') }} />

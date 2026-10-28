@@ -7,6 +7,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { GuardiansService } from '../guardians/guardians.service';
 import { SignGuestWaiversDto } from './dto/guest-waiver.dto';
 import { guestWaiverLink, hashGuestWaiverToken } from './guest-waiver-token';
 
@@ -58,6 +59,7 @@ export class GuestWaiversService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly guardians: GuardiansService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -270,6 +272,22 @@ export class GuestWaiversService {
       }),
     );
     return { items: memberships.map((m) => ({ membershipId: m.id, scopedClassId: m.scopedClassId, expiryDate: m.expiryDate?.toISOString() ?? null })) };
+  }
+
+  /** Decision 379 — a parent bringing guests on their child's booking: the
+   * child's own Friend Passes pay for them (the plan belongs to the child). */
+  async minorFriendPasses(guardianId: string, studentId: string, schoolId: string) {
+    await this.guardians.assertGuardianOfStudent(guardianId, studentId);
+    return this.myFriendPasses(studentId, schoolId);
+  }
+
+  /** Decision 379 — the parent shares the guests' links on their child's
+   * booking, as the booker would. */
+  async minorBookingGuests(guardianId: string, studentId: string, bookingId: string) {
+    await this.guardians.assertGuardianOfStudent(guardianId, studentId);
+    const booking = await this.prismaApp.withTenantContext(studentId, (tx) => tx.booking.findUnique({ where: { id: bookingId }, select: { studentId: true } }));
+    if (!booking || booking.studentId !== studentId) throw new NotFoundException('Booking not found');
+    return this.bookingGuests(studentId, bookingId);
   }
 
   // ---------------------------------------------------------------------------

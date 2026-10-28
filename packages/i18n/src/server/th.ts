@@ -1,5 +1,6 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "เฉพาะผู้ปกครองเท่านั้นที่เพิ่มแขกได้ ไม่สามารถทำได้ในโหมดเด็ก",
   "Your current passcode is not right.": "รหัสเข้าใช้ปัจจุบันของคุณไม่ถูกต้อง",
   "Choose a new passcode that is different from your current one.": "เลือกรหัสเข้าใช้ใหม่ที่ไม่ซ้ำกับรหัสปัจจุบัน",
   "You must be 18 or over to create a School.": "คุณต้องมีอายุ 18 ปีขึ้นไปจึงจะสร้างโรงเรียนได้",

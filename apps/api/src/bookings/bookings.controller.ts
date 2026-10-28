@@ -12,6 +12,7 @@ import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
+import { MinorBookingListDto, MinorSchoolListDto } from './dto/minor-bookings.dto';
 import { StudentBookingListResponseDto, StudentNextBookingResponseDto } from './dto/student-booking-response.dto';
 import { BookingsSummaryQueryDto } from './dto/bookings-summary-query.dto';
 import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
@@ -88,6 +89,21 @@ export class BookingsController {
   @Patch('bookings/:id/override')
   updateOverrideReason(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateBookingOverrideDto) {
     return this.bookingsService.updateOverrideReason(user.sub, id, dto);
+  }
+
+  /** Decision 379 — a parent books a class for their child in the app: the
+   * child's Schools and upcoming bookings. Booking and cancelling reuse the
+   * Guardian-on-behalf-of paths (BookClassDto/CancelBookingDto.studentId). */
+  @ApiOkResponse({ type: MinorSchoolListDto })
+  @Get('guardians/me/minors/:studentId/schools')
+  findMinorSchools(@CurrentUser() user: JwtPayload, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.bookingsService.findMinorSchools(user.sub, studentId);
+  }
+
+  @ApiOkResponse({ type: MinorBookingListDto })
+  @Get('guardians/me/minors/:studentId/bookings')
+  findMinorBookings(@CurrentUser() user: JwtPayload, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.bookingsService.findMinorUpcomingBookings(user.sub, studentId);
   }
 
   @ApiOkResponse({ type: BookingListResponseDto })

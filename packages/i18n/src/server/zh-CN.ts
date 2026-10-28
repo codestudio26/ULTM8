@@ -1,5 +1,6 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Guests can only be added by a parent, not in Kid Mode.": "只有家长可以添加访客，儿童模式下不可以。",
   "Your current passcode is not right.": "你当前的登录码不正确。",
   "Choose a new passcode that is different from your current one.": "请选择一个与当前不同的新登录码。",
   "You must be 18 or over to create a School.": "你必须年满 18 岁才能创建学校。",

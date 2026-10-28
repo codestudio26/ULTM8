@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Te zajęcia są pełne.",
       joinWaitlist: "Dołącz do listy oczekujących",
       waitlistPosition: "Jesteś nr {position} na liście oczekujących.",
+      childWaitlistPosition: "Twoje dziecko jest nr {position} na liście oczekujących.",
       leaveWaitlist: "Opuść listę oczekujących",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Dodaj gościa",
       remove: "Usuń gościa",
       passesLeft: "Karnety dla znajomego, których możesz użyć na te zajęcia: {count}",
+      childPassesLeft: "Karnety dla znajomego Twojego dziecka na te zajęcia: {count}",
       linksIntro: "Wyślij każdemu gościowi jego link, żeby podpisał oświadczenie przed zajęciami.",
       guestNumber: "Gość {number}",
       signed: "Oświadczenie podpisane: {name}",
@@ -590,6 +592,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Rezerwacja dla: {name}",
+      upcomingTitle: "Nadchodzące rezerwacje",
+      noBookings: "{name} nie ma nadchodzących rezerwacji.",
+      bookTitle: "Zarezerwuj zajęcia",
+      noSchools: "{name} nie jest jeszcze uczniem żadnej szkoły.",
+      noClasses: "Brak nadchodzących zajęć w tej szkole.",
+      loadError: "Nie udało się wczytać szkół Twojego dziecka — spróbuj ponownie.",
+      bookingsLoadError: "Nie udało się wczytać rezerwacji Twojego dziecka — spróbuj ponownie.",
+      classesLoadError: "Nie udało się wczytać zajęć — spróbuj ponownie.",
+    },
     myMinors: {
       empty: "Brak powiązanych podopiecznych.",
       loadError: "Nie udało się wczytać Twoich podopiecznych — spróbuj ponownie.",
@@ -604,6 +617,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Nie udało się dodać tego podopiecznego — spróbuj ponownie.",
       addMinor: "Dodaj podopiecznego",
       addAMinor: "Dodaj podopiecznego",
+      bookAClass: "Zarezerwuj zajęcia",
     },
     minorConsent: {
       loadError: "Nie udało się wczytać ustawień tego podopiecznego — spróbuj ponownie.",

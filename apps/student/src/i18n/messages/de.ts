@@ -260,6 +260,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       full: "Dieser Kurs ist ausgebucht.",
       joinWaitlist: "Auf die Warteliste",
       waitlistPosition: "Du bist Nr. {position} auf der Warteliste.",
+      childWaitlistPosition: "Dein Kind ist Nr. {position} auf der Warteliste.",
       leaveWaitlist: "Warteliste verlassen",
     },
     guests: {
@@ -267,6 +268,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       add: "Gast hinzufügen",
       remove: "Gast entfernen",
       passesLeft: "Freundespässe, die du für diesen Kurs nutzen kannst: {count}",
+      childPassesLeft: "Freundespässe deines Kindes für diesen Kurs: {count}",
       linksIntro: "Schick jedem Gast seinen Link, damit er den Haftungsausschluss vor dem Kurs unterschreiben kann.",
       guestNumber: "Gast {number}",
       signed: "Haftungsausschluss unterschrieben: {name}",
@@ -575,6 +577,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childBooking: {
+      title: "Für {name} buchen",
+      upcomingTitle: "Kommende Buchungen",
+      noBookings: "{name} hat keine kommenden Buchungen.",
+      bookTitle: "Kurs buchen",
+      noSchools: "{name} ist noch an keiner Schule angemeldet.",
+      noClasses: "Keine kommenden Kurse an dieser Schule.",
+      loadError: "Die Schulen deines Kindes konnten nicht geladen werden — bitte versuche es erneut.",
+      bookingsLoadError: "Die Buchungen deines Kindes konnten nicht geladen werden — bitte versuche es erneut.",
+      classesLoadError: "Die Kurse konnten nicht geladen werden — bitte versuche es erneut.",
+    },
     myMinors: {
       empty: "Noch keine verknüpften Minderjährigen.",
       loadError: "Deine Minderjährigen konnten nicht geladen werden — bitte versuche es erneut.",
@@ -589,6 +602,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       addError: "Dieser Minderjährige konnte nicht hinzugefügt werden — bitte versuche es erneut.",
       addMinor: "Minderjährigen hinzufügen",
       addAMinor: "Einen Minderjährigen hinzufügen",
+      bookAClass: "Kurs buchen",
     },
     minorConsent: {
       loadError: "Die Einstellungen dieses Minderjährigen konnten nicht geladen werden — bitte versuche es erneut.",
