@@ -221,7 +221,13 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
     expect(other.status).toBe(200);
     expect(other.body.done).toBe(false);
     expect(other.body.classes.find((c: { classId: string }) => c.classId === there.id)).toMatchObject({ ok: false, code: 'OTHER_BRANCH' });
+    // Found by name, a Class not yet booked isn't booked on the tablet (Decision 388).
+    expect(other.body.classes.find((c: { classId: string }) => c.classId === here.id)).toMatchObject({ ok: false, code: 'KIOSK_BOOK_FIRST' });
+    expect(await superuser.booking.count({ where: { studentId: users.cy.id, classId: here.id } })).toBe(0);
 
+    // Booked (here by staff, as the app would), the same tap checks them in.
+    const booked = await http().post(`/v1/classes/${here.id}/book`).set('Authorization', `Bearer ${tokens.owner}`).send({ studentId: users.cy.id });
+    expect(booked.status).toBe(201);
     const ok = await http().post('/v1/front-desk/kiosk/check-ins').set('Authorization', `Bearer ${s.sessionToken}`).send({ studentId: users.cy.id, classIds: [here.id] });
     expect(ok.body.done).toBe(true);
     const after = await http().get(`/v1/front-desk/kiosk/students/${users.cy.id}/card`).query(today()).set('Authorization', `Bearer ${s.sessionToken}`);
@@ -330,5 +336,43 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
     }
     expect(statuses.slice(0, 5)).toEqual([403, 403, 403, 403, 403]);
     expect(statuses[5]).toBe(429);
+  });
+
+  it('ten wrong staff codes end the session (Decision 388)', async () => {
+    const s = await start('owner');
+    const ownerCode = await codeOf('owner');
+    const codes = new Set(await superuser.staffKioskCode.findMany({ where: { schoolId: school.id } }).then((r) => r.map((c) => c.code)));
+    let guess = 0;
+    const wrongCode = () => {
+      while (codes.has(String(guess).padStart(4, '0'))) guess++;
+      return String(guess++).padStart(4, '0');
+    };
+    const unlock = (staffCode: string) => http().post('/v1/front-desk/kiosk/unlock').set('Authorization', `Bearer ${s.sessionToken}`).send({ staffCode });
+
+    expect((await unlock(wrongCode())).status).toBe(403);
+    expect((await superuser.frontDeskSession.findUniqueOrThrow({ where: { id: s.sessionId } })).wrongCodeCount).toBe(1);
+
+    // Past the per-minute limit, as if eight more wrong codes came over the last minutes.
+    await superuser.frontDeskSession.update({ where: { id: s.sessionId }, data: { wrongCodeCount: 9 } });
+    const tenth = await unlock(wrongCode());
+    expect(tenth.status).toBe(401);
+    expect(tenth.body.error.code).toBe('FRONT_DESK_SESSION_ENDED');
+    const row = await superuser.frontDeskSession.findUniqueOrThrow({ where: { id: s.sessionId } });
+    expect(row.endedAt).not.toBeNull();
+    expect(row.endedById).toBeNull();
+
+    // A real code no longer helps: staff start the tablet again.
+    expect((await unlock(ownerCode)).status).toBe(401);
+    expect((await http().get('/v1/front-desk/kiosk/session').set('Authorization', `Bearer ${s.sessionToken}`)).status).toBe(401);
+  });
+
+  it("a tablet stops working once its Branch is closed (Decision 388)", async () => {
+    const closing = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Sul' } });
+    const s = await start('owner', closing.id);
+    expect((await http().get('/v1/front-desk/kiosk/session').set('Authorization', `Bearer ${s.sessionToken}`)).status).toBe(200);
+    await superuser.branch.update({ where: { id: closing.id }, data: { archivedAt: new Date() } });
+    const res = await http().get('/v1/front-desk/kiosk/session').set('Authorization', `Bearer ${s.sessionToken}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('FRONT_DESK_SESSION_ENDED');
   });
 });

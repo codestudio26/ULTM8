@@ -6408,3 +6408,20 @@ Decision 309 made the Disciplines page read-only for everyone but the School own
 ### Recorded by
 
 User (Code), 28 Oct 2026, Disciplines thread.
+
+---
+
+## Decision 388 — Front desk: the locked tablet only books with a scan; too many wrong staff codes end it; a closed Branch ends it
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decisions 378 and 380 (the locked tablet) · **Found by:** a review of #360
+
+### Decision
+
+1. **On the locked tablet, someone found by name is only checked in to classes they have already booked.** The tablet may be unattended, and typing a name proves nothing about who is standing there, so it must not book a place, spend a class credit or count a class towards someone's grading on their behalf. Booking a place there needs proof: the app QR scanned on that tablet, or the person's own check-in code once it exists (Decision 384), which gives the same check. A class they haven't booked shows "Not booked: book in the app, or scan the app QR" and can't be ticked. The API refuses it too (`KIOSK_BOOK_FIRST`), even if the booking is cancelled between the welcome card and the tap. The staff Check-in page is unchanged: staff can still book a place for someone.
+2. **Ten wrong staff codes end the tablet's session.** Five tries a minute over the session's 24 hours were enough to guess a 4-digit code. Every wrong code is counted on the session and logged; the tenth ends it, the tablet shows that front-desk mode has ended, and a staff member starts it again. A correct code still ends the session as before.
+3. **Closing a Branch ends its tablet**, as closing the School already did.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, reviewing #360: "yes fix 1 and 3, and A for 2", to the recommendations (end the session after about 10 wrong codes; end a closed Branch's tablet; option A: on the tablet, name search only checks in to classes already booked, and booking there needs the app QR or a personal code).
+

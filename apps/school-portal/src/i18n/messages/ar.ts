@@ -3356,6 +3356,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "تم تسجيل الحضور",
       booked: "محجوز",
       willBook: "يحجز مكانًا",
+      bookInApp: "غير محجوز: احجز في التطبيق أو امسح رمز QR من التطبيق",
       opensAt: "يبدأ تسجيل الحضور الساعة {time}",
       notCheckedIn: "لم يُسجَّل الحضور",
       failed: "تعذّر تسجيل الحضور. يُرجى المحاولة مرة أخرى.",

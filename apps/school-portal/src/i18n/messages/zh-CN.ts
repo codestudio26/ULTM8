@@ -3120,6 +3120,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "已签到",
       booked: "已预约",
       willBook: "将预约名额",
+      bookInApp: "未预约：请在应用中预约，或扫描应用中的二维码",
       opensAt: "签到于 {time} 开始",
       notCheckedIn: "未签到",
       failed: "签到失败，请重试。",

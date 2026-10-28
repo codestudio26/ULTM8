@@ -3163,6 +3163,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "Giriş yapıldı",
       booked: "Rezerve",
       willBook: "Yer ayırır",
+      bookInApp: "Rezerve değil: uygulamadan rezerve edin ya da uygulamadaki QR kodu okutun",
       opensAt: "Giriş {time} itibarıyla açık",
       notCheckedIn: "Giriş yapılmadı",
       failed: "Giriş yapılamadı. Lütfen tekrar deneyin.",

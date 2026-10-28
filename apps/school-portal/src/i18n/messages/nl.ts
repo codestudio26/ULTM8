@@ -3163,6 +3163,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "Ingecheckt",
       booked: "Geboekt",
       willBook: "Boekt een plek",
+      bookInApp: "Niet geboekt: boek in de app of scan de QR-code van de app",
       opensAt: "Inchecken vanaf {time}",
       notCheckedIn: "Niet ingecheckt",
       failed: "Inchecken mislukt. Probeer het opnieuw.",

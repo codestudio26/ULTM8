@@ -4357,7 +4357,7 @@ model StaffPermission {
   userId String
   user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
 
-  canInviteCoaches Boolean @default(false)
+  canInviteCoaches     Boolean @default(false)
   /// Decision 383: may edit the School's styles, belts and skills.
   canManageDisciplines Boolean @default(false)
 
@@ -4406,6 +4406,10 @@ model FrontDeskSession {
   /// who ended it from the Check-in page.
   endedById String?
   endedBy   User?     @relation("FrontDeskSessionEndedBy", fields: [endedById], references: [id], onDelete: SetNull)
+
+  /// Wrong staff codes typed on this tablet (Decision 388). At
+  /// FRONT_DESK_MAX_WRONG_CODES the session ends, so the code can't be guessed.
+  wrongCodeCount Int @default(0)
 
   @@index([schoolId])
   @@index([startedById])

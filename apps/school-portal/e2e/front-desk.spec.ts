@@ -142,7 +142,9 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   const whole = await classNow({ title: 'Whole School class', startDate: at(-5 * MIN) });
   const m = await subscribe(s.student.id);
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id, status: 'COMPLETED', checkInMethod: 'SELF_SERVICE' } });
-  await subscribe(s.newStudent.id);
+  // Nia booked the Whole School class in the app; Riverside she didn't.
+  const niaPlan = await subscribe(s.newStudent.id);
+  await db.booking.create({ data: { id: randomUUID(), studentId: s.newStudent.id, classId: whole.id, schoolId: s.schoolId, sourceMembershipId: niaPlan.id } });
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('link', { name: 'Front-desk mode' }).click();
@@ -170,12 +172,16 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await page.getByRole('button', { name: /Nia P\./ }).click();
   const card = page.getByTestId('fd-welcome');
   await expect(card).toContainText('Welcome back, Nia');
-  await card.getByRole('button', { name: /Whole School class/ }).click();
-  await card.getByRole('button', { name: /Riverside Fundamentals/ }).click();
+  // Found by name, the tablet doesn't book a place (Decision 388).
+  const riverside = card.getByRole('button', { name: /Riverside Fundamentals/ });
+  await expect(riverside).toContainText('Not booked: book in the app, or scan the app QR');
+  await expect(riverside).toBeDisabled();
+  await expect(card.getByRole('button', { name: /Whole School class/ })).toHaveAttribute('aria-pressed', 'true');
   await card.getByRole('button', { name: 'Check in to 1 class' }).click();
   await expect(page.getByText('You’re in, Nia')).toBeVisible();
   const booking = await db.booking.findFirstOrThrow({ where: { studentId: s.newStudent.id, classId: whole.id } });
   expect(booking.status).toBe('COMPLETED');
+  expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: cls.id } })).toBe(0);
   await page.getByRole('button', { name: 'Done' }).click();
 
   await page.getByRole('button', { name: /Sign up/ }).click();

@@ -385,6 +385,8 @@ function KioskWelcome({
         />
       )}
       qr={qr}
+      // Found by name, the tablet only checks in to Classes already booked (Decision 388).
+      mayBook={qr !== null}
       short
       onBack={onBack}
       onDone={onDone}
@@ -397,6 +399,7 @@ function KioskWelcome({
 function ExitDialog({ digits, onStay, onUnlocked }: { digits: number; onStay: () => void; onUnlocked: (name: string) => void }) {
   const t = useT();
   const unlock = useKioskUnlock();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="fd-veil">
@@ -411,7 +414,14 @@ function ExitDialog({ digits, onStay, onUnlocked }: { digits: number; onStay: ()
           staffCode
           onCode={(code) => {
             setError(null);
-            unlock.mutate(code, { onSuccess: (r) => onUnlocked(r.unlockedBy), onError: (err) => setError(errorText(err, t('frontDesk.exit.failed'))) });
+            unlock.mutate(code, {
+              onSuccess: (r) => onUnlocked(r.unlockedBy),
+              onError: (err) => {
+                // Too many wrong codes ended the session (Decision 388): show the ended screen now.
+                if (isSessionEnded(err)) void queryClient.invalidateQueries({ queryKey: ['kiosk'] });
+                setError(errorText(err, t('frontDesk.exit.failed')));
+              },
+            });
           }}
         />
         <div className="fd-msg fd-msg--bad" aria-live="polite">
