@@ -1,8 +1,9 @@
 /**
  * Decision 382 (Transactions G6) — a refund made in the Stripe dashboard is
  * picked up by the charge.refunded / charge.refund.updated webhooks and shows
- * on the Transactions page, over real HTTP against a real Postgres. Stripe is
- * faked: charges.retrieve and refunds.retrieve return what each test sets.
+ * on the Transactions page, over real HTTP against a real Postgres. A full
+ * refund also ends the Membership it paid for. Stripe is faked:
+ * charges.retrieve and refunds.retrieve return what each test sets.
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET, REDIS_URL.
  */
@@ -36,10 +37,12 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
   /** What Stripe holds, by id: Charges and Refunds. */
   const charges = new Map<string, object>();
   const refunds = new Map<string, object>();
+  const subscriptionsCancel = jest.fn(async (id: string) => ({ id, status: 'canceled' }));
   const fakeStripeClient = {
     scopedClient: jest.fn(() => ({
       charges: { retrieve: jest.fn(async (id: string) => charges.get(id)) },
       refunds: { retrieve: jest.fn(async (id: string) => refunds.get(id)) },
+      subscriptions: { cancel: subscriptionsCancel },
     })),
     platformClient: jest.fn(),
   };
@@ -58,7 +61,7 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
       },
     });
 
-  async function seed(status: TransactionStatus = 'SUCCESSFUL') {
+  async function seed(status: TransactionStatus = 'SUCCESSFUL', opts: { membership?: boolean } = {}) {
     const school = await su.school.create({ data: { id: randomUUID(), name: `Dash refunds ${randomUUID().slice(0, 6)}` } });
     schoolIds.push(school.id);
     const owner = await mkUser('owner');
@@ -75,15 +78,21 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
     const plan = await su.membershipPlan.create({
       data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: '10-Class Pack', price: 15000, classesIncluded: 10, currency: 'GBP' },
     });
+    const stripeSubscriptionId = `sub_${randomUUID()}`;
+    const membership = opts.membership
+      ? await su.membership.create({
+          data: { id: randomUUID(), studentId: student.id, membershipPlanId: plan.id, schoolId: school.id, status: 'ACTIVE', frequency: 'RECURRING', stripeSubscriptionId },
+        })
+      : null;
     const pi = `pi_${randomUUID()}`;
     const transaction = await su.transaction.create({
       data: {
-        id: randomUUID(), schoolId: school.id, studentId: student.id, paymentAccountId: account.id, membershipPlanId: plan.id,
+        id: randomUUID(), schoolId: school.id, studentId: student.id, paymentAccountId: account.id, membershipPlanId: plan.id, membershipId: membership?.id,
         amount: 15000, currency: 'GBP', status, paymentMethod: 'STRIPE', stripePaymentIntentId: pi,
       },
     });
     const ownerToken = jwt.sign({ sub: owner.id, email: owner.email, grants: [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }] });
-    return { school, account, transaction, pi, ownerToken };
+    return { school, student, account, transaction, pi, ownerToken, membership, stripeSubscriptionId };
   }
   type Seeded = Awaited<ReturnType<typeof seed>>;
 
@@ -114,6 +123,9 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
     await app.close();
     const where = { schoolId: { in: schoolIds } };
     await su.transaction.deleteMany({ where });
+    await su.booking.deleteMany({ where });
+    await su.class.deleteMany({ where });
+    await su.membership.deleteMany({ where });
     await su.membershipPlan.deleteMany({ where });
     await su.paymentAccount.deleteMany({ where });
     await su.roleGrant.deleteMany({ where });
@@ -188,5 +200,51 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
     await webhook(s, 'charge.refunded', otherCharge);
     await webhook(null, 'charge.refunded', setCharge(s, 15000));
     expect(await row(s)).toMatchObject({ status: 'SUCCESSFUL', refundedAmount: null });
+  });
+
+  it('a full refund ends the Membership it paid for: Expired, future bookings cancelled, Stripe subscription cancelled', async () => {
+    const s = await seed('SUCCESSFUL', { membership: true });
+    const futureClass = await su.class.create({
+      data: { id: randomUUID(), schoolId: s.school.id, title: 'Future class', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+    });
+    const booking = await su.booking.create({
+      data: { id: randomUUID(), studentId: s.student.id, classId: futureClass.id, schoolId: s.school.id, sourceMembershipId: s.membership!.id, status: 'UPCOMING' },
+    });
+    subscriptionsCancel.mockClear();
+
+    await webhook(s, 'charge.refunded', setCharge(s, 15000));
+
+    expect((await su.membership.findUniqueOrThrow({ where: { id: s.membership!.id } })).status).toBe('EXPIRED');
+    expect((await su.booking.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('CANCELLED');
+    expect(subscriptionsCancel).toHaveBeenCalledWith(s.stripeSubscriptionId);
+    expect(fakeStripeClient.scopedClient).toHaveBeenCalledWith(s.account.stripeConnectedAccountId);
+  });
+
+  it('a partial refund keeps the Membership active, and a refund that later fails does not bring an ended one back', async () => {
+    const s = await seed('SUCCESSFUL', { membership: true });
+    subscriptionsCancel.mockClear();
+    const chargeId = setCharge(s, 5000);
+    await webhook(s, 'charge.refunded', chargeId);
+    expect((await su.membership.findUniqueOrThrow({ where: { id: s.membership!.id } })).status).toBe('ACTIVE');
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+
+    setCharge(s, 15000, chargeId);
+    await webhook(s, 'charge.refunded', chargeId);
+    expect((await su.membership.findUniqueOrThrow({ where: { id: s.membership!.id } })).status).toBe('EXPIRED');
+
+    setCharge(s, 0, chargeId);
+    await webhook(s, 'charge.refunded', chargeId);
+    expect(await row(s)).toMatchObject({ status: 'SUCCESSFUL', refundedAmount: null });
+    expect((await su.membership.findUniqueOrThrow({ where: { id: s.membership!.id } })).status).toBe('EXPIRED');
+    expect(subscriptionsCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("a payment ULTM8 already marked Refunded doesn't end the Membership a second time", async () => {
+    const s = await seed('REFUNDED', { membership: true });
+    await su.transaction.update({ where: { id: s.transaction.id }, data: { refundedAmount: 15000 } });
+    subscriptionsCancel.mockClear();
+    await webhook(s, 'charge.refunded', setCharge(s, 15000));
+    expect((await su.membership.findUniqueOrThrow({ where: { id: s.membership!.id } })).status).toBe('ACTIVE');
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
   });
 });

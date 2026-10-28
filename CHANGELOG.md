@@ -18,8 +18,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 - **Transactions: refunds made in Stripe show up** (Decision 382) — a card
   payment refunded in the Stripe dashboard now shows as Refunded on the
   Transactions page (or with the refunded amount, for a part refund), in the
-  portal and the student app. A refund that later fails turns it back to
-  Successful. No database change. Needs the `charge.refunded` and
+  portal and the student app. A full refund also ends the membership it paid
+  for (future bookings cancelled, Subscription stopped); a part refund keeps
+  it. A refund that later fails turns the payment back to Successful. No
+  database change. Needs the `charge.refunded` and
   `charge.refund.updated` events switched on for the Stripe webhook.
 - **Front desk: one-step check-in** (Decision 378) — the welcome card's
   confirm now books, checks in and checks in the ticked guests in one go. If
