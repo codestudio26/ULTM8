@@ -197,6 +197,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "每一条腰带、每一次预约，尽在一处。",
       newSchool: "新学校？{link}",
       forgotPasscode: "忘记登录码？",
+      phoneVerified: "手机号已验证。现在可以登录了。",
+      verifyPhoneLink: "验证你的手机号",
     },
     forgot: {
       title: "重置登录码",
@@ -2935,6 +2937,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "我的资料",
     loadFailed: "无法加载你的资料。",
     signInNote: "你使用电子邮箱和电话号码登录，因此无法在此修改。",
+    removePhoto: "移除照片",
+    changePasscode: {
+      title: "更改登录码",
+      current: "当前登录码",
+      hint: "更改后，你会在其他设备上退出登录。",
+      submit: "更改登录码",
+      changed: "登录码已更改。你已在其他设备上退出登录。",
+    },
   },
   address: {
     legend: "地址",
