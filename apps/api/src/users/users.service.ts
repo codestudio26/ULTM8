@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { addressWriteData } from '../common/address/postal-address.dto';
 
 /**
  * `SELECT` shape shared by getMe/updateMe — explicit, not `findUnique({ where })`'s
@@ -22,6 +23,12 @@ const SELF_PROFILE_SELECT = {
   language: true,
   currency: true,
   address: true,
+  addressLine1: true,
+  addressLine2: true,
+  addressCity: true,
+  addressRegion: true,
+  addressPostalCode: true,
+  addressCountry: true,
   profilePhotoUrl: true,
   weightCategory: true,
   kimonoSize: true,
@@ -47,6 +54,23 @@ export class UsersService {
     // Should be unreachable in practice — a valid JWT implies the User row exists — but
     // checked explicitly rather than assumed, same defensive convention every other
     // service's findOne uses.
+    if (!found) {
+      throw new NotFoundException('User not found');
+    }
+    return found;
+  }
+
+  /**
+   * A Student's full profile for a Staff member editing it on their behalf
+   * (SchoolsService.getStudentProfile, Decision 341 S9). Read under the
+   * caller's own context: `user_self_or_shared_school` shows staff the User
+   * rows of the students whose STUDENT grant they can see. Authorization is
+   * the caller's job, as for updateProfileFor.
+   */
+  async getProfileFor(callerId: string, targetUserId: string) {
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.findUnique({ where: { id: targetUserId }, select: SELF_PROFILE_SELECT }),
+    );
     if (!found) {
       throw new NotFoundException('User not found');
     }
@@ -134,7 +158,7 @@ export class UsersService {
           nationality: dto.nationality,
           language: dto.language,
           currency: dto.currency,
-          address: dto.address,
+          ...addressWriteData(dto),
           profilePhotoUrl: dto.profilePhotoUrl,
           // Decision 220/246 — plain pass-through, same as gender/nationality/
           // language/currency/address above: `undefined` (omitted) leaves the

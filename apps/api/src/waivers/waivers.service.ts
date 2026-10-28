@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { WaiverSignature } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -13,10 +13,25 @@ import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
+import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto } from './dto/paper-signature.dto';
+import { UpdateWaiverSettingsDto } from './dto/waiver-settings.dto';
+import type { WaiverSignatureRequestJobData } from '../jobs/waiver-signature-requests.processor';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { WaiverAssignmentService } from './waiver-assignment.service';
 
 const RETENTION_WINDOW_DAYS = 90;
+
+/** A member is reminded by the button at most once a day (Decision 354). */
+const REMIND_AGAIN_AFTER_MS = 24 * 60 * 60 * 1000;
+
+const WAIVER_SETTINGS_SELECT = {
+  waiverArchivedSignaturesCount: true,
+  waiverRenewalMonths: true,
+  waiverMinorsSignAgainAt18: true,
+  waiverPaperSignaturesAllowed: true,
+  waiverNoticeOnJoin: true,
+  waiverReminderDays: true,
+} as const;
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
@@ -151,9 +166,59 @@ export class WaiversService {
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.waiver.update({ where: { id: waiverId }, data: { title: dto.title, body: dto.body } }),
-    );
+    // Waivers review W3: a change of wording is a new version, so later
+    // signatures record which one they were given.
+    const wordingChanged =
+      (dto.title !== undefined && dto.title !== existing.title) || (dto.body !== undefined && dto.body !== existing.body);
+    // Decision 354 (W3b): the owner chooses, on each change of wording,
+    // between a small fix (signatures stay) and new terms (`resign`): every
+    // signature expires, kept with its copy of what was signed, and current
+    // students are asked to sign the new version.
+    const resign = wordingChanged && dto.resign === true;
+    const { updated, toNotify } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const updated = await tx.waiver.update({
+        where: { id: waiverId },
+        data: { title: dto.title, body: dto.body, ...(wordingChanged ? { version: { increment: 1 } } : {}) },
+      });
+      if (!resign) return { updated, toNotify: [] as string[] };
+      const signed = await tx.waiverSignature.findMany({ where: { waiverId, status: 'SIGNED' }, select: { studentId: true } });
+      await tx.waiverSignature.updateMany({ where: { waiverId, status: 'SIGNED' }, data: { status: 'EXPIRED' } });
+      if (existing.archivedAt) return { updated, toNotify: [] as string[] };
+      const active = await this.activeStudentIds(tx, existing.schoolId);
+      await this.waiverAssignment.assignUnsignedRows(tx, existing.schoolId, [waiverId], active);
+      const activeSet = new Set(active);
+      return { updated, toNotify: [...new Set(signed.map((r) => r.studentId))].filter((id) => activeSet.has(id)) };
+    });
+    if (toNotify.length > 0) {
+      await this.enqueueNotice({ waiverId, schoolId: existing.schoolId, studentIds: toNotify, reason: 'updated', batchId: `v${updated.version}` });
+    }
+    return updated;
+  }
+
+  private async activeStudentIds(
+    tx: Parameters<Parameters<PrismaAppService['withTenantContext']>[1]>[0],
+    schoolId: string,
+  ): Promise<string[]> {
+    const grants = await tx.roleGrant.findMany({
+      where: { schoolId, role: 'STUDENT', revokedAt: null },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    return grants.map((g) => g.userId);
+  }
+
+  /** A notice is a side effect: the change it follows is already saved, so a
+   * queue failure is logged, never returned to the caller (same reasoning as
+   * createWaiver's own enqueue). */
+  private async enqueueNotice(data: WaiverSignatureRequestJobData): Promise<void> {
+    try {
+      await this.waiverSignatureRequestsQueue.add('notify', data, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+    } catch (err) {
+      this.logger.error(
+        `Waiver ${data.waiverId} (School ${data.schoolId}): enqueueing the ${data.reason ?? 'assigned'} notice failed — no one was told.`,
+        err instanceof Error ? err.stack : String(err),
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -165,23 +230,11 @@ export class WaiversService {
   // reasoning. Archiving/unarchiving itself works identically to the other 6.
   // ---------------------------------------------------------------------------
 
-  /** Active dependents that block archiving a Waiver — the task's own hint:
-   * ANY WaiverSignature row at all, signed or not (the Unsigned-at-
-   * assignment-time rows this session's own earlier build introduced count
-   * too — a real legal-assignment record, not just a completed signature).
-   * This is also independently DB-enforced: WaiverSignature.waiverId is an
-   * `ON DELETE RESTRICT` FK (verified in this phase's own migration
-   * review) — this check is the explicit, friendly version of that
-   * protection, not an accident of a caught P2003. */
-  private async assertNoActiveDependents(callerId: string, waiverId: string): Promise<void> {
-    const signatureCount = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waiverSignature.count({ where: { waiverId } }));
-    if (signatureCount > 0) {
-      throw new ConflictException(
-        `This Waiver can't be archived while it has ${signatureCount} signature${signatureCount === 1 ? '' : 's'}/assignment record${signatureCount === 1 ? '' : 's'} against it (legal records). It can still be edited in place if needed.`,
-      );
-    }
-  }
-
+  /** Decision 354 (Waivers review W2): archiving is always allowed. It
+   * retires the waiver for new members; every signature and unsigned entry
+   * stays (WaiverSignature.waiverId is ON DELETE RESTRICT and the template
+   * is never purged), and whether its signatures still count is the School's
+   * own Waiver setting. */
   async archiveWaiver(callerId: string, waiverId: string) {
     const existing = await this.findOneWaiver(callerId, waiverId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
@@ -189,8 +242,6 @@ export class WaiversService {
     if (existing.archivedAt) {
       return existing;
     }
-    await this.assertNoActiveDependents(callerId, waiverId);
-
     const now = new Date();
     const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
     await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -212,12 +263,23 @@ export class WaiversService {
     if (existing.purgedAt) {
       throw new ConflictException('This Waiver has already been purged and cannot be unarchived.');
     }
-    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.waiver.updateMany({
+    // Waivers review W6: an archived Waiver is not assigned to anyone who
+    // joins, so bringing it back assigns it to them now.
+    const { count } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.waiver.updateMany({
         where: { id: waiverId, archivedAt: { not: null }, purgedAt: null },
         data: { archivedAt: null, purgeAt: null },
-      }),
-    );
+      });
+      if (result.count > 0) {
+        const studentGrants = await tx.roleGrant.findMany({
+          where: { schoolId: existing.schoolId, role: 'STUDENT', revokedAt: null },
+          select: { userId: true },
+          distinct: ['userId'],
+        });
+        await this.waiverAssignment.assignUnsignedRows(tx, existing.schoolId, [waiverId], studentGrants.map((g) => g.userId));
+      }
+      return result;
+    });
     if (count === 0) {
       return this.findOneWaiver(callerId, waiverId);
     }
@@ -274,26 +336,233 @@ export class WaiversService {
       throw new NotFoundException('Waiver not found');
     }
 
-    const { page, summary } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const pageResult = await cursorPaginate(
-        (args) =>
-          tx.waiverSignature.findMany({
-            ...args,
-            where: { waiverId, schoolId },
-            include: { student: { select: { firstName: true, surname: true } } },
-          }),
-        cursor,
-        limit,
-      );
+    // Waivers review W1: a student who has left the School is no longer
+    // visible to its staff (User RLS), so names are read separately rather
+    // than joined, which failed the whole list. A leaver's unsigned entry is
+    // left out; their signature stays, flagged formerStudent.
+    const { page, summary, names, activeIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const active = await tx.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', revokedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+      const activeIds = new Set(active.map((g) => g.userId));
+      const where = {
+        waiverId,
+        schoolId,
+        OR: [{ status: { in: ['SIGNED' as const, 'EXPIRED' as const] } }, { studentId: { in: [...activeIds] } }],
+      };
+      const pageResult = await cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where }), cursor, limit);
       const counts = await tx.waiverSignature.groupBy({
         by: ['status'],
-        where: { waiverId, schoolId },
+        where: { waiverId, schoolId, studentId: { in: [...activeIds] } },
         _count: { _all: true },
       });
-      return { page: pageResult, summary: summarizeStatusCounts(counts) };
+      const users = await tx.user.findMany({
+        where: { id: { in: pageResult.items.map((i) => i.studentId) } },
+        select: { id: true, firstName: true, surname: true },
+      });
+      const names = new Map(users.map((u) => [u.id, `${u.firstName} ${u.surname}`.trim()]));
+      return { page: pageResult, summary: summarizeStatusCounts(counts), names, activeIds };
     });
-    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item)));
+    // The signed copy of the text stays out of the list (one copy per row
+    // would make a long waiver's roster megabytes); the detail call has it.
+    const items = await Promise.all(
+      page.items.map(async (item) => {
+        const { signedWaiverBody: _body, ...response } = await this.toSignatureResponse(item);
+        return { ...response, studentName: names.get(item.studentId) ?? null, formerStudent: !activeIds.has(item.studentId) };
+      }),
+    );
     return { ...page, items, summary };
+  }
+
+  /** One row of the Signatures panel, with the copy of the text as signed
+   * (Waivers review W3). Same access and the same leaver rule as the list. */
+  async findSignatureForWaiver(callerId: string, schoolId: string, waiverId: string, signatureId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const waiver = await this.findOneWaiver(callerId, waiverId);
+    if (waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+    const { signature, name, recordedByName, active } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const signature = await tx.waiverSignature.findFirst({ where: { id: signatureId, waiverId, schoolId } });
+      if (!signature) return { signature: null, name: null, recordedByName: null, active: false };
+      const grant = await tx.roleGrant.findFirst({
+        where: { schoolId, userId: signature.studentId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      const user = await tx.user.findUnique({ where: { id: signature.studentId }, select: { firstName: true, surname: true } });
+      const recorder = signature.recordedById
+        ? await tx.user.findUnique({ where: { id: signature.recordedById }, select: { firstName: true, surname: true } })
+        : null;
+      return {
+        signature,
+        name: user ? `${user.firstName} ${user.surname}`.trim() : null,
+        recordedByName: recorder ? `${recorder.firstName} ${recorder.surname}`.trim() : null,
+        active: !!grant,
+      };
+    });
+    if (!signature || (!active && signature.status !== 'SIGNED' && signature.status !== 'EXPIRED')) {
+      throw new NotFoundException('Waiver not found');
+    }
+    return { ...(await this.toSignatureResponse(signature)), studentName: name, recordedByName, formerStudent: !active };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Decision 354: reminders, Waiver settings and paper signatures. All School
+  // Owner/Manager only, the same gate as Waiver CRUD.
+  // ---------------------------------------------------------------------------
+
+  /** "Remind everyone who hasn't signed" (Q8): current students with an
+   * unsigned entry, each at most once a day. */
+  async remind(callerId: string, schoolId: string, waiverId: string): Promise<{ reminded: number }> {
+    const waiver = await this.findOwnedWaiver(callerId, schoolId, waiverId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (waiver.archivedAt) {
+      throw new ConflictException('This waiver is archived, so no one can be reminded to sign it.');
+    }
+    const now = new Date();
+    const studentIds = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const active = await this.activeStudentIds(tx, schoolId);
+      const due = await tx.waiverSignature.findMany({
+        where: {
+          waiverId,
+          schoolId,
+          status: { in: ['UNSIGNED', 'PENDING'] },
+          studentId: { in: active },
+          OR: [{ lastRemindedAt: null }, { lastRemindedAt: { lt: new Date(now.getTime() - REMIND_AGAIN_AFTER_MS) } }],
+        },
+        select: { id: true, studentId: true },
+      });
+      await tx.waiverSignature.updateMany({ where: { id: { in: due.map((d) => d.id) } }, data: { lastRemindedAt: now } });
+      return [...new Set(due.map((d) => d.studentId))];
+    });
+    if (studentIds.length > 0) {
+      await this.enqueueNotice({ waiverId, schoolId, studentIds, reason: 'reminder', batchId: String(now.getTime()) });
+    }
+    return { reminded: studentIds.length };
+  }
+
+  async getWaiverSettings(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: WAIVER_SETTINGS_SELECT }),
+    );
+    if (!school) throw new NotFoundException('School not found');
+    return school;
+  }
+
+  async updateWaiverSettings(callerId: string, schoolId: string, dto: UpdateWaiverSettingsDto) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.update({
+        where: { id: schoolId },
+        data: {
+          waiverArchivedSignaturesCount: dto.waiverArchivedSignaturesCount,
+          waiverRenewalMonths: dto.waiverRenewalMonths,
+          waiverMinorsSignAgainAt18: dto.waiverMinorsSignAgainAt18,
+          waiverPaperSignaturesAllowed: dto.waiverPaperSignaturesAllowed,
+          waiverNoticeOnJoin: dto.waiverNoticeOnJoin,
+          waiverReminderDays: dto.waiverReminderDays,
+        },
+        select: WAIVER_SETTINGS_SELECT,
+      }),
+    );
+  }
+
+  private async findOwnedWaiver(callerId: string, schoolId: string, waiverId: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const waiver = await this.findOneWaiver(callerId, waiverId);
+    if (waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+    return waiver;
+  }
+
+  /** The checks both paper steps share (Q6): the School allows it, the
+   * waiver is in use, and the entry is a current student's unsigned one. */
+  private async assertPaperRecordable(callerId: string, schoolId: string, waiverId: string, signatureId: string) {
+    const waiver = await this.findOwnedWaiver(callerId, schoolId, waiverId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const { allowed, signature, active } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverPaperSignaturesAllowed: true } });
+      const signature = await tx.waiverSignature.findFirst({ where: { id: signatureId, waiverId, schoolId } });
+      const grant = signature
+        ? await tx.roleGrant.findFirst({ where: { schoolId, userId: signature.studentId, role: 'STUDENT', revokedAt: null }, select: { id: true } })
+        : null;
+      return { allowed: !!school?.waiverPaperSignaturesAllowed, signature, active: !!grant };
+    });
+    if (!allowed) {
+      throw new ForbiddenException('Paper signatures are turned off for this School. Turn them on in Waiver settings.');
+    }
+    if (waiver.archivedAt) {
+      throw new ConflictException('This waiver is no longer in use, so it can no longer be signed.');
+    }
+    if (!signature || !active) {
+      throw new NotFoundException('Waiver not found');
+    }
+    if (signature.status !== 'UNSIGNED' && signature.status !== 'PENDING') {
+      throw new ConflictException('Only a waiver that has not been signed yet can be recorded as signed on paper.');
+    }
+    return { waiver, signature };
+  }
+
+  /** Step 1 of recording a paper signature: where to upload the photo. */
+  async requestPaperUploadUrl(callerId: string, schoolId: string, waiverId: string, signatureId: string, dto: PaperSignatureUploadUrlDto) {
+    const { signature } = await this.assertPaperRecordable(callerId, schoolId, waiverId, signatureId);
+    const ext = dto.contentType === 'image/png' ? 'png' : 'jpg';
+    const objectKey = `waiver-signatures/${schoolId}/${waiverId}/${signature.studentId}/paper-${randomUUID()}.${ext}`;
+    const uploadUrl = await this.r2Client.getPresignedUploadUrl(objectKey, dto.contentType);
+    return { uploadUrl, objectKey };
+  }
+
+  /** Step 2: the entry becomes Signed, on paper, recorded by the caller, with
+   * a copy of the wording in use now (the paper is taken to be this version). */
+  async recordPaperSignature(callerId: string, schoolId: string, waiverId: string, signatureId: string, dto: RecordPaperSignatureDto) {
+    const { signature } = await this.assertPaperRecordable(callerId, schoolId, waiverId, signatureId);
+    const prefix = `waiver-signatures/${schoolId}/${waiverId}/${signature.studentId}/paper-`;
+    if (!dto.imageKey.startsWith(prefix)) {
+      throw new BadRequestException('imageKey does not match this signature.');
+    }
+    // A date with no time is midnight UTC; the latest time zone is 14 hours
+    // ahead, so "today" anywhere is accepted.
+    const signedDate = new Date(`${dto.signedDate.slice(0, 10)}T00:00:00.000Z`);
+    if (Number.isNaN(signedDate.getTime()) || signedDate.getTime() > Date.now() + 14 * 60 * 60 * 1000) {
+      throw new BadRequestException("The date signed can't be in the future.");
+    }
+    if (!(await this.r2Client.objectExists(dto.imageKey))) {
+      throw new BadRequestException('Upload the photo of the signed paper first.');
+    }
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiverId }, select: { title: true, body: true, version: true } });
+      const { count } = await tx.waiverSignature.updateMany({
+        where: { id: signatureId, status: { in: ['UNSIGNED', 'PENDING'] } },
+        data: {
+          status: 'SIGNED',
+          method: 'PAPER',
+          recordedById: callerId,
+          signedById: null,
+          signerFullName: dto.signerFullName,
+          signatureText: null,
+          signatureImageKey: dto.imageKey,
+          signedDate,
+          signedWaiverTitle: current.title,
+          signedWaiverBody: current.body,
+          signedWaiverSha256: createHash('sha256').update(current.body, 'utf8').digest('hex'),
+          signedWaiverVersion: current.version,
+        },
+      });
+      if (count === 0) {
+        throw new ConflictException('Only a waiver that has not been signed yet can be recorded as signed on paper.');
+      }
+      return tx.waiverSignature.findUniqueOrThrow({ where: { id: signatureId } });
+    });
+    return this.toSignatureResponse(updated);
   }
 
   // ---------------------------------------------------------------------------
@@ -406,6 +675,12 @@ export class WaiversService {
     }
 
     const waiver = await this.findOneWaiver(studentId, waiverId);
+    // Waivers review W6/W10: a retired Waiver, or one at a closed School, is
+    // no longer signed.
+    if (waiver.archivedAt) {
+      throw new ConflictException('This waiver is no longer in use, so it can no longer be signed.');
+    }
+    await this.tenantAuth.assertSchoolNotArchived(studentId, waiver.schoolId);
 
     // See this method's own header comment — a verified GuardianLink itself
     // satisfies SKILL.md §13's "or must be Guardian-linked" branch, so only the
@@ -435,7 +710,13 @@ export class WaiversService {
 
     const signedData = {
       status: 'SIGNED' as const,
+      signedWaiverTitle: null as string | null,
+      signedWaiverBody: null as string | null,
+      signedWaiverSha256: null as string | null,
+      signedWaiverVersion: null as number | null,
       signedById: callerId,
+      method: 'ONLINE' as const,
+      recordedById: null as string | null,
       signerFullName: dto.signerFullName,
       signatureText: dto.signatureText,
       signatureImageKey: dto.signatureImageKey,
@@ -445,6 +726,18 @@ export class WaiversService {
     let created: WaiverSignature;
     try {
       created = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        // Waivers review W3: copy the wording being signed, read in this same
+        // transaction. A signer who read an older version is sent back to it.
+        const current = await tx.waiver.findUniqueOrThrow({ where: { id: waiver.id }, select: { title: true, body: true, version: true } });
+        if (dto.waiverVersion !== undefined && dto.waiverVersion !== current.version) {
+          throw new ConflictException('This waiver was changed while you were reading it. Please read it again before signing.');
+        }
+        Object.assign(signedData, {
+          signedWaiverTitle: current.title,
+          signedWaiverBody: current.body,
+          signedWaiverSha256: createHash('sha256').update(current.body, 'utf8').digest('hex'),
+          signedWaiverVersion: current.version,
+        });
         const existing = await tx.waiverSignature.findFirst({
           where: { waiverId: waiver.id, studentId, status: { not: 'EXPIRED' } },
         });
@@ -498,9 +791,7 @@ export class WaiversService {
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
     if (!student.dateOfBirth) {
-      throw new ForbiddenException(
-        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
-      );
+      throw new ForbiddenException('Add your date of birth to your profile before signing a waiver.');
     }
     const today = new Date();
     let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
@@ -511,7 +802,7 @@ export class WaiversService {
 
     if (age < 18) {
       throw new ForbiddenException(
-        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+        "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
       );
     }
   }
@@ -582,10 +873,9 @@ export class WaiversService {
 
 /** The v1.2 backend backlog's own "Recommended display shape" rollup —
  * "12 of 40 signed" — computed from a `groupBy` over WaiverSignature.status
- * for one Waiver. `total` is every row regardless of status (Signed,
- * Unsigned, Expired, and Pending — the full confirmed enum, SKILL.md §13),
- * not just Signed+Unsigned, so an Expired row (e.g. a re-assignment cycle)
- * still counts toward the denominator the frontend shows. */
+ * for one Waiver. `total` is Signed + Unsigned + Pending; Expired rows are
+ * counted in `expired` only, since each one has been replaced by a new entry
+ * for the same student (Decision 354). */
 export interface WaiverSignatureSummary {
   total: number;
   signed: number;
@@ -597,7 +887,9 @@ export interface WaiverSignatureSummary {
 function summarizeStatusCounts(counts: Array<{ status: string; _count: { _all: number } }>): WaiverSignatureSummary {
   const summary: WaiverSignatureSummary = { total: 0, signed: 0, unsigned: 0, expired: 0, pending: 0 };
   for (const { status, _count } of counts) {
-    summary.total += _count._all;
+    // Decision 354: an Expired row is an old signature the same student has
+    // been asked to give again, so it isn't a separate entry in the total.
+    if (status !== 'EXPIRED') summary.total += _count._all;
     switch (status) {
       case 'SIGNED':
         summary.signed += _count._all;

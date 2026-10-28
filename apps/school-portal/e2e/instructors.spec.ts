@@ -56,7 +56,7 @@ test('a School with branches requires one before Add Manually will submit', asyn
   // stays open with nothing created, rather than any particular message text.
   await expect(page.getByRole('dialog', { name: 'Add instructor manually' })).toBeVisible();
 
-  await page.getByLabel('Branch').selectOption({ label: 'North' });
+  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
   await page.getByRole('button', { name: 'Add instructor' }).last().click();
   await expect(page.getByText(/was added/)).toBeVisible();
 });
@@ -93,11 +93,12 @@ test('the owner invites an existing eligible user (already a Student) to the Ins
   const roles = (await db.roleGrant.findMany({ where: { userId: existing.id, revokedAt: null } })).map((g) => g.role).sort();
   expect(roles).toEqual(['INSTRUCTOR', 'STUDENT']);
 
-  // They're now an eligible candidate for "Add instructor" — the role grant
-  // and the Instructor profile are deliberately separate steps (see
-  // InstructorsService.create()'s own header comment).
-  await page.getByRole('button', { name: 'Add instructor' }).click();
-  await expect(page.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
+  // The role grant and the Instructor profile are deliberately separate steps
+  // (see InstructorsService.create()'s own header comment); "Add instructor"
+  // opens next with them already picked (Decision 312).
+  const add = page.getByRole('dialog', { name: /Add instructor/i });
+  await expect(add.getByLabel('User')).toHaveValue(existing.id);
+  await expect(add.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
 });
 
 test('no existing account is found by email/phone — a clear message, no grant created', async ({ page }) => {
@@ -128,7 +129,7 @@ test('a School with branches requires one before granting the Instructor role wi
     db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } }),
   ).resolves.toBeNull();
 
-  await page.getByLabel('Branch').selectOption({ label: 'North' });
+  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
   await page.getByRole('button', { name: 'Grant Instructor role' }).click();
   await expect(page.getByText(/Instructor role granted/)).toBeVisible();
   const grant = await db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
@@ -140,13 +141,20 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
-  await page.getByLabel('Address').fill('123 Mat Street');
+  await page.getByLabel('Country', { exact: true }).selectOption('GB');
+  await page.getByLabel('Address line 1').fill('123 Mat Street');
+  // A UK address needs a postcode: the form says so before anything is sent.
+  await page.getByLabel('Town/City').fill('Leeds');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Postcode is required.')).toBeVisible();
+  await page.getByLabel('Postcode').fill('LS1 4AP');
   await page.getByLabel('Activities', { exact: false }).fill('BJJ, Judo');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Your profile was updated.')).toBeVisible();
 
   const updated = await db.instructor.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId } });
-  expect(updated.address).toBe('123 Mat Street');
+  expect(updated.address).toBe('123 Mat Street, Leeds, LS1 4AP, United Kingdom');
+  expect(updated.addressCity).toBe('Leeds');
   expect(updated.activities).toEqual(['BJJ', 'Judo']);
 });
 
@@ -193,6 +201,15 @@ test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled
     // own render).
     await expect(page.getByText(/^1\s+booked$/)).toBeVisible();
 
+    // Still teaching an upcoming class: revoking is refused (Decision 331).
+    await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+    const blocked = page.getByRole('dialog', { name: 'Dana Coach still teaches classes' });
+    await expect(blocked).toBeVisible();
+    await blocked.getByRole('button', { name: 'Cancel' }).click();
+
+    // Once the class is over, it goes through.
+    await db.class.update({ where: { id: cls.id }, data: { startDate: new Date(Date.now() - 25 * 3_600_000), endDate: new Date(Date.now() - 24 * 3_600_000) } });
+    await page.reload();
     await page.getByRole('button', { name: 'Revoke enrollment' }).click();
     const dialog = page.getByRole('dialog', { name: 'Revoke Dana Coach\'s enrollment?' });
     await expect(dialog).toBeVisible();

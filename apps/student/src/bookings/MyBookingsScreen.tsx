@@ -6,6 +6,16 @@ import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useEnterCheckInCode } from '../attendance/attendanceQueries';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
+import { BookingGuests } from './BookingGuests';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
+
+const BOOKING_STATUS: Record<string, TranslationKey> = {
+  UPCOMING: 'bookings.statusLabel.upcoming',
+  COMPLETED: 'bookings.statusLabel.completed',
+  CANCELLED: 'bookings.statusLabel.cancelled',
+  NO_SHOW: 'bookings.statusLabel.noShow',
+};
 
 type Booking = components['schemas']['BookingResponseDto'];
 
@@ -13,6 +23,7 @@ type Booking = components['schemas']['BookingResponseDto'];
  * UPCOMING/COMPLETED/CANCELLED/NO_SHOW, apps/api/prisma/schema.prisma) — the other
  * three are already-resolved terminal states with nothing to cancel. */
 function BookingRow({ booking }: { booking: Booking }) {
+  const t = useT();
   const cancelBooking = useCancelBooking();
   const enterCode = useEnterCheckInCode();
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +57,7 @@ function BookingRow({ booking }: { booking: Booking }) {
     try {
       await cancelBooking.mutateAsync(booking.id);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Could not cancel this booking — please try again.'));
+      setError(getApiErrorMessage(err, t('bookings.myBookings.cancelError')));
     }
   }
 
@@ -70,26 +81,27 @@ function BookingRow({ booking }: { booking: Booking }) {
       setEnteringCode(false);
       setCode('');
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Incorrect or expired code — ask Staff for the current code.'));
+      setError(getApiErrorMessage(err, t('bookings.myBookings.codeError')));
     }
   }
 
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontSize: 15, fontWeight: '600' }}>Class {booking.classId}</Text>
-      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Status: {booking.status}</Text>
+      <Text style={{ fontSize: 15, fontWeight: '600' }}>{t('bookings.myBookings.classLabel', { classId: booking.classId })}</Text>
+      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: BOOKING_STATUS[booking.status] ? t(BOOKING_STATUS[booking.status]) : booking.status })}</Text>
       {error ? <InlineError message={error} /> : null}
+      {booking.status === 'UPCOMING' && booking.attendees.length > 0 ? <BookingGuests bookingId={booking.id} /> : null}
 
       {booking.status === 'UPCOMING' && confirming ? (
         <View style={{ marginTop: 8 }}>
-          <Text style={{ color: '#C5221F', fontSize: 13 }}>Cancel booking? This cannot be undone.</Text>
+          <Text style={{ color: '#C5221F', fontSize: 13 }}>{t('bookings.myBookings.cancelConfirm')}</Text>
           <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <Button title="Keep booking" variant="secondary" onPress={keepBooking} />
+              <Button title={t('bookings.myBookings.keepBooking')} variant="secondary" onPress={keepBooking} />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                title="Cancel booking"
+                title={t('bookings.myBookings.cancelBooking')}
                 variant="destructive"
                 onPress={confirmCancel}
                 loading={cancelBooking.isPending}
@@ -100,7 +112,7 @@ function BookingRow({ booking }: { booking: Booking }) {
       ) : booking.status === 'UPCOMING' && enteringCode ? (
         <View style={{ marginTop: 8 }}>
           <Text style={{ fontSize: 13, marginBottom: 6 }}>
-            Type the code shown on the Class's check-in screen. No camera needed.
+            {t('bookings.myBookings.codeInstructions')}
           </Text>
           <TextField
             value={code}
@@ -112,11 +124,11 @@ function BookingRow({ booking }: { booking: Booking }) {
           />
           <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <Button title="Cancel" variant="secondary" onPress={cancelCodeEntry} />
+              <Button title={t('bookings.myBookings.cancel')} variant="secondary" onPress={cancelCodeEntry} />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                title="Check in"
+                title={t('bookings.myBookings.checkIn')}
                 onPress={submitCode}
                 loading={enterCode.isPending}
                 disabled={code.length !== 6}
@@ -127,10 +139,10 @@ function BookingRow({ booking }: { booking: Booking }) {
       ) : booking.status === 'UPCOMING' ? (
         <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
           <View style={{ flex: 1 }}>
-            <Button title="Check in with code" variant="secondary" onPress={openCodeEntry} />
+            <Button title={t('bookings.myBookings.checkInWithCode')} variant="secondary" onPress={openCodeEntry} />
           </View>
           <View style={{ flex: 1 }}>
-            <Button title="Cancel" variant="secondary" onPress={openConfirm} loading={cancelBooking.isPending} />
+            <Button title={t('bookings.myBookings.cancel')} variant="secondary" onPress={openConfirm} loading={cancelBooking.isPending} />
           </View>
         </View>
       ) : null}
@@ -139,14 +151,15 @@ function BookingRow({ booking }: { booking: Booking }) {
 }
 
 export function MyBookingsScreen() {
+  const t = useT();
   const query = useMyBookings();
 
   return (
     <PaginatedListScreen
       query={query}
       renderItem={(item: Booking) => <BookingRow booking={item} />}
-      emptyMessage="No bookings yet."
-      errorFallbackMessage="Failed to load bookings — please try again."
+      emptyMessage={t('bookings.myBookings.empty')}
+      errorFallbackMessage={t('bookings.myBookings.loadError')}
     />
   );
 }

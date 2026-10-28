@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
  * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a
@@ -59,6 +60,7 @@ export function InstructorFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     userId: initial?.userId ?? '',
@@ -95,7 +97,7 @@ export function InstructorFormModal({
         bio: form.bio || null,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -105,16 +107,23 @@ export function InstructorFormModal({
         {error ? <ErrorBanner message={error} /> : null}
         {isEdit ? null : (
           <Field
-            label="User"
+            label={t('instructors.form.user')}
             htmlFor="instructor-userId"
-            hint="Must already hold an active Instructor role at this School — grant it first on the Staff page."
+            hint={t('instructors.form.userHint')}
           >
             <SelectField
               required
               value={form.userId}
-              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              onChange={(e) => {
+                const userId = e.target.value;
+                // Start on the branch their Instructor role is for: a whole-School
+                // profile needs a whole-School role (Decision 311, I13).
+                const picked = (eligibleUsers ?? []).find((u) => u.id === userId);
+                const roleBranch = picked && !picked.schoolWide ? picked.branchIds.find((id) => branches.some((b) => b.id === id && !b.archivedAt)) : undefined;
+                setForm((f) => ({ ...f, userId, branchId: roleBranch ?? (picked?.schoolWide ? f.branchId : '') }));
+              }}
               options={[
-                { value: '', label: 'Select a user…' },
+                { value: '', label: t('instructors.form.userPlaceholder') },
                 ...(eligibleUsers ?? []).map((u) => ({
                   value: u.id,
                   label: `${u.firstName} ${u.surname} (${u.email})`,
@@ -123,14 +132,14 @@ export function InstructorFormModal({
             />
           </Field>
         )}
-        <Field label="Branch" htmlFor="instructor-branch" hint="Leave unselected for a School-wide profile.">
+        <Field label={t('instructors.form.branch')} htmlFor="instructor-branch" hint={t('instructors.form.branchHint')}>
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: 'Whole School' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('instructors.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
         </Field>
-        <Field label="Photo" htmlFor="instructor-photo">
+        <Field label={t('instructors.form.photo')} htmlFor="instructor-photo">
           <PhotoUploadField
             value={form.photoUrl}
             onChange={(photoUrl) => setForm((f) => ({ ...f, photoUrl }))}
@@ -145,12 +154,14 @@ export function InstructorFormModal({
           />
         </Field>
         {usesStyles ? (
-          <Field label="Specializations" htmlFor="instructor-specializations" hint="The styles this instructor teaches.">
+          <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsStylesHint')}>
             <div id="instructor-specializations">
-              {disciplines.map((d) => (
+              {disciplines
+                .filter((d) => !d.archivedAt || (initial?.specializationStyleIds ?? []).includes(d.id))
+                .map((d) => (
                 <Checkbox
                   key={d.id}
-                  label={d.name}
+                  label={d.archivedAt ? t('disciplines.stylePicker.archivedName', { name: d.name }) : d.name}
                   checked={styleIds.includes(d.id)}
                   onChange={(e) => setStyleIds((ids) => (e.target.checked ? [...ids, d.id] : ids.filter((id) => id !== d.id)))}
                 />
@@ -158,21 +169,21 @@ export function InstructorFormModal({
             </div>
           </Field>
         ) : (
-          <Field label="Specializations" htmlFor="instructor-specializations" hint="Comma-separated">
+          <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsHint')}>
             <TextField
               value={form.specializations}
               onChange={(e) => setForm((f) => ({ ...f, specializations: e.target.value }))}
             />
           </Field>
         )}
-        <Field label="Phone" htmlFor="instructor-phone">
+        <Field label={t('instructors.form.phone')} htmlFor="instructor-phone">
           <PhoneField
             value={form.phone}
             onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Years of experience" htmlFor="instructor-experience">
+        <Field label={t('instructors.form.yearsOfExperience')} htmlFor="instructor-experience">
           <TextField
             type="number"
             min={0}
@@ -180,15 +191,15 @@ export function InstructorFormModal({
             onChange={(e) => setForm((f) => ({ ...f, yearsOfExperience: e.target.value }))}
           />
         </Field>
-        <Field label="Bio" htmlFor="instructor-bio">
+        <Field label={t('instructors.form.bio')} htmlFor="instructor-bio">
           <TextArea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

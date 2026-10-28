@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { trimSearch } from '../../common/search/name-search';
 
 /**
  * GET /schools/:schoolId/classes query — cursor-based pagination (Decision 22/70,
@@ -28,8 +29,10 @@ export class ClassesQueryDto extends PaginationQueryDto {
   @MaxLength(100)
   activities?: string;
 
+  /** Trimmed; blank means no filter (Decision 278, same as the other list endpoints' `search`). */
   @ApiPropertyOptional({ description: 'Case-insensitive substring match against Class.title.' })
   @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
   @IsString()
   @MaxLength(200)
   search?: string;
@@ -37,7 +40,39 @@ export class ClassesQueryDto extends PaginationQueryDto {
   /** Decision 226 — archived Classes are excluded by default. */
   @ApiPropertyOptional({ default: false, description: 'Include archived Classes too (excluded by default).' })
   @IsOptional()
-  @Type(() => Boolean)
+  // "false" is a non-empty string, which @Type(() => Boolean) read as true (Waivers review W11).
+  @Transform(({ value }) => (value === 'true' || value === true ? true : value === 'false' || value === false ? false : value))
   @IsBoolean()
   includeArchived?: boolean;
+
+  /** "Log a class" on the student's Ranks tab (Decision 301 item 5): the
+   * classes of one style, the ones the coach can pick. */
+  @ApiPropertyOptional({ description: 'Only Classes that list this style (Class.styles).' })
+  @IsOptional()
+  @IsUUID()
+  disciplineId?: string;
+
+  @ApiPropertyOptional({ description: 'ISO 8601 date-time: only Classes starting at or after it.' })
+  @IsOptional()
+  @IsISO8601()
+  startsFrom?: string;
+
+  @ApiPropertyOptional({ description: 'ISO 8601 date-time: only Classes starting at or before it.' })
+  @IsOptional()
+  @IsISO8601()
+  startsTo?: string;
+
+  /** Classes review C3: `upcoming` (not yet ended, soonest first), `past`
+   * (ended, latest first) or `all` (latest first). Omitted keeps the old
+   * id order, for callers that read the whole list (e.g. plan scoping). */
+  @ApiPropertyOptional({ enum: ['upcoming', 'past', 'all'], description: 'Date view, sorted by start time. Omit for the unsorted list.' })
+  @IsOptional()
+  @IsIn(['upcoming', 'past', 'all'])
+  when?: 'upcoming' | 'past' | 'all';
+
+  /** Classes review C17: only Classes this User teaches (coach dashboard). */
+  @ApiPropertyOptional({ description: 'Only Classes taught by this User.' })
+  @IsOptional()
+  @IsUUID()
+  instructorId?: string;
 }

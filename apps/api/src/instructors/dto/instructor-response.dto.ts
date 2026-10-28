@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PostalAddressColumnsResponseDto } from '../../common/address/postal-address.dto';
 
 /**
  * Response shape — see class-response.dto.ts's header comment (including why every
@@ -6,7 +7,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * openapi-typescript silently generates `Record<string, never>` for it). Field-for-field
  * match of the Instructor Prisma model.
  */
-export class InstructorResponseDto {
+export class InstructorResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   id!: string;
 
@@ -32,6 +33,12 @@ export class InstructorResponseDto {
    * (Instructor itself is never the source of truth for role-holding). */
   @ApiProperty({ enum: ['ACTIVE', 'REVOKED'] })
   status!: 'ACTIVE' | 'REVOKED';
+
+  /** Decision 312 — true while the linked User still has the temporary
+   * passcode from "Add Manually" (User.mustChangePasscode), i.e. they haven't
+   * signed in yet. Not a raw Instructor column. */
+  @ApiProperty()
+  awaitingFirstLogin!: boolean;
 
   @ApiProperty()
   schoolId!: string;

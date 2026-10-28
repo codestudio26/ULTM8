@@ -8,15 +8,26 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useRanks } from '../ranks/rankQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useTimetableSlots, type TimetableSlotResponse } from '../timetable/timetableQueries';
-import { useNotifications } from '../notifications/notificationQueries';
+import { notificationLink, useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
 import { useGradingBoard, useMyGrading, useStudentEligibility, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
 import { BeltChip } from '../grading/BeltChip';
+import { useI18n, useT, type TranslationKey } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
-const dayLabel = (d: string) => d.charAt(0) + d.slice(1).toLowerCase();
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+/** Weekday labels are translation keys, resolved at render time. */
+const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], TranslationKey> = {
+  MONDAY: 'coach.weekdays.monday',
+  TUESDAY: 'coach.weekdays.tuesday',
+  WEDNESDAY: 'coach.weekdays.wednesday',
+  THURSDAY: 'coach.weekdays.thursday',
+  FRIDAY: 'coach.weekdays.friday',
+  SATURDAY: 'coach.weekdays.saturday',
+  SUNDAY: 'coach.weekdays.sunday',
+};
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -42,6 +53,7 @@ function Section({ title, action, children }: { title: string; action?: React.Re
  * read; it shows students of the coach's own branches only (Decision 168).
  */
 export function CoachDashboardPage() {
+  const t = useT();
   const schoolId = useCoachSchoolId();
   const { claims } = useAuth();
   const school = useSchool(schoolId);
@@ -50,14 +62,14 @@ export function CoachDashboardPage() {
   if (!schoolId) {
     return (
       <Card>
-        <EmptyState title="You're not a coach at a School yet" description="Open the invite link the School sent you to get started." />
+        <EmptyState title={t('coach.dashboard.notCoachTitle')} description={t('coach.dashboard.notCoachDescription')} />
       </Card>
     );
   }
 
   return (
     <>
-      <PageHeader title="Coach dashboard" subtitle={school.data?.name} />
+      <PageHeader title={t('coach.dashboard.title')} subtitle={school.data?.name} />
       <GradingSection schoolId={schoolId} />
       <ClassesSection schoolId={schoolId} me={claims?.sub ?? ''} />
       <NotificationsSection />
@@ -67,17 +79,18 @@ export function CoachDashboardPage() {
 }
 
 function GradingSection({ schoolId }: { schoolId: string }) {
+  const t = useT();
   const my = useMyGrading(schoolId);
   const disciplines = useDisciplines(schoolId);
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   return (
-    <Section title="Grading" action={styles.length > 0 ? <Link to="/grading">Open the Grading Board</Link> : undefined}>
+    <Section title={t('coach.dashboard.grading')} action={styles.length > 0 ? <Link to="/grading">{t('coach.dashboard.openBoard')}</Link> : undefined}>
       {my.isLoading || disciplines.isLoading ? (
         <Spinner />
       ) : my.error || disciplines.error ? (
-        <ErrorBanner message={errorText(my.error ?? disciplines.error, 'Could not load your grading.')} />
+        <ErrorBanner message={errorText(my.error ?? disciplines.error, t('coach.dashboard.gradingLoadFailed'))} />
       ) : styles.length === 0 ? (
-        <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+        <EmptyState title={t('coach.dashboard.noStylesTitle')} description={t('coach.dashboard.noStylesDescription')} />
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {styles.map((style) => (
@@ -90,6 +103,7 @@ function GradingSection({ schoolId }: { schoolId: string }) {
 }
 
 function StyleSummary({ schoolId, style }: { schoolId: string; style: DisciplineResponse }) {
+  const t = useT();
   const board = useGradingBoard(schoolId, style.id, false);
   const items = board.data?.items ?? [];
   const ready = items.filter((i) => i.eligibility.boardColumn === 'READY_TO_GRADE').length;
@@ -100,12 +114,12 @@ function StyleSummary({ schoolId, style }: { schoolId: string; style: Discipline
       {board.isLoading ? (
         <Spinner />
       ) : board.error ? (
-        <span className="ultm8-field__hint">{errorText(board.error, 'Could not load this board.')}</span>
+        <span className="ultm8-field__hint">{errorText(board.error, t('coach.dashboard.boardLoadFailed'))}</span>
       ) : (
         <>
-          <Badge variant={ready > 0 ? 'success' : 'default'}>{ready} ready to grade</Badge>
-          <Badge>{gettingThere} getting there</Badge>
-          <span className="ultm8-field__hint">{items.length} students</span>
+          <Badge variant={ready > 0 ? 'success' : 'default'}>{t('coach.dashboard.readyCount', { count: ready })}</Badge>
+          <Badge>{t('coach.dashboard.gettingThereCount', { count: gettingThere })}</Badge>
+          <span className="ultm8-field__hint">{t('coach.dashboard.studentsCount', { count: items.length })}</span>
         </>
       )}
     </li>
@@ -114,9 +128,11 @@ function StyleSummary({ schoolId, style }: { schoolId: string; style: Discipline
 
 /** Classes and weekly timetable slots where they are the instructor. */
 function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
-  const classes = useClasses(schoolId);
+  const t = useT();
+  // Classes review C17: asked of the server, soonest first, so a School with
+  // many Classes doesn't hide this coach's next one past the first page.
+  const classes = useClasses(schoolId, { when: 'upcoming', instructorId: me, limit: 10 });
   const slots = useTimetableSlots(schoolId);
-  const now = Date.now();
   const weekly = useMemo(
     () =>
       (slots.data?.items ?? [])
@@ -124,33 +140,26 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
         .sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime)),
     [slots.data, me],
   );
-  const upcoming = useMemo(
-    () =>
-      (classes.data?.items ?? [])
-        .filter((c: ClassResponse) => c.instructorId === me && new Date(c.endDate).getTime() >= now)
-        .sort((a, b) => a.startDate.localeCompare(b.startDate))
-        .slice(0, 10),
-    [classes.data, me, now],
-  );
+  const upcoming: ClassResponse[] = classes.data?.items ?? [];
   const loading = classes.isLoading || slots.isLoading;
   const error = classes.error ?? slots.error;
   return (
-    <Section title="My classes">
+    <Section title={t('coach.dashboard.myClasses')}>
       {loading ? (
         <Spinner />
       ) : error ? (
-        <ErrorBanner message={errorText(error, 'Could not load your classes.')} />
+        <ErrorBanner message={errorText(error, t('coach.dashboard.classesLoadFailed'))} />
       ) : weekly.length === 0 && upcoming.length === 0 ? (
-        <EmptyState title="No classes yet" description="Classes the School assigns to you will show here." />
+        <EmptyState title={t('coach.dashboard.noClassesTitle')} description={t('coach.dashboard.noClassesDescription')} />
       ) : (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
           {weekly.length > 0 ? (
             <div>
-              <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Every week</h3>
+              <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('coach.dashboard.everyWeek')}</h3>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {weekly.map((s) => (
                   <li key={s.id}>
-                    {dayLabel(s.weekday)} {s.startTime}–{s.endTime} · {s.title}
+                    {t(WEEKDAY_LABELS[s.weekday])} {s.startTime}–{s.endTime} · {s.title}
                   </li>
                 ))}
               </ul>
@@ -158,11 +167,14 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
           ) : null}
           {upcoming.length > 0 ? (
             <div>
-              <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Coming up</h3>
+              <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('coach.dashboard.comingUp')}</h3>
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {upcoming.map((c) => (
                   <li key={c.id}>
-                    {shortDate(c.startDate)} · {c.title}
+                    {shortDate(c.startDate)} · {c.title} ·{' '}
+                    {/* Classes review C4: a coach had no way to reach these. */}
+                    <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
+                    <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
                   </li>
                 ))}
               </ul>
@@ -175,22 +187,28 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
 }
 
 function NotificationsSection() {
+  const { t, serverText } = useI18n();
   const notifications = useNotifications();
-  const items = (notifications.data?.items ?? []).slice(0, 5);
-  const unread = (notifications.data?.items ?? []).filter((n) => !n.read).length;
+  const items = (notifications.data?.items ?? []).slice(0, 5).map((n) => ({ ...n, ...serverText.notification(n) }));
+  // Every page, snoozed left out — not just the five-row preview's page.
+  const unread = useNotificationCounts().data?.unread ?? 0;
   return (
-    <Section title="Notifications" action={<Link to="/notifications">See all{unread > 0 ? ` (${unread} unread)` : ''}</Link>}>
+    <Section
+      title={t('coach.dashboard.notifications')}
+      action={<Link to="/notifications">{unread > 0 ? t('coach.dashboard.seeAllUnread', { count: unread }) : t('coach.dashboard.seeAll')}</Link>}
+    >
       {notifications.isLoading ? (
         <Spinner />
       ) : notifications.error ? (
-        <ErrorBanner message={errorText(notifications.error, 'Could not load notifications.')} />
+        <ErrorBanner message={errorText(notifications.error, t('coach.dashboard.notificationsLoadFailed'))} />
       ) : items.length === 0 ? (
-        <EmptyState title="No notifications" />
+        <EmptyState title={t('coach.dashboard.noNotifications')} />
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {items.map((n) => (
             <li key={n.id} style={{ fontWeight: n.read ? 400 : 700 }}>
-              {n.title}
+              {/* Decision 355: opens what the notification is about. */}
+              {notificationLink(n) ? <Link to={notificationLink(n)!}>{n.title}</Link> : n.title}
               <div className="ultm8-field__hint" style={{ fontWeight: 400 }}>
                 {n.body}
               </div>
@@ -205,21 +223,22 @@ function NotificationsSection() {
 /** Their own ranks, when they also train at this School (Decision 184: a
  * coach keeps their student side). */
 function MyTrainingSection({ schoolId, me }: { schoolId: string; me: string }) {
+  const t = useT();
   const eligibility = useStudentEligibility(me, schoolId);
   const disciplines = useDisciplines(schoolId);
   const items = eligibility.data?.items ?? [];
   return (
-    <Section title="My training">
+    <Section title={t('coach.dashboard.myTraining')}>
       {eligibility.isLoading || disciplines.isLoading ? (
         <Spinner />
       ) : eligibility.error ? (
-        <ErrorBanner message={errorText(eligibility.error, 'Could not load your ranks.')} />
+        <ErrorBanner message={errorText(eligibility.error, t('coach.dashboard.ranksLoadFailed'))} />
       ) : items.length === 0 ? (
-        <EmptyState title="No rank yet" description="Your ranks will show here once you're graded." />
+        <EmptyState title={t('coach.dashboard.noRankTitle')} description={t('coach.dashboard.noRankDescription')} />
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {items.map((item) => (
-            <MyRank key={item.disciplineId} item={item} styleName={disciplines.data?.items.find((d) => d.id === item.disciplineId)?.name ?? 'Style'} />
+            <MyRank key={item.disciplineId} item={item} styleName={disciplines.data?.items.find((d) => d.id === item.disciplineId)?.name ?? t('coach.dashboard.styleFallback')} />
           ))}
         </ul>
       )}
@@ -228,6 +247,7 @@ function MyTrainingSection({ schoolId, me }: { schoolId: string; me: string }) {
 }
 
 function MyRank({ item, styleName }: { item: StudentEligibility; styleName: string }) {
+  const t = useT();
   const ranks = useRanks(item.disciplineId);
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
   const rung = ladder.find((r) => r.id === item.currentStripeId) ?? null;
@@ -237,8 +257,8 @@ function MyRank({ item, styleName }: { item: StudentEligibility; styleName: stri
       <strong style={{ minWidth: 120 }}>{styleName}</strong>
       {rung ? <BeltChip rung={rung} /> : null}
       <span>{rung?.name ?? '—'}</span>
-      {e?.hasNext ? <span className="ultm8-field__hint">{e.progressPercent ?? 0}% to next rank</span> : null}
-      {e?.hasNext && e.eligible ? <Badge variant="success">Ready to grade</Badge> : null}
+      {e?.hasNext ? <span className="ultm8-field__hint">{t('coach.dashboard.toNextRank', { percent: e.progressPercent ?? 0 })}</span> : null}
+      {e?.hasNext && e.eligible ? <Badge variant="success">{t('coach.dashboard.readyToGrade')}</Badge> : null}
     </li>
   );
 }

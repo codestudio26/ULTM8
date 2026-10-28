@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from '../instructors/instructorQueries';
-import { titleCase } from '../lib/text';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
+import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
+import { useI18n } from '../i18n/I18nProvider';
 import type { TimetableSlotResponse } from './timetableQueries';
+import { weekdayName } from './timetableOccurrences';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 
@@ -20,13 +21,9 @@ export interface TimetableSlotFormValues {
   weekday: (typeof WEEKDAYS)[number];
   startTime: string;
   endTime: string;
-  /** NOT clearable via this form yet — TimetableService.update() converts
-   * these via `dto.X ? parseHHmm(dto.X) : undefined`, a falsy check that
-   * would treat an explicit `null` the same as an omitted field. A real,
-   * separate, flagged backend gap (see that service's own comment), not
-   * something this form can fix on its own. */
-  breakStart?: string;
-  breakEnd?: string;
+  /** `null` removes the break (Decision 332, T9). */
+  breakStart?: string | null;
+  breakEnd?: string | null;
   /** Always populated — defaults to 'ON', never undefined. */
   status: 'ON' | 'OFF';
   title: string;
@@ -75,6 +72,7 @@ export function TimetableSlotFormModal({
   onSubmit: (values: TimetableSlotFormValues) => Promise<void>;
   onClose: () => void;
 }) {
+  const { t, locale } = useI18n();
   const [form, setForm] = useState({
     branchId: initial?.branchId ?? '',
     instructorId: initial?.instructorId ?? '',
@@ -114,18 +112,33 @@ export function TimetableSlotFormModal({
       .map((s) => s.trim())
       .filter(Boolean);
     if (usesStyles) {
-      const problem = styleSelectionProblem(disciplines, styles);
+      const problem = styleSelectionProblem(disciplines, styles, t);
       if (problem) {
         setError(problem);
         return;
       }
     } else if (activities.length === 0) {
-      setError('At least one activity is required.');
+      setError(t('timetable.form.activitiesRequired'));
       return;
     }
     if (form.endTime <= form.startTime) {
-      setError('End time must be after start time.');
+      setError(t('timetable.form.endAfterStart'));
       return;
+    }
+    // The same break checks the API makes (Decision 332, T8).
+    if (!form.breakStart !== !form.breakEnd) {
+      setError(t('timetable.form.breakBothEnds'));
+      return;
+    }
+    if (form.breakStart && form.breakEnd) {
+      if (form.breakEnd <= form.breakStart) {
+        setError(t('timetable.form.breakEndAfterStart'));
+        return;
+      }
+      if (form.breakStart < form.startTime || form.breakEnd > form.endTime) {
+        setError(t('timetable.form.breakInsideClass'));
+        return;
+      }
     }
     try {
       await onSubmit({
@@ -134,8 +147,8 @@ export function TimetableSlotFormModal({
         weekday: form.weekday,
         startTime: form.startTime,
         endTime: form.endTime,
-        breakStart: form.breakStart || undefined,
-        breakEnd: form.breakEnd || undefined,
+        breakStart: form.breakStart || null,
+        breakEnd: form.breakEnd || null,
         status: form.status,
         title: form.title,
         ...(usesStyles ? { styles } : { activities }),
@@ -154,7 +167,7 @@ export function TimetableSlotFormModal({
         cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -162,13 +175,13 @@ export function TimetableSlotFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Title" htmlFor="slot-title">
+        <Field label={t('timetable.form.titleLabel')} htmlFor="slot-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
         {usesStyles ? (
           <StylePicker idPrefix="slot" disciplines={disciplines} value={styles} onChange={setStyles} />
         ) : (
-          <Field label="Activities" htmlFor="slot-activities" hint="Comma-separated, at least one">
+          <Field label={t('timetable.form.activitiesLabel')} htmlFor="slot-activities" hint={t('timetable.form.activitiesHint')}>
             <TextField
               required
               value={form.activities}
@@ -176,14 +189,14 @@ export function TimetableSlotFormModal({
             />
           </Field>
         )}
-        <Field label="Weekday" htmlFor="slot-weekday">
+        <Field label={t('timetable.form.weekdayLabel')} htmlFor="slot-weekday">
           <SelectField
             value={form.weekday}
             onChange={(e) => setForm((f) => ({ ...f, weekday: e.target.value as (typeof WEEKDAYS)[number] }))}
-            options={WEEKDAYS.map((w) => ({ value: w, label: titleCase(w) }))}
+            options={WEEKDAYS.map((w) => ({ value: w, label: weekdayName(w, locale, 'long') }))}
           />
         </Field>
-        <Field label="Start time" htmlFor="slot-startTime" hint="24-hour clock, HH:mm">
+        <Field label={t('timetable.form.startTimeLabel')} htmlFor="slot-startTime" hint={t('timetable.form.timeHint')}>
           <TextField
             required
             type="time"
@@ -191,7 +204,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
           />
         </Field>
-        <Field label="End time" htmlFor="slot-endTime" hint="24-hour clock, HH:mm">
+        <Field label={t('timetable.form.endTimeLabel')} htmlFor="slot-endTime" hint={t('timetable.form.timeHint')}>
           <TextField
             required
             type="time"
@@ -200,50 +213,49 @@ export function TimetableSlotFormModal({
           />
         </Field>
         <Field
-          label="Break start"
+          label={t('timetable.form.breakStartLabel')}
           htmlFor="slot-breakStart"
-          hint={initial?.breakStart ? "Can't be cleared from this form yet — set a new time instead." : undefined}
+          hint={t('timetable.form.breakHint')}
         >
           <TextField type="time" value={form.breakStart} onChange={(e) => setForm((f) => ({ ...f, breakStart: e.target.value }))} />
         </Field>
         <Field
-          label="Break end"
+          label={t('timetable.form.breakEndLabel')}
           htmlFor="slot-breakEnd"
-          hint={initial?.breakEnd ? "Can't be cleared from this form yet — set a new time instead." : undefined}
         >
           <TextField type="time" value={form.breakEnd} onChange={(e) => setForm((f) => ({ ...f, breakEnd: e.target.value }))} />
         </Field>
-        <Field label="Status" htmlFor="slot-status">
+        <Field label={t('timetable.form.statusLabel')} htmlFor="slot-status">
           <SelectField
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as 'ON' | 'OFF' }))}
             options={[
-              { value: 'ON', label: 'On' },
-              { value: 'OFF', label: 'Off' },
+              { value: 'ON', label: t('timetable.form.statusOn') },
+              { value: 'OFF', label: t('timetable.form.statusOff') },
             ]}
           />
         </Field>
-        <Field label="Branch" htmlFor="slot-branch" hint="Leave unselected for a School-wide slot.">
+        <Field label={t('timetable.form.branchLabel')} htmlFor="slot-branch" hint={t('timetable.form.branchHint')}>
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: 'Whole School' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('timetable.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
         </Field>
-        <Field label="Instructor" htmlFor="slot-instructor">
+        <Field label={t('timetable.form.instructorLabel')} htmlFor="slot-instructor">
           <SelectField
             value={form.instructorId}
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
-              { value: '', label: 'Unassigned' },
-              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
+              { value: '', label: t('timetable.form.unassigned') },
+              ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
         </Field>
-        <Field label="Capacity" htmlFor="slot-capacity" hint="Leave blank for unlimited.">
+        <Field label={t('timetable.form.capacityLabel')} htmlFor="slot-capacity" hint={t('timetable.form.capacityHint')}>
           <TextField type="number" min={1} value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
         </Field>
-        <Field label="Booking cutoff" htmlFor="slot-bookingCutoff" hint="Minutes before each occurrence starts.">
+        <Field label={t('timetable.form.bookingCutoffLabel')} htmlFor="slot-bookingCutoff" hint={t('timetable.form.bookingCutoffHint')}>
           <TextField
             type="number"
             min={0}
@@ -251,7 +263,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, bookingCutoffMinutesBeforeStart: e.target.value }))}
           />
         </Field>
-        <Field label="QR check-in window" htmlFor="slot-qrWindow" hint="Minutes from each occurrence's start.">
+        <Field label={t('timetable.form.qrWindowLabel')} htmlFor="slot-qrWindow" hint={t('timetable.form.qrWindowHint')}>
           <TextField
             type="number"
             min={0}
@@ -259,7 +271,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, qrAttendanceWindowMinutes: e.target.value }))}
           />
         </Field>
-        <Field label="Refund/credit cutoff" htmlFor="slot-refundCutoff" hint="Hours before each occurrence starts.">
+        <Field label={t('timetable.form.refundCutoffLabel')} htmlFor="slot-refundCutoff" hint={t('timetable.form.refundCutoffHint')}>
           <TextField
             type="number"
             min={0}
@@ -267,7 +279,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, refundCutoffHoursBeforeStart: e.target.value }))}
           />
         </Field>
-        <Field label="Cancellation charge" htmlFor="slot-cancellationCharge" hint="Minor currency unit (e.g. cents).">
+        <Field label={t('timetable.form.cancellationChargeLabel')} htmlFor="slot-cancellationCharge" hint={t('timetable.form.cancellationChargeHint')}>
           <TextField
             type="number"
             min={0}
@@ -275,28 +287,23 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, cancellationCharge: e.target.value }))}
           />
         </Field>
-        <Field label="Banner URL" htmlFor="slot-banner">
+        <Field label={t('timetable.form.bannerUrlLabel')} htmlFor="slot-banner">
           <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
         </Field>
-        <Field label="Description" htmlFor="slot-description">
+        <Field label={t('timetable.form.descriptionLabel')} htmlFor="slot-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
         <Checkbox
-          label="Requires signed waiver/terms to book"
+          label={t('timetable.form.waiverRequired')}
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
-        <Checkbox
-          label="Included in general membership access (no separate ticket required)"
-          checked={form.membershipInclusion}
-          onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
-        />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

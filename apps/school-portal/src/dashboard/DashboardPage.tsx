@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useBookingsSummary } from './dashboardQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. No mockup
@@ -19,6 +20,7 @@ import { useBookingsSummary } from './dashboardQueries';
  * than an in-place expand on this same screen.
  */
 export function DashboardPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: school } = useSchool(schoolId);
   const summary = useBookingsSummary(schoolId);
@@ -27,19 +29,26 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Dashboard" subtitle={school?.name} />
+      <PageHeader title={t('dashboard.title')} subtitle={school?.name} />
+      {/* Decision 292 — the owner hasn't chosen a cancellation policy yet. */}
+      {school && !school.cancellationPolicyChosenAt ? (
+        <div className="ultm8-banner ultm8-banner--warning" role="status">
+          <strong>{t('schools.cancellations.chooseTitle')}</strong> {t('schools.cancellations.chooseBody')}{' '}
+          <Link to="/school#cancellations">{t('schools.cancellations.chooseLink')}</Link>
+        </div>
+      ) : null}
       <section
-        aria-label="Bookings this week"
+        aria-label={t('dashboard.bookingsAria')}
         style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 16 }}
       >
         {summary.isLoading ? (
           <Spinner />
         ) : summary.error ? (
-          <ErrorBanner message={summary.error instanceof ApiError ? summary.error.message : 'Could not load Bookings.'} />
+          <ErrorBanner message={summary.error instanceof ApiError ? summary.error.message : t('dashboard.loadFailed')} />
         ) : (
           <>
-            <StatCard label="Bookings this week" value={summary.data?.totalBookings ?? 0} />
-            <StatCard label="Upcoming" value={summary.data?.upcomingBookings ?? 0} />
+            <StatCard label={t('dashboard.statBookingsThisWeek')} value={summary.data?.totalBookings ?? 0} />
+            <StatCard label={t('dashboard.statUpcoming')} value={summary.data?.upcomingBookings ?? 0} />
           </>
         )}
       </section>
@@ -47,9 +56,11 @@ export function DashboardPage() {
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
             <p style={{ margin: 0, color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-              {summary.data.from === summary.data.to ? `For ${summary.data.from}.` : `${summary.data.from} – ${summary.data.to}.`}
+              {summary.data.from === summary.data.to
+                ? t('dashboard.forDate', { date: summary.data.from })
+                : t('dashboard.dateRange', { from: summary.data.from, to: summary.data.to })}
             </p>
-            <Link to="/bookings-drilldown">See more →</Link>
+            <Link to="/bookings-drilldown">{t('dashboard.seeMore')}</Link>
           </div>
         </Card>
       ) : null}

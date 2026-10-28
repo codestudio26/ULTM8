@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { jwtSubTracker } from './common/throttle/identity-trackers';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { AuthModule } from './auth/auth.module';
@@ -52,7 +53,11 @@ function ipLimitPerMinute(): number {
         // here so every other route is unaffected; auth (Decision 12, decoupled from IP)
         // and booking/waitlist/credit-restore (Decision 17) override this tighter via
         // apps/api/src/common/throttle/identity-trackers.ts's trackers.
-        { name: 'identity', ttl: 60_000, limit: 1000 },
+        // Keyed by the signed-in user (JWT sub), falling back to the IP for anonymous
+        // requests. Keyed by IP, every student and coach on one School's WiFi (or,
+        // without TRUST_PROXY, every user behind the load balancer) shared one
+        // 1000/min budget: the booking/schedule stress test of 26 Oct 2026 hit it.
+        { name: 'identity', ttl: 60_000, limit: 1000, getTracker: jwtSubTracker },
       ],
     }),
     PrismaModule,

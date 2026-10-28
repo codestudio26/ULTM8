@@ -3,6 +3,7 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useT } from '../i18n/I18nProvider';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAuth } from './AuthContext';
 import type { AuthStackParamList } from '../navigation/types';
@@ -10,6 +11,7 @@ import type { AuthStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
+  const t = useT();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [passcode, setPasscode] = useState('');
@@ -21,11 +23,16 @@ export function LoginScreen({ navigation }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, passcode);
+      const outcome = await login(email, passcode);
+      // A temporary passcode from the School: choose one's own first.
+      if (outcome) {
+        navigation.navigate('ChoosePasscode', { passcodeChangeToken: outcome.passcodeChangeToken });
+        return;
+      }
       // No navigation.reset() needed here — RootNavigator swaps the whole stack to
       // AppNavigator once useAuth().accessToken is set (see RootNavigator.tsx).
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Something went wrong — please try again.'));
+      setError(getApiErrorMessage(err, t('auth.errors.generic')));
     } finally {
       setSubmitting(false);
     }
@@ -34,12 +41,12 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Log in</Text>
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>{t('auth.login.title')}</Text>
         <Text style={{ fontSize: fontSize.footnote, color: theme.textSecondary, marginBottom: spacing[6] }}>
-          Email and your 6-digit passcode — that's your whole login (no separate password).
+          {t('auth.login.intro')}
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Email">
+        <Field label={t('auth.fields.email')}>
           <TextField
             keyboardType="email-address"
             autoCapitalize="none"
@@ -48,7 +55,7 @@ export function LoginScreen({ navigation }: Props) {
             onChangeText={setEmail}
           />
         </Field>
-        <Field label="Passcode" hint="6 digits">
+        <Field label={t('auth.fields.passcode')} hint={t('auth.fields.sixDigits')}>
           <TextField
             keyboardType="number-pad"
             secureTextEntry
@@ -57,10 +64,10 @@ export function LoginScreen({ navigation }: Props) {
             onChangeText={setPasscode}
           />
         </Field>
-        <Button title="Log in" onPress={handleSubmit} loading={submitting} />
-        <Button title="Create an account" variant="secondary" onPress={() => navigation.navigate('Register')} />
+        <Button title={t('auth.login.submit')} onPress={handleSubmit} loading={submitting} />
+        <Button title={t('auth.login.createAccount')} variant="secondary" onPress={() => navigation.navigate('Register')} />
         <Button
-          title="Forgot your passcode?"
+          title={t('auth.login.forgotPasscode')}
           variant="secondary"
           onPress={() => navigation.navigate('ForgotPasscode')}
         />

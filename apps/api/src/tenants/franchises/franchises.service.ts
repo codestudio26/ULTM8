@@ -1,16 +1,41 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { FeeModel, School } from '@prisma/client';
+import { FeeModel } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { escapeLike } from '../../common/search/name-search';
 import { AuthService } from '../../auth/auth.service';
-import { CreateFranchiseDto, FeeModelDto } from './dto/create-franchise.dto';
+import { CreateFranchiseDto, CURRENCY_CODES, FeeModelDto, LANGUAGE_CODES } from './dto/create-franchise.dto';
 import { FranchiseFeeRateChangeStrategyDto, UpdateFranchiseDto } from './dto/update-franchise.dto';
-import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE } from '../../jobs/queue.constants';
+import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE, NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { FranchiseFeeRateMigrationJobData } from '../../jobs/franchise-fee-rate-migration.types';
+import { addressWriteData } from '../../common/address/postal-address.dto';
+import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
+import { StripeClientService } from '../../payments/stripe-client.service';
+import { StepUpService } from '../../auth/step-up.service';
+import { FRANCHISE_FEE_FINAL_CANCEL } from '../../franchise-fees/franchise-fee-cancel';
+import { cancelOpenJoinRequests, stopFranchiseFeeBilling } from '../../franchise-fees/stop-franchise-fee-billing';
+import { CloseOwnFranchiseDto } from './dto/franchise-join-request.dto';
+import { stopPlatformSubscription } from '../stop-tenant-billing';
+import { memberSchoolsOf, sendFranchiseNotice } from './franchise-notifications';
+
+/** Decision 352 — the columns a join request is shown with, to either side. */
+export const JOIN_REQUEST_SELECT = {
+  id: true,
+  franchiseId: true,
+  schoolId: true,
+  schoolName: true,
+  status: true,
+  createdAt: true,
+  decidedAt: true,
+} as const;
+
+/** Decision 110's own retention window, the same one the Platform Admin close uses. */
+const RETENTION_WINDOW_DAYS = 90;
 
 /**
  * FOUND ON REVIEW, before this ever shipped: `FranchiseResponseDto`'s own header
@@ -37,6 +62,12 @@ const FRANCHISE_PUBLIC_SELECT = {
   name: true,
   mobileNumber: true,
   address: true,
+  addressLine1: true,
+  addressLine2: true,
+  addressCity: true,
+  addressRegion: true,
+  addressPostalCode: true,
+  addressCountry: true,
   type: true,
   activities: true,
   facilities: true,
@@ -48,6 +79,7 @@ const FRANCHISE_PUBLIC_SELECT = {
   feeModel: true,
   flatFeeAmount: true,
   perHeadcountRate: true,
+  shareBrandingWithMembers: true,
   createdAt: true,
   updatedAt: true,
   // Phase 57 — FranchiseResponseDto now types archivedAt/purgeAt/purgedAt
@@ -60,6 +92,26 @@ const FRANCHISE_PUBLIC_SELECT = {
   // constant's own header comment.
 } as const;
 
+/** One row of `franchise_member_schools()` — see FranchiseMemberSchoolResponseDto. */
+export interface FranchiseMemberSchoolRow {
+  id: string;
+  name: string;
+  businessType: string | null;
+  logoUrl: string | null;
+  franchiseFeeSubscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;
+  archivedAt: Date | null;
+  createdAt: Date;
+}
+
+/** A School "already being billed" — it holds a live franchise-fee subscription.
+ * Decision 337: a subscription Stripe has since cancelled no longer counts, and
+ * neither does a closed School (its subscription is cancelled when it closes). */
+const BILLING_SCHOOL_WHERE = {
+  stripeFranchiseFeeSubscriptionId: { not: null },
+  OR: [{ franchiseFeeSubscriptionStatus: null }, { franchiseFeeSubscriptionStatus: { not: 'CANCELED' as const } }],
+  archivedAt: null,
+};
+
 @Injectable()
 export class FranchisesService {
   constructor(
@@ -67,7 +119,212 @@ export class FranchisesService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     @InjectQueue(FRANCHISE_FEE_RATE_MIGRATION_QUEUE) private readonly rateMigrationQueue: Queue,
+    private readonly prismaJobs: PrismaJobsService,
+    private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
+    private readonly stripeClient: StripeClientService,
+    private readonly stepUp: StepUpService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
+
+  private readonly logger = new Logger(FranchisesService.name);
+
+  /** Decision 352 — the Franchise Owner's list of Schools asking to join. */
+  async listJoinRequests(callerId: string, franchiseId: string) {
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseJoinRequest.findMany({
+        where: { franchiseId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+        select: JOIN_REQUEST_SELECT,
+      }),
+    );
+    return { items };
+  }
+
+  /**
+   * Decision 352 — the Franchise Owner accepts (the School joins) or declines a
+   * School's request. Accepting writes the School's franchiseId on the jobs
+   * connection, since a Franchise Owner can't see a non-member School under RLS;
+   * the request is re-checked as PENDING and the School as still independent and
+   * open, in the same transaction, so a double click or a School that has joined
+   * elsewhere meanwhile can't join twice.
+   */
+  async decideJoinRequest(callerId: string, franchiseId: string, requestId: string, accept: boolean) {
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    if (accept) {
+      await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
+    }
+    const request = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseJoinRequest.findFirst({ where: { id: requestId, franchiseId }, select: { status: true, schoolId: true, schoolName: true } }),
+    );
+    if (!request) {
+      throw new NotFoundException('Join request not found');
+    }
+    if (request.status !== 'PENDING') {
+      throw new ConflictException('This join request has already been answered.');
+    }
+    const decided = { decidedById: callerId, decidedAt: new Date() };
+
+    if (!accept) {
+      const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.franchiseJoinRequest.updateMany({ where: { id: requestId, status: 'PENDING' }, data: { status: 'DECLINED', ...decided } }),
+      );
+      if (count === 0) {
+        throw new ConflictException('This join request has already been answered.');
+      }
+    } else {
+      await this.prismaJobs.$transaction(async (tx) => {
+        const { count } = await tx.franchiseJoinRequest.updateMany({
+          where: { id: requestId, status: 'PENDING' },
+          data: { status: 'ACCEPTED', ...decided },
+        });
+        if (count === 0) {
+          throw new ConflictException('This join request has already been answered.');
+        }
+        const joined = await tx.school.updateMany({
+          where: { id: request.schoolId, franchiseId: null, archivedAt: null },
+          // Decision 350 — a new Franchise's branding starts hidden until the
+          // School Owner turns it on.
+          data: { franchiseId, showFranchiseBranding: false },
+        });
+        if (joined.count === 0) {
+          throw new ConflictException('This School can no longer join: it is in another Franchise now, or it has been closed.');
+        }
+      });
+    }
+    // Decision 364 — the School's Owners hear the answer.
+    const franchise = await this.prismaJobs.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: { name: true } });
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: accept ? 'ACCEPTED' : 'DECLINED',
+      requestId,
+      franchiseName: franchise.name,
+      schoolId: request.schoolId,
+      schoolName: request.schoolName,
+    });
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseJoinRequest.findUniqueOrThrow({ where: { id: requestId }, select: JOIN_REQUEST_SELECT }),
+    );
+  }
+
+  /**
+   * Decision 352 — the Franchise Owner removes a member School, after a confirm
+   * step in the portal. The same result as the School leaving
+   * (SchoolsService.leaveFranchise): the School becomes independent, its
+   * franchise-fee subscription is cancelled with a final invoice for the month
+   * (Decision 337, F19) and its Franchise branding switch is reset. Fee charges
+   * already recorded stay on record. Runs on the jobs connection, after the
+   * ownership check, because a Franchise Owner can't write a School row.
+   */
+  async removeSchool(callerId: string, franchiseId: string, schoolId: string) {
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
+    const school = await this.prismaJobs.school.findUnique({
+      where: { id: schoolId },
+      select: { name: true, franchiseId: true, stripeFranchiseFeeSubscriptionId: true },
+    });
+    if (!school || school.franchiseId !== franchiseId) {
+      throw new NotFoundException('This School is not a member of this Franchise.');
+    }
+    const { count } = await this.prismaJobs.school.updateMany({
+      where: { id: schoolId, franchiseId },
+      data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
+    });
+    if (count === 0) {
+      throw new NotFoundException('This School is not a member of this Franchise.');
+    }
+
+    const subscriptionId = school.stripeFranchiseFeeSubscriptionId;
+    if (subscriptionId) {
+      try {
+        const account = await this.prismaJobs.paymentAccount.findUnique({ where: { franchiseId } });
+        if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
+          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(subscriptionId, FRANCHISE_FEE_FINAL_CANCEL);
+        }
+      } catch (err) {
+        this.logger.error(
+          `Franchise ${franchiseId} removed School ${schoolId}, but cancelling its franchise-fee subscription (${subscriptionId}) failed — it may need manual cancellation.`,
+          err as Error,
+        );
+      }
+    }
+    // Decision 364 — the School's Owners are told.
+    const franchise = await this.prismaJobs.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: { name: true } });
+    await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+      kind: 'REMOVED',
+      franchiseId,
+      franchiseName: franchise.name,
+      schoolId,
+      schoolName: school.name,
+    });
+    return { schoolId };
+  }
+
+  /**
+   * Decision 352 — a Franchise Owner closes their own Franchise: the same close
+   * a Full Platform Admin can do (TenantLifecycleService.closeFranchise,
+   * Decision 110): read-only from now, purged after 90 days, and every member
+   * School's franchise-fee billing stops (Decision 337, F16). Needs the
+   * Franchise's name re-typed and a fresh passcode check (StepUpService, the
+   * X-Step-Up-Token header from POST /auth/step-up/verify). Reopening is still a
+   * Platform Admin action. The write uses the platform-admin connection, which
+   * holds the only grant on archivedAt/purgeAt, after the ownership check.
+   */
+  async closeOwnFranchise(callerId: string, franchiseId: string, dto: CloseOwnFranchiseDto, stepUpToken: string | undefined) {
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    this.stepUp.assertVerified(callerId, stepUpToken);
+    const franchise = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchise.findUnique({ where: { id: franchiseId }, select: { name: true, archivedAt: true } }),
+    );
+    if (!franchise) {
+      throw new NotFoundException('Franchise not found');
+    }
+    if (franchise.archivedAt) {
+      throw new ConflictException('This Franchise is already closed.');
+    }
+    if (dto.confirmName !== franchise.name) {
+      throw new BadRequestException("Type the Franchise's name exactly as it is to close it.");
+    }
+    const members = await memberSchoolsOf(this.prismaJobs, franchiseId);
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const { count } = await this.prismaPlatformAdmin.franchise.updateMany({
+      where: { id: franchiseId, archivedAt: null },
+      data: { archivedAt: now, purgeAt },
+    });
+    if (count === 0) {
+      throw new ConflictException('This Franchise is already closed.');
+    }
+    await stopFranchiseFeeBilling(this.prismaJobs, this.stripeClient, this.logger, { franchiseId });
+    await cancelOpenJoinRequests(this.prismaJobs, franchiseId);
+    // Decision 364 — the Franchise's own ULTM8 subscription ends with its paid
+    // period, and each member School's Owners are told.
+    await stopPlatformSubscription(this.prismaJobs, this.stripeClient, this.logger, { franchiseId });
+    for (const member of members) {
+      await sendFranchiseNotice(this.notificationFanoutQueue, this.prismaJobs, this.logger, {
+        kind: 'FRANCHISE_CLOSED',
+        franchiseId,
+        franchiseName: franchise.name,
+        schoolId: member.id,
+        schoolName: member.name,
+      });
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchise.findUniqueOrThrow({ where: { id: franchiseId }, select: FRANCHISE_PUBLIC_SELECT }),
+    );
+  }
+
+  /**
+   * How many of this Franchise's Schools are already being billed. Decision 337 —
+   * counted on the jobs connection, not the caller's: School's RLS shows a row only
+   * to someone with a role AT that School, so a Franchise Owner's own context sees
+   * none of its member Schools once they have an owner (every real School does).
+   * Counted that way, this was always 0 in practice, so the rate-change prompt and
+   * the fee-model lock never fired. Callers check Franchise ownership first; only
+   * a number leaves this method.
+   */
+  private countSchoolsAlreadyBilling(franchiseId: string): Promise<number> {
+    return this.prismaJobs.school.count({ where: { franchiseId, ...BILLING_SCHOOL_WHERE } });
+  }
 
   /**
    * Self-service Franchise creation, creator becomes FRANCHISE_OWNER — the same
@@ -98,7 +355,7 @@ export class FranchisesService {
           id: franchiseId,
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           type: dto.type,
           activities: dto.activities ?? [],
           facilities: dto.facilities ?? [],
@@ -110,6 +367,7 @@ export class FranchisesService {
           feeModel: dto.feeModel,
           flatFeeAmount: dto.flatFeeAmount,
           perHeadcountRate: dto.perHeadcountRate,
+          shareBrandingWithMembers: dto.shareBrandingWithMembers,
         },
         select: FRANCHISE_PUBLIC_SELECT,
       });
@@ -143,26 +401,52 @@ export class FranchisesService {
    *
    * `feeModel`/`activity` — additive, optional filters (School Portal's Franchises
    * page Fee model / Activity filters, FranchisesQueryDto). Both omitted behaves
-   * exactly as before either filter existed. */
+   * exactly as before either filter existed.
+   *
+   * Decision 278 — `search` (header Global Search): case-insensitive substring on
+   * `name`, one more condition on the same RLS-scoped query; never widens it.
+   * `excludeArchived` (default false, so the Franchises page still lists closed
+   * Franchises as before) leaves archived Franchises out — the search box asks
+   * for it so a closed Franchise can't take one of its few result slots. */
   async findAllForCaller(
     callerId: string,
     cursor?: string,
     limit?: number,
     feeModel?: FeeModelDto,
     activity?: string,
+    search?: string,
+    excludeArchived?: boolean,
   ): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
+    const activityTerm = activity?.trim();
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Decision 337 (F11) — the Activity filter ignores capitals, like the header
+      // search. Prisma's `has` is case-sensitive, so the matching ids come from a
+      // raw query run in the same RLS-scoped transaction (it can only ever see
+      // the caller's own Franchises, same as the findMany below).
+      const activityIds = activityTerm
+        ? (
+            await tx.$queryRaw<Array<{ id: string }>>`
+              SELECT id FROM "Franchise"
+              WHERE EXISTS (SELECT 1 FROM unnest(activities) a WHERE lower(a) = lower(${activityTerm}))`
+          ).map((r) => r.id)
+        : undefined;
+      return cursorPaginate(
         (args) =>
           tx.franchise.findMany({
             ...args,
-            where: { ...(feeModel ? { feeModel } : {}), ...(activity ? { activities: { has: activity } } : {}) },
+            where: {
+              ...(feeModel ? { feeModel } : {}),
+              ...(activityIds ? { id: { in: activityIds } } : {}),
+              // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
+              ...(search ? { name: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
+              ...(excludeArchived ? { archivedAt: null } : {}),
+            },
             select: FRANCHISE_PUBLIC_SELECT,
           }),
         cursor,
         limit,
-      ),
-    );
+      );
+    });
   }
 
   async findOne(callerId: string, franchiseId: string) {
@@ -228,6 +512,15 @@ export class FranchisesService {
     if (dto.flatFeeAmount === null || dto.perHeadcountRate === null) {
       throw new BadRequestException('flatFeeAmount/perHeadcountRate cannot be null — omit the field to leave it unchanged.');
     }
+    // Decision 337 (F20) — same gap for the other not-nullable fields: an
+    // explicit `null` slipped past `@IsOptional()` and reached Prisma, which
+    // answered with a 500.
+    const nullable = dto as unknown as Record<string, unknown>;
+    if (nullable.name === null) throw new BadRequestException("Franchise name can't be empty.");
+    if (nullable.feeModel === null) throw new BadRequestException('feeModel cannot be null — omit the field to leave it unchanged.');
+    if (nullable.activities === null || nullable.facilities === null) {
+      throw new BadRequestException('activities/facilities cannot be null — send an empty list to clear them.');
+    }
 
     let rateChangeContext:
       | {
@@ -242,23 +535,39 @@ export class FranchisesService {
       | undefined;
 
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const rateFieldsTouched = dto.flatFeeAmount !== undefined || dto.perHeadcountRate !== undefined;
-      let changingRate = false;
-      let current: { feeModel: FeeModel; flatFeeAmount: number | null; perHeadcountRate: number | null } | undefined;
-      if (rateFieldsTouched) {
-        current = await tx.franchise.findUniqueOrThrow({
-          where: { id: franchiseId },
-          select: { feeModel: true, flatFeeAmount: true, perHeadcountRate: true },
-        });
-        changingRate =
-          (dto.flatFeeAmount !== undefined && dto.flatFeeAmount !== current.flatFeeAmount) ||
-          (dto.perHeadcountRate !== undefined && dto.perHeadcountRate !== current.perHeadcountRate);
+      const current = await tx.franchise.findUniqueOrThrow({
+        where: { id: franchiseId },
+        select: { feeModel: true, flatFeeAmount: true, perHeadcountRate: true, defaultLanguage: true, defaultCurrency: true },
+      });
+
+      // Decision 337 (F21) — language/currency must come from the same lists the
+      // form's pickers use. An unchanged legacy free-text value is let through, so
+      // an older Franchise can still be edited without re-picking it first.
+      if (dto.defaultLanguage != null && dto.defaultLanguage !== current.defaultLanguage && !LANGUAGE_CODES.includes(dto.defaultLanguage)) {
+        throw new BadRequestException('defaultLanguage must be one of the supported language codes.');
+      }
+      if (dto.defaultCurrency != null && dto.defaultCurrency !== current.defaultCurrency && !CURRENCY_CODES.includes(dto.defaultCurrency)) {
+        throw new BadRequestException('defaultCurrency must be one of the supported currency codes.');
+      }
+
+      const changingRate =
+        (dto.flatFeeAmount !== undefined && dto.flatFeeAmount !== current.flatFeeAmount) ||
+        (dto.perHeadcountRate !== undefined && dto.perHeadcountRate !== current.perHeadcountRate);
+      const changingFeeModel = dto.feeModel !== undefined && dto.feeModel !== current.feeModel;
+      const schoolsAlreadyBilling =
+        changingRate || changingFeeModel ? await this.countSchoolsAlreadyBilling(franchiseId) : 0;
+
+      // Decision 337 (F1) — a fee-model switch can't be carried over to Schools that
+      // are already billing: their Stripe subscriptions hold a flat Price or a
+      // metered one, and the monthly job would start treating them as the other
+      // kind. Blocked rather than migrated (product owner's choice, Q3).
+      if (changingFeeModel && schoolsAlreadyBilling > 0) {
+        throw new BadRequestException(
+          `This Franchise has ${schoolsAlreadyBilling} School(s) already being billed, so its fee model can't be changed. Changing the fee amount is still possible.`,
+        );
       }
 
       if (changingRate) {
-        const schoolsAlreadyBilling = await tx.school.count({
-          where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } },
-        });
         // A brand-new/never-billed Franchise has nothing to migrate — no
         // decision is required, and no FranchiseFeeRateChange row is created;
         // the rate simply changes, same as any other field edit. Same
@@ -271,11 +580,11 @@ export class FranchisesService {
             );
           }
           rateChangeContext = {
-            feeModel: current!.feeModel,
-            oldFlatFeeAmount: current!.flatFeeAmount,
-            newFlatFeeAmount: dto.flatFeeAmount ?? current!.flatFeeAmount,
-            oldPerHeadcountRate: current!.perHeadcountRate,
-            newPerHeadcountRate: dto.perHeadcountRate ?? current!.perHeadcountRate,
+            feeModel: current.feeModel,
+            oldFlatFeeAmount: current.flatFeeAmount,
+            newFlatFeeAmount: dto.flatFeeAmount ?? current.flatFeeAmount,
+            oldPerHeadcountRate: current.perHeadcountRate,
+            newPerHeadcountRate: dto.perHeadcountRate ?? current.perHeadcountRate,
             strategy: dto.feeRateChangeStrategy,
             affectedSchoolCount: schoolsAlreadyBilling,
           };
@@ -292,7 +601,7 @@ export class FranchisesService {
         data: {
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           type: dto.type,
           activities: dto.activities,
           facilities: dto.facilities,
@@ -304,6 +613,7 @@ export class FranchisesService {
           feeModel: dto.feeModel,
           flatFeeAmount: dto.flatFeeAmount,
           perHeadcountRate: dto.perHeadcountRate,
+          shareBrandingWithMembers: dto.shareBrandingWithMembers,
         },
         select: FRANCHISE_PUBLIC_SELECT,
       });
@@ -373,9 +683,7 @@ export class FranchisesService {
    */
   async getBillingStatus(callerId: string, franchiseId: string): Promise<{ schoolsAlreadyBillingCount: number }> {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
-    const schoolsAlreadyBillingCount = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.count({ where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } } }),
-    );
+    const schoolsAlreadyBillingCount = await this.countSchoolsAlreadyBilling(franchiseId);
     return { schoolsAlreadyBillingCount };
   }
 
@@ -425,11 +733,16 @@ export class FranchisesService {
    * safety backstop for this assumption, not a substitute for real pagination if the
    * assumption ever turns out wrong — flagged for Architect review in that case.
    */
-  async findSchoolsForFranchise(callerId: string, franchiseId: string): Promise<School[]> {
+  async findSchoolsForFranchise(callerId: string, franchiseId: string): Promise<FranchiseMemberSchoolRow[]> {
     await this.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
 
+    // Decision 337 (F2) — `franchise_member_schools()` replaced the earlier
+    // `schools_for_franchise()`, which returned whole School rows (join code and
+    // Stripe ids included). The new function returns only the roster columns and
+    // reads the caller from `app.current_user_id` instead of an argument
+    // (migration 20261129000000_franchise_review_fixes).
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.$queryRaw<School[]>`SELECT * FROM schools_for_franchise(${franchiseId}, ${callerId})`,
+      tx.$queryRaw<FranchiseMemberSchoolRow[]>`SELECT * FROM franchise_member_schools(${franchiseId})`,
     );
   }
 

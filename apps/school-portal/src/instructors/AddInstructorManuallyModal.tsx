@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Decision 1/230/237 — a real Instructor record created immediately from
@@ -23,6 +24,7 @@ export function AddInstructorManuallyModal({
   onSubmit: (values: { firstName: string; surname: string; email: string; branchId?: string }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState({ firstName: '', surname: '', email: '', branchId: '' });
   const [error, setError] = useState<string | null>(null);
   const requiresBranch = branches.length > 0;
@@ -38,35 +40,35 @@ export function AddInstructorManuallyModal({
         ...(form.branchId ? { branchId: form.branchId } : {}),
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title="Add instructor manually" onClose={onClose}>
+    <Modal title={t('instructors.manualModal.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="First name" htmlFor="add-manually-firstName">
+        <Field label={t('instructors.manualModal.firstName')} htmlFor="add-manually-firstName">
           <TextField required value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} />
         </Field>
-        <Field label="Surname" htmlFor="add-manually-surname">
+        <Field label={t('instructors.manualModal.surname')} htmlFor="add-manually-surname">
           <TextField required value={form.surname} onChange={(e) => setForm((f) => ({ ...f, surname: e.target.value }))} />
         </Field>
-        <Field label="Email" htmlFor="add-manually-email" hint="A temporary passcode is emailed here — they'll choose their own on first login.">
+        <Field label={t('instructors.manualModal.email')} htmlFor="add-manually-email" hint={t('instructors.manualModal.emailHint')}>
           <TextField required type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </Field>
         {requiresBranch ? (
-          <Field label="Branch" htmlFor="add-manually-branch">
+          <Field label={t('instructors.manualModal.branch')} htmlFor="add-manually-branch">
             <SelectField
               required
               value={form.branchId}
               onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-              options={[{ value: '', label: 'Select a branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+              options={[{ value: '', label: t('instructors.manualModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
           </Field>
         ) : null}
         <Button type="submit" loading={submitting}>
-          Add instructor
+          {t('instructors.manualModal.submit')}
         </Button>
       </form>
     </Modal>

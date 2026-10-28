@@ -1,76 +1,137 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useCreateDiscipline, useDeleteDiscipline, useDisciplines, useUpdateDiscipline, type DisciplineResponse } from './disciplineQueries';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import {
+  useCreateDiscipline,
+  useDeleteDiscipline,
+  useDisciplines,
+  useSetDisciplineArchived,
+  useUpdateDiscipline,
+  type DisciplineResponse,
+} from './disciplineQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
 import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
+import { GradingTabs } from '../grading/GradingTabs';
+import { useT } from '../i18n/I18nProvider';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
  * TimetableSlots' activities are conceptually drawn from (domain-rules §4 —
  * "discipline" and the DTOs' own free-text "activities" fields are the same
  * concept, not formally reconciled into one shared enum) — managed here first,
- * since Instructors/Classes/Timetable have nothing to reference otherwise. */
+ * since Instructors/Classes/Timetable have nothing to reference otherwise.
+ *
+ * Decision 309: the owner edits; coaches and Branch Staff see the same page
+ * read-only, so they can check what each belt needs. Archived styles are
+ * hidden behind "Show archived". */
 export function DisciplinesPage() {
   const navigate = useNavigate();
-  const schoolId = useOwnedSchoolId();
-  const { data, isLoading, error } = useDisciplines(schoolId);
+  const t = useT();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const schoolId = ownedSchoolId ?? coachSchoolId;
+  const canEdit = !!ownedSchoolId;
+  const [showArchived, setShowArchived] = useState(false);
+  const { data, isLoading, error } = useDisciplines(schoolId, { includeArchived: showArchived });
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
+  const setArchived = useSetDisciplineArchived(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<DisciplineResponse | null>(null);
   const [fromTemplate, setFromTemplate] = useState(false);
   const [duplicating, setDuplicating] = useState<DisciplineResponse | null>(null);
   const [deleting, setDeleting] = useState<DisciplineResponse | null>(null);
+  const [archiving, setArchiving] = useState<DisciplineResponse | null>(null);
+  const [rowError, setRowError] = useState<string | null>(null);
   const deleteDiscipline = useDeleteDiscipline(schoolId ?? '');
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Disciplines.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('disciplines.list.loadFailed')} />;
 
   const disciplines = data?.items ?? [];
+
+  async function unarchive(d: DisciplineResponse) {
+    setRowError(null);
+    try {
+      await setArchived.mutateAsync({ id: d.id, archived: false });
+    } catch (err) {
+      setRowError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
 
   return (
     <>
       <PageHeader
-        title="Disciplines"
-        subtitle="The martial arts / activities your School offers — Instructors and Classes both reference these."
+        title={t('disciplines.list.title')}
+        subtitle={canEdit ? t('disciplines.list.subtitle') : t('disciplines.list.readOnlySubtitle')}
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" onClick={() => setFromTemplate(true)}>
-              Start from template
-            </Button>
-            <Button onClick={() => setCreating(true)}>Add discipline</Button>
-          </div>
+          canEdit ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="secondary" onClick={() => setFromTemplate(true)}>
+                {t('disciplines.list.startFromTemplate')}
+              </Button>
+              <Button onClick={() => setCreating(true)}>{t('disciplines.list.addButton')}</Button>
+            </div>
+          ) : undefined
         }
       />
+      <GradingTabs />
       <Card>
+        <div style={{ marginBottom: 12 }}>
+          <Checkbox label={t('disciplines.list.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+        </div>
+        {rowError ? <ErrorBanner message={rowError} /> : null}
         {disciplines.length === 0 ? (
-          <EmptyState title="No Disciplines yet" description="Add your first Discipline to get started." />
+          <EmptyState title={t('disciplines.list.emptyTitle')} description={t('disciplines.list.emptyDescription')} />
         ) : (
           <Table<DisciplineResponse>
             rows={disciplines}
             columns={[
-              { key: 'name', header: 'Name', render: (d) => d.name },
-              { key: 'classTypes', header: 'Class types offered', render: (d) => d.classTypesOffered.join(', ') || '—' },
+              {
+                key: 'name',
+                header: t('disciplines.list.columnName'),
+                render: (d) => (
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    {d.name}
+                    {d.archivedAt ? <Badge variant="default">{t('disciplines.list.archived')}</Badge> : null}
+                  </span>
+                ),
+              },
+              { key: 'classTypes', header: t('disciplines.list.columnClassTypes'), render: (d) => d.classTypesOffered.join(', ') || '—' },
+              { key: 'students', header: t('disciplines.list.columnStudents'), render: (d) => String(d.studentCount) },
               {
                 key: 'actions',
                 header: '',
                 render: (d) => (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/disciplines/${d.id}`)}>
-                      Manage skills
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <Button variant="secondary" onClick={() => navigate(`/disciplines/${d.id}`)} aria-label={t('disciplines.list.openAria', { name: d.name })}>
+                      {t('disciplines.list.manageSkills')}
                     </Button>
-                    <Button variant="secondary" onClick={() => setEditing(d)}>
-                      Edit
-                    </Button>
-                    <Button variant="secondary" onClick={() => setDuplicating(d)}>
-                      Duplicate
-                    </Button>
-                    <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={`Delete ${d.name}`}>
-                      Delete
-                    </Button>
+                    {canEdit && !d.archivedAt ? (
+                      <>
+                        <Button variant="secondary" onClick={() => setEditing(d)}>
+                          {t('disciplines.list.edit')}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setDuplicating(d)}>
+                          {t('disciplines.list.duplicate')}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setArchiving(d)} aria-label={t('disciplines.list.archiveAria', { name: d.name })}>
+                          {t('disciplines.list.archive')}
+                        </Button>
+                      </>
+                    ) : null}
+                    {canEdit && d.archivedAt ? (
+                      <Button variant="secondary" onClick={() => void unarchive(d)} aria-label={t('disciplines.list.unarchiveAria', { name: d.name })}>
+                        {t('disciplines.list.unarchive')}
+                      </Button>
+                    ) : null}
+                    {canEdit ? (
+                      <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
+                        {t('disciplines.list.delete')}
+                      </Button>
+                    ) : null}
                   </div>
                 ),
               },
@@ -81,9 +142,9 @@ export function DisciplinesPage() {
 
       {creating ? (
         <DisciplineFormModal
-          title="Add discipline"
+          title={t('disciplines.list.addTitle')}
           submitting={createDiscipline.isPending}
-          onSubmit={async (values) => {
+          onSubmit={async ({ renameClassTypes: _renames, ...values }) => {
             await createDiscipline.mutateAsync(values);
             setCreating(false);
           }}
@@ -97,10 +158,21 @@ export function DisciplinesPage() {
 
       {deleting ? (
         <ConfirmDeleteModal
-          title={`Delete ${deleting.name}?`}
-          description="Its belts, skills and coach permissions are deleted with it. A style can only be deleted while nobody has a rank in it and no class or lesson uses it."
+          title={t('disciplines.list.deleteTitle', { name: deleting.name })}
+          description={t('disciplines.list.deleteDescription')}
           onConfirm={() => deleteDiscipline.mutateAsync(deleting.id)}
           onClose={() => setDeleting(null)}
+        />
+      ) : null}
+
+      {archiving ? (
+        <ConfirmDeleteModal
+          title={t('disciplines.list.archiveTitle', { name: archiving.name })}
+          description={t('disciplines.list.archiveDescription')}
+          confirmLabel={t('disciplines.list.archive')}
+          genericErrorMessage={t('disciplines.list.archiveFailed')}
+          onConfirm={() => setArchived.mutateAsync({ id: archiving.id, archived: true })}
+          onClose={() => setArchiving(null)}
         />
       ) : null}
 
@@ -129,10 +201,11 @@ function EditDisciplineModal({
   discipline: DisciplineResponse;
   onClose: () => void;
 }) {
+  const t = useT();
   const updateDiscipline = useUpdateDiscipline(schoolId, discipline.id);
   return (
     <DisciplineFormModal
-      title="Edit discipline"
+      title={t('disciplines.list.editTitle')}
       initial={discipline}
       submitting={updateDiscipline.isPending}
       onSubmit={async (values) => {

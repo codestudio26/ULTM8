@@ -8,7 +8,7 @@ import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
-import { ReorderRanksDto, RungHoldersResponseDto } from './dto/ladder.dto';
+import { ReorderRanksDto, ReorderSkillsDto, RungHoldersResponseDto } from './dto/ladder.dto';
 import { CreateStyleFromTemplateDto, StyleTemplateListResponseDto } from './dto/style-template.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
@@ -36,9 +36,14 @@ export class RanksController {
   }
 
   @ApiOkResponse({ type: DisciplineListResponseDto })
+  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean, description: 'Decision 309 — include archived styles too (left out by default).' })
   @Get('schools/:schoolId/disciplines')
-  async findAllDisciplines(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
-    return { items: await this.ranksService.findAllDisciplines(user.sub, schoolId) };
+  async findAllDisciplines(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Query('includeArchived', new ParseBoolPipe({ optional: true })) includeArchived?: boolean,
+  ) {
+    return { items: await this.ranksService.findAllDisciplines(user.sub, schoolId, includeArchived) };
   }
 
   @ApiOkResponse({ type: StyleTemplateListResponseDto })
@@ -62,13 +67,28 @@ export class RanksController {
   @ApiOkResponse({ type: DisciplineResponseDto })
   @Get('disciplines/:id')
   findOneDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.ranksService.findOneDiscipline(user.sub, id);
+    return this.ranksService.getDiscipline(user.sub, id);
   }
 
   @ApiOkResponse({ type: DisciplineResponseDto })
   @Patch('disciplines/:id')
   updateDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateDisciplineDto) {
     return this.ranksService.updateDiscipline(user.sub, id, dto);
+  }
+
+  /** Decision 309 — retire a style: hidden from pickers, read-only, history
+   * kept. Refused (409) while an upcoming class or a timetable slot uses it. */
+  @ApiOkResponse({ type: DisciplineResponseDto })
+  @ApiConflictResponse({ description: 'An upcoming class or a timetable slot still uses the style.' })
+  @Post('disciplines/:id/archive')
+  archiveDiscipline(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.ranksService.archiveDiscipline(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: DisciplineResponseDto })
+  @Post('disciplines/:id/unarchive')
+  unarchiveDiscipline(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.ranksService.unarchiveDiscipline(user.sub, id);
   }
 
   @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
@@ -163,6 +183,12 @@ export class RanksController {
   @Get('styles/:disciplineId/skills')
   async findAllSkills(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string) {
     return { items: await this.ranksService.findAllSkills(user.sub, disciplineId) };
+  }
+
+  @ApiOkResponse({ type: SkillListResponseDto, description: 'The style\'s skills in their new order (Decision 309).' })
+  @Put('styles/:disciplineId/skills/order')
+  async reorderSkills(@CurrentUser() user: JwtPayload, @Param('disciplineId', ParseUUIDPipe) disciplineId: string, @Body() dto: ReorderSkillsDto) {
+    return { items: await this.ranksService.reorderSkills(user.sub, disciplineId, dto) };
   }
 
   @ApiOkResponse({ type: SkillResponseDto })

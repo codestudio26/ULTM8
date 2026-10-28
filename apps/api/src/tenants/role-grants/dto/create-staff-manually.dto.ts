@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEmail, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 
 /**
  * Staff "Add Manually" (Decision 251) — mirrors Decision 1/230/237's
@@ -28,20 +30,27 @@ import { IsEmail, IsString, IsUUID, MaxLength, MinLength } from 'class-validator
  * NOT collected here, same as CreateInstructorManuallyDto — left blank and
  * filled in by the Staff member themselves after their first login.
  */
+// Names are trimmed before validation, so one made only of spaces is refused
+// (Decision 361), same as CreateInstructorManuallyDto.
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
 export class CreateStaffManuallyDto {
   @ApiProperty()
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(100)
   firstName!: string;
 
   @ApiProperty()
+  @Transform(trim)
   @IsString()
   @MinLength(1)
   @MaxLength(100)
   surname!: string;
 
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

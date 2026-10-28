@@ -103,7 +103,7 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
 
     // Lessons, made by the coach through the API.
     for (const [title, s] of [['Armbar', 'BJJ'], ['Hip throw', 'Judo']] as const) {
-      const res = await as('coach').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, description: `${title} step by step`, format: 'PRERECORDED', skillIds: [skill[s]] });
+      const res = await as('owner').post(`/v1/schools/${school.id}/curriculum/lessons`, { title, description: `${title} step by step`, format: 'PRERECORDED', skillIds: [skill[s]] });
       expect(res.status).toBe(201);
       lesson[title] = res.body.id;
     }
@@ -140,7 +140,7 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
     };
     expect(await mk('paid', { type: 'SUBSCRIPTION', title: 'Monthly BJJ', price: 5000, disciplineIds: [style.BJJ] })).toMatchObject({ includesLessons: true, disciplineIds: [style.BJJ] });
     expect(await mk('free', { type: 'FRIEND_PASS', title: 'Friend pass', price: 0, classesIncluded: 1, disciplineIds: [style.BJJ] })).toMatchObject({ includesLessons: false });
-    expect(await mk('trial', { type: 'TRIAL_MEMBERSHIP', title: 'Judo trial', price: 0, disciplineIds: [style.Judo], includesLessons: true })).toMatchObject({ includesLessons: true });
+    expect(await mk('trial', { type: 'TRIAL_MEMBERSHIP', title: 'Judo trial', price: 0, expiryDurationDays: 14, disciplineIds: [style.Judo], includesLessons: true })).toMatchObject({ includesLessons: true });
     const foreign = await as('owner').post(`/v1/schools/${school.id}/membership-plans`, { type: 'SUBSCRIPTION', title: 'Bad', price: 100, disciplineIds: [style.Elsewhere] });
     expect(foreign.status).toBe(400);
 

@@ -277,6 +277,21 @@ describeIfDb('stripe-webhook-processing job', () => {
     expect(membershipCount).toBe(0);
   });
 
+  // Decision 339 (T12) — a card payment the Student abandoned: Stripe cancels
+  // the PaymentIntent (directly, or when its Checkout Session expires), and the
+  // row used to stay Pending for ever.
+  it('payment_intent.canceled flips an abandoned Pending card Transaction to FAILED, no Membership (Decision 339)', async () => {
+    const { transaction, stripePaymentIntentId } = await seedPendingTransaction();
+    const stripeEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+
+    await processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.canceled', objectId: stripePaymentIntentId }));
+
+    const updatedTransaction = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updatedTransaction.status).toBe('FAILED');
+    expect(updatedTransaction.membershipId).toBeNull();
+  });
+
   it('a redelivered payment_intent.payment_failed is a no-op — already-FAILED Transaction untouched, no Membership', async () => {
     const { transaction, stripePaymentIntentId } = await seedPendingTransaction();
     const firstEventId = `evt_fixture_${randomUUID()}`;

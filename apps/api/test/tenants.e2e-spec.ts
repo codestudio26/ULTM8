@@ -134,6 +134,9 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   afterAll(async () => {
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: [schoolA.id, schoolB.id] } } });
     await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+    // Decision 364's join/leave notices are written by the fanout worker; let it finish first.
+    await new Promise((r) => setTimeout(r, 1500));
+    await superuser.notification.deleteMany({ where: { userId: { in: [ownerA.id, ownerB.id, verifiedInvitee.id] } } });
     await superuser.user.deleteMany({ where: { id: { in: [ownerA.id, ownerB.id, verifiedInvitee.id] } } });
     await superuser.school.deleteMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });
     await superuser.$disconnect();
@@ -1146,6 +1149,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     } finally {
       await superuser.roleGrant.deleteMany({ where: { userId: existingPerson.id } });
       await superuser.studentHomeBranch.deleteMany({ where: { studentId: existingPerson.id } });
+      await superuser.notification.deleteMany({ where: { userId: existingPerson.id } });
       await superuser.user.delete({ where: { id: existingPerson.id } });
     }
   });
@@ -1456,7 +1460,21 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   // coupled to the shared schoolA/schoolB fixtures other tests above depend on.
   // ---------------------------------------------------------------------------
 
-  it('School Owner can self-service-join their School into a Franchise, one-way only', async () => {
+  // Decision 352 — joining is a request the Franchise Owner accepts. In these
+  // fixtures ownerA owns both sides, so the same token asks and accepts.
+  async function joinViaRequest(schoolId: string, franchiseId: string, token: string) {
+    const ask = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ franchiseId })
+      .expect(201);
+    return request(app.getHttpServer())
+      .post(`/v1/franchises/${franchiseId}/join-requests/${ask.body.id}/accept`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  }
+
+  it('School Owner can ask to join their School into a Franchise; once in, a second join is a conflict', async () => {
     const createSchoolRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
@@ -1477,6 +1495,22 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send({ franchiseId });
     expect(joinRes.status).toBe(201);
     expect(joinRes.body.franchiseId).toBe(franchiseId);
+    expect(joinRes.body.status).toBe('PENDING');
+    // Asking does not join yet (Decision 352).
+    expect((await superuser.school.findUniqueOrThrow({ where: { id: freshSchoolId } })).franchiseId).toBeNull();
+
+    // A second ask while the first is open is a conflict.
+    const askAgain = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId });
+    expect(askAgain.status).toBe(409);
+
+    await request(app.getHttpServer())
+      .post(`/v1/franchises/${franchiseId}/join-requests/${joinRes.body.id}/accept`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .expect(200);
+    expect((await superuser.school.findUniqueOrThrow({ where: { id: freshSchoolId } })).franchiseId).toBe(franchiseId);
 
     // One-way only — a second join attempt (even naming the same Franchise again)
     // is a conflict, never a silent no-op or a re-link (Decision 98's entire point:
@@ -1545,11 +1579,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send({ name: 'Leave-Franchise Test Franchise A' });
     const franchiseAId = createFranchiseRes.body.id;
 
-    await request(app.getHttpServer())
-      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
-      .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ franchiseId: franchiseAId })
-      .expect(201);
+    await joinViaRequest(freshSchoolId, franchiseAId, tokenOwnerA);
 
     const leaveRes = await request(app.getHttpServer())
       .post(`/v1/schools/${freshSchoolId}/leave-franchise`)
@@ -1567,12 +1597,8 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send({ name: 'Leave-Franchise Test Franchise B' });
     const franchiseBId = createFranchiseBRes.body.id;
 
-    const switchRes = await request(app.getHttpServer())
-      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
-      .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ franchiseId: franchiseBId });
-    expect(switchRes.status).toBe(201);
-    expect(switchRes.body.franchiseId).toBe(franchiseBId);
+    await joinViaRequest(freshSchoolId, franchiseBId, tokenOwnerA);
+    expect((await superuser.school.findUniqueOrThrow({ where: { id: freshSchoolId } })).franchiseId).toBe(franchiseBId);
 
     await superuser.school.delete({ where: { id: freshSchoolId } });
     await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
@@ -1592,11 +1618,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .set('Authorization', `Bearer ${tokenOwnerA}`)
       .send({ name: 'Unauthorized Leave Test Franchise' });
     const franchiseId = createFranchiseRes.body.id;
-    await request(app.getHttpServer())
-      .post(`/v1/schools/${schoolA.id}/join-franchise`)
-      .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ franchiseId })
-      .expect(201);
+    await joinViaRequest(schoolA.id, franchiseId, tokenOwnerA);
 
     // ownerB holds no grant at all on schoolA.
     const res = await request(app.getHttpServer())

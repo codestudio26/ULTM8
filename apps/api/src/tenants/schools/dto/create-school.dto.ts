@@ -10,9 +10,13 @@ import {
   IsString,
   IsUrl,
   Matches,
+  Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../../common/address/postal-address.dto';
 
 /**
  * Mirrors the confirmed School.classCancellationPolicy enum (schema.prisma /
@@ -23,6 +27,19 @@ export enum ClassCancellationPolicyDto {
   MANUAL = 'MANUAL',
   AUTO_REFUND = 'AUTO_REFUND',
   AUTO_CREDIT = 'AUTO_CREDIT',
+}
+
+/** Decision 291 — School.classCancellationPolicyWindow. */
+export enum ClassCancellationPolicyWindowDto {
+  BEFORE_CUTOFF = 'BEFORE_CUTOFF',
+  ANY_TIME = 'ANY_TIME',
+}
+
+/** Decision 291 — School.schoolCancelledClassResolution. */
+export enum SchoolCancelledClassResolutionDto {
+  REFUND_ALL = 'REFUND_ALL',
+  CREDIT_ALL = 'CREDIT_ALL',
+  FOLLOW_POLICY = 'FOLLOW_POLICY',
 }
 
 /**
@@ -65,6 +82,15 @@ export class CreateSchoolDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -206,9 +232,59 @@ export class CreateSchoolDto {
   // No `default:` in the Swagger metadata, for the same reason as
   // classCancellationPolicy above — the default is documented in the
   // description instead.
-  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 120 — Decision 24).' })
+  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279).' })
   @IsOptional()
   @IsInt()
   @Min(1)
   waitlistClaimWindowMinutes?: number;
+
+  // Decision 291 — the rest of the owner's "Class cancellations" settings.
+  // Defaults live in the schema and are documented in each description, same
+  // reasoning as classCancellationPolicy above.
+  @ApiPropertyOptional({ enum: ClassCancellationPolicyWindowDto, description: 'Whether the policy applies only before a class\'s refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).' })
+  @IsOptional()
+  @IsEnum(ClassCancellationPolicyWindowDto)
+  classCancellationPolicyWindow?: ClassCancellationPolicyWindowDto;
+
+  @ApiPropertyOptional({ description: 'Whether a class\'s late-cancellation fee is charged after its cutoff. Defaults to true.' })
+  @IsOptional()
+  @IsBoolean()
+  chargeLateCancellationFee?: boolean;
+
+  @ApiPropertyOptional({ enum: SchoolCancelledClassResolutionDto, description: 'What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL.' })
+  @IsOptional()
+  @IsEnum(SchoolCancelledClassResolutionDto)
+  schoolCancelledClassResolution?: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default).' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  defaultRefundCutoffHours?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Minor-unit amount charged to a no-show\'s saved card. null = off (the default).' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  noShowFee?: number | null;
+
+  @ApiPropertyOptional({ description: 'Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class\'s check-in end time, or its end.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  checkInOpensMinutesBeforeStart?: number;
+
+  @ApiPropertyOptional({
+    enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'],
+    description: 'What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.',
+  })
+  @IsOptional()
+  @IsEnum(['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'])
+  lateCancelRefundPolicy?: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
+
+  @ApiPropertyOptional({ description: 'Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false.' })
+  @IsOptional()
+  @IsBoolean()
+  branchStaffCanRecordPayments?: boolean;
 }

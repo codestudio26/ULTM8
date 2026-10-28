@@ -6,6 +6,8 @@ import { useClass } from '../classes/classQueries';
 import { useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
 import { useInstructorScan } from './attendanceQueries';
 import { QrScanModal } from './QrScanModal';
+import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** Instructor roll-call (Decision 71's named concept; mechanics shipped Phase
  * 51/Decision 107 as `POST /classes/{id}/attendance-scan`) — the client half
@@ -26,6 +28,7 @@ import { QrScanModal } from './QrScanModal';
  * call the identical `useInstructorScan` mutation; only the presence of a
  * decoded `studentToken` differs. */
 export function RollCallPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const classId = id ?? null;
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
@@ -37,34 +40,34 @@ export function RollCallPage() {
   if (!classId) return null;
   if (classLoading || bookingsLoading) return <Spinner />;
   if (classError) {
-    return <ErrorBanner message={classError instanceof ApiError ? classError.message : 'Could not load this Class.'} />;
+    return <ErrorBanner message={classError instanceof ApiError ? classError.message : t('attendance.rollCall.loadFailed')} />;
   }
   if (bookingsError) {
-    return <ErrorBanner message={bookingsError instanceof ApiError ? bookingsError.message : 'Could not load this Class’s bookings.'} />;
+    return <ErrorBanner message={bookingsError instanceof ApiError ? bookingsError.message : t('attendance.rollCall.bookingsLoadFailed')} />;
   }
 
-  const bookings = bookingData?.items ?? [];
+  const bookings = sortForRollCall(bookingData?.items ?? []);
 
   function handleManualConfirm(studentId: string) {
     setRowError(null);
-    instructorScan.mutate({ studentId }, { onError: (err) => setRowError({ studentId, message: errorMessage(err) }) });
+    instructorScan.mutate({ studentId }, { onError: (err) => setRowError({ studentId, message: errorMessage(err, t) }) });
   }
 
   function handleScanDecoded(studentId: string, studentToken: string) {
     setScanningStudentId(null);
     setRowError(null);
-    instructorScan.mutate({ studentId, studentToken }, { onError: (err) => setRowError({ studentId, message: errorMessage(err) }) });
+    instructorScan.mutate({ studentId, studentToken }, { onError: (err) => setRowError({ studentId, message: errorMessage(err, t) }) });
   }
 
   return (
     <>
       <PageHeader
-        title={cls ? `Roll call — ${cls.title}` : 'Roll call'}
-        subtitle={cls ? `${new Date(cls.startDate).toLocaleString()} – ${new Date(cls.endDate).toLocaleString()}` : undefined}
+        title={cls ? t('attendance.rollCall.titleWithClass', { title: cls.title }) : t('attendance.rollCall.title')}
+        subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
       />
       <Card>
         {bookings.length === 0 ? (
-          <EmptyState title="No Bookings" description="Nobody is booked into this Class." />
+          <EmptyState title={t('attendance.rollCall.emptyTitle')} description={t('attendance.rollCall.emptyDescription')} />
         ) : (
           bookings.map((booking) => (
             <RollCallRow
@@ -89,14 +92,32 @@ export function RollCallPage() {
   );
 }
 
-function errorMessage(err: unknown): string {
-  return err instanceof ApiError ? err.message : 'Could not check in this Student — please try again.';
+/** Students still to check in first, then those already present, then
+ * cancelled/no-show; alphabetical within each group (C2: the API returns
+ * bookings in id order, which reads as random on a long roll call). */
+const ROLL_CALL_ORDER: Record<string, number> = { UPCOMING: 0, COMPLETED: 1 };
+function sortForRollCall(bookings: BookingResponse[]): BookingResponse[] {
+  const name = (b: BookingResponse) => `${b.studentFirstName} ${b.studentSurname}`.trim().toLocaleLowerCase();
+  return [...bookings].sort(
+    (a, b) => (ROLL_CALL_ORDER[a.status] ?? 2) - (ROLL_CALL_ORDER[b.status] ?? 2) || name(a).localeCompare(name(b)),
+  );
 }
 
-const CHECK_IN_METHOD_LABEL: Record<string, string> = {
-  SELF_SERVICE: 'Self check-in',
-  INSTRUCTOR_SCAN: 'Scanned by you',
-  INSTRUCTOR_MANUAL: 'Confirmed by you',
+function errorMessage(err: unknown, t: TranslateFn): string {
+  return err instanceof ApiError ? err.message : t('attendance.rollCall.checkInFailed');
+}
+
+const CHECK_IN_METHOD_LABEL: Record<string, TranslationKey> = {
+  SELF_SERVICE: 'attendance.rollCall.methodSelfService',
+  INSTRUCTOR_SCAN: 'attendance.rollCall.methodInstructorScan',
+  INSTRUCTOR_MANUAL: 'attendance.rollCall.methodInstructorManual',
+};
+
+/** Non-UPCOMING, non-COMPLETED statuses are shown as the raw enum value in
+ * English; the label is still looked up so other locales can translate it. */
+const BOOKING_STATUS_LABEL: Record<string, TranslationKey> = {
+  CANCELLED: 'attendance.rollCall.statusCancelled',
+  NO_SHOW: 'attendance.rollCall.statusNoShow',
 };
 
 function RollCallRow({
@@ -112,34 +133,37 @@ function RollCallRow({
   onScan: () => void;
   onManualConfirm: () => void;
 }) {
+  const t = useT();
   const name = `${booking.studentFirstName} ${booking.studentSurname}`.trim();
   const isUpcoming = booking.status === 'UPCOMING';
   const isCompleted = booking.status === 'COMPLETED';
+  const statusKey = BOOKING_STATUS_LABEL[booking.status];
+  const statusLabel = statusKey ? t(statusKey) : booking.status;
 
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
       <div>
         <div>{name || booking.studentId}</div>
         {isCompleted && booking.checkInMethod ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{CHECK_IN_METHOD_LABEL[booking.checkInMethod] ?? booking.checkInMethod}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{CHECK_IN_METHOD_LABEL[booking.checkInMethod] ? t(CHECK_IN_METHOD_LABEL[booking.checkInMethod]!) : booking.checkInMethod}</div>
         ) : !isUpcoming ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{booking.status}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{statusLabel}</div>
         ) : null}
         {error ? <p style={{ color: 'var(--color-danger)', fontSize: 13, margin: '4px 0 0' }}>{error}</p> : null}
       </div>
       {isCompleted ? (
-        <Badge variant="success">Present ✓</Badge>
+        <Badge variant="success">{t('attendance.rollCall.present')}</Badge>
       ) : isUpcoming ? (
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="secondary" onClick={onScan} disabled={pending}>
-            Scan
+            {t('attendance.rollCall.scan')}
           </Button>
           <Button onClick={onManualConfirm} loading={pending} disabled={pending}>
-            Confirm present
+            {t('attendance.rollCall.confirmPresent')}
           </Button>
         </div>
       ) : (
-        <Badge variant="default">{booking.status}</Badge>
+        <Badge variant="default">{statusLabel}</Badge>
       )}
     </div>
   );

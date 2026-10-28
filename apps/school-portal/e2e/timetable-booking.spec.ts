@@ -5,8 +5,8 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
 /**
  * Timetable page redesign (v1.2 backend backlog, "Timetable page") — the three
  * Day/Week/Month range views, the Rows/Grid layout toggle, and the click-to-book
- * confirmation dialog wired to the real `GET /timetable/:id/occurrence` +
- * `POST /classes/:id/book` endpoints. No mockup was reachable this session (see
+ * confirmation dialog wired to the real calendar (`GET /schools/:id/timetable/calendar`,
+ * Decision 353) + `POST /classes/:id/book` endpoints. No mockup was reachable this session (see
  * TimetablePage.tsx's own header comment) — this models its structure on
  * classes-filter.spec.ts/dashboard.spec.ts's own house style, same as every
  * other redesign spec this session.
@@ -60,8 +60,10 @@ test.beforeEach(async () => {
       id: randomUUID(),
       schoolId: s.schoolId,
       weekday: todayWeekday(),
-      startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
-      endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+      // Late evening, so today's class hasn't ended whenever CI runs (the
+      // booking dialog refuses an ended class, Decision 332).
+      startTime: new Date(Date.UTC(1970, 0, 1, 23, 0)),
+      endTime: new Date(Date.UTC(1970, 0, 1, 23, 59)),
       title: slotTitle,
       activities: ['BJJ'],
       status: 'ON',
@@ -69,8 +71,7 @@ test.beforeEach(async () => {
   });
   slotId = slot.id;
 
-  // Materialized for TODAY only — any other same-weekday date in the displayed
-  // Month view deliberately has nothing, to exercise the "not bookable yet" gap.
+  // Materialized for TODAY only: the calendar shows real Classes (Decision 353).
   const today = new Date();
   const cls = await db.class.create({
     data: {
@@ -80,8 +81,8 @@ test.beforeEach(async () => {
       occurrenceDate: new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())),
       title: slotTitle,
       activities: ['BJJ'],
-      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 18, 0),
-      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 19, 0),
+      startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 0),
+      endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59),
     },
   });
   classId = cls.id;
@@ -135,35 +136,18 @@ test('picking today\'s occurrence opens the booking dialog, gates Confirm on a S
   if (created) bookingId = created.id;
 });
 
-test('an occurrence beyond the generation horizon shows "not bookable yet", not an error', async ({ page }) => {
+test('a date past the 4-week horizon shows "Opens for booking later" and no Book (Decision 353)', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next' }).click();
 
-  await page.getByRole('button', { name: 'Month', exact: true }).click();
-
-  const dots = page.getByRole('button', { name: new RegExp(`^Book ${slotTitle} on `) });
-  const count = await dots.count();
-  expect(count).toBeGreaterThan(1); // today's + at least one other same-weekday date this month
-
-  let opened = false;
-  for (let i = 0; i < count; i++) {
-    const label = await dots.nth(i).getAttribute('aria-label');
-    if (label && !label.endsWith(todayKey)) {
-      await dots.nth(i).click();
-      opened = true;
-      break;
-    }
-  }
-  expect(opened).toBe(true);
-
-  const dialog = page.getByRole('dialog', { name: `Book — ${slotTitle}` });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByText('Not bookable yet.')).toBeVisible();
-  // No Student field offered — nothing to confirm into.
-  await expect(dialog.getByLabel('Student')).toHaveCount(0);
-
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(dialog).toHaveCount(0);
+  const laterKey = dateKey(new Date(Date.now() + 42 * 86_400_000));
+  const trigger = page.getByRole('button', { name: `Actions for ${slotTitle} on ${laterKey}` });
+  await expect(trigger).toBeVisible();
+  await expect(page.getByText('Opens for booking later')).toBeVisible();
+  await trigger.click();
+  await expect(page.getByRole('menuitem', { name: 'Edit slot' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Book' })).toHaveCount(0);
 });
 
 test('Day/Week/Month and Rows/Grid both keep today\'s occurrence visible', async ({ page }) => {

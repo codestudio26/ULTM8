@@ -53,6 +53,7 @@ resource "aws_ecs_task_definition" "api" {
       environment = [
         { name = "PORT", value = "3000" },
         { name = "NODE_ENV", value = "production" },
+        { name = "TRUST_PROXY", value = "1" }, # One hop: the ALB. Lets req.ip (and so the IP rate limits) see the real client.
         { name = "CORS_ALLOWED_ORIGINS", value = "https://${var.domain_name}" },
         { name = "JWT_ACCESS_TTL", value = "15m" },        # Spec §8.3's own confirmed tenant-realm default.
         { name = "PLATFORM_ADMIN_JWT_TTL", value = "5m" }, # Decision 100's own confirmed Developer-level default — see that decision's own "What this does NOT resolve" section.

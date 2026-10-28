@@ -5,6 +5,7 @@ import { Button, ErrorBanner, SuccessBanner } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { decodeJwtPayload } from '../auth/decodeJwt';
 import { useScanAttendance } from './attendanceQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** The "scan to check in" half of the self-service camera-scan path
  * (`POST /attendance/scan`, Phase 51/Decision 107) — the counterpart to the
@@ -29,6 +30,7 @@ import { useScanAttendance } from './attendanceQueries';
  * camera capture itself is unexercised here — flagged, not asserted as
  * device-verified. */
 export function QrScanner() {
+  const t = useT();
   const [permission, requestPermission] = useCameraPermissions();
   const scan = useScanAttendance();
   const [decodeError, setDecodeError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function QrScanner() {
     const payload = decodeJwtPayload<{ classId?: string }>(data);
     if (!payload?.classId) {
       scanningRef.current = false;
-      setDecodeError('That did not look like a Class check-in code — try again.');
+      setDecodeError(t('attendance.qrScanner.notACheckInCode'));
       return;
     }
     scanningRef.current = false;
@@ -67,9 +69,9 @@ export function QrScanner() {
     return (
       <View style={{ alignItems: 'center', gap: 12, padding: 16 }}>
         <Text style={{ fontSize: 14, textAlign: 'center' }}>
-          Camera access is needed to scan the Class check-in code.
+          {t('attendance.qrScanner.permissionNeeded')}
         </Text>
-        <Button title="Allow camera access" onPress={requestPermission} />
+        <Button title={t('attendance.qrScanner.allowCamera')} onPress={requestPermission} />
       </View>
     );
   }
@@ -77,8 +79,8 @@ export function QrScanner() {
   if (scan.isSuccess) {
     return (
       <View style={{ alignItems: 'center', gap: 12, padding: 16 }}>
-        <SuccessBanner message="Checked in ✓" />
-        <Button title="Scan again" variant="secondary" onPress={scanAgain} />
+        <SuccessBanner message={t('attendance.qrScanner.checkedIn')} />
+        <Button title={t('attendance.qrScanner.scanAgain')} variant="secondary" onPress={scanAgain} />
       </View>
     );
   }
@@ -94,19 +96,19 @@ export function QrScanner() {
         />
       </View>
       <Text style={{ fontSize: 13, textAlign: 'center', color: '#5F6368' }}>
-        Point your camera at the check-in code shown at the venue.
+        {t('attendance.qrScanner.pointCamera')}
       </Text>
       {scan.isPending ? <ActivityIndicator testID="activity-indicator" /> : null}
       {decodeError ? (
         <>
           <ErrorBanner message={decodeError} />
-          <Button title="Try again" variant="secondary" onPress={scanAgain} />
+          <Button title={t('attendance.qrScanner.tryAgain')} variant="secondary" onPress={scanAgain} />
         </>
       ) : null}
       {scan.isError ? (
         <>
-          <ErrorBanner message={getApiErrorMessage(scan.error, 'Could not check in with that code — please try again.')} />
-          <Button title="Try again" variant="secondary" onPress={scanAgain} />
+          <ErrorBanner message={getApiErrorMessage(scan.error, t('attendance.qrScanner.scanError'))} />
+          <Button title={t('attendance.qrScanner.tryAgain')} variant="secondary" onPress={scanAgain} />
         </>
       ) : null}
     </View>

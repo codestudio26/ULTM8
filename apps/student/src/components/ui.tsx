@@ -17,6 +17,8 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSchoolTheme } from '../theme/SchoolThemeContext';
+import { useI18n, useT } from '../i18n/I18nProvider';
+import { DEFAULT_LOCALE } from '../i18n/locales';
 import {
   ActivityIndicator,
   FlatList,
@@ -167,6 +169,20 @@ export interface PhoneFieldProps {
  * dependency isn't pulled in just for this). A trigger `Pressable` (flag + dial
  * code) opens the modal; a search box filters by country name or dial code. */
 export function PhoneField({ value, onChange, defaultCountry, placeholder }: PhoneFieldProps) {
+  const { t, locale } = useI18n();
+  // Country names in the app's language where the engine has `Intl.DisplayNames`
+  // (same approach as packages/ui's web PhoneField), else the frozen English list
+  // above. The English name stays searchable either way.
+  const countries = useMemo(() => {
+    let names: Intl.DisplayNames | undefined;
+    try {
+      if (locale !== DEFAULT_LOCALE) names = new Intl.DisplayNames([locale], { type: 'region' });
+    } catch {
+      names = undefined;
+    }
+    const list = PHONE_COUNTRIES.map(([code, name, dial]) => [code, names?.of(code) ?? name, dial, name] as [CountryCode, string, string, string]);
+    return names ? list.sort((a, b) => a[1].localeCompare(b[1], locale)) : list;
+  }, [locale]);
   const [country, setCountry] = useState<CountryCode | undefined>(() => {
     if (value) return parsePhoneNumberFromString(value)?.country ?? defaultCountry;
     return defaultCountry;
@@ -242,13 +258,14 @@ export function PhoneField({ value, onChange, defaultCountry, placeholder }: Pho
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return PHONE_COUNTRIES;
-    return PHONE_COUNTRIES.filter(
-      ([code, name, dial]) => name.toLowerCase().includes(q) || dial.includes(q.replace(/^\+/, '')) || code.toLowerCase() === q,
+    if (!q) return countries;
+    return countries.filter(
+      ([code, name, dial, englishName]) =>
+        name.toLowerCase().includes(q) || englishName.toLowerCase().includes(q) || dial.includes(q.replace(/^\+/, '')) || code.toLowerCase() === q,
     );
-  }, [search]);
+  }, [search, countries]);
 
-  const selected = country ? PHONE_COUNTRIES.find(([code]) => code === country) : undefined;
+  const selected = country ? countries.find(([code]) => code === country) : undefined;
 
   return (
     <View>
@@ -257,33 +274,37 @@ export function PhoneField({ value, onChange, defaultCountry, placeholder }: Pho
           onPress={() => setOpen(true)}
           style={({ pressed }) => [styles.phoneFieldTrigger, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel="Country calling code"
+          accessibilityLabel={t('common.phoneField.countryCallingCode')}
         >
           {selected ? (
             <Text style={styles.phoneFieldTriggerText}>{`${flagEmoji(selected[0])} +${selected[2]}`}</Text>
           ) : (
-            <Text style={[styles.phoneFieldTriggerText, { color: theme.textMuted }]}>Country</Text>
+            <Text style={[styles.phoneFieldTriggerText, { color: theme.textMuted }]}>{t('common.phoneField.country')}</Text>
           )}
         </Pressable>
         <TextInput
           style={[styles.input, styles.phoneFieldInput]}
           placeholderTextColor={theme.textMuted}
           placeholder={placeholder}
-          accessibilityLabel="Phone number"
+          accessibilityLabel={t('common.phoneField.phoneNumber')}
           keyboardType="phone-pad"
           value={displayNational}
           onChangeText={handleNationalInput}
           onBlur={() => setTouched(true)}
         />
       </View>
-      {invalid ? <InlineError message={`Enter a valid phone number${selected ? ` for ${selected[1]}` : ''}.`} /> : null}
+      {invalid ? (
+        <InlineError
+          message={selected ? t('common.phoneField.invalidPhoneFor', { country: selected[1] }) : t('common.phoneField.invalidPhone')}
+        />
+      ) : null}
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.phoneFieldModal}>
           <TextInput
             style={styles.input}
             placeholderTextColor={theme.textMuted}
-            placeholder="Search country or dial code…"
-            accessibilityLabel="Search country"
+            placeholder={t('common.phoneField.searchPlaceholder')}
+            accessibilityLabel={t('common.phoneField.searchCountry')}
             autoFocus
             value={search}
             onChangeText={setSearch}
@@ -303,7 +324,7 @@ export function PhoneField({ value, onChange, defaultCountry, placeholder }: Pho
               </Pressable>
             )}
           />
-          <Button title="Close" variant="secondary" onPress={() => setOpen(false)} />
+          <Button title={t('common.close')} variant="secondary" onPress={() => setOpen(false)} />
         </View>
       </Modal>
     </View>
@@ -328,9 +349,9 @@ export function SearchablePickerField({
   value,
   onSelect,
   loading,
-  placeholder = 'Select…',
-  searchPlaceholder = 'Search…',
-  emptyLabel = 'Not available.',
+  placeholder: placeholderProp,
+  searchPlaceholder: searchPlaceholderProp,
+  emptyLabel: emptyLabelProp,
   triggerAccessibilityLabel,
 }: {
   options: CodeNameOption[];
@@ -342,6 +363,10 @@ export function SearchablePickerField({
   emptyLabel?: string;
   triggerAccessibilityLabel?: string;
 }) {
+  const t = useT();
+  const placeholder = placeholderProp ?? t('common.searchablePicker.placeholder');
+  const searchPlaceholder = searchPlaceholderProp ?? t('common.searchablePicker.searchPlaceholder');
+  const emptyLabel = emptyLabelProp ?? t('common.searchablePicker.empty');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -399,7 +424,7 @@ export function SearchablePickerField({
               </Pressable>
             )}
           />
-          <Button title="Close" variant="secondary" onPress={() => setOpen(false)} />
+          <Button title={t('common.close')} variant="secondary" onPress={() => setOpen(false)} />
         </View>
       </Modal>
     </View>

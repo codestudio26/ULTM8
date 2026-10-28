@@ -1,3 +1,5 @@
+import { formatLocale } from '../i18n/format';
+
 /** `MembershipPlan.price` (and everywhere else price appears in this schema) is a
  * minor-unit integer — `apps/api/prisma/schema.prisma:847`, "price Int // minor-unit"
  * — e.g. `2500` means $25.00, not $2500. Found on review, before this ever shipped:
@@ -6,7 +8,7 @@
 export function formatMoney(minorUnits: number, currency?: string | null): string {
   const amount = minorUnits / 100;
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: (currency ?? 'usd').toUpperCase() }).format(amount);
+    return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency: (currency ?? 'usd').toUpperCase() }).format(amount);
   } catch {
     return `${amount.toFixed(2)} ${(currency ?? 'usd').toUpperCase()}`;
   }

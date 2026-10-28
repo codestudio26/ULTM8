@@ -27,7 +27,7 @@ test('Branch Staff with grading permission land on the dashboard and use the boa
   await expect(page.getByRole('region', { name: 'Grading' }).getByText('1 ready to grade')).toBeVisible();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
 
-  await page.getByRole('navigation').getByRole('link', { name: 'Grading Board' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Grading', exact: true }).click();
   await expect(page.getByRole('listitem', { name: s.student.name })).toBeVisible();
 });
 

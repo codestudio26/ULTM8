@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsPhoneNumber, IsString, IsUrl, MaxLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../common/address/postal-address.dto';
 
 /**
  * `PATCH /instructors/me/profile` — Decision 1/217's self-service completion
@@ -8,12 +10,11 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength } fro
  * multi-School instructor can't set different values per School through
  * this one endpoint).
  *
- * Deliberately does NOT cover `phone`/`dateOfBirth` (User-level, not
- * Instructor-level) — `dateOfBirth` is already settable via the existing
- * `PATCH /users/me`; `phone` is deliberately excluded from that endpoint
- * entirely (UpdateUserDto's own header comment: a login/OTP identifier,
- * changing it needs more care than a bare PATCH field), and this endpoint
- * doesn't carve out a special case for an Instructor created this way.
+ * Decision 331 adds `bio`, `photoUrl` and `phone`: here `phone` is the
+ * School-facing `Instructor.phone` contact number, not the User's login/OTP
+ * phone, which this endpoint still never touches (UpdateUserDto's own header
+ * comment: changing a login identifier needs more care than a bare PATCH
+ * field). `dateOfBirth` stays on `PATCH /users/me`.
  *
  * `certificationKey` is verified against R2 (InstructorsService.
  * completeMyProfile(), mirroring WaiversService.sign()'s own
@@ -21,11 +22,41 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength } fro
  * bare caller-supplied string.
  */
 export class CompleteInstructorProfileDto {
+  /** Decision 331 — the instructor edits their own bio, photo and the
+   * School-facing contact phone (Instructor.phone, not their login phone).
+   * Same limits as UpdateInstructorDto; null clears. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  bio?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  photoUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'School-facing contact number, E.164 — not the login phone.' })
+  @IsOptional()
+  @IsPhoneNumber(undefined, { message: 'phone must be a valid E.164 number' })
+  phone?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

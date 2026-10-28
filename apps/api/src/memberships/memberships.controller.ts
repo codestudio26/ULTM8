@@ -8,11 +8,17 @@ import { MembershipsService } from './memberships.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
+import { CancelMembershipDto, GiftFriendPassDto, SellMembershipDto } from './dto/desk-membership.dto';
+import { DeskPaymentOptionsDto, RecordDeskPaymentDto, RecordDeskPaymentResponseDto } from './dto/record-desk-payment.dto';
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
+  DeskMembershipResponseDto,
   MembershipListResponseDto,
+  MembershipResponseDto,
   MembershipStatusResponseDto,
+  PlanMemberListResponseDto,
   PurchaseMembershipResponseDto,
+  StudentMembershipListResponseDto,
 } from './dto/membership-response.dto';
 import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
 import { MembershipPlanPriceChangeListResponseDto } from './dto/membership-plan-price-change-response.dto';
@@ -65,8 +71,14 @@ export class MembershipsController {
   @ApiOkResponse({ type: MembershipPlanActiveCountResponseDto })
   @Get('membership-plans/:id/active-count')
   async getActiveCount(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    const activeCount = await this.membershipsService.getActiveMemberCount(user.sub, id);
-    return { activeCount };
+    return this.membershipsService.getActiveMemberCount(user.sub, id);
+  }
+
+  /** Decision 348: who holds this plan now, by name. School Owner only. */
+  @ApiOkResponse({ type: PlanMemberListResponseDto })
+  @Get('membership-plans/:id/members')
+  findPlanMembers(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.membershipsService.findPlanMembers(user.sub, id);
   }
 
   /** v1.2 backend backlog "Archive action" — School Owner/Manager only, same
@@ -115,6 +127,63 @@ export class MembershipsController {
     @Headers('x-step-up-token') stepUpToken?: string,
   ) {
     return this.membershipsService.purchase(user.sub, id, dto, stepUpToken);
+  }
+
+  /** Decision 348: cancel a Subscription at the end of its paid period. The
+   * Student, a Guardian of a linked minor, or the School's owner. */
+  @ApiOkResponse({ type: MembershipResponseDto })
+  @Post('memberships/:id/cancel')
+  cancel(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelMembershipDto) {
+    return this.membershipsService.cancelSubscriptionAtPeriodEnd(user.sub, id, dto?.studentId);
+  }
+
+  /** Decision 348: a Student's Memberships at the School. School Owner only. */
+  @ApiOkResponse({ type: StudentMembershipListResponseDto })
+  @Get('schools/:schoolId/students/:studentId/memberships')
+  findStudentMemberships(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('studentId') studentId: string) {
+    return this.membershipsService.findStudentMemberships(user.sub, schoolId, studentId);
+  }
+
+  /** Decision 348: the owner records a plan sold at the desk, paid in cash or
+   * by bank transfer. */
+  @ApiCreatedResponse({ type: DeskMembershipResponseDto })
+  @Post('schools/:schoolId/students/:studentId/memberships/sell')
+  sellAtDesk(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('studentId') studentId: string,
+    @Body() dto: SellMembershipDto,
+  ) {
+    return this.membershipsService.sellAtDesk(user.sub, schoolId, studentId, dto);
+  }
+
+  /** Decision 348: the owner gives a Student a Friend Pass for one guest. */
+  @ApiCreatedResponse({ type: DeskMembershipResponseDto })
+  @Post('schools/:schoolId/students/:studentId/memberships/gift')
+  giftFriendPass(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('studentId') studentId: string,
+    @Body() dto: GiftFriendPassDto,
+  ) {
+    return this.membershipsService.giftFriendPass(user.sub, schoolId, studentId, dto);
+  }
+
+  /** A cash or bank payment taken at the front desk (Decision 346, G7):
+   * records it and starts the Student's membership at once. */
+  @ApiCreatedResponse({ type: RecordDeskPaymentResponseDto })
+  @Post('schools/:schoolId/desk-payments')
+  recordDeskPayment(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: RecordDeskPaymentDto) {
+    return this.membershipsService.recordDeskPayment(user.sub, schoolId, dto);
+  }
+
+  /** The students and plans the caller may record a desk payment for
+   * (Decision 347): every current Student for the owner, their own branches'
+   * for Branch Staff; plans that can be paid once in cash. */
+  @ApiOkResponse({ type: DeskPaymentOptionsDto })
+  @Get('schools/:schoolId/desk-payments/options')
+  deskPaymentOptions(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.membershipsService.deskPaymentOptions(user.sub, schoolId);
   }
 
   @ApiOkResponse({ type: MembershipListResponseDto })

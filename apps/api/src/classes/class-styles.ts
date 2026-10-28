@@ -19,6 +19,10 @@ export interface ResolvedClassStyles {
  *   Judo) lists several styles.
  * - A School with no styles: no styles; free-text `activities` as before.
  *
+ * - An archived style (Decision 309) can't be newly picked; one the record
+ *   already lists (`keepDisciplineIds`) may stay, so an old class can still
+ *   be edited.
+ *
  * `activities` stays what Decision 90's bridge (booking rank gate, attendance
  * credit) reads until the grading engine switches to `styles`. When the caller
  * sends styles without activities, activities is filled in from the styles'
@@ -29,8 +33,9 @@ export async function resolveClassStyles(
   schoolId: string,
   styles: ClassStyleInputDto[] | undefined,
   activities: string[] | undefined,
+  keepDisciplineIds: string[] = [],
 ): Promise<ResolvedClassStyles> {
-  const disciplines = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, classTypesOffered: true } });
+  const disciplines = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, classTypesOffered: true, archivedAt: true } });
 
   if (disciplines.length === 0) {
     if (styles?.length) {
@@ -56,6 +61,9 @@ export async function resolveClassStyles(
       throw new BadRequestException(`The style "${discipline.name}" is listed twice.`);
     }
     seen.add(s.disciplineId);
+    if (discipline.archivedAt && !keepDisciplineIds.includes(s.disciplineId)) {
+      throw new BadRequestException(`"${discipline.name}" is archived, so it can't be given to a class. Unarchive it on the Disciplines page first.`);
+    }
     const classType = s.classType ?? null;
     if (discipline.classTypesOffered.length > 0) {
       if (!classType || !discipline.classTypesOffered.includes(classType)) {
@@ -73,4 +81,9 @@ export async function resolveClassStyles(
     styles: resolved,
     activities: activities?.length ? activities : resolved.map((s) => byId.get(s.disciplineId)!.name),
   };
+}
+
+/** The style ids a stored `styles` value lists (for `keepDisciplineIds`). */
+export function styleIdsOf(styles: unknown): string[] {
+  return Array.isArray(styles) ? styles.map((s) => (s as { disciplineId?: unknown }).disciplineId).filter((id): id is string => typeof id === 'string') : [];
 }

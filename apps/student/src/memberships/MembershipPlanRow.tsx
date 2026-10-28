@@ -8,6 +8,7 @@ import { formatMoney } from '../lib/formatMoney';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
 type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
@@ -58,6 +59,7 @@ type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
  * unmounted (e.g. Student navigates away mid-purchase), and duplicated
  * purchase.error into a second `actionError` state that could drift from it. */
 export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; schoolId: string }) {
+  const t = useT();
   const purchase = usePurchaseMembership();
   const invalidateMyMemberships = useInvalidateMyMemberships();
   const { data: paymentMethod } = usePaymentMethod(schoolId);
@@ -103,46 +105,50 @@ export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; sc
     <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{plan.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
-        {formatMoney(plan.price, plan.currency)}
-        {plan.classesIncluded != null ? ` · ${plan.classesIncluded} classes` : ''}
-        {plan.expiryDurationDays != null ? ` · ${plan.expiryDurationDays} days` : ''}
+        {[
+          formatMoney(plan.price, plan.currency),
+          plan.classesIncluded != null ? t('memberships.planRow.classesIncluded', { count: plan.classesIncluded }) : null,
+          plan.expiryDurationDays != null ? t('memberships.planRow.durationDays', { count: plan.expiryDurationDays }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </Text>
 
       {purchase.isError ? (
-        <InlineError message={getApiErrorMessage(purchase.error, 'Could not complete this purchase — please try again.')} />
+        <InlineError message={getApiErrorMessage(purchase.error, t('memberships.planRow.purchaseError'))} />
       ) : null}
 
       {/* FRIEND_PASS is School-gifted, never Student self-purchased (confirmed:
           MembershipsService.purchase() 400s any Student attempt) — no button, since a
           working-looking "Purchase" action that always errors is worse than none. */}
       {isFriendPass ? (
-        <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>Ask School staff for a Friend Pass.</Text>
+        <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>{t('memberships.planRow.friendPass')}</Text>
       ) : outcome === null && steppingUp ? (
         <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelStepUp} />
       ) : outcome === null ? (
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
-          <Button title="Purchase" onPress={handlePurchase} loading={purchase.isPending} />
+          <Button title={t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
           {canPayWithSavedCard ? (
-            <Button title="Pay with saved card" variant="secondary" onPress={openPayWithSavedCard} loading={purchase.isPending} />
+            <Button title={t('memberships.planRow.payWithSavedCard')} variant="secondary" onPress={openPayWithSavedCard} loading={purchase.isPending} />
           ) : null}
         </View>
       ) : null}
 
-      {outcome === 'active' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>You're enrolled ✓</Text> : null}
+      {outcome === 'active' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('memberships.planRow.enrolled')}</Text> : null}
 
       {outcome === 'pending_confirmation' ? (
-        <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>Payment pending confirmation by the School.</Text>
+        <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('memberships.planRow.pendingConfirmation')}</Text>
       ) : null}
 
       {outcome === 'requires_checkout' ? (
         <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
-          Payment submitted — check My Memberships shortly once it's confirmed.
+          {t('memberships.planRow.checkoutSubmitted')}
         </Text>
       ) : null}
 
       {outcome === 'requires_payment' ? (
         <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
-          Online payment for this plan isn't available in the app yet.
+          {t('memberships.planRow.onlinePaymentUnavailable')}
         </Text>
       ) : null}
     </View>

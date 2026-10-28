@@ -69,4 +69,9 @@ export interface JwtPayload {
   impersonation?: ImpersonationClaim;
   kidMode?: KidModeClaim;
   passcodeChangePurpose?: true;
+  /** Decision 361 — the user's `rolesChangedAt` (epoch ms, 0 if never) when this
+   * token's grants were read. JwtStrategy refuses the token once the user's
+   * roles change after that. Only ordinary access tokens carry it; tokens
+   * without it (Kid Mode, impersonation, passcode-change) aren't checked. */
+  rca?: number;
 }

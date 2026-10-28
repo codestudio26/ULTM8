@@ -12,9 +12,14 @@ import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
-import { StudentBookingListResponseDto } from './dto/student-booking-response.dto';
+import { StudentBookingListResponseDto, StudentNextBookingResponseDto } from './dto/student-booking-response.dto';
 import { BookingsSummaryQueryDto } from './dto/bookings-summary-query.dto';
 import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
+import { CancellationService } from './cancellation.service';
+import { CancelClassDto } from './dto/cancel-class.dto';
+import { ResolveCancellationDto } from './dto/resolve-cancellation.dto';
+import { OpenCancellationResponseDto } from './dto/open-cancellation-response.dto';
+import { ClassResponseDto } from '../classes/dto/class-response.dto';
 
 // Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
 // to class-booking and credit-restore (cancelBooking is where BookingsService restores
@@ -37,6 +42,7 @@ export class BookingsController {
   constructor(
     private readonly bookingsService: BookingsService,
     private readonly guardiansService: GuardiansService,
+    private readonly cancellationService: CancellationService,
   ) {}
 
   /**
@@ -84,6 +90,19 @@ export class BookingsController {
     return this.bookingsService.findAllForClass(user.sub, id, query.cursor, query.limit);
   }
 
+  /** The student page's "Upcoming booking": the soonest one and how many more
+   * (Decision 341) — see BookingsService.findNextForStudent. Declared before
+   * the list route below only for reading order; the paths don't overlap. */
+  @ApiOkResponse({ type: StudentNextBookingResponseDto })
+  @Get('students/:id/bookings/next')
+  findNextForStudent(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('schoolId') schoolId: string,
+  ) {
+    return this.bookingsService.findNextForStudent(user.sub, id, schoolId);
+  }
+
   /** v1.2 backend backlog — Student Detail's "Upcoming Booking", a real
    * per-Student Staff read. `schoolId` required query param, same convention
    * as GET /students/{id}/membership-status and /students/{id}/rank-history
@@ -110,5 +129,28 @@ export class BookingsController {
   @Get('schools/:schoolId/bookings/summary')
   getWeeklySummary(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: BookingsSummaryQueryDto) {
     return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
+  }
+
+  /** Decision 291 — the School cancels a whole class. School Owner/Manager or
+   * that branch's Branch Staff. See CancellationService.cancelClass. */
+  @ApiOkResponse({ type: ClassResponseDto })
+  @Post('classes/:id/cancel')
+  cancelClass(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelClassDto) {
+    return this.cancellationService.cancelClass(user.sub, id, dto.reason);
+  }
+
+  /** Decision 291 — the staff "to resolve" list. See CancellationService.listOpen. */
+  @ApiOkResponse({ type: [OpenCancellationResponseDto] })
+  @Get('schools/:schoolId/cancellations')
+  listOpenCancellations(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.cancellationService.listOpen(user.sub, schoolId);
+  }
+
+  /** Decision 291 — a staff decision on one seat in that list. */
+  @ApiOkResponse({ type: BookingResponseDto })
+  @Throttle(BOOKING_ACTION_THROTTLE)
+  @Patch('bookings/:id/resolution')
+  resolveCancellation(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ResolveCancellationDto) {
+    return this.cancellationService.resolve(user.sub, id, dto.attendeeId, dto.action);
   }
 }

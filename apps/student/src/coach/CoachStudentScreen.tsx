@@ -26,19 +26,25 @@ import {
 } from './coachQueries';
 import { countingClassTypes, flattenLadder, type Rung } from './ladder';
 import { Muted, Section } from './parts';
+import { useT } from '../i18n/I18nProvider';
+import type { TranslationKey } from '../i18n/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CoachStudent'>;
 
-const SKILL_LABEL: Record<string, string> = { NOT_STARTED: 'Not started', LEARNING: 'Learning', SIGNED_OFF: 'Signed off' };
-const EVENT_LABEL: Record<string, string> = {
-  PROMOTION: 'Promoted',
-  BULK_PROMOTION: 'Promoted (bulk)',
-  STRIPE_AWARD: 'Stripe awarded',
-  BULK_STRIPE_AWARD: 'Stripe awarded (bulk)',
-  DOWNGRADE: 'Moved down',
-  ADJUSTMENT: 'Progress adjusted',
-  SELF_DECLARED: 'Belt declared',
-  RANK_CORRECTION: 'Belt corrected',
+const SKILL_LABEL: Record<string, TranslationKey> = {
+  NOT_STARTED: 'coach.skillStatus.notStarted',
+  LEARNING: 'coach.skillStatus.learning',
+  SIGNED_OFF: 'coach.skillStatus.signedOff',
+};
+const EVENT_LABEL: Record<string, TranslationKey> = {
+  PROMOTION: 'coach.events.promotion',
+  BULK_PROMOTION: 'coach.events.bulkPromotion',
+  STRIPE_AWARD: 'coach.events.stripeAward',
+  BULK_STRIPE_AWARD: 'coach.events.bulkStripeAward',
+  DOWNGRADE: 'coach.events.downgrade',
+  ADJUSTMENT: 'coach.events.adjustment',
+  SELF_DECLARED: 'coach.events.selfDeclared',
+  RANK_CORRECTION: 'coach.events.rankCorrection',
 };
 
 /**
@@ -52,6 +58,7 @@ const EVENT_LABEL: Record<string, string> = {
  */
 export function CoachStudentScreen({ route }: Props) {
   const { schoolId, disciplineId, studentId, styleName } = route.params;
+  const t = useT();
   const my = useMyGrading(schoolId);
   const eligibility = useStudentEligibility(studentId, schoolId);
   const ranks = useStyleRanks(disciplineId);
@@ -69,25 +76,25 @@ export function CoachStudentScreen({ route }: Props) {
   if (loadError) {
     return (
       <View style={{ padding: spacing[4] }}>
-        <ErrorBanner message={getApiErrorMessage(loadError, 'Could not load this student.')} />
+        <ErrorBanner message={getApiErrorMessage(loadError, t('coach.student.loadError'))} />
       </View>
     );
   }
   if (!item || !current) {
     return (
       <View style={{ padding: spacing[4] }}>
-        <Muted>No rank in {styleName} yet. Give a first rank from the web portal.</Muted>
+        <Muted>{t('coach.student.noRank', { style: styleName })}</Muted>
       </View>
     );
   }
-  const can = (t: Parameters<typeof my.can>[1]) => my.can(disciplineId, t);
+  const can = (toggle: Parameters<typeof my.can>[1]) => my.can(disciplineId, toggle);
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }} keyboardShouldPersistTaps="handled">
       <Section title={styleName}>
         <Text style={{ fontWeight: '600' }}>{current.name}</Text>
-        <Muted>Since {formatDate(item.dateOfCurrentRank)}</Muted>
-        {item.verificationStatus === 'UNVERIFIED' ? <Muted>Declared by the student, not verified yet.</Muted> : null}
+        <Muted>{t('coach.student.since', { date: formatDate(item.dateOfCurrentRank) })}</Muted>
+        {item.verificationStatus === 'UNVERIFIED' ? <Muted>{t('coach.student.unverified')}</Muted> : null}
         <Progress eligibility={item.eligibility} />
       </Section>
       <Actions studentId={studentId} disciplineId={disciplineId} item={item} ladder={ladder} current={current} skillsRequired={!!discipline?.skillsRequiredToGrade} can={can} />
@@ -98,30 +105,29 @@ export function CoachStudentScreen({ route }: Props) {
 }
 
 function Progress({ eligibility: e }: { eligibility: Eligibility }) {
-  if (!e.hasNext) return <Muted>Top of the ladder: no next grade.</Muted>;
+  const t = useT();
+  if (!e.hasNext) return <Muted>{t('coach.student.topOfLadder')}</Muted>;
   const tick = (ok: boolean | undefined) => (ok ? '✓' : '·');
   return (
     <View style={{ marginTop: spacing[2] }}>
-      <Text>
-        {e.progressPercent ?? 0}% to the next grade{e.eligible ? ' · Ready to grade' : ''}
-      </Text>
+      <Text>{t(e.eligible ? 'coach.student.toNextGradeReady' : 'coach.student.toNextGrade', { percent: e.progressPercent ?? 0 })}</Text>
       {e.timeOnly ? null : e.byType && e.byType.length > 0 ? (
-        e.byType.map((t) => (
-          <Muted key={t.classType}>
-            {tick(t.counted >= t.required)} {t.classType}: {t.counted} of {t.required} classes
+        e.byType.map((bt) => (
+          <Muted key={bt.classType}>
+            {t('coach.student.classTypeLine', { tick: tick(bt.counted >= bt.required), classType: bt.classType, counted: bt.counted, count: bt.required })}
           </Muted>
         ))
       ) : (
-        <Muted>
-          {tick(e.classesOk)} Classes: {e.countedClasses ?? 0} of {e.requiredClasses ?? 0}
-        </Muted>
+        <Muted>{t('coach.student.classesLine', { tick: tick(e.classesOk), counted: e.countedClasses ?? 0, required: e.requiredClasses ?? 0 })}</Muted>
       )}
-      <Muted>
-        {tick(e.daysOk)} Days: {e.elapsedDays ?? 0} of {e.requiredDays ?? 0}
-      </Muted>
+      <Muted>{t('coach.student.daysLine', { tick: tick(e.daysOk), elapsed: e.elapsedDays ?? 0, required: e.requiredDays ?? 0 })}</Muted>
       {(e.requiredSkillIds?.length ?? 0) > 0 ? (
         <Muted>
-          {tick(e.skillsOk)} Skills: {(e.requiredSkillIds?.length ?? 0) - (e.missingSkillIds?.length ?? 0)} of {e.requiredSkillIds?.length}
+          {t('coach.student.skillsLine', {
+            tick: tick(e.skillsOk),
+            done: (e.requiredSkillIds?.length ?? 0) - (e.missingSkillIds?.length ?? 0),
+            required: e.requiredSkillIds?.length ?? 0,
+          })}
         </Muted>
       ) : null}
     </View>
@@ -147,6 +153,7 @@ function Actions({
   skillsRequired: boolean;
   can: Can;
 }) {
+  const t = useT();
   const promote = usePromote(studentId, disciplineId);
   const stripeAward = useStripeAward(studentId, disciplineId);
   const downgrade = useDowngrade(studentId, disciplineId);
@@ -183,52 +190,52 @@ function Actions({
       setAcknowledged(false);
       setDone(message);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'That didn\'t work. Please try again.'));
+      setError(getApiErrorMessage(err, t('coach.student.actionError')));
     }
   }
   const grade = () => {
     const body = { acknowledgeWithoutSkillSignoff: needsAck, expectedCurrentRungId: current.id, ...(note.trim() ? { note: note.trim() } : {}) };
-    return run(() => (isStripe ? stripeAward.mutateAsync(body) : promote.mutateAsync({ ...body, targetRungId: next!.id })), `Graded to ${next!.name}.`);
+    return run(() => (isStripe ? stripeAward.mutateAsync(body) : promote.mutateAsync({ ...body, targetRungId: next!.id })), t('coach.student.gradedTo', { rung: next!.name }));
   };
   const moveDown = () =>
     run(
       () => downgrade.mutateAsync({ acknowledgeWithoutSkillSignoff: false, targetRungId: below!.id, expectedCurrentRungId: current.id, reason: reason.trim() }),
-      `Moved down to ${below!.name}.`,
+      t('coach.student.movedDownTo', { rung: below!.name }),
     );
 
   const any = (next && can('canPromote')) || (below && can('canDowngrade')) || can('canAdjustProgress') || (item.verificationStatus === 'UNVERIFIED' && can('canVerifyRanks'));
   if (!any) return null;
 
   return (
-    <Section title="Grade">
+    <Section title={t('coach.student.gradeTitle')}>
       {error ? <ErrorBanner message={error} /> : null}
       {done ? <SuccessBanner message={done} /> : null}
       {item.verificationStatus === 'UNVERIFIED' && can('canVerifyRanks') ? (
-        <Button title="Verify belt" loading={verify.isPending} onPress={() => run(() => verify.mutateAsync(undefined), 'Belt verified.')} />
+        <Button title={t('coach.student.verifyBelt')} loading={verify.isPending} onPress={() => run(() => verify.mutateAsync(undefined), t('coach.student.beltVerified'))} />
       ) : null}
 
       {next && can('canPromote') ? (
         <>
-          <Button title={isStripe ? `Award stripe: ${next.name}` : `Grade to ${next.name}`} variant={open === 'grade' ? 'secondary' : 'primary'} onPress={() => toggle('grade')} />
+          <Button title={isStripe ? t('coach.student.awardStripe', { rung: next.name }) : t('coach.student.gradeTo', { rung: next.name })} variant={open === 'grade' ? 'secondary' : 'primary'} onPress={() => toggle('grade')} />
           {open === 'grade' ? (
             <View style={{ marginBottom: spacing[3] }}>
-              {e.daysOk === false ? <Muted>Too early: {(e.requiredDays ?? 0) - (e.elapsedDays ?? 0)} days short of the minimum.</Muted> : null}
+              {e.daysOk === false ? <Muted>{t('coach.student.tooEarly', { count: (e.requiredDays ?? 0) - (e.elapsedDays ?? 0) })}</Muted> : null}
               {blockedBySkills ? (
-                <InlineError message={`${missing} skill${missing === 1 ? '' : 's'} not signed off. This style needs every skill signed off before grading.`} />
+                <InlineError message={t('coach.student.skillsBlocked', { count: missing })} />
               ) : null}
               {needsAck ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: minTouchTarget }}>
-                  <Switch value={acknowledged} onValueChange={setAcknowledged} accessibilityLabel="Grade without all skills signed off" />
+                  <Switch value={acknowledged} onValueChange={setAcknowledged} accessibilityLabel={t('coach.student.gradeWithoutSkills')} />
                   <Text style={{ flex: 1, marginLeft: spacing[2] }}>
-                    Grade without all skills signed off ({missing} missing). This is recorded on the history.
+                    {t('coach.student.gradeWithoutSkillsDetail', { count: missing })}
                   </Text>
                 </View>
               ) : null}
-              <Field label="Note" hint="Optional. Shown on the history.">
-                <TextField value={note} onChangeText={setNote} maxLength={1000} accessibilityLabel="Note" />
+              <Field label={t('coach.student.note')} hint={t('coach.student.noteHint')}>
+                <TextField value={note} onChangeText={setNote} maxLength={1000} accessibilityLabel={t('coach.student.note')} />
               </Field>
               <Button
-                title="Confirm"
+                title={t('coach.student.confirm')}
                 loading={promote.isPending || stripeAward.isPending}
                 disabled={blockedBySkills || (needsAck && !acknowledged)}
                 onPress={grade}
@@ -240,13 +247,13 @@ function Actions({
 
       {below && can('canDowngrade') ? (
         <>
-          <Button title={`Move down to ${below.name}`} variant="secondary" onPress={() => toggle('down')} />
+          <Button title={t('coach.student.moveDownTo', { rung: below.name })} variant="secondary" onPress={() => toggle('down')} />
           {open === 'down' ? (
             <View style={{ marginBottom: spacing[3] }}>
-              <Field label="Reason" hint="Required. Shown on the student's history.">
-                <TextField value={reason} onChangeText={setReason} maxLength={1000} accessibilityLabel="Reason" />
+              <Field label={t('coach.student.reason')} hint={t('coach.student.reasonHint')}>
+                <TextField value={reason} onChangeText={setReason} maxLength={1000} accessibilityLabel={t('coach.student.reason')} />
               </Field>
-              <Button title="Confirm move down" variant="destructive" loading={downgrade.isPending} disabled={!reason.trim()} onPress={moveDown} />
+              <Button title={t('coach.student.confirmMoveDown')} variant="destructive" loading={downgrade.isPending} disabled={!reason.trim()} onPress={moveDown} />
             </View>
           ) : null}
         </>
@@ -254,12 +261,12 @@ function Actions({
 
       {can('canAdjustProgress') && e.hasNext && !e.timeOnly ? (
         <>
-          <Button title="Log a class" variant="secondary" onPress={() => (classTypes.length > 0 ? toggle('log') : run(() => logClass.mutateAsync(null), 'Class logged.'))} />
+          <Button title={t('coach.student.logClass')} variant="secondary" onPress={() => (classTypes.length > 0 ? toggle('log') : run(() => logClass.mutateAsync(null), t('coach.student.classLogged')))} />
           {open === 'log' ? (
             <View style={{ marginBottom: spacing[3] }}>
-              <Muted>Which class type?</Muted>
-              {classTypes.map((t) => (
-                <Button key={t} title={t} variant="secondary" loading={logClass.isPending} onPress={() => run(() => logClass.mutateAsync(t), `${t} class logged.`)} />
+              <Muted>{t('coach.student.whichClassType')}</Muted>
+              {classTypes.map((ct) => (
+                <Button key={ct} title={ct} variant="secondary" loading={logClass.isPending} onPress={() => run(() => logClass.mutateAsync(ct), t('coach.student.classTypeLogged', { classType: ct }))} />
               ))}
             </View>
           ) : null}
@@ -271,57 +278,62 @@ function Actions({
 
 /** The skills for the next grade; each tap moves a skill one step (Not started → Learning → Signed off). */
 function Skills({ studentId, item, skills, canSignOff }: { studentId: string; item: StudentEligibility; skills: SkillResponse[]; canSignOff: boolean }) {
+  const t = useT();
   const cycle = useCycleSkill(studentId);
   const e = item.eligibility;
   const ids = [...(e.requiredSkillIds ?? []), ...(e.optionalSkillIds ?? [])];
   if (!e.hasNext || ids.length === 0) return null;
   const status = new Map(item.skillStatuses.map((s) => [s.skillId, s.status]));
   return (
-    <Section title={e.timeOnly ? 'Skills (optional)' : 'Skills for the next grade'}>
-      {cycle.isError ? <InlineError message={getApiErrorMessage(cycle.error, 'Could not change that skill.')} /> : null}
+    <Section title={e.timeOnly ? t('coach.student.skillsOptional') : t('coach.student.skillsForNextGrade')}>
+      {cycle.isError ? <InlineError message={getApiErrorMessage(cycle.error, t('coach.student.skillError'))} /> : null}
       {ids.map((id) => {
-        const label = SKILL_LABEL[status.get(id) ?? 'NOT_STARTED'];
-        const name = skills.find((s) => s.id === id)?.name ?? 'Skill';
+        const skillStatus = status.get(id) ?? 'NOT_STARTED';
+        const label = SKILL_LABEL[skillStatus] ? t(SKILL_LABEL[skillStatus]!) : skillStatus;
+        const name = skills.find((s) => s.id === id)?.name ?? t('coach.student.skillFallback');
         return (
           <Pressable
             key={id}
             disabled={!canSignOff || cycle.isPending}
             onPress={() => cycle.mutate(id)}
             accessibilityRole={canSignOff ? 'button' : undefined}
-            accessibilityLabel={`${name}: ${label}`}
+            accessibilityLabel={t('coach.student.skillStatus', { name, status: label })}
             style={{ minHeight: minTouchTarget, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.border }}
           >
             <Text style={{ flex: 1 }}>{name}</Text>
-            <Text style={{ color: label === 'Signed off' ? theme.textSuccess : theme.textSecondary }}>{label}</Text>
+            <Text style={{ color: skillStatus === 'SIGNED_OFF' ? theme.textSuccess : theme.textSecondary }}>{label}</Text>
           </Pressable>
         );
       })}
-      {!canSignOff ? <Muted>You can't sign off skills in this style.</Muted> : null}
+      {!canSignOff ? <Muted>{t('coach.student.cannotSignOff')}</Muted> : null}
     </Section>
   );
 }
 
 function History({ studentId, schoolId, ladder }: { studentId: string; schoolId: string; ladder: Rung[] }) {
+  const t = useT();
   const history = useRankHistory(studentId, schoolId);
   const name = (id: string | null | undefined) => ladder.find((r) => r.id === id)?.name ?? '';
+  const eventLabel = (type: string) => (EVENT_LABEL[type] ? t(EVENT_LABEL[type]!) : type);
   return (
-    <Section title="History">
+    <Section title={t('coach.student.historyTitle')}>
       {history.isLoading ? (
         <ActivityIndicator />
       ) : history.error ? (
-        <InlineError message={getApiErrorMessage(history.error, 'Could not load the history.')} />
+        <InlineError message={getApiErrorMessage(history.error, t('coach.student.historyError'))} />
       ) : (history.data?.items ?? []).length === 0 ? (
-        <Muted>Nothing yet.</Muted>
+        <Muted>{t('coach.student.nothingYet')}</Muted>
       ) : (
         (history.data?.items ?? []).map((ev: PromotionEvent) => (
           <View key={ev.id} style={{ marginBottom: spacing[2] }}>
             <Text style={{ fontWeight: '600' }}>
-              {EVENT_LABEL[ev.type] ?? ev.type}
-              {ev.toStripeTierId ? `: ${name(ev.toStripeTierId)}` : ''}
+              {ev.toStripeTierId
+                ? t('coach.student.eventWithRung', { event: eventLabel(ev.type), rung: name(ev.toStripeTierId) })
+                : eventLabel(ev.type)}
             </Text>
             <Muted>{formatDate(ev.effectiveDate)}</Muted>
-            {ev.reason ? <Muted>Reason: {ev.reason}</Muted> : null}
-            {ev.note ? <Muted>{ev.noteHiddenAt ? `${ev.note} (hidden from the student)` : ev.note}</Muted> : null}
+            {ev.reason ? <Muted>{t('coach.student.reasonLine', { reason: ev.reason })}</Muted> : null}
+            {ev.note ? <Muted>{ev.noteHiddenAt ? t('coach.student.noteHidden', { note: ev.note }) : ev.note}</Muted> : null}
           </View>
         ))
       )}

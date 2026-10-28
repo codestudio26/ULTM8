@@ -3,7 +3,9 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
+import { branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
  * purgeAt is date-granular (90 days out), not a tight real-time window. See
@@ -94,7 +96,11 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  *     own documented minor-signing path) is treated as a minor's waiver:
  *     eligible once the signing Student turns 18 + 6 more years. A null
  *     `dateOfBirth` means this can never be computed safely — skipped and
- *     logged for manual review, never guessed.
+ *     logged for manual review, never guessed. Decision 354 (W16): never
+ *     while the Student is still enrolled, and not before 7 years after
+ *     they left — the later of the two dates. A paper signature (no
+ *     signedById) counts as a minor's when the Student was under 18 on the
+ *     date signed.
  *   - A self-signed signature is treated as an adult's: eligible 7 years
  *     after the Student's most recent revoked STUDENT RoleGrant at that
  *     School ("departure"). A Student still actively enrolled (an
@@ -163,7 +169,10 @@ function addYears(date: Date, years: number): Date {
 export class EntityOffboardingPurgeProcessor extends WorkerHost {
   private readonly logger = new Logger(EntityOffboardingPurgeProcessor.name);
 
-  constructor(private readonly prismaJobs: PrismaJobsService) {
+  constructor(
+    private readonly prismaJobs: PrismaJobsService,
+    private readonly r2Client: R2ClientService,
+  ) {
     super();
   }
 
@@ -173,7 +182,9 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     let skipped = 0;
     let waiversSkipped = 0;
 
-    deleted += await this.sweepSimple('branch', now);
+    const branchOutcome = await this.sweepBranches(now);
+    deleted += branchOutcome.deleted;
+    skipped += branchOutcome.skipped;
     deleted += await this.sweepSimple('class', now);
     deleted += await this.sweepSimple('timetableSlot', now);
     deleted += await this.sweepSimple('instructor', now);
@@ -189,22 +200,62 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     deleted += signatureOutcome.deleted;
     skipped += signatureOutcome.skipped;
 
+    deleted += await this.sweepGuestWaiverSignatures(now);
+
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +
         `${waiversSkipped} Waiver row(s) past purgeAt deliberately left un-purged (legal-record exception).`,
     );
   }
 
-  /** Shared sweep for the 5 entities with nothing beyond a plain
-   * DELETE-and-catch-P2003 (Branch, Class, TimetableSlot, Instructor,
-   * Lesson) — Rank and Waiver each need their own method (see this file's
+  /** Branch's own sweep (Decision 293). Every FK pointing at Branch is
+   * CASCADE or SET NULL, never RESTRICT, so a plain delete always succeeds:
+   * anything attached after archiving (a home-branch Student, a staff role,
+   * a coach invite, a Class) would be silently deleted or detached. Rechecks
+   * BranchesService.close()'s own dependents rule right before deleting,
+   * the same way sweepRanks() does, and leaves the Branch archived if it
+   * fails. Decision 330 (fix 7): a Branch with history (past classes, slots,
+   * Instructor profiles or roles) is never deleted; its purgeAt is cleared so
+   * it stops coming back. */
+  private async sweepBranches(now: Date): Promise<{ deleted: number; skipped: number }> {
+    const due = await this.prismaJobs.branch.findMany({ where: { purgeAt: { lte: now }, purgedAt: null }, select: { id: true } });
+    let deleted = 0;
+    let skipped = 0;
+    for (const { id } of due) {
+      try {
+        const counts = await countBranchDependents(this.prismaJobs, id);
+        if (hasBranchDependents(counts)) {
+          this.logger.warn(
+            `entity-offboarding-purge: branch ${id} is no longer safe to remove ` +
+              `(${describeBranchDependents(counts).join(', ')}) — left archived, will retry.`,
+          );
+          skipped += 1;
+          continue;
+        }
+        if (await branchHasHistory(this.prismaJobs, id)) {
+          await this.prismaJobs.branch.update({ where: { id }, data: { purgeAt: null } });
+          this.logger.log(`entity-offboarding-purge: branch ${id} has history — kept closed, never purged.`);
+          skipped += 1;
+          continue;
+        }
+        await this.prismaJobs.branch.delete({ where: { id } });
+        deleted += 1;
+      } catch (err) {
+        this.logger.error(`entity-offboarding-purge: failed to purge branch ${id}`, err as Error);
+      }
+    }
+    return { deleted, skipped };
+  }
+
+  /** Shared sweep for the 4 entities with nothing beyond a plain
+   * DELETE-and-catch-P2003 (Class, TimetableSlot, Instructor, Lesson) — Rank and Waiver each need their own method (see this file's
    * own header comment for why). Typed loosely (`any`-ish via a narrow
-   * model-name union) since these 5 share an identical purgeAt/purgedAt/id
+   * model-name union) since these 4 share an identical purgeAt/purgedAt/id
    * shape and identical delete-by-id call, and Prisma's own per-model client
    * types don't factor into one common interface cleanly enough to avoid it
    * — contained entirely inside this one private method, never exposed. */
   private async sweepSimple(
-    model: 'branch' | 'class' | 'timetableSlot' | 'instructor' | 'lesson',
+    model: 'class' | 'timetableSlot' | 'instructor' | 'lesson',
     now: Date,
   ): Promise<number> {
     const client = this.prismaJobs[model] as unknown as {
@@ -289,18 +340,35 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
    * to retain and are left alone). */
   private async sweepWaiverSignatures(now: Date): Promise<{ deleted: number; skipped: number }> {
     const signatures = await this.prismaJobs.waiverSignature.findMany({
-      where: { status: { in: ['SIGNED', 'EXPIRED'] }, signedById: { not: null } },
-      select: { id: true, studentId: true, signedById: true, schoolId: true },
+      where: { status: { in: ['SIGNED', 'EXPIRED'] }, OR: [{ signedById: { not: null } }, { method: 'PAPER' }] },
+      select: { id: true, studentId: true, signedById: true, schoolId: true, signatureImageKey: true, method: true, signedDate: true },
     });
 
     let deleted = 0;
     let skipped = 0;
     for (const sig of signatures) {
-      const guardianSigned = sig.signedById !== sig.studentId;
+      // Decision 354 (W16): no signature is purged while its Student is
+      // still enrolled at that School, whoever signed it.
+      const stillEnrolled = await this.prismaJobs.roleGrant.count({
+        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: null },
+      });
+      if (stillEnrolled > 0) {
+        skipped += 1;
+        continue;
+      }
+      const mostRecentDeparture = await this.prismaJobs.roleGrant.findFirst({
+        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: { not: null } },
+        orderBy: { revokedAt: 'desc' },
+        select: { revokedAt: true },
+      });
+      const student = await this.prismaJobs.user.findUnique({ where: { id: sig.studentId }, select: { dateOfBirth: true } });
+      const guardianSigned =
+        sig.method === 'PAPER'
+          ? !!student?.dateOfBirth && !!sig.signedDate && addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS) > sig.signedDate
+          : sig.signedById !== sig.studentId;
       let eligible: boolean;
 
       if (guardianSigned) {
-        const student = await this.prismaJobs.user.findUnique({ where: { id: sig.studentId }, select: { dateOfBirth: true } });
         if (!student?.dateOfBirth) {
           this.logger.warn(
             `entity-offboarding-purge: WaiverSignature ${sig.id} is a Guardian-signed (minor's) waiver with no Student dateOfBirth on file — ` +
@@ -309,20 +377,13 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
           skipped += 1;
           continue;
         }
-        eligible = addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS + MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY) <= now;
+        // A minor who was never enrolled (signed for, never joined) has no
+        // departure; the age rule alone applies.
+        const pastMajority = addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS + MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY) <= now;
+        const pastDeparture =
+          !mostRecentDeparture?.revokedAt || addYears(mostRecentDeparture.revokedAt, ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE) <= now;
+        eligible = pastMajority && pastDeparture;
       } else {
-        const stillEnrolled = await this.prismaJobs.roleGrant.count({
-          where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: null },
-        });
-        if (stillEnrolled > 0) {
-          skipped += 1;
-          continue;
-        }
-        const mostRecentDeparture = await this.prismaJobs.roleGrant.findFirst({
-          where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: { not: null } },
-          orderBy: { revokedAt: 'desc' },
-          select: { revokedAt: true },
-        });
         if (!mostRecentDeparture?.revokedAt) {
           // No STUDENT RoleGrant history at all for this signer at this School — no
           // departure signal to measure retention from. Left in place rather than
@@ -340,6 +401,15 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
 
       try {
+        // The drawn image goes first: if that fails the row stays and the
+        // next sweep tries both again, so no image is left without a record.
+        if (sig.signatureImageKey) {
+          if (this.r2Client.isConfigured()) {
+            await this.r2Client.deleteObject(sig.signatureImageKey);
+          } else {
+            this.logger.warn(`entity-offboarding-purge: R2 is not configured, so the image of WaiverSignature ${sig.id} was not deleted.`);
+          }
+        }
         await this.prismaJobs.waiverSignature.delete({ where: { id: sig.id } });
         deleted += 1;
       } catch (err) {
@@ -347,5 +417,21 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
     }
     return { deleted, skipped };
+  }
+
+  /** Guest waiver signatures (Waivers Q9), kept like a student who has left
+   * (Decision 354, W16): 7 years after the class, and for a guest under 18
+   * until they turn 24 (18 + 6) if that's later. For a guest who was 18 or
+   * over at the class, 24 comes before class + 7 years, so both dates having
+   * passed is the whole rule. */
+  private async sweepGuestWaiverSignatures(now: Date): Promise<number> {
+    const sevenYearsAgo = new Date(now);
+    sevenYearsAgo.setUTCFullYear(sevenYearsAgo.getUTCFullYear() - 7);
+    const born24YearsAgo = new Date(now);
+    born24YearsAgo.setUTCFullYear(born24YearsAgo.getUTCFullYear() - 24);
+    const result = await this.prismaJobs.guestWaiverSignature.deleteMany({
+      where: { classStartsAt: { lte: sevenYearsAgo }, guestDateOfBirth: { lte: born24YearsAgo } },
+    });
+    return result.count;
   }
 }

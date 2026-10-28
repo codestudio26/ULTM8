@@ -41,6 +41,13 @@ export class ClassResponseDto {
   @ApiProperty()
   endDate!: string;
 
+  /** Decision 353 (Q6) — from the slot, shown on the class details only. */
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Break start, if its timetable slot has a break. Shown only; no effect on bookings.' })
+  breakStartAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  breakEndAt!: string | null;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Nullable = unlimited.' })
   capacity!: number | null;
 
@@ -61,6 +68,15 @@ export class ClassResponseDto {
 
   @ApiProperty()
   membershipInclusion!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 291 — set when the School cancelled this class. A cancelled class can\'t be booked or waitlisted.' })
+  cancelledAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancellationReason!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set when the Timetable generated this Class (Spec 55 §6.1); null for a one-off Class.' })
+  timetableSlotId!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Class has been archived. Null when active.' })
   archivedAt!: string | null;

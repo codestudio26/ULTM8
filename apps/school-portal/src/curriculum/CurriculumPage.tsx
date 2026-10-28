@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import {
@@ -9,6 +9,7 @@ import {
   useCreateLesson,
   useCreateLessonCategory,
   useDeleteLesson,
+  useDeleteLessonCategory,
   useLessonCategories,
   useLessons,
   useOrderCategoryLessons,
@@ -17,6 +18,7 @@ import {
   useSchoolSkillGroups,
   useUnarchiveLesson,
   useUpdateLesson,
+  useVideoUploadStatus,
   type DisciplineSkillGroup,
   type LessonCategory,
   type LessonResponse,
@@ -24,19 +26,22 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { LessonFormModal } from './LessonFormModal';
 import { VideoUploadModal } from './VideoUploadModal';
+import { LessonCommentsModal } from './LessonCommentsModal';
+import { formatDuration } from './formatDuration';
+import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 /** PENDING gets no badge at all — it's the common case (Decision 101's
  * pipeline was unbuilt until now) and badging every single row would just be
  * noise. PROCESSING/READY/FAILED are the three states a Lesson actually
  * moves through once a video's been uploaded. */
-function captionStatusBadge(status: LessonResponse['captionStatus']) {
+function captionStatusBadge(t: TranslateFn, status: LessonResponse['captionStatus']) {
   switch (status) {
     case 'PROCESSING':
-      return <Badge variant="accent">Processing video</Badge>;
+      return <Badge variant="accent">{t('curriculum.videoStatus.processing')}</Badge>;
     case 'READY':
-      return <Badge variant="success">Video ready</Badge>;
+      return <Badge variant="success">{t('curriculum.videoStatus.ready')}</Badge>;
     case 'FAILED':
-      return <Badge variant="danger">Video failed</Badge>;
+      return <Badge variant="danger">{t('curriculum.videoStatus.failed')}</Badge>;
     case 'PENDING':
     default:
       return null;
@@ -54,7 +59,12 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * explains why) — uploading a video is its own dedicated flow, triggered
  * from this page's row actions instead. */
 export function CurriculumPage() {
-  const schoolId = useOwnedSchoolId();
+  // Coaches and Branch Staff see the curriculum read-only; only the owner
+  // changes it (Decision 326).
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const schoolId = ownedSchoolId ?? coachSchoolId;
+  const canEdit = !!ownedSchoolId;
   const { data, isLoading, error } = useLessons(schoolId);
   const categoriesQuery = useLessonCategories(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
@@ -82,13 +92,20 @@ export function CurriculumPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
   const [uploadingVideoFor, setUploadingVideoFor] = useState<LessonResponse | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [commentsFor, setCommentsFor] = useState<LessonResponse | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<LessonCategory | null>(null);
+  const deleteCategory = useDeleteLessonCategory(schoolId ?? '');
+  // Off until the video account is set up (C4); unknown counts as on, and the
+  // server still refuses with a plain message.
+  const videoUploadsOn = useVideoUploadStatus(canEdit ? schoolId : null).data?.enabled ?? true;
+  const t = useT();
 
   if (!schoolId) return null;
   if (isLoading || skillGroupsLoading || categoriesQuery.isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Lessons.'} />;
-  if (categoriesQuery.error) return <ErrorBanner message={errorText(categoriesQuery.error, 'Could not load categories.')} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('curriculum.loadFailed')} />;
+  if (categoriesQuery.error) return <ErrorBanner message={errorText(categoriesQuery.error, t('curriculum.categoriesLoadFailed'))} />;
   if (skillGroupsError) {
-    return <ErrorBanner message={skillGroupsError instanceof ApiError ? skillGroupsError.message : 'Could not load Skills.'} />;
+    return <ErrorBanner message={skillGroupsError instanceof ApiError ? skillGroupsError.message : t('curriculum.skillsLoadFailed')} />;
   }
 
   const lessons = data?.items ?? [];
@@ -104,7 +121,7 @@ export function CurriculumPage() {
     try {
       await orderCategories.mutateAsync(ids);
     } catch (err) {
-      setMoveError(errorText(err, 'Could not reorder the categories.'));
+      setMoveError(errorText(err, t('curriculum.reorderCategoriesFailed')));
     }
   }
 
@@ -116,66 +133,92 @@ export function CurriculumPage() {
     try {
       await orderLessons.mutateAsync({ categoryId: category.id, lessonIds: ids });
     } catch (err) {
-      setMoveError(errorText(err, 'Could not reorder the lessons.'));
+      setMoveError(errorText(err, t('curriculum.reorderLessonsFailed')));
     }
   }
 
   const lessonColumns = (category: LessonCategory | null, inCategory: LessonResponse[]) => [
     {
       key: 'title',
-      header: 'Title',
+      header: t('curriculum.columnTitle'),
       render: (l: LessonResponse) => (
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           {l.title}
-          {l.free ? <Badge variant="success">Free</Badge> : null}
-          {captionStatusBadge(l.captionStatus)}
-          {l.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+          {l.free ? <Badge variant="success">{t('curriculum.free')}</Badge> : null}
+          {captionStatusBadge(t, l.captionStatus)}
+          {l.archivedAt ? <Badge variant="default">{t('curriculum.archived')}</Badge> : null}
         </span>
       ),
     },
     {
       key: 'format',
-      header: 'Format',
-      render: (l: LessonResponse) => <Badge variant={l.format === 'LIVE' ? 'accent' : 'default'}>{l.format === 'LIVE' ? 'Live' : 'Prerecorded'}</Badge>,
+      header: t('curriculum.columnFormat'),
+      render: (l: LessonResponse) => <Badge variant={l.format === 'LIVE' ? 'accent' : 'default'}>{l.format === 'LIVE' ? t('curriculum.formatLive') : t('curriculum.formatPrerecorded')}</Badge>,
     },
-    { key: 'duration', header: 'Duration', render: (l: LessonResponse) => (l.durationSeconds ? `${Math.round(l.durationSeconds / 60)} min` : '—') },
+    {
+      key: 'duration',
+      header: t('curriculum.columnDuration'),
+      render: (l: LessonResponse) => (l.durationSeconds ? formatDuration(l.durationSeconds) : t('common.none')),
+    },
     {
       key: 'instructor',
-      header: 'Instructor',
-      render: (l: LessonResponse) => (l.instructorId ? instructors.find((i) => i.userId === l.instructorId)?.userId ?? l.instructorId : '—'),
+      header: t('curriculum.columnInstructor'),
+      render: (l: LessonResponse) => {
+        if (!l.instructorId) return t('common.none');
+        const instructor = instructors.find((i) => i.userId === l.instructorId);
+        // The coach's name, as the lesson form's own picker shows it; an id only
+        // if they're no longer in this School's instructor list.
+        return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() || instructor.userId : l.instructorId;
+      },
     },
-    { key: 'skills', header: 'Skills', render: (l: LessonResponse) => l.skillIds.length },
+    { key: 'skills', header: t('curriculum.columnSkills'), render: (l: LessonResponse) => l.skillIds.length },
     {
       key: 'actions',
       header: '',
       render: (l: LessonResponse) => {
         const i = inCategory.indexOf(l);
+        // Comments panel (Decision 326): an archived lesson's comments stay
+        // hidden until it's unarchived.
+        const comments = l.archivedAt ? null : (
+          <Button variant="secondary" onClick={() => setCommentsFor(l)} aria-label={t('curriculum.comments.openAria', { title: l.title, count: l.commentCount })}>
+            {t('curriculum.comments.button', { count: l.commentCount })}
+          </Button>
+        );
+        if (!canEdit) return comments;
         return (
           <div style={{ display: 'flex', gap: 6 }}>
+            {comments}
             {category ? (
               <>
-                <Button variant="secondary" onClick={() => moveLesson(category, inCategory, i, -1)} disabled={i === 0} aria-label={`Move ${l.title} up`}>
+                <Button variant="secondary" onClick={() => moveLesson(category, inCategory, i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: l.title })}>
                   ↑
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => moveLesson(category, inCategory, i, 1)}
                   disabled={i === inCategory.length - 1}
-                  aria-label={`Move ${l.title} down`}
+                  aria-label={t('curriculum.moveDownAria', { name: l.title })}
                 >
                   ↓
                 </Button>
               </>
             ) : null}
-            <Button variant="secondary" onClick={() => setEditing(l)} aria-label={`Edit ${l.title}`}>
-              Edit
+            <Button variant="secondary" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
+              {t('curriculum.edit')}
             </Button>
-            {/* Only offered while there's no video yet, or the last one failed —
-                re-uploading over an already-PROCESSING/READY video (a real
-                "replace the video" workflow) isn't built; out of scope here. */}
-            {l.captionStatus === 'PENDING' || l.captionStatus === 'FAILED' ? (
-              <Button variant="secondary" onClick={() => setUploadingVideoFor(l)} aria-label={`Upload video for ${l.title}`}>
-                Upload video
+            {/* Offered while there's no video yet or the last one failed, and
+                as "Upload again" while one is processing, in case its upload
+                never arrived (C5). Replacing a ready video isn't built. Greyed
+                out until video uploads are set up (C4). */}
+            {l.captionStatus !== 'READY' ? (
+              <Button
+                variant="secondary"
+                disabled={!videoUploadsOn}
+                title={videoUploadsOn ? undefined : t('curriculum.videoUploadsOff')}
+                onClick={() => setUploadingVideoFor(l)}
+                aria-label={t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgainAria' : 'curriculum.uploadVideoAria', { title: l.title })}
+              >
+                {t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo')}
               </Button>
             ) : null}
             {/* Decision 226 — reversible alternative to Delete below, same
@@ -183,22 +226,22 @@ export function CurriculumPage() {
             {l.archivedAt ? (
               <Button
                 variant="secondary"
-                onClick={() => { setActionError(null); unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, 'Could not unarchive this Lesson.'))); }}
-                aria-label={`Unarchive ${l.title}`}
+                onClick={() => { setActionError(null); unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.unarchiveFailed')))); }}
+                aria-label={t('curriculum.unarchiveAria', { title: l.title })}
               >
-                Unarchive
+                {t('curriculum.unarchive')}
               </Button>
             ) : (
               <Button
                 variant="secondary"
-                onClick={() => { setActionError(null); archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, 'Could not archive this Lesson.'))); }}
-                aria-label={`Archive ${l.title}`}
+                onClick={() => { setActionError(null); archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.archiveFailed')))); }}
+                aria-label={t('curriculum.archiveAria', { title: l.title })}
               >
-                Archive
+                {t('curriculum.archive')}
               </Button>
             )}
-            <Button variant="secondary" onClick={() => setDeleting(l)} aria-label={`Delete ${l.title}`}>
-              Delete
+            <Button variant="secondary" onClick={() => setDeleting(l)} aria-label={t('curriculum.deleteAria', { title: l.title })}>
+              {t('curriculum.delete')}
             </Button>
           </div>
         );
@@ -209,18 +252,19 @@ export function CurriculumPage() {
   return (
     <>
       <PageHeader
-        title="Curriculum"
-        subtitle="Lessons Instructors and Staff can build here, grouped into categories in the order students see them — upload a video from a Lesson's row once it's created; auto-captioning finishes on its own afterwards."
-        actions={<Button onClick={() => setCreating(true)}>Add lesson</Button>}
+        title={t('curriculum.title')}
+        subtitle={canEdit ? t('curriculum.subtitle') : t('curriculum.readOnlySubtitle')}
+        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('curriculum.addLesson')}</Button> : null}
       />
       {moveError ? <ErrorBanner message={moveError} /> : null}
       {actionError ? <ErrorBanner message={actionError} /> : null}
       {uploadMessage ? <SuccessBanner message={uploadMessage} /> : null}
-      <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} />
+      {canEdit && !videoUploadsOn ? <p className="ultm8-field__hint">{t('curriculum.videoUploadsOff')}</p> : null}
+      {canEdit ? <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} onDelete={setDeletingCategory} /> : null}
 
       {lessons.length === 0 ? (
         <Card>
-          <EmptyState title="No Lessons yet" description="Add your first Lesson to get started." />
+          <EmptyState title={t('curriculum.emptyTitle')} description={canEdit ? t('curriculum.emptyDescription') : t('curriculum.emptyReadOnly')} />
         </Card>
       ) : (
         <>
@@ -232,7 +276,7 @@ export function CurriculumPage() {
                   {c.name}
                 </h2>
                 {inCategory.length === 0 ? (
-                  <p className="ultm8-field__hint">No lessons in this category yet.</p>
+                  <p className="ultm8-field__hint">{t('curriculum.noLessonsInCategory')}</p>
                 ) : (
                   <Table<LessonResponse> rows={inCategory} columns={lessonColumns(c, inCategory)} />
                 )}
@@ -242,8 +286,9 @@ export function CurriculumPage() {
           {uncategorised.length > 0 ? (
             <Card className="ultm8-field">
               <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-                No category
+                {t('curriculum.noCategory')}
               </h2>
+              {canEdit ? <p className="ultm8-field__hint">{t('curriculum.uncategorisedHint')}</p> : null}
               <Table<LessonResponse> rows={uncategorised} columns={lessonColumns(null, uncategorised)} />
             </Card>
           ) : null}
@@ -252,7 +297,7 @@ export function CurriculumPage() {
 
       {creating ? (
         <LessonFormModal
-          title="Add lesson"
+          title={t('curriculum.addLesson')}
           instructors={instructors}
           skillGroups={skillGroups}
           categories={categories}
@@ -267,8 +312,8 @@ export function CurriculumPage() {
 
       {deleting ? (
         <ConfirmDeleteModal
-          title={`Delete ${deleting.title}?`}
-          description="The lesson is removed for everyone. Students' grading isn't affected."
+          title={t('curriculum.deleteTitle', { title: deleting.title })}
+          description={t('curriculum.deleteDescription')}
           onConfirm={() => deleteLesson.mutateAsync(deleting.id)}
           onClose={() => setDeleting(null)}
         />
@@ -284,6 +329,15 @@ export function CurriculumPage() {
           onClose={() => setEditing(null)}
         />
       ) : null}
+      {deletingCategory ? (
+        <ConfirmDeleteModal
+          title={t('curriculum.categories.deleteTitle', { name: deletingCategory.name })}
+          description={t('curriculum.categories.deleteDescription', { count: lessons.filter((l) => l.categoryId === deletingCategory.id).length })}
+          onConfirm={() => deleteCategory.mutateAsync(deletingCategory.id)}
+          onClose={() => setDeletingCategory(null)}
+        />
+      ) : null}
+      {commentsFor ? <LessonCommentsModal schoolId={schoolId} lesson={commentsFor} canDelete={canEdit} onClose={() => setCommentsFor(null)} /> : null}
       {renaming ? <RenameCategoryModal schoolId={schoolId} category={renaming} onClose={() => setRenaming(null)} /> : null}
       {uploadingVideoFor ? (
         <VideoUploadModal
@@ -291,7 +345,7 @@ export function CurriculumPage() {
           lesson={uploadingVideoFor}
           onClose={() => setUploadingVideoFor(null)}
           onUploaded={() => {
-            setUploadMessage(`Uploading ${uploadingVideoFor.title}'s video — this can take a few minutes before it's ready.`);
+            setUploadMessage(t('curriculum.uploadingMessage', { title: uploadingVideoFor.title }));
             setUploadingVideoFor(null);
           }}
         />
@@ -301,59 +355,66 @@ export function CurriculumPage() {
 }
 
 /** The School's categories in order (Decisions 128.15, 191): add, rename,
- * and move up or down. Lessons follow their category's place. */
+ * move up or down, and delete (Decision 326). Lessons follow their
+ * category's place. */
 function CategoriesCard({
   schoolId,
   categories,
   onMove,
   onRename,
+  onDelete,
 }: {
   schoolId: string;
   categories: LessonCategory[];
   onMove: (index: number, delta: number) => void;
   onRename: (c: LessonCategory) => void;
+  onDelete: (c: LessonCategory) => void;
 }) {
   const create = useCreateLessonCategory(schoolId);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!name.trim()) {
-      setError('Give this category a name.');
+      setError(t('curriculum.categories.nameRequired'));
       return;
     }
     try {
       await create.mutateAsync(name.trim());
       setName('');
     } catch (err) {
-      setError(errorText(err, 'Could not add the category.'));
+      setError(errorText(err, t('curriculum.categories.addFailed')));
     }
   }
 
   return (
     <Card className="ultm8-field">
       <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        Categories
+        {t('curriculum.categories.title')}
       </h2>
       {error ? <ErrorBanner message={error} /> : null}
       {categories.length === 0 ? (
-        <p className="ultm8-field__hint">No categories yet. Add one to group your lessons.</p>
+        <p className="ultm8-field__hint">{t('curriculum.categories.empty')}</p>
       ) : (
-        <ol aria-label="Categories" style={{ paddingLeft: 20 }}>
+        <ol aria-label={t('curriculum.categories.title')} style={{ paddingLeft: 20 }}>
           {categories.map((c, i) => (
             <li key={c.id} aria-label={c.name} style={{ marginBottom: 6 }}>
               <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <strong>{c.name}</strong>
-                <Button variant="secondary" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label={`Move ${c.name} up`}>
+                <Button variant="secondary" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: c.name })}>
                   ↑
                 </Button>
-                <Button variant="secondary" onClick={() => onMove(i, 1)} disabled={i === categories.length - 1} aria-label={`Move ${c.name} down`}>
+                <Button variant="secondary" onClick={() => onMove(i, 1)} disabled={i === categories.length - 1} aria-label={t('curriculum.moveDownAria', { name: c.name })}>
                   ↓
                 </Button>
-                <Button variant="secondary" onClick={() => onRename(c)} aria-label={`Rename ${c.name}`}>
-                  Rename
+                <Button variant="secondary" onClick={() => onRename(c)} aria-label={t('curriculum.categories.renameAria', { name: c.name })}>
+                  {t('curriculum.categories.rename')}
+                </Button>
+                <Button variant="secondary" onClick={() => onDelete(c)} aria-label={t('curriculum.categories.deleteAria', { name: c.name })}>
+                  {t('curriculum.delete')}
                 </Button>
               </span>
             </li>
@@ -361,11 +422,11 @@ function CategoriesCard({
         </ol>
       )}
       <form onSubmit={add} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Field label="New category" htmlFor="new-lesson-category">
-          <TextField id="new-lesson-category" value={name} placeholder="e.g. Escapes" onChange={(e) => setName(e.target.value)} />
+        <Field label={t('curriculum.categories.newLabel')} htmlFor="new-lesson-category">
+          <TextField id="new-lesson-category" value={name} placeholder={t('curriculum.categories.newPlaceholder')} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Button type="submit" loading={create.isPending}>
-          Add category
+          {t('curriculum.categories.add')}
         </Button>
       </form>
     </Card>
@@ -376,6 +437,7 @@ function RenameCategoryModal({ schoolId, category, onClose }: { schoolId: string
   const rename = useRenameLessonCategory(schoolId);
   const [name, setName] = useState(category.name);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -384,23 +446,23 @@ function RenameCategoryModal({ schoolId, category, onClose }: { schoolId: string
       await rename.mutateAsync({ id: category.id, name: name.trim() });
       onClose();
     } catch (err) {
-      setError(errorText(err, 'Could not rename the category.'));
+      setError(errorText(err, t('curriculum.categories.renameFailed')));
     }
   }
 
   return (
-    <Modal title={`Rename ${category.name}`} onClose={onClose}>
+    <Modal title={t('curriculum.categories.renameAria', { name: category.name })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={save}>
-        <Field label="Name" htmlFor="rename-lesson-category">
+        <Field label={t('curriculum.categories.nameLabel')} htmlFor="rename-lesson-category">
           <TextField id="rename-lesson-category" required value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button type="submit" loading={rename.isPending}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
@@ -424,9 +486,10 @@ function EditLessonModal({
   onClose: () => void;
 }) {
   const updateLesson = useUpdateLesson(schoolId, lesson.id);
+  const t = useT();
   return (
     <LessonFormModal
-      title="Edit lesson"
+      title={t('curriculum.editLesson')}
       initial={lesson}
       instructors={instructors}
       skillGroups={skillGroups}

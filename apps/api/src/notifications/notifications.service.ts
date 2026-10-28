@@ -45,6 +45,7 @@ export class NotificationsService {
       const decoded = cursor ? decodeCursor(cursor) : null;
       const where: Prisma.NotificationWhereInput = {
         userId: callerId,
+        deletedAt: null,
         ...(decoded
           ? {
               OR: [
@@ -92,14 +93,19 @@ export class NotificationsService {
    * (`readAt` set) — see the response DTO's own header comment for why an
    * unread Notification is excluded from both the numerator and denominator
    * rather than counted as a miss.
+   *
+   * Deleted Notifications (Decision 277, `deletedAt` set) are left out of
+   * `total`/`unread`, matching the list, but still count towards the
+   * Read-within-24h metric: they were read, and "Clear all read" would
+   * otherwise reset that metric to empty every time it is used.
    */
   async getCountsForCaller(callerId: string) {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const now = new Date();
       const [total, unread, readRows] = await Promise.all([
-        tx.notification.count({ where: { userId: callerId } }),
+        tx.notification.count({ where: { userId: callerId, deletedAt: null } }),
         tx.notification.count({
-          where: { userId: callerId, read: false, OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }] },
+          where: { userId: callerId, deletedAt: null, read: false, OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }] },
         }),
         // Only the two timestamps are needed to compute the metric — not a
         // full row fetch of every read Notification the caller has ever had.
@@ -140,13 +146,32 @@ export class NotificationsService {
       // RLS returns null (not another User's row) for a Notification outside the
       // caller's scope — a genuine 404 and an isolation-blocked read are
       // indistinguishable at this layer by design (ultm8-tenant-isolation §2).
-      if (!existing) {
+      // A deleted Notification (Decision 277) is a 404 too: it is gone from
+      // the caller's point of view.
+      if (!existing || existing.deletedAt) {
         throw new NotFoundException('Notification not found');
       }
       return tx.notification.update({
         where: { id: notificationId },
         data: { read: true, readAt: existing.readAt ?? new Date() },
       });
+    });
+  }
+
+  /**
+   * POST /notifications/me/read-all (Decision 355) — "Mark all read": every
+   * unread, not-deleted Notification the caller has, across every page,
+   * snoozed ones included. `readAt` is set to now: an unread row has never
+   * been read (there is no way back to unread), so this is its first read,
+   * the same rule markRead follows. Nothing unread is a plain `{ updated: 0 }`.
+   */
+  async markAllRead(callerId: string): Promise<{ updated: number }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { userId: callerId, read: false, deletedAt: null },
+        data: { read: true, readAt: new Date() },
+      });
+      return { updated: result.count };
     });
   }
 
@@ -173,13 +198,57 @@ export class NotificationsService {
     if (snoozedUntil.getTime() <= Date.now()) {
       throw new BadRequestException('`until`/`minutes` must resolve to a future time.');
     }
+    // The same 7-day ceiling `minutes` has (SnoozeNotificationDto), so `until`
+    // can't hide a notification for years.
+    if (snoozedUntil.getTime() > Date.now() + MAX_SNOOZE_MS) {
+      throw new BadRequestException('A notification can be snoozed for at most 7 days.');
+    }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const existing = await tx.notification.findUnique({ where: { id: notificationId } });
-      if (!existing) {
+      if (!existing || existing.deletedAt) {
         throw new NotFoundException('Notification not found');
       }
       return tx.notification.update({ where: { id: notificationId }, data: { snoozedUntil } });
+    });
+  }
+
+  /**
+   * DELETE /notifications/:id (Decision 277). A soft delete: sets `deletedAt`
+   * so the row leaves the caller's list and counts, but the record itself is
+   * kept (Decision 244 — Notifications stay a permanent record, so payment
+   * and waiver alerts are never actually erased). `updateMany` with a
+   * `deletedAt: null` filter, then a count check, for the same reason
+   * deregisterDeviceToken uses `deleteMany`: an RLS-hidden row, someone
+   * else's row, and an already-deleted row all come back as zero rows
+   * matched, which becomes one correctly-shaped 404.
+   */
+  async softDelete(callerId: string, notificationId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { id: notificationId, userId: callerId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      if (result.count === 0) {
+        throw new NotFoundException('Notification not found');
+      }
+    });
+  }
+
+  /**
+   * POST /notifications/me/clear-read (Decision 277). Soft-deletes every one
+   * of the caller's read Notifications in one go, the "Clear all read" action.
+   * Unread ones are never touched, snoozed or not. Returns how many were
+   * cleared so the page can say so; clearing an inbox with nothing read is a
+   * plain `{ cleared: 0 }`, not an error.
+   */
+  async clearRead(callerId: string): Promise<{ cleared: number }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.updateMany({
+        where: { userId: callerId, read: true, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      return { cleared: result.count };
     });
   }
 
@@ -242,6 +311,8 @@ export class NotificationsService {
   }
 }
 
+const MAX_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface NotificationCursor {
   createdAt: Date;
   id: string;
@@ -251,7 +322,19 @@ function encodeCursor(n: { createdAt: Date; id: string }): string {
   return Buffer.from(JSON.stringify({ createdAt: n.createdAt.toISOString(), id: n.id })).toString('base64url');
 }
 
+/** A cursor that isn't one this service wrote is the caller's mistake (a 400),
+ * not a server fault: JSON.parse and an Invalid Date used to surface as 500s. */
 function decodeCursor(cursor: string): NotificationCursor {
-  const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { createdAt: string; id: string };
-  return { createdAt: new Date(parsed.createdAt), id: parsed.id };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+  } catch {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  const { createdAt, id } = (parsed ?? {}) as { createdAt?: unknown; id?: unknown };
+  const date = typeof createdAt === 'string' ? new Date(createdAt) : null;
+  if (!date || Number.isNaN(date.getTime()) || typeof id !== 'string') {
+    throw new BadRequestException('Invalid cursor.');
+  }
+  return { createdAt: date, id };
 }

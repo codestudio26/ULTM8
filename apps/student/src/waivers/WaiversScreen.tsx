@@ -4,6 +4,7 @@ import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useEnrolledSchoolIds } from '../auth/AuthContext';
 import { WaiverRow } from './WaiverRow';
+import { useT } from '../i18n/I18nProvider';
 import { useAllEnrolledSchoolWaivers, useEnrolledSchoolNames, useMyWaiverSignatures } from './waiverQueries';
 
 /** Off Home, alongside My Bookings/Memberships/Notifications. Shows every Waiver
@@ -15,6 +16,7 @@ import { useAllEnrolledSchoolWaivers, useEnrolledSchoolNames, useMyWaiverSignatu
  * multi-School Student needs to know which Waiver belongs to which School, not just
  * a merged, undifferentiated list. */
 export function WaiversScreen() {
+  const t = useT();
   const schoolIds = useEnrolledSchoolIds();
   const waivers = useAllEnrolledSchoolWaivers(schoolIds);
   const mySignatures = useMyWaiverSignatures(schoolIds.length > 0);
@@ -23,7 +25,7 @@ export function WaiversScreen() {
   if (schoolIds.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: '#5F6368' }}>You're not enrolled at a School yet — waivers appear here once you are.</Text>
+        <Text style={{ color: '#5F6368' }}>{t('waivers.screen.notEnrolled')}</Text>
       </Screen>
     );
   }
@@ -48,7 +50,7 @@ export function WaiversScreen() {
   if (waivers.isError && waivers.items.length === 0) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(waivers.error, 'Failed to load waivers — please try again.')} />
+        <ErrorBanner message={getApiErrorMessage(waivers.error, t('waivers.screen.loadError'))} />
       </Screen>
     );
   }
@@ -67,7 +69,7 @@ export function WaiversScreen() {
   if (waivers.items.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: '#5F6368' }}>No waivers to sign.</Text>
+        <Text style={{ color: '#5F6368' }}>{t('waivers.screen.empty')}</Text>
       </Screen>
     );
   }

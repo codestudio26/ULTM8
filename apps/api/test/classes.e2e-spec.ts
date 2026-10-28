@@ -54,7 +54,6 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
   let instructorSchoolWide: { id: string };
   let instructorBranchA2: { id: string };
   let tokenOwnerA: string;
-  let tokenOwnerB: string;
   let tokenBranchStaffA1: string;
 
   const classIds: string[] = [];
@@ -117,9 +116,6 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     tokenOwnerA = signAccessToken(ownerA, [
       { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolA.id, branchId: null },
     ]);
-    tokenOwnerB = signAccessToken(ownerB, [
-      { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null },
-    ]);
     tokenBranchStaffA1 = signAccessToken(branchStaffA1User, [
       { role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolA.id, branchId: branchA1.id },
     ]);
@@ -141,8 +137,8 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     return {
       title: 'Fixture Class',
       activities: ['BJJ'],
-      startDate: '2026-10-01T10:00:00.000Z',
-      endDate: '2026-10-01T11:00:00.000Z',
+      startDate: '2036-10-01T10:00:00.000Z',
+      endDate: '2036-10-01T11:00:00.000Z',
       ...overrides,
     };
   }
@@ -309,7 +305,7 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/classes`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send(classBody({ title: 'Backwards dates', startDate: '2026-10-01T11:00:00.000Z', endDate: '2026-10-01T10:00:00.000Z' }));
+      .send(classBody({ title: 'Backwards dates', startDate: '2036-10-01T11:00:00.000Z', endDate: '2036-10-01T10:00:00.000Z' }));
     expect(createRes.status).toBe(400);
 
     const validClass = await request(app.getHttpServer())
@@ -495,6 +491,28 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
       expect(narrowed.status).toBe(200);
       expect(narrowed.body.styles).toEqual([{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
       expect(narrowed.body.activities).toEqual(['BJJ']);
+    });
+
+    it('filters the list by style and by start time, for "Log a class" (Decision 301 item 5)', async () => {
+      const at = (iso: string, title: string, styles: Array<Record<string, unknown>>) =>
+        create({ title, activities: undefined, styles, startDate: iso, endDate: new Date(new Date(iso).getTime() + 90 * 60_000).toISOString() });
+      const early = await at('2030-03-04T18:00:00.000Z', 'Filter BJJ early', [{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
+      const late = await at('2030-03-11T18:00:00.000Z', 'Filter BJJ late', [{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
+      const mixed = await at('2030-03-05T18:00:00.000Z', 'Filter mixed', [{ disciplineId: judo.id, classType: 'Open Mat' }, { disciplineId: bjj.id, classType: 'Open Mat' }]);
+      const judoOnly = await at('2030-03-05T19:00:00.000Z', 'Filter Judo', [{ disciplineId: judo.id, classType: 'Open Mat' }]);
+      for (const res of [early, late, mixed, judoOnly]) expect(res.status).toBe(201);
+
+      const list = (query: Record<string, string>) =>
+        request(app.getHttpServer()).get(`/v1/schools/${schoolS.id}/classes`).query({ search: 'Filter', limit: '100', ...query }).set('Authorization', `Bearer ${tokenOwnerS}`);
+      const titles = (res: request.Response) => (res.body.items as Array<{ title: string }>).map((c) => c.title).sort();
+
+      const bjjOnly = await list({ disciplineId: bjj.id });
+      expect(bjjOnly.status).toBe(200);
+      expect(titles(bjjOnly)).toEqual(['Filter BJJ early', 'Filter BJJ late', 'Filter mixed']);
+      expect(titles(await list({ disciplineId: bjj.id, startsFrom: '2030-03-05T00:00:00.000Z', startsTo: '2030-03-10T00:00:00.000Z' }))).toEqual(['Filter mixed']);
+      expect(titles(await list({ startsTo: '2030-03-05T18:30:00.000Z' }))).toEqual(['Filter BJJ early', 'Filter mixed']);
+      expect((await list({ disciplineId: 'not-a-uuid' })).status).toBe(400);
+      expect((await list({ startsFrom: 'yesterday' })).status).toBe(400);
     });
 
     it('a School with no styles keeps free-text activities, and cannot be given styles', async () => {

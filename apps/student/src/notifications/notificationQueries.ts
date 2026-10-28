@@ -42,3 +42,13 @@ export function useMarkNotificationRead() {
     },
   });
 }
+
+/** Decision 355 — "Mark all read": every unread notification, on every page,
+ * so the whole list is refetched rather than patched page by page. */
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/notifications/me/read-all', {})),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+}

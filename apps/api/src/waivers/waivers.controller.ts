@@ -13,6 +13,8 @@ import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
 import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
 import { WaiversQueryDto } from './dto/waivers-query.dto';
+import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto, RemindResponseDto } from './dto/paper-signature.dto';
+import { UpdateWaiverSettingsDto, WaiverSettingsDto } from './dto/waiver-settings.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
 // capture as of Phase 34), plus Guardian-on-behalf-of-a-linked-minor signing as
@@ -62,11 +64,69 @@ export class WaiversController {
     return this.waiversService.findSignaturesForWaiver(user.sub, schoolId, id, query.cursor, query.limit);
   }
 
+  /** One signature with the text as it was signed (Waivers review W3). */
+  @ApiOkResponse({ type: WaiverSignatureResponseDto })
+  @Get('schools/:schoolId/waivers/:id/signatures/:signatureId')
+  findSignature(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('id') id: string,
+    @Param('signatureId') signatureId: string,
+  ) {
+    return this.waiversService.findSignatureForWaiver(user.sub, schoolId, id, signatureId);
+  }
+
   // NOTE ordering: 'waivers/me' MUST be registered before 'waivers/:id' — both
   // share the same path prefix, and NestJS/Express resolves routes in
   // registration order, so a static segment declared after a param route would
   // never be reached (a request to /waivers/me would incorrectly match :id='me').
   // Caught before this ever ran, not found via a failing test.
+  /** Decision 354: the School's Waiver settings (Owner/Manager only). */
+  @ApiOkResponse({ type: WaiverSettingsDto })
+  @Get('schools/:schoolId/waiver-settings')
+  getWaiverSettings(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.waiversService.getWaiverSettings(user.sub, schoolId);
+  }
+
+  @ApiOkResponse({ type: WaiverSettingsDto })
+  @Patch('schools/:schoolId/waiver-settings')
+  updateWaiverSettings(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: UpdateWaiverSettingsDto) {
+    return this.waiversService.updateWaiverSettings(user.sub, schoolId, dto);
+  }
+
+  /** Decision 354: remind current students who haven't signed (each at most once a day). */
+  @ApiCreatedResponse({ type: RemindResponseDto })
+  @Post('schools/:schoolId/waivers/:id/remind')
+  remind(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('id') id: string) {
+    return this.waiversService.remind(user.sub, schoolId, id);
+  }
+
+  /** Decision 354: record a waiver signed on paper, step 1 (upload the photo). */
+  @ApiCreatedResponse({ type: SignatureUploadUrlResponseDto })
+  @Post('schools/:schoolId/waivers/:id/signatures/:signatureId/paper-upload-url')
+  requestPaperUploadUrl(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('id') id: string,
+    @Param('signatureId') signatureId: string,
+    @Body() dto: PaperSignatureUploadUrlDto,
+  ) {
+    return this.waiversService.requestPaperUploadUrl(user.sub, schoolId, id, signatureId, dto);
+  }
+
+  /** Step 2: mark the entry Signed on paper. */
+  @ApiCreatedResponse({ type: WaiverSignatureResponseDto })
+  @Post('schools/:schoolId/waivers/:id/signatures/:signatureId/paper')
+  recordPaperSignature(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('id') id: string,
+    @Param('signatureId') signatureId: string,
+    @Body() dto: RecordPaperSignatureDto,
+  ) {
+    return this.waiversService.recordPaperSignature(user.sub, schoolId, id, signatureId, dto);
+  }
+
   @ApiOkResponse({ type: WaiverSignatureListResponseDto })
   @Get('waivers/me')
   findMySignatures(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
@@ -85,8 +145,8 @@ export class WaiversController {
     return this.waiversService.updateWaiver(user.sub, id, dto);
   }
 
-  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
-   * any WaiverSignature row (signed or unsigned-assignment). */
+  /** Decision 226 — School Owner/Manager only, idempotent. Always allowed
+   * since Decision 354 (W2); signatures stay. */
   @ApiOkResponse({ type: WaiverResponseDto })
   @Post('waivers/:id/archive')
   archiveWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string) {

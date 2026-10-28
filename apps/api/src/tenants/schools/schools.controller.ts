@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
@@ -7,15 +7,19 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { SchoolsService } from './schools.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import { SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
+import { SchoolFranchiseBrandingResponseDto, SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
+import { CloseOwnSchoolDto, CloseOwnSchoolResponseDto } from './dto/close-own-school.dto';
+import { FranchiseJoinRequestResponseDto, SchoolFranchiseJoinRequestResponseDto } from '../franchises/dto/franchise-join-request.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
+import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
+import { StudentGuardiansResponseDto } from './dto/student-guardians-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -53,6 +57,13 @@ export class SchoolsController {
     return this.schoolsService.findTheme(user.sub, id);
   }
 
+  /** Decision 350 — see SchoolsService.findFranchiseBranding. */
+  @ApiOkResponse({ type: SchoolFranchiseBrandingResponseDto })
+  @Get(':id/franchise-branding')
+  findFranchiseBranding(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findFranchiseBranding(user.sub, id);
+  }
+
   @ApiOkResponse({ type: SchoolResponseDto })
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSchoolDto) {
@@ -65,7 +76,7 @@ export class SchoolsController {
   @ApiOkResponse({ type: StudentListResponseDto })
   @Get(':id/students')
   findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
-    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status);
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status, query.search);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch
@@ -79,6 +90,42 @@ export class SchoolsController {
     @Body() dto: SetHomeBranchDto,
   ) {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
+  }
+
+  /** The Student's full profile, for the staff edit form (Decision 341) — same
+   * access as the PATCH below. */
+  @ApiOkResponse({ type: UserResponseDto })
+  @Get(':id/students/:studentId/profile')
+  getStudentProfile(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentProfile(user.sub, id, studentId);
+  }
+
+  /** The student's Guardians, by name, for the student's page (Decision 371).
+   * Same staff who can read the student's profile. */
+  @ApiOkResponse({ type: StudentGuardiansResponseDto })
+  @Get(':id/students/:studentId/guardians')
+  getStudentGuardians(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentGuardians(user.sub, id, studentId);
+  }
+
+  /** What revoking this Student's enrolment will cancel, and the memberships
+   * it leaves running — for the owner's Revoke dialog (Decision 343). */
+  @ApiOkResponse({ type: StudentLeavingSummaryResponseDto })
+  @Get(':id/students/:studentId/leaving-summary')
+  getStudentLeavingSummary(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.getStudentLeavingSummary(user.sub, id, studentId);
   }
 
   /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
@@ -101,12 +148,27 @@ export class SchoolsController {
     return this.schoolsService.join(user.sub, id, dto);
   }
 
-  /** School Owner/Manager only — see SchoolsService.joinFranchise's own header
-   * comment for the full "narrow, one-way only" account (Phase 16b-i, Decision 98). */
-  @ApiCreatedResponse({ type: SchoolResponseDto })
+  /** School Owner/Manager only — asks the Franchise Owner to let this School
+   * join (Decision 352); see SchoolsService.joinFranchise. */
+  @ApiCreatedResponse({ type: FranchiseJoinRequestResponseDto })
   @Post(':id/join-franchise')
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
+  }
+
+  /** Decision 352 — the School's latest request to join a Franchise. */
+  @ApiOkResponse({ type: SchoolFranchiseJoinRequestResponseDto })
+  @Get(':id/franchise-join-request')
+  findFranchiseJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findFranchiseJoinRequest(user.sub, id);
+  }
+
+  /** Decision 352 — withdraw the open request. */
+  @ApiOkResponse({ type: FranchiseJoinRequestResponseDto })
+  @HttpCode(200)
+  @Post(':id/franchise-join-request/cancel')
+  cancelFranchiseJoinRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.cancelFranchiseJoinRequest(user.sub, id);
   }
 
   /** School Owner/Manager only — see SchoolsService.leaveFranchise's own header
@@ -117,6 +179,24 @@ export class SchoolsController {
   @Post(':id/leave-franchise')
   leaveFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.schoolsService.leaveFranchise(user.sub, id);
+  }
+
+  /** Decision 364 — the School Owner closes their own School, with its name
+   * re-typed and a passcode check. Not during impersonation. */
+  @ApiOkResponse({ type: CloseOwnSchoolResponseDto })
+  @ApiHeader({ name: 'x-step-up-token', required: true, description: 'From POST /auth/step-up/verify (passcode check).' })
+  @HttpCode(200)
+  @Post(':id/close')
+  closeOwnSchool(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: CloseOwnSchoolDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    if (user.impersonation) {
+      throw new ForbiddenException('Closing a School is not available during an impersonation session (Decision 39).');
+    }
+    return this.schoolsService.closeOwnSchool(user.sub, id, dto, stepUpToken);
   }
 
   /** School Owner/Manager only — see SchoolsService.regenerateJoinCode's own

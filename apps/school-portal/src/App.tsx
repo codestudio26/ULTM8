@@ -12,8 +12,10 @@ import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
 import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePage';
 import { CoachInvitePage } from './auth/CoachInvitePage';
+import { GuestWaiverPage } from './waivers/GuestWaiverPage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
+import { MyProfilePage } from './profile/MyProfilePage';
 import { DashboardPage } from './dashboard/DashboardPage';
 import { BookingsDrilldownPage } from './dashboard/BookingsDrilldownPage';
 import { BranchesPage } from './branches/BranchesPage';
@@ -25,11 +27,16 @@ import { InstructorsPage } from './instructors/InstructorsPage';
 import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
+import { CheckInPage } from './frontdesk/CheckInPage';
+import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { InviteStudentPage } from './students/InviteStudentPage';
+import { AddStudentManuallyPage } from './students/AddStudentManuallyPage';
 import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
 import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
+import { GradingSettingsPage } from './grading/GradingSettingsPage';
+import { GradingSkillsPage } from './grading/GradingSkillsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -38,8 +45,11 @@ import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage';
+import { CancellationsPage } from './cancellations/CancellationsPage';
+import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
+import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
@@ -65,6 +75,7 @@ export function App() {
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
       <Route path="/first-login-passcode-change" element={<FirstLoginPasscodeChangePage />} />
       <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
+      <Route path="/guest-waiver/:token" element={<GuestWaiverPage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
@@ -121,6 +132,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <SchoolPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* The signed-in user's own profile — any portal user, from the header's account menu. */}
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MyProfilePage />
             </Shell>
           </RequireAuth>
         }
@@ -226,11 +248,40 @@ export function App() {
         }
       />
       <Route
+        path="/check-in"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CheckInPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Front-desk mode is full screen: no menu (DESIGN.md → "Check-in and front-desk mode"). */}
+      <Route
+        path="/front-desk"
+        element={
+          <RequireAuth>
+            <FrontDeskModePage />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/students/invite"
         element={
           <RequireAuth>
             <Shell>
               <InviteStudentPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students/add"
+        element={
+          <RequireAuth>
+            <Shell>
+              <AddStudentManuallyPage />
             </Shell>
           </RequireAuth>
         }
@@ -269,11 +320,31 @@ export function App() {
         }
       />
       <Route
-        path="/grading-permissions"
+        path="/grading/permissions"
         element={
           <RequireAuth>
             <Shell>
               <GradingPermissionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/settings"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSettingsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading/skills"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingSkillsPage />
             </Shell>
           </RequireAuth>
         }
@@ -359,6 +430,16 @@ export function App() {
         }
       />
       <Route
+        path="/membership-plans/:id/members"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlanMembersPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/membership-plans/:id/edit"
         element={
           <RequireAuth>
@@ -379,11 +460,31 @@ export function App() {
         }
       />
       <Route
+        path="/cancellations"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CancellationsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/waivers"
         element={
           <RequireAuth>
             <Shell>
               <WaiversPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/waivers/settings"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WaiverSettingsPage />
             </Shell>
           </RequireAuth>
         }
@@ -419,6 +520,8 @@ export function App() {
         }
       />
 
+      {/* The Permissions page moved under Grading's tabs. */}
+      <Route path="/grading-permissions" element={<Navigate to="/grading/permissions" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

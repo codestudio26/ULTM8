@@ -288,9 +288,10 @@ implementation) are both merged to master.
    yet given one. Nothing is blocked on it; worth a short pass.
 
 **Smaller, individually-flagged items worth a decision at some point** (none currently
-block a module, but each is a real, live gap): `grading.service.ts`'s
-`assertStaffAtSchool` may be over-broad for mutating grading actions (shipped on an
-unconfirmed assumption — real rework risk if narrowed later); `SettingsController`'s
+block a module, but each is a real, live gap): ~~`grading.service.ts`'s
+`assertStaffAtSchool` may be over-broad for mutating grading actions~~ (resolved:
+grading writes now go through `assertCanGrade`, per style, action and branch —
+Decisions 138, 168, 181); `SettingsController`'s
 "permissions metadata" was named in the spec but never given an endpoint; no general
 refresh-token endpoint exists (Spec §8.3 describes one; the current 15-minute
 forced-relogin window is the accepted tradeoff); `user_self_or_shared_school`'s RLS
@@ -674,6 +675,17 @@ final provisioning step needs the product owner directly)
     explicitly not legal advice and not yet built. Still needs: a real program with an
     actual owner, and legal counsel's review of the real retention/residency requirements
     before any of Decision 245's options are implemented.
+
+**H. Translation before launch** (Decision 323)
+21. Translate the student app (`apps/student`) into the same 15 languages as the
+    School Portal, with the phone's language by default, a picker in Profile, and
+    Platform Admin overrides. Built 26 Oct 2026 (shared `@ultm8/i18n` package,
+    then the app's translation layer, all screens and 14 first-draft translations).
+22. Native-speaker review of every text, from zero, once the wording is final: export
+    the portal's and the student app's texts to the translation review page
+    (`apps/school-portal/scripts/i18n-review/`), share it per language, then apply the
+    corrections in one change. Earlier reviews were cleared on 26 Oct 2026. The
+    reviewers per language are for the product owner to arrange.
 
 ---
 

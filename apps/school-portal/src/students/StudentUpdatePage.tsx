@@ -1,210 +1,224 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
-import { useStudents, useUpdateStudentProfile } from './studentQueries';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { useStudentProfile, useUpdateStudentProfile, type StudentProfileResponse, type UpdateStudentProfileInput } from './studentQueries';
+import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
+
+type Form = {
+  firstName: string;
+  surname: string;
+  username: string;
+  dateOfBirth: string;
+  gender: string;
+  nationality: string;
+  language: string;
+  currency: string;
+  address: PostalAddress;
+  profilePhotoUrl: string;
+  weightCategory: string;
+  kimonoSize: string;
+  beltSize: string;
+};
+
+/** The fields that a blank clears (sent as `null`). */
+const CLEARABLE = ['username', 'gender', 'nationality', 'language', 'currency', 'weightCategory', 'kimonoSize', 'beltSize'] as const;
+
+function formFrom(p: StudentProfileResponse): Form {
+  return {
+    firstName: p.firstName,
+    surname: p.surname,
+    username: p.username ?? '',
+    dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
+    gender: p.gender ?? '',
+    nationality: p.nationality ?? '',
+    language: p.language ?? '',
+    currency: p.currency ?? '',
+    address: postalAddressFromRecord(p, guessDefaultCountry()),
+    profilePhotoUrl: p.profilePhotoUrl ?? '',
+    weightCategory: p.weightCategory ?? '',
+    kimonoSize: p.kimonoSize ?? '',
+    beltSize: p.beltSize ?? '',
+  };
+}
 
 /**
- * `StudentUpdate.dc.html` (v1.2 backend backlog — "Update Student page", a
- * proposed new capability until now) — a Staff member editing a Student's
- * own profile on their behalf, reached from `StudentDetail`'s own "Edit
- * Profile" button (StudentGradingPage.tsx, the real page that screen maps
- * to — see that mockup's own tooltip, quoted in the backlog doc).
+ * `StudentUpdate.dc.html` (v1.2 backend backlog — "Update Student page") — a
+ * Staff member editing a Student's own profile on their behalf, reached from
+ * the student page's "Edit profile" button (StudentGradingPage.tsx). A
+ * dedicated page (`/students/:id/edit`), not a Modal, matching
+ * BranchSettingsPage (Decision 231).
  *
- * Built as a dedicated page/route (`/students/:id/edit`), not a Modal opened
- * from the Detail screen, because that's what the mockup itself is — a
- * separate `.dc.html` screen, not a dialog over `StudentDetail`. Mirrors
- * `BranchSettingsPage.tsx`'s own shape exactly (Decision 231: Branch's edit
- * form moved OUT of a Modal and INTO a dedicated page) rather than the
- * "Revoke enrollment" action+Modal already on StudentGradingPage.tsx:
- * Revoke is a single irreversible confirmation with no form, the same shape
- * ConfirmDeleteModal already serves everywhere else in this app, while this
- * is a multi-field edit form with its own named screen in the design canvas
- * — the Branch precedent is the one that actually matches this screen's
- * own shape, not just its "Staff-on-behalf-of" category.
- *
- * Fields match `UpdateStudentProfileDto`/`UpdateUserDto` exactly — no email/
- * phone field exists here at all (see that DTO's own header comment: both
- * are unique login/OTP identifiers, deliberately excluded from self-service
- * too). Known-data limitation, disclosed rather than hidden: unlike
- * BranchSettingsPage (which pre-fills every field from a real
- * `GET /branches/{id}`), there is no single-Student detail endpoint —
- * `StudentSummaryResponseDto` (the only Student read in this app,
- * `useStudents`) carries only `firstName`/`surname`/`email`/`enrolledAt`/
- * `status`. Only `firstName`/`surname` are pre-filled here; every other
- * field starts blank and is sent ONLY if the Staff member types a value — a
- * value left blank is omitted from the request entirely (never sent as an
- * empty string), so saving without touching it can't blank out something
- * the Student already has, but this form also can't be used to CLEAR an
- * existing value in one of those other fields today. Fixing that for real
- * needs a new Staff-facing "read one Student's full profile" endpoint, out
- * of this change's scope — flagged in the PR description, not silently
- * assumed away.
+ * Opens with the Student's current profile (GET
+ * /schools/{id}/students/{studentId}/profile, Decision 341) and sends only
+ * what changed, so a value saved before Language and Currency became lists
+ * doesn't block saving something else. Emptying a field clears it; date of
+ * birth and photo can't be cleared (the API keeps both). Language and
+ * Currency are picked from the lists the app serves, as on My Profile.
+ * Email and phone aren't here: they're the Student's login/OTP identifiers
+ * (see UpdateUserDto's own header comment).
  */
 export function StudentUpdatePage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
   const navigate = useNavigate();
-  const students = useStudents(schoolId);
+  const profile = useStudentProfile(schoolId, studentId);
   const updateProfile = useUpdateStudentProfile(schoolId);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
-  const student = students.data?.items.find((s) => s.id === studentId);
-  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : 'Student';
-
-  const [form, setForm] = useState<{
-    firstName: string;
-    surname: string;
-    username: string;
-    dateOfBirth: string;
-    gender: string;
-    nationality: string;
-    language: string;
-    currency: string;
-    address: string;
-    profilePhotoUrl: string;
-    weightCategory: string;
-    kimonoSize: string;
-    beltSize: string;
-  } | null>(null);
+  const [initial, setInitial] = useState<Form | null>(null);
+  const [form, setForm] = useState<Form | null>(null);
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // Pre-fill once the roster loads (same "fetch, then edit" shape
-  // BranchSettingsPage uses, minus a real single-resource GET to re-sync
-  // from — see this file's own header comment) — initialized lazily rather
-  // than in a useEffect, since there's nothing to re-sync TO after a save
-  // here (updateProfile's response isn't re-read back into the form).
-  if (form === null && student) {
-    setForm({
-      firstName: student.firstName,
-      surname: student.surname,
-      username: '',
-      dateOfBirth: '',
-      gender: '',
-      nationality: '',
-      language: '',
-      currency: '',
-      address: '',
-      profilePhotoUrl: '',
-      weightCategory: '',
-      kimonoSize: '',
-      beltSize: '',
-    });
+  // Filled once from the loaded profile — not re-synced on every refetch, so
+  // a background refetch can't overwrite edits in progress.
+  if (form === null && profile.data) {
+    const loaded = formFrom(profile.data);
+    setInitial(loaded);
+    setForm(loaded);
   }
 
   if (!schoolId || !studentId) return null;
-  if (students.isLoading) return <Spinner />;
-  if (students.error) {
-    return <ErrorBanner message={students.error instanceof ApiError ? students.error.message : 'Could not load this Student.'} />;
+  if (profile.isLoading) return <Spinner />;
+  if (profile.error) {
+    return <ErrorBanner message={profile.error instanceof ApiError ? profile.error.message : t('students.update.loadFailed')} />;
   }
-  if (!student || !form) return null;
-  // Narrowed to a stable, non-null local — a nested function declared after an
-  // early-return guard doesn't itself get TypeScript's narrowing of a mutable
-  // (useState/useParams) value, since the compiler can't assume the guard
-  // still holds whenever that closure actually runs.
+  if (!profile.data || !form || !initial) return null;
+  const studentName = `${profile.data.firstName} ${profile.data.surname}`.trim() || t('students.update.studentFallback');
+  // Narrowed to stable, non-null locals for the closure below.
   const safeStudentId = studentId;
   const safeForm = form;
+  const safeInitial = initial;
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => (f ? { ...f, [key]: value } : f));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(safeForm.address, safeInitial.address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
+    const body: UpdateStudentProfileInput = {};
+    if (safeForm.firstName !== safeInitial.firstName) body.firstName = safeForm.firstName;
+    if (safeForm.surname !== safeInitial.surname) body.surname = safeForm.surname;
+    if (safeForm.dateOfBirth && safeForm.dateOfBirth !== safeInitial.dateOfBirth) body.dateOfBirth = safeForm.dateOfBirth;
+    if (safeForm.profilePhotoUrl && safeForm.profilePhotoUrl !== safeInitial.profilePhotoUrl) body.profilePhotoUrl = safeForm.profilePhotoUrl;
+    for (const key of CLEARABLE) {
+      if (safeForm[key] !== safeInitial[key]) body[key] = safeForm[key].trim() || null;
+    }
+    if (prepared.postalAddress !== undefined) body.postalAddress = prepared.postalAddress;
     try {
-      await updateProfile.mutateAsync({
-        studentId: safeStudentId,
-        body: {
-          firstName: safeForm.firstName,
-          surname: safeForm.surname,
-          username: safeForm.username || undefined,
-          dateOfBirth: safeForm.dateOfBirth || undefined,
-          gender: safeForm.gender || undefined,
-          nationality: safeForm.nationality || undefined,
-          language: safeForm.language || undefined,
-          currency: safeForm.currency || undefined,
-          address: safeForm.address || undefined,
-          profilePhotoUrl: safeForm.profilePhotoUrl || undefined,
-          weightCategory: safeForm.weightCategory || undefined,
-          kimonoSize: safeForm.kimonoSize || undefined,
-          beltSize: safeForm.beltSize || undefined,
-        },
-      });
+      if (Object.keys(body).length > 0) {
+        const updated = await updateProfile.mutateAsync({ studentId: safeStudentId, body });
+        const reloaded = formFrom(updated);
+        setInitial(reloaded);
+        setForm(reloaded);
+      }
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Could not update this profile. Please try again.');
+      setSaveError(err instanceof ApiError ? err.message : t('students.update.saveFailed'));
     }
   }
 
   return (
     <>
       <PageHeader
-        title={`Edit ${studentName}'s profile`}
-        subtitle="On this Student's behalf — email and phone can't be changed here; they're this Student's login/OTP identifiers."
+        title={t('students.update.title', { name: studentName })}
+        subtitle={t('students.update.subtitle')}
         actions={
           <Button variant="secondary" onClick={() => navigate(`/students/${studentId}`)}>
-            Back to {studentName}
+            {t('students.update.backTo', { name: studentName })}
           </Button>
         }
       />
-      {saved ? <SuccessBanner message="Profile saved." /> : null}
+      {saved ? <SuccessBanner message={t('students.update.saved')} /> : null}
       {saveError ? <ErrorBanner message={saveError} /> : null}
       <Card>
         <form onSubmit={handleSubmit}>
-          <Field label="First name" htmlFor="student-update-firstName">
+          <Field label={t('students.update.firstName')} htmlFor="student-update-firstName">
             <TextField
               required
               value={form.firstName}
-              onChange={(e) => setForm((f) => ({ ...f!, firstName: e.target.value }))}
+              onChange={(e) => set('firstName', e.target.value)}
             />
           </Field>
-          <Field label="Surname" htmlFor="student-update-surname">
+          <Field label={t('students.update.surname')} htmlFor="student-update-surname">
             <TextField
               required
               value={form.surname}
-              onChange={(e) => setForm((f) => ({ ...f!, surname: e.target.value }))}
+              onChange={(e) => set('surname', e.target.value)}
             />
           </Field>
-          <Field label="Username" htmlFor="student-update-username" hint="Mobile app only. Leave blank to keep unchanged.">
-            <TextField value={form.username} onChange={(e) => setForm((f) => ({ ...f!, username: e.target.value }))} />
+          <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('auth.register.usernameHint')}>
+            <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
           </Field>
-          <Field label="Date of birth" htmlFor="student-update-dob" hint="Leave blank to keep unchanged.">
-            <TextField
-              type="date"
-              value={form.dateOfBirth}
-              onChange={(e) => setForm((f) => ({ ...f!, dateOfBirth: e.target.value }))}
+          <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob">
+            <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
+          </Field>
+          <Field label={t('students.update.gender')} htmlFor="student-update-gender">
+            <TextField value={form.gender} onChange={(e) => set('gender', e.target.value)} />
+          </Field>
+          <Field label={t('students.update.nationality')} htmlFor="student-update-nationality">
+            <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
+          </Field>
+          <Field label={t('students.update.language')} htmlFor="student-update-language">
+            <SelectField
+              value={form.language}
+              onChange={(e) => set('language', e.target.value)}
+              options={[
+                { value: '', label: t('schools.form.notSet') },
+                // A value saved before the list existed stays shown until it's changed.
+                ...(initial.language && !(languages ?? []).some((l) => l.code === initial.language) ? [{ value: initial.language, label: initial.language }] : []),
+                ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) })),
+              ]}
             />
           </Field>
-          <Field label="Gender" htmlFor="student-update-gender" hint="Leave blank to keep unchanged.">
-            <TextField value={form.gender} onChange={(e) => setForm((f) => ({ ...f!, gender: e.target.value }))} />
+          <Field label={t('students.update.currency')} htmlFor="student-update-currency">
+            <CurrencyField
+              id="student-update-currency"
+              value={form.currency}
+              onChange={(code) => set('currency', code)}
+              options={[
+                { code: '', name: t('schools.form.notSet') },
+                ...(initial.currency && !(currencies ?? []).some((c) => c.code === initial.currency) ? [{ code: initial.currency, name: initial.currency }] : []),
+                ...(currencies ?? []),
+              ]}
+              placeholder={t('schools.form.notSet')}
+            />
           </Field>
-          <Field label="Nationality" htmlFor="student-update-nationality" hint="Leave blank to keep unchanged.">
-            <TextField value={form.nationality} onChange={(e) => setForm((f) => ({ ...f!, nationality: e.target.value }))} />
+          <AddressFields
+            idPrefix="student-update-address"
+            value={form.address}
+            onChange={(address) => set('address', address)}
+            errors={addressErrors}
+          />
+          <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category" hint={t('students.update.freeTextHint')}>
+            <TextField value={form.weightCategory} onChange={(e) => set('weightCategory', e.target.value)} />
           </Field>
-          <Field label="Language" htmlFor="student-update-language" hint="Leave blank to keep unchanged.">
-            <TextField value={form.language} onChange={(e) => setForm((f) => ({ ...f!, language: e.target.value }))} />
+          <Field label={t('students.update.kimonoSize')} htmlFor="student-update-kimono-size" hint={t('students.update.freeTextHint')}>
+            <TextField value={form.kimonoSize} onChange={(e) => set('kimonoSize', e.target.value)} />
           </Field>
-          <Field label="Currency" htmlFor="student-update-currency" hint="Leave blank to keep unchanged.">
-            <TextField value={form.currency} onChange={(e) => setForm((f) => ({ ...f!, currency: e.target.value }))} />
+          <Field label={t('students.update.beltSize')} htmlFor="student-update-belt-size" hint={t('students.update.freeTextHint')}>
+            <TextField value={form.beltSize} onChange={(e) => set('beltSize', e.target.value)} />
           </Field>
-          <Field label="Address" htmlFor="student-update-address" hint="Leave blank to keep unchanged.">
-            <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f!, address: e.target.value }))} />
-          </Field>
-          <Field label="Weight category" htmlFor="student-update-weight-category" hint="Free text — no confirmed unit/scale (Decision 220/246). Leave blank to keep unchanged.">
-            <TextField value={form.weightCategory} onChange={(e) => setForm((f) => ({ ...f!, weightCategory: e.target.value }))} />
-          </Field>
-          <Field label="Kimono size" htmlFor="student-update-kimono-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
-            <TextField value={form.kimonoSize} onChange={(e) => setForm((f) => ({ ...f!, kimonoSize: e.target.value }))} />
-          </Field>
-          <Field label="Belt size" htmlFor="student-update-belt-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
-            <TextField value={form.beltSize} onChange={(e) => setForm((f) => ({ ...f!, beltSize: e.target.value }))} />
-          </Field>
-          <Field label="Photo" htmlFor="student-update-photo" hint="Leave unchanged to keep the existing photo.">
+          <Field label={t('students.update.photo')} htmlFor="student-update-photo" hint={t('students.update.photoHint')}>
             <PhotoUploadField
               value={form.profilePhotoUrl}
-              onChange={(profilePhotoUrl) => setForm((f) => ({ ...f!, profilePhotoUrl }))}
+              onChange={(profilePhotoUrl) => set('profilePhotoUrl', profilePhotoUrl)}
               requestUpload={(file) =>
                 requestPhotoUpload.mutateAsync({
                   entityType: 'USER',
@@ -216,7 +230,7 @@ export function StudentUpdatePage() {
             />
           </Field>
           <Button type="submit" loading={updateProfile.isPending}>
-            Save
+            {t('common.save')}
           </Button>
         </form>
       </Card>

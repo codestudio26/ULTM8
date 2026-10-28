@@ -5,6 +5,36 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { NOTIFICATION_FANOUT_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 
+/** Why a member is asked to sign (Decision 354). */
+export type WaiverNoticeReason = 'assigned' | 'reminder' | 'updated' | 'renewal' | 'adult';
+
+export interface WaiverSignatureRequestJobData {
+  waiverId: string;
+  schoolId: string;
+  /** Only these students; every current student when left out. */
+  studentIds?: string[];
+  reason?: WaiverNoticeReason;
+  /** Tells repeat notices apart (see process()). */
+  batchId?: string;
+}
+
+/** The notice's English text; packages/i18n/src/server/translate.ts matches
+ * each shape to its translation. */
+export function waiverNotice(reason: WaiverNoticeReason, school: string, waiver: string): { title: string; body: string } {
+  switch (reason) {
+    case 'reminder':
+      return { title: 'Waiver reminder', body: `${school} reminds you to sign the waiver "${waiver}".` };
+    case 'updated':
+      return { title: 'Waiver updated', body: `${school} has updated the waiver "${waiver}". Please read it and sign it again.` };
+    case 'renewal':
+      return { title: 'Waiver renewal', body: `Your signature on the waiver "${waiver}" at ${school} has run out. Please sign it again.` };
+    case 'adult':
+      return { title: 'Waiver renewal', body: `You're now 18, so ${school} asks you to sign the waiver "${waiver}" yourself.` };
+    default:
+      return { title: 'Waiver signature requested', body: `${school} has invited you to sign the waiver "${waiver}".` };
+  }
+}
+
 /**
  * Consumes the `waiver-signature-requests` queue (Phase 10) — Spec 55 §9's
  * confirmed job: "Waiver assigned to a student... waiverSchool status list
@@ -60,46 +90,48 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ waiverId: string; schoolId: string }>): Promise<void> {
-    const { waiverId, schoolId } = job.data;
+  async process(job: Job<WaiverSignatureRequestJobData>): Promise<void> {
+    const { waiverId, schoolId, studentIds, reason = 'assigned', batchId } = job.data;
 
-    const waiver = await this.prismaJobs.waiver.findUnique({ where: { id: waiverId }, select: { title: true } });
+    const waiver = await this.prismaJobs.waiver.findUnique({
+      where: { id: waiverId },
+      select: { title: true, archivedAt: true, school: { select: { name: true } } },
+    });
     if (!waiver) {
-      // A genuine race (the Waiver was deleted between enqueue and processing) —
-      // nothing to notify students about. Waivers has no delete endpoint today,
-      // so this is dormant, not reachable — guarded anyway rather than assumed.
       this.logger.warn(`waiver-signature-requests: Waiver ${waiverId} not found — nothing to fan out.`);
       return;
     }
+    // Decision 354: an archived waiver asks no one to sign it.
+    if (waiver.archivedAt) {
+      this.logger.log(`waiver-signature-requests: Waiver ${waiverId} is archived — no one notified.`);
+      return;
+    }
 
+    // Decision 354: a job may name the students it is for (a new member, a
+    // reminder, a re-sign); only those still at the School are told.
     const studentGrants = await this.prismaJobs.roleGrant.findMany({
-      where: { schoolId, role: 'STUDENT', revokedAt: null },
+      where: { schoolId, role: 'STUDENT', revokedAt: null, ...(studentIds ? { userId: { in: studentIds } } : {}) },
       select: { userId: true },
       distinct: ['userId'],
     });
 
+    const { title, body } = waiverNotice(reason, waiver.school.name, waiver.title);
     if (studentGrants.length > 0) {
       await this.notificationFanoutQueue.addBulk(
-        studentGrants.map((grant) => ({
-          name: 'notify',
-          data: {
-            notificationId: `waiver-${waiverId}-${grant.userId}`,
-            userId: grant.userId,
-            title: 'Waiver signature requested',
-            // Spec 55 §9's own confirmed sample text, verbatim.
-            body: `${waiver.title} has invited you to sign the following waiver.`,
-            type: 'WAIVER_SIGNATURE_REQUEST',
-          } satisfies NotificationFanoutJobData,
-          opts: {
-            jobId: `waiver-${waiverId}-${grant.userId}`,
-            attempts: 3,
-            backoff: { type: 'exponential' as const, delay: 5000 },
-          },
-        })),
+        studentGrants.map((grant) => {
+          // The first request for a waiver keeps its old id; later notices are
+          // told apart by their batch so each one is actually sent.
+          const id = batchId ? `waiver-${reason}-${batchId}-${waiverId}-${grant.userId}` : `waiver-${waiverId}-${grant.userId}`;
+          return {
+            name: 'notify',
+            data: { notificationId: id, userId: grant.userId, title, body, type: 'WAIVER_SIGNATURE_REQUEST', schoolId, targetType: 'WAIVER', targetId: waiverId } satisfies NotificationFanoutJobData,
+            opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
+          };
+        }),
       );
     }
 
-    this.logger.log(`Waiver ${waiverId} (School ${schoolId}) — fanned out ${studentGrants.length} notification(s).`);
+    this.logger.log(`Waiver ${waiverId} (School ${schoolId}, ${reason}) — fanned out ${studentGrants.length} notification(s).`);
   }
 
   /** Matches OtpDeliveryProcessor's own precedent — logs loudly once a job has
@@ -108,7 +140,7 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
    * fan-out silently, invisibly dropped. Retry/backoff for THIS job itself is
    * configured where it's enqueued (WaiversService.createWaiver), not here. */
   @OnWorkerEvent('failed')
-  onFailed(job: Job<{ waiverId: string; schoolId: string }> | undefined, error: Error) {
+  onFailed(job: Job<WaiverSignatureRequestJobData> | undefined, error: Error) {
     if (!job) return;
     const attemptsMade = job.attemptsMade ?? 0;
     const maxAttempts = job.opts?.attempts ?? 1;

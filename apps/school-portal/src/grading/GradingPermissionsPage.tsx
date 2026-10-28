@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner } from '@ultm8/ui';
+import { GradingTabs } from './GradingTabs';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 type Permission = components['schemas']['GradingPermissionResponseDto'];
 type Staff = components['schemas']['GradingStaffDto'];
 type StyleInput = components['schemas']['StylePermissionInputDto'];
 type Toggle = Exclude<keyof StyleInput, 'disciplineId'>;
 
-/** The seven toggles, in the order Gus approved (Decision 181). */
-export const TOGGLES: Array<{ key: Toggle; label: string; hint: string }> = [
-  { key: 'canPromote', label: 'Promote', hint: 'Grade up, stripe award, bulk promote, give a first rank' },
-  { key: 'canDowngrade', label: 'Move down', hint: 'Downgrade, with a reason' },
-  { key: 'canSignOffSkills', label: 'Sign off skills', hint: 'Skills for the next rank' },
-  { key: 'canAdjustProgress', label: 'Adjust progress', hint: 'Move on the board (e.g. to Ready to Grade), log a class, correct the rank date, Active switch' },
-  { key: 'canVerifyRanks', label: 'Verify ranks', hint: 'Verify or correct self-declared ranks' },
-  { key: 'canVoidHistory', label: 'Void history', hint: 'Void a history entry, with a reason' },
-  { key: 'canChangeBoardThresholds', label: 'Change board %', hint: "This style's Grading Board split (33% / 66% by default)" },
+/** The seven toggles, in the order Gus approved (Decision 181). Labels and
+ * hints are translation keys, resolved at render time. */
+export const TOGGLES: Array<{ key: Toggle; label: TranslationKey; hint: TranslationKey }> = [
+  { key: 'canPromote', label: 'grading.permissions.toggles.canPromote.label', hint: 'grading.permissions.toggles.canPromote.hint' },
+  { key: 'canDowngrade', label: 'grading.permissions.toggles.canDowngrade.label', hint: 'grading.permissions.toggles.canDowngrade.hint' },
+  { key: 'canSignOffSkills', label: 'grading.permissions.toggles.canSignOffSkills.label', hint: 'grading.permissions.toggles.canSignOffSkills.hint' },
+  { key: 'canAdjustProgress', label: 'grading.permissions.toggles.canAdjustProgress.label', hint: 'grading.permissions.toggles.canAdjustProgress.hint' },
+  { key: 'canVerifyRanks', label: 'grading.permissions.toggles.canVerifyRanks.label', hint: 'grading.permissions.toggles.canVerifyRanks.hint' },
+  { key: 'canVoidHistory', label: 'grading.permissions.toggles.canVoidHistory.label', hint: 'grading.permissions.toggles.canVoidHistory.hint' },
+  {
+    key: 'canChangeBoardThresholds',
+    label: 'grading.permissions.toggles.canChangeBoardThresholds.label',
+    hint: 'grading.permissions.toggles.canChangeBoardThresholds.hint',
+  },
 ];
 
 const ALL_ON = Object.fromEntries(TOGGLES.map((t) => [t.key, true])) as Record<Toggle, boolean>;
@@ -52,11 +59,12 @@ export function GradingPermissionsPage() {
   const schoolId = useOwnedSchoolId();
   const permissions = useGradingPermissions(schoolId);
   const disciplines = useDisciplines(schoolId);
+  const t = useT();
 
   if (!schoolId) return null;
   if (permissions.isLoading || disciplines.isLoading) return <Spinner />;
   const error = permissions.error ?? disciplines.error;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load grading permissions.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('grading.permissions.loadFailed')} />;
 
   const staff = permissions.data?.staff ?? [];
   const styles = disciplines.data?.items ?? [];
@@ -64,16 +72,17 @@ export function GradingPermissionsPage() {
   return (
     <>
       <PageHeader
-        title="Grading permissions"
-        subtitle="You (the owner) can always do everything. Choose, for each coach and each style, what they may do. Coaches only grade the students of their own branches."
+        title={t('grading.permissions.title')}
+        subtitle={t('grading.permissions.subtitle')}
       />
+      <GradingTabs />
       {staff.length === 0 ? (
         <Card>
-          <EmptyState title="No coaches yet" description="Invite Instructors or Branch Staff on the Staff page, then give them grading permission here." />
+          <EmptyState title={t('grading.permissions.noCoachesTitle')} description={t('grading.permissions.noCoachesDescription')} />
         </Card>
       ) : styles.length === 0 ? (
         <Card>
-          <EmptyState title="No styles yet" description="Add a style on the Disciplines page first." />
+          <EmptyState title={t('grading.noStylesTitle')} description={t('grading.permissions.noStylesDescription')} />
         </Card>
       ) : (
         staff.map((member) => (
@@ -103,6 +112,7 @@ function draftFrom(saved: Permission[], styles: DisciplineResponse[]): Draft {
 
 function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: string; member: Staff; styles: DisciplineResponse[]; saved: Permission[] }) {
   const set = useSetGradingPermissions(schoolId);
+  const t = useT();
   const [draft, setDraft] = useState<Draft>(() => draftFrom(saved, styles));
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -121,7 +131,7 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
       await set.mutateAsync({ userId: member.userId, styles: body });
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save — please try again.');
+      setError(err instanceof ApiError ? err.message : t('grading.permissions.saveFailed'));
     }
   }
 
@@ -132,31 +142,31 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
           <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
             {name}{' '}
             {member.roles.map((r) => (
-              <Badge key={r}>{r === 'INSTRUCTOR' ? 'Instructor' : 'Branch Staff'}</Badge>
+              <Badge key={r}>{r === 'INSTRUCTOR' ? t('grading.permissions.roleInstructor') : t('grading.permissions.roleBranchStaff')}</Badge>
             ))}
           </h2>
           <div style={{ display: 'flex', gap: 8 }}>
             {dirty ? (
               <Button variant="secondary" onClick={() => setDraft(JSON.parse(savedKey) as Draft)}>
-                Undo
+                {t('grading.permissions.undo')}
               </Button>
             ) : null}
-            <Button onClick={save} disabled={!dirty} loading={set.isPending} aria-label={`Save permissions for ${name}`}>
-              Save
+            <Button onClick={save} disabled={!dirty} loading={set.isPending} aria-label={t('grading.permissions.saveAria', { name })}>
+              {t('common.save')}
             </Button>
           </div>
         </div>
         {error ? <ErrorBanner message={error} /> : null}
-        {done && !dirty ? <SuccessBanner message="Saved." /> : null}
+        {done && !dirty ? <SuccessBanner message={t('grading.permissions.saved')} /> : null}
         <div style={{ overflowX: 'auto' }}>
           <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 760 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 12 }}>Style</th>
-                <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 12 }}>May grade</th>
-                {TOGGLES.map((t) => (
-                  <th key={t.key} title={t.hint} style={{ textAlign: 'center', padding: '6px 8px', fontSize: 12 }}>
-                    {t.label}
+                <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 12 }}>{t('grading.permissions.columnStyle')}</th>
+                <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 12 }}>{t('grading.permissions.columnMayGrade')}</th>
+                {TOGGLES.map((toggle) => (
+                  <th key={toggle.key} title={t(toggle.hint)} style={{ textAlign: 'center', padding: '6px 8px', fontSize: 12 }}>
+                    {t(toggle.label)}
                   </th>
                 ))}
               </tr>
@@ -171,19 +181,19 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
                       <input
                         type="checkbox"
                         checked={row !== null}
-                        aria-label={`${name} may grade in ${style.name}`}
+                        aria-label={t('grading.permissions.mayGradeAria', { name, style: style.name })}
                         onChange={(e) => setDraft((d) => ({ ...d, [style.id]: e.target.checked ? { ...ALL_ON } : null }))}
                       />
                     </td>
-                    {TOGGLES.map((t) => (
-                      <td key={t.key} style={{ textAlign: 'center', padding: '6px 8px' }}>
+                    {TOGGLES.map((toggle) => (
+                      <td key={toggle.key} style={{ textAlign: 'center', padding: '6px 8px' }}>
                         <input
                           type="checkbox"
                           disabled={row === null}
-                          checked={row?.[t.key] ?? false}
-                          title={t.hint}
-                          aria-label={`${name}, ${style.name}: ${t.label}`}
-                          onChange={(e) => setDraft((d) => ({ ...d, [style.id]: { ...(d[style.id] as Record<Toggle, boolean>), [t.key]: e.target.checked } }))}
+                          checked={row?.[toggle.key] ?? false}
+                          title={t(toggle.hint)}
+                          aria-label={t('grading.permissions.toggleAria', { name, style: style.name, toggle: t(toggle.label) })}
+                          onChange={(e) => setDraft((d) => ({ ...d, [style.id]: { ...(d[style.id] as Record<Toggle, boolean>), [toggle.key]: e.target.checked } }))}
                         />
                       </td>
                     ))}
@@ -194,7 +204,7 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
           </table>
         </div>
         <p className="ultm8-field__hint" style={{ marginBottom: 0 }}>
-          Ticking "May grade" turns every toggle on; untick what they shouldn't do. "Ready to grade" notifications go to coaches who may promote.
+          {t('grading.permissions.footnote')}
         </p>
       </Card>
     </section>

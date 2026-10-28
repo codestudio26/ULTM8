@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useBranches } from '../branches/branchQueries';
+import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrants/roleGrantQueries';
 import { useInviteStudent } from './studentQueries';
+import { Trans } from '../i18n/Trans';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Invite a Student (v1.2 backend backlog) — a Staff member enrolling an
@@ -20,12 +22,12 @@ import { useInviteStudent } from './studentQueries';
  * Deliberately scoped to someone who ALREADY has a ULTM8 account — the
  * earlier "Enroll a Student" mockup's from-scratch account-creation form was
  * removed per direct product feedback (v1.2 backend backlog, "Invite a
- * Student", 28 Sep update) in favor of this narrower shape. See this PR's
- * own description for the open question that leaves: whether a from-scratch
- * "add a brand-new person" path (the Instructor page's own "Add manually",
- * mirrored) should still exist here too.
+ * Student", 28 Sep update) in favor of this narrower shape. A brand-new
+ * adult is added from scratch on the owner's Add manually page instead
+ * (AddStudentManuallyPage, Decision 371).
  */
 export function InviteStudentPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const navigate = useNavigate();
   const { data: branchData } = useBranches(schoolId);
@@ -40,29 +42,32 @@ export function InviteStudentPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  if (!schoolId) return null;
+  // Owner only, like the Students page (Decision 341).
+  if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
-  const needsBranch = branches.length > 0;
+  // Archived branches can't be chosen, so only open ones make a home branch
+  // required (Decision 341), matching the API.
+  const needsBranch = branches.some((b) => !b.archivedAt);
 
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();
     setFindError(null);
     setInviteSuccess(false);
     if (!email && !phone) {
-      setFindError('Enter an email or phone number to search.');
+      setFindError(t('students.invite.enterEmailOrPhone'));
       return;
     }
     setFindLoading(true);
     try {
       const result = await fetchInviteCandidate(schoolId!, { email: email || undefined, phone: phone || undefined });
       if (!result.found) {
-        setFindError('No ULTM8 account found with that email or phone.');
+        setFindError(t('students.invite.notFound'));
         setCandidate(null);
         return;
       }
       setCandidate(result);
     } catch (err) {
-      setFindError(err instanceof ApiError ? err.message : 'Could not search for this person.');
+      setFindError(err instanceof ApiError ? err.message : t('students.invite.searchFailed'));
       setCandidate(null);
     } finally {
       setFindLoading(false);
@@ -82,7 +87,7 @@ export function InviteStudentPage() {
     setInviteError(null);
     setInviteSuccess(false);
     if (needsBranch && !branchId) {
-      setInviteError('Select this Student\'s home branch.');
+      setInviteError(t('students.invite.selectBranch'));
       return;
     }
     try {
@@ -93,61 +98,71 @@ export function InviteStudentPage() {
       setInviteSuccess(true);
       resetSearch();
     } catch (err) {
-      setInviteError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setInviteError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
     <>
-      <PageHeader title="Invite a Student" subtitle="Enroll someone who already has a ULTM8 account at your School." />
+      <PageHeader title={t('students.invite.title')} subtitle={t('students.invite.subtitle')} />
       <Card className="ultm8-field">
         {inviteSuccess ? (
           <>
-            <SuccessBanner message="Enrolled." />
+            <SuccessBanner message={t('students.invite.enrolled')} />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Button onClick={() => navigate('/students')}>Back to Students</Button>
+              <Button onClick={() => navigate('/students')}>{t('students.invite.backToStudents')}</Button>
               <Button variant="secondary" onClick={() => setInviteSuccess(false)}>
-                Invite another
+                {t('students.invite.inviteAnother')}
               </Button>
             </div>
           </>
         ) : !candidate ? (
           <form onSubmit={handleFind}>
             {findError ? <ErrorBanner message={findError} /> : null}
-            <Field label="Email" htmlFor="invite-student-email" hint="Exact match only. Provide email or phone (or both).">
+            <Field label={t('students.invite.email')} htmlFor="invite-student-email" hint={t('students.invite.emailHint')}>
               <TextField type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </Field>
-            <Field label="Phone" htmlFor="invite-student-phone" hint="Exact match only.">
+            <Field label={t('students.invite.phone')} htmlFor="invite-student-phone" hint={t('students.invite.phoneHint')}>
               <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
             </Field>
             <Button type="submit" loading={findLoading}>
-              Find
+              {t('students.invite.find')}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleInvite}>
             {inviteError ? <ErrorBanner message={inviteError} /> : null}
             <p className="ultm8-field">
-              Found <strong>{candidate.firstName} {candidate.surname}</strong> ({candidate.email}).
+              <Trans
+                k="students.invite.found"
+                vars={{ email: candidate.email ?? '' }}
+                nodes={{
+                  name: (
+                    <strong>
+                      {candidate.firstName} {candidate.surname}
+                    </strong>
+                  ),
+                }}
+              />
             </p>
             {needsBranch ? (
-              <Field label="Home branch" htmlFor="invite-student-branch">
+              <Field label={t('students.invite.homeBranch')} htmlFor="invite-student-branch">
                 {/* Not `required` — the browser's own HTML5 constraint validation would
                     silently swallow the submit before handleInvite's own branch check
                     (and its friendlier error message) ever ran. */}
                 <SelectField
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
-                  options={[{ value: '', label: 'Select a Branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                  options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
                 />
               </Field>
             ) : null}
             <div style={{ display: 'flex', gap: 8 }}>
               <Button type="submit" loading={inviteStudent.isPending}>
-                Enroll
+                {t('students.invite.enroll')}
               </Button>
               <Button type="button" variant="secondary" onClick={resetSearch}>
-                Search again
+                {t('students.invite.searchAgain')}
               </Button>
             </div>
           </form>
