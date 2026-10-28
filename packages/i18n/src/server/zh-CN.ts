@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe 无法处理此退款。它仍在列表中——请重试，或改为退回课时。",
   "This class has been cancelled by the school.": "这节课已被学校取消。",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "“可邀请教练”仅适用于分校员工。教练不能邀请教练。",
+  "\"Can manage disciplines\" is for Branch Staff only.": "“可管理项目”仅适用于分校员工。",
+  "Send canInviteCoaches, canManageDisciplines or both.": "请提供“可邀请教练”“可管理项目”之一或两者。",
+  "This person is not on the staff of this School.": "此人不是这所学校的员工。",
+  "Only the School owner sets the price of a grade.": "只有学校所有者可以设置级别的价格。",
   "\"Getting There\" must start below \"Ready to Grade\".": "“接近达标”必须从“可以晋级”之下开始。",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "监护人不能提供 overrideReason——只有教练员或员工可以越过段位资格限制。",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "降级以今天为生效日期，且课时数从 0 开始；effectiveDate 和起始课时数仅用于晋级。",
@@ -594,6 +598,5 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "此处只能撤销所有者、教练、分校员工或学员角色。",
   "You are already the main owner.": "你已经是主所有者。",
   "This person is not a co-owner of this School.": "此人不是这所学校的共同所有者。",
-  "This person is not on the staff of this School.": "此人不是这所学校的员工。",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType 为 SCHOOL 时，entityId 必须等于 schoolId。",
 };

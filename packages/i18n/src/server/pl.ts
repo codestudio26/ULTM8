@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe nie mógł przetworzyć tego zwrotu. Nadal jest na liście — spróbuj ponownie albo oddaj kredyt.",
   "This class has been cancelled by the school.": "Te zajęcia zostały odwołane przez szkołę.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "Uprawnienie „Może zapraszać trenerów” jest tylko dla personelu oddziału. Trenerzy nie mogą zapraszać trenerów (Spec 55 §8.2).",
+  "\"Can manage disciplines\" is for Branch Staff only.": "„Może zarządzać dyscyplinami” jest tylko dla Personelu oddziału.",
+  "Send canInviteCoaches, canManageDisciplines or both.": "Podaj „Może zapraszać trenerów”, „Może zarządzać dyscyplinami” albo oba.",
+  "This person is not on the staff of this School.": "Ta osoba nie należy do personelu tej Szkoły.",
+  "Only the School owner sets the price of a grade.": "Tylko właściciel Szkoły ustala cenę stopnia.",
   "\"Getting There\" must start below \"Ready to Grade\".": "„Prawie gotowy” musi zaczynać się poniżej „Gotowy do egzaminu”.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Opiekun nie może podać overrideReason — tylko instruktor lub personel może pominąć wymóg stopnia.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "Obniżenie stopnia ma dzisiejszą datę i zaczyna się od zera zajęć; effectiveDate i zajęcia początkowe dotyczą tylko awansu.",
@@ -594,6 +598,5 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "Tutaj można odebrać tylko role właściciela, instruktora, personelu oddziału lub ucznia.",
   "You are already the main owner.": "Jesteś już głównym właścicielem.",
   "This person is not a co-owner of this School.": "Ta osoba nie jest współwłaścicielem tej szkoły.",
-  "This person is not on the staff of this School.": "Ta osoba nie należy do personelu tej szkoły.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityId musi być równe schoolId dla entityType SCHOOL.",
 };

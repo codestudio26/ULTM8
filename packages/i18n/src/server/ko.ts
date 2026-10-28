@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe에서 이 환불을 처리하지 못했습니다. 목록에 그대로 남아 있습니다. 다시 시도하거나 대신 수업 횟수를 돌려주세요.",
   "This class has been cancelled by the school.": "이 수업은 학교에 의해 취소되었습니다.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "'코치 초대 가능'은 지점 직원 전용입니다. 코치는 코치를 초대할 수 없습니다.",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"종목 관리 가능\"은 지점 직원에게만 줄 수 있습니다.",
+  "Send canInviteCoaches, canManageDisciplines or both.": "\"코치 초대 가능\", \"종목 관리 가능\" 중 하나 또는 둘 다 보내 주세요.",
+  "This person is not on the staff of this School.": "이 사람은 이 스쿨의 직원이 아닙니다.",
+  "Only the School owner sets the price of a grade.": "급의 가격은 스쿨 소유자만 정할 수 있습니다.",
   "\"Getting There\" must start below \"Ready to Grade\".": "'거의 다 됨'은 '승급 준비 완료'보다 낮은 단계에서 시작해야 합니다.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "보호자는 overrideReason을 입력할 수 없습니다. 급 자격 요건의 예외 처리는 사범 또는 직원만 할 수 있습니다.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "강등은 오늘 날짜로 처리되며 수업 횟수 0회로 시작합니다. effectiveDate와 시작 수업 횟수는 승급할 때만 사용합니다.",
@@ -594,6 +598,5 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "여기서는 소유자, 강사, 지점 직원, 수련생 역할만 회수할 수 있습니다.",
   "You are already the main owner.": "이미 대표 소유자입니다.",
   "This person is not a co-owner of this School.": "이 사람은 이 학교의 공동 소유자가 아닙니다.",
-  "This person is not on the staff of this School.": "이 사람은 이 학교의 직원이 아닙니다.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType이 SCHOOL이면 entityId는 schoolId와 같아야 합니다.",
 };

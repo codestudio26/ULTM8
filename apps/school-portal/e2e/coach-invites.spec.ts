@@ -39,7 +39,7 @@ test('the owner lets a Branch Staff member invite coaches', async ({ page }) => 
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
   const toggle = page.getByLabel('Bea Desk can invite coaches');
-  await expect(page.locator('.ultm8-card').filter({ hasText: 'Who can invite coaches' }).getByRole('row', { name: /Bea Desk/ }).getByText('North')).toBeVisible();
+  await expect(page.locator('.ultm8-card').filter({ hasText: 'What Branch Staff can do' }).getByRole('row', { name: /Bea Desk/ }).getByText('North')).toBeVisible();
   await expect(toggle).not.toBeChecked();
   await toggle.check();
   await expect(toggle).toBeChecked();

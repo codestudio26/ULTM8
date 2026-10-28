@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe kon deze terugbetaling niet verwerken. Hij staat nog in de lijst — probeer het opnieuw of geef het tegoed terug.",
   "This class has been cancelled by the school.": "Deze les is geannuleerd door de school.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "‘Mag coaches uitnodigen’ is alleen voor vestigingsmedewerkers. Coaches kunnen geen coaches uitnodigen (Spec 55 §8.2).",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"Mag disciplines beheren\" is alleen voor Vestigingsmedewerkers.",
+  "Send canInviteCoaches, canManageDisciplines or both.": "Geef \"Mag coaches uitnodigen\", \"Mag disciplines beheren\" of beide op.",
+  "This person is not on the staff of this School.": "Deze persoon hoort niet bij de medewerkers van deze School.",
+  "Only the School owner sets the price of a grade.": "Alleen de eigenaar van de School bepaalt de prijs van een graad.",
   "\"Getting There\" must start below \"Ready to Grade\".": "‘Bijna klaar’ moet onder ‘Klaar voor examen’ beginnen.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Een voogd mag geen overrideReason opgeven: alleen een instructeur of medewerker mag de graadvereiste omzeilen.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "Een terugzetting krijgt de datum van vandaag en begint zonder lessen; effectiveDate en startlessen zijn alleen voor een promotie.",
@@ -594,6 +598,5 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "Hier kunnen alleen rollen als eigenaar, instructeur, vestigingsmedewerker of leerling worden ingetrokken.",
   "You are already the main owner.": "Je bent al de hoofdeigenaar.",
   "This person is not a co-owner of this School.": "Deze persoon is geen mede-eigenaar van deze school.",
-  "This person is not on the staff of this School.": "Deze persoon hoort niet bij het personeel van deze school.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityId moet gelijk zijn aan schoolId bij entityType SCHOOL.",
 };
