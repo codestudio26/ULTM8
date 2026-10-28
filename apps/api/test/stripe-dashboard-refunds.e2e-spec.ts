@@ -1,5 +1,5 @@
 /**
- * Decision 381 (Transactions G6) — a refund made in the Stripe dashboard is
+ * Decision 382 (Transactions G6) — a refund made in the Stripe dashboard is
  * picked up by the charge.refunded / charge.refund.updated webhooks and shows
  * on the Transactions page, over real HTTP against a real Postgres. Stripe is
  * faked: charges.retrieve and refunds.retrieve return what each test sets.
@@ -24,7 +24,7 @@ const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const hasDb = Boolean(DATABASE_URL && DATABASE_URL_APP && JWT_ACCESS_SECRET);
 const describeIfDb = hasDb ? describe : describe.skip;
 
-describeIfDb('Stripe-dashboard refunds (Decision 381)', () => {
+describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
   let app: INestApplication;
   let processor: StripeWebhookProcessingProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });

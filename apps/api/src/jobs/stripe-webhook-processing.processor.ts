@@ -174,7 +174,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       dispute = await client.disputes.retrieve(objectId);
     }
 
-    // Decision 381 (Transactions G6) — a refund made in the Stripe dashboard (or
+    // Decision 382 (Transactions G6) — a refund made in the Stripe dashboard (or
     // anywhere else) is picked up here. Same pre-fetch discipline as the Dispute
     // above: the Charge's live `amount_refunded` is what the handler syncs to, so
     // a redelivered or out-of-order event can never leave a stale total. A
@@ -417,7 +417,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           throw new Error(`dispatch() reached ${eventType} (event ${stripeEventId}) with no Dispute — this should be unreachable; see process()'s own guard.`);
         }
         return this.handleChargeDispute(tx, dispute, stripeEventId);
-      // Decision 381 (G6) — see process()'s own pre-fetch comment.
+      // Decision 382 (G6) — see process()'s own pre-fetch comment.
       case 'charge.refunded':
       case 'charge.refund.updated':
         if (refundedCharge) {
@@ -1115,7 +1115,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   }
 
   /**
-   * Decision 381 (Transactions G6) — a refund made outside ULTM8 (the Stripe
+   * Decision 382 (Transactions G6) — a refund made outside ULTM8 (the Stripe
    * dashboard, Stripe's own API) shows on the Transactions page. Syncs the
    * matching Transaction to the Charge's live `amount_refunded`: Refunded once
    * it covers the whole payment, otherwise the partial total in the Refunded

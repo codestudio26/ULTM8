@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Transactions: refunds made in Stripe show up** (Decision 381) — a card
+- **Transactions: refunds made in Stripe show up** (Decision 382) — a card
   payment refunded in the Stripe dashboard now shows as Refunded on the
   Transactions page (or with the refunded amount, for a part refund), in the
   portal and the student app. A refund that later fails turns it back to

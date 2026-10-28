@@ -6333,7 +6333,7 @@ User (Code), 28 Oct 2026, Waivers thread.
 
 ---
 
-## Decision 381 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
+## Decision 382 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 111, 291, 339, 346 · **Resolves:** Transactions review gap G6. No database change.
 
