@@ -17373,6 +17373,10 @@
           "inviteCoaches": {
             "type": "boolean",
             "description": "Invite coaches (off by default; Decision 183)."
+          },
+          "disciplines": {
+            "type": "boolean",
+            "description": "Manage disciplines, belts and skills for the whole School (off by default; Decision 383)."
           }
         },
         "required": [
@@ -17381,7 +17385,8 @@
           "students",
           "cancelClasses",
           "staffList",
-          "inviteCoaches"
+          "inviteCoaches",
+          "disciplines"
         ]
       },
       "StaffRoleDto": {
@@ -17464,6 +17469,10 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "Branch Staff the owner lets edit styles, belts and skills (Decision 383)."
+          },
           "mainOwner": {
             "type": "boolean",
             "description": "The School's main owner (Decision 370). Other owners are co-owners."
@@ -17503,6 +17512,7 @@
           "active",
           "addedAt",
           "canInviteCoaches",
+          "canManageDisciplines",
           "mainOwner",
           "roles"
         ]
@@ -18252,6 +18262,10 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383)."
+          },
           "branchIds": {
             "description": "Branches they may invite to; empty for the owner (any branch) or when they can't invite.",
             "type": "array",
@@ -18263,6 +18277,7 @@
         "required": [
           "isOwner",
           "canInviteCoaches",
+          "canManageDisciplines",
           "branchIds"
         ]
       },
@@ -18287,6 +18302,9 @@
           },
           "canInviteCoaches": {
             "type": "boolean"
+          },
+          "canManageDisciplines": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -18294,7 +18312,8 @@
           "firstName",
           "surname",
           "branchIds",
-          "canInviteCoaches"
+          "canInviteCoaches",
+          "canManageDisciplines"
         ]
       },
       "StaffPermissionListResponseDto": {
@@ -18316,11 +18335,12 @@
         "properties": {
           "canInviteCoaches": {
             "type": "boolean"
+          },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "May edit the School's styles, belts and skills (Decision 383)."
           }
-        },
-        "required": [
-          "canInviteCoaches"
-        ]
+        }
       },
       "CoachInvitePreviewDto": {
         "type": "object",

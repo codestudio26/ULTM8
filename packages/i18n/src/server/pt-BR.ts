@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "O Stripe não conseguiu processar este reembolso. Ele continua na lista — tente de novo ou devolva o crédito.",
   "This class has been cancelled by the school.": "Esta aula foi cancelada pela escola.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "\"Pode convidar professores\" é apenas para a equipe da filial. Professores não podem convidar professores.",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"Pode gerenciar modalidades\" é só para a Equipe da filial.",
+  "Send canInviteCoaches, canManageDisciplines or both.": "Envie \"Pode convidar professores\", \"Pode gerenciar modalidades\" ou os dois.",
+  "This person is not on the staff of this School.": "Esta pessoa não faz parte da equipe desta Escola.",
+  "Only the School owner sets the price of a grade.": "Só o dono da Escola define o preço de uma graduação.",
   "\"Getting There\" must start below \"Ready to Grade\".": "\"Quase lá\" deve começar abaixo de \"Pronto para graduar\".",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Um responsável não pode informar overrideReason — apenas instrutores ou a equipe podem ignorar a restrição de elegibilidade por graduação.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "Um rebaixamento tem a data de hoje e começa sem aulas; effectiveDate e aulas iniciais servem para promoções.",
@@ -595,5 +599,4 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "O proprietário da escola não permitiu que você convide instrutores.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da filial. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
   "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
-  "This person is not on the staff of this School.": "Esta pessoa não faz parte da equipe desta escola.",
 };

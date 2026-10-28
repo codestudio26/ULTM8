@@ -676,8 +676,8 @@ export class RoleGrantsService {
    * an owner, coach or Branch Staff role at this School, one row per person
    * with their roles grouped. Replaces looking people up by User ID.
    *
-   * Owner only for now; the "See the staff list" switch for Branch Staff comes
-   * with the access switches. Grants are read under the owner's own tenant
+   * Owners see everyone; Branch Staff with "See the staff list" get a
+   * read-only view (Decision 387, listStaffForBranchStaff). Grants are read under the owner's own tenant
    * context (an owner already sees every grant at their School, ended ones
    * too). Names and contact details come through PrismaAuthService, like
    * findAllForUser(): once all of someone's roles here have ended, the ordinary
@@ -746,6 +746,7 @@ export class RoleGrantsService {
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
         canInviteCoaches: permission?.canInviteCoaches ?? false,
+        canManageDisciplines: permission?.canManageDisciplines ?? false,
         mainOwner: main?.userId === userId,
         displayName: permission?.displayName ?? null,
         workPhone: permission?.workPhone ?? null,
@@ -829,6 +830,7 @@ export class RoleGrantsService {
         addedAt: new Date(Math.min(...grants.filter((g) => g.userId === userId).map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: null,
         canInviteCoaches: false,
+        canManageDisciplines: false,
         mainOwner: own.some((g) => g.isMainOwner),
         displayName: detail?.displayName ?? null,
         workPhone: detail?.workPhone ?? null,
@@ -1054,5 +1056,6 @@ function toPermissionColumns(access: StaffAccessSet) {
     canCancelClasses: access.cancelClasses,
     canSeeStaffList: access.staffList,
     canInviteCoaches: access.inviteCoaches,
+    canManageDisciplines: access.disciplines,
   };
 }

@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe non è riuscito a elaborare questo rimborso. Resta nella lista: riprova o restituisci il credito.",
   "This class has been cancelled by the school.": "Questa lezione è stata annullata dalla scuola.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "«Può invitare allenatori» è riservato allo Staff della sede. Gli allenatori non possono invitare altri allenatori (Spec 55 §8.2).",
+  "\"Can manage disciplines\" is for Branch Staff only.": "\"Può gestire le discipline\" è solo per lo Staff della sede.",
+  "Send canInviteCoaches, canManageDisciplines or both.": "Indica \"Può invitare allenatori\", \"Può gestire le discipline\" o entrambi.",
+  "This person is not on the staff of this School.": "Questa persona non fa parte dello staff di questa Scuola.",
+  "Only the School owner sets the price of a grade.": "Solo il titolare della Scuola stabilisce il prezzo di un grado.",
   "\"Getting There\" must start below \"Ready to Grade\".": "«Quasi pronto» deve iniziare sotto «Pronto per l'esame».",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Un tutore non può indicare overrideReason: solo un istruttore o lo staff può ignorare il requisito di grado.",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "Una retrocessione ha la data di oggi e parte da zero lezioni; effectiveDate e le lezioni iniziali valgono solo per le promozioni.",
@@ -595,5 +599,4 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "Il titolare della scuola non ti ha permesso di invitare istruttori.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Gli interruttori di accesso sono per il personale della sede. Gli istruttori hanno i diritti del loro ruolo e i titolari hanno tutti i diritti.",
   "You are not on the staff of this School.": "Non fai parte del personale di questa scuola.",
-  "This person is not on the staff of this School.": "Questa persona non fa parte del personale di questa scuola.",
 };

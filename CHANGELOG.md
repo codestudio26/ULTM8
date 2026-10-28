@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Disciplines: Branch Staff the owner allows can manage styles** (Decision
+  383) — a new "Can manage disciplines" switch per Branch Staff member on the
+  Staff page, off by default. With it on, they edit styles, belts and skills
+  like the owner, with every safety check covering the whole School; grade
+  prices and the students list stay the owner's. An archived style nobody
+  uses shows "Delete permanently". Migration
+  `20261217000000_staff_manage_disciplines`.
 - **Translations review** — 83 newer API error messages (desk sales, cancelling
   a Subscription, promotion fees, timetable breaks and closures, waitlist, staff
   removal) are now translated into all 14 languages, so a non-English screen
@@ -94,8 +101,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   credit, seeing the staff list, and inviting coaches, with "Front desk" and
   "Branch manager" presets. Defaults keep what Branch Staff could already do.
   Branch Staff's menus, Classes, Timetable, Students and a read-only Staff list
-  follow their switches; the old "Who can invite coaches" card moves into
-  Access. Instructors and owners are unchanged. Needs the migration
+  follow their switches. The "What Branch Staff can do" card moves into
+  Access too, including "Manage disciplines" (Decision 383), which no preset
+  ticks. Instructors and owners are unchanged. Needs the migration
   `20261219000000_staff_access`.
 - **Staff page: display name and work phone** (Decision 381) — an owner can
   set the name and work phone the School uses for a staff member ("Edit

@@ -46,6 +46,8 @@ test('the owner picks a preset, changes one switch, and saves', async ({ page })
 
   await dialog.getByRole('button', { name: 'Branch manager' }).click();
   await expect(dialog.getByLabel('Manage classes and the timetable')).toBeChecked();
+  // Disciplines change the whole School, so no preset ticks them.
+  await expect(dialog.getByLabel('Manage disciplines')).not.toBeChecked();
   await dialog.getByLabel('See the staff list').uncheck();
   await expect(dialog.getByText('Custom access')).toBeVisible();
   await dialog.getByLabel('See the staff list').check();
@@ -62,6 +64,7 @@ test('the owner picks a preset, changes one switch, and saves', async ({ page })
     canCancelClasses: true,
     canSeeStaffList: true,
     canInviteCoaches: true,
+    canManageDisciplines: false,
   });
 });
 

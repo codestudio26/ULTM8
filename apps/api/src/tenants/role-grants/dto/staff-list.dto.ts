@@ -82,6 +82,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: 'Invite coaches (off by default; Decision 183).' })
   @IsBoolean()
   inviteCoaches!: boolean;
+
+  @ApiProperty({ description: 'Manage disciplines, belts and skills for the whole School (off by default; Decision 383).' })
+  @IsBoolean()
+  disciplines!: boolean;
 }
 
 export class StaffAccessResponseDto {
@@ -134,6 +138,9 @@ export class StaffMemberDto {
 
   @ApiProperty()
   canInviteCoaches!: boolean;
+
+  @ApiProperty({ description: 'Branch Staff the owner lets edit styles, belts and skills (Decision 383).' })
+  canManageDisciplines!: boolean;
 
   @ApiProperty({ description: "The School's main owner (Decision 370). Other owners are co-owners." })
   mainOwner!: boolean;

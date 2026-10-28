@@ -32,9 +32,9 @@ if (!hasDb) {
   );
 }
 
-const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false };
-const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true };
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false };
+const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false };
+const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: true };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false };
 
 describeIfDb('Staff access switches (Decision 387)', () => {
   let app: INestApplication;
@@ -247,6 +247,7 @@ describeIfDb('Staff access switches (Decision 387)', () => {
     expect(forCoach.body.error.message).toBe('Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.');
     expect((await setAccess(ALL_ON, own.id)).status).toBe(400);
     expect((await setAccess({ classes: true })).status).toBe(400);
+    expect((await setAccess({ ...ALL_ON, disciplines: undefined })).status).toBe(400);
     expect((await staffApi.put(`/v1/schools/${school.id}/staff/${staff.id}/access`).send(ALL_ON)).status).toBe(403);
 
     const saved = await setAccess(ALL_OFF);
@@ -268,6 +269,7 @@ describeIfDb('Staff access switches (Decision 387)', () => {
       canCancelClasses: true,
       canSeeStaffList: false,
       canInviteCoaches: false,
+      canManageDisciplines: false,
     });
   });
 });

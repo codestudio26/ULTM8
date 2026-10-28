@@ -20,6 +20,10 @@ export const serverMessages: Record<string, string> = {
   "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe 无法处理此退款。它仍在列表中——请重试，或改为退回课时。",
   "This class has been cancelled by the school.": "这节课已被学校取消。",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "“可邀请教练”仅适用于分校员工。教练不能邀请教练。",
+  "\"Can manage disciplines\" is for Branch Staff only.": "“可管理项目”仅适用于分校员工。",
+  "Send canInviteCoaches, canManageDisciplines or both.": "请提供“可邀请教练”“可管理项目”之一或两者。",
+  "This person is not on the staff of this School.": "此人不是这所学校的员工。",
+  "Only the School owner sets the price of a grade.": "只有学校所有者可以设置级别的价格。",
   "\"Getting There\" must start below \"Ready to Grade\".": "“接近达标”必须从“可以晋级”之下开始。",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "监护人不能提供 overrideReason——只有教练员或员工可以越过段位资格限制。",
   "A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.": "降级以今天为生效日期，且课时数从 0 开始；effectiveDate 和起始课时数仅用于晋级。",
@@ -595,5 +599,4 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "学校所有者未允许你邀请教练。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
-  "This person is not on the staff of this School.": "此人不是这所学校的员工。",
 };

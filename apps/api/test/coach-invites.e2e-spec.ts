@@ -290,10 +290,10 @@ describeIfDb('Coach invites (Decision 183)', () => {
 
   it('each person can read their own invite rights (for the portal)', async () => {
     const mine = (who: string) => as(who).get(`/v1/schools/${school.id}/staff-permissions/me`);
-    expect((await mine('owner')).body).toEqual({ isOwner: true, canInviteCoaches: true, branchIds: [] });
-    expect((await mine('coach')).body).toEqual({ isOwner: false, canInviteCoaches: false, branchIds: [] });
+    expect((await mine('owner')).body).toEqual({ isOwner: true, canInviteCoaches: true, canManageDisciplines: true, branchIds: [] });
+    expect((await mine('coach')).body).toEqual({ isOwner: false, canInviteCoaches: false, canManageDisciplines: false, branchIds: [] });
     await superuser.staffPermission.update({ where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } }, data: { canInviteCoaches: true } });
-    expect((await mine('staff')).body).toEqual({ isOwner: false, canInviteCoaches: true, branchIds: [north.id] });
+    expect((await mine('staff')).body).toEqual({ isOwner: false, canInviteCoaches: true, canManageDisciplines: false, branchIds: [north.id] });
     // A plain student (not the one who accepted an invite above).
     const pupil = await mkUser('pupil');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: pupil.id, schoolId: school.id } });

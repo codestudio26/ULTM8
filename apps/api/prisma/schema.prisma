@@ -4349,6 +4349,8 @@ model StaffPermission {
   user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
 
   canInviteCoaches Boolean @default(false)
+  /// Decision 383: may edit the School's styles, belts and skills.
+  canManageDisciplines Boolean @default(false)
 
   /// Decision 387: the owner's other access switches for a Branch Staff
   /// member (Instructors and owners are not affected). Defaults keep what

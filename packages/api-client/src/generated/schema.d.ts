@@ -5680,6 +5680,8 @@ export interface components {
             staffList: boolean;
             /** @description Invite coaches (off by default; Decision 183). */
             inviteCoaches: boolean;
+            /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
+            disciplines: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -5706,6 +5708,8 @@ export interface components {
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
             canInviteCoaches: boolean;
+            /** @description Branch Staff the owner lets edit styles, belts and skills (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description The School's main owner (Decision 370). Other owners are co-owners. */
             mainOwner: boolean;
             /** @description Decision 381: the School's own name for them, set by an owner. Null = not set. */
@@ -5937,6 +5941,8 @@ export interface components {
         MyStaffPermissionResponseDto: {
             isOwner: boolean;
             canInviteCoaches: boolean;
+            /** @description May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
             branchIds: string[];
         };
@@ -5947,12 +5953,15 @@ export interface components {
             /** @description Branches where they are Branch Staff. */
             branchIds: string[];
             canInviteCoaches: boolean;
+            canManageDisciplines: boolean;
         };
         StaffPermissionListResponseDto: {
             items: components["schemas"]["StaffPermissionResponseDto"][];
         };
         SetStaffPermissionDto: {
-            canInviteCoaches: boolean;
+            canInviteCoaches?: boolean;
+            /** @description May edit the School's styles, belts and skills (Decision 383). */
+            canManageDisciplines?: boolean;
         };
         CoachInvitePreviewDto: {
             schoolName: string;

@@ -6353,6 +6353,33 @@ User (Code), 28 Oct 2026, Waivers thread.
 
 User (Code), 27 Oct 2026 "all recommended" on the Staff build plan (Q5 hybrid); built 28 Oct 2026, Staff thread.
 
+## Decision 383 — Disciplines: Branch Staff the owner allows can manage styles
+
+**Date:** 28 Oct 2026 · **Status:** Approved by product owner ("start all three", 28 Oct 2026, confirming the reading of "the School owner gives Branch Staff access to choose this")
+**Resolves:** Decision 310's two open items, "Whether Branch Staff can be allowed to manage disciplines" and "Permanently deleting an archived style nobody uses". Adds to Decisions 184, 198, 307, 309.
+
+### Background
+
+Decision 309 made the Disciplines page read-only for everyone but the School owner. The product owner asked for the owner to be able to let Branch Staff edit styles too, and to delete archived styles nobody uses. Styles, belts and skills belong to the whole School, while a Branch Staff member's row security shows only their own branch's classes, slots and instructors and none of the students' ranks.
+
+### Decision
+
+1. **A new owner switch, "Can manage disciplines", per Branch Staff member, off by default.** It sits next to "Can invite coaches" (Decision 184) on the Staff page, in a card now called "What Branch Staff can do", and shows as a badge in the staff list. Only the owner sets it, only for Branch Staff (`StaffPermission.canManageDisciplines`). It is cleared when they lose their last Branch Staff role at the School, like "Can invite coaches".
+2. **With it on, they can do on the Disciplines page what the owner can:** add, edit, duplicate, archive, unarchive and delete styles (also from a template), and add, edit, reorder, archive and delete belts and skills.
+3. **Their changes run with the owner's view of the School.** Every safety check covers all branches: a belt a student holds anywhere can't be removed, a class in another branch blocks archiving, and a rename reaches every branch's classes, slots and instructors. The API asks the database (`discipline_manager_context`) whose view to use: the caller's own when they own the School, the School's main owner's (Decision 370) when they are Branch Staff with the switch, otherwise the request is refused. This is used only for the Disciplines changes. The ranks tables record no author, so nothing is written in the owner's name.
+4. **What stays the owner's:** grade prices (Decisions 300, 307) are set by the owner only; a price sent by Branch Staff is refused, and prices already set are kept when they edit a belt. The students list on a style stays owner-only (Decision 309 item 5).
+5. **"Delete permanently" for an archived style.** On an archived style the Delete button now says "Delete permanently". It keeps Decision 198's rule: a style goes only when nobody has ever held a rank in it, no instructor has declared a belt in it, and no class, timetable slot or lesson uses it. An archived style with history stays archived.
+6. Every new text is translated into all 15 languages, including the two new API messages.
+
+### What this does NOT resolve
+
+- Deleting an archived style that still has history (past ranks, past classes). It stays archived and is never purged (Decision 309).
+- Whether coaches should ever be able to edit a style.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, Disciplines thread.
+
 ## Decision 387 — Staff page: access switches and the "Front desk" and "Branch manager" presets
 
 **Date:** 28 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 7), order of work (d)
@@ -6361,8 +6388,8 @@ User (Code), 27 Oct 2026 "all recommended" on the Staff build plan (Q5 hybrid); 
 
 ### Decision
 
-1. **Six switches, for Branch Staff.** `StaffPermission` (the School's one row per staff member) gains `canManageClasses`, `canManageBookings`, `canManageStudents`, `canCancelClasses` and `canSeeStaffList`, beside the existing `canInviteCoaches`. Migration `20261219000000_staff_access`.
-2. **Defaults keep today's behaviour.** A Branch Staff member with no row, or a new one, may manage bookings and check-in, see and edit their branches' students, and cancel classes with credit (all of which Branch Staff could already do: Spec 55 §8.2, Decisions 291, 341). Managing classes and the timetable, seeing the staff list and inviting coaches start off.
+1. **Six switches, for Branch Staff.** `StaffPermission` (the School's one row per staff member) gains `canManageClasses`, `canManageBookings`, `canManageStudents`, `canCancelClasses` and `canSeeStaffList`, beside the existing `canInviteCoaches`. Migration `20261219000000_staff_access`. Decision 383's `canManageDisciplines` ("Manage disciplines") sits on the same Access window as a seventh switch, with its own rules unchanged.
+2. **Defaults keep today's behaviour.** A Branch Staff member with no row, or a new one, may manage bookings and check-in, see and edit their branches' students, and cancel classes with credit (all of which Branch Staff could already do: Spec 55 §8.2, Decisions 291, 341). Managing classes and the timetable, seeing the staff list, inviting coaches and managing disciplines start off.
 3. **What each switch gates (API).**
    - *Classes and timetable:* create, edit, archive and unarchive Classes and weekly slots at the person's own branches, and upload a class photo. School-wide classes and slots, and timetable closures, stay owner-only. A slot edit that would cancel booked classes also needs *cancel classes*.
    - *Bookings and check-in:* booking and cancelling for students, booking overrides, the waitlist, class QR codes, scanning, desk lookups and front-desk check-in (including guests).
@@ -6371,15 +6398,16 @@ User (Code), 27 Oct 2026 "all recommended" on the Staff build plan (Q5 hybrid); 
    - *Staff list:* `GET /schools/:id/staff` shows the person's branches' current staff (and the owners and School-wide staff), read only, with no switches. It is read through `ultm8_jobs` after the switch check, so `ultm8_jobs` gets SELECT on `StaffPermission`'s id, schoolId, userId, displayName and workPhone only.
    - *Invite coaches:* as before (Decision 183). Turning it off withdraws the person's open invites.
    A switch that is off answers 403 `STAFF_ACCESS_OFF` with a fixed message per switch (translated into all 14 languages).
-4. **Instructors and owners are not switched.** Instructors keep the rights of their role (Spec 55 §8.2: attendance scan and booking override; Decision 341: their branch's students) whatever a switch says; owners and co-owners have every right. `PUT /schools/:schoolId/staff/:userId/access` (owner only, all six booleans) answers 400 for anyone who is not Branch Staff.
+4. **Instructors and owners are not switched.** Instructors keep the rights of their role (Spec 55 §8.2: attendance scan and booking override; Decision 341: their branch's students) whatever a switch says; owners and co-owners have every right. `PUT /schools/:schoolId/staff/:userId/access` (owner only, all seven booleans, `disciplines` included) answers 400 for anyone who is not Branch Staff.
 5. **The person's own view.** `GET /schools/:schoolId/staff/me/access` tells the portal what to show: Branch Staff see Students, Staff, Cancellations and Check-in in the menu, Classes and Timetable editing, and Invite coaches according to their switches.
-6. **Presets.** On the owner's Access window: **Front desk** = bookings and check-in, and students; **Branch manager** = all six. A preset only ticks the switches; the owner can change any before saving. The Staff list shows the matching preset, or "Custom access".
+6. **Presets.** On the owner's Access window: **Front desk** = bookings and check-in, and students; **Branch manager** = all six branch switches. Neither preset ticks "Manage disciplines", because it changes the whole School (Decision 383). A preset only ticks the switches; the owner can change any before saving. The Staff list shows the matching preset, or "Custom access".
 7. **Removal resets.** When someone stops being Branch Staff at the School, every switch goes back to its default.
-8. The old "Who can invite coaches" card on the Staff page is replaced by the Access window.
+8. The Staff page's "What Branch Staff can do" card (Decisions 184, 383) is replaced by the Access window, which holds both of its switches.
 
 ### What this does NOT resolve
 
 - **[UNRESOLVED]** Decision 360 says "six switches per staff member". They are built for Branch Staff only, because Instructors' rights are fixed by their role (Spec 55 §8.2) and owners have every right. Whether Instructors should get switches too is not decided.
+- **[UNRESOLVED]** Whether "Branch manager" should include "Manage disciplines". It is left out because disciplines change the whole School.
 - **[UNRESOLVED]** The exact contents of the two presets and the defaults (point 2) were not specified; they were chosen to keep what Branch Staff could already do. With these defaults, a new Branch Staff member shows "Custom access" (defaults include cancelling classes, which "Front desk" does not).
 
 ### Recorded by

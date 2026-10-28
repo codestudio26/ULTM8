@@ -12,6 +12,7 @@ const GROUPS: Array<{ heading: TranslationKey; keys: AccessKey[] }> = [
   { heading: 'roleGrants.access.groupCheckIn', keys: ['bookings'] },
   { heading: 'roleGrants.access.groupMembers', keys: ['students'] },
   { heading: 'roleGrants.access.groupStaff', keys: ['staffList', 'inviteCoaches'] },
+  { heading: 'roleGrants.access.groupDisciplines', keys: ['disciplines'] },
 ];
 
 const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }> = {
@@ -21,18 +22,20 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
   students: { label: 'roleGrants.access.students', hint: 'roleGrants.access.studentsHint' },
   staffList: { label: 'roleGrants.access.staffList', hint: 'roleGrants.access.staffListHint' },
   inviteCoaches: { label: 'roleGrants.access.inviteCoaches', hint: 'roleGrants.access.inviteCoachesHint' },
+  disciplines: { label: 'roleGrants.access.disciplines', hint: 'roleGrants.access.disciplinesHint' },
 };
 
 /** Decision 387's two presets. "Front desk": bookings and check-in, and
- * students. "Branch manager": everything. */
+ * students. "Branch manager": everything at their branches. Neither manages
+ * disciplines, which change the whole School (Decision 383). */
 export const PRESETS: Array<{ name: TranslationKey; access: StaffAccess }> = [
   {
     name: 'roleGrants.access.presetFrontDesk',
-    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false },
+    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false },
   },
   {
     name: 'roleGrants.access.presetBranchManager',
-    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true },
+    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false },
   },
 ];
 

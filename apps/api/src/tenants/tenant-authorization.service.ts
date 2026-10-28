@@ -26,9 +26,13 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
  */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Decision 387 — the owner's access switches for a Branch Staff member. */
-export const STAFF_ACCESS = ['classes', 'bookings', 'students', 'cancelClasses', 'staffList', 'inviteCoaches'] as const;
+/** Decision 387 — the owner's access switches for a Branch Staff member.
+ * "disciplines" is Decision 383's "Can manage disciplines", shown on the same
+ * Access window; the Disciplines module checks it itself. */
+export const STAFF_ACCESS = ['classes', 'bookings', 'students', 'cancelClasses', 'staffList', 'inviteCoaches', 'disciplines'] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
+/** The switches staffMay checks. */
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -41,6 +45,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   cancelClasses: true,
   staffList: false,
   inviteCoaches: false,
+  disciplines: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -49,7 +54,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
 const INSTRUCTOR_FLOOR: ReadonlySet<StaffAccess> = new Set(['bookings', 'students']);
 
 /** One fixed message per switch, so the portal can translate each. */
-export const STAFF_ACCESS_OFF_MESSAGES: Record<StaffAccess, string> = {
+export const STAFF_ACCESS_OFF_MESSAGES: Record<GatedStaffAccess, string> = {
   classes: "The School owner hasn't let you manage classes and the timetable here.",
   bookings: "The School owner hasn't let you manage bookings and check-in here.",
   students: "The School owner hasn't let you see or edit students.",
@@ -66,6 +71,7 @@ export function staffAccessFrom(row: {
   canCancelClasses: boolean;
   canSeeStaffList: boolean;
   canInviteCoaches: boolean;
+  canManageDisciplines: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -75,6 +81,7 @@ export function staffAccessFrom(row: {
     cancelClasses: row.canCancelClasses,
     staffList: row.canSeeStaffList,
     inviteCoaches: row.canInviteCoaches,
+    disciplines: row.canManageDisciplines,
   };
 }
 
@@ -86,6 +93,7 @@ export const STAFF_ACCESS_SELECT = {
   canCancelClasses: true,
   canSeeStaffList: true,
   canInviteCoaches: true,
+  canManageDisciplines: true,
 } as const;
 
 @Injectable()
@@ -187,7 +195,7 @@ export class TenantAuthorizationService {
    * that branch or a grant with no branch; "classes" on a School-wide row
    * (no target branch) stays the owner's.
    */
-  async staffMay(userId: string, schoolId: string, access: StaffAccess, targetBranchId?: string | null): Promise<boolean> {
+  async staffMay(userId: string, schoolId: string, access: GatedStaffAccess, targetBranchId?: string | null): Promise<boolean> {
     return this.prismaApp.withTenantContext(userId, async (tx) => {
       const grants = await tx.roleGrant.findMany({
         where: {
@@ -236,7 +244,7 @@ export class TenantAuthorizationService {
   }
 
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */
-  async assertStaffMay(userId: string, schoolId: string, access: StaffAccess, targetBranchId?: string | null): Promise<void> {
+  async assertStaffMay(userId: string, schoolId: string, access: GatedStaffAccess, targetBranchId?: string | null): Promise<void> {
     if (await this.staffMay(userId, schoolId, access, targetBranchId)) return;
     throw new ForbiddenException({
       code: 'STAFF_ACCESS_OFF',
