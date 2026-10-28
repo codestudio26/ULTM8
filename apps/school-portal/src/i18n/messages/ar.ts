@@ -212,6 +212,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       railTagline: "كل حزام، كل حجز، في مكان واحد.",
       newSchool: "مدرسة جديدة؟ {link}",
       forgotPasscode: "هل نسيت رمز الدخول؟",
+      phoneVerified: "تم التحقق من رقم الهاتف. يمكنك تسجيل الدخول الآن.",
+      verifyPhoneLink: "تحقق من رقم هاتفك",
     },
     forgot: {
       title: "إعادة تعيين رمز الدخول",
@@ -3145,6 +3147,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     title: "ملفي الشخصي",
     loadFailed: "تعذّر تحميل ملفك الشخصي.",
     signInNote: "تسجّل الدخول باستخدام بريدك الإلكتروني ورقم هاتفك، لذا لا يمكن تغييرهما هنا.",
+    removePhoto: "إزالة الصورة",
+    changePasscode: {
+      title: "تغيير رمز الدخول",
+      current: "رمز الدخول الحالي",
+      hint: "تغييره يسجّل خروجك من أجهزتك الأخرى.",
+      submit: "تغيير رمز الدخول",
+      changed: "تم تغيير رمز الدخول. تم تسجيل خروجك من أجهزتك الأخرى.",
+    },
   },
   address: {
     legend: "العنوان",

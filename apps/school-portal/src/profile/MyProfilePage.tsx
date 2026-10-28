@@ -7,6 +7,7 @@ import {
   ErrorBanner,
   Field,
   PageHeader,
+  PasscodeField,
   PhotoUploadField,
   SelectField,
   Spinner,
@@ -18,7 +19,9 @@ import {
   type PostalAddress,
   type PostalAddressErrors,
 } from '@ultm8/ui';
-import { ApiError } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
+import { apiClient } from '../api';
+import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
@@ -32,6 +35,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
  *
  * Fields are the approved set, each one `UpdateUserDto` accepts: photo, first
  * name, surname, username, date of birth, language, currency and address.
+ * "Remove photo" saves the photo as null (sign-in review A11).
  * `UpdateUserDto` also accepts gender, nationality and the Decision 220/246
  * measurements; they're left off on purpose (not in the approved design).
  * Email and phone are shown read-only — the DTO deliberately excludes both
@@ -40,9 +44,8 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
  * Blank username/language/currency are sent as `null` (clears them, same
  * convention as SchoolPage). The address is the shared country-first
  * `AddressFields` (Decision 276), sent as `postalAddress` only when it
- * changed, and `null` when emptied; date of birth and photo can't be cleared
- * (the API rejects a null date of birth, and the DTO has no null for the
- * photo), so a blank one is simply left out. The photo uses the same
+ * changed, and `null` when emptied; date of birth can't be cleared (the API
+ * rejects a null date of birth), so a blank one is simply left out. The photo uses the same
  * `POST /uploads/public-photo-url` path as every other photo field, with
  * entityType USER and no entityId — the API's self-service case.
  *
@@ -106,7 +109,8 @@ export function MyProfilePage() {
     setAddressErrors({});
     try {
       await updateMe.mutateAsync({
-        profilePhotoUrl: form.profilePhotoUrl || undefined,
+        // A removed photo is sent as null, which clears it (A11).
+        profilePhotoUrl: form.profilePhotoUrl || (me?.profilePhotoUrl ? null : undefined),
         firstName: form.firstName,
         surname: form.surname,
         username: form.username || null,
@@ -144,6 +148,13 @@ export function MyProfilePage() {
                 })
               }
             />
+            {form.profilePhotoUrl ? (
+              <div style={{ marginTop: 8 }}>
+                <Button type="button" variant="secondary" onClick={() => set('profilePhotoUrl', '')}>
+                  {t('profile.removePhoto')}
+                </Button>
+              </div>
+            ) : null}
           </Field>
           <Field label={t('students.update.firstName')} htmlFor="profile-firstName">
             <TextField required maxLength={100} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
@@ -184,7 +195,7 @@ export function MyProfilePage() {
             <TextField readOnly value={me.email} />
           </Field>
           <Field label={t('auth.phoneLabel')} htmlFor="profile-phone" hint={t('profile.signInNote')}>
-            <TextField readOnly value={me.phone} />
+            <TextField readOnly value={me.phone ?? ''} />
           </Field>
           <div style={{ marginTop: 16 }}>
             <Button type="submit" loading={updateMe.isPending}>
@@ -193,6 +204,92 @@ export function MyProfilePage() {
           </div>
         </form>
       </Card>
+      <ChangePasscodeCard />
     </>
+  );
+}
+
+/** "Change passcode" (Decision 375, Q1): the current passcode, then the new one
+ * twice. The API signs out every other browser and phone and hands this one a
+ * new token pair, which is swapped in so this page stays signed in. */
+function ChangePasscodeCard() {
+  const { t } = useI18n();
+  const { replaceTokens } = useAuth();
+  const [currentPasscode, setCurrentPasscode] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setChanged(false);
+    if (newPasscode !== confirmPasscode) {
+      setError(t('auth.newPasscodeMismatch'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await unwrap(apiClient.POST('/v1/auth/passcode-change', { body: { currentPasscode, newPasscode } }));
+      replaceTokens(result.accessToken!, result.refreshToken!);
+      setCurrentPasscode('');
+      setNewPasscode('');
+      setConfirmPasscode('');
+      setChanged(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card>
+      <h2 style={{ marginTop: 0 }}>{t('profile.changePasscode.title')}</h2>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        {changed ? <SuccessBanner message={t('profile.changePasscode.changed')} /> : null}
+        <Field label={t('profile.changePasscode.current')} htmlFor="profile-current-passcode">
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="current-password"
+            required
+            value={currentPasscode}
+            onChange={(e) => setCurrentPasscode(e.target.value)}
+          />
+        </Field>
+        <Field label={t('auth.newPasscodeLabel')} htmlFor="profile-new-passcode" hint={t('profile.changePasscode.hint')}>
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="new-password"
+            required
+            value={newPasscode}
+            onChange={(e) => setNewPasscode(e.target.value)}
+          />
+        </Field>
+        <Field label={t('auth.confirmNewPasscodeLabel')} htmlFor="profile-confirm-passcode">
+          <PasscodeField
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="new-password"
+            required
+            value={confirmPasscode}
+            onChange={(e) => setConfirmPasscode(e.target.value)}
+          />
+        </Field>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={submitting}>
+            {t('profile.changePasscode.submit')}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/passcode-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_changePasscode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools": {
         parameters: {
             query?: never;
@@ -4673,7 +4689,7 @@ export interface components {
             /** @description Exactly 6 digits — the account's sole login credential (Decision 72) */
             passcode: string;
             passcodeConfirm: string;
-            /** @description ISO 8601 date, no time component */
+            /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth: string;
             gender?: string;
             nationality?: string;
@@ -4732,6 +4748,12 @@ export interface components {
             expiresAt: string;
         };
         ChangePasscodeFirstLoginDto: {
+            /** @description Exactly 6 digits */
+            newPasscode: string;
+        };
+        ChangePasscodeDto: {
+            /** @description The current passcode, exactly 6 digits */
+            currentPasscode: string;
             /** @description Exactly 6 digits */
             newPasscode: string;
         };
@@ -5085,7 +5107,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
@@ -5813,7 +5836,8 @@ export interface components {
             /** @description Null clears it. */
             address?: string | null;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            profilePhotoUrl?: string;
+            /** @description Null removes the photo. */
+            profilePhotoUrl?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
@@ -8890,6 +8914,29 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ChangePasscodeFirstLoginDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_changePasscode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasscodeDto"];
             };
         };
         responses: {

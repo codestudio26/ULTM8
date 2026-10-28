@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Signed-in users are no longer limited per internet address** (Decision
+  376). Everyone at a School on the same WiFi shares one address, which was
+  limited to 60 requests a minute; a busy front desk could hit it. Signed-in
+  users now have only their own per-user limits; requests from people who
+  aren't signed in keep the per-address limit.
+- **Change passcode, unfinished sign-ups, 18+ to create a School**
+  (Decision 375) — My profile can change the passcode (current one, then the
+  new one twice), which signs out every other device; a sign-up whose phone
+  was never verified can be replaced by a new sign-up after 30 minutes;
+  creating a School needs the person to be 18 or over.
+- **Sign-in and accounts fixes** (Decision 373) — sign-up and Forgot passcode
+  no longer half-save an account or fail with a server error when text
+  messages aren't set up; a first sign-in with a temporary passcode stays
+  signed in past 15 minutes; logging in clears the previous person's data;
+  Create your School has Log out; an unverified phone gets a plain message and
+  a Verify link; sign-up refuses blank names and impossible birth dates;
+  usernames ignore capitals; My profile can remove its photo; a Franchise
+  owner without a School lands on Franchises.
 - **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
   — an Active students card (students with a membership in effect); this
   week's birthdays, children included, with no ages, on the Dashboard and the
@@ -22,7 +40,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
   hidden. **Needs a database migration.**
 
-- **Check-in and front desk review fixes** (Decision 375) — a checked-in
+- **Check-in and front desk review fixes** (Decision 377) — a checked-in
   student keeps their seat, so a full class can't be booked past its limit; the
   welcome card no longer books a class whose check-in hasn't opened ("Check-in
   opens at …"); a scanned app QR is checked once and stays good for 5 minutes;

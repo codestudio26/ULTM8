@@ -32,6 +32,15 @@ interface AuthContextValue {
    * inside the accepted staleness window on purpose (same section).
    */
   setAccessToken: (token: string) => void;
+  /** Starts a brand-new session from a token pair the API just issued — login()
+   * and the first-login passcode change. Drops everything a previous session in
+   * this tab left behind first (its refresh token, cached data and School
+   * choice), so nothing of the last person carries over (sign-in review A2, A4). */
+  startSession: (accessToken: string, refreshToken: string) => void;
+  /** Swaps in a new token pair for the SAME person, keeping their cached data
+   * and School choice — after "Change passcode", which revokes every earlier
+   * refresh token (Decision 375). */
+  replaceTokens: (accessToken: string, refreshToken: string) => void;
   /** See `useCoachSchoolId`/`SchoolSwitcher` — the School a multi-School coach
    * has explicitly picked, if any. Most callers want `useCoachSchoolId()`
    * instead of reading this directly. */
@@ -109,21 +118,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(readClaims());
   }, []);
 
+  const startSession = useCallback(
+    (accessToken: string, refreshToken: string) => {
+      queryClient.clear();
+      writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, null);
+      writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, null);
+      setActiveCoachSchoolIdState(null);
+      setActiveOwnedSchoolIdState(null);
+      // Refresh token first, then the access token — applyToken is what flips
+      // `accessToken` state, so ordering it last means the refresh token is
+      // already persisted by the time anything could possibly need it. Same
+      // ordering apps/student's own login() already established.
+      sessionStorageTokenStore.setRefreshToken(refreshToken);
+      applyToken(accessToken);
+      markVerifyNoticeDue();
+    },
+    [applyToken, queryClient],
+  );
+
+  const replaceTokens = useCallback(
+    (accessToken: string, refreshToken: string) => {
+      sessionStorageTokenStore.setRefreshToken(refreshToken);
+      applyToken(accessToken);
+    },
+    [applyToken],
+  );
+
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
       if (result.mustChangePasscode) {
         return { mustChangePasscode: true as const, passcodeChangeToken: result.passcodeChangeToken! };
       }
-      // Refresh token first, then the access token — applyToken is what flips
-      // `accessToken` state, so ordering it last means the refresh token is
-      // already persisted by the time anything could possibly need it. Same
-      // ordering apps/student's own login() already established.
-      sessionStorageTokenStore.setRefreshToken(result.refreshToken!);
-      applyToken(result.accessToken!);
-      markVerifyNoticeDue();
+      startSession(result.accessToken!, result.refreshToken!);
     },
-    [applyToken],
+    [startSession],
   );
 
   const logout = useCallback(async () => {
@@ -205,12 +234,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       setAccessToken: applyToken,
+      startSession,
+      replaceTokens,
       activeCoachSchoolId,
       setActiveCoachSchoolId,
       activeOwnedSchoolId,
       setActiveOwnedSchoolId,
     }),
-    [accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId, activeOwnedSchoolId, setActiveOwnedSchoolId],
+    [accessToken, claims, login, logout, applyToken, startSession, replaceTokens, activeCoachSchoolId, setActiveCoachSchoolId, activeOwnedSchoolId, setActiveOwnedSchoolId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
