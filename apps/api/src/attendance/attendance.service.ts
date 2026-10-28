@@ -177,8 +177,13 @@ export class AttendanceService {
       if (lookup.deskStudentId !== dto.studentId || lookup.schoolId !== cls.schoolId || lookup.staffId !== instructorId) {
         throw new BadRequestException('This scan belongs to a different Student.');
       }
-      await this.assertCameraConsentNotWithdrawn(dto.studentId);
-      method = 'INSTRUCTOR_SCAN';
+      if (lookup.via === 'CODE') {
+        // A typed personal code uses no camera (Decision 384).
+        method = 'PERSONAL_CODE';
+      } else {
+        await this.assertCameraConsentNotWithdrawn(dto.studentId);
+        method = 'INSTRUCTOR_SCAN';
+      }
     } else if (dto.studentToken) {
       const tokenStudentId = this.qrTokenService.verifyStudentToken(dto.studentToken);
       if (tokenStudentId !== dto.studentId) {

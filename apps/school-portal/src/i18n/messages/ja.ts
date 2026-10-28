@@ -2761,6 +2761,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "セルフチェックイン",
       methodInstructorScan: "あなたがスキャン",
       methodInstructorManual: "あなたが確認",
+      methodPersonalCode: "受付で個人コード",
       present: "出席 ✓",
       scan: "スキャン",
       confirmPresent: "出席を確認",
@@ -3081,7 +3082,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "生徒のコードを入力",
       kioskTitle: "チェックインコードを入力",
-      hint: "4桁。会員カードとULTM8アプリに表示されています",
+      hint: "あなたの{digits}桁のチェックインコードです。わからない場合は受付でお尋ねください。",
+      staffHint: "生徒の{digits}桁のコードです。生徒のページに表示されます。",
+      checking: "コードを確認中…",
       soonHint: "個人用チェックインコードは近日対応予定です。今はスキャンか名前を使ってください。",
       delete: "削除",
       submit: "チェックイン",
@@ -3229,6 +3232,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "申込を送信できませんでした。受付でお尋ねください。",
       sentTitle: "ありがとうございます",
       sentBody: "申込はスタッフに届きました。承認されるとメールが届きます。",
+    },
+    studentCode: {
+      title: "チェックインコード",
+      hint: "アプリのQRを見せられないときに受付で入力します。生徒は変更できません。",
+      renew: "新しいコードを発行",
+      confirm: "古いコードは使えなくなります。新しいコードを発行しますか？",
+      confirmYes: "はい、新しいコード",
+      failed: "新しいコードを発行できませんでした。もう一度お試しください。",
     },
     findMe: {
       title: "自分を探す",

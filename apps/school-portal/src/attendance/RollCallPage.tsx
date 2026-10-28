@@ -111,6 +111,7 @@ const CHECK_IN_METHOD_LABEL: Record<string, TranslationKey> = {
   SELF_SERVICE: 'attendance.rollCall.methodSelfService',
   INSTRUCTOR_SCAN: 'attendance.rollCall.methodInstructorScan',
   INSTRUCTOR_MANUAL: 'attendance.rollCall.methodInstructorManual',
+  PERSONAL_CODE: 'attendance.rollCall.methodPersonalCode',
 };
 
 /** Non-UPCOMING, non-COMPLETED statuses are shown as the raw enum value in

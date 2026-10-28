@@ -2761,6 +2761,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "셀프 출석",
       methodInstructorScan: "내가 스캔함",
       methodInstructorManual: "내가 확인함",
+      methodPersonalCode: "데스크에서 개인 코드",
       present: "출석 ✓",
       scan: "스캔",
       confirmPresent: "출석 확인",
@@ -3081,7 +3082,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "수련생 코드를 입력하세요",
       kioskTitle: "출석 코드를 입력하세요",
-      hint: "4자리, 회원 카드와 ULTM8 앱에 있어요",
+      hint: "내 {digits}자리 출석 체크 코드입니다. 모르면 데스크에 문의하세요.",
+      staffHint: "수련생의 {digits}자리 코드로, 수련생 페이지에 표시됩니다.",
+      checking: "코드 확인 중…",
       soonHint: "개인 출석 코드는 곧 제공됩니다. 지금은 스캔이나 이름을 사용하세요.",
       delete: "지우기",
       submit: "출석 체크",
@@ -3229,6 +3232,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "가입 신청을 보내지 못했습니다. 데스크에 문의해 주세요.",
       sentTitle: "감사합니다",
       sentBody: "가입 신청이 직원에게 전달되었습니다. 승인되면 이메일을 받게 됩니다.",
+    },
+    studentCode: {
+      title: "출석 체크 코드",
+      hint: "앱의 QR을 보여줄 수 없을 때 데스크에서 입력합니다. 수련생은 바꿀 수 없습니다.",
+      renew: "새 코드 발급",
+      confirm: "이전 코드는 더 이상 쓸 수 없습니다. 새 코드를 발급할까요?",
+      confirmYes: "네, 새 코드",
+      failed: "새 코드를 발급하지 못했습니다. 다시 시도해 주세요.",
     },
     findMe: {
       title: "내 정보 찾기",
