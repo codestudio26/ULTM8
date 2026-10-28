@@ -2370,7 +2370,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "환불/크레딧 마감일",
       leaveBlankToClear: "비워 두면 지워집니다.",
       cancellationLabel: "해지 수수료",
-      cancellationHint: "예: 5.00. 향후 청구 절차를 위해 저장되며 아직 자동으로 청구되지 않습니다. 지우려면 비워 두세요.",
+      cancellationHint: "예: 5.00. 이 요금제로 예약한 수업을 마감 후 취소하고 수업 자체에 취소 수수료가 없으면 학생의 저장된 카드로 청구됩니다. 청구하지 않으려면 비워 두세요.",
       waiverRequired: "구매하려면 서명된 면책 동의서/약관 필요",
       stylesLegend: "이 플랜에 포함된 종목",
       includesLessons: "레슨 포함",

@@ -2484,7 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Termin zwrotu/kredytu",
       leaveBlankToClear: "Zostaw puste, aby wyczyścić.",
       cancellationLabel: "Opłata za rezygnację",
-      cancellationHint: "Na przykład 5.00. Zapisywane na potrzeby przyszłego procesu obciążeń — jeszcze nie pobierane automatycznie. Zostaw puste, aby wyczyścić.",
+      cancellationHint: "Na przykład 5.00. Pobierane z zapisanej karty ucznia, gdy odwoła zajęcia zarezerwowane w tym planie po terminie, jeśli zajęcia nie mają własnej opłaty. Zostaw puste, aby nie pobierać opłaty.",
       waiverRequired: "Zakup wymaga podpisanego oświadczenia/regulaminu",
       stylesLegend: "Dyscypliny objęte tym planem",
       includesLessons: "Zawiera lekcje",

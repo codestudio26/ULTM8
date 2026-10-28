@@ -2370,7 +2370,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "返金／クレジットの締切",
       leaveBlankToClear: "空欄にするとクリアされます。",
       cancellationLabel: "解約手数料",
-      cancellationHint: "例：5.00。今後の請求処理のために保存されます（まだ自動では徴収されません）。消去するには空欄にしてください。",
+      cancellationHint: "例：5.00。このプランで予約したクラスを締め切り後にキャンセルした場合、クラス自体にキャンセル料がなければ、生徒の保存済みカードに請求されます。請求しない場合は空欄にしてください。",
       waiverRequired: "購入には署名済みの免責同意書／規約が必要",
       stylesLegend: "このプランの対象種目",
       includesLessons: "レッスンを含む",

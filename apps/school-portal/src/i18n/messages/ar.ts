@@ -2555,7 +2555,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "آخر موعد للاسترداد/الرصيد",
       leaveBlankToClear: "اتركه فارغًا لمسحه.",
       cancellationLabel: "رسوم الإلغاء",
-      cancellationHint: "مثل 5.00. يُحفظ لعملية تحصيل مستقبلية — لا يُحصَّل تلقائيًا بعد. اتركه فارغًا لمسحه.",
+      cancellationHint: "مثل 5.00. يُخصم من البطاقة المحفوظة للطالب عندما يلغي حصة حجزها بهذه الخطة بعد موعدها النهائي، إذا لم يكن للحصة رسم خاص بها. اتركه فارغًا لعدم فرض رسم.",
       waiverRequired: "يتطلب إقرارًا/شروطًا موقّعة للشراء",
       stylesLegend: "الرياضات التي تشملها هذه الخطة",
       includesLessons: "تشمل الدروس",

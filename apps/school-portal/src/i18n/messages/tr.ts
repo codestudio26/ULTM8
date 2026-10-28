@@ -2408,7 +2408,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "İade/kredi son tarihi",
       leaveBlankToClear: "Temizlemek için boş bırakın.",
       cancellationLabel: "İptal ücreti",
-      cancellationHint: "Örneğin 5.00. İleride bir tahsilat akışı için saklanır — henüz otomatik tahsil edilmez. Temizlemek için boş bırakın.",
+      cancellationHint: "Örneğin 5.00. Öğrenci bu planla rezerve ettiği bir dersi son tarihten sonra iptal ederse ve dersin kendi ücreti yoksa, kayıtlı kartından tahsil edilir. Ücret almamak için boş bırakın.",
       waiverRequired: "Satın almak için imzalı feragatname/koşullar gerekir",
       stylesLegend: "Bu planın kapsadığı branşlar",
       includesLessons: "Ders içeriklerini kapsar",

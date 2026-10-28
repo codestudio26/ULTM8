@@ -2408,7 +2408,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Termine per rimborso/credito",
       leaveBlankToClear: "Lascia vuoto per cancellare.",
       cancellationLabel: "Penale di disdetta",
-      cancellationHint: "Ad esempio 5.00. Salvato per un futuro processo di addebito — non ancora riscosso automaticamente. Lascia vuoto per cancellare.",
+      cancellationHint: "Ad esempio 5.00. Addebitato sulla carta salvata dell'allievo quando annulla dopo la scadenza una lezione prenotata con questo piano, se la lezione non ha un addebito proprio. Lascia vuoto per nessun addebito.",
       waiverRequired: "Richiede liberatoria/condizioni firmate per l’acquisto",
       stylesLegend: "Discipline coperte da questo piano",
       includesLessons: "Include le lezioni video",

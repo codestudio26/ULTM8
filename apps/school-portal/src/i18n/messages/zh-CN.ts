@@ -2370,7 +2370,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "退款/抵扣截止时间",
       leaveBlankToClear: "留空即可清除。",
       cancellationLabel: "取消费用",
-      cancellationHint: "例如 5.00。保存以供将来的扣费流程使用——目前不会自动收取。留空即可清除。",
+      cancellationHint: "例如 5.00。学员在截止时间后取消用此方案预订的课程，且该课程没有自己的取消费时，从学员保存的卡中扣取。留空表示不收费。",
       waiverRequired: "购买需签署免责声明/条款",
       stylesLegend: "此方案涵盖的项目",
       includesLessons: "包含课时",
