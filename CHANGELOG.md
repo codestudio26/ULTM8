@@ -35,7 +35,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   no longer be archived while a class using it is being saved. Booking and
   checking in the same student from two desks at once no longer fails with a
   server error; the second booking gets the usual "already has a booking".
-
+- **Round-3 stress-test fixes (billing and waivers)** — a payment that
+  arrives after its School closed no longer starts a Subscription: it is
+  refunded and the Stripe subscription cancelled, and closing a School also
+  cancels Subscriptions still waiting for their first payment. Cancelling a
+  Subscription several times at once calls Stripe once. A signature can no
+  longer land on waiver terms the owner has just replaced, a double-clicked
+  signature is saved once, and "Remind everyone" pressed several times at
+  once reminds each student once.
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own
