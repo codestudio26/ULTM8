@@ -594,5 +594,6 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "Aqui só é possível revogar papéis de proprietário, instrutor, equipe da filial ou aluno.",
   "You are already the main owner.": "Você já é o proprietário principal.",
   "This person is not a co-owner of this School.": "Esta pessoa não é coproprietária desta escola.",
+  "This person is not on the staff of this School.": "Esta pessoa não faz parte da equipe desta escola.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityId deve ser igual a schoolId para entityType SCHOOL.",
 };

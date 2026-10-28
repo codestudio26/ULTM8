@@ -503,6 +503,7 @@ export const SERVER_MESSAGES: string[] = [
  "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.",
  "You are already the main owner.",
  "This person is not a co-owner of this School.",
+ "This person is not on the staff of this School.",
  "entityId must equal schoolId for entityType SCHOOL.",
 ];
 

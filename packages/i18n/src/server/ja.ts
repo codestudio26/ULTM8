@@ -594,5 +594,6 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "ここで取り消せるのは、オーナー、インストラクター、支店スタッフ、生徒の役割だけです。",
   "You are already the main owner.": "あなたはすでにメインオーナーです。",
   "This person is not a co-owner of this School.": "この人はこのスクールの共同オーナーではありません。",
+  "This person is not on the staff of this School.": "この人はこのスクールのスタッフではありません。",
   "entityId must equal schoolId for entityType SCHOOL.": "entityTypeがSCHOOLの場合、entityIdはschoolIdと同じである必要があります。",
 };

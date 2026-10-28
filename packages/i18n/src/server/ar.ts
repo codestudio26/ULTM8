@@ -594,5 +594,6 @@ export const serverMessages: Record<string, string> = {
   "This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.": "لا يمكن هنا سحب إلا أدوار المالك أو المدرّب أو موظف الفرع أو الطالب.",
   "You are already the main owner.": "أنت المالك الرئيسي بالفعل.",
   "This person is not a co-owner of this School.": "هذا الشخص ليس مالكًا مشاركًا في هذه المدرسة.",
+  "This person is not on the staff of this School.": "هذا الشخص ليس من موظفي هذه المدرسة.",
   "entityId must equal schoolId for entityType SCHOOL.": "يجب أن يساوي entityId قيمة schoolId عندما يكون entityType هو SCHOOL.",
 };
