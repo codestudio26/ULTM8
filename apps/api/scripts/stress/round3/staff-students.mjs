@@ -60,7 +60,7 @@ async function mkClass(cap, extra = {}) {
 const activeStudentIds = new Set((await db.roleGrant.findMany({ where: { schoolId: S.id, role: 'STUDENT', revokedAt: null }, select: { userId: true } })).map((g) => g.userId));
 const live = shuffle(S.students.filter((x) => activeStudentIds.has(x.id) && x.branch === b0));
 const taken = new Set();
-const take = (kind, n = 1) => { const out = live.filter((x) => x.kind === kind && !taken.has(x.id)).slice(0, n); out.forEach((x) => taken.add(x.id)); if (out.length < n) throw new Error(`not enough ${kind} students`); return out; };
+const take = (kind, n = 1) => { const out = live.filter((x) => (kind === 'any' || x.kind === kind) && !taken.has(x.id)).slice(0, n); out.forEach((x) => taken.add(x.id)); if (out.length < n) throw new Error(`not enough ${kind} students`); return out; };
 
 // ---------------------------------------------------------------- setup
 // Enough staff for the list to mean something: 30 Branch Staff / coaches.
@@ -69,7 +69,8 @@ for (let i = staffNow; i < 30; i++) { const u = await mkUser('staff'); await mkG
 // A second branch, and home branches for 80 students (40 per branch), for the S1 check.
 let bB = await db.branch.findFirst({ where: { schoolId: S.id, name: 'SS Branch B' } });
 if (!bB) bB = await db.branch.create({ data: { id: randomUUID(), schoolId: S.id, name: 'SS Branch B' } });
-const hbA = take('sub', 40), hbB = take('pack', 40);
+// Membership kind doesn't matter here; 'any' keeps smaller schools' packs for the credit checks.
+const hbA = take('any', 40), hbB = take('any', 40);
 await db.studentHomeBranch.deleteMany({ where: { schoolId: S.id, studentId: { in: [...hbA, ...hbB].map((x) => x.id) } } });
 await db.studentHomeBranch.createMany({ data: [...hbA.map((x) => ({ id: randomUUID(), schoolId: S.id, studentId: x.id, branchId: b0 })), ...hbB.map((x) => ({ id: randomUUID(), schoolId: S.id, studentId: x.id, branchId: bB.id }))] });
 const otherOwner = O.owner;
@@ -271,6 +272,8 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   await call('SR:setup-waitlist', 'POST', `/classes/${wl}/waitlist`, waiter.tok, {});
   const full = await Promise.all(classes.map((c) => db.booking.count({ where: { classId: c, status: 'UPCOMING' } })));
   const credits0 = (await db.membership.findFirst({ where: { studentId: t1.id, schoolId: S.id, classesRemaining: { not: null } } })).classesRemaining;
+  // Bookings T1 already had (the load phase books everyone) are cancelled and refunded by the revoke too.
+  const t1Earlier = await db.booking.count({ where: { studentId: t1.id, schoolId: S.id, status: 'UPCOMING', classId: { notIn: classes } } });
   if (t1Books.some((b) => b.status !== 201) || wlJoin.status !== 201 || full.some((n) => n !== cap)) throw new Error(`setup: t1 bookings ${t1Books.map((b) => b.status)} wl ${wlJoin.status} ${JSON.stringify(wlJoin.body)} full ${full}`);
 
   // T2: a Subscription paid through (fake) Stripe.
@@ -319,8 +322,8 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   ok('SR2 revoke ×20 in parallel: no 5xx, grant revoked once, idempotent replies', no5xx(revs) && revs.every((r) => r.status === 200) && !!g1After.revokedAt, `revoke codes ${JSON.stringify(codes(revs))}`);
   ok('SR3 seats freed exactly once and never overbooked while 30 others book the same classes', upcoming.every((n) => n <= cap) && t1Live === 0 && won === 3 && t1Cancelled.every((b) => b.status === 'CANCELLED') && no5xx(races),
     `upcoming per class ${upcoming.join('/')} (cap ${cap}); racers booked ${won} (3 seats freed); race codes ${JSON.stringify(codes(races))}; T1 bookings ${t1Cancelled.map((b) => `${b.status}/${b.refundResolution}`).join(', ')}`);
-  ok('SR4 credits come back once per cancelled booking (before the refund cut-off, Decision 343)', credits0 === 2 && credits1 === 5 && t1Cancelled.every((b) => b.refundResolution === 'REFUNDED'),
-    `pack credits ${credits0} after booking 3 → ${credits1} after revoke (want 5)`);
+  ok('SR4 credits come back once per cancelled booking (before the refund cut-off, Decision 343)', credits0 === 2 && credits1 === 5 + t1Earlier && t1Cancelled.every((b) => b.refundResolution === 'REFUNDED'),
+    `pack credits ${credits0} after booking 3 → ${credits1} after revoke (want ${5 + t1Earlier}: 3 test bookings and ${t1Earlier} earlier ones back)`);
   ok('SR5 the waitlist place is removed; the next person keeps theirs', wlT1?.status === 'CANCELLED' && ['WAITING', 'NOTIFIED'].includes(wlWaiter?.status), `T1 entry ${wlT1?.status}; next person ${wlWaiter?.status}`);
   if (subId) {
     const m2 = await db.membership.findUnique({ where: { id: t2m.id } });
