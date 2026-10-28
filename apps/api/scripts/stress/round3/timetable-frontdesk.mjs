@@ -395,7 +395,7 @@ async function closeFixture(label, nClasses) {
   }
   await db.roleGrant.createMany({ data: bookers.map((b) => ({ id: randomUUID(), userId: b.id, role: 'STUDENT', schoolId: X.id })) });
   await db.membership.createMany({ data: bookers.map((b) => ({ id: randomUUID(), studentId: b.id, membershipPlanId: subPlan.id, schoolId: X.id, frequency: 'RECURRING' })) });
-  const branchScopedTry = await call('close:race-book', 'POST', `/classes/${classes[0]}/book`, rushStudents.filter(eligibleKind)[95].tok, {});
+  const branchScopedTry = await call('close:race-book', 'POST', `/classes/${classes[0]}/book`, rushStudents.filter(eligibleKind).at(-2).tok, {});
   // One race: bookers hit the Branch's classes while the owner closes it; a failed
   // close is retried once after the bookings finish (as the owner would).
   const race = async (br, cls, who) => {
@@ -566,7 +566,7 @@ async function closeFixture(label, nClasses) {
   if (broken.length) {
     // The class that slipped through still works: book it, edit it keeping its style.
     const r = broken[0];
-    const st = rushStudents.filter(eligibleKind)[120];
+    const st = rushStudents.filter(eligibleKind).at(-1);
     const bk = await call('disc:race-class-book', 'POST', `/classes/${r.sample}/book`, st.tok, {});
     const ed = await call('disc:race-class-edit', 'PATCH', `/classes/${r.sample}`, X.owner.tok, { title: `R3TF ${RUN} race edited`, styles: [{ disciplineId: r.D, classType: null }] });
     info('D4 class left with the archived style still works', `book ${bk.status}, edit keeping the style ${ed.status}`);
