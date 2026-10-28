@@ -129,6 +129,22 @@ export function useHandOverMainOwner(schoolId: string) {
   });
 }
 
+/** Decision 381 — the School's own display name and work phone for a staff
+ * member. null clears a field. */
+export function useUpdateStaffDetails(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, displayName, workPhone }: { userId: string; displayName: string | null; workPhone: string | null }) =>
+      unwrap(
+        apiClient.PATCH('/v1/schools/{schoolId}/staff/{userId}/details', {
+          params: { path: { schoolId, userId } },
+          body: { displayName, workPhone },
+        }),
+      ),
+    onSuccess: () => invalidateStaffLists(queryClient),
+  });
+}
+
 export function useInviteStaff() {
   const queryClient = useQueryClient();
   return useMutation({
