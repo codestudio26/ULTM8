@@ -14,6 +14,13 @@ let s: GradingSchool;
 const MIN = 60_000;
 const at = (ms: number) => new Date(Date.now() + ms);
 
+// The Check-in page asks for "today" by the browser's own day, and these
+// tests seed classes from 10 minutes ago to 4 hours ahead. Run the browser in
+// a fixed-offset zone where it is about 9 in the morning, so "today" never
+// ends mid-test, whatever time CI runs. (Etc/GMT-N is UTC+N.)
+const offset = ((9 - new Date().getUTCHours() + 36) % 24) - 12;
+test.use({ timezoneId: offset === 0 ? 'Etc/GMT' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}` });
+
 async function subscribe(studentId: string) {
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: `Unlimited ${randomUUID().slice(0, 4)}`, price: 5000 } });
   return db.membership.create({ data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'RECURRING' } });
