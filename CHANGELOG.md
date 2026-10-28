@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Dashboard: Active students, birthdays and a setup checklist** (Decision 374)
+  — an Active students card (students with a membership in effect); this
+  week's birthdays, children included, with no ages, on the Dashboard and the
+  coach dashboard; and a setup checklist for new Schools (Branch, style and
+  belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
+  hidden. **Needs a database migration.**
+
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
