@@ -662,6 +662,47 @@
       }
     },
     "/v1/schools/{id}/students/{studentId}/profile": {
+      "get": {
+        "operationId": "SchoolsController_getStudentProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "patch": {
         "operationId": "SchoolsController_updateStudentProfile",
         "parameters": [
@@ -699,6 +740,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/students/{studentId}/guardians": {
+      "get": {
+        "operationId": "SchoolsController_getStudentGuardians",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentGuardiansResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/students/{studentId}/leaving-summary": {
+      "get": {
+        "operationId": "SchoolsController_getStudentLeavingSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentLeavingSummaryResponseDto"
                 }
               }
             }
@@ -1298,6 +1425,86 @@
         ]
       }
     },
+    "/v1/branches/{id}/close-preview": {
+      "get": {
+        "operationId": "BranchesController_closePreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchClosePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/branches/{id}/close": {
+      "post": {
+        "operationId": "BranchesController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/branches/{id}/unarchive": {
       "post": {
         "operationId": "BranchesController_unarchive",
@@ -1556,6 +1763,130 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateStaffManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/add-manually": {
+      "post": {
+        "operationId": "RoleGrantsController_createStudentManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStudentManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff": {
+      "get": {
+        "operationId": "RoleGrantsController_listStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Default active. \"removed\" = had a staff role here, holds none now.",
+            "schema": {
+              "enum": [
+                "active",
+                "removed",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SCHOOL_OWNER_MANAGER",
+                "INSTRUCTOR",
+                "BRANCH_STAFF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Part of a name or email, any capitals.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListResponseDto"
                 }
               }
             }
@@ -4779,6 +5110,112 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/closures": {
+      "get": {
+        "operationId": "TimetableController_listClosures",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "TimetableController_createClosure",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClosureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCreatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/closures/{id}": {
+      "delete": {
+        "operationId": "TimetableController_deleteClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/timetable/{id}": {
       "get": {
         "operationId": "TimetableController_findOne",
@@ -5243,6 +5680,49 @@
         ]
       }
     },
+    "/v1/students/{id}/bookings/next": {
+      "get": {
+        "operationId": "BookingsController_findNextForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNextBookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/bookings": {
       "get": {
         "operationId": "BookingsController_findAllForStudent",
@@ -5329,6 +5809,15 @@
             "required": false,
             "in": "query",
             "description": "Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes held at this Branch of the School.",
             "schema": {
               "type": "string"
             }
@@ -6169,6 +6658,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateInstructorManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/resend-passcode": {
+      "post": {
+        "operationId": "InstructorsController_resendPasscode",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendPasscodeResponseDto"
                 }
               }
             }
@@ -10887,6 +11411,295 @@
         ]
       }
     },
+    "/v1/bookings/{id}/guests": {
+      "get": {
+        "operationId": "GuestWaiversController_bookingGuests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingGuestsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/guest-waivers": {
+      "get": {
+        "operationId": "GuestWaiversController_classGuests",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassGuestWaiversDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/friend-passes/me": {
+      "get": {
+        "operationId": "GuestWaiversController_myFriendPasses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendPassListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures": {
+      "get": {
+        "operationId": "GuestWaiversController_listSignatures",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverSignatureListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers/{id}/guest-signatures/{signatureId}": {
+      "get": {
+        "operationId": "GuestWaiversController_getSignature",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "signatureId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverSignatureDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guest-waiver-links/{token}": {
+      "get": {
+        "operationId": "GuestWaiverLinksController_page",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestWaiverPageDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ]
+      }
+    },
+    "/v1/guest-waiver-links/{token}/sign": {
+      "post": {
+        "operationId": "GuestWaiverLinksController_sign",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignGuestWaiversDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignGuestWaiversResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest-waivers"
+        ]
+      }
+    },
     "/v1/attendance/scan": {
       "post": {
         "operationId": "AttendanceController_scan",
@@ -13131,6 +13944,102 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/teaching": {
+      "get": {
+        "operationId": "StaffRemovalController_teaching",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTeachingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+      "post": {
+        "operationId": "StaffRemovalController_removeFromSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveFromSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -14071,6 +14980,9 @@
           "email": {
             "type": "string"
           },
+          "guardianManaged": {
+            "type": "boolean"
+          },
           "profilePhotoUrl": {
             "type": "string",
             "nullable": true
@@ -14080,6 +14992,14 @@
           },
           "status": {
             "$ref": "#/components/schemas/StudentStatus"
+          },
+          "homeBranchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -14087,6 +15007,7 @@
           "firstName",
           "surname",
           "email",
+          "guardianManaged",
           "enrolledAt",
           "status"
         ]
@@ -14152,77 +15073,6 @@
           "createdAt",
           "updatedAt"
         ]
-      },
-      "UpdateStudentProfileDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string",
-            "description": "Mobile-only per confirmed field list. Null clears it.",
-            "nullable": true
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "ISO 8601 date, no time component"
-          },
-          "gender": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "nationality": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "language": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
-            "nullable": true
-          },
-          "currency": {
-            "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
-          },
-          "postalAddress": {
-            "nullable": true,
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PostalAddressDto"
-              }
-            ]
-          },
-          "profilePhotoUrl": {
-            "type": "string"
-          },
-          "weightCategory": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          },
-          "kimonoSize": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          },
-          "beltSize": {
-            "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
-            "nullable": true
-          }
-        }
       },
       "UserResponseDto": {
         "type": "object",
@@ -14336,6 +15186,176 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "StudentGuardianDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname"
+        ]
+      },
+      "StudentGuardiansResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentGuardianDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "LeavingStudentMembershipDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "renews": {
+            "type": "boolean"
+          },
+          "cancelAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "planTitle",
+          "type",
+          "renews"
+        ]
+      },
+      "StudentLeavingSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "waitlistPlaces": {
+            "type": "number"
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeavingStudentMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "upcomingBookings",
+          "waitlistPlaces",
+          "memberships"
+        ]
+      },
+      "UpdateStudentProfileDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
+          },
+          "gender": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "description": "A code from GET /settings/languages. Null clears it.",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "A code from GET /settings/currencies. Null clears it.",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
+          "profilePhotoUrl": {
+            "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          }
+        }
       },
       "JoinSchoolDto": {
         "type": "object",
@@ -15056,6 +16076,69 @@
           }
         }
       },
+      "BranchClosePreviewDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Classes that have not ended yet, not counting archived ones."
+          },
+          "timetableSlots": {
+            "type": "number",
+            "description": "Weekly timetable slots, not counting archived ones."
+          },
+          "instructors": {
+            "type": "number",
+            "description": "Instructor profiles, not counting archived ones."
+          },
+          "students": {
+            "type": "number",
+            "description": "Students with this as their home Branch."
+          },
+          "staffRoles": {
+            "type": "number",
+            "description": "Active Branch Staff and coach roles scoped to this Branch."
+          },
+          "pendingCoachInvites": {
+            "type": "number",
+            "description": "Coach invites to this Branch not yet accepted, cancelled or expired. Closing cancels them."
+          },
+          "hasHistory": {
+            "type": "boolean",
+            "description": "Whether the Branch has a past (classes, slots, Instructor profiles or roles). If so it is kept after closing, never removed."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "timetableSlots",
+          "instructors",
+          "students",
+          "staffRoles",
+          "pendingCoachInvites",
+          "hasHistory"
+        ]
+      },
+      "CloseBranchDto": {
+        "type": "object",
+        "properties": {
+          "classesTo": {
+            "type": "string",
+            "description": "Where upcoming Classes and weekly timetable slots go: a Branch id, or \"WHOLE_SCHOOL\"."
+          },
+          "studentsTo": {
+            "type": "string",
+            "description": "New home Branch for Students: a Branch id, or \"WHOLE_SCHOOL\" for no home Branch."
+          },
+          "instructorsTo": {
+            "type": "string",
+            "description": "Where Instructor profiles go: a Branch id, or \"WHOLE_SCHOOL\"."
+          },
+          "staffTo": {
+            "type": "string",
+            "description": "Where active Branch Staff and coach roles go: a Branch id only. A Branch role never becomes School-wide; remove access on the Staff page instead."
+          }
+        }
+      },
       "CreateRoleGrantDto": {
         "type": "object",
         "properties": {
@@ -15362,6 +16445,178 @@
           "updatedAt",
           "email",
           "emailSent"
+        ]
+      },
+      "CreateStudentManuallyDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The student must be 18 or over."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has open branches: the home branch."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email",
+          "dateOfBirth"
+        ]
+      },
+      "CreateStudentManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean"
+          },
+          "temporaryPasscode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email",
+          "emailSent"
+        ]
+      },
+      "StaffRoleDto": {
+        "type": "object",
+        "properties": {
+          "grantId": {
+            "type": "string",
+            "description": "The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SCHOOL_OWNER_MANAGER",
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "grantedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "grantId",
+          "role",
+          "grantedAt"
+        ]
+      },
+      "StaffMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Holds at least one active staff, coach or owner role here."
+          },
+          "addedAt": {
+            "type": "string",
+            "description": "When they were first given a staff role here."
+          },
+          "removedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When their last staff role here ended, for removed staff."
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          },
+          "roles": {
+            "description": "Active roles first, then ended ones, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRoleDto"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "active",
+          "addedAt",
+          "canInviteCoaches",
+          "roles"
+        ]
+      },
+      "StaffListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffMemberDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CreateFranchiseDto": {
@@ -16587,7 +17842,7 @@
           },
           "dateOfBirth": {
             "type": "string",
-            "description": "ISO 8601 date, no time component"
+            "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
           },
           "gender": {
             "type": "string",
@@ -17896,6 +19151,45 @@
           "date"
         ]
       },
+      "ClosureResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt"
+        ]
+      },
       "TimetableCalendarResponseDto": {
         "type": "object",
         "properties": {
@@ -17911,11 +19205,103 @@
             "items": {
               "$ref": "#/components/schemas/TimetableCalendarLaterDto"
             }
+          },
+          "closures": {
+            "description": "Closures overlapping the dates shown that the caller covers (Decision 353, Q8).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureResponseDto"
+            }
           }
         },
         "required": [
           "classes",
-          "later"
+          "later",
+          "closures"
+        ]
+      },
+      "ClosureListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateClosureDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "First closed date, YYYY-MM-DD (local)."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Last closed date, YYYY-MM-DD (local). The same as startDate for one day."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Shown on the calendar and in the cancellation notice, e.g. \"Christmas\"."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Close only this Branch. Left out, the whole School is closed."
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "reason"
+        ]
+      },
+      "ClosureCreatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "cancelledClasses": {
+            "type": "number",
+            "description": "How many classes the closure cancelled."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt",
+          "cancelledClasses"
         ]
       },
       "UpcomingImpactResponseDto": {
@@ -18347,6 +19733,25 @@
           "updatedAt"
         ]
       },
+      "StudentNextBookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "next": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudentBookingResponseDto"
+              }
+            ]
+          },
+          "moreUpcoming": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "moreUpcoming"
+        ]
+      },
       "StudentBookingListResponseDto": {
         "type": "object",
         "properties": {
@@ -18370,7 +19775,8 @@
         "properties": {
           "activity": {
             "type": "string",
-            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
+            "nullable": true,
+            "description": "The Style name (or, for a Class with no Styles, its free-text activity tag) this row is for; null for a Class with neither."
           },
           "totalBookings": {
             "type": "number"
@@ -18385,12 +19791,60 @@
           "upcomingBookings"
         ]
       },
+      "BookingsSummaryClassDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The IANA time zone the Class runs in (Branch, else School, else UTC)."
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "null = unlimited."
+          },
+          "bookedCount": {
+            "type": "number"
+          },
+          "cancelledCount": {
+            "type": "number"
+          },
+          "cancelled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "startDate",
+          "timeZone",
+          "branchName",
+          "capacity",
+          "bookedCount",
+          "cancelledCount",
+          "cancelled"
+        ]
+      },
       "BookingsSummaryDayDto": {
         "type": "object",
         "properties": {
           "date": {
             "type": "string",
-            "description": "YYYY-MM-DD, the School's own local calendar day."
+            "description": "YYYY-MM-DD, the Classes' own local calendar day."
           },
           "totalBookings": {
             "type": "number"
@@ -18398,10 +19852,19 @@
           "upcomingBookings": {
             "type": "number"
           },
+          "cancelledBookings": {
+            "type": "number"
+          },
           "activities": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BookingsSummaryActivityDto"
+            }
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryClassDto"
             }
           }
         },
@@ -18409,7 +19872,9 @@
           "date",
           "totalBookings",
           "upcomingBookings",
-          "activities"
+          "cancelledBookings",
+          "activities",
+          "classes"
         ]
       },
       "BookingsSummaryResponseDto": {
@@ -18423,10 +19888,24 @@
             "type": "string",
             "description": "Inclusive range end actually used, YYYY-MM-DD."
           },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Branch filter applied, if any."
+          },
           "totalBookings": {
             "type": "number"
           },
           "upcomingBookings": {
+            "type": "number"
+          },
+          "cancelledBookings": {
+            "type": "number"
+          },
+          "attendedBookings": {
+            "type": "number"
+          },
+          "noShowBookings": {
             "type": "number"
           },
           "days": {
@@ -18439,8 +19918,12 @@
         "required": [
           "from",
           "to",
+          "branchId",
           "totalBookings",
           "upcomingBookings",
+          "cancelledBookings",
+          "attendedBookings",
+          "noShowBookings",
           "days"
         ]
       },
@@ -19229,9 +20712,34 @@
           "emailSent"
         ]
       },
+      "ResendPasscodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the new passcode was set but the email could not be sent."
+          }
+        },
+        "required": [
+          "emailSent"
+        ]
+      },
       "CompleteInstructorProfileDto": {
         "type": "object",
         "properties": {
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "School-facing contact number, E.164 — not the login phone."
+          },
           "address": {
             "type": "string"
           },
@@ -23647,6 +25155,388 @@
           }
         }
       },
+      "BookingGuestDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string",
+            "nullable": true,
+            "description": "The guest's signing link. Only for the booker and the School Owner/Manager, and null when the portal address isn't set up."
+          },
+          "waiverStatus": {
+            "type": "string",
+            "enum": [
+              "SIGNED",
+              "UNSIGNED",
+              "NONE"
+            ],
+            "description": "NONE: the School has no current waiver to sign."
+          },
+          "guestFullName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "attendeeId",
+          "waiverStatus"
+        ]
+      },
+      "BookingGuestsDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "waiverRequired": {
+            "type": "boolean",
+            "description": "The class asks for a signed waiver, so its guests should sign one too."
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingGuestDto"
+            }
+          }
+        },
+        "required": [
+          "bookingId",
+          "waiverRequired",
+          "guests"
+        ]
+      },
+      "ClassGuestWaiversDto": {
+        "type": "object",
+        "properties": {
+          "waiverRequired": {
+            "type": "boolean"
+          },
+          "bookings": {
+            "description": "Upcoming bookings with guests.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingGuestsDto"
+            }
+          }
+        },
+        "required": [
+          "waiverRequired",
+          "bookings"
+        ]
+      },
+      "FriendPassDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string"
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Only good for this class."
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "membershipId"
+        ]
+      },
+      "FriendPassListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FriendPassDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuestWaiverSignatureDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guestFullName": {
+            "type": "string"
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signedByGuardian": {
+            "type": "boolean"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signedWaiverVersion": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "signedByGuardian",
+          "classTitle",
+          "classStartsAt",
+          "signedAt",
+          "signedWaiverVersion"
+        ]
+      },
+      "GuestWaiverSignatureListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverSignatureDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuestWaiverSignatureDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guestFullName": {
+            "type": "string"
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signedByGuardian": {
+            "type": "boolean"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signedWaiverVersion": {
+            "type": "number"
+          },
+          "signedWaiverTitle": {
+            "type": "string"
+          },
+          "signedWaiverBody": {
+            "type": "string"
+          },
+          "signedWaiverSha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "signedByGuardian",
+          "classTitle",
+          "classStartsAt",
+          "signedAt",
+          "signedWaiverVersion",
+          "signedWaiverTitle",
+          "signedWaiverBody",
+          "signedWaiverSha256"
+        ]
+      },
+      "GuestWaiverPageWaiverDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number",
+            "description": "Send it back when signing; a waiver changed since is refused."
+          },
+          "signed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "version",
+          "signed"
+        ]
+      },
+      "GuestWaiverPageDto": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ],
+            "description": "CLOSED: the booking was cancelled, the class has ended or the School has closed."
+          },
+          "waivers": {
+            "description": "The School's current waivers.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverPageWaiverDto"
+            }
+          },
+          "guestFullName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The guest named on an earlier signature on this link, if any."
+          }
+        },
+        "required": [
+          "schoolName",
+          "classTitle",
+          "classStartsAt",
+          "classEndsAt",
+          "status",
+          "waivers"
+        ]
+      },
+      "GuestWaiverSignItemDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number",
+            "description": "The version the guest read (GuestWaiverPageWaiverDto.version)."
+          }
+        },
+        "required": [
+          "waiverId",
+          "version"
+        ]
+      },
+      "SignGuestWaiversDto": {
+        "type": "object",
+        "properties": {
+          "guestFullName": {
+            "type": "string",
+            "description": "The guest's full name."
+          },
+          "guestDateOfBirth": {
+            "type": "string",
+            "description": "The guest's date of birth, YYYY-MM-DD."
+          },
+          "signerFullName": {
+            "type": "string",
+            "description": "Who is signing: the guest, or for a guest under 18 their parent or guardian."
+          },
+          "signatureText": {
+            "type": "string",
+            "description": "Typed signature."
+          },
+          "waivers": {
+            "description": "Every current waiver the guest has not signed yet.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestWaiverSignItemDto"
+            }
+          }
+        },
+        "required": [
+          "guestFullName",
+          "guestDateOfBirth",
+          "signerFullName",
+          "signatureText",
+          "waivers"
+        ]
+      },
+      "SignGuestWaiversResponseDto": {
+        "type": "object",
+        "properties": {
+          "signed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "signed"
+        ]
+      },
       "ScanAttendanceDto": {
         "type": "object",
         "properties": {
@@ -25186,6 +27076,78 @@
         "required": [
           "uploadUrl",
           "publicUrl"
+        ]
+      },
+      "StaffTeachingResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Upcoming classes they teach here (not ended, cancelled or archived)."
+          },
+          "activeSlots": {
+            "type": "number",
+            "description": "Active weekly timetable slots they teach here (on, not archived)."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "activeSlots"
+        ]
+      },
+      "RemoveFromSchoolDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "string",
+            "enum": [
+              "REASSIGN",
+              "NONE",
+              "CANCEL"
+            ],
+            "description": "REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor."
+          },
+          "toUserId": {
+            "type": "string",
+            "description": "With REASSIGN only: the coach at this School who takes them over (a User id)."
+          }
+        }
+      },
+      "RemoveFromSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "removedRoles": {
+            "type": "number",
+            "description": "How many roles were ended."
+          },
+          "classesReassigned": {
+            "type": "number",
+            "description": "Upcoming classes given to the other coach."
+          },
+          "classesCleared": {
+            "type": "number",
+            "description": "Upcoming classes left with no instructor."
+          },
+          "classesCancelled": {
+            "type": "number",
+            "description": "Upcoming classes cancelled."
+          },
+          "slotsReassigned": {
+            "type": "number",
+            "description": "Weekly timetable slots given to the other coach."
+          },
+          "slotsCleared": {
+            "type": "number",
+            "description": "Weekly timetable slots left with no instructor."
+          }
+        },
+        "required": [
+          "removedRoles",
+          "classesReassigned",
+          "classesCleared",
+          "classesCancelled",
+          "slotsReassigned",
+          "slotsCleared"
         ]
       }
     }

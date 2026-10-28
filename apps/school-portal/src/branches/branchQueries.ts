@@ -130,6 +130,39 @@ export function useArchiveBranch(schoolId: string) {
   });
 }
 
+export type BranchClosePreview = components['schemas']['BranchClosePreviewDto'];
+export type CloseBranchInput = components['schemas']['CloseBranchDto'];
+
+/** Decision 330 — what closing a Branch would move. Read fresh each time the
+ * window opens, so the counts are today's. */
+export function useBranchClosePreview(branchId: string | null) {
+  return useQuery({
+    queryKey: ['branch-close-preview', branchId],
+    queryFn: () => unwrap(apiClient.GET('/v1/branches/{id}/close-preview', { params: { path: { id: branchId! } } })),
+    enabled: !!branchId,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+/** Decision 330 — move what is still in use, then close (archive). Moves
+ * classes, students, Instructor profiles and staff roles, so every list that
+ * shows them is refreshed too. */
+export function useCloseBranch(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ branchId, body }: { branchId: string; body: CloseBranchInput }) =>
+      unwrap(apiClient.POST('/v1/branches/{id}/close', { params: { path: { id: branchId } }, body })),
+    onSuccess: (_data, { branchId }) => {
+      queryClient.invalidateQueries({ queryKey: ['branches', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['branch', branchId] });
+      for (const key of ['classes', 'timetable', 'instructors', 'students', 'roleGrants', 'coach-invites']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
+  });
+}
+
 export function useUnarchiveBranch(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({

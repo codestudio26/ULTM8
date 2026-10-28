@@ -19,10 +19,13 @@ import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
-import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
+import { daysInRange, defaultWeekRange, localDateRangeToInstants, MAX_SUMMARY_RANGE_DAYS, safeZone } from './booking-week';
+import { styleIdsOf } from '../classes/class-styles';
 import { localDay } from '../ranks/engine';
-import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -166,6 +169,10 @@ export class BookingsService {
     }
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // First, before any row lock (see lockStudentClass).
+      await lockStudentClass(tx, studentId, classId);
+      await lockSchoolOpen(tx, resolvedClass.schoolId);
+      await assertNotAlreadyAttended(tx, studentId, classId);
       if (resolvedClass.termsWaiverRequired) {
         if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
@@ -178,6 +185,7 @@ export class BookingsService {
 
       const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
       const partySize = 1 + attendeeMembershipIds.length;
+      let locked: LockedClass;
       if (resolvedClass.capacity !== null) {
         // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
         // race — two concurrent bookClass() calls for the same Class can both read
@@ -191,7 +199,9 @@ export class BookingsService {
         // count-then-create, serializing concurrent bookers for THIS Class only
         // (other Classes are entirely unaffected). First use of an explicit lock in
         // this codebase; flagged here rather than silently introduced.
-        await lockClassSeats(tx, classId);
+        // The lock also re-checks that the School hasn't cancelled or archived the
+        // Class since the read above (stress test, 27 Oct 2026).
+        locked = await lockClassSeats(tx, classId);
         const occupied = await this.countOccupiedSeats(classId);
         // Waitlist first (product owner, 26 Oct 2026): a seat offered to a waitlisted
         // Student (NOTIFIED) is held for them, and while anyone is queued a Student
@@ -206,6 +216,10 @@ export class BookingsService {
             message: 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
           });
         }
+      } else {
+        // No seats to count, so a shared lock: it only makes a whole-class cancel
+        // and this booking wait for each other, and re-checks the Class.
+        locked = await lockClassShared(tx, classId);
       }
 
       const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
@@ -218,7 +232,7 @@ export class BookingsService {
             studentId,
             classId,
             schoolId: resolvedClass.schoolId,
-            branchId: resolvedClass.branchId,
+            branchId: locked ? locked.branchId : resolvedClass.branchId,
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,
@@ -247,8 +261,16 @@ export class BookingsService {
       // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
       for (const membershipId of attendeeMembershipIds) {
         const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
+        // Waivers Q9: each guest seat gets its own waiver signing link.
+        const attendeeId = randomUUID();
         await tx.bookingAttendee.create({
-          data: { id: randomUUID(), bookingId, schoolId: resolvedClass.schoolId, membershipId: guestMembership.id },
+          data: {
+            id: attendeeId,
+            bookingId,
+            schoolId: resolvedClass.schoolId,
+            membershipId: guestMembership.id,
+            guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
+          },
         });
       }
 
@@ -620,40 +642,64 @@ export class BookingsService {
   }
 
   /**
+   * GET /students/{id}/bookings/next — the student page's "Upcoming booking"
+   * (Decision 341, S14): the soonest UPCOMING booking whose class hasn't
+   * started yet, and how many more there are. The paged list above is in id
+   * order, so the page used to pick the soonest from its first 20 only.
+   * Staff who cover this student only (the owner, or by the Grading Board's
+   * branch rule), as for the rest of that page.
+   */
+  async findNextForStudent(callerId: string, studentId: string, schoolId: string) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
+    const where = { studentId, schoolId, status: 'UPCOMING' as const, class: { startDate: { gt: new Date() } } };
+    const [next, total] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.booking.findFirst({
+          where,
+          orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
+          include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+        }),
+        tx.booking.count({ where }),
+      ]),
+    );
+    if (!next) return { next: null, moreUpcoming: 0 };
+    const { class: cls, ...rest } = next;
+    return {
+      next: { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate },
+      moreUpcoming: total - 1,
+    };
+  }
+
+  /**
    * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
-   * "Bookings This Week" drill-down (nothing backed this before: see the backlog
-   * doc's own entry for the full gap this closes). Staff-only (School Owner/
-   * Manager, Branch Staff, or Instructor) — the same `assertStaffAtSchool` gate
-   * findAllForClass/findAllForStudent above already use, not the narrower
-   * `assertSchoolOwner` TransactionsController.findAllForSchool uses: Booking data
-   * here is scheduling/attendance information, not the financial ledger Transaction
-   * reads with a deliberately tighter Owner-only gate elsewhere in this codebase.
-   *
-   * Two real, disclosed judgment calls (see BookingsSummaryResponseDto's own header
-   * comment for the full account): (1) grouping "by discipline" groups by the raw
-   * `Class.activities` string tags, not the canonical `Discipline`/`styles` FK —
-   * same Decision 90 bridge ClassesQueryDto's own `activities` filter already
-   * relies on, not reopened here; (2) a Booking whose Class carries several
-   * activities tags counts once per tag (fan-out) in the per-activity breakdown,
-   * but exactly once in every day-level/overall total.
+   * "Bookings This Week" drill-down, reworked by Decision 367 (Dashboard review).
+   * School Owner only (Q6): no other screen reads it, and Branch Staff would
+   * otherwise see every Branch's numbers.
    *
    * `from`/`to` (YYYY-MM-DD) must both be supplied or both omitted — supplying only
-   * one is treated the same as an invalid range, a plain 400, rather than silently
-   * guessing the other end. Interpreted as local calendar days in the School's own
-   * `timezone` (falls back to UTC — School.timezone is nullable) — see
-   * booking-week.ts's own header comment for why.
+   * one is a plain 400 rather than silently guessing the other end — and span at
+   * most MAX_SUMMARY_RANGE_DAYS (D2). The default is the current Mon–Sun week in
+   * the School's time zone (booking-week.ts). Each Class lands on its own local
+   * day: its Branch's time zone, else the School's, else UTC (D3), so the
+   * instant window is padded a day either side and trimmed per Class.
+   *
+   * See BookingsSummaryResponseDto's header comment for what each figure counts
+   * (cancelled apart, Styles grouping, multi-Style fan-out).
    */
-  async getWeeklySummary(callerId: string, schoolId: string, from?: string, to?: string): Promise<BookingsSummaryResponseDto> {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+  async getWeeklySummary(callerId: string, schoolId: string, from?: string, to?: string, branchId?: string): Promise<BookingsSummaryResponseDto> {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
     );
-    const timeZone = school?.timezone ?? null;
+    const schoolZone = safeZone(school?.timezone);
 
     let range: { from: string; to: string };
     if (from === undefined && to === undefined) {
-      range = defaultWeekRange(timeZone);
+      range = defaultWeekRange(schoolZone);
     } else if (from === undefined || to === undefined) {
       throw new BadRequestException('from and to must both be supplied, or both omitted for the current week.');
     } else {
@@ -662,58 +708,129 @@ export class BookingsService {
     if (range.from > range.to) {
       throw new BadRequestException('from must not be after to.');
     }
+    // Validates both ends before daysInRange builds anything.
+    const { gte, lt } = localDateRangeToInstants(range.from, range.to, schoolZone);
+    if ((lt.getTime() - gte.getTime()) / 86_400_000 > MAX_SUMMARY_RANGE_DAYS + 1) {
+      throw new BadRequestException(`The date range can be at most ${MAX_SUMMARY_RANGE_DAYS} days.`);
+    }
+    const dayList = daysInRange(range.from, range.to);
+    if (dayList.length > MAX_SUMMARY_RANGE_DAYS) {
+      throw new BadRequestException(`The date range can be at most ${MAX_SUMMARY_RANGE_DAYS} days.`);
+    }
 
-    const { gte, lt } = localDateRangeToInstants(range.from, range.to, timeZone);
+    const PAD_MS = 86_400_000;
+    const { classes, disciplines } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (branchId) {
+        const branch = await tx.branch.findFirst({ where: { id: branchId, schoolId }, select: { id: true } });
+        if (!branch) throw new BadRequestException('That Branch is not part of this School.');
+      }
+      const [classes, disciplines] = await Promise.all([
+        tx.class.findMany({
+          where: {
+            schoolId,
+            ...(branchId ? { branchId } : {}),
+            startDate: { gte: new Date(gte.getTime() - PAD_MS), lt: new Date(lt.getTime() + PAD_MS) },
+            // An archived Class still shows if people booked it.
+            OR: [{ archivedAt: null }, { bookings: { some: {} } }],
+          },
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            capacity: true,
+            activities: true,
+            styles: true,
+            cancelledAt: true,
+            branch: { select: { name: true, timezone: true } },
+            bookings: { select: { status: true } },
+          },
+          orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        }),
+        tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      ]);
+      return { classes, disciplines };
+    });
+    const styleName = new Map(disciplines.map((d) => [d.id, d.name]));
 
-    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.booking.findMany({
-        where: { schoolId, class: { startDate: { gte, lt } } },
-        select: { status: true, class: { select: { startDate: true, activities: true } } },
-      }),
-    );
-
-    const UNSPECIFIED = 'Unspecified';
-    const dayBuckets = new Map<string, { total: number; upcoming: number; activities: Map<string, { total: number; upcoming: number }> }>();
-    for (const day of daysInRange(range.from, range.to)) {
-      dayBuckets.set(day, { total: 0, upcoming: 0, activities: new Map() });
+    type ActivityCount = { total: number; upcoming: number };
+    const dayBuckets = new Map<
+      string,
+      { total: number; upcoming: number; cancelled: number; activities: Map<string | null, ActivityCount>; classes: BookingsSummaryResponseDto['days'][number]['classes'] }
+    >();
+    for (const day of dayList) {
+      dayBuckets.set(day, { total: 0, upcoming: 0, cancelled: 0, activities: new Map(), classes: [] });
     }
 
     let totalBookings = 0;
     let upcomingBookings = 0;
-    for (const b of bookings) {
-      totalBookings += 1;
-      const isUpcoming = b.status === 'UPCOMING';
-      if (isUpcoming) upcomingBookings += 1;
+    let cancelledBookings = 0;
+    let attendedBookings = 0;
+    let noShowBookings = 0;
+    for (const cls of classes) {
+      const timeZone = safeZone(cls.branch?.timezone || school?.timezone);
+      const bucket = dayBuckets.get(localDay(cls.startDate, timeZone));
+      if (!bucket) continue; // In the padding, outside the range on its own local day.
 
-      const day = localDay(b.class.startDate, timeZone ?? 'UTC');
-      const bucket = dayBuckets.get(day);
-      if (!bucket) continue; // Defensive — the gte/lt filter above should make this unreachable.
-      bucket.total += 1;
-      if (isUpcoming) bucket.upcoming += 1;
-
-      const tags = b.class.activities.length > 0 ? b.class.activities : [UNSPECIFIED];
-      for (const tag of tags) {
-        const a = bucket.activities.get(tag) ?? { total: 0, upcoming: 0 };
-        a.total += 1;
-        if (isUpcoming) a.upcoming += 1;
-        bucket.activities.set(tag, a);
+      const counts = { booked: 0, upcoming: 0, cancelled: 0 };
+      for (const b of cls.bookings) {
+        if (b.status === 'CANCELLED') {
+          counts.cancelled += 1;
+          continue;
+        }
+        counts.booked += 1;
+        if (b.status === 'UPCOMING') counts.upcoming += 1;
+        if (b.status === 'COMPLETED') attendedBookings += 1;
+        if (b.status === 'NO_SHOW') noShowBookings += 1;
       }
+      totalBookings += counts.booked;
+      upcomingBookings += counts.upcoming;
+      cancelledBookings += counts.cancelled;
+      bucket.total += counts.booked;
+      bucket.upcoming += counts.upcoming;
+      bucket.cancelled += counts.cancelled;
+
+      if (counts.booked > 0) {
+        const ids = styleIdsOf(cls.styles).filter((id) => styleName.has(id));
+        const names = ids.length > 0 ? [...new Set(ids.map((id) => styleName.get(id)!))] : cls.activities.length > 0 ? [...new Set(cls.activities)] : [null];
+        for (const name of names) {
+          const a = bucket.activities.get(name) ?? { total: 0, upcoming: 0 };
+          a.total += counts.booked;
+          a.upcoming += counts.upcoming;
+          bucket.activities.set(name, a);
+        }
+      }
+
+      bucket.classes.push({
+        classId: cls.id,
+        title: cls.title,
+        startDate: cls.startDate,
+        timeZone,
+        branchName: cls.branch?.name ?? null,
+        capacity: cls.capacity,
+        bookedCount: counts.booked,
+        cancelledCount: counts.cancelled,
+        cancelled: cls.cancelledAt !== null,
+      });
     }
 
     return {
       from: range.from,
       to: range.to,
+      branchId: branchId ?? null,
       totalBookings,
       upcomingBookings,
+      cancelledBookings,
+      attendedBookings,
+      noShowBookings,
       days: Array.from(dayBuckets.entries()).map(([date, bucket]) => ({
         date,
         totalBookings: bucket.total,
         upcomingBookings: bucket.upcoming,
-        activities: Array.from(bucket.activities.entries()).map(([activity, a]) => ({
-          activity,
-          totalBookings: a.total,
-          upcomingBookings: a.upcoming,
-        })),
+        cancelledBookings: bucket.cancelled,
+        activities: Array.from(bucket.activities.entries())
+          .map(([activity, a]) => ({ activity, totalBookings: a.total, upcomingBookings: a.upcoming }))
+          .sort((x, y) => y.totalBookings - x.totalBookings || (x.activity ?? '\uffff').localeCompare(y.activity ?? '\uffff')),
+        classes: bucket.classes,
       })),
     };
   }

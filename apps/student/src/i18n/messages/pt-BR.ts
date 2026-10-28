@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Verificar telefone",
       resetPasscode: "Redefinir código de acesso",
       newPasscode: "Novo código de acesso",
+      choosePasscode: "Escolher código",
     },
     app: {
       home: "ULTM8 Aluno",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Novo código de acesso",
       confirmNewPasscode: "Confirme o novo código de acesso",
       submit: "Definir novo código de acesso",
+    },
+    choosePasscode: {
+      title: "Escolha seu código de acesso",
+      intro: "Sua escola deu a você um código de acesso temporário. Escolha seu próprio código de 6 dígitos para concluir o login.",
+      submit: "Salvar e entrar",
     },
     stepUp: {
       prompt: "Digite seu código de acesso novamente para confirmar.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Entrar na lista de espera",
       waitlistPosition: "Você é o nº {position} na lista de espera.",
       leaveWaitlist: "Sair da lista de espera",
+    },
+    guests: {
+      count: "Convidados: {count}",
+      add: "Adicionar um convidado",
+      remove: "Remover um convidado",
+      passesLeft: "Passes de convidado que você pode usar nesta aula: {count}",
+      linksIntro: "Envie a cada convidado o link dele, para que assine o termo antes da aula.",
+      guestNumber: "Convidado {number}",
+      signed: "Termo assinado: {name}",
+      unsigned: "Ainda não assinou o termo",
+      share: "Compartilhar link",
+      shareMessage: "Assine o termo antes da aula: {link}",
+      noLink: "O link para assinar não está disponível. Peça à Escola para enviá-lo.",
+      noShare: "Não é possível compartilhar aqui. Copie o link acima e envie ao seu convidado.",
+      loadError: "Não foi possível carregar seus convidados — tente novamente.",
     },
     statusLabel: {
       upcoming: "PRÓXIMA",

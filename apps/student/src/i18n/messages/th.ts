@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "ยืนยันโทรศัพท์",
       resetPasscode: "รีเซ็ตรหัสผ่าน",
       newPasscode: "รหัสผ่านใหม่",
+      choosePasscode: "ตั้งรหัสผ่าน",
     },
     app: {
       home: "ULTM8 นักเรียน",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "รหัสผ่านใหม่",
       confirmNewPasscode: "ยืนยันรหัสผ่านใหม่",
       submit: "ตั้งรหัสผ่านใหม่",
+    },
+    choosePasscode: {
+      title: "ตั้งรหัสผ่านของคุณ",
+      intro: "โรงเรียนให้รหัสผ่านชั่วคราวแก่คุณ ตั้งรหัสผ่าน 6 หลักของคุณเองเพื่อเข้าสู่ระบบให้เสร็จ",
+      submit: "บันทึกและเข้าสู่ระบบ",
     },
     stepUp: {
       prompt: "กรอกรหัสผ่านอีกครั้งเพื่อยืนยัน",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "เข้ารายชื่อรอ",
       waitlistPosition: "คุณอยู่ลำดับที่ {position} ในรายชื่อรอ",
       leaveWaitlist: "ออกจากรายชื่อรอ",
+    },
+    guests: {
+      count: "แขก: {count} คน",
+      add: "เพิ่มแขก",
+      remove: "ลดแขก",
+      passesLeft: "บัตรเพื่อนที่ใช้กับคลาสนี้ได้: {count} ใบ",
+      linksIntro: "ส่งลิงก์ให้แขกแต่ละคน เพื่อให้ลงนามเอกสารสละสิทธิ์ก่อนคลาส",
+      guestNumber: "แขก {number}",
+      signed: "ลงนามเอกสารสละสิทธิ์แล้ว: {name}",
+      unsigned: "ยังไม่ได้ลงนามเอกสารสละสิทธิ์",
+      share: "แชร์ลิงก์",
+      shareMessage: "โปรดลงนามเอกสารสละสิทธิ์ก่อนคลาส: {link}",
+      noLink: "ลิงก์ลงนามไม่พร้อมใช้งาน ขอให้โรงเรียนส่งให้",
+      noShare: "แชร์จากที่นี่ไม่ได้ คัดลอกลิงก์ด้านบนแล้วส่งให้แขกของคุณ",
+      loadError: "โหลดรายชื่อแขกของคุณไม่ได้ โปรดลองอีกครั้ง",
     },
     statusLabel: {
       upcoming: "กำลังจะถึง",

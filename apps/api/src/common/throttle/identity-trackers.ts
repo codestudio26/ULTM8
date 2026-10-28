@@ -41,15 +41,46 @@ export function bodyIdentityTracker(...fields: Array<'email' | 'phone'>) {
  * bucket an as-yet-unauthenticated-at-this-point request counts against.
  */
 export async function jwtSubTracker(req: Record<string, any>): Promise<string> {
+  const payload = unverifiedJwtPayload(req);
+  return typeof payload?.sub === 'string' ? `sub:${payload.sub}` : `ip:${req.ip}`;
+}
+
+// The bearer token's claims, NOT verified (see jwtSubTracker), or null.
+function unverifiedJwtPayload(req: Record<string, any>): Record<string, any> | null {
   const header = req.headers?.authorization as string | undefined;
-  if (!header?.startsWith('Bearer ')) return `ip:${req.ip}`;
-  const token = header.slice('Bearer '.length);
-  const parts = token.split('.');
-  if (parts.length !== 3) return `ip:${req.ip}`;
+  if (!header?.startsWith('Bearer ')) return null;
+  const parts = header.slice('Bearer '.length).split('.');
+  if (parts.length !== 3) return null;
   try {
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return typeof payload?.sub === 'string' ? `sub:${payload.sub}` : `ip:${req.ip}`;
+    return payload && typeof payload === 'object' ? payload : null;
   } catch {
-    return `ip:${req.ip}`;
+    return null;
   }
+}
+
+const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'];
+
+/**
+ * Whether this request is a staff member booking for someone else: the body
+ * names another student and the token carries a staff role. Product owner, 28 Oct
+ * 2026: a front desk books many students a minute, so staff booking on someone's
+ * behalf get their own, higher per-user limit; a Student's (or Guardian's) own
+ * booking limit is unchanged. Like jwtSubTracker this only picks a rate-limit
+ * bucket: the token is checked by JwtAuthGuard afterwards, and BookingsService
+ * still checks the staff role at the Class's School.
+ */
+export function isStaffBookingOnBehalf(req: Record<string, any>): boolean {
+  const payload = unverifiedJwtPayload(req);
+  const studentId = (req.body as Record<string, unknown> | undefined)?.studentId;
+  if (typeof payload?.sub !== 'string' || typeof studentId !== 'string' || studentId === payload.sub) return false;
+  const grants = Array.isArray(payload.grants) ? payload.grants : [];
+  return grants.some((g: { role?: unknown }) => typeof g?.role === 'string' && STAFF_ROLES.includes(g.role));
+}
+
+/** jwtSubTracker, with a separate bucket for staff booking on someone's behalf
+ * (isStaffBookingOnBehalf), so the two limits don't share a count. */
+export async function bookingTracker(req: Record<string, any>): Promise<string> {
+  const tracker = await jwtSubTracker(req);
+  return isStaffBookingOnBehalf(req) ? `${tracker}:on-behalf` : tracker;
 }

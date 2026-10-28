@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "验证手机",
       resetPasscode: "重置密码",
       newPasscode: "新密码",
+      choosePasscode: "设置密码",
     },
     app: {
       home: "ULTM8 学员",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "新密码",
       confirmNewPasscode: "确认新密码",
       submit: "设置新密码",
+    },
+    choosePasscode: {
+      title: "设置你的密码",
+      intro: "你的学校给了你一个临时密码。请设置你自己的 6 位密码以完成登录。",
+      submit: "保存并登录",
     },
     stepUp: {
       prompt: "请再次输入密码以确认。",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "加入候补名单",
       waitlistPosition: "你在候补名单中排第 {position} 位。",
       leaveWaitlist: "退出候补名单",
+    },
+    guests: {
+      count: "嘉宾：{count} 位",
+      add: "添加嘉宾",
+      remove: "减少嘉宾",
+      passesLeft: "本课可使用的好友卡：{count} 张",
+      linksIntro: "把链接发给每位嘉宾，让他们在课前签署免责声明。",
+      guestNumber: "嘉宾 {number}",
+      signed: "免责声明已签署：{name}",
+      unsigned: "尚未签署免责声明",
+      share: "分享链接",
+      shareMessage: "请在课前签署免责声明：{link}",
+      noLink: "签署链接不可用。请让学校发送。",
+      noShare: "此处无法分享。请复制上方链接发给你的嘉宾。",
+      loadError: "无法加载你的嘉宾，请重试。",
     },
     statusLabel: {
       upcoming: "即将开始",

@@ -9,6 +9,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
@@ -241,7 +242,7 @@ export class CoachInvitesService {
     if (!this.stillValid(invite)) throw new GoneException('This invite is no longer valid. Ask the school for a new one.');
 
     const tokenHash = hashToken(token);
-    const grant = await this.prismaApp.withCoachInviteToken(callerId, tokenHash, async (tx) => {
+    const acceptInTx = () => this.prismaApp.withCoachInviteToken(callerId, tokenHash, async (tx) => {
       const me = await tx.user.findUnique({ where: { id: callerId }, select: { email: true } });
       if (!me || me.email.trim().toLowerCase() !== invite.email) {
         throw new ForbiddenException(`This invite is for ${invite.email}. Sign in with that email to accept it.`);
@@ -267,6 +268,14 @@ export class CoachInvitesService {
           grantedById: invite.invitedById,
         },
       });
+    });
+    // RoleGrant_one_live_per_scope: the same coach role given at the same
+    // moment another way (a second invite, the owner's "Give role") makes
+    // this insert fail and roll back, invite claim included. Once more: the
+    // check above then finds that grant and the invite is still accepted.
+    const grant = await acceptInTx().catch((err) => {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return acceptInTx();
+      throw err;
     });
 
     // Same as SchoolsService.join(): re-mint after the grant commits so the

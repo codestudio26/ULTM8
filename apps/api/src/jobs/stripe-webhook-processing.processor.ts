@@ -445,6 +445,18 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
     }
 
+    // Decision 334 §8: a closed School takes no purchases or confirmations, and
+    // Decision 364 §2: every close stops billing. A payment started before the
+    // close and paid after it is refused like any other Membership refusal
+    // (refunded, its Subscription cancelled, by resolveMembershipCollision()).
+    // FOR SHARE waits for a close still in flight. A close that comes after
+    // waits for this commit, so its stopSchoolBilling() sees the Membership
+    // made here (stress test round 3, 27 Oct 2026).
+    const [school] = await tx.$queryRaw<{ archivedAt: Date | null }[]>`SELECT "archivedAt" FROM "School" WHERE id = ${transaction.schoolId} FOR SHARE`;
+    if (school?.archivedAt) {
+      throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: School ${transaction.schoolId} is closed.`);
+    }
+
     const updateResult = await tx.transaction.updateMany({
       where: { id: transaction.id, status: { in: SETTLEABLE } },
       data: { status: 'SUCCESSFUL' },
@@ -600,9 +612,17 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // stripeSubscriptionId is null for a one-time purchase, so there is nothing to
     // cancel.
     if (transaction.stripeSubscriptionId) {
-      await stripe.subscriptions.cancel(transaction.stripeSubscriptionId, undefined, {
-        idempotencyKey: `membership-collision-cancel-${stripeEventId}-${transaction.stripeSubscriptionId}`,
-      });
+      try {
+        await stripe.subscriptions.cancel(transaction.stripeSubscriptionId, undefined, {
+          idempotencyKey: `membership-collision-cancel-${stripeEventId}-${transaction.stripeSubscriptionId}`,
+        });
+      } catch (err) {
+        // Closing the School already cancelled this unpaid Subscription
+        // (stopSchoolBilling) and the payment went through anyway: nothing left
+        // to cancel, the refund below is still owed.
+        const subscription = await stripe.subscriptions.retrieve(transaction.stripeSubscriptionId);
+        if (subscription.status !== 'canceled' && subscription.status !== 'incomplete_expired') throw err;
+      }
     }
     await stripe.refunds.create(
       { payment_intent: paymentIntentId },
@@ -617,7 +637,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       });
     });
     this.logger.log(
-      `PaymentIntent ${paymentIntentId} (Transaction ${transaction.id}) refunded${transaction.stripeSubscriptionId ? ' and its Subscription cancelled' : ''} — lost the one-active-general-access-Membership race (event ${stripeEventId}).`,
+      `PaymentIntent ${paymentIntentId} (Transaction ${transaction.id}) refunded${transaction.stripeSubscriptionId ? ' and its Subscription cancelled' : ''} — the Membership was refused (one active general-access Membership, or the School is closed) (event ${stripeEventId}).`,
     );
   }
 

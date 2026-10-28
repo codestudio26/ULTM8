@@ -5123,6 +5123,31 @@ User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.
 
 ---
 
+## Decision 331 — Instructors: resend the temporary passcode, self-edit bio/photo/phone, no revoke while teaching, private address and certification
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Adds to:** Decisions 1, 217, 226, 230, 311, 312
+
+The Instructors review (23 Oct 2026) left six product questions open. The product owner chose the recommended answer to each: *"Go with the suggestions"*.
+
+### Decision
+
+1. **The owner can resend the temporary passcode.** New `POST /instructors/:id/resend-passcode`, School Owner/Manager only, for someone "Add manually" created who still has the temporary passcode (`User.mustChangePasscode`) and still holds the Instructor role at this School. A new 6-digit passcode replaces the old one (which stops working) and is emailed the same way as at creation. Refused (409) once they have chosen their own passcode ("Forgot passcode" is theirs to use) or lost the role. Same per-account limit as "Add manually" (20 an hour). The detail page shows "Resend passcode" while they haven't signed in yet.
+2. **Instructors edit their own bio, photo and phone.** `PATCH /instructors/me/profile` also takes `bio`, `photoUrl` and `phone` (same limits as the owner's edit; null clears). `phone` here is `Instructor.phone`, the number the School sees, not the login phone, which this endpoint still never changes. An instructor may request a photo upload link for their own profile. The Complete Profile page has Photo, Bio and Phone.
+3. **Specializations and activities stay separate.** Specializations are the School's styles, set by the owner; activities are the instructor's own words (Decision 312 item 4). No change.
+4. **No revoking an Instructor role while it leaves classes without an instructor.** Revoking an INSTRUCTOR grant is refused (409) while the person still teaches an upcoming class (not ended, not archived) or an active weekly slot (ON, not archived) at this School that no other active Instructor role of theirs covers (the branch rule of `assertValidInstructor`). So removing one branch of several only blocks on that branch's classes. The message points to "Hand over classes" (Decision 312 item 6), and the detail page opens a box with that button instead of the revoke confirmation. Other roles are not affected. This replaces Decision 311 I5's warning.
+5. **Address and certification are private.** Instructor responses (`GET /schools/:id/instructors`, `GET /instructors/:id`) return the address fields, `certificationKey` and `certificationConsentedAt` only to the School Owner/Manager or to the instructor themselves; for anyone else (colleagues, Branch Staff) they are null. The owner-only endpoints are unchanged.
+6. **Archiving an instructor keeps their role.** Archiving hides the profile and stops new classes (Decision 226, 311 I2); the Instructor role stays until revoked. No change.
+
+### What this does NOT resolve
+
+The temporary passcode still has no expiry of its own (Decision 230). An instructor at more than one School still edits one set of profile fields for all of them (Decision 217).
+
+### Recorded by
+
+User (Code), 26 Oct 2026: *"Go with the suggestions"*, answering the six open questions from the Instructors review.
+
+---
+
 ## Decision 332 — Timetable review fixes: archived slots stay off, new slots bookable at once, capacity cuts and booking-rule changes on booked classes
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 322 §5 and §6 · **Builds on:** Decisions 172, 226
@@ -5671,6 +5696,8 @@ The product owner answered the Timetable review's remaining questions with "all 
 3. **The break is shown on the class details only (Q6).** It has no effect on bookings, check-in or anything else. Each Class carries its slot's break for that date (`Class.breakStartAt`/`breakEndAt`), which moves with the class's times; a class kept at other times keeps its own. It is shown on the portal's class page and booking dialog and on the student app's class card.
 4. **A class moved to a day this week that has already passed keeps today's behaviour (Q7):** removed if unbooked, cancelled with notice if booked (Decision 322 §5).
 5. **Decision 319 order (Q8):** closure dates first, then the week start day and the timetable filters. Google Calendar and the schedule embed come later.
+   - **Closures, as built.** The owner adds a closure from the Timetable's Closures button: first and last date, the whole School or one Branch, and a reason (e.g. "Christmas"). Every class on those local dates that hasn't ended or been cancelled is cancelled exactly as if the owner cancelled it by hand (Decision 291: the School's or Branch's cancellation settings, students and waitlist told, the reason in the notice); the dialog asks before doing it. New slots, slot moves and the nightly generation skip closed dates, and the calendar shows "Closed — reason" on them. Branch Staff and coaches see the closures that cover them; only the owner adds or removes one. API: `GET/POST /schools/:schoolId/closures`, `DELETE /closures/:id`; new table `Closure`.
+   - Two choices the decisions didn't spell out, made the least surprising way: a Branch closure leaves School-wide classes (no Branch) running, since they don't belong to that Branch; and removing a closure doesn't bring cancelled classes back (their students were already told), though dates it had kept free get their classes again.
 
 ### Still open
 
@@ -5816,6 +5843,273 @@ User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, the
 
 ---
 
+## Decision 367 — Dashboard review: cancelled bookings apart, Attendance card, by Style, classes per day, Branch filter, Owner only
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Follows up:** Decision 224 (drill-down grouped by raw activity tags) · **Builds:** Spec 55 §2.1's Attendance (Present / Absent) Dashboard card
+
+The School Portal Dashboard review (27 Oct 2026) found 9 bugs (D1–D9) and asked 7 questions (Q1–Q7). The owner chose every recommendation.
+
+### Decision
+
+1. **Cancelled bookings are counted apart (Q1).** "Bookings this week", "Upcoming", each day and each style leave cancelled Bookings out; the card shows "N cancelled" underneath, and each day and class show their own.
+2. **Attendance card (Q2).** The Dashboard shows this week's Present (checked in, `COMPLETED`) and Absent (`NO_SHOW`), per Spec 55 §2.1.
+3. **Grouped by Style (Q3).** The Bookings page groups by each class's Styles, by the Style's current name. A class with no Styles keeps its free-text activity tags; one with neither shows as "No style". A class with several Styles still counts once in each Style's row and once in every total (unchanged from Decision 224).
+4. **Classes per day (Q4).** Each day lists its classes: start time on the class's own clock, name (linking to the class page), Branch, booked / seats (or "N booked" when unlimited), cancelled bookings, and "Class cancelled" for a class the School cancelled. An archived class shows only if it has bookings.
+5. **Branch filter (Q5).** Shown on the Dashboard and the Bookings page when the School has two or more open Branches. "All Branches" (the default) also includes School-wide classes; one Branch shows only classes held there. The choice is kept in the page address and carried by "See more".
+6. **Owner only (Q6).** `GET /schools/:schoolId/bookings/summary` now answers only the School Owner; Branch Staff and coaches get 403 (no screen of theirs used it). If Branch Staff get a Dashboard later, it shows their own Branch only.
+7. **Decided-but-unbuilt Dashboard items (Q7)**: Active students (Decision 317 item 5), this week's birthdays (Decision 318 item 2) and the setup checklist (Decision 318 item 1) come next as their own PR; "What's new" (Decision 318 item 3) waits for Platform Admin.
+
+### Bugs fixed with it (no product decision needed)
+
+- **D1** Bookings page day names were one day early anywhere west of London (a calendar day was formatted as UTC midnight in the browser's zone).
+- **D2** No range limit: a half-typed year (0202) made the server build ~666,000 empty days. A range is now at most **92 days**, checked in the page and on the server.
+- **D3** Days and weeks used the School's time zone or UTC, ignoring the Branch's. Each class now lands on its own local day: Branch, else School, else UTC (the Classes page's rule).
+- **D4** A cleared date or To-before-From showed the API's English error; the page now says so in the picked language and doesn't ask.
+- **D5** The Dashboard's week shows as "26 Oct – 1 Nov" in the picked language, not "2026-10-26 – 2026-11-01".
+- **D6** "Unspecified" is now the translated "No style".
+- **D7** The Dashboard refreshes when the Owner returns to the tab and every 5 minutes.
+- **D8** "Upcoming" has its own singular/plural ("1 próxima").
+- **D9** From/To (and the Branch) are kept in the page address.
+
+### Not changed
+
+The week still runs Monday to Sunday. Once the Timetable's "week starts on" setting (Decision 319) is built, the Dashboard should follow it.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, choosing "All recommended" on the Dashboard review's decision card.
+
+---
+
+## Decision 330 — Closing a Branch: only what is still in use blocks it, "Close branch" moves it, and a Branch with history is kept
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Changes:** Decision 252 (Branch archive) · **Builds on:** Decision 293
+
+Fixes 5 to 7 from the Branches review. Under Decision 252 any Class ever held at a Branch, even years ago, blocked archiving it, so a real Branch could never be closed; the owner had to move everything by hand first; and a closed Branch was always deleted after 90 days, which set its past Classes' Branch to "whole School" and deleted its role history.
+
+### Decision
+
+1. **Only what is still in use blocks closing** (fix 5): classes that haven't ended and aren't archived, weekly timetable slots and Instructor profiles that aren't archived, Students with it as their home Branch, and active staff or coach roles. Past and archived classes stay linked to the Branch as its history and no longer block.
+2. **"Close branch"** (fix 6) replaces "Archive" on the Branches page. Its window lists what is still in use and asks, per group, where it goes:
+   - upcoming classes and weekly slots: another open Branch, or the whole School. Their bookings and waitlist entries follow the class;
+   - home-branch Students: another Branch, or no home Branch;
+   - Instructor profiles: another Branch, or the whole School;
+   - staff and coach roles: another Branch only. A Branch role never becomes School-wide, since that would widen what the person can see. The old role is revoked and the same role granted at the new Branch, so the role history stays with the closed Branch. With no other open Branch, the window says to remove their access on the Staff page first.
+   Coach invites still open for the Branch are cancelled (an invite's branch can't change after it is sent). If a class would end up at a Branch where its coach has no coach role, nothing is moved and the window says why. Everything happens in one step: all of it moves and the Branch closes, or nothing changes. Past classes, bookings, attendance, money and messages are untouched, and nobody is charged or emailed. API: `GET /v1/branches/{id}/close-preview` and `POST /v1/branches/{id}/close`; `POST /v1/branches/{id}/archive` stays, as a close with nothing to move.
+3. **A closed Branch with history is kept for good** (fix 7). History means any class (past, future or archived), timetable slot, Instructor profile, or staff/coach role (current or revoked) ever at the Branch. Such a Branch gets no removal date; an empty one is still removed after 90 days. The purge job checks again before deleting and, if it finds history, clears the date instead. Reopen works either way.
+4. **Wording:** "Close branch", "Reopen", "Closed" and "Show closed" replace the archive words on the Branches page and in Branch pickers ("(Closed)"), in all 15 languages.
+
+Migration `20261205000000_branch_close`: the School owner may delete a home-branch row (for "no home Branch"; the owner-only RLS policy already covered it, the table grant was missing), and the purge job may clear a closed Branch's `purgeAt`.
+
+### What this does NOT resolve
+
+- A coach's other Branch roles, permissions and the Classes they teach elsewhere are untouched; only what points at the closed Branch moves.
+- A slot moved to a Branch in another timezone keeps its wall-clock times, so its classes happen at that local time there, as when a slot's Branch is edited today.
+
+### Recorded by
+
+User, 26 Oct 2026, choosing on the Branches review's decision cards: fix 5 "Only live things block", fix 6 "Build Close branch", fix 7 "Keep it if it has history".
+
+---
+
+## Decision 366 — Guests on a booking sign the waiver by a shared link
+
+**Date:** 27 Oct 2026 · **Status:** Approved by product owner (two Waivers decision cards: "Guests sign by shared link", then "Build guest booking + link together")
+**Resolves:** Waivers review question Q9, left open by Decision 354. Database change: `20261210000000_guest_waivers`.
+
+### Background
+
+A guest on a booking is a seat paid for with one of the booker's Friend Passes (SKILL.md §10). A guest has no account, name or login, so "guests must sign" had no one to apply to. Checking the plan against the code also showed that the API could put guests on a booking but no screen could, and that a booking is checked in as a whole, not guest by guest.
+
+### Decision
+
+1. **Members can bring guests in the Student app.** A class row shows how many of the member's own Friend Passes can pay for a guest in that class (a pass for this class only is used before a general one) and lets them add guests up to that number. The API is unchanged: each guest is one Friend Pass in `attendeeMembershipIds`. New `GET /schools/:schoolId/friend-passes/me` lists the caller's usable passes.
+2. **Each guest seat gets its own signing link**, `PORTAL_BASE_URL/guest-waiver/<token>`. The token is an HMAC of the seat id keyed by `JWT_ACCESS_SECRET`, so the booker can share the same link again; only its SHA-256 is stored (`BookingAttendee.guestTokenHash`), as coach invites do. The booker shares it from the class row after booking and from My Bookings. The School Owner/Manager and Branch Staff can copy it from the class page; Instructors see only whether the guest signed.
+3. **The guest signs on a public web page with no account.** They read the School's current waivers (not archived) and sign them all at once: full name, date of birth, a typed signature and "I agree". A guest under 18 (by the date of birth given) is signed for by a parent or guardian, whose name must be given and differ from the guest's. A waiver changed while the guest was reading is refused (version check), as for members. The link works while the booking is Upcoming, the class hasn't ended and the School is open. A waiver added later is asked for on the same link.
+4. **The booking is not blocked.** When a class asks for a waiver, the class page shows each guest as "Waiver signed: name" or "Guest hasn't signed the waiver", with a note counting unsigned guests. Check-in is unchanged, since a booking is checked in as a whole.
+5. **Each guest signature is its own record** (`GuestWaiverSignature`): guest name and date of birth, signer, whether a parent signed, a copy of the wording signed with its SHA-256 and version, and the class title and start. It outlives the seat, booking and class. The Owner/Manager sees guest signatures on the Waivers page, with the wording each signed. Read access follows `WaiverSignature`'s narrow shape (Owner/Manager and the booker). Branch Staff and Instructors get only signed or not, read by the API through `ultm8_jobs` after checking they are staff for the class. The signing page reaches its seat only through the token (SECURITY DEFINER read functions and token-holder RLS policies).
+6. **Retention** follows Decision 354's rule for a student who has left: a guest signature is purged 7 years after the class, and for a guest under 18, not before they turn 24 (18 + 6), whichever is later.
+7. The signing page is limited to 30 reads and 10 signs a minute per IP. Every new text is translated into all 15 languages.
+
+### What this does NOT resolve
+
+- A drawn signature for guests: the guest page uses the typed signature only (drawn capture stays optional, Decision 74).
+- Guests on a booking a Guardian makes for a child, or through Kid Mode: not offered in the app.
+- Changing `JWT_ACCESS_SECRET` changes every guest link. Links are only useful until the class ends.
+
+### Recorded by
+
+User (Code), 27 Oct 2026: chose "Guests sign by shared link" on the Q9 card, then "Build guest booking + link together" on the follow-up card.
+
+---
+
+## Decision 360 — Staff page: what to build next (the eight build-plan answers)
+
+**Date:** 26–27 Oct 2026 · **Status:** Product-owner answers to the Staff build plan's eight questions · **Follows:** Decisions 183, 295, 296
+**Resolves:** the Staff review's "still not built" list: no staff list, no Remove from School, no co-owner rules, no edit, revoked access lasting up to 15 minutes.
+
+### Decision
+
+1. **Wording and acceptance.** The Staff page's "Send invite" (which grants at once, it never invited anyone) becomes **Give role**. An owner setting **New staff must accept first** follows, off by default; when on, a role given this way waits for the person to accept.
+2. **Access changes are instant.** Any change to someone's roles (given, removed, Remove from School) takes effect on their next request, even if they are signed in; the apps quietly fetch a fresh session. No 15-minute wait.
+3. **Owners.** Every School has one **main owner**; other owners are equal **co-owners**. Nobody inside the School can remove the main owner; only a Platform Admin can, through support. The main owner can hand the main role to a co-owner after re-entering their passcode. For existing Schools, the main owner is the owner with the earliest owner grant.
+4. **Staff list.** The Staff page lists everyone with an owner, coach or Branch Staff role, with a **Removed** filter that is hidden by default.
+5. **Editing staff details.** Hybrid: the owner sets a School-only **display name** and **work phone**; the person's own account (real name, login email, personal phone) stays theirs alone.
+6. **Remove and Pause.** **Remove from School** is built first; **Pause** follows as the very next piece of work.
+7. **Access switches.** Six switches per staff member (classes and timetable; bookings and check-in; students; credit for cancelled classes; see the staff list; invite coaches) with two presets, **Front desk** and **Branch manager**. Money and School settings stay owner-only.
+8. **Activity log.** A log of who changed what on the Staff page comes right after the access switches.
+
+### Order of work
+
+One pull request at a time: (a) Decision 361 below; (b) owners and co-owners; (c) display name and work phone; (d) access switches and presets; (e) Pause; (f) the "must accept first" setting; (g) the activity log. Each records its own decision before it is built.
+
+### Recorded by
+
+User (Code), 26 Oct 2026 in the Staff thread (Q1 "option B", Q3 the main-owner model, Q4 "go with recommendation", Q7 "yes"), and 27 Oct 2026 "all recommended" for the rest (Q2 D, Q3 hand-over and earliest owner, Q5 hybrid, Q6 Remove now and Pause next, Q8 after the switches).
+
+---
+
+## Decision 361 — Staff list, Remove from School, "Give role", and instant access changes
+
+**Date:** 27 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (items 1, 2, 4, 6)
+
+### Decision
+
+1. **Instant access changes.** `User.rolesChangedAt` is stamped by a database trigger whenever a `RoleGrant` row for that user is inserted, updated or deleted, so every path is covered, not only the Staff page. Access tokens carry the stamp they were made with (`rca`). If the user's stamp is newer, the API answers `401` with code `ROLES_CHANGED`; the portal and Student app already refresh on any 401 and retry, and the refreshed token carries the current roles. The stamp is read through a 5-second in-process cache, cleared at once by the API's own role changes, so a change made through the Staff page applies on the very next request and any other change (another server instance, raw SQL) within 5 seconds. If the stamp can't be read, the request is refused rather than let through. Tokens without `rca` (Kid Mode, impersonation, tokens made before this change) are not checked; they still expire within 15 minutes.
+2. **Staff list.** `GET /schools/:schoolId/staff` (owner only) lists one row per person who holds or held an owner, Instructor or Branch Staff role at the School: name, email, phone, photo, roles with branch names, who gave each, "Can invite coaches", added and removed dates. Filters: status (active by default, removed, all), role, branch, and a name/email search that ignores capitals. It replaces looking people up by User ID.
+3. **Remove from School.** `POST /schools/:schoolId/staff/:userId/remove` (owner only) ends every Instructor and Branch Staff role the person holds at the School in one step, clears their grading permissions and "Can invite coaches", and cancels open coach invites they sent. Owner roles are never touched here (Decision 360 item 3 decides who may remove an owner). Student roles and memberships are kept. The person appears under "Removed".
+4. **"Give role".** The Staff page's grant button and messages say "Give role" and that it works straight away; the coach-invite card keeps "Send invite", since that one really does send an invite.
+5. **Blank names.** Add staff manually trims first name and surname, so a name of only spaces is refused (Add Instructor already did).
+
+### Not built here
+
+Owners and co-owners, display name and work phone, access switches, Pause, "must accept first" and the activity log (Decision 360's order of work).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, Staff thread.
+
+---
+
+## Decision 341 — Students page review fixes: who sees which students, joining, profile values, home branches on revoke
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner approval of the Students fix plan (S1, S3, S4, S5 part 1, S6–S14) · **Plan:** the Students Fix Plan (25–26 Oct 2026), built from the Students section review
+
+### Background
+
+The Students section review reproduced 14 bugs against the real API and portal. Twelve follow rules already decided (Decisions 110, 139, 148, 168, 177, 226, 252, 276) and were approved for build together. Two need the product owner's own call and are **not** part of this decision: S2 (what revoking a student does to their memberships, bookings and waitlist places) and S5 part 2 (whether staff may change a date of birth across the 18th birthday).
+
+### Decision
+
+1. **Branch Staff and Instructors see and edit the students they cover (S1).** The Students list, a student's profile and its edit follow the Grading Board's rule (Decisions 168, 177): the owner sees every student; other staff see the current students whose home branch is one of their branches, or every student at a School without branches. A staff grant with no branch covers no students at a School with branches, and a student with no home branch yet stays the owner's alone (Decision 148). Former students are the owner's view only. Enforced in the database (RLS policy `rolegrant_branch_staff_student_read`, the branched half of Decision 177's `rolegrant_branchless_staff_student_read`) and in the API.
+2. **A home branch belongs to an enrolment (S13).** Revoking a student's enrolment removes their home branch at that School, and so does a Guardian withdrawing baseline consent. Leftover rows from before are removed once. Re-enrolling picks a home branch as usual. Before this, a former student could never be enrolled again ("A record with this value already exists") and their old branch could never be archived (Decision 252).
+3. **A closed School takes no new students (S4)**, however they join: the student app, a Guardian, or the owner's Invite (Decision 110).
+4. **Only open branches count (S6).** An archived branch can't be chosen as a home branch ("This branch has been archived. Choose another branch."). A School whose branches are all archived needs no home branch to enrol.
+5. **Staff who aren't the owner get the owner-only reason (S11)** when they try to enrol someone: "Only the School owner can enrol students."
+6. **Profile values (S5 part 1, S7, S8).**
+   - A date of birth must be a real calendar date, not in the future, and not more than 120 years ago. This applies to self-service and staff alike.
+   - Names and username are trimmed; one made only of spaces is refused.
+   - When staff edit a student, Language and Currency are picked from the lists the app serves (`GET /settings/languages`, `/settings/currencies`). Values saved before stay until someone changes them. Gender and nationality stay free text: no list is confirmed for them.
+7. **The staff edit form opens with the student's saved profile (S9)** (`GET /schools/:id/students/:studentId/profile`, same access as the edit). Emptying a field clears it; the form sends only what changed.
+8. **A Guardian-managed child shows "Managed by a Guardian" (S10)** instead of their account's placeholder email. Which Guardian is a separate question.
+9. **A former student's page (S3)** shows their name and an Inactive badge. Their ranks and history stay readable; grading, skill sign-off, Log a class and Edit profile are hidden, since the API refuses them.
+10. **"Upcoming Booking" is the real next one (S14):** the soonest upcoming booking whose class hasn't started, chosen by the API across all the student's bookings (`GET /students/:id/bookings/next`), with how many more there are.
+11. **Owner-only pages redirect (S12).** Anyone else opening `/students` or `/students/invite` goes to their own home screen.
+
+### Recorded by
+
+User, 26 Oct 2026, after the fix plan and four review passes: *"Build it .. and ask me what's on me"*. S2 and S5 part 2 were put to the user as separate questions.
+
+## Decision 342 — Only the School owner may change a birth date across the 18th birthday
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (Students review, S5 part 2)
+
+### Background
+
+A student's age decides whether a Guardian must consent for them (Decision 67). Staff edit a student's profile on their behalf, including the date of birth, so a coach could turn a 10-year-old into an adult (or the reverse) and switch the consent rules on or off. Decision 341 already refuses future, impossible and over-120-year dates.
+
+### Decision
+
+When staff edit a student's profile, a new date of birth that changes the student from under 18 to 18 or over, or the reverse, is accepted only from the **School owner**. Branch Staff and Instructors can still correct a date that stays on the same side of 18; a crossing one is refused with "Only the School owner can change a birth date that makes someone an adult or a child." Age is counted on today's date, a birthday today counting; an unknown date of birth counts as under 18, as the waiver adult check does. Students editing their own profile are not affected by this decision.
+
+### Recorded by
+
+User, 26 Oct 2026, picking **"Allow, owner only"** on the question *"Can staff change a birth date across someone's 18th birthday?"* (the other options were blocking every crossing change, and allowing any staff member).
+
+## Decision 343 — Revoking a student ends their bookings and waitlist places; the Revoke dialog lists what is still live
+
+**Date:** 26 Oct 2026 · **Status:** Product-owner decision (Students review, S2) · **Related:** Memberships review M18; Decision 122 (bookings funded by an expired membership)
+
+### Background
+
+Revoking a student's enrolment (Students page, Revoke enrolment, owner only) only ended the STUDENT role grant. The student's upcoming bookings kept their seats, their waitlist places stayed, and a Subscription kept charging. The spec doesn't say what leaving a School does to these.
+
+### Decision
+
+When a student's last STUDENT grant at a School is revoked:
+
+1. **Upcoming bookings are cancelled.** That means every booking still Upcoming whose class hasn't ended. A booking whose class has already ended is left to attendance and the no-show sweep. Each booking is cancelled under the same credit rule as a cancellation by staff: the class credit comes back before the class's refund cut-off, and once the class has started, the School's late-cancel setting decides. The disputed-payment freeze applies (Decisions 55, 111). No late-cancellation fee is charged. Guest seats on the student's own bookings go with them under the same rule. The freed seats are offered to the waitlist.
+2. **Waitlist places are removed** (Waiting or Notified). A Notified place's held offer goes to the next person.
+3. **Memberships get no automatic refund.** Class packs and passes stay as they are. The owner refunds by hand if they choose to.
+4. **A Subscription stops at the end of the paid period.** Revoke calls the shared "cancel at period end" method from the Memberships follow-up (Decision 348, merged 26 Oct) before it revokes anything. If Stripe can't be reached, nothing is revoked and the owner is asked to try again (a retry is safe: a Subscription already stopping is skipped). The dialog says the subscription stops renewing, or, for one already cancelled, the date it ends. *(Updated 27 Oct 2026: when this decision was first recorded, the method didn't exist yet and the dialog told the owner to cancel in Stripe.)*
+5. **The Revoke dialog lists what is still live before the owner confirms:** the upcoming bookings and waitlist places Revoke will end, and each membership still in effect (credits left, end date, or "keeps renewing"). The list comes from `GET /schools/:id/students/:studentId/leaving-summary`, which is owner only, like Revoke.
+
+### What this does NOT resolve
+
+- A seat the student holds as a guest on someone else's booking is left alone (same open question as Decision 122).
+- A Guardian withdrawing consent also ends a child's enrolments (all Schools at once), but does not cancel their bookings. That flow wasn't part of this question.
+
+### Recorded by
+
+User (Code), 26 Oct 2026. The Students thread first put the options on a card (S2), and the user asked *"what do you suggest as an acadmy/school owner"*. The Memberships thread then listed S2 with the recommended option among its own questions, and the user answered *"all recommended"*. That option: the subscription stops at period end, upcoming bookings are cancelled, waitlist places are removed, packs and passes get no automatic refund, and the Revoke dialog lists what is live.
+
+## Decision 371 — Students: Add manually for adults, list search, branch and paging, Re-enrol, Guardian names, and the "added" notice
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision (Students review, follow-up questions) · **Related:** Decisions 341, 343; Decisions 1/230 (temporary passcode, first-login change)
+
+### Background
+
+After the Students review fixes, five questions were left: whether the owner can create a student from scratch (Invite only finds someone who already has a ULTM8 account), how the list copes with a large School, how a former student comes back, whether a child's page shows who their Guardian is, and whether an invited student must accept.
+
+### Decision
+
+1. **Add manually (owner only, adults only).** `POST /schools/:schoolId/students/add-manually` takes first name, surname, email, date of birth and (at a School with open branches) a home branch. It creates the account with a temporary 6-digit passcode, enrols them like Invite does, and emails the passcode. The student must choose their own passcode on first sign-in (`mustChangePasscode`, the same first-login flow as Decisions 1/230); the student app now has that screen. A date of birth under 18 is refused: a child joins through their Guardian's app. An email that already has an account is refused with "use Invite instead". If the email can't be sent, the response gives the owner the temporary passcode once, so they can hand it over in person, rather than leaving an account nobody can sign in to. *(The handing-over fallback was not part of the question; it was added because email isn't live yet on the deployed site.)*
+2. **Students list: search, branch, paging.** Each roster row now carries the student's home branch (`homeBranchId`, `homeBranchName`), read under StudentHomeBranch RLS as the caller (the owner sees every branch, Branch Staff and coaches their own). The list has a name/email search, a Branch column and filter (including "No home branch") at a School with branches, and pages of 25. The roster is still fetched whole; paging is in the browser.
+3. **Re-enrol.** The owner has a Re-enrol button on a former student's page. It uses the same `POST /schools/:id/join` as Invite, with a new home branch where the School has branches (revoking removed the old one, Decision 341, S13).
+4. **Guardian names.** `GET /schools/:id/students/:studentId/guardians` lists a student's active Guardians by name only. It is gated like the profile read (staff who can read this enrolled student). The links and names are read on the jobs and auth connections after that check, because the caller can't see them under RLS.
+5. **"You've been added to [School]."** When the owner enrols someone (Invite or Re-enrol), the student gets an in-app notice, and a child's Guardians get the usual "For [child]: …" copy. There is no accept step. Add manually sends no separate notice, since its email says the same.
+
+### What this does NOT resolve
+
+- A temporary passcode can't be resent, and Add manually can't be undone from the portal: an account made with a wrong email stays (the owner can revoke the enrolment).
+- Adding a child by hand stays out of scope (a Guardian adds a child).
+
+### Recorded by
+
+User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students questions listed in the status report (add manually for adults only with a sign-in code, list search/branch filter/paging, a Re-enrol button, the Guardian's name on a child's page, and a "You've been added" notice with no accept step).
+
+---
+
+## Decision 372 — Stress test round 3: the product owner's answers
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 331 (no revoke while teaching), 343 (revoke ends bookings), 361 (Remove from School), 364 (every School close stops billing) · **Answers:** `docs/handover/STRESS-TEST-ROUND3.md`, "Waiting on the product owner" (Q1–Q6)
+
+### Decision
+
+1. **Removing a coach who still teaches (Q1).** Remove from School always works, so a dismissed coach loses access at once. In the same step the owner chooses what happens to their upcoming classes:
+   - give them to another coach at the School;
+   - no coach for now: the classes still run, and the owner assigns a coach later;
+   - cancel them, as for any class the School cancels (students told, credit by the School's cancellation settings).
+   Weekly slots they teach follow the same choice.
+2. **One attendance per student per class (Q2).** Once a student has been checked in to a class, another booking for that same class is refused. A cancelled booking doesn't count.
+3. **A desk sale or Friend Pass clicked twice (Q3).** An identical desk sale or Friend Pass for the same student (same plan) within 1 minute is refused with "This was just recorded. Check before adding another."
+4. **A Friend Pass covers a guest only (Q4),** never its holder's own seat.
+5. **Staff booking on someone's behalf (Q5)** may book up to 200 a minute per staff login. A student's own limit is unchanged.
+6. **A payment that arrives after its School closed (Q6)** is refunded and its Stripe subscription cancelled; no Membership is created.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: Q1 "What happens if we have to remove it, for example the coach has been dismissed", then "agreed" to removing in one step with a choice for the classes, and "agreed" to also allow "No coach for now"; Q2 "yes, if the booking is for the same class"; Q3 "agreed"; Q4 "agreed"; Q5 "raise to 1000 per min", then "ok - 200" after the recommendation; Q6 refund "go ahead with your idea".
 ## Decision 368 — School settings page review: 11 fixes, join code, School logo and colour, currency guard, Franchise name check
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision (fixes and Q1–Q5, "All recommended") · **Builds on:** Decisions 257 (footer), 266 (join code, School colour), 291/292 (cancellation settings), 322 (late cancel), 334 (plan currency), 350/352 (Franchise branding and join requests), 364 (School self-close) · **Number note:** 367 is taken by the Dashboard review (PR #347).

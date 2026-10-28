@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Telefoon bevestigen",
       resetPasscode: "Toegangscode opnieuw instellen",
       newPasscode: "Nieuwe toegangscode",
+      choosePasscode: "Code kiezen",
     },
     app: {
       home: "ULTM8 Student",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nieuwe toegangscode",
       confirmNewPasscode: "Bevestig nieuwe toegangscode",
       submit: "Nieuwe toegangscode instellen",
+    },
+    choosePasscode: {
+      title: "Kies je toegangscode",
+      intro: "Je school heeft je een tijdelijke toegangscode gegeven. Kies je eigen 6-cijferige code om het inloggen af te ronden.",
+      submit: "Opslaan en inloggen",
     },
     stepUp: {
       prompt: "Voer je toegangscode opnieuw in om te bevestigen.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Op de wachtlijst",
       waitlistPosition: "Je staat op plek {position} op de wachtlijst.",
       leaveWaitlist: "Wachtlijst verlaten",
+    },
+    guests: {
+      count: "Gasten: {count}",
+      add: "Gast toevoegen",
+      remove: "Gast weghalen",
+      passesLeft: "Vriendenpassen die je voor deze les kunt gebruiken: {count}",
+      linksIntro: "Stuur elke gast zijn link, zodat hij de vrijwaring vóór de les kan ondertekenen.",
+      guestNumber: "Gast {number}",
+      signed: "Vrijwaring ondertekend: {name}",
+      unsigned: "Heeft de vrijwaring nog niet ondertekend",
+      share: "Link delen",
+      shareMessage: "Onderteken de vrijwaring vóór de les: {link}",
+      noLink: "De ondertekenlink is niet beschikbaar. Vraag de school om hem te sturen.",
+      noShare: "Delen kan hier niet. Kopieer de link hierboven en stuur hem naar je gast.",
+      loadError: "Je gasten konden niet worden geladen — probeer het opnieuw.",
     },
     statusLabel: {
       upcoming: "GEPLAND",

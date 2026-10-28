@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "전화번호 인증",
       resetPasscode: "패스코드 재설정",
       newPasscode: "새 패스코드",
+      choosePasscode: "비밀번호 설정",
     },
     app: {
       home: "ULTM8 수련생",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "새 패스코드",
       confirmNewPasscode: "새 패스코드 확인",
       submit: "새 패스코드 설정",
+    },
+    choosePasscode: {
+      title: "비밀번호 설정",
+      intro: "학교에서 임시 비밀번호를 받았습니다. 로그인을 마치려면 6자리 비밀번호를 직접 정하세요.",
+      submit: "저장하고 로그인",
     },
     stepUp: {
       prompt: "확인하려면 패스코드를 다시 입력하세요.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "대기자 명단 등록",
       waitlistPosition: "대기자 명단 {position}번째입니다.",
       leaveWaitlist: "대기자 명단에서 나가기",
+    },
+    guests: {
+      count: "게스트: {count}명",
+      add: "게스트 추가",
+      remove: "게스트 빼기",
+      passesLeft: "이 수업에 쓸 수 있는 친구 패스: {count}개",
+      linksIntro: "수업 전에 면책 동의서에 서명할 수 있도록 각 게스트에게 링크를 보내세요.",
+      guestNumber: "게스트 {number}",
+      signed: "면책 동의서 서명 완료: {name}",
+      unsigned: "아직 면책 동의서에 서명하지 않음",
+      share: "링크 공유",
+      shareMessage: "수업 전에 면책 동의서에 서명해 주세요: {link}",
+      noLink: "서명 링크를 사용할 수 없습니다. 도장에 보내 달라고 요청하세요.",
+      noShare: "여기서는 공유할 수 없습니다. 위 링크를 복사해 게스트에게 보내세요.",
+      loadError: "게스트를 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     statusLabel: {
       upcoming: "예정",

@@ -45,7 +45,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "有教练员申报了此腰带，因此无法删除。",
     beltDeclaredArchive: "有教练员申报了此腰带，因此无法归档。",
     classHasDependents: "此课程仍有以下内容，无法归档：{items}。",
-    branchHasDependents: "此分校仍有以下内容，无法归档：{items}。请先移走或删除它们。",
+    branchHasDependents: "此分校仍有以下内容，无法关闭：{items}。请选择去向或先移走。",
     instructorHasDependents: "此教练员仍被分配到以下内容，无法归档：{items}。请先将其改派给其他人。",
     schoolHasSubscription: "该学校已有有效的平台订阅——暂不支持更改方案。",
     franchiseHasSubscription: "该加盟机构已有有效的平台订阅——暂不支持更改方案。",
@@ -94,6 +94,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "{count} 个有效课表时段",
+      },
+      weeklySlots: {
+        other: "{count} 个每周课表时段",
       },
     },
   },
@@ -166,6 +169,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} 已将 {school} 移出加盟体系。加盟费已停止。",
     franchiseClosedTitle: "加盟体系已关闭",
     franchiseClosedBody: "{franchise} 已关闭。{school} 继续运营，加盟费已停止。",
+    studentAddedTitle: "已加入学校",
+    studentAddedBody: "你已被加入 {school}。",
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",

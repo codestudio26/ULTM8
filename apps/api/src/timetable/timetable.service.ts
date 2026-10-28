@@ -4,9 +4,10 @@ import { Queue } from 'bullmq';
 import { DateTime } from 'luxon';
 import { Prisma, TimetableSlot } from '@prisma/client';
 import { BookingsService } from '../bookings/bookings.service';
+import { CancellationService } from '../bookings/cancellation.service';
 import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
-import { buildSlotOccurrences, occurrenceFields, weekdayNumber } from './slot-occurrences';
+import { buildSlotOccurrences, isClosedOn, occurrenceFields, weekdayNumber, withoutClosedDates, type ClosureRange } from './slot-occurrences';
 import { resolveClassStyles, styleIdsOf } from '../classes/class-styles';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -17,6 +18,19 @@ import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 
 const RETENTION_WINDOW_DAYS = 90;
+
+/** A Closure as the API returns it: plain YYYY-MM-DD dates (Decision 353, Q8). */
+export function toClosureResponse(c: { id: string; schoolId: string; branchId: string | null; startDate: Date; endDate: Date; reason: string; createdAt: Date }) {
+  return {
+    id: c.id,
+    schoolId: c.schoolId,
+    branchId: c.branchId,
+    startDate: c.startDate.toISOString().slice(0, 10),
+    endDate: c.endDate.toISOString().slice(0, 10),
+    reason: c.reason,
+    createdAt: c.createdAt.toISOString(),
+  };
+}
 
 /**
  * `@db.Time(0)` columns round-trip through Prisma as a `Date` whose time-of-day
@@ -138,6 +152,7 @@ export class TimetableService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
     private readonly bookingsService: BookingsService,
+    private readonly cancellationService: CancellationService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
@@ -395,7 +410,7 @@ export class TimetableService {
     // School-wide classes only (Q4): Class RLS is School-wide, so it's done here.
     const scope = query.branchId ? [query.branchId] : await this.staffBranchScope(callerId, schoolId);
     const branchWhere = scope ? { OR: [{ branchId: { in: scope } }, { branchId: null }] } : {};
-    const { schoolZone, branchZones, classes, slots } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const { schoolZone, branchZones, classes, slots, closures } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const school = await tx.school.findUniqueOrThrow({ where: { id: schoolId }, select: { timezone: true, archivedAt: true } });
       const branches = await tx.branch.findMany({ where: { schoolId }, select: { id: true, timezone: true, archivedAt: true } });
       const rows = await tx.class.findMany({
@@ -415,7 +430,12 @@ export class TimetableService {
       const liveSlots = school.archivedAt
         ? []
         : await tx.timetableSlot.findMany({ where: { schoolId, status: 'ON', archivedAt: null, ...branchWhere } });
-      return { schoolZone: school.timezone ?? 'UTC', branchZones: branches, classes: rows, slots: liveSlots };
+      // Closures overlapping the dates shown (Decision 353, Q8).
+      const closureRows = await tx.closure.findMany({
+        where: { schoolId, ...branchWhere, startDate: { lte: to.toJSDate() }, endDate: { gte: from.toJSDate() } },
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      });
+      return { schoolZone: school.timezone ?? 'UTC', branchZones: branches, classes: rows, slots: liveSlots, closures: closureRows };
     });
     const zoneFor = (branchId: string | null) => branchZones.find((b) => b.id === branchId)?.timezone ?? schoolZone;
     const inRange = (date: string) => date >= query.from && date <= query.to;
@@ -458,10 +478,10 @@ export class TimetableService {
       const lastGenerated = DateTime.fromJSDate(generated[generated.length - 1].occurrenceDate as Date, { zone: 'UTC' }).toISODate()!;
       for (let day = from; day <= to; day = day.plus({ days: 1 })) {
         const date = day.toISODate()!;
-        if (date > lastGenerated && day.weekday === weekdayNumber(slot.weekday)) later.push({ slotId: slot.id, date });
+        if (date > lastGenerated && day.weekday === weekdayNumber(slot.weekday) && !isClosedOn(closures, slot.branchId, date)) later.push({ slotId: slot.id, date });
       }
     }
-    return { classes: calendarClasses, later };
+    return { classes: calendarClasses, later, closures: closures.map(toClosureResponse) };
   }
 
   /** The Branches a staff member's grants at this School cover, or null when
@@ -563,11 +583,13 @@ export class TimetableService {
     const live = slot.status === 'ON' && !slot.archivedAt;
     const dayShift = weekdayNumber(slot.weekday) - weekdayNumber(before.weekday);
     const now = new Date();
+    // A class isn't moved onto, or made on, a closed date (Decision 353, Q8).
+    const closures = await this.openClosures(callerId, slot.schoolId);
 
     for (const { cls, bookings, queued, taken, waitingStudentIds } of await this.upcomingClassesOf(callerId, slot.id)) {
       const booked = bookings.length > 0 || queued > 0;
       if (booked && bookedChoice === 'CANCEL') {
-        await this.cancelClass(callerId, cls, bookings, zone);
+        await this.cancelClass(callerId, cls, zone);
         continue;
       }
       // Whether this Class takes the slot's new day, time, place and rules.
@@ -578,8 +600,8 @@ export class TimetableService {
         { zone },
       ).plus({ days: follows ? dayShift : 0 });
       const fields = occurrenceFields(slot, localDate);
-      if (follows && (!live || fields.startDate <= now)) {
-        if (booked) await this.cancelClass(callerId, cls, bookings, zone);
+      if (follows && (!live || fields.startDate <= now || (dayShift !== 0 && isClosedOn(closures, slot.branchId, localDate.toISODate()!)))) {
+        if (booked) await this.cancelClass(callerId, cls, zone);
         else await this.removeClass(callerId, cls.id);
         continue;
       }
@@ -602,7 +624,7 @@ export class TimetableService {
       } catch (err) {
         // Another Class of this slot (an archived one) already holds that date.
         if ((err as { code?: string }).code !== 'P2002') throw err;
-        if (booked) await this.cancelClass(callerId, cls, bookings, zone);
+        if (booked) await this.cancelClass(callerId, cls, zone);
         else await this.removeClass(callerId, cls.id);
         continue;
       }
@@ -618,8 +640,125 @@ export class TimetableService {
     }
 
     if (live) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.createMany({ data: buildSlotOccurrences(slot, zone), skipDuplicates: true }));
+      await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.class.createMany({ data: withoutClosedDates(buildSlotOccurrences(slot, zone), closures, slot.branchId), skipDuplicates: true }),
+      );
     }
+  }
+
+  /** GET /schools/:schoolId/closures — any School staff; Branch Staff and
+   * coaches see their Branch's and School-wide ones (RLS). Newest first. */
+  async listClosures(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.closure.findMany({ where: { schoolId }, orderBy: [{ startDate: 'desc' }, { id: 'asc' }] }),
+    );
+    return { items: rows.map(toClosureResponse) };
+  }
+
+  /**
+   * POST /schools/:schoolId/closures (Decision 319 §3, Decision 353 Q8) — owner
+   * only. Every class on the closed dates (its local date) that hasn't ended or
+   * been cancelled is cancelled under the School's normal rule, with the reason
+   * in the notice: CancellationService.cancelClass, as if cancelled by hand. A
+   * Branch closure cancels that Branch's classes; a School-wide one, every class.
+   * The nightly generation and slot edits then skip those dates.
+   */
+  async createClosure(callerId: string, schoolId: string, dto: { startDate: string; endDate: string; reason: string; branchId?: string }) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (dto.branchId) {
+      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+      await this.assertBranchNotArchived(callerId, dto.branchId);
+    }
+    const start = DateTime.fromISO(dto.startDate, { zone: 'UTC' });
+    const end = DateTime.fromISO(dto.endDate, { zone: 'UTC' });
+    if (!start.isValid || !end.isValid || end < start) {
+      throw new BadRequestException('The closure needs valid dates, with the last date on or after the first.');
+    }
+    if (end.diff(start, 'days').days > 365) {
+      throw new BadRequestException('A closure can be at most a year long.');
+    }
+    if (end.toISODate()! < DateTime.utc().minus({ days: 1 }).toISODate()!) {
+      throw new BadRequestException('A closure can\'t be entirely in the past.');
+    }
+    const reason = dto.reason.trim();
+    if (!reason) throw new BadRequestException('Give the closure a reason, e.g. "Christmas".');
+
+    const { closure, school, branches, classes } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const created = await tx.closure.create({
+        data: { schoolId, branchId: dto.branchId ?? null, startDate: start.toJSDate(), endDate: end.toJSDate(), reason, createdById: callerId },
+      });
+      const sch = await tx.school.findUniqueOrThrow({ where: { id: schoolId }, select: { timezone: true } });
+      const brs = await tx.branch.findMany({ where: { schoolId }, select: { id: true, timezone: true } });
+      // Two days either side covers every zone; the local date is checked below.
+      const rows = await tx.class.findMany({
+        where: {
+          schoolId,
+          ...(dto.branchId ? { branchId: dto.branchId } : {}),
+          cancelledAt: null,
+          archivedAt: null,
+          endDate: { gt: new Date() },
+          startDate: { gte: start.minus({ days: 2 }).toJSDate(), lt: end.plus({ days: 3 }).toJSDate() },
+        },
+        select: { id: true, branchId: true, startDate: true },
+      });
+      return { closure: created, school: sch, branches: brs, classes: rows };
+    });
+
+    const zoneFor = (branchId: string | null) => branches.find((b) => b.id === branchId)?.timezone ?? school.timezone ?? 'UTC';
+    let cancelledClasses = 0;
+    for (const cls of classes) {
+      const date = DateTime.fromJSDate(cls.startDate).setZone(zoneFor(cls.branchId)).toISODate()!;
+      if (date < dto.startDate || date > dto.endDate) continue;
+      try {
+        await this.cancellationService.cancelClass(callerId, cls.id, reason);
+        cancelledClasses += 1;
+      } catch (err) {
+        // Ended or cancelled meanwhile: nothing left to do for this one.
+        if (!(err instanceof BadRequestException) && !(err instanceof ConflictException) && !(err instanceof NotFoundException)) throw err;
+      }
+    }
+    return { ...toClosureResponse(closure), cancelledClasses };
+  }
+
+  /** DELETE /closures/:id — owner only. Classes it cancelled stay cancelled
+   * (their students were told); slots' dates it skipped get their classes now. */
+  async deleteClosure(callerId: string, closureId: string): Promise<void> {
+    const closure = await this.prismaApp.withTenantContext(callerId, (tx) => tx.closure.findUnique({ where: { id: closureId } }));
+    if (!closure) throw new NotFoundException('Closure not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, closure.schoolId);
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.closure.delete({ where: { id: closureId } }));
+
+    const remaining = await this.openClosures(callerId, closure.schoolId);
+    const slots = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.timetableSlot.findMany({
+        where: {
+          schoolId: closure.schoolId,
+          status: 'ON',
+          archivedAt: null,
+          school: { archivedAt: null },
+          ...(closure.branchId ? { branchId: closure.branchId } : {}),
+          OR: [{ branchId: null }, { branch: { archivedAt: null } }],
+        },
+      }),
+    );
+    for (const slot of slots) {
+      const zone = await this.zoneOf(callerId, slot);
+      await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.class.createMany({ data: withoutClosedDates(buildSlotOccurrences(slot, zone), remaining, slot.branchId), skipDuplicates: true }),
+      );
+    }
+  }
+
+  /** The School's closures that haven't ended (a day's slack covers every zone). */
+  private async openClosures(callerId: string, schoolId: string): Promise<ClosureRange[]> {
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.closure.findMany({
+        where: { schoolId, endDate: { gte: new Date(Date.now() - 86_400_000) } },
+        select: { branchId: true, startDate: true, endDate: true },
+      }),
+    );
   }
 
   /** The slot's time zone: its Branch's, else its School's, else UTC (Decision 172). */
@@ -659,23 +798,32 @@ export class TimetableService {
    * Students told. Unlinking frees the date, so switching the slot back on makes
    * that date again (Decision 332, T15); the cancelled Class and its booking
    * history stay. */
-  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date; schoolId: string }, bookings: Array<{ id: string; studentId: string }>, zone: string): Promise<void> {
-    // The waitlist closes first, so the seats the cancellations free aren't
-    // offered to anyone.
+  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date; schoolId: string }, zone: string): Promise<void> {
+    // Marked cancelled first, under the Class row lock bookings also take
+    // (lockOpenClass), and the waitlist closed in the same transaction, so the
+    // seats the cancellations free aren't offered to anyone. A booking racing
+    // this either committed before (and is read below) or now sees the class
+    // cancelled (stress test round 3: it used to stay booked on the cancelled
+    // class, as with CancellationService.cancelClass).
+    const at = new Date();
     const waiting = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${cls.id} FOR UPDATE`;
+      // Marked cancelled too, so the calendar shows it as a cancelled date
+      // (Decision 353, T7) rather than a class that was simply removed.
+      await tx.class.updateMany({ where: { id: cls.id, cancelledAt: null }, data: { cancelledAt: at, cancelledById: callerId } });
       const entries = await tx.waitlistEntry.findMany({ where: { classId: cls.id, status: { in: ['WAITING', 'NOTIFIED'] } }, select: { studentId: true } });
       await tx.waitlistEntry.updateMany({ where: { classId: cls.id, status: { in: ['WAITING', 'NOTIFIED'] } }, data: { status: 'CANCELLED' } });
       return entries.map((e) => e.studentId);
-    });
+    }, { timeoutMs: 15_000 });
+    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({ where: { classId: cls.id, status: 'UPCOMING' }, select: { id: true, studentId: true } }),
+    );
     for (const b of bookings) {
       await this.bookingsService.cancelBooking(callerId, b.id, undefined, { schoolCancelled: true });
     }
-    await this.prismaApp.withTenantContext(callerId, (tx) => {
-      const at = new Date();
-      // Marked cancelled too, so the calendar shows it as a cancelled date
-      // (Decision 353, T7) rather than a class that was simply removed.
-      return tx.class.update({ where: { id: cls.id }, data: { archivedAt: at, cancelledAt: at, cancelledById: callerId, purgeAt: new Date(at.getTime() + RETENTION_WINDOW_DAYS * 86_400_000), timetableSlotId: null } });
-    });
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.update({ where: { id: cls.id }, data: { archivedAt: at, purgeAt: new Date(at.getTime() + RETENTION_WINDOW_DAYS * 86_400_000), timetableSlotId: null } }),
+    );
     // The date in the slot's own zone, not UTC (Decision 332, T16).
     await this.tell([...bookings.map((b) => b.studentId), ...waiting], `class-cancelled-${cls.id}`, 'Class cancelled',
       `${cls.title} on ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED',

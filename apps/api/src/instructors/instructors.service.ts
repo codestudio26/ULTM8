@@ -1,6 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
@@ -20,6 +21,21 @@ import { addressWriteData } from '../common/address/postal-address.dto';
 
 const BCRYPT_ROUNDS = 12;
 const RETENTION_WINDOW_DAYS = 90;
+
+/** Decision 331 — an instructor's home address and certification, seen only by
+ * the School Owner/Manager and the instructor themselves; colleagues reading
+ * the roster or a detail page get these as null. */
+const PRIVATE_FIELDS = [
+  'address',
+  'addressLine1',
+  'addressLine2',
+  'addressCity',
+  'addressRegion',
+  'addressPostalCode',
+  'addressCountry',
+  'certificationKey',
+  'certificationConsentedAt',
+] as const;
 
 @Injectable()
 export class InstructorsService {
@@ -66,11 +82,14 @@ export class InstructorsService {
         select: { id: true },
       }),
     );
+    const duplicateMessage = 'This user already has an Instructor profile at this School.';
     if (duplicate) {
-      throw new ConflictException('This user already has an Instructor profile at this School.');
+      throw new ConflictException(duplicateMessage);
     }
 
     const instructorId = randomUUID();
+    // The schoolId+userId unique index stops a twin request the check above
+    // couldn't see yet; it gets the same answer.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const specs = await resolveInstructorSpecializations(tx, schoolId, dto.specializationStyleIds, dto.specializations);
       return tx.instructor.create({
@@ -87,6 +106,9 @@ export class InstructorsService {
           bio: dto.bio,
         },
       });
+    }).catch((err) => {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') throw new ConflictException(duplicateMessage);
+      throw err;
     });
   }
 
@@ -177,25 +199,7 @@ export class InstructorsService {
 
     // Same non-blocking-email-failure shape as CoachInvitesService.create():
     // creation already succeeded; only the delivery can fail independently.
-    let emailSent = true;
-    try {
-      await this.delivery.sendEmail(
-        email,
-        "Your ULTM8 instructor account is ready",
-        [
-          "You've been added as an Instructor on ULTM8.",
-          '',
-          `Sign in with this email address (${email}) and the temporary passcode below — you'll be asked to choose your own passcode right away.`,
-          '',
-          `Temporary passcode: ${tempPasscode}`,
-          '',
-          `${baseUrl}/login`,
-        ].join('\n'),
-      );
-    } catch (err) {
-      emailSent = false;
-      this.logger.warn(`Instructor ${instructor.id}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
-    }
+    const emailSent = await this.sendTempPasscodeEmail(instructor.id, email, tempPasscode, baseUrl, false);
 
     return {
       ...instructor,
@@ -206,6 +210,68 @@ export class InstructorsService {
       awaitingFirstLogin: true,
       emailSent,
     };
+  }
+
+  /** The temporary-passcode email createManually() and resendPasscode() send.
+   * Returns false (logged, not thrown) when delivery fails: the account change
+   * already happened. */
+  private async sendTempPasscodeEmail(instructorId: string, email: string, tempPasscode: string, baseUrl: string, resent: boolean): Promise<boolean> {
+    try {
+      await this.delivery.sendEmail(
+        email,
+        resent ? 'Your new ULTM8 temporary passcode' : "Your ULTM8 instructor account is ready",
+        [
+          resent ? 'Your School sent you a new temporary passcode for ULTM8. Any earlier one no longer works.' : "You've been added as an Instructor on ULTM8.",
+          '',
+          `Sign in with this email address (${email}) and the temporary passcode below — you'll be asked to choose your own passcode right away.`,
+          '',
+          `Temporary passcode: ${tempPasscode}`,
+          '',
+          `${baseUrl}/login`,
+        ].join('\n'),
+      );
+      return true;
+    } catch (err) {
+      this.logger.warn(`Instructor ${instructorId}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  }
+
+  /**
+   * POST /instructors/:id/resend-passcode (Decision 331) — a fresh temporary
+   * passcode for an instructor "Add Manually" created who hasn't signed in
+   * yet (lost or expired email). School Owner/Manager only, same gate as
+   * createManually(). Only while the account still has the temporary
+   * passcode and the person still holds the Instructor role here; the old
+   * passcode stops working. Once they've chosen their own passcode, this is
+   * refused: their sign-in is theirs to manage (Forgot passcode).
+   */
+  async resendPasscode(callerId: string, instructorId: string) {
+    const existing = await this.loadOne(callerId, instructorId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.status !== 'ACTIVE') {
+      throw new ConflictException('This person is no longer an instructor here. Give them the Instructor role back first.');
+    }
+    if (!existing.awaitingFirstLogin) {
+      throw new ConflictException('This instructor has already signed in and chosen their own passcode. They can use "Forgot passcode" if they need a new one.');
+    }
+    const baseUrl = this.portalBaseUrl();
+
+    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+    // Written under the instructor's own tenant context (the same way
+    // AuthService.resetPasscode() writes a passcode): User rows are only
+    // writable by their owner. The mustChangePasscode condition makes this a
+    // no-op if they signed in and chose a passcode since the check above.
+    const { count } = await this.prismaApp.withTenantContext(existing.userId, (tx) =>
+      tx.user.updateMany({ where: { id: existing.userId, mustChangePasscode: true }, data: { passcodeHash } }),
+    );
+    if (count === 0) {
+      throw new ConflictException('This instructor has already signed in and chosen their own passcode. They can use "Forgot passcode" if they need a new one.');
+    }
+    const emailSent = await this.sendTempPasscodeEmail(existing.id, existing.email, tempPasscode, baseUrl, true);
+    return { emailSent };
   }
 
   /**
@@ -236,6 +302,10 @@ export class InstructorsService {
         where: { userId: callerId },
         data: {
           ...addressWriteData(dto),
+          // Decision 331 — self-edited bio/photo/School-facing phone; null clears.
+          bio: dto.bio,
+          photoUrl: dto.photoUrl,
+          phone: dto.phone,
           activities: dto.activities,
           certificationKey: dto.certificationKey,
           // Can only move from unset to set, never clear — see this DTO's own
@@ -344,10 +414,12 @@ export class InstructorsService {
     const names = await resolveUserNames(this.prismaAuth, userIds);
     const statuses = await this.resolveInstructorStatuses(callerId, schoolId, userIds);
     const awaiting = await this.resolveAwaitingFirstLogin(userIds);
+    // Decision 331 — address and certification for the owner, or on your own row.
+    const seesAll = await this.isSchoolOwner(callerId, schoolId);
     return {
       ...page,
       items: page.items.map((i) => ({
-        ...i,
+        ...(seesAll || i.userId === callerId ? i : redactPrivateFields(i)),
         firstName: names.get(i.userId)?.firstName ?? '',
         surname: names.get(i.userId)?.surname ?? '',
         email: names.get(i.userId)?.email ?? '',
@@ -427,7 +499,17 @@ export class InstructorsService {
     return { items: [...byUser.values()] };
   }
 
+  /** GET /instructors/:id — address and certification only for the School
+   * Owner/Manager or the instructor themselves (Decision 331). */
   async findOne(callerId: string, instructorId: string) {
+    const found = await this.loadOne(callerId, instructorId);
+    const seesPrivate = found.userId === callerId || (await this.isSchoolOwner(callerId, found.schoolId));
+    return seesPrivate ? found : redactPrivateFields(found);
+  }
+
+  /** The full row, unredacted: for this service's own checks and for
+   * owner-only responses. */
+  private async loadOne(callerId: string, instructorId: string) {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.instructor.findUnique({ where: { id: instructorId } }),
     );
@@ -458,7 +540,7 @@ export class InstructorsService {
    * download link for the certification the instructor uploaded, for the
    * School Owner/Manager only (the same people who manage instructors). */
   async getCertificationUrl(callerId: string, instructorId: string) {
-    const existing = await this.findOne(callerId, instructorId);
+    const existing = await this.loadOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     if (!existing.certificationKey) {
       throw new NotFoundException("This instructor hasn't uploaded a certification.");
@@ -485,7 +567,7 @@ export class InstructorsService {
    * Instructor Detail screen, so there's no real caller this excludes.
    */
   async findClassesForInstructor(callerId: string, instructorId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    const instructor = await this.findOne(callerId, instructorId); // 404s if not visible/doesn't exist
+    const instructor = await this.loadOne(callerId, instructorId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, instructor.schoolId, instructor.branchId);
 
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -539,7 +621,7 @@ export class InstructorsService {
     // Instructor columns (schoolId/branchId/userId) off it, all of which survive that
     // resolution untouched; see the return below for where the resolved fields
     // themselves get carried into this method's own response.
-    const existing = await this.findOne(callerId, instructorId);
+    const existing = await this.loadOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
@@ -629,7 +711,7 @@ export class InstructorsService {
   }
 
   async archive(callerId: string, instructorId: string) {
-    const existing = await this.findOne(callerId, instructorId);
+    const existing = await this.loadOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (existing.archivedAt) {
@@ -642,11 +724,11 @@ export class InstructorsService {
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.instructor.updateMany({ where: { id: instructorId, archivedAt: null }, data: { archivedAt: now, purgeAt } }),
     );
-    return this.findOne(callerId, instructorId);
+    return this.loadOne(callerId, instructorId);
   }
 
   async unarchive(callerId: string, instructorId: string) {
-    const existing = await this.findOne(callerId, instructorId);
+    const existing = await this.loadOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (!existing.archivedAt) {
@@ -662,13 +744,13 @@ export class InstructorsService {
       }),
     );
     if (count === 0) {
-      const current = await this.findOne(callerId, instructorId);
+      const current = await this.loadOne(callerId, instructorId);
       if (current.purgedAt) {
         throw new ConflictException('This Instructor profile has already been purged and cannot be unarchived.');
       }
       return current;
     }
-    return this.findOne(callerId, instructorId);
+    return this.loadOne(callerId, instructorId);
   }
 
   /**
@@ -683,7 +765,7 @@ export class InstructorsService {
    * made from a moved slot are moved only if they're upcoming themselves.
    */
   async reassign(callerId: string, instructorId: string, toUserId: string) {
-    const existing = await this.findOne(callerId, instructorId);
+    const existing = await this.loadOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (toUserId === existing.userId) {
@@ -717,6 +799,16 @@ export class InstructorsService {
       });
       return { classesMoved: movedClasses.count, slotsMoved: movedSlots.count };
     });
+  }
+
+  private async isSchoolOwner(callerId: string, schoolId: string): Promise<boolean> {
+    try {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+      return true;
+    } catch (err) {
+      if (err instanceof ForbiddenException) return false;
+      throw err;
+    }
   }
 
   /** A branch of this School that isn't archived (Decision 311, I4) — the
@@ -761,4 +853,10 @@ export class InstructorsService {
   // Classes (see the Phase 6 kickoff prompt). Since Decision 311 the owner can
   // still edit a revoked instructor's profile; only moving it to another branch
   // checks the role again.
+}
+
+function redactPrivateFields<T extends Record<(typeof PRIVATE_FIELDS)[number], unknown>>(row: T): T {
+  const copy = { ...row };
+  for (const field of PRIVATE_FIELDS) (copy as Record<string, unknown>)[field] = null;
+  return copy;
 }
