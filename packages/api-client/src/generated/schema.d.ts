@@ -4532,6 +4532,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DashboardController_getOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/dashboard/setup-checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["DashboardController_setSetupChecklistHidden"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/birthdays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DashboardController_getBirthdays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
         parameters: {
             query?: never;
@@ -4717,6 +4765,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -4774,6 +4832,16 @@ export interface components {
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Branch Staff may record desk payments (Decision 347). */
             branchStaffCanRecordPayments: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4).
+             * @enum {string}
+             */
+            weekStartsOn: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4).
+             * @enum {string}
+             */
+            timetableDefaultLayout: "LIST" | "GRID";
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -4842,6 +4910,16 @@ export interface components {
             lateCancelRefundPolicy?: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false. */
             branchStaffCanRecordPayments?: boolean;
+            /**
+             * @description First day of the Timetable's week (Decision 319 §4). Default MONDAY.
+             * @enum {string}
+             */
+            weekStartsOn?: "MONDAY" | "SUNDAY";
+            /**
+             * @description The layout the Timetable opens in (Decision 319 §4). Default LIST.
+             * @enum {string}
+             */
+            timetableDefaultLayout?: "LIST" | "GRID";
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -8473,6 +8551,36 @@ export interface components {
             uploadUrl: string;
             /** @description The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing. */
             publicUrl: string;
+        };
+        /** @enum {string} */
+        SetupStepKey: "BRANCH" | "STYLE_AND_BELTS" | "CLASS" | "MEMBERSHIP_PLAN" | "WAIVER" | "STRIPE" | "STAFF";
+        SetupStepDto: {
+            key: components["schemas"]["SetupStepKey"];
+            done: boolean;
+        };
+        SetupChecklistDto: {
+            hidden: boolean;
+            steps: components["schemas"]["SetupStepDto"][];
+        };
+        DashboardOverviewDto: {
+            activeStudents: number;
+            setupChecklist: components["schemas"]["SetupChecklistDto"];
+        };
+        UpdateSetupChecklistDto: {
+            hidden: boolean;
+        };
+        BirthdayDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            date: string;
+        };
+        BirthdaysResponseDto: {
+            /** @description The week, YYYY-MM-DD, Monday to Sunday in the School's time zone. */
+            from: string;
+            to: string;
+            today: string;
+            items: components["schemas"]["BirthdayDto"][];
         };
         StaffTeachingResponseDto: {
             /** @description Upcoming classes they teach here (not ended, cancelled or archived). */
@@ -16215,6 +16323,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPhotoUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    DashboardController_getOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOverviewDto"];
+                };
+            };
+        };
+    };
+    DashboardController_setSetupChecklistHidden: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSetupChecklistDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOverviewDto"];
+                };
+            };
+        };
+    };
+    DashboardController_getBirthdays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BirthdaysResponseDto"];
                 };
             };
         };

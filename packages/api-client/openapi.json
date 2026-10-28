@@ -13902,6 +13902,121 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/dashboard": {
+      "get": {
+        "operationId": "DashboardController_getOverview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "dashboard"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/dashboard/setup-checklist": {
+      "patch": {
+        "operationId": "DashboardController_setSetupChecklistHidden",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSetupChecklistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "dashboard"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/birthdays": {
+      "get": {
+        "operationId": "DashboardController_getBirthdays",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BirthdaysResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "dashboard"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
       "get": {
         "operationId": "StaffRemovalController_teaching",
@@ -14421,6 +14536,22 @@
           "branchStaffCanRecordPayments": {
             "type": "boolean",
             "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
+          },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4). Default MONDAY."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4). Default LIST."
           }
         },
         "required": [
@@ -14620,6 +14751,22 @@
             "type": "boolean",
             "description": "Branch Staff may record desk payments (Decision 347)."
           },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4)."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4)."
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -14667,6 +14814,8 @@
           "checkInOpensMinutesBeforeStart",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
+          "weekStartsOn",
+          "timetableDefaultLayout",
           "createdAt",
           "updatedAt"
         ]
@@ -14826,6 +14975,22 @@
           "branchStaffCanRecordPayments": {
             "type": "boolean",
             "description": "Lets Branch Staff record a cash or bank transfer payment taken at the desk (Decision 347). Default false."
+          },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ],
+            "description": "First day of the Timetable's week (Decision 319 §4). Default MONDAY."
+          },
+          "timetableDefaultLayout": {
+            "type": "string",
+            "enum": [
+              "LIST",
+              "GRID"
+            ],
+            "description": "The layout the Timetable opens in (Decision 319 §4). Default LIST."
           },
           "mobileNumber": {
             "type": "string",
@@ -27013,6 +27178,127 @@
         "required": [
           "uploadUrl",
           "publicUrl"
+        ]
+      },
+      "SetupStepKey": {
+        "type": "string",
+        "enum": [
+          "BRANCH",
+          "STYLE_AND_BELTS",
+          "CLASS",
+          "MEMBERSHIP_PLAN",
+          "WAIVER",
+          "STRIPE",
+          "STAFF"
+        ]
+      },
+      "SetupStepDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/SetupStepKey"
+          },
+          "done": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "done"
+        ]
+      },
+      "SetupChecklistDto": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupStepDto"
+            }
+          }
+        },
+        "required": [
+          "hidden",
+          "steps"
+        ]
+      },
+      "DashboardOverviewDto": {
+        "type": "object",
+        "properties": {
+          "activeStudents": {
+            "type": "number"
+          },
+          "setupChecklist": {
+            "$ref": "#/components/schemas/SetupChecklistDto"
+          }
+        },
+        "required": [
+          "activeStudents",
+          "setupChecklist"
+        ]
+      },
+      "UpdateSetupChecklistDto": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ]
+      },
+      "BirthdayDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "date"
+        ]
+      },
+      "BirthdaysResponseDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The week, YYYY-MM-DD, Monday to Sunday in the School's time zone."
+          },
+          "to": {
+            "type": "string"
+          },
+          "today": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BirthdayDto"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "today",
+          "items"
         ]
       },
       "StaffTeachingResponseDto": {
