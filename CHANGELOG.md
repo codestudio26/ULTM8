@@ -24,7 +24,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   request during a burst of logins or Add manually (native `bcrypt`, same
   hashes). A student "Add manually" that fails part-way no longer leaves an
   account behind, so the owner can just try again. Needs the migration
-  `20261212000000_role_grant_one_live_per_scope`.
+  `20261212000100_role_grant_one_live_per_scope`.
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own
