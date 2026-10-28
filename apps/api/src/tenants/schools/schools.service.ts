@@ -174,6 +174,7 @@ export class SchoolsService {
           // Decision 292 — saving a policy is the owner choosing it.
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          checkInCodeDigits: dto.checkInCodeDigits,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,
@@ -958,6 +959,7 @@ export class SchoolsService {
           // Decision 292 — saving a policy is the owner choosing it.
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
+          checkInCodeDigits: dto.checkInCodeDigits,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,

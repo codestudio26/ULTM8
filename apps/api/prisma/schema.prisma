@@ -514,6 +514,9 @@ model User {
   bookingsResolved                  Booking[]                   @relation("BookingResolvedBy")
   bookingsCheckedIn                 Booking[]                   @relation("BookingCheckedInBy")
   bookingAttendeesCheckedIn         BookingAttendee[]           @relation("BookingAttendeeCheckedInBy")
+  frontDeskSessionsStarted          FrontDeskSession[]          @relation("FrontDeskSessionStartedBy")
+  frontDeskSessionsEnded            FrontDeskSession[]          @relation("FrontDeskSessionEndedBy")
+  staffKioskCodes                   StaffKioskCode[]            @relation("StaffKioskCodeUser")
   bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
   waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
@@ -1039,6 +1042,9 @@ model School {
   waitlistClaimWindowMinutes     Int                             @default(60)
   /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
   checkInOpensMinutesBeforeStart Int                             @default(30)
+  /// Length of ULTM8-generated check-in codes here: staff kiosk codes (Decision
+  /// 320) and members' personal codes (Decision 315). 4 (default) or 6.
+  checkInCodeDigits              Int                             @default(4)
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -1115,6 +1121,8 @@ model School {
   promotionFeeRequests  PromotionFeeRequest[]
   trainingLogs          TrainingLog[]
   guestWaiverSignatures GuestWaiverSignature[]
+  frontDeskSessions     FrontDeskSession[]
+  staffKioskCodes       StaffKioskCode[]
 
   notificationBroadcasts NotificationBroadcast[]
 
@@ -1195,13 +1203,14 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants     RoleGrant[]
-  classes        Class[]
-  timetableSlots TimetableSlot[]
-  closures       Closure[]
-  instructors    Instructor[]
-  homeStudents   StudentHomeBranch[]
-  coachInvites   CoachInvite[]
+  roleGrants        RoleGrant[]
+  classes           Class[]
+  timetableSlots    TimetableSlot[]
+  closures          Closure[]
+  instructors       Instructor[]
+  homeStudents      StudentHomeBranch[]
+  frontDeskSessions FrontDeskSession[]
+  coachInvites      CoachInvite[]
 
   notificationBroadcasts NotificationBroadcast[]
 
@@ -4374,6 +4383,64 @@ model StaffPermission {
   updatedAt DateTime @updatedAt
 
   @@unique([schoolId, userId])
+  @@index([userId])
+}
+
+/// A front-desk tablet in locked mode (Decisions 317, 320, 351, 380). Staff
+/// start it for one Branch (none when the School has no Branches); the tablet
+/// then holds only a session token, never a staff login, and the token reaches
+/// only the front-desk kiosk endpoints. It ends when a staff member types their
+/// own kiosk code on the tablet, when staff end it from the Check-in page, at
+/// expiresAt, or as soon as the person who started it is no longer staff
+/// there. RLS: staff at the School (Branch-scoped grants: that Branch);
+/// ultm8_jobs reads it to check a kiosk request's session.
+model FrontDeskSession {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  /// The kiosk acts with this staff member's access, limited to the kiosk endpoints.
+  startedById String
+  startedBy   User   @relation("FrontDeskSessionStartedBy", fields: [startedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  endedAt   DateTime?
+  /// Who ended it: the staff member whose kiosk code unlocked the tablet, or
+  /// who ended it from the Check-in page.
+  endedById String?
+  endedBy   User?     @relation("FrontDeskSessionEndedBy", fields: [endedById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([startedById])
+}
+
+/// A staff member's own kiosk code at a School (Decision 320 item 3): generated
+/// by ULTM8, School.checkInCodeDigits long, unique in the School. Typed on a
+/// locked front-desk tablet to leave it; the session records who it was. There
+/// is no shared School code. RLS: the staff member themselves; ultm8_jobs
+/// reads it to match a code typed on the tablet.
+model StaffKioskCode {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("StaffKioskCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  code String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, userId])
+  @@unique([schoolId, code])
   @@index([userId])
 }
 

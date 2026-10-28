@@ -23,5 +23,7 @@ import { SubscriptionPlansModule } from '../subscription-plans/subscription-plan
   imports: [TenantsModule, QueueModule, BookingsModule, SubscriptionPlansModule],
   controllers: [AttendanceController],
   providers: [AttendanceService, QrTokenService, FrontDeskCheckInService],
+  // The locked front-desk tablet (FrontDeskModule, Decision 380) checks in through these.
+  exports: [AttendanceService, FrontDeskCheckInService],
 })
 export class AttendanceModule {}

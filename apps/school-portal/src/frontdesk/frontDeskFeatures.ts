@@ -9,9 +9,9 @@ export const FRONT_DESK_BACKEND = {
   /** Personal 4-digit check-in code (Decision 315, v1.3 backlog §3.2). */
   personalCode: false,
   /** Locked front-desk session tied to one Branch, left with a staff code
-   * (Decisions 317, 320, 351; §3.21). Until then front-desk mode runs in the
-   * staff member's own login and isn't locked. */
-  kioskSession: false,
+   * (Decisions 317, 320, 351; §3.21). Built 28 Oct 2026 (Decision 380):
+   * /front-desk starts it and /front-desk/kiosk is the tablet. */
+  kioskSession: true,
   /** One student's waiver status for the welcome card (GET /students/{id}/waiver-status, built 28 Oct 2026). */
   waiverStatus: true,
   /** Sign-ups from the tablet waiting for staff approval (Decisions 318, 351). */

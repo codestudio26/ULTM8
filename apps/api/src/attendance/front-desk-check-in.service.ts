@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CheckInMethod } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -19,6 +19,20 @@ function reasonOf(err: HttpException): Reason {
   const fields = body && typeof body === 'object' ? (body as { code?: unknown; message?: unknown }) : {};
   const message = typeof body === 'string' ? body : typeof fields.message === 'string' ? fields.message : Array.isArray(fields.message) ? fields.message.join('; ') : err.message;
   return { code: typeof fields.code === 'string' ? fields.code : err.name.replace(/Exception$/, '').replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase(), message };
+}
+
+/** Who a QR lookup made on a locked tablet belongs to: the session, not the
+ * staff member who started it (Decision 380). */
+export function frontDeskLookupOwner(sessionId: string): string {
+  return `front-desk:${sessionId}`;
+}
+
+/** A locked tablet only checks people in to its own Branch's Classes, and the
+ * whole School's (Decision 380). */
+function assertAtKioskBranch(kiosk: { branchId: string | null } | undefined, classBranchId: string | null) {
+  if (kiosk?.branchId && classBranchId && classBranchId !== kiosk.branchId) {
+    throw new ForbiddenException({ code: 'OTHER_BRANCH', message: 'This class is at another Branch.' });
+  }
 }
 
 /** Thrown inside the transaction to roll it back while saying which item failed. */
@@ -51,7 +65,10 @@ export class FrontDeskCheckInService {
     private readonly qrTokens: QrTokenService,
   ) {}
 
-  async checkIn(callerId: string, schoolId: string, dto: DeskCheckInDto): Promise<DeskCheckInResponseDto> {
+  /** `kiosk`: a locked front-desk tablet (Decision 380) checks in as the staff
+   * member who started it, only for Classes at its Branch (or the whole
+   * School's), with QR lookups made on that tablet. */
+  async checkIn(callerId: string, schoolId: string, dto: DeskCheckInDto, kiosk?: { sessionId: string; branchId: string | null }): Promise<DeskCheckInResponseDto> {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
@@ -72,7 +89,8 @@ export class FrontDeskCheckInService {
     if (dto.lookupToken) {
       // The app QR was checked when it was scanned (deskQrLookup).
       const lookup = this.qrTokens.verifyDeskLookup(dto.lookupToken);
-      if (lookup.deskStudentId !== studentId || lookup.schoolId !== schoolId || lookup.staffId !== callerId) {
+      const lookupOwner = kiosk ? frontDeskLookupOwner(kiosk.sessionId) : callerId;
+      if (lookup.deskStudentId !== studentId || lookup.schoolId !== schoolId || lookup.staffId !== lookupOwner) {
         throw new BadRequestException('This scan belongs to a different Student.');
       }
       await this.attendance.assertCameraConsentNotWithdrawn(studentId);
@@ -97,6 +115,7 @@ export class FrontDeskCheckInService {
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, cls.branchId);
         await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', cls.branchId);
+        assertAtKioskBranch(kiosk, cls.branchId);
         if (cls.cancelledAt) throw new ConflictException('This class has been cancelled by the school.');
         await this.attendance.assertWithinWindow(cls);
       } catch (err) {
@@ -121,6 +140,7 @@ export class FrontDeskCheckInService {
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, booking.branchId);
         await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', booking.branchId);
+        assertAtKioskBranch(kiosk, booking.class.branchId);
         if (seat.checkedInAt) throw new ConflictException('This guest is already checked in.');
         // The member's booking is either already in, or checked in by this call.
         const memberInNow = dto.classIds.includes(booking.classId) && booking.status === 'UPCOMING';

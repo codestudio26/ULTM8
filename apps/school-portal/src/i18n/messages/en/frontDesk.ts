@@ -33,7 +33,7 @@ export const frontDesk = {
     soonHint: 'Personal check-in codes are coming. Use Scan or Name for now.',
     delete: 'Delete',
     submit: 'Check in',
-    entered: { one: '{count} of 4 digits entered', other: '{count} of 4 digits entered' },
+    entered: { one: '{count} of {total} digits entered', other: '{count} of {total} digits entered' },
     notFound: 'We couldn’t find that code. Try again, or find your name.',
   },
   scan: {
@@ -52,6 +52,7 @@ export const frontDesk = {
     member: 'Member',
     shortNote: 'Only first names and an initial are shown here.',
     more: 'Showing {shown} of {count}. Type more of the name.',
+    typeMore: 'More people match. Type more of the name.',
   },
   welcome: {
     aria: 'Welcome',
@@ -95,10 +96,8 @@ export const frontDesk = {
     startBody: 'Which branch is this device at? It shows only that branch’s classes.',
     branch: 'Branch',
     startLocked: 'While it’s on, the device can only check people in and take sign-ups. Leaving needs a staff member’s own code.',
-    startNotLocked: 'Locking the device comes later. Until then, this runs in your own login: stay with the device.',
     start: 'Start',
     cancel: 'Cancel',
-    notLockedBanner: 'Front-desk mode isn’t locked yet: this runs in your own login. Stay with the device.',
     branchLine: '{branch} branch',
     todayAt: 'Today at {branch}',
     next: 'Next: {time} {title}',
@@ -109,6 +108,10 @@ export const frontDesk = {
     checkedInToday: 'Checked in today',
     backToCheckIn: 'Back to check-in',
     wholeSchool: 'Whole School',
+    startFailed: 'Could not start front-desk mode.',
+    cantStart: 'Only the School owner, or Branch Staff for their own branch, can start front-desk mode.',
+    yourCode: 'Your code to leave front-desk mode: {code}',
+    yourCodeHint: 'Starting signs you out of this device. Any staff member’s own code unlocks it. You can also see yours on the Check-in page.',
   },
   done: {
     title: 'You’re in, {name}',
@@ -119,9 +122,32 @@ export const frontDesk = {
   exit: {
     title: 'Leave front-desk mode',
     codeHint: 'Enter your own staff code. We note who unlocked the device.',
-    notLockedHint: 'Leaving with a staff code comes later.',
     stay: 'Stay',
-    leave: 'Leave',
+    codeTitle: 'Your staff code',
+    submit: 'Unlock',
+    failed: 'Could not unlock. Please try again.',
+  },
+  /** The locked tablet's own screens (Decision 380). */
+  tablet: {
+    unlockedTitle: 'Unlocked by {name}',
+    unlockedBody: 'Front-desk mode has ended on this device.',
+    staffSignIn: 'Staff sign-in',
+    endedTitle: 'Front-desk mode has ended',
+    endedBody: 'A member of staff ended it, or it ran for 24 hours. Sign in to start it again.',
+    noSessionTitle: 'This device isn’t in front-desk mode',
+    noSessionBody: 'A member of staff signs in and starts it from Check-in.',
+    loadFailed: 'Could not reach ULTM8. Check the internet connection.',
+  },
+  /** Check-in page: the tablets in front-desk mode, and your own code (Decision 380). */
+  tablets: {
+    title: 'Front-desk tablets',
+    myCode: 'Your code to leave front-desk mode: {code}.',
+    newCode: 'Get a new code',
+    newCodeConfirm: 'Get a new code? Your old code stops working.',
+    none: 'No device is in front-desk mode.',
+    startedBy: 'Started by {name} at {time}',
+    end: 'End',
+    endFailed: 'Could not end it. Please try again.',
   },
   signUp: {
     step1: 'About you',

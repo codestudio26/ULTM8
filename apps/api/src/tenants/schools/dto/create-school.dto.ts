@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -288,6 +289,11 @@ export class CreateSchoolDto {
   @Min(0)
   @Max(1440)
   checkInOpensMinutesBeforeStart?: number;
+
+  @ApiPropertyOptional({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members\' personal codes (Decision 315). Default 4. Codes already issued keep their length.' })
+  @IsOptional()
+  @IsIn([4, 6])
+  checkInCodeDigits?: number;
 
   @ApiPropertyOptional({
     enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'],

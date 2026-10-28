@@ -209,7 +209,9 @@ export class AttendanceService {
    * five minutes (front-desk check-in review Q2, product owner 28 Oct 2026).
    * Also says who it is, and refuses a QR of someone who isn't a current
    * Student here (CI6: before, the desk opened a card with no name). */
-  async deskQrLookup(callerId: string, schoolId: string, studentToken: string) {
+  /** `lookupOwner`: who may use the lookup to check in; a locked tablet's own
+   * session, not its starter (Decision 380, frontDeskLookupOwner). */
+  async deskQrLookup(callerId: string, schoolId: string, studentToken: string, lookupOwner: string = callerId) {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const studentId = this.qrTokenService.verifyStudentToken(studentToken);
@@ -225,7 +227,7 @@ export class AttendanceService {
     const user = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { firstName: true, surname: true, profilePhotoUrl: true } }),
     );
-    const { token, expiresAt } = this.qrTokenService.signDeskLookup({ deskStudentId: studentId, schoolId, staffId: callerId });
+    const { token, expiresAt } = this.qrTokenService.signDeskLookup({ deskStudentId: studentId, schoolId, staffId: lookupOwner });
     return {
       lookupToken: token,
       expiresAt: expiresAt.toISOString(),
