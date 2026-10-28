@@ -644,6 +644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/{userId}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["RoleGrantsController_updateStaffDetails"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
@@ -4820,6 +4836,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HealthController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5630,11 +5662,25 @@ export interface components {
             canInviteCoaches: boolean;
             /** @description The School's main owner (Decision 370). Other owners are co-owners. */
             mainOwner: boolean;
+            /** @description Decision 381: the School's own name for them, set by an owner. Null = not set. */
+            displayName?: string | null;
+            /** @description Decision 381: their work phone at this School (E.164), set by an owner. Null = not set. */
+            workPhone?: string | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
         StaffListResponseDto: {
             items: components["schemas"]["StaffMemberDto"][];
+        };
+        UpdateStaffDetailsDto: {
+            displayName?: string | null;
+            /** @description E.164, e.g. +447700900123. */
+            workPhone?: string | null;
+        };
+        StaffDetailsResponseDto: {
+            userId: string;
+            displayName?: string | null;
+            workPhone?: string | null;
         };
         HandOverMainOwnerDto: {
             /** @description A co-owner of this School, who becomes its main owner. */
@@ -10047,6 +10093,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffListResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_updateStaffDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStaffDetailsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetailsResponseDto"];
                 };
             };
         };
@@ -17087,6 +17159,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
                 };
+            };
+        };
+    };
+    HealthController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Database and Redis are reachable. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1,14 +1,15 @@
 import React, { useDeferredValue, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PhoneField, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import type { BranchResponse } from '../branches/branchQueries';
 import { Avatar } from '../lib/Avatar';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
-import { useHandOverMainOwner, useStaffList, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
+import { useHandOverMainOwner, useStaffList, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
 
 /** Table rows need an `id`. */
 type StaffRow = StaffMember & { id: string };
@@ -28,6 +29,10 @@ type StaffRow = StaffMember & { id: string };
  * remove a co-owner (the same Revoke); nobody here can remove the main owner,
  * only ULTM8 support. The main owner can make a co-owner the main owner, after
  * re-entering their passcode.
+ *
+ * Decision 381 — "Edit details" sets the School's own display name and work
+ * phone for someone. The list shows them first, with the person's own account
+ * name and phone underneath; the account itself never changes.
  */
 export function StaffListSection({
   schoolId,
@@ -55,11 +60,14 @@ export function StaffListSection({
   const { claims } = useAuth();
   const [handingOver, setHandingOver] = useState<StaffMember | null>(null);
   const [handedOverTo, setHandedOverTo] = useState<string | null>(null);
+  const [editing, setEditing] = useState<StaffMember | null>(null);
+  const [savedFor, setSavedFor] = useState<string | null>(null);
 
   const filtering = !!(q || role || branchId || status !== 'active');
   const people: StaffRow[] = (data?.items ?? []).map((p) => ({ ...p, id: p.userId }));
   const roleLabel = (r: string) => (ROLE_LABELS[r] ? t(ROLE_LABELS[r]!) : r);
   const fullName = (p: StaffMember) => `${p.firstName} ${p.surname}`.trim();
+  const shownName = (p: StaffMember) => p.displayName ?? fullName(p);
   const ownerLabel = (p: StaffMember) => (p.mainOwner ? t('roleGrants.list.mainOwner') : t('roleGrants.list.coOwner'));
   const roleText = (r: StaffRoleEntry, p?: StaffMember) =>
     r.role === 'SCHOOL_OWNER_MANAGER' && p && !r.revokedAt
@@ -130,6 +138,7 @@ export function StaffListSection({
       </div>
 
       {handedOverTo ? <SuccessBanner message={t('roleGrants.list.handOverDone', { name: handedOverTo })} /> : null}
+      {savedFor ? <SuccessBanner message={t('roleGrants.list.detailsSaved', { name: savedFor })} /> : null}
       {error ? <ErrorBanner message={t('roleGrants.list.loadFailed')} /> : null}
       {isLoading ? (
         <Spinner />
@@ -150,13 +159,28 @@ export function StaffListSection({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Avatar firstName={p.firstName} surname={p.surname} photoUrl={p.profilePhotoUrl ?? null} />
                   <div>
-                    <div>{`${p.firstName} ${p.surname}`.trim()}</div>
+                    <div>{shownName(p)}</div>
+                    {p.displayName ? <div style={{ fontSize: 13, opacity: 0.75 }}>{t('roleGrants.list.accountName', { name: fullName(p) })}</div> : null}
                     <div style={{ fontSize: 13, opacity: 0.75 }}>{p.email}</div>
                   </div>
                 </div>
               ),
             },
-            { key: 'phone', header: t('roleGrants.list.columnPhone'), render: (p) => p.phone ?? '—' },
+            {
+              key: 'phone',
+              header: t('roleGrants.list.columnPhone'),
+              render: (p) =>
+                p.workPhone ? (
+                  <div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {p.workPhone} <Badge>{t('roleGrants.list.workPhoneTag')}</Badge>
+                    </div>
+                    {p.phone ? <div style={{ fontSize: 13, opacity: 0.75 }}>{p.phone}</div> : null}
+                  </div>
+                ) : (
+                  p.phone ?? '—'
+                ),
+            },
             {
               key: 'roles',
               header: t('roleGrants.list.columnRoles'),
@@ -190,6 +214,7 @@ export function StaffListSection({
               header: '',
               render: (p) => {
                 const actions = [
+                  ...(p.active ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
                     : []),
@@ -201,7 +226,7 @@ export function StaffListSection({
                   ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
                 ];
                 if (actions.length === 0) return null;
-                return <RowActionsMenu label={t('roleGrants.list.actionsAria', { name: fullName(p) })} actions={actions} />;
+                return <RowActionsMenu label={t('roleGrants.list.actionsAria', { name: shownName(p) })} actions={actions} />;
               },
             },
           ]}
@@ -215,6 +240,18 @@ export function StaffListSection({
           name={`${confirmingRemove.firstName} ${confirmingRemove.surname}`.trim()}
           description={t('roleGrants.list.removeDescription', { roles: coachRoles(confirmingRemove).map((r) => roleText(r)).join(', ') })}
           onClose={() => setConfirmingRemove(null)}
+        />
+      ) : null}
+
+      {editing ? (
+        <StaffDetailsModal
+          schoolId={schoolId}
+          person={editing}
+          onDone={(name) => {
+            setSavedFor(name);
+            setEditing(null);
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
 
@@ -283,6 +320,61 @@ function HandOverMainOwnerModal({
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={handOver.isPending}>
             {t('roleGrants.list.makeMainOwner')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Decision 381 — the School's own display name and work phone for a staff
+ * member. Empty fields clear them. */
+function StaffDetailsModal({
+  schoolId,
+  person,
+  onDone,
+  onClose,
+}: {
+  schoolId: string;
+  person: StaffMember;
+  onDone: (name: string) => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const update = useUpdateStaffDetails(schoolId);
+  const [displayName, setDisplayName] = useState(person.displayName ?? '');
+  const [workPhone, setWorkPhone] = useState(person.workPhone ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const accountName = `${person.firstName} ${person.surname}`.trim();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const saved = await update.mutateAsync({ userId: person.userId, displayName: displayName.trim() || null, workPhone: workPhone || null });
+      onDone(saved.displayName ?? accountName);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Modal title={t('roleGrants.list.detailsTitle', { name: accountName })} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <p>{t('roleGrants.list.detailsBody')}</p>
+        {error ? <ErrorBanner message={error} /> : null}
+        <Field label={t('roleGrants.list.displayNameLabel')} htmlFor="staff-display-name" hint={t('roleGrants.list.displayNameHint')}>
+          <TextField id="staff-display-name" maxLength={80} placeholder={accountName} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        </Field>
+        <Field label={t('roleGrants.list.workPhoneLabel')} htmlFor="staff-work-phone" hint={t('roleGrants.list.workPhoneHint')}>
+          <PhoneField id="staff-work-phone" value={workPhone} onChange={setWorkPhone} defaultCountry={guessDefaultCountry()} />
+        </Field>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <Button type="submit" loading={update.isPending}>
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}

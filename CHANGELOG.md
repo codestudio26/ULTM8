@@ -88,6 +88,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: display name and work phone** (Decision 381) — an owner can
+  set the name and work phone the School uses for a staff member ("Edit
+  details" in the person's menu). The Staff list shows them first, with the
+  person's own account name and phone underneath, and search finds the
+  display name too. The person's own account (real name, login email,
+  personal phone) never changes. Needs the migration
+  `20261216000000_staff_details`.
 - **Staff page: main owner and co-owners** (Decision 370) — every School has
   one main owner; other owners are co-owners. "Give role" can now make someone
   a co-owner. Any owner can remove a co-owner, but nobody in the School can
