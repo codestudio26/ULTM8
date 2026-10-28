@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "การสแกนนี้เป็นของนักเรียนคนอื่น",
   "Pick at least one class or guest to check in.": "เลือกอย่างน้อยหนึ่งคลาสหรือแขกหนึ่งคนเพื่อเช็กอิน",
   "The same guest was listed more than once.": "มีแขกคนเดียวกันอยู่ในรายการมากกว่าหนึ่งครั้ง",
+  "Pick one of the School's open Branches for this tablet.": "เลือกสาขาที่เปิดอยู่ของโรงเรียนสำหรับแท็บเล็ตนี้",
+  "This School has no Branches: start front-desk mode for the whole School.": "โรงเรียนนี้ไม่มีสาขา: เริ่มโหมดเคาน์เตอร์สำหรับทั้งโรงเรียน",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "เฉพาะเจ้าของโรงเรียน หรือพนักงานสาขาของสาขานี้ เท่านั้นที่เริ่มโหมดเคาน์เตอร์ได้",
+  "Front-desk session not found, or already ended.": "ไม่พบเซสชันเคาน์เตอร์ต้อนรับ หรือสิ้นสุดไปแล้ว",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "เซสชันเคาน์เตอร์ต้อนรับนี้สิ้นสุดแล้ว ขอให้พนักงานเริ่มใหม่อีกครั้ง",
+  "That staff code isn't right.": "รหัสพนักงานนั้นไม่ถูกต้อง",
+  "This class is at another Branch.": "คลาสนี้อยู่ที่สาขาอื่น",
+  "The tablet's day is out of range. Check the tablet's date and time.": "วันที่ของแท็บเล็ตอยู่นอกช่วง ตรวจสอบวันที่และเวลาของแท็บเล็ต",
 };

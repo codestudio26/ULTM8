@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "Este escaneo pertenece a otro alumno.",
   "Pick at least one class or guest to check in.": "Elige al menos una clase o un invitado para registrar la entrada.",
   "The same guest was listed more than once.": "El mismo invitado aparece más de una vez.",
+  "Pick one of the School's open Branches for this tablet.": "Elige una de las sucursales abiertas de la Escuela para esta tableta.",
+  "This School has no Branches: start front-desk mode for the whole School.": "Esta Escuela no tiene sucursales: inicia el modo recepción para toda la Escuela.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "Solo el dueño de la Escuela, o el Personal de esta sucursal, puede iniciar el modo recepción.",
+  "Front-desk session not found, or already ended.": "Sesión de recepción no encontrada, o ya terminada.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "Esta sesión de recepción ha terminado. Pide a alguien del personal que la inicie de nuevo.",
+  "That staff code isn't right.": "Ese código de personal no es correcto.",
+  "This class is at another Branch.": "Esta clase es en otra sucursal.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "El día de la tableta está fuera de rango. Revisa la fecha y la hora de la tableta.",
 };

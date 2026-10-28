@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "Deze scan hoort bij een andere leerling.",
   "Pick at least one class or guest to check in.": "Kies minstens één les of gast om in te checken.",
   "The same guest was listed more than once.": "Dezelfde gast staat er meer dan één keer in.",
+  "Pick one of the School's open Branches for this tablet.": "Kies een van de open Vestigingen van de School voor deze tablet.",
+  "This School has no Branches: start front-desk mode for the whole School.": "Deze School heeft geen Vestigingen: start de baliemodus voor de hele School.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "Alleen de eigenaar van de School, of Vestigingspersoneel van deze Vestiging, kan de baliemodus starten.",
+  "Front-desk session not found, or already ended.": "Baliesessie niet gevonden, of al beëindigd.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "Deze baliesessie is beëindigd. Vraag iemand van het personeel om hem opnieuw te starten.",
+  "That staff code isn't right.": "Die personeelscode klopt niet.",
+  "This class is at another Branch.": "Deze les is bij een andere Vestiging.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "De dag van de tablet valt buiten het bereik. Controleer de datum en tijd van de tablet.",
 };

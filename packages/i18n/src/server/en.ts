@@ -504,4 +504,12 @@ export const SERVER_PATTERNS: string[] = [
  "This scan belongs to a different Student.",
  "Pick at least one class or guest to check in.",
  "The same guest was listed more than once.",
+ "Pick one of the School's open Branches for this tablet.",
+ "This School has no Branches: start front-desk mode for the whole School.",
+ "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.",
+ "Front-desk session not found, or already ended.",
+ "This front-desk session has ended. Ask a member of staff to start it again.",
+ "That staff code isn't right.",
+ "This class is at another Branch.",
+ "The tablet's day is out of range. Check the tablet's date and time.",
 ];

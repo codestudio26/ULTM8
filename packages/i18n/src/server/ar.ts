@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "هذا المسح يخص طالبًا آخر.",
   "Pick at least one class or guest to check in.": "اختر حصة واحدة أو ضيفًا واحدًا على الأقل لتسجيل الحضور.",
   "The same guest was listed more than once.": "تم إدراج الضيف نفسه أكثر من مرة.",
+  "Pick one of the School's open Branches for this tablet.": "اختر أحد الفروع المفتوحة للمدرسة لهذا الجهاز اللوحي.",
+  "This School has no Branches: start front-desk mode for the whole School.": "لا توجد فروع لهذه المدرسة: ابدأ وضع الاستقبال للمدرسة كلها.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "لا يمكن بدء وضع الاستقبال إلا لمالك المدرسة أو لموظفي هذا الفرع.",
+  "Front-desk session not found, or already ended.": "لم يتم العثور على جلسة الاستقبال، أو انتهت بالفعل.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "انتهت جلسة الاستقبال هذه. اطلب من أحد الموظفين بدءها من جديد.",
+  "That staff code isn't right.": "رمز الموظف هذا غير صحيح.",
+  "This class is at another Branch.": "هذا الصف في فرع آخر.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "يوم الجهاز اللوحي خارج النطاق. تحقق من تاريخ ووقت الجهاز اللوحي.",
 };

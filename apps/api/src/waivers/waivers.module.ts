@@ -33,5 +33,7 @@ import { R2ClientService } from '../common/object-storage/r2-client.service';
   imports: [TenantsModule, QueueModule, GuardiansModule, WaiverAssignmentModule],
   controllers: [WaiversController, GuestWaiversController, GuestWaiverLinksController],
   providers: [WaiversService, GuestWaiversService, R2ClientService],
+  // The locked front-desk tablet's welcome card (FrontDeskModule, Decision 380).
+  exports: [WaiversService, GuestWaiversService],
 })
 export class WaiversModule {}

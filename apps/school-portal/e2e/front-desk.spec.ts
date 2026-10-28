@@ -4,10 +4,11 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
 
 /**
  * Check-in and front-desk mode (DESIGN.md → "Check-in and front-desk mode";
- * Decisions 315, 317, 320, 351). Staff check a student in by name from
- * Students → Check-in; front-desk mode shows a Branch's classes, short names
- * and recent check-ins; the parts still waiting for their backend (personal
- * code, sign-up, find me, locked exit) are shown switched off.
+ * Decisions 315, 317, 320, 351, 380). Staff check a student in by name from
+ * Students → Check-in; front-desk mode is a locked tablet that shows a
+ * Branch's classes, short names and recent check-ins, and is left with a
+ * staff member's own code; the parts still waiting for their backend
+ * (personal code, sign-up, find me) are shown switched off.
  */
 let s: GradingSchool;
 const MIN = 60_000;
@@ -30,6 +31,8 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
+  await db.frontDeskSession.deleteMany({ where });
+  await db.staffKioskCode.deleteMany({ where });
   await db.waiverSignature.deleteMany({ where });
   await db.waiver.deleteMany({ where });
   await db.trainingLog.deleteMany({ where });
@@ -130,33 +133,50 @@ test('the personal code waits for its backend', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Check in' })).toBeDisabled();
 });
 
-test('front-desk mode: pick the branch, short names, recent check-ins, sign-up waits, exit', async ({ page }) => {
+test('front-desk mode: a locked tablet with the branch\'s classes, short names, check-in, and exit with a staff code (Decision 380)', async ({ page }) => {
   const branch = await addBranch(s, 'Riverside');
   const cls = await classNow({ branchId: branch.id, title: 'Riverside Fundamentals' });
   const other = await addBranch(s, 'Hilltop');
   await classNow({ branchId: other.id, title: 'Other branch class' });
   // A Whole School class is on at every Branch (CI3).
-  await classNow({ title: 'Whole School class', startDate: at(-5 * MIN) });
+  const whole = await classNow({ title: 'Whole School class', startDate: at(-5 * MIN) });
   const m = await subscribe(s.student.id);
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id, status: 'COMPLETED', checkInMethod: 'SELF_SERVICE' } });
+  await subscribe(s.newStudent.id);
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('link', { name: 'Front-desk mode' }).click();
 
   await expect(page.getByRole('heading', { name: 'Start front-desk mode' })).toBeVisible();
+  const myCode = ((await page.getByTestId('fd-my-code').textContent()) ?? '').match(/(\d{4})/)?.[1] ?? '';
+  expect(myCode).toMatch(/^\d{4}$/);
   await page.getByRole('radio', { name: 'Riverside' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
-  await expect(page.getByRole('status').filter({ hasText: /locked yet/ })).toBeVisible();
+  // The device now holds only the tablet's session, not the owner's login.
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
   await expect(page.getByTestId('fd-class')).toHaveCount(2);
   await expect(page.getByTestId('fd-class').first()).toContainText('Riverside Fundamentals');
   await expect(page.getByTestId('fd-class').nth(1)).toContainText('Whole School class');
   await expect(page.getByTestId('fd-strip')).toContainText('Sam L.');
+  expect(await page.evaluate(() => Object.keys(sessionStorage).filter((k) => /token/i.test(k) && sessionStorage.getItem(k)))).toEqual([]);
 
   await page.getByRole('tab', { name: 'Name' }).click();
   await page.getByLabel('First or last name').fill('Sam');
   await expect(page.getByRole('button', { name: /Sam L\./ })).toBeVisible();
   await expect(page.getByText('Sam Lee')).toHaveCount(0);
+
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia P\./ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await expect(card).toContainText('Welcome back, Nia');
+  await card.getByRole('button', { name: /Whole School class/ }).click();
+  await card.getByRole('button', { name: /Riverside Fundamentals/ }).click();
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('You’re in, Nia')).toBeVisible();
+  const booking = await db.booking.findFirstOrThrow({ where: { studentId: s.newStudent.id, classId: whole.id } });
+  expect(booking.status).toBe('COMPLETED');
+  await page.getByRole('button', { name: 'Done' }).click();
 
   await page.getByRole('button', { name: /Sign up/ }).click();
   await page.getByRole('button', { name: 'Next' }).click();
@@ -166,8 +186,37 @@ test('front-desk mode: pick the branch, short names, recent check-ins, sign-up w
   await page.getByRole('button', { name: 'Back to check-in' }).click();
 
   await page.getByRole('button', { name: 'Exit' }).click();
-  await page.getByRole('button', { name: 'Leave' }).click();
-  await expect(page).toHaveURL(/\/check-in$/);
+  const exit = page.getByRole('dialog', { name: 'Leave front-desk mode' });
+  const typeCode = async (code: string) => {
+    for (const d of code) await exit.getByRole('button', { name: d, exact: true }).click();
+    await exit.getByRole('button', { name: 'Unlock' }).click();
+  };
+  const wrong = myCode === '0000' ? '1111' : '0000';
+  await typeCode(wrong);
+  await expect(exit).toContainText(/That staff code isn.t right/);
+  await typeCode(myCode);
+  await expect(page.getByRole('heading', { name: /Unlocked by Olive/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Staff sign-in' }).click();
+  await expect(page).toHaveURL(/\/login/);
+});
+
+test('staff see a tablet on the Check-in page and can end it there (Decision 380)', async ({ page, browser }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+
+  const staff = await (await browser.newContext()).newPage();
+  await signIn(staff, s.ownerToken);
+  await staff.goto('/check-in');
+  const tablets = staff.getByTestId('fd-tablets');
+  await expect(tablets).toContainText('Whole School');
+  await tablets.getByRole('button', { name: 'End' }).click();
+  await expect(tablets).toContainText('No device is in front-desk mode.');
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Front-desk mode has ended' })).toBeVisible();
+  await staff.context().close();
 });
 
 test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {

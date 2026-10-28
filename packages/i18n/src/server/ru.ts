@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "Это сканирование принадлежит другому ученику.",
   "Pick at least one class or guest to check in.": "Выберите хотя бы одно занятие или гостя для отметки.",
   "The same guest was listed more than once.": "Один и тот же гость указан больше одного раза.",
+  "Pick one of the School's open Branches for this tablet.": "Выберите один из открытых Филиалов Школы для этого планшета.",
+  "This School has no Branches: start front-desk mode for the whole School.": "У этой Школы нет Филиалов: запустите режим ресепшена для всей Школы.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "Запустить режим ресепшена может только владелец Школы или Персонал этого Филиала.",
+  "Front-desk session not found, or already ended.": "Сеанс ресепшена не найден или уже завершён.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "Этот сеанс ресепшена завершён. Попросите сотрудника запустить его снова.",
+  "That staff code isn't right.": "Этот код сотрудника неверный.",
+  "This class is at another Branch.": "Это занятие в другом Филиале.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "День на планшете вне допустимого диапазона. Проверьте дату и время на планшете.",
 };

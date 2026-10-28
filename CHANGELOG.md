@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Front desk: a locked tablet, left with your own staff code** (Decision
+  380) — starting front-desk mode signs you out of the device, so it holds no
+  staff login; it shows only its Branch's classes and short names, and only
+  check-in and sign-up work on it. Leaving takes a staff member's own code
+  (shown on the start screen and the Check-in page, with "Get a new code").
+  The Check-in page lists tablets in front-desk mode and can end one. New
+  School setting: check-in code length (4 or 6 digits). Needs migration
+  `20261216000000_front_desk_sessions`.
 - **Front desk: one-step check-in** (Decision 378) — the welcome card's
   confirm now books, checks in and checks in the ticked guests in one go. If
   one class can't be done (full, not open yet, no membership…), nothing is

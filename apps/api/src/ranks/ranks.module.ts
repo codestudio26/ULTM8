@@ -40,6 +40,7 @@ import { PromotionFeeService } from './promotion-fee.service';
   // PromotionFeeService: exported so staff-created charges (Decision 303)
   // can call markPaid() once they are built.
   providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService, PromotionFeeService],
-  exports: [GradingErasureService, PromotionFeeService],
+  // GradingService: belt progress on the locked front-desk tablet's welcome card (Decision 380).
+  exports: [GradingErasureService, PromotionFeeService, GradingService],
 })
 export class RanksModule {}

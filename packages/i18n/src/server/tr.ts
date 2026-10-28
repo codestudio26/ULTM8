@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "Bu tarama başka bir öğrenciye ait.",
   "Pick at least one class or guest to check in.": "Giriş yapmak için en az bir ders veya misafir seçin.",
   "The same guest was listed more than once.": "Aynı misafir birden fazla kez listelendi.",
+  "Pick one of the School's open Branches for this tablet.": "Bu tablet için Okulun açık Şubelerinden birini seçin.",
+  "This School has no Branches: start front-desk mode for the whole School.": "Bu Okulun Şubesi yok: resepsiyon modunu tüm Okul için başlatın.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "Resepsiyon modunu yalnızca Okul sahibi veya bu Şubenin Şube Personeli başlatabilir.",
+  "Front-desk session not found, or already ended.": "Resepsiyon oturumu bulunamadı veya zaten bitti.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "Bu resepsiyon oturumu bitti. Bir personelden yeniden başlatmasını isteyin.",
+  "That staff code isn't right.": "Bu personel kodu doğru değil.",
+  "This class is at another Branch.": "Bu ders başka bir Şubede.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "Tabletin günü aralık dışında. Tabletin tarih ve saatini kontrol edin.",
 };

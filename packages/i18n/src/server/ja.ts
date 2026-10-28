@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "このスキャンは別の生徒のものです。",
   "Pick at least one class or guest to check in.": "チェックインするクラスかゲストを1つ以上選んでください。",
   "The same guest was listed more than once.": "同じゲストが複数回指定されています。",
+  "Pick one of the School's open Branches for this tablet.": "このタブレットで使う、スクールの営業中の支店を選んでください。",
+  "This School has no Branches: start front-desk mode for the whole School.": "このスクールには支店がありません。スクール全体で受付モードを開始してください。",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "受付モードを開始できるのは、スクールのオーナーかこの支店の支店スタッフだけです。",
+  "Front-desk session not found, or already ended.": "受付セッションが見つからないか、すでに終了しています。",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "この受付セッションは終了しました。スタッフに再開してもらってください。",
+  "That staff code isn't right.": "そのスタッフコードは正しくありません。",
+  "This class is at another Branch.": "このクラスは別の支店です。",
+  "The tablet's day is out of range. Check the tablet's date and time.": "タブレットの日付が範囲外です。タブレットの日付と時刻を確認してください。",
 };

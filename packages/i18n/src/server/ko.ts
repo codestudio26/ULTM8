@@ -495,4 +495,12 @@ export const serverMessages: Record<string, string> = {
   "This scan belongs to a different Student.": "이 스캔은 다른 수련생의 것입니다.",
   "Pick at least one class or guest to check in.": "체크인할 수업이나 게스트를 하나 이상 고르세요.",
   "The same guest was listed more than once.": "같은 게스트가 두 번 이상 들어 있습니다.",
+  "Pick one of the School's open Branches for this tablet.": "이 태블릿에 사용할 학교의 운영 중인 지점을 하나 고르세요.",
+  "This School has no Branches: start front-desk mode for the whole School.": "이 학교에는 지점이 없습니다. 학교 전체로 프런트 데스크 모드를 시작하세요.",
+  "Only the School owner, or Branch Staff at this Branch, can start front-desk mode.": "학교 소유자나 이 지점의 지점 직원만 프런트 데스크 모드를 시작할 수 있습니다.",
+  "Front-desk session not found, or already ended.": "프런트 데스크 세션을 찾을 수 없거나 이미 종료되었습니다.",
+  "This front-desk session has ended. Ask a member of staff to start it again.": "이 프런트 데스크 세션이 종료되었습니다. 직원에게 다시 시작해 달라고 하세요.",
+  "That staff code isn't right.": "그 직원 코드가 맞지 않습니다.",
+  "This class is at another Branch.": "이 수업은 다른 지점에 있습니다.",
+  "The tablet's day is out of range. Check the tablet's date and time.": "태블릿의 날짜가 범위를 벗어났습니다. 태블릿의 날짜와 시간을 확인하세요.",
 };
