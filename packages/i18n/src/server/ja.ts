@@ -480,4 +480,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "このメールアドレスのアカウントはすでに存在します。代わりに「招待」を使ってください。",
   "This student has already attended this class.": "この生徒はすでにこのクラスに出席しています。",
   "This was just recorded. Check before adding another.": "たった今記録されました。もう一件追加する前に確認してください。",
+  "This person isn't a Student at this School.": "この人はこのスクールの生徒ではありません。",
+  "This scan has expired. Ask the Student to show their QR again.": "このスキャンは期限切れです。生徒にもう一度QRを見せてもらってください。",
+  "This scan belongs to a different Student.": "このスキャンは別の生徒のものです。",
 };

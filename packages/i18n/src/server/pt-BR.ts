@@ -480,4 +480,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "Já existe uma conta com este e-mail — use “Convidar” em vez disso.",
   "This student has already attended this class.": "Este aluno já participou desta aula.",
   "This was just recorded. Check before adding another.": "Isso acabou de ser registrado. Confira antes de adicionar outro.",
+  "This person isn't a Student at this School.": "Essa pessoa não é aluno desta escola.",
+  "This scan has expired. Ask the Student to show their QR again.": "Esta leitura expirou. Peça ao aluno para mostrar o QR de novo.",
+  "This scan belongs to a different Student.": "Esta leitura é de outro aluno.",
 };

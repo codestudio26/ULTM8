@@ -12,8 +12,8 @@ export const FRONT_DESK_BACKEND = {
    * (Decisions 317, 320, 351; §3.21). Until then front-desk mode runs in the
    * staff member's own login and isn't locked. */
   kioskSession: false,
-  /** One student's waiver status for the welcome card. */
-  waiverStatus: false,
+  /** One student's waiver status for the welcome card (GET /students/{id}/waiver-status, built 28 Oct 2026). */
+  waiverStatus: true,
   /** Sign-ups from the tablet waiting for staff approval (Decisions 318, 351). */
   signUp: false,
   /** "Find me" on the tablet (Decision 351). */

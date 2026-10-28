@@ -3636,6 +3636,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/waiver-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_getStudentWaiverStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -3918,6 +3934,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AttendanceController_instructorScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/qr-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_deskQrLookup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7910,6 +7942,14 @@ export interface components {
             /** @description objectKey from paper-upload-url, after the photo was uploaded. */
             imageKey: string;
         };
+        WaiverToSignDto: {
+            waiverId: string;
+            title: string;
+        };
+        StudentWaiverStatusDto: {
+            signed: boolean;
+            toSign: components["schemas"]["WaiverToSignDto"][];
+        };
         UpdateWaiverDto: {
             title?: string;
             /** @description The waiver document body text. */
@@ -8067,6 +8107,19 @@ export interface components {
             studentId: string;
             /** @description The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation. */
             studentToken?: string;
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN. */
+            lookupToken?: string;
+        };
+        DeskQrLookupDto: {
+            studentToken: string;
+        };
+        DeskQrLookupResponseDto: {
+            lookupToken: string;
+            expiresAt: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            profilePhotoUrl?: string | null;
         };
         AcademySummaryDto: {
             id: string;
@@ -14650,6 +14703,29 @@ export interface operations {
             };
         };
     };
+    WaiversController_getStudentWaiverStatus: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentWaiverStatusDto"];
+                };
+            };
+        };
+    };
     WaiversController_findMySignatures: {
         parameters: {
             query?: {
@@ -15076,6 +15152,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_deskQrLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeskQrLookupDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskQrLookupResponseDto"];
                 };
             };
         };

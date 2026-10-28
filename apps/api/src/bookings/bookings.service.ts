@@ -26,6 +26,7 @@ import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClas
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -864,8 +865,8 @@ export class BookingsService {
    * row privacy AND lets a Student's own booking attempt see the true occupancy. */
   private async countOccupiedSeats(classId: string): Promise<number> {
     const [bookingCount, attendeeCount] = await Promise.all([
-      this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
-      this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+      this.prismaJobs.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
+      this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: SEAT_HOLDING_STATUSES } } }),
     ]);
     return bookingCount + attendeeCount;
   }

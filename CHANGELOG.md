@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Check-in and front desk review fixes** (Decision 375) — a checked-in
+  student keeps their seat, so a full class can't be booked past its limit; the
+  welcome card no longer books a class whose check-in hasn't opened ("Check-in
+  opens at …"); a scanned app QR is checked once and stays good for 5 minutes;
+  the card shows which waivers are still to sign; Whole School classes show at
+  every Branch; a School with no Branches can start front-desk mode; the page
+  moves to the new day at midnight; a QR of someone who isn't a student here is
+  refused instead of opening a blank card; places left count guests; the card
+  waits for bookings before ticking; closed Branches are hidden; name search
+  says when there are more matches. New text in all 15 languages.
 - **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
   and 2, plus four new scripts for everything added since; report in
   `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
