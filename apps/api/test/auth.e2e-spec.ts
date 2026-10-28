@@ -24,6 +24,7 @@ import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
+import { monitorEventLoopDelay } from 'perf_hooks';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
@@ -321,5 +322,68 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     expect(right.status).toBe(201);
     expect(typeof right.body.stepUpToken).toBe('string');
     expect(typeof right.body.expiresAt).toBe('string');
+  });
+});
+
+/**
+ * Stress test round 3: passcode hashing ran on the event loop (bcryptjs, pure
+ * JS, ~0.7 s per cost-12 hash), so a burst of logins froze every other request
+ * for seconds. The API now uses native `bcrypt` (libuv threadpool). Own block
+ * and own users, for the same throttle-isolation reason as the block above.
+ * The users' hashes are written by bcryptjs here, so this also proves hashes
+ * from the old library still verify.
+ */
+describeIfDb('AuthController — passcode checks off the event loop (stress round 3)', () => {
+  let app: INestApplication;
+  const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  const userIds: string[] = [];
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('v1');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await superuser.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.$disconnect();
+    await app.close();
+  });
+
+  it('8 parallel logins all succeed and never block the event loop for long', async () => {
+    const passcodeHash = await bcrypt.hash(PASSCODE, 12);
+    const users = await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `burst-${i}-${randomUUID()}@example.test`,
+            phone: randomPhone(),
+            firstName: 'Auth',
+            surname: 'Burst',
+            passcodeHash,
+            dateOfBirth: new Date('2000-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        }),
+      ),
+    );
+    userIds.push(...users.map((u) => u.id));
+
+    const delay = monitorEventLoopDelay({ resolution: 10 });
+    delay.enable();
+    const results = await Promise.all(
+      users.map((u) => request(app.getHttpServer()).post('/v1/auth/login').send({ email: u.email, passcode: PASSCODE })),
+    );
+    delay.disable();
+
+    expect(results.map((r) => r.status)).toEqual(users.map(() => 201));
+    // bcryptjs blocked the loop for 1–2 s in this burst; native bcrypt stays
+    // in the tens of milliseconds. 300 ms leaves room for a slow CI machine.
+    expect(delay.max / 1e6).toBeLessThan(300);
   });
 });

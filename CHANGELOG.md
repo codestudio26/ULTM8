@@ -15,6 +15,55 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Stress test round 3** — the same 30 Schools and 12,213 students as rounds 1
+  and 2, plus four new scripts for everything added since; report in
+  `docs/handover/STRESS-TEST-ROUND3.md`, scripts in
+  `apps/api/scripts/stress/round3/`. Fixes below.
+- **Remove from School works for a coach who still teaches** (product owner,
+  28 Oct 2026) — the dialog shows how many upcoming classes and weekly slots
+  they teach and asks what happens to them: give them to another coach, no
+  coach for now, or cancel the classes (students told, credit per the
+  School's cancellation settings; their weekly slots stay with no coach).
+  The coach loses access at once either way.
+- **API stress-test fixes: duplicate roles, passcode hashing, Add manually**
+  (stress test round 3) — a double click on "Give role" (or two coach invites
+  accepted at once) no longer gives someone the same role twice, so revoking
+  it really ends the access; the database now allows one live grant per
+  person, role and scope, and existing duplicates are revoked (the oldest is
+  kept). Passcode hashing and checking no longer slow down every other
+  request during a burst of logins or Add manually (native `bcrypt`, same
+  hashes). A student "Add manually" that fails part-way no longer leaves an
+  account behind, so the owner can just try again. Needs the migration
+  `20261212000100_role_grant_one_live_per_scope`.
+- **Round-3 stress-test fixes (races)** — a booking made while the School
+  cancels the class is now either cancelled with the rest or refused ("This
+  class has been cancelled by the school"); it used to stay booked on the
+  cancelled class (also when a timetable slot is switched off with its booked
+  classes cancelled). A class cancel that stopped half way (the server busy) is
+  finished by cancelling again, instead of answering "already cancelled".
+  Closing a Branch while people book its classes no longer fails with a server
+  error on both sides, and those bookings move with their class. A style can
+  no longer be archived while a class using it is being saved. Booking and
+  checking in the same student from two desks at once no longer fails with a
+  server error; the second booking gets the usual "already has a booking".
+  A desk sale, a cash payment marked as paid, a booking or a waitlist place
+  sent while the owner closes the School is now refused ("This School has been
+  closed"); one of them could still be saved just after the close.
+- **Round-3 stress-test fixes (billing and waivers)** — a payment that
+  arrives after its School closed no longer starts a Subscription: it is
+  refunded and the Stripe subscription cancelled, and closing a School also
+  cancels Subscriptions still waiting for their first payment. Cancelling a
+  Subscription several times at once calls Stripe once. A signature can no
+  longer land on waiver terms the owner has just replaced, a double-clicked
+  signature is saved once, and "Remind everyone" pressed several times at
+  once reminds each student once.
+- **Booking and desk rules (product owner, 28 Oct 2026)** — a student checked
+  in to a class can't be booked into it again ("This student has already
+  attended this class"); a cancelled booking still can. The same desk sale or
+  Friend Pass for the same student within a minute is refused ("This was just
+  recorded. Check before adding another."). A Friend Pass only covers a guest,
+  never its holder's own seat. Staff booking for students can now book 200 a
+  minute (students' own limit stays 20).
 - **Dashboard review fixes** (Decision 367) — "Bookings this week" leaves
   cancelled bookings out and shows them as their own number; a new Attendance
   card shows this week's present and absent; a Branch filter for Schools with

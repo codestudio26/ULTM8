@@ -589,7 +589,7 @@ export class TimetableService {
     for (const { cls, bookings, queued, taken, waitingStudentIds } of await this.upcomingClassesOf(callerId, slot.id)) {
       const booked = bookings.length > 0 || queued > 0;
       if (booked && bookedChoice === 'CANCEL') {
-        await this.cancelClass(callerId, cls, bookings, zone);
+        await this.cancelClass(callerId, cls, zone);
         continue;
       }
       // Whether this Class takes the slot's new day, time, place and rules.
@@ -601,7 +601,7 @@ export class TimetableService {
       ).plus({ days: follows ? dayShift : 0 });
       const fields = occurrenceFields(slot, localDate);
       if (follows && (!live || fields.startDate <= now || (dayShift !== 0 && isClosedOn(closures, slot.branchId, localDate.toISODate()!)))) {
-        if (booked) await this.cancelClass(callerId, cls, bookings, zone);
+        if (booked) await this.cancelClass(callerId, cls, zone);
         else await this.removeClass(callerId, cls.id);
         continue;
       }
@@ -624,7 +624,7 @@ export class TimetableService {
       } catch (err) {
         // Another Class of this slot (an archived one) already holds that date.
         if ((err as { code?: string }).code !== 'P2002') throw err;
-        if (booked) await this.cancelClass(callerId, cls, bookings, zone);
+        if (booked) await this.cancelClass(callerId, cls, zone);
         else await this.removeClass(callerId, cls.id);
         continue;
       }
@@ -798,23 +798,32 @@ export class TimetableService {
    * Students told. Unlinking frees the date, so switching the slot back on makes
    * that date again (Decision 332, T15); the cancelled Class and its booking
    * history stay. */
-  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date; schoolId: string }, bookings: Array<{ id: string; studentId: string }>, zone: string): Promise<void> {
-    // The waitlist closes first, so the seats the cancellations free aren't
-    // offered to anyone.
+  private async cancelClass(callerId: string, cls: { id: string; title: string; startDate: Date; schoolId: string }, zone: string): Promise<void> {
+    // Marked cancelled first, under the Class row lock bookings also take
+    // (lockOpenClass), and the waitlist closed in the same transaction, so the
+    // seats the cancellations free aren't offered to anyone. A booking racing
+    // this either committed before (and is read below) or now sees the class
+    // cancelled (stress test round 3: it used to stay booked on the cancelled
+    // class, as with CancellationService.cancelClass).
+    const at = new Date();
     const waiting = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${cls.id} FOR UPDATE`;
+      // Marked cancelled too, so the calendar shows it as a cancelled date
+      // (Decision 353, T7) rather than a class that was simply removed.
+      await tx.class.updateMany({ where: { id: cls.id, cancelledAt: null }, data: { cancelledAt: at, cancelledById: callerId } });
       const entries = await tx.waitlistEntry.findMany({ where: { classId: cls.id, status: { in: ['WAITING', 'NOTIFIED'] } }, select: { studentId: true } });
       await tx.waitlistEntry.updateMany({ where: { classId: cls.id, status: { in: ['WAITING', 'NOTIFIED'] } }, data: { status: 'CANCELLED' } });
       return entries.map((e) => e.studentId);
-    });
+    }, { timeoutMs: 15_000 });
+    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({ where: { classId: cls.id, status: 'UPCOMING' }, select: { id: true, studentId: true } }),
+    );
     for (const b of bookings) {
       await this.bookingsService.cancelBooking(callerId, b.id, undefined, { schoolCancelled: true });
     }
-    await this.prismaApp.withTenantContext(callerId, (tx) => {
-      const at = new Date();
-      // Marked cancelled too, so the calendar shows it as a cancelled date
-      // (Decision 353, T7) rather than a class that was simply removed.
-      return tx.class.update({ where: { id: cls.id }, data: { archivedAt: at, cancelledAt: at, cancelledById: callerId, purgeAt: new Date(at.getTime() + RETENTION_WINDOW_DAYS * 86_400_000), timetableSlotId: null } });
-    });
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.update({ where: { id: cls.id }, data: { archivedAt: at, purgeAt: new Date(at.getTime() + RETENTION_WINDOW_DAYS * 86_400_000), timetableSlotId: null } }),
+    );
     // The date in the slot's own zone, not UTC (Decision 332, T16).
     await this.tell([...bookings.map((b) => b.studentId), ...waiting], `class-cancelled-${cls.id}`, 'Class cancelled',
       `${cls.title} on ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED',

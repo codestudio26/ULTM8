@@ -6087,3 +6087,26 @@ After the Students review fixes, five questions were left: whether the owner can
 ### Recorded by
 
 User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students questions listed in the status report (add manually for adults only with a sign-in code, list search/branch filter/paging, a Re-enrol button, the Guardian's name on a child's page, and a "You've been added" notice with no accept step).
+
+---
+
+## Decision 372 — Stress test round 3: the product owner's answers
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 331 (no revoke while teaching), 343 (revoke ends bookings), 361 (Remove from School), 364 (every School close stops billing) · **Answers:** `docs/handover/STRESS-TEST-ROUND3.md`, "Waiting on the product owner" (Q1–Q6)
+
+### Decision
+
+1. **Removing a coach who still teaches (Q1).** Remove from School always works, so a dismissed coach loses access at once. In the same step the owner chooses what happens to their upcoming classes:
+   - give them to another coach at the School;
+   - no coach for now: the classes still run, and the owner assigns a coach later;
+   - cancel them, as for any class the School cancels (students told, credit by the School's cancellation settings).
+   Weekly slots they teach follow the same choice.
+2. **One attendance per student per class (Q2).** Once a student has been checked in to a class, another booking for that same class is refused. A cancelled booking doesn't count.
+3. **A desk sale or Friend Pass clicked twice (Q3).** An identical desk sale or Friend Pass for the same student (same plan) within 1 minute is refused with "This was just recorded. Check before adding another."
+4. **A Friend Pass covers a guest only (Q4),** never its holder's own seat.
+5. **Staff booking on someone's behalf (Q5)** may book up to 200 a minute per staff login. A student's own limit is unchanged.
+6. **A payment that arrives after its School closed (Q6)** is refunded and its Stripe subscription cancelled; no Membership is created.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: Q1 "What happens if we have to remove it, for example the coach has been dismissed", then "agreed" to removing in one step with a choice for the classes, and "agreed" to also allow "No coach for now"; Q2 "yes, if the booking is for the same class"; Q3 "agreed"; Q4 "agreed"; Q5 "raise to 1000 per min", then "ok - 200" after the recommendation; Q6 refund "go ahead with your idea".

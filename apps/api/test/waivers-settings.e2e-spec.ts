@@ -92,7 +92,9 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
     app.setGlobalPrefix('v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
-    await app.init();
+    // Listening once: an unbound server makes supertest open a new listener per
+    // request, and parallel requests then reset each other's connections.
+    await app.listen(0);
 
     await superuser.school.create({ data: { id: school.id, name: 'Settings Dojo', timezone: 'UTC' } });
     await superuser.school.create({ data: { id: otherSchool.id, name: 'Other Dojo', timezone: 'UTC' } });
@@ -262,6 +264,48 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
     await http().post(`/v1/waivers/${waiver.id}/archive`).set(auth(owner));
     expect((await http().post(`/v1/schools/${school.id}/waivers/${waiver.id}/remind`).set(auth(owner))).status).toBe(409);
     await superuser.roleGrant.updateMany({ where: { userId: { in: [a.id, b.id] } }, data: { revokedAt: new Date() } });
+  });
+
+  describe('requests at the same moment (stress test round 3)', () => {
+    it('new terms saved while students sign leave no signature on the old version', async () => {
+      const students = await Promise.all(Array.from({ length: 8 }, (_, i) => mkUser(`race-sign-${i}`, school.id, 'STUDENT')));
+      const waiver = await mkWaiver('Racing terms', 'Terms 1');
+      for (let round = 2; round <= 4; round++) {
+        await superuser.waiverSignature.deleteMany({ where: { waiverId: waiver.id, status: 'SIGNED' } });
+        const [edit, ...signs] = await Promise.all([
+          http().patch(`/v1/waivers/${waiver.id}`).set(auth(owner)).send({ body: `Terms ${round}`, resign: true }),
+          ...students.map((st) => sign(waiver.id, st)),
+        ]);
+        expect(edit.status).toBe(200);
+        signs.forEach((r) => expect([201, 409]).toContain(r.status));
+        const signed = await superuser.waiverSignature.findMany({ where: { waiverId: waiver.id, status: 'SIGNED' } });
+        expect(signed.filter((r) => r.signedWaiverVersion !== edit.body.version)).toEqual([]);
+      }
+      await superuser.roleGrant.updateMany({ where: { userId: { in: students.map((st) => st.id) } }, data: { revokedAt: new Date() } });
+    });
+
+    it('a double-clicked signature is saved once; the other clicks get 409', async () => {
+      const st = await mkUser('double-click', school.id, 'STUDENT');
+      const waiver = await mkWaiver('Double click');
+      const res = await Promise.all(Array.from({ length: 6 }, () => sign(waiver.id, st)));
+      expect(res.filter((r) => r.status === 201)).toHaveLength(1);
+      expect(res.filter((r) => r.status === 409)).toHaveLength(5);
+      expect((await rowsFor(waiver.id, st.id)).map((r) => r.status)).toEqual(['SIGNED']);
+      await superuser.roleGrant.updateMany({ where: { userId: st.id }, data: { revokedAt: new Date() } });
+    });
+
+    it('"Remind everyone" pressed several times at once reminds each student once, without failing', async () => {
+      const students = await Promise.all(Array.from({ length: 10 }, (_, i) => mkUser(`race-remind-${i}`, school.id, 'STUDENT')));
+      const waiver = await mkWaiver('Remind burst');
+      notices = [];
+      const res = await Promise.all(Array.from({ length: 8 }, () => http().post(`/v1/schools/${school.id}/waivers/${waiver.id}/remind`).set(auth(owner))));
+      expect(res.map((r) => r.status)).toEqual(Array(8).fill(201));
+      const reminded = notices.flatMap((n) => n.studentIds);
+      expect(reminded.length).toBe(new Set(reminded).size);
+      expect(res.reduce((sum, r) => sum + r.body.reminded, 0)).toBe(reminded.length);
+      for (const st of students) expect(reminded).toContain(st.id);
+      await superuser.roleGrant.updateMany({ where: { userId: { in: students.map((st) => st.id) } }, data: { revokedAt: new Date() } });
+    });
   });
 
   it('Q8: a new member is told which waivers to sign when they join, unless the School turned that off', async () => {

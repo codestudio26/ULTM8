@@ -27,12 +27,36 @@ export async function stopSchoolBilling(
     where: { schoolId, status: 'ACTIVE', stripeSubscriptionId: { not: null }, cancelAt: null },
     select: { id: true, stripeSubscriptionId: true },
   });
-  if (memberships.length > 0) {
+  // A Subscription bought but not paid yet has no Membership (Decision 6), only
+  // its Pending (or failed, still payable) Transaction. A closed School takes
+  // no purchases (Decision 334 §8), so the unpaid Subscription is cancelled
+  // now; Stripe voids its first invoice and payment_intent.canceled fails the
+  // Transaction. A payment that still gets through is refunded by the webhook.
+  // Stripe itself expires a first invoice left unpaid for 23 hours, so older
+  // rows have nothing left to cancel.
+  const unpaid = await prismaJobs.transaction.findMany({
+    where: {
+      schoolId,
+      kind: 'MEMBERSHIP',
+      status: { in: ['PENDING', 'FAILED'] },
+      stripeSubscriptionId: { not: null },
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    },
+    select: { id: true, stripeSubscriptionId: true },
+  });
+  if (memberships.length > 0 || unpaid.length > 0) {
     const account = await prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { stripeConnectedAccountId: true } });
     if (!account?.stripeConnectedAccountId) {
-      logger.error(`School ${schoolId} closed with ${memberships.length} Subscription(s) but no connected Stripe account; cancel them in Stripe by hand.`);
+      logger.error(`School ${schoolId} closed with ${memberships.length + unpaid.length} Subscription(s) but no connected Stripe account; cancel them in Stripe by hand.`);
     } else {
       const stripe = stripeClient.scopedClient(account.stripeConnectedAccountId);
+      for (const t of unpaid) {
+        try {
+          await stripe.subscriptions.cancel(t.stripeSubscriptionId as string);
+        } catch (err) {
+          logger.error(`School ${schoolId} closed: failed to cancel unpaid Subscription ${t.stripeSubscriptionId} (Transaction ${t.id}).`, err as Error);
+        }
+      }
       for (const m of memberships) {
         try {
           const subscription = await stripe.subscriptions.update(m.stripeSubscriptionId as string, { cancel_at_period_end: true });
