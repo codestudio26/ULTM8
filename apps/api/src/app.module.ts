@@ -21,6 +21,7 @@ import { WaiversModule } from './waivers/waivers.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { GuardiansModule } from './guardians/guardians.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { FrontDeskModule } from './front-desk/front-desk.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationBroadcastModule } from './notifications/broadcast/notification-broadcast.module';
@@ -86,6 +87,7 @@ import { validateEnv } from './common/config/validate-env';
     DashboardModule,
     StaffRemovalModule,
     HealthModule,
+    FrontDeskModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

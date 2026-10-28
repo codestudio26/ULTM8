@@ -1,5 +1,6 @@
 import { ExecutionContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { verifyFrontDeskSessionToken } from '../../front-desk/front-desk-session-token';
 
 /** Requests per minute per IP for a caller who isn't signed in
  * (THROTTLE_IP_LIMIT_PER_MINUTE, default 60). Only the browser tests raise it:
@@ -22,6 +23,10 @@ export function ipLimitPerMinute(): number {
  * anyone leave the IP limit with a made-up token. Signed-in requests don't count
  * towards their IP, so an expired token after a busy minute still gets its 401
  * (and the app refreshes), not a 429.
+ *
+ * A locked front-desk tablet (Decision 380) counts as signed in the same way:
+ * its session token verifies with the front-desk key, and it is counted on its
+ * own as `front-desk:<sessionId>`.
  *
  * A route that sets its own `default` limit (login, public School search, guest
  * waivers, bulk promote) keeps it: the guard uses the route's limit in place of
@@ -47,11 +52,13 @@ export function verifiedSub(req: Record<string, any>): string | null {
   const secret = process.env.JWT_ACCESS_SECRET;
   if (header?.startsWith('Bearer ') && secret) {
     if (verifier?.secret !== secret) verifier = { secret, jwt: new JwtService({ secret }) };
+    const token = header.slice('Bearer '.length);
     try {
-      const payload = verifier.jwt.verify(header.slice('Bearer '.length));
+      const payload = verifier.jwt.verify(token);
       sub = typeof payload?.sub === 'string' ? payload.sub : null;
     } catch {
-      sub = null;
+      const sessionId = verifyFrontDeskSessionToken(token);
+      sub = sessionId ? `front-desk:${sessionId}` : null;
     }
   }
   verified.set(req, sub);

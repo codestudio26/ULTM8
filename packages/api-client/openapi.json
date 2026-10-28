@@ -1938,6 +1938,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/{userId}/details": {
+      "patch": {
+        "operationId": "RoleGrantsController_updateStaffDetails",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffDetailsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/main-owner": {
       "post": {
         "operationId": "RoleGrantsController_handOverMainOwner",
@@ -14657,6 +14710,477 @@
           }
         ]
       }
+    },
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Database and Redis are reachable."
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/sessions": {
+      "post": {
+        "operationId": "FrontDeskSessionsController_start",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartFrontDeskSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrontDeskSessionStartedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "FrontDeskSessionsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrontDeskSessionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/sessions/{id}/end": {
+      "post": {
+        "operationId": "FrontDeskSessionsController_end",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrontDeskSessionEndedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/my-code": {
+      "get": {
+        "operationId": "FrontDeskSessionsController_myCode",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffKioskCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "FrontDeskSessionsController_newCode",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffKioskCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/session": {
+      "get": {
+        "operationId": "FrontDeskKioskController_info",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskSessionInfoDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/today": {
+      "get": {
+        "operationId": "FrontDeskKioskController_today",
+        "parameters": [
+          {
+            "name": "startsFrom",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsTo",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskTodayDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/students": {
+      "get": {
+        "operationId": "FrontDeskKioskController_search",
+        "parameters": [
+          {
+            "name": "search",
+            "required": true,
+            "in": "query",
+            "description": "Two letters or more.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskStudentListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/students/{id}/card": {
+      "get": {
+        "operationId": "FrontDeskKioskController_card",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsFrom",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "startsTo",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskStudentCardDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/qr-lookups": {
+      "post": {
+        "operationId": "FrontDeskKioskController_qrLookup",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskQrLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskQrLookupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/check-ins": {
+      "post": {
+        "operationId": "FrontDeskKioskController_checkIn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/unlock": {
+      "post": {
+        "operationId": "FrontDeskKioskController_unlock",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskUnlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskUnlockedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -15086,6 +15610,14 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
           },
+          "checkInCodeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length."
+          },
           "lateCancelRefundPolicy": {
             "type": "string",
             "enum": [
@@ -15301,6 +15833,14 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
           },
+          "checkInCodeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes)."
+          },
           "lateCancelRefundPolicy": {
             "type": "string",
             "enum": [
@@ -15374,6 +15914,7 @@
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
+          "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
           "weekStartsOn",
@@ -15524,6 +16065,14 @@
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
+          },
+          "checkInCodeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length."
           },
           "lateCancelRefundPolicy": {
             "type": "string",
@@ -17272,9 +17821,23 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "Branch Staff the owner lets edit styles, belts and skills (Decision 383)."
+          },
           "mainOwner": {
             "type": "boolean",
             "description": "The School's main owner (Decision 370). Other owners are co-owners."
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 381: the School's own name for them, set by an owner. Null = not set."
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 381: their work phone at this School (E.164), set by an owner. Null = not set."
           },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
@@ -17292,6 +17855,7 @@
           "active",
           "addedAt",
           "canInviteCoaches",
+          "canManageDisciplines",
           "mainOwner",
           "roles"
         ]
@@ -17308,6 +17872,40 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "UpdateStaffDetailsDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 80
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "E.164, e.g. +447700900123."
+          }
+        }
+      },
+      "StaffDetailsResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "workPhone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "userId"
         ]
       },
       "HandOverMainOwnerDto": {
@@ -17966,6 +18564,10 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383)."
+          },
           "branchIds": {
             "description": "Branches they may invite to; empty for the owner (any branch) or when they can't invite.",
             "type": "array",
@@ -17977,6 +18579,7 @@
         "required": [
           "isOwner",
           "canInviteCoaches",
+          "canManageDisciplines",
           "branchIds"
         ]
       },
@@ -18001,6 +18604,9 @@
           },
           "canInviteCoaches": {
             "type": "boolean"
+          },
+          "canManageDisciplines": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -18008,7 +18614,8 @@
           "firstName",
           "surname",
           "branchIds",
-          "canInviteCoaches"
+          "canInviteCoaches",
+          "canManageDisciplines"
         ]
       },
       "StaffPermissionListResponseDto": {
@@ -18030,11 +18637,12 @@
         "properties": {
           "canInviteCoaches": {
             "type": "boolean"
+          },
+          "canManageDisciplines": {
+            "type": "boolean",
+            "description": "May edit the School's styles, belts and skills (Decision 383)."
           }
-        },
-        "required": [
-          "canInviteCoaches"
-        ]
+        }
       },
       "CoachInvitePreviewDto": {
         "type": "object",
@@ -28370,6 +28978,497 @@
           "classesCancelled",
           "slotsReassigned",
           "slotsCleared"
+        ]
+      },
+      "StartFrontDeskSessionDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Branch this tablet is at. Required when the School has open Branches; leave out when it has none."
+          }
+        }
+      },
+      "FrontDeskSessionStartedDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "sessionToken": {
+            "type": "string",
+            "description": "For the tablet only. It reaches the /front-desk/kiosk endpoints and nothing else."
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "sessionId",
+          "sessionToken",
+          "expiresAt"
+        ]
+      },
+      "FrontDeskSessionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "startedById": {
+            "type": "string"
+          },
+          "startedByName": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "startedById",
+          "startedByName",
+          "startedAt",
+          "expiresAt"
+        ]
+      },
+      "FrontDeskSessionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrontDeskSessionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FrontDeskSessionEndedDto": {
+        "type": "object",
+        "properties": {
+          "ended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ended"
+        ]
+      },
+      "StaffKioskCodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The caller's own code for leaving a locked tablet at this School (4 or 6 digits, the School's setting)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "KioskSessionInfoDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checkInOpensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Check-in opens this many minutes before a Class starts (the School's setting)."
+          },
+          "checkInCodeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "How many digits staff codes have here."
+          }
+        },
+        "required": [
+          "sessionId",
+          "schoolId",
+          "schoolName",
+          "expiresAt",
+          "checkInOpensMinutesBeforeStart",
+          "checkInCodeDigits"
+        ]
+      },
+      "KioskClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "null: no limit."
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "null: a whole-School Class."
+          },
+          "coachName": {
+            "type": "string",
+            "nullable": true
+          },
+          "seatsTaken": {
+            "type": "number",
+            "description": "Booked or checked in, each with their guests."
+          },
+          "checkedIn": {
+            "type": "number",
+            "description": "Members and guests checked in."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "startDate",
+          "endDate",
+          "seatsTaken",
+          "checkedIn"
+        ]
+      },
+      "KioskRecentCheckInDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surnameInitial": {
+            "type": "string",
+            "description": "The surname's first letter only (Decision 351)."
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surnameInitial",
+          "classTitle",
+          "at"
+        ]
+      },
+      "KioskTodayDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskClassDto"
+            }
+          },
+          "recent": {
+            "description": "Today's last 10 check-ins, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskRecentCheckInDto"
+            }
+          }
+        },
+        "required": [
+          "classes",
+          "recent"
+        ]
+      },
+      "KioskStudentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surnameInitial": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "A child's photo only while their Guardian's camera consent is active (Decisions 57, 69)."
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surnameInitial"
+        ]
+      },
+      "KioskStudentListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "At most 8.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskStudentDto"
+            }
+          },
+          "more": {
+            "type": "boolean",
+            "description": "More matched than were returned: type more of the name."
+          }
+        },
+        "required": [
+          "items",
+          "more"
+        ]
+      },
+      "KioskWaiverToSignDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "waiverId",
+          "title"
+        ]
+      },
+      "KioskProgressDto": {
+        "type": "object",
+        "properties": {
+          "counted": {
+            "type": "number"
+          },
+          "required": {
+            "type": "number"
+          },
+          "percent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "counted",
+          "required",
+          "percent"
+        ]
+      },
+      "KioskGuestDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Once they signed their waiver: first name and initial."
+          },
+          "waiverStatus": {
+            "type": "string",
+            "enum": [
+              "SIGNED",
+              "UNSIGNED",
+              "NONE"
+            ]
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "attendeeId",
+          "waiverStatus"
+        ]
+      },
+      "KioskBookingDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "bookingId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPCOMING",
+              "COMPLETED"
+            ]
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskGuestDto"
+            }
+          }
+        },
+        "required": [
+          "classId",
+          "bookingId",
+          "status",
+          "guests"
+        ]
+      },
+      "KioskStudentCardDto": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/KioskStudentDto"
+          },
+          "membershipStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "NONE"
+            ]
+          },
+          "waiverSigned": {
+            "type": "boolean"
+          },
+          "waiversToSign": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskWaiverToSignDto"
+            }
+          },
+          "progress": {
+            "nullable": true,
+            "description": "Classes toward the next belt, when a rank counts classes.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KioskProgressDto"
+              }
+            ]
+          },
+          "bookings": {
+            "description": "The student's bookings in today's Classes here.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KioskBookingDto"
+            }
+          }
+        },
+        "required": [
+          "student",
+          "membershipStatus",
+          "waiverSigned",
+          "waiversToSign",
+          "bookings"
+        ]
+      },
+      "KioskQrLookupResponseDto": {
+        "type": "object",
+        "properties": {
+          "lookupToken": {
+            "type": "string",
+            "description": "Pass to POST /front-desk/kiosk/check-ins within 5 minutes."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "student": {
+            "$ref": "#/components/schemas/KioskStudentDto"
+          }
+        },
+        "required": [
+          "lookupToken",
+          "expiresAt",
+          "student"
+        ]
+      },
+      "KioskUnlockDto": {
+        "type": "object",
+        "properties": {
+          "staffCode": {
+            "type": "string",
+            "description": "A staff member's own code (4 or 6 digits)."
+          }
+        },
+        "required": [
+          "staffCode"
+        ]
+      },
+      "KioskUnlockedDto": {
+        "type": "object",
+        "properties": {
+          "unlockedBy": {
+            "type": "string",
+            "description": "First name of the staff member whose code it was."
+          }
+        },
+        "required": [
+          "unlockedBy"
         ]
       }
     }

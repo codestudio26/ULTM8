@@ -128,6 +128,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Minutes before a Class starts that check-in opens.' })
   checkInOpensMinutesBeforeStart!: number;
 
+  @ApiProperty({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here (staff kiosk codes, members\' personal codes).' })
+  checkInCodeDigits!: number;
+
   @ApiProperty({ enum: ['NO_REFUND_ONCE_STARTED', 'REFUND_UNTIL_END', 'ALWAYS_REFUND'] })
   lateCancelRefundPolicy!: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
 

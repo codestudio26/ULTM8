@@ -644,6 +644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/{userId}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["RoleGrantsController_updateStaffDetails"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
@@ -4820,6 +4836,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["HealthController_check"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskSessionsController_list"];
+        put?: never;
+        post: operations["FrontDeskSessionsController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/sessions/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskSessionsController_end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/my-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskSessionsController_myCode"];
+        put?: never;
+        post: operations["FrontDeskSessionsController_newCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_today"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/students/{id}/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_card"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/qr-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_qrLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_checkIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4973,6 +5165,11 @@ export interface components {
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
             /**
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
+             * @enum {number}
+             */
+            checkInCodeDigits?: 4 | 6;
+            /**
              * @description What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.
              * @enum {string}
              */
@@ -5042,6 +5239,11 @@ export interface components {
             cancellationPolicyChosenAt?: string | null;
             /** @description Minutes before a Class starts that check-in opens. */
             checkInOpensMinutesBeforeStart: number;
+            /**
+             * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
+             * @enum {number}
+             */
+            checkInCodeDigits: 4 | 6;
             /** @enum {string} */
             lateCancelRefundPolicy: "NO_REFUND_ONCE_STARTED" | "REFUND_UNTIL_END" | "ALWAYS_REFUND";
             /** @description Branch Staff may record desk payments (Decision 347). */
@@ -5117,6 +5319,11 @@ export interface components {
             noShowFee?: number | null;
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
+            /**
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
+             * @enum {number}
+             */
+            checkInCodeDigits?: 4 | 6;
             /**
              * @description What cancelling a Booking after its Class has started gives back, when the Class has no refund cut-off of its own. Default NO_REFUND_ONCE_STARTED. Under the first two, a Class that has ended can no longer be cancelled.
              * @enum {string}
@@ -5628,13 +5835,29 @@ export interface components {
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
             canInviteCoaches: boolean;
+            /** @description Branch Staff the owner lets edit styles, belts and skills (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description The School's main owner (Decision 370). Other owners are co-owners. */
             mainOwner: boolean;
+            /** @description Decision 381: the School's own name for them, set by an owner. Null = not set. */
+            displayName?: string | null;
+            /** @description Decision 381: their work phone at this School (E.164), set by an owner. Null = not set. */
+            workPhone?: string | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
         StaffListResponseDto: {
             items: components["schemas"]["StaffMemberDto"][];
+        };
+        UpdateStaffDetailsDto: {
+            displayName?: string | null;
+            /** @description E.164, e.g. +447700900123. */
+            workPhone?: string | null;
+        };
+        StaffDetailsResponseDto: {
+            userId: string;
+            displayName?: string | null;
+            workPhone?: string | null;
         };
         HandOverMainOwnerDto: {
             /** @description A co-owner of this School, who becomes its main owner. */
@@ -5831,6 +6054,8 @@ export interface components {
         MyStaffPermissionResponseDto: {
             isOwner: boolean;
             canInviteCoaches: boolean;
+            /** @description May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383). */
+            canManageDisciplines: boolean;
             /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
             branchIds: string[];
         };
@@ -5841,12 +6066,15 @@ export interface components {
             /** @description Branches where they are Branch Staff. */
             branchIds: string[];
             canInviteCoaches: boolean;
+            canManageDisciplines: boolean;
         };
         StaffPermissionListResponseDto: {
             items: components["schemas"]["StaffPermissionResponseDto"][];
         };
         SetStaffPermissionDto: {
-            canInviteCoaches: boolean;
+            canInviteCoaches?: boolean;
+            /** @description May edit the School's styles, belts and skills (Decision 383). */
+            canManageDisciplines?: boolean;
         };
         CoachInvitePreviewDto: {
             schoolName: string;
@@ -8957,6 +9185,152 @@ export interface components {
             /** @description Weekly timetable slots left with no instructor. */
             slotsCleared: number;
         };
+        StartFrontDeskSessionDto: {
+            /** @description The Branch this tablet is at. Required when the School has open Branches; leave out when it has none. */
+            branchId?: string | null;
+        };
+        FrontDeskSessionStartedDto: {
+            sessionId: string;
+            /** @description For the tablet only. It reaches the /front-desk/kiosk endpoints and nothing else. */
+            sessionToken: string;
+            branchId?: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        FrontDeskSessionDto: {
+            id: string;
+            branchId?: string | null;
+            branchName?: string | null;
+            startedById: string;
+            startedByName: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        FrontDeskSessionListDto: {
+            items: components["schemas"]["FrontDeskSessionDto"][];
+        };
+        FrontDeskSessionEndedDto: {
+            ended: boolean;
+        };
+        StaffKioskCodeDto: {
+            /** @description The caller's own code for leaving a locked tablet at this School (4 or 6 digits, the School's setting). */
+            code: string;
+        };
+        KioskSessionInfoDto: {
+            sessionId: string;
+            schoolId: string;
+            schoolName: string;
+            branchId?: string | null;
+            branchName?: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @description Check-in opens this many minutes before a Class starts (the School's setting). */
+            checkInOpensMinutesBeforeStart: number;
+            /**
+             * @description How many digits staff codes have here.
+             * @enum {number}
+             */
+            checkInCodeDigits: 4 | 6;
+        };
+        KioskClassDto: {
+            id: string;
+            title: string;
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** Format: date-time */
+            qrAttendanceEndAt?: string | null;
+            /** @description null: no limit. */
+            capacity?: number | null;
+            /** @description null: a whole-School Class. */
+            branchId?: string | null;
+            coachName?: string | null;
+            /** @description Booked or checked in, each with their guests. */
+            seatsTaken: number;
+            /** @description Members and guests checked in. */
+            checkedIn: number;
+        };
+        KioskRecentCheckInDto: {
+            id: string;
+            firstName: string;
+            /** @description The surname's first letter only (Decision 351). */
+            surnameInitial: string;
+            classTitle: string;
+            /** Format: date-time */
+            at: string;
+        };
+        KioskTodayDto: {
+            classes: components["schemas"]["KioskClassDto"][];
+            /** @description Today's last 10 check-ins, newest first. */
+            recent: components["schemas"]["KioskRecentCheckInDto"][];
+        };
+        KioskStudentDto: {
+            id: string;
+            firstName: string;
+            surnameInitial: string;
+            /** @description A child's photo only while their Guardian's camera consent is active (Decisions 57, 69). */
+            profilePhotoUrl?: string | null;
+        };
+        KioskStudentListDto: {
+            /** @description At most 8. */
+            items: components["schemas"]["KioskStudentDto"][];
+            /** @description More matched than were returned: type more of the name. */
+            more: boolean;
+        };
+        KioskWaiverToSignDto: {
+            waiverId: string;
+            title: string;
+        };
+        KioskProgressDto: {
+            counted: number;
+            required: number;
+            percent: number;
+        };
+        KioskGuestDto: {
+            attendeeId: string;
+            /** @description Once they signed their waiver: first name and initial. */
+            name?: string | null;
+            /** @enum {string} */
+            waiverStatus: "SIGNED" | "UNSIGNED" | "NONE";
+            /** Format: date-time */
+            checkedInAt?: string | null;
+        };
+        KioskBookingDto: {
+            classId: string;
+            bookingId: string;
+            /** @enum {string} */
+            status: "UPCOMING" | "COMPLETED";
+            guests: components["schemas"]["KioskGuestDto"][];
+        };
+        KioskStudentCardDto: {
+            student: components["schemas"]["KioskStudentDto"];
+            /** @enum {string} */
+            membershipStatus: "ACTIVE" | "EXPIRED" | "NONE";
+            waiverSigned: boolean;
+            waiversToSign: components["schemas"]["KioskWaiverToSignDto"][];
+            /** @description Classes toward the next belt, when a rank counts classes. */
+            progress?: components["schemas"]["KioskProgressDto"] | null;
+            /** @description The student's bookings in today's Classes here. */
+            bookings: components["schemas"]["KioskBookingDto"][];
+        };
+        KioskQrLookupResponseDto: {
+            /** @description Pass to POST /front-desk/kiosk/check-ins within 5 minutes. */
+            lookupToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+            student: components["schemas"]["KioskStudentDto"];
+        };
+        KioskUnlockDto: {
+            /** @description A staff member's own code (4 or 6 digits). */
+            staffCode: string;
+        };
+        KioskUnlockedDto: {
+            /** @description First name of the staff member whose code it was. */
+            unlockedBy: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -10047,6 +10421,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffListResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_updateStaffDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStaffDetailsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetailsResponseDto"];
                 };
             };
         };
@@ -17086,6 +17486,290 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RemoveFromSchoolResponseDto"];
+                };
+            };
+        };
+    };
+    HealthController_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Database and Redis are reachable. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FrontDeskSessionsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrontDeskSessionListDto"];
+                };
+            };
+        };
+    };
+    FrontDeskSessionsController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartFrontDeskSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrontDeskSessionStartedDto"];
+                };
+            };
+        };
+    };
+    FrontDeskSessionsController_end: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrontDeskSessionEndedDto"];
+                };
+            };
+        };
+    };
+    FrontDeskSessionsController_myCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffKioskCodeDto"];
+                };
+            };
+        };
+    };
+    FrontDeskSessionsController_newCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffKioskCodeDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_info: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskSessionInfoDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_today: {
+        parameters: {
+            query: {
+                startsFrom: string;
+                startsTo: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskTodayDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_search: {
+        parameters: {
+            query: {
+                /** @description Two letters or more. */
+                search: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskStudentListDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_card: {
+        parameters: {
+            query: {
+                startsFrom: string;
+                startsTo: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskStudentCardDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_qrLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeskQrLookupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_checkIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeskCheckInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskUnlockDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskUnlockedDto"];
                 };
             };
         };

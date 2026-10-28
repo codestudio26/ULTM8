@@ -22,7 +22,7 @@ test.afterAll(async () => {
 type Page = import('@playwright/test').Page;
 const giveCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
 const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
-const permissionsCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Who can invite coaches' });
+const permissionsCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'What Branch Staff can do' });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 test('the owner gives someone Branch Staff, sees them in the list, and removes the role after confirming', async ({ page }) => {
@@ -40,7 +40,7 @@ test('the owner gives someone Branch Staff, sees them in the list, and removes t
   await giveCard(page).getByRole('button', { name: 'Give role' }).click();
   await expect(page.getByText(/^Tara Target is now Branch Staff/)).toBeVisible();
 
-  // The list and "Who can invite coaches" show them at once, no reload, with
+  // The list and "What Branch Staff can do" show them at once, no reload, with
   // the branch's name rather than its id.
   const row = listRow(page, 'Tara Target');
   await expect(row.getByText('Branch Staff · North')).toBeVisible();
@@ -62,7 +62,7 @@ test('the owner gives someone Branch Staff, sees them in the list, and removes t
   await expect(dialog).toHaveCount(0);
   expect((await db.roleGrant.findFirstOrThrow({ where: { userId: tara.id, role: 'BRANCH_STAFF' } })).revokedAt).not.toBeNull();
 
-  // ...they leave the active list and "Who can invite coaches" at once.
+  // ...they leave the active list and "What Branch Staff can do" at once.
   await expect(listRow(page, 'Tara Target')).toHaveCount(0);
   await expect(permissionsCard(page).getByRole('cell', { name: 'Tara Target', exact: true })).toHaveCount(0);
 });

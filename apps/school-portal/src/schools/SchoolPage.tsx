@@ -83,6 +83,7 @@ type DetailsForm = {
   accentColor: string;
   waitlistClaimWindowMinutes: string;
   checkInOpensMinutesBeforeStart: string;
+  checkInCodeDigits: 4 | 6;
   branchStaffCanRecordPayments: boolean;
   weekStartsOn: 'MONDAY' | 'SUNDAY';
   timetableDefaultLayout: 'LIST' | 'GRID';
@@ -105,6 +106,7 @@ function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsFor
     accentColor: school.accentColor ?? '',
     waitlistClaimWindowMinutes: String(school.waitlistClaimWindowMinutes),
     checkInOpensMinutesBeforeStart: String(school.checkInOpensMinutesBeforeStart),
+    checkInCodeDigits: school.checkInCodeDigits === 6 ? 6 : 4,
     branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
     weekStartsOn: school.weekStartsOn,
     timetableDefaultLayout: school.timetableDefaultLayout,
@@ -165,6 +167,7 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
         accentColor: form.accentColor || null,
         waitlistClaimWindowMinutes: Number(form.waitlistClaimWindowMinutes),
         checkInOpensMinutesBeforeStart: Number(form.checkInOpensMinutesBeforeStart),
+        checkInCodeDigits: form.checkInCodeDigits,
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
         weekStartsOn: form.weekStartsOn,
         timetableDefaultLayout: form.timetableDefaultLayout,
@@ -272,6 +275,18 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
             required
             value={form.checkInOpensMinutesBeforeStart}
             onChange={(e) => set('checkInOpensMinutesBeforeStart', e.target.value)}
+          />
+        </Field>
+        {/* Decision 380: how long the codes ULTM8 makes here are (staff codes for the front-desk tablet). */}
+        <Field label={t('schools.form.checkInCodeDigits')} htmlFor="edit-checkin-code-digits" hint={t('schools.form.checkInCodeDigitsHint')}>
+          <SelectField
+            id="edit-checkin-code-digits"
+            value={String(form.checkInCodeDigits)}
+            onChange={(e) => set('checkInCodeDigits', e.target.value === '6' ? 6 : 4)}
+            options={[
+              { value: '4', label: t('schools.form.checkInCodeDigits4') },
+              { value: '6', label: t('schools.form.checkInCodeDigits6') },
+            ]}
           />
         </Field>
         {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
