@@ -587,4 +587,13 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "Zaten ana sahipsiniz.",
   "This person is not a co-owner of this School.": "Bu kişi bu okulun ortak sahibi değil.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType SCHOOL için entityId, schoolId ile aynı olmalıdır.",
+  "The School owner hasn't let you manage classes and the timetable here.": "Okul sahibi burada dersleri ve ders programını yönetmenize izin vermedi.",
+  "The School owner hasn't let you manage bookings and check-in here.": "Okul sahibi burada rezervasyonları ve girişleri yönetmenize izin vermedi.",
+  "The School owner hasn't let you see or edit students.": "Okul sahibi öğrencileri görmenize veya düzenlemenize izin vermedi.",
+  "The School owner hasn't let you cancel classes or give credit back.": "Okul sahibi dersleri iptal etmenize veya kredi iade etmenize izin vermedi.",
+  "The School owner hasn't let you see the staff list.": "Okul sahibi personel listesini görmenize izin vermedi.",
+  "The School owner hasn't let you invite coaches.": "Okul sahibi eğitmen davet etmenize izin vermedi.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
+  "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
+  "This person is not on the staff of this School.": "Bu kişi bu okulun personelinde değil.",
 };

@@ -3,7 +3,8 @@ import { addBranch, addCoachInvite, addPerson, cleanup, db, seedGradingSchool, s
 
 /**
  * Coach invites (Decision 183), against the real API: the owner invites and
- * cancels on the Staff page and chooses which Branch Staff may invite; the
+ * cancels on the Staff page and chooses which Branch Staff may invite (on
+ * their Access window, Decision 387); the
  * invited person accepts through the link and keeps their student role.
  */
 let s: GradingSchool;
@@ -38,15 +39,20 @@ test('the owner lets a Branch Staff member invite coaches', async ({ page }) => 
   const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  const toggle = page.getByLabel('Bea Desk can invite coaches');
-  await expect(page.locator('.ultm8-card').filter({ hasText: 'Who can invite coaches' }).getByRole('row', { name: /Bea Desk/ }).getByText('North')).toBeVisible();
+  // Decision 387: "Can invite coaches" is one of the switches on Access.
+  await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Access for Bea Desk' });
+  const toggle = dialog.getByLabel('Invite coaches');
   await expect(toggle).not.toBeChecked();
   await toggle.check();
-  await expect(toggle).toBeChecked();
-  await expect(toggle).toBeEnabled(); // saved
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible();
   await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canInviteCoaches).toBe(true);
   await page.reload();
-  await expect(page.getByLabel('Bea Desk can invite coaches')).toBeChecked();
+  await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  await expect(page.getByRole('dialog', { name: 'Access for Bea Desk' }).getByLabel('Invite coaches')).toBeChecked();
 });
 
 test('a student accepts through the link and becomes a coach too', async ({ page }) => {

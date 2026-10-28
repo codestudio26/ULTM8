@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
   fetchInviteCandidate,
   useCreateStaffManually,
   useInviteStaff,
+  useMyStaffAccess,
   useRevokeRoleGrant,
   type InviteCandidateResponse,
   type StaffMember,
@@ -74,9 +75,10 @@ export function StaffPage() {
 
   const [confirmingRevoke, setConfirmingRevoke] = useState<{ person: StaffMember; role: StaffRoleEntry } | null>(null);
 
-  // Owner only (it isn't in the coach nav): anyone else goes to their own
-  // home screen rather than a blank page (Decision 296).
-  if (!schoolId) return <Navigate to="/" replace />;
+  // Owner only, except Branch Staff whose owner lets them see the staff list
+  // (Decision 387), who get it read only; anyone else goes to their own home
+  // screen rather than a blank page (Decision 296).
+  if (!schoolId) return <BranchStaffListPage />;
   const branches = branchData?.items ?? [];
   // Branch Staff always need a branch. An Instructor needs one whenever the
   // School has branches; with none, the School itself is the branch
@@ -295,6 +297,24 @@ export function StaffPage() {
           onClose={() => setAddingManually(false)}
         />
       ) : null}
+    </>
+  );
+}
+
+/** Decision 387 — Branch Staff with "See the staff list": their branches'
+ * staff, read only. Without the switch, their own home screen. */
+function BranchStaffListPage() {
+  const t = useT();
+  const coachSchoolId = useCoachSchoolId();
+  const access = useMyStaffAccess(coachSchoolId);
+  const { data: branchData } = useBranches(access.data?.access.staffList ? coachSchoolId : null);
+  if (!coachSchoolId) return <Navigate to="/" replace />;
+  if (access.isLoading) return <Spinner />;
+  if (!access.data?.access.staffList) return <Navigate to="/" replace />;
+  return (
+    <>
+      <PageHeader title={t('roleGrants.staff.title')} subtitle={t('roleGrants.access.readOnlyIntro')} />
+      <StaffListSection schoolId={coachSchoolId} branches={branchData?.items ?? []} onRevokeRole={() => undefined} readOnly />
     </>
   );
 }

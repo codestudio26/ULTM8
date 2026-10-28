@@ -504,6 +504,15 @@ export const SERVER_MESSAGES: string[] = [
  "You are already the main owner.",
  "This person is not a co-owner of this School.",
  "entityId must equal schoolId for entityType SCHOOL.",
+  "The School owner hasn't let you manage classes and the timetable here.",
+  "The School owner hasn't let you manage bookings and check-in here.",
+  "The School owner hasn't let you see or edit students.",
+  "The School owner hasn't let you cancel classes or give credit back.",
+  "The School owner hasn't let you see the staff list.",
+  "The School owner hasn't let you invite coaches.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",
+  "You are not on the staff of this School.",
+  "This person is not on the staff of this School.",
 ];
 
 export const SERVER_PATTERNS: string[] = [

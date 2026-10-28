@@ -88,6 +88,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: access switches** (Decision 387) — an owner chooses what each
+  Branch Staff member may do ("Access" in the person's menu): manage classes
+  and the timetable, bookings and check-in, students, cancelling classes with
+  credit, seeing the staff list, and inviting coaches, with "Front desk" and
+  "Branch manager" presets. Defaults keep what Branch Staff could already do.
+  Branch Staff's menus, Classes, Timetable, Students and a read-only Staff list
+  follow their switches; the old "Who can invite coaches" card moves into
+  Access. Instructors and owners are unchanged. Needs the migration
+  `20261219000000_staff_access`.
 - **Staff page: display name and work phone** (Decision 381) — an owner can
   set the name and work phone the School uses for a staff member ("Edit
   details" in the person's menu). The Staff list shows them first, with the

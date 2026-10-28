@@ -146,6 +146,7 @@ export class BookingsService {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
+      await this.tenantAuth.assertStaffMay(callerId, resolvedClass.schoolId, 'bookings', resolvedClass.branchId);
     }
     assertClassBookable(resolvedClass, { byStaff: isStaffAction });
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
@@ -343,6 +344,10 @@ export class BookingsService {
       await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
     } else if (resolvedBooking.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
+      // A School cancellation was already allowed by its caller (Decision 387).
+      if (!opts?.schoolCancelled) {
+        await this.tenantAuth.assertStaffMay(callerId, resolvedBooking.schoolId, 'bookings', resolvedBooking.branchId);
+      }
     }
 
     // Decision 291 — only a School Owner/Manager can send money back. A Student
@@ -545,6 +550,7 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, existing.schoolId, 'bookings', existing.branchId);
     if (!existing.overriddenById) {
       throw new BadRequestException('This Booking was not created via a rank-gate override — there is no override justification to amend.');
     }

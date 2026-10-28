@@ -9,6 +9,7 @@ import { formatLocale } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
+import { StaffAccessModal, presetOf } from './StaffAccessModal';
 import { useHandOverMainOwner, useStaffList, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
 
 /** Table rows need an `id`. */
@@ -33,15 +34,22 @@ type StaffRow = StaffMember & { id: string };
  * Decision 381 — "Edit details" sets the School's own display name and work
  * phone for someone. The list shows them first, with the person's own account
  * name and phone underneath; the account itself never changes.
+ *
+ * Decision 387 — "Access" sets a Branch Staff member's switches
+ * (StaffAccessModal); their row shows the preset they match. Branch Staff
+ * whose owner lets them see the staff list get this list read only
+ * (`readOnly`): their branches' current staff, no menu, no Removed filter.
  */
 export function StaffListSection({
   schoolId,
   branches,
   onRevokeRole,
+  readOnly = false,
 }: {
   schoolId: string;
   branches: BranchResponse[];
   onRevokeRole: (person: StaffMember, role: StaffRoleEntry) => void;
+  readOnly?: boolean;
 }) {
   const t = useT();
   const [search, setSearch] = useState('');
@@ -62,6 +70,8 @@ export function StaffListSection({
   const [handedOverTo, setHandedOverTo] = useState<string | null>(null);
   const [editing, setEditing] = useState<StaffMember | null>(null);
   const [savedFor, setSavedFor] = useState<string | null>(null);
+  const [settingAccess, setSettingAccess] = useState<StaffMember | null>(null);
+  const [accessSavedFor, setAccessSavedFor] = useState<string | null>(null);
 
   const filtering = !!(q || role || branchId || status !== 'active');
   const people: StaffRow[] = (data?.items ?? []).map((p) => ({ ...p, id: p.userId }));
@@ -121,6 +131,7 @@ export function StaffListSection({
             </Field>
           </div>
         ) : null}
+        {readOnly ? null : (
         <div style={{ minWidth: 140 }}>
           <Field label={t('roleGrants.list.status')} htmlFor="staff-status-filter">
             <SelectField
@@ -135,10 +146,12 @@ export function StaffListSection({
             />
           </Field>
         </div>
+        )}
       </div>
 
       {handedOverTo ? <SuccessBanner message={t('roleGrants.list.handOverDone', { name: handedOverTo })} /> : null}
       {savedFor ? <SuccessBanner message={t('roleGrants.list.detailsSaved', { name: savedFor })} /> : null}
+      {accessSavedFor ? <SuccessBanner message={t('roleGrants.access.saved', { name: accessSavedFor })} /> : null}
       {error ? <ErrorBanner message={t('roleGrants.list.loadFailed')} /> : null}
       {isLoading ? (
         <Spinner />
@@ -193,7 +206,7 @@ export function StaffListSection({
                         {roleText(r, p)}
                       </Badge>
                     ))}
-                    {p.canInviteCoaches && p.active ? <Badge>{t('roleGrants.list.canInviteCoaches')}</Badge> : null}
+                    {p.access ? <Badge>{(() => { const preset = presetOf(p.access); return preset ? t(preset) : t('roleGrants.access.custom'); })()}</Badge> : null}
                   </div>
                 );
               },
@@ -213,8 +226,10 @@ export function StaffListSection({
               key: 'actions',
               header: '',
               render: (p) => {
+                if (readOnly) return null;
                 const actions = [
                   ...(p.active ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
+                  ...(p.access ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
                     : []),
@@ -240,6 +255,19 @@ export function StaffListSection({
           name={`${confirmingRemove.firstName} ${confirmingRemove.surname}`.trim()}
           description={t('roleGrants.list.removeDescription', { roles: coachRoles(confirmingRemove).map((r) => roleText(r)).join(', ') })}
           onClose={() => setConfirmingRemove(null)}
+        />
+      ) : null}
+
+      {settingAccess ? (
+        <StaffAccessModal
+          schoolId={schoolId}
+          person={settingAccess}
+          name={shownName(settingAccess)}
+          onDone={() => {
+            setAccessSavedFor(shownName(settingAccess));
+            setSettingAccess(null);
+          }}
+          onClose={() => setSettingAccess(null)}
         />
       ) : null}
 

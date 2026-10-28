@@ -26,6 +26,68 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
  */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Decision 387 — the owner's access switches for a Branch Staff member. */
+export const STAFF_ACCESS = ['classes', 'bookings', 'students', 'cancelClasses', 'staffList', 'inviteCoaches'] as const;
+export type StaffAccess = (typeof STAFF_ACCESS)[number];
+export type StaffAccessSet = Record<StaffAccess, boolean>;
+
+/** A Branch Staff member with no StaffPermission row yet has these: what
+ * Branch Staff could already do before the switches existed. Same as the
+ * column defaults (migration 20261219000000_staff_access). */
+export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
+  classes: false,
+  bookings: true,
+  students: true,
+  cancelClasses: true,
+  staffList: false,
+  inviteCoaches: false,
+};
+
+/** What an Instructor may do by role, whatever the switches say (Spec 55
+ * §8.2: attendance scan and booking override; Decision 341: their branch's
+ * students). The switches are for Branch Staff only. */
+const INSTRUCTOR_FLOOR: ReadonlySet<StaffAccess> = new Set(['bookings', 'students']);
+
+/** One fixed message per switch, so the portal can translate each. */
+export const STAFF_ACCESS_OFF_MESSAGES: Record<StaffAccess, string> = {
+  classes: "The School owner hasn't let you manage classes and the timetable here.",
+  bookings: "The School owner hasn't let you manage bookings and check-in here.",
+  students: "The School owner hasn't let you see or edit students.",
+  cancelClasses: "The School owner hasn't let you cancel classes or give credit back.",
+  staffList: "The School owner hasn't let you see the staff list.",
+  inviteCoaches: "The School owner hasn't let you invite coaches.",
+};
+
+/** StaffPermission columns as a StaffAccessSet. */
+export function staffAccessFrom(row: {
+  canManageClasses: boolean;
+  canManageBookings: boolean;
+  canManageStudents: boolean;
+  canCancelClasses: boolean;
+  canSeeStaffList: boolean;
+  canInviteCoaches: boolean;
+} | null | undefined): StaffAccessSet {
+  if (!row) return { ...DEFAULT_STAFF_ACCESS };
+  return {
+    classes: row.canManageClasses,
+    bookings: row.canManageBookings,
+    students: row.canManageStudents,
+    cancelClasses: row.canCancelClasses,
+    staffList: row.canSeeStaffList,
+    inviteCoaches: row.canInviteCoaches,
+  };
+}
+
+/** The StaffPermission columns staffAccessFrom reads. */
+export const STAFF_ACCESS_SELECT = {
+  canManageClasses: true,
+  canManageBookings: true,
+  canManageStudents: true,
+  canCancelClasses: true,
+  canSeeStaffList: true,
+  canInviteCoaches: true,
+} as const;
+
 @Injectable()
 export class TenantAuthorizationService {
   constructor(private readonly prismaApp: PrismaAppService) {}
@@ -114,6 +176,72 @@ export class TenantAuthorizationService {
     if (await this.isSchoolOwner(callerId, schoolId)) return;
     await this.assertStaffAtSchool(callerId, schoolId);
     await this.assertBranchCoversStudent(await this.staffBranchCoverage(callerId, schoolId), schoolId, studentId);
+  }
+
+  /**
+   * Decision 387 — may `userId` do `access` at this School (for a row at
+   * `targetBranchId`, when given)? The owner always may. An Instructor may do
+   * what their role already allows (INSTRUCTOR_FLOOR). Branch Staff may when
+   * the owner's switch for them is on (a person with no StaffPermission row
+   * has DEFAULT_STAFF_ACCESS). A target branch is covered by a staff grant at
+   * that branch or a grant with no branch; "classes" on a School-wide row
+   * (no target branch) stays the owner's.
+   */
+  async staffMay(userId: string, schoolId: string, access: StaffAccess, targetBranchId?: string | null): Promise<boolean> {
+    return this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: {
+          userId,
+          schoolId,
+          role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] },
+          revokedAt: null,
+          ...(targetBranchId ? { OR: [{ branchId: null }, { branchId: targetBranchId }] } : {}),
+        },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+      if (access === 'classes' && !targetBranchId) return false;
+      if (INSTRUCTOR_FLOOR.has(access) && grants.some((g) => g.role === 'INSTRUCTOR')) return true;
+      if (!grants.some((g) => g.role === 'BRANCH_STAFF')) return false;
+      const row = await tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId } },
+        select: STAFF_ACCESS_SELECT,
+      });
+      return staffAccessFrom(row)[access];
+    });
+  }
+
+  /** Decision 387 — may `userId` manage classes and the timetable at every
+   * one of `branchIds` (a School-wide row is null, the owner's alone)? Used
+   * for a write that reads one branch and may move the row to another. */
+  async assertMayManageClasses(userId: string, schoolId: string, branchIds: Array<string | null>): Promise<void> {
+    for (const branchId of new Set(branchIds)) await this.assertStaffMay(userId, schoolId, 'classes', branchId);
+  }
+
+  /** Whether `userId` may manage classes at some branch here (the owner
+   * always): for an upload made before the class it belongs to exists. */
+  async mayManageClassesSomewhere(userId: string, schoolId: string): Promise<boolean> {
+    const branchIds = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null, branchId: { not: null } },
+        select: { branchId: true },
+      });
+      return grants.map((g) => g.branchId as string);
+    });
+    if (await this.isSchoolOwner(userId, schoolId)) return true;
+    for (const branchId of branchIds) {
+      if (await this.staffMay(userId, schoolId, 'classes', branchId)) return true;
+    }
+    return false;
+  }
+
+  /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */
+  async assertStaffMay(userId: string, schoolId: string, access: StaffAccess, targetBranchId?: string | null): Promise<void> {
+    if (await this.staffMay(userId, schoolId, access, targetBranchId)) return;
+    throw new ForbiddenException({
+      code: 'STAFF_ACCESS_OFF',
+      message: STAFF_ACCESS_OFF_MESSAGES[access],
+    });
   }
 
   /**

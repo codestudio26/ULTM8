@@ -587,4 +587,13 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "이미 대표 소유자입니다.",
   "This person is not a co-owner of this School.": "이 사람은 이 학교의 공동 소유자가 아닙니다.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityType이 SCHOOL이면 entityId는 schoolId와 같아야 합니다.",
+  "The School owner hasn't let you manage classes and the timetable here.": "학교 소유자가 여기에서 수업과 시간표를 관리하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you manage bookings and check-in here.": "학교 소유자가 여기에서 예약과 체크인을 관리하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you see or edit students.": "학교 소유자가 학생을 보거나 편집하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you cancel classes or give credit back.": "학교 소유자가 수업을 취소하거나 크레딧을 돌려주도록 허용하지 않았습니다.",
+  "The School owner hasn't let you see the staff list.": "학교 소유자가 직원 목록을 보도록 허용하지 않았습니다.",
+  "The School owner hasn't let you invite coaches.": "학교 소유자가 코치를 초대하도록 허용하지 않았습니다.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
+  "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
+  "This person is not on the staff of this School.": "이 사람은 이 학교의 직원이 아닙니다.",
 };

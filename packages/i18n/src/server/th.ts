@@ -587,4 +587,13 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "คุณเป็นเจ้าของหลักอยู่แล้ว",
   "This person is not a co-owner of this School.": "บุคคลนี้ไม่ใช่เจ้าของร่วมของโรงเรียนนี้",
   "entityId must equal schoolId for entityType SCHOOL.": "สำหรับ entityType SCHOOL ค่า entityId ต้องเท่ากับ schoolId",
+  "The School owner hasn't let you manage classes and the timetable here.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณจัดการคลาสและตารางเรียนที่นี่",
+  "The School owner hasn't let you manage bookings and check-in here.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณจัดการการจองและการเช็กอินที่นี่",
+  "The School owner hasn't let you see or edit students.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณดูหรือแก้ไขนักเรียน",
+  "The School owner hasn't let you cancel classes or give credit back.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณยกเลิกคลาสหรือคืนเครดิต",
+  "The School owner hasn't let you see the staff list.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณดูรายชื่อพนักงาน",
+  "The School owner hasn't let you invite coaches.": "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณเชิญโค้ช",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "สวิตช์การเข้าถึงมีไว้สำหรับพนักงานสาขา โค้ชมีสิทธิ์ตามบทบาท และเจ้าของมีสิทธิ์ทั้งหมด",
+  "You are not on the staff of this School.": "คุณไม่ได้เป็นพนักงานของโรงเรียนนี้",
+  "This person is not on the staff of this School.": "บุคคลนี้ไม่ได้เป็นพนักงานของโรงเรียนนี้",
 };

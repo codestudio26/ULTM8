@@ -587,4 +587,13 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "Você já é o proprietário principal.",
   "This person is not a co-owner of this School.": "Esta pessoa não é coproprietária desta escola.",
   "entityId must equal schoolId for entityType SCHOOL.": "entityId deve ser igual a schoolId para entityType SCHOOL.",
+  "The School owner hasn't let you manage classes and the timetable here.": "O proprietário da escola não permitiu que você gerencie aulas e a grade horária aqui.",
+  "The School owner hasn't let you manage bookings and check-in here.": "O proprietário da escola não permitiu que você gerencie reservas e check-in aqui.",
+  "The School owner hasn't let you see or edit students.": "O proprietário da escola não permitiu que você veja ou edite alunos.",
+  "The School owner hasn't let you cancel classes or give credit back.": "O proprietário da escola não permitiu que você cancele aulas ou devolva créditos.",
+  "The School owner hasn't let you see the staff list.": "O proprietário da escola não permitiu que você veja a lista da equipe.",
+  "The School owner hasn't let you invite coaches.": "O proprietário da escola não permitiu que você convide instrutores.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da filial. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
+  "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
+  "This person is not on the staff of this School.": "Esta pessoa não faz parte da equipe desta escola.",
 };

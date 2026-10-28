@@ -22,7 +22,6 @@ test.afterAll(async () => {
 type Page = import('@playwright/test').Page;
 const giveCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
 const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
-const permissionsCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Who can invite coaches' });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 test('the owner gives someone Branch Staff, sees them in the list, and removes the role after confirming', async ({ page }) => {
@@ -40,12 +39,12 @@ test('the owner gives someone Branch Staff, sees them in the list, and removes t
   await giveCard(page).getByRole('button', { name: 'Give role' }).click();
   await expect(page.getByText(/^Tara Target is now Branch Staff/)).toBeVisible();
 
-  // The list and "Who can invite coaches" show them at once, no reload, with
-  // the branch's name rather than its id.
+  // The list shows them at once, no reload, with the branch's name rather
+  // than its id, and their access (Decision 387: the defaults are custom).
   const row = listRow(page, 'Tara Target');
   await expect(row.getByText('Branch Staff · North')).toBeVisible();
   await expect(listCard(page).getByText(north.id)).toHaveCount(0);
-  await expect(permissionsCard(page).getByRole('cell', { name: 'Tara Target', exact: true })).toBeVisible();
+  await expect(row.getByText('Custom access')).toBeVisible();
 
   // Removing the role asks first; Cancel changes nothing.
   await row.getByRole('button', { name: 'Actions for Tara Target' }).click();
@@ -62,9 +61,8 @@ test('the owner gives someone Branch Staff, sees them in the list, and removes t
   await expect(dialog).toHaveCount(0);
   expect((await db.roleGrant.findFirstOrThrow({ where: { userId: tara.id, role: 'BRANCH_STAFF' } })).revokedAt).not.toBeNull();
 
-  // ...they leave the active list and "Who can invite coaches" at once.
+  // ...they leave the active list at once.
   await expect(listRow(page, 'Tara Target')).toHaveCount(0);
-  await expect(permissionsCard(page).getByRole('cell', { name: 'Tara Target', exact: true })).toHaveCount(0);
 });
 
 test('the list filters by role, branch and name, and "Remove from School" ends every coach and staff role', async ({ page }) => {
@@ -81,7 +79,7 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
   await page.goto('/staff');
 
   await expect(listRow(page, 'Cal Coach').getByText('Instructor · North')).toBeVisible();
-  await expect(listRow(page, 'Cal Coach').getByText('Can invite coaches')).toBeVisible();
+  await expect(listRow(page, 'Cal Coach').getByText('Custom access')).toBeVisible();
   await expect(listRow(page, 'Dee Desk')).toBeVisible();
 
   await listCard(page).getByLabel('Branch').selectOption({ label: 'South' });

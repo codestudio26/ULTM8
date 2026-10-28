@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useSchool } from '../schools/schoolQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { classZone, formatInZone } from '../lib/datetime';
@@ -22,9 +23,15 @@ export function ClassesPage() {
   const coachSchoolId = useCoachSchoolId();
   // Coaches and Branch Staff get the same list to reach a Class's roll call and
   // QR code (Classes review C4), without Add/Edit/Archive: the API lets only
-  // the School Owner change a Class.
+  // the School Owner change a Class, and Branch Staff whose owner switched on
+  // "Manage classes and the timetable" their own branch's classes (Decision 387).
   const schoolId = ownedSchoolId ?? coachSchoolId;
-  const readOnly = !ownedSchoolId;
+  const { claims } = useAuth();
+  const isBranchStaff = !ownedSchoolId && !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
+  const mayManage = !!useMyStaffAccess(isBranchStaff ? coachSchoolId : null).data?.access.classes;
+  const readOnly = !ownedSchoolId && !mayManage;
+  // A School-wide class stays the owner's.
+  const mayChange = (c: ClassResponse) => !readOnly && (!!ownedSchoolId || c.branchId !== null);
   // Server-side Discipline (Activities) filter + "Search classes" box
   // (GET /schools/:schoolId/classes?activities=&search=), plus Prev/Next cursor
   // pagination (ClassListResponseDto.nextCursor was already real server-side —
@@ -113,8 +120,8 @@ export function ClassesPage() {
       { label: t('classes.showQr'), onClick: () => navigate(`/classes/${c.id}/qr-code`) },
       { label: t('classes.rollCall'), onClick: () => navigate(`/classes/${c.id}/roll-call`) },
       // An archived Class can't be edited (C11): unarchive it first.
-      ...(readOnly || c.archivedAt ? [] : [{ label: t('classes.edit'), onClick: () => setEditing(c) }]),
-      ...(readOnly ? [] : [archiveActionFor(c)]),
+      ...(!mayChange(c) || c.archivedAt ? [] : [{ label: t('classes.edit'), onClick: () => setEditing(c) }]),
+      ...(!mayChange(c) ? [] : [archiveActionFor(c)]),
     ];
   }
 
@@ -336,6 +343,7 @@ export function ClassesPage() {
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
+          wholeSchool={!!ownedSchoolId}
           submitting={createClass.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to
@@ -356,6 +364,7 @@ export function ClassesPage() {
           instructors={instructors}
           disciplines={disciplines}
           classItem={editing}
+          wholeSchool={!!ownedSchoolId}
           onClose={() => setEditing(null)}
         />
       ) : null}
@@ -417,6 +426,7 @@ function EditClassModal({
   disciplines,
   classItem,
   onClose,
+  wholeSchool,
 }: {
   schoolId: string;
   schoolTimezone: string | null;
@@ -426,6 +436,7 @@ function EditClassModal({
   disciplines: DisciplineResponse[];
   classItem: ClassResponse;
   onClose: () => void;
+  wholeSchool: boolean;
 }) {
   const t = useT();
   const updateClass = useUpdateClass(schoolId, classItem.id);
@@ -439,6 +450,7 @@ function EditClassModal({
       branches={branches}
       instructors={instructors}
       disciplines={disciplines}
+      wholeSchool={wholeSchool}
       submitting={updateClass.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateClassDto accepts

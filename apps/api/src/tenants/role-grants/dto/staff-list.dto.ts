@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, IsPhoneNumber, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsPhoneNumber, IsString, IsUUID, MaxLength } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 /** Trimmed; an empty string clears the field (null). */
@@ -57,6 +57,53 @@ export class StaffRoleDto {
   revokedAt!: string | null;
 }
 
+/** Decision 387 — a Branch Staff member's access switches. */
+export class StaffAccessDto {
+  @ApiProperty({ description: 'Manage classes and the timetable at their branches (off by default).' })
+  @IsBoolean()
+  classes!: boolean;
+
+  @ApiProperty({ description: 'Manage bookings and check-in at their branches (on by default).' })
+  @IsBoolean()
+  bookings!: boolean;
+
+  @ApiProperty({ description: 'See and edit the students of their branches (on by default).' })
+  @IsBoolean()
+  students!: boolean;
+
+  @ApiProperty({ description: 'Cancel classes at their branches and give credit back, never refunds (on by default).' })
+  @IsBoolean()
+  cancelClasses!: boolean;
+
+  @ApiProperty({ description: "See the staff list for their branches, read only (off by default)." })
+  @IsBoolean()
+  staffList!: boolean;
+
+  @ApiProperty({ description: 'Invite coaches (off by default; Decision 183).' })
+  @IsBoolean()
+  inviteCoaches!: boolean;
+}
+
+export class StaffAccessResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ type: StaffAccessDto })
+  access!: StaffAccessDto;
+}
+
+/** GET /schools/{schoolId}/staff/me/access — what the caller may do here. */
+export class MyStaffAccessResponseDto {
+  @ApiProperty({ description: 'School Owner/Manager: every switch is on, by role.' })
+  owner!: boolean;
+
+  @ApiProperty({ description: 'Holds an active Branch Staff role here.' })
+  branchStaff!: boolean;
+
+  @ApiProperty({ type: StaffAccessDto, description: "What the caller may do. An Instructor's own role gives bookings and students." })
+  access!: StaffAccessDto;
+}
+
 export class StaffMemberDto {
   @ApiProperty()
   userId!: string;
@@ -96,6 +143,13 @@ export class StaffMemberDto {
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 381: their work phone at this School (E.164), set by an owner. Null = not set.' })
   workPhone!: string | null;
+
+  @ApiPropertyOptional({
+    type: StaffAccessDto,
+    nullable: true,
+    description: "Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise.",
+  })
+  access!: StaffAccessDto | null;
 
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];

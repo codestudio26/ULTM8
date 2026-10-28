@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
 import { StudentsTabs } from './StudentsTabs';
@@ -31,7 +32,15 @@ const NO_BRANCH = '__none__';
  */
 export function StudentsPage() {
   const t = useT();
-  const schoolId = useOwnedSchoolId();
+  const { claims } = useAuth();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  // Decision 387 — Branch Staff whose owner turned on "students" see the
+  // roster too (the API limits it to what they may see); adding and inviting
+  // stay the owner's.
+  const isBranchStaff = !ownedSchoolId && !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
+  const myAccess = useMyStaffAccess(isBranchStaff ? coachSchoolId : null);
+  const schoolId = ownedSchoolId ?? (myAccess.data?.access.students ? coachSchoolId : null);
   const navigate = useNavigate();
   // Active/Inactive/All filter (GET /schools/:id/students?status=) — defaults to
   // ACTIVE, the exact pre-existing behavior for this page (v1.2 backend backlog,
@@ -61,8 +70,10 @@ export function StudentsPage() {
     [data, search, branchFilter],
   );
 
-  // Only the owner has this page; anyone else typing /students goes to their
-  // own home screen (Decision 341). Coaches reach a student from the board.
+  // Only the owner, and Branch Staff with the "students" switch, have this
+  // page; anyone else typing /students goes to their own home screen
+  // (Decisions 341, 387). Coaches reach a student from the board.
+  if (isBranchStaff && myAccess.isLoading) return <Spinner />;
   if (!schoolId) return <Navigate to="/" replace />;
 
   const branches = branchData?.items ?? [];
@@ -80,12 +91,14 @@ export function StudentsPage() {
         title={t('students.title')}
         subtitle={t('students.subtitle')}
         actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" onClick={() => navigate('/students/add')}>
-              {t('students.addManuallyButton')}
-            </Button>
-            <Button onClick={() => navigate('/students/invite')}>{t('students.inviteButton')}</Button>
-          </div>
+          ownedSchoolId ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Button variant="secondary" onClick={() => navigate('/students/add')}>
+                {t('students.addManuallyButton')}
+              </Button>
+              <Button onClick={() => navigate('/students/invite')}>{t('students.inviteButton')}</Button>
+            </div>
+          ) : undefined
         }
       />
       <StudentsTabs />

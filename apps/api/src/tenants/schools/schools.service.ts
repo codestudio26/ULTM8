@@ -797,6 +797,11 @@ export class SchoolsService {
   ) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    // Decision 387: the roster is also the student picker for booking, so
+    // Branch Staff see it with either the students or the bookings switch.
+    if (!(await this.tenantAuth.staffMay(callerId, schoolId, 'bookings'))) {
+      await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
+    }
 
     if (status === StudentRosterStatusDto.ACTIVE) {
       // Unchanged from this method's pre-existing behavior — kept as its own,
@@ -1148,6 +1153,7 @@ export class SchoolsService {
   /** Staff at this School, `studentId` currently enrolled here, and — for
    * anyone but the owner — one of the students the caller covers, by the
    * Grading Board's branch rule (Decision 341, S1; Decisions 168, 177).
+   * Branch Staff also need the owner's students switch (Decision 387).
    * Enrolment is read under the student's own context, as grading's
    * assertEnrolledStudent does, so a student outside the caller's branches
    * gets the branch message rather than "not a Student". */
@@ -1163,6 +1169,7 @@ export class SchoolsService {
     if (!enrolled) {
       throw new NotFoundException('This person is not a Student at this School.');
     }
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
   }
 }
