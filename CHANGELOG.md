@@ -61,6 +61,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   recorded. Check before adding another."). A Friend Pass only covers a guest,
   never its holder's own seat. Staff booking for students can now book 200 a
   minute (students' own limit stays 20).
+- **Dashboard review fixes** (Decision 367) — "Bookings this week" leaves
+  cancelled bookings out and shows them as their own number; a new Attendance
+  card shows this week's present and absent; a Branch filter for Schools with
+  several Branches. The Bookings page groups by Style, lists each day's
+  classes (time, booked / seats, link to the class), names each day correctly
+  in the Americas, limits a range to 92 days with a clear message, counts
+  each class on its Branch's local day, and keeps the dates in the address.
 - **Instructors: resend passcode, self-edit, safer revoke, private details**
   (Decision 331) — the owner can send a new temporary passcode to an
   instructor who hasn't signed in yet; instructors can change their own

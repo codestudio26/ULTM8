@@ -1478,6 +1478,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     let classTueMulti: { id: string };
     let classWedNoTags: { id: string };
     let classOutOfRange: { id: string };
+    let summaryBranch: { id: string };
+    let classBranchLate: { id: string };
     const summaryBookingIds: string[] = [];
     const summaryMembershipIds: string[] = [];
     const summaryClassIds: string[] = [];
@@ -1491,8 +1493,9 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     let classB: { id: string };
 
     beforeAll(async () => {
+      // Decision 367 (Q3): grouped by the Style's current name, not the stale tag.
       classMon = await superuser.class.create({
-        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Old Judo Tag'], styles: [{ disciplineId: discipline.id, classType: 'Fundamentals' }], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
       });
       classTueMulti = await superuser.class.create({
         data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Tue Judo+BJJ', activities: ['Judo', 'BJJ'], startDate: dt('2026-01-06', 9), endDate: dt('2026-01-06', 10) },
@@ -1503,7 +1506,13 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       classOutOfRange = await superuser.class.create({
         data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, title: 'Summary Out Of Range', activities: ['Judo'], startDate: dt('2026-01-12', 9), endDate: dt('2026-01-12', 10) },
       });
-      summaryClassIds.push(classMon.id, classTueMulti.id, classWedNoTags.id, classOutOfRange.id);
+      // Decision 367 (D3): 01:30 UTC Tuesday is 22:30 Monday at a São Paulo Branch,
+      // so it counts on Monday even though the School has no time zone (UTC).
+      summaryBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Summary São Paulo', timezone: 'America/Sao_Paulo' } });
+      classBranchLate = await superuser.class.create({
+        data: { membershipInclusion: true, id: randomUUID(), schoolId: school.id, branchId: summaryBranch.id, title: 'Summary Late Karate', activities: ['Karate'], capacity: 10, startDate: new Date('2026-01-06T01:30:00.000Z'), endDate: new Date('2026-01-06T02:30:00.000Z') },
+      });
+      summaryClassIds.push(classMon.id, classTueMulti.id, classWedNoTags.id, classOutOfRange.id, classBranchLate.id);
 
       // classesRemaining: 5 (a Class-Pack shape), not null — studentA/studentB each
       // already hold a general-access (classesRemaining IS NULL) Active Membership
@@ -1521,7 +1530,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       });
       summaryMembershipIds.push(membershipA.id, membershipB.id);
 
-      const mkBooking = async (studentId: string, classId: string, membershipId: string, status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED') => {
+      const mkBooking = async (studentId: string, classId: string, membershipId: string, status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW') => {
         const booking = await superuser.booking.create({
           data: { id: randomUUID(), studentId, classId, schoolId: school.id, sourceMembershipId: membershipId, status },
         });
@@ -1529,9 +1538,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         return booking;
       };
 
-      // Monday: 2 UPCOMING + 1 CANCELLED (cancelled still counts toward totalBookings
-      // — "every Booking (any status)" per BookingsService's own header comment —
-      // but not toward upcomingBookings).
+      // Monday: 2 UPCOMING + 1 CANCELLED (Decision 367 Q1: cancelled is reported on
+      // its own, never in totalBookings).
       await mkBooking(studentA.id, classMon.id, membershipA.id, 'UPCOMING');
       await mkBooking(studentB.id, classMon.id, membershipB.id, 'UPCOMING');
       await mkBooking(studentA.id, classMon.id, membershipA.id, 'CANCELLED');
@@ -1540,6 +1548,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       await mkBooking(studentB.id, classTueMulti.id, membershipB.id, 'UPCOMING');
       // Wednesday: 1 COMPLETED on a Class with no activities tags at all.
       await mkBooking(studentA.id, classWedNoTags.id, membershipA.id, 'COMPLETED');
+      // Monday (local), at the São Paulo Branch: 1 NO_SHOW.
+      await mkBooking(studentB.id, classBranchLate.id, membershipB.id, 'NO_SHOW');
       // Outside the requested range entirely — must never be counted.
       await mkBooking(studentB.id, classOutOfRange.id, membershipB.id, 'UPCOMING');
 
@@ -1584,9 +1594,10 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       await superuser.booking.deleteMany({ where: { id: { in: summaryBookingIds } } });
       await superuser.membership.deleteMany({ where: { id: { in: summaryMembershipIds } } });
       await superuser.class.deleteMany({ where: { id: { in: summaryClassIds } } });
+      await superuser.branch.delete({ where: { id: summaryBranch.id } });
     });
 
-    it('returns correct total/upcoming counts and a day-by-day, per-activity-tag breakdown for the requested range', async () => {
+    it('returns correct counts (cancelled apart, attendance) and a day-by-day, per-Style breakdown for the requested range', async () => {
       const res = await request(app.getHttpServer())
         .get(`/v1/schools/${school.id}/bookings/summary`)
         .query({ from: RANGE_FROM, to: RANGE_TO })
@@ -1594,10 +1605,14 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       expect(res.status).toBe(200);
       expect(res.body.from).toBe(RANGE_FROM);
       expect(res.body.to).toBe(RANGE_TO);
-      // 2 UPCOMING + 1 CANCELLED (Mon) + 1 UPCOMING (Tue) + 1 COMPLETED (Wed) = 5.
-      // The out-of-range Booking (2026-01-12) must not be counted.
+      expect(res.body.branchId).toBeNull();
+      // 2 UPCOMING (Mon) + 1 NO_SHOW (Mon, Branch) + 1 UPCOMING (Tue) + 1 COMPLETED (Wed) = 5;
+      // the CANCELLED one is reported apart, the out-of-range one (2026-01-12) not at all.
       expect(res.body.totalBookings).toBe(5);
       expect(res.body.upcomingBookings).toBe(3);
+      expect(res.body.cancelledBookings).toBe(1);
+      expect(res.body.attendedBookings).toBe(1);
+      expect(res.body.noShowBookings).toBe(1);
 
       expect(res.body.days).toHaveLength(7); // Mon..Sun inclusive
       expect(res.body.days.map((d: { date: string }) => d.date)).toEqual([
@@ -1607,15 +1622,23 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       const monday = res.body.days.find((d: { date: string }) => d.date === RANGE_FROM);
       expect(monday.totalBookings).toBe(3);
       expect(monday.upcomingBookings).toBe(2);
+      expect(monday.cancelledBookings).toBe(1);
       const mondayJudo = monday.activities.find((a: { activity: string }) => a.activity === 'Judo');
-      expect(mondayJudo.totalBookings).toBe(3);
+      expect(mondayJudo.totalBookings).toBe(2);
       expect(mondayJudo.upcomingBookings).toBe(2);
+      expect(monday.activities.find((a: { activity: string }) => a.activity === 'Old Judo Tag')).toBeUndefined();
+      // The Branch's late class lands on its own local Monday.
+      expect(monday.activities.find((a: { activity: string }) => a.activity === 'Karate').totalBookings).toBe(1);
+      expect(monday.classes.map((c: { classId: string }) => c.classId)).toEqual([classMon.id, classBranchLate.id]);
+      const late = monday.classes.find((c: { classId: string }) => c.classId === classBranchLate.id);
+      expect(late).toMatchObject({ timeZone: 'America/Sao_Paulo', branchName: 'Summary São Paulo', capacity: 10, bookedCount: 1, cancelledCount: 0, cancelled: false });
+      expect(monday.classes.find((c: { classId: string }) => c.classId === classMon.id)).toMatchObject({ bookedCount: 2, cancelledCount: 1, timeZone: 'UTC' });
 
       const tuesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-06');
       expect(tuesday.totalBookings).toBe(1);
       expect(tuesday.upcomingBookings).toBe(1);
-      // Fan-out: a Class tagged Judo AND BJJ counts once in EACH tag's bucket, but
-      // only once in the day's own total above.
+      // Fan-out: a Class with no Styles tagged Judo AND BJJ counts once in EACH
+      // tag's row, but only once in the day's own total above.
       const tueJudo = tuesday.activities.find((a: { activity: string }) => a.activity === 'Judo');
       const tueBjj = tuesday.activities.find((a: { activity: string }) => a.activity === 'BJJ');
       expect(tueJudo.totalBookings).toBe(1);
@@ -1624,14 +1647,56 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       const wednesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-07');
       expect(wednesday.totalBookings).toBe(1);
       expect(wednesday.upcomingBookings).toBe(0);
-      const wedUnspecified = wednesday.activities.find((a: { activity: string }) => a.activity === 'Unspecified');
-      expect(wedUnspecified).toBeDefined();
-      expect(wedUnspecified.totalBookings).toBe(1);
+      const wedNoStyle = wednesday.activities.find((a: { activity: string | null }) => a.activity === null);
+      expect(wedNoStyle).toBeDefined();
+      expect(wedNoStyle.totalBookings).toBe(1);
 
       // A day in-range with zero Bookings still appears, at zero — never a sparse array.
       const thursday = res.body.days.find((d: { date: string }) => d.date === '2026-01-08');
       expect(thursday.totalBookings).toBe(0);
       expect(thursday.activities).toEqual([]);
+      expect(thursday.classes).toEqual([]);
+    });
+
+    it('Decision 367 (Q5): the Branch filter counts only that Branch\'s Classes, and refuses another School\'s Branch', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO, branchId: summaryBranch.id })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.branchId).toBe(summaryBranch.id);
+      expect(res.body.totalBookings).toBe(1);
+      expect(res.body.noShowBookings).toBe(1);
+      expect(res.body.cancelledBookings).toBe(0);
+
+      const foreign = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO, branchId: randomUUID() })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(foreign.status).toBe(400);
+    });
+
+    it('Decision 367 (D2): a range is at most 92 days, and a half-typed year is refused without building it', async () => {
+      const ok = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: '2026-01-01', to: '2026-04-02' }) // 92 days
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(ok.status).toBe(200);
+      expect(ok.body.days).toHaveLength(92);
+
+      const tooLong = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: '2026-01-01', to: '2026-04-03' })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(tooLong.status).toBe(400);
+
+      const started = Date.now();
+      const halfTyped = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: '0202-10-26', to: '2026-10-27' })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(halfTyped.status).toBe(400);
+      expect(Date.now() - started).toBeLessThan(2000);
     });
 
     it('a date-range narrower than the full fixture set excludes what falls outside it', async () => {
@@ -1642,9 +1707,10 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       expect(res.status).toBe(200);
       expect(res.body.days).toHaveLength(1);
       expect(res.body.totalBookings).toBe(3);
+      expect(res.body.cancelledBookings).toBe(1);
     });
 
-    it('Staff-only — a Student caller gets 403, Branch Staff (not just the Owner) gets 200', async () => {
+    it('School Owner only (Decision 367 Q6) — a Student and Branch Staff both get 403', async () => {
       const studentRes = await request(app.getHttpServer())
         .get(`/v1/schools/${school.id}/bookings/summary`)
         .query({ from: RANGE_FROM, to: RANGE_TO })
@@ -1655,7 +1721,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         .get(`/v1/schools/${school.id}/bookings/summary`)
         .query({ from: RANGE_FROM, to: RANGE_TO })
         .set('Authorization', `Bearer ${tokenBranchStaff}`);
-      expect(staffRes.status).toBe(200);
+      expect(staffRes.status).toBe(403);
     });
 
     it('cross-School isolation — School B\'s own Owner cannot read School A\'s summary, and School A\'s figures never include School B\'s Bookings', async () => {
@@ -1665,7 +1731,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         .set('Authorization', `Bearer ${tokenOwnerB}`);
       expect(forbidden.status).toBe(403);
 
-      // School B's own summary sees exactly its own 1 Booking, not School A's 5.
+      // School B's own summary sees exactly its own 1 Booking, not School A's.
       const ownRes = await request(app.getHttpServer())
         .get(`/v1/schools/${schoolB.id}/bookings/summary`)
         .query({ from: RANGE_FROM, to: RANGE_TO })

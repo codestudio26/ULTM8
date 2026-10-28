@@ -6293,25 +6293,46 @@ export interface components {
             nextCursor?: string | null;
         };
         BookingsSummaryActivityDto: {
-            /** @description The raw Class.activities tag this bucket is for, or "Unspecified" for a Class with no tags. */
-            activity: string;
+            /** @description The Style name (or, for a Class with no Styles, its free-text activity tag) this row is for; null for a Class with neither. */
+            activity: string | null;
             totalBookings: number;
             upcomingBookings: number;
         };
+        BookingsSummaryClassDto: {
+            classId: string;
+            title: string;
+            /** Format: date-time */
+            startDate: string;
+            /** @description The IANA time zone the Class runs in (Branch, else School, else UTC). */
+            timeZone: string;
+            branchName: string | null;
+            /** @description null = unlimited. */
+            capacity: number | null;
+            bookedCount: number;
+            cancelledCount: number;
+            cancelled: boolean;
+        };
         BookingsSummaryDayDto: {
-            /** @description YYYY-MM-DD, the School's own local calendar day. */
+            /** @description YYYY-MM-DD, the Classes' own local calendar day. */
             date: string;
             totalBookings: number;
             upcomingBookings: number;
+            cancelledBookings: number;
             activities: components["schemas"]["BookingsSummaryActivityDto"][];
+            classes: components["schemas"]["BookingsSummaryClassDto"][];
         };
         BookingsSummaryResponseDto: {
             /** @description Inclusive range start actually used, YYYY-MM-DD. */
             from: string;
             /** @description Inclusive range end actually used, YYYY-MM-DD. */
             to: string;
+            /** @description The Branch filter applied, if any. */
+            branchId: string | null;
             totalBookings: number;
             upcomingBookings: number;
+            cancelledBookings: number;
+            attendedBookings: number;
+            noShowBookings: number;
             days: components["schemas"]["BookingsSummaryDayDto"][];
         };
         CancelClassDto: {
@@ -11754,6 +11775,8 @@ export interface operations {
                 from?: string;
                 /** @description Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted. */
                 to?: string;
+                /** @description Only Classes held at this Branch of the School. */
+                branchId?: string;
             };
             header?: never;
             path: {
