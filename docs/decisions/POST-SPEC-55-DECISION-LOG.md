@@ -6200,6 +6200,25 @@ User (Code), 28 Oct 2026: "yes, build the per-IP limit change", to the proposal 
 
 ---
 
+## Decision 377 — Check-in and front desk review: seats after check-in, QR checked on scan, waiver status at the desk, guests one by one
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 107 (QR check-in), 315/317/320/351 (front desk), 366 (guest waivers) · **Review:** the "Check-in and front desk review" doc (bugs CI1–CI10, questions Q1–Q4); `docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`
+
+### Decision
+
+1. **A checked-in booking still holds its seat.** Seats taken = Upcoming and Completed bookings, each with their guests, everywhere seats are counted (booking, waitlist join and claim, capacity changes). Before, each check-in freed a seat, so a full class could be booked past its limit (CI1).
+2. **The desk never books a class it can't check into yet.** The welcome card shows a class whose check-in hasn't opened (the School's "check-in opens N minutes before") with "Check-in opens at …" and it can't be ticked (CI2).
+3. **The app QR is checked once, when it's scanned (Q2).** `POST /schools/{schoolId}/front-desk/qr-lookups` verifies the ~20-second QR and returns who it is plus a lookup token valid for 5 minutes, for that student, School and staff member only. `POST /classes/{id}/attendance-scan` accepts `lookupToken` in place of `studentToken`, recorded as `INSTRUCTOR_SCAN`. The QR of someone who isn't a current student at the School is refused (CI6).
+4. **Waiver status on the welcome card (Q4, handover F4).** `GET /students/{id}/waiver-status?schoolId=` (any staff at the School) → `{ signed, toSign: [{ waiverId, title }] }`: whether they hold a waiver that counts for booking, and the School's current waivers they haven't signed. The other "Soon" parts (personal code, tablet sign-up, Find me, open mat) stay in v1.3.
+5. **Exit stays as it is until the locked session (Q1).** Front-desk mode keeps running in the staff member's own login with its warning banner until v1.3's locked session.
+6. **Guests are checked in one by one (Q3).** The welcome card lists each guest with their own tick and waiver status, and each guest's check-in is recorded. Built in its own PR (it needs a database change).
+
+### Recorded by
+
+User (Code), 28 Oct 2026, on the decision cards: "Fix all 10 in one PR", "Leave until v1.3" (Exit), "Check QR once on scan", "Tick each guest separately", "Only waiver status now".
+
+---
+
 ## Decision 368 — School settings page review: 11 fixes, join code, School logo and colour, currency guard, Franchise name check
 
 **Date:** 27 Oct 2026 · **Status:** Product-owner decision (fixes and Q1–Q5, "All recommended") · **Builds on:** Decisions 257 (footer), 266 (join code, School colour), 291/292 (cancellation settings), 322 (late cancel), 334 (plan currency), 350/352 (Franchise branding and join requests), 364 (School self-close) · **Number note:** 367 is taken by the Dashboard review (PR #347).

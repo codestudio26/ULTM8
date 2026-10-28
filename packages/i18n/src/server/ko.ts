@@ -489,4 +489,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "이 이메일을 사용하는 계정이 이미 있습니다. 대신 '초대'를 사용하세요.",
   "This student has already attended this class.": "이 학생은 이미 이 수업에 출석했습니다.",
   "This was just recorded. Check before adding another.": "방금 기록되었습니다. 하나 더 추가하기 전에 확인하세요.",
+  "This person isn't a Student at this School.": "이 사람은 이 학교의 수련생이 아닙니다.",
+  "This scan has expired. Ask the Student to show their QR again.": "이 스캔은 만료되었습니다. 수련생에게 QR을 다시 보여 달라고 하세요.",
+  "This scan belongs to a different Student.": "이 스캔은 다른 수련생의 것입니다.",
 };

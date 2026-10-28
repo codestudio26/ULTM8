@@ -498,4 +498,7 @@ export const SERVER_PATTERNS: string[] = [
   "Enter the Franchise ID exactly as the Franchise Owner gave it.",
  "This student has already attended this class.",
  "This was just recorded. Check before adding another.",
+ "This person isn't a Student at this School.",
+ "This scan has expired. Ask the Student to show their QR again.",
+ "This scan belongs to a different Student.",
 ];

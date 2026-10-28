@@ -489,4 +489,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "已有使用此邮箱的账户——请改用“邀请”。",
   "This student has already attended this class.": "该学员已参加过此课程。",
   "This was just recorded. Check before adding another.": "刚刚已记录。添加另一条之前请先核对。",
+  "This person isn't a Student at this School.": "此人不是本学校的学员。",
+  "This scan has expired. Ask the Student to show their QR again.": "此次扫描已过期。请学员再次出示二维码。",
+  "This scan belongs to a different Student.": "此次扫描属于另一名学员。",
 };

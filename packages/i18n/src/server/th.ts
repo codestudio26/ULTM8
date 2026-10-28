@@ -489,4 +489,7 @@ export const serverMessages: Record<string, string> = {
   "An account with this email already exists — use \"Invite\" instead.": "มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว — ใช้ \"เชิญ\" แทน",
   "This student has already attended this class.": "นักเรียนคนนี้เข้าเรียนคลาสนี้แล้ว",
   "This was just recorded. Check before adding another.": "เพิ่งบันทึกรายการนี้ไป โปรดตรวจสอบก่อนเพิ่มอีกรายการ",
+  "This person isn't a Student at this School.": "บุคคลนี้ไม่ใช่นักเรียนของโรงเรียนนี้",
+  "This scan has expired. Ask the Student to show their QR again.": "การสแกนนี้หมดอายุแล้ว ขอให้นักเรียนแสดง QR อีกครั้ง",
+  "This scan belongs to a different Student.": "การสแกนนี้เป็นของนักเรียนคนอื่น",
 };

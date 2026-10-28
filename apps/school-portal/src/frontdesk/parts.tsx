@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Spinner } from '@ultm8/ui';
 import { Avatar } from '../lib/Avatar';
 import { QrScanModal } from '../attendance/QrScanModal';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BookingResponse } from '../bookings/bookingQueries';
 import { useInstructors } from '../instructors/instructorQueries';
 import { useStudentEligibility } from '../grading/gradingQueries';
+import { useSchool } from '../schools/schoolQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { hasBackend } from './frontDeskFeatures';
 import {
   QrExpiredError,
   errorText,
-  readStudentQr,
   useFrontDeskCheckIn,
   useMembershipStatus,
   useStudentSearch,
+  useWaiverStatus,
+  type QrLookup,
 } from './frontDeskQueries';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
@@ -44,13 +47,20 @@ export function isOver(c: ClassResponse, now = Date.now()): boolean {
   return new Date(c.qrAttendanceEndAt ?? c.endDate).getTime() < now;
 }
 
+/** When check-in opens: the School's set number of minutes before the start
+ * (School page, 30 by default), the same rule the API applies. */
+export function checkInOpensAt(c: ClassResponse, minutesBefore: number): number {
+  return new Date(c.startDate).getTime() - minutesBefore * 60_000;
+}
+
 /** The next Class to start, or the one on now. */
 export function nextClassId(classes: ClassResponse[], now = Date.now()): string | null {
   return classes.find((c) => new Date(c.endDate).getTime() > now)?.id ?? null;
 }
 
-function active(bookings: BookingResponse[]) {
-  return bookings.filter((b) => b.status === 'UPCOMING' || b.status === 'COMPLETED');
+/** Seats taken: booked or checked in, each with their guests, as the API counts them (CI1, CI7). */
+function seatsTaken(bookings: BookingResponse[]): number {
+  return bookings.filter((b) => b.status === 'UPCOMING' || b.status === 'COMPLETED').reduce((n, b) => n + 1 + (b.attendees?.length ?? 0), 0);
 }
 
 export function SoonTag() {
@@ -64,7 +74,7 @@ export function SoonTag() {
 
 export function ClassCard({ cls, bookings, coach, next }: { cls: ClassResponse; bookings: BookingResponse[]; coach?: string; next: boolean }) {
   const t = useT();
-  const taken = active(bookings).length;
+  const taken = seatsTaken(bookings);
   const checkedIn = bookings.filter((b) => b.status === 'COMPLETED').length;
   const left = cls.capacity == null ? null : Math.max(0, cls.capacity - taken);
   return (
@@ -229,6 +239,8 @@ export function ScanBox({ title, hint, onQr }: { title: string; hint: string; on
   );
 }
 
+const NAME_RESULTS = 8;
+
 /** Name search. On the shared tablet (`short`) names show as "Lucas M."
  * (Decision 351); staff see full names. */
 export function NameSearch({ schoolId, short, onPick }: { schoolId: string | null; short: boolean; onPick: (s: FrontDeskStudent) => void }) {
@@ -251,7 +263,8 @@ export function NameSearch({ schoolId, short, onPick }: { schoolId: string | nul
         style={{ minHeight: 52, fontSize: 16 }}
       />
       {term.trim().length >= 2 && !isFetching && items.length === 0 ? <p className="fd-hint">{t('frontDesk.name.none')}</p> : null}
-      {items.slice(0, 8).map((s) => (
+      {items.length > NAME_RESULTS ? <p className="fd-hint">{t('frontDesk.name.more', { shown: NAME_RESULTS, count: items.length })}</p> : null}
+      {items.slice(0, NAME_RESULTS).map((s) => (
         <button key={s.id} type="button" className="fd-row" onClick={() => onPick(s)}>
           <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={40} />
           <span className="fd-row__name">{short ? shortName(s) : `${s.firstName} ${s.surname}`}</span>
@@ -274,12 +287,37 @@ const STATUS_TAG: Record<string, { key: TranslationKey; cls: string }> = {
 };
 
 /**
- * Who it is, their membership and belt progress, and today's Classes to tick.
- * Classes they're booked into start ticked. Anything the API refuses (no live
- * membership, outside the check-in window, rank gate, full) comes back as its
- * reason and is shown in place of the Confirm button's result.
+ * Who it is, their membership, waivers and belt progress, and today's Classes
+ * to tick. Classes they're booked into start ticked. A Class whose check-in
+ * hasn't opened yet is shown but can't be ticked, so Confirm never books a
+ * place it can't check into (CI2). Anything the API refuses (no live
+ * membership, rank gate, full) comes back as its reason and is shown in place
+ * of the Confirm button's result. Waits for today's bookings before ticking
+ * anything (CI8).
  */
-export function WelcomeCard({
+export function WelcomeCard(props: {
+  student: FrontDeskStudent;
+  schoolId: string;
+  classes: ClassResponse[];
+  bookingsByClass: Map<string, BookingResponse[]>;
+  bookingsReady: boolean;
+  qr: QrLookup | null;
+  short: boolean;
+  onBack: () => void;
+  onDone: (classIds: string[]) => void;
+}) {
+  const school = useSchool(props.schoolId);
+  if (!props.bookingsReady || !school.data) {
+    return (
+      <div className="fd-welcome" data-testid="fd-welcome">
+        <Spinner />
+      </div>
+    );
+  }
+  return <WelcomeCardBody {...props} opensMinutesBefore={school.data.checkInOpensMinutesBeforeStart} />;
+}
+
+function WelcomeCardBody({
   student,
   schoolId,
   classes,
@@ -288,27 +326,33 @@ export function WelcomeCard({
   short,
   onBack,
   onDone,
+  opensMinutesBefore,
 }: {
   student: FrontDeskStudent;
   schoolId: string;
   classes: ClassResponse[];
   bookingsByClass: Map<string, BookingResponse[]>;
-  qr: { token: string; expiresAt: number } | null;
+  qr: QrLookup | null;
   short: boolean;
   onBack: () => void;
   onDone: (classIds: string[]) => void;
+  opensMinutesBefore: number;
 }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const open = classes.filter((c) => !isOver(c));
+  const now = Date.now();
+  const open = classes.filter((c) => !isOver(c, now));
+  const canTick = (c: ClassResponse) => checkInOpensAt(c, opensMinutesBefore) <= Date.now();
   const mineIn = (c: ClassResponse, status: string) => (bookingsByClass.get(c.id) ?? []).some((b) => b.studentId === student.id && b.status === status);
   const [picks, setPicks] = useState<string[]>(() => {
-    const booked = open.filter((c) => mineIn(c, 'UPCOMING')).map((c) => c.id);
+    const ready = open.filter(canTick);
+    const booked = ready.filter((c) => mineIn(c, 'UPCOMING')).map((c) => c.id);
     if (booked.length) return booked;
-    const next = nextClassId(open);
-    return next ? [next] : [];
+    const next = ready.find((c) => !mineIn(c, 'COMPLETED'));
+    return next ? [next.id] : [];
   });
   const status = useMembershipStatus(student.id, schoolId);
+  const waivers = useWaiverStatus(student.id, schoolId);
   const eligibility = useStudentEligibility(student.id, schoolId);
   const checkIn = useFrontDeskCheckIn();
   const [error, setError] = useState<string | null>(null);
@@ -316,11 +360,13 @@ export function WelcomeCard({
   const progress = (eligibility.data?.items ?? []).map((i) => i.progressBreakdown?.classes).find((c) => c && c.required > 0);
   const tag = status.data ? STATUS_TAG[status.data.status] : null;
   const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  // Only Classes that can still be checked into right now are sent.
+  const sendable = picks.filter((id) => open.some((c) => c.id === id && canTick(c)));
 
   function confirm() {
     setError(null);
     checkIn.mutate(
-      { studentId: student.id, classIds: picks, bookingsByClass, qr },
+      { studentId: student.id, classIds: sendable, bookingsByClass, qr },
       {
         onSuccess: (ids) => {
           queryClient.invalidateQueries({ queryKey: ['membershipStatus', student.id, schoolId] });
@@ -343,11 +389,13 @@ export function WelcomeCard({
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {tag ? <span className={tag.cls}>{t(tag.key)}</span> : null}
-        {hasBackend('waiverStatus') ? null : (
-          <span className="fd-tag">
-            {t('frontDesk.welcome.waiverSoon')}
-          </span>
-        )}
+        {hasBackend('waiverStatus') && waivers.data ? (
+          waivers.data.toSign.length > 0 ? (
+            <span className="fd-tag fd-tag--warn">{t('frontDesk.welcome.waiverToSign', { titles: waivers.data.toSign.map((w) => w.title).join(', ') })}</span>
+          ) : waivers.data.signed ? (
+            <span className="fd-tag fd-tag--ok">{t('frontDesk.welcome.waiverSigned')}</span>
+          ) : null
+        ) : null}
       </div>
       {progress ? (
         <div className="fd-bar fd-bar--progress" aria-hidden="true">
@@ -360,11 +408,12 @@ export function WelcomeCard({
       ) : (
         <div className="fd-ticks">
           {open.map((c) => {
-            const on = picks.includes(c.id);
             const already = mineIn(c, 'COMPLETED');
             const booked = mineIn(c, 'UPCOMING');
+            const notYet = !already && !canTick(c);
+            const on = picks.includes(c.id) && !notYet;
             return (
-              <button key={c.id} type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already}>
+              <button key={c.id} type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already || notYet}>
                 <span className="fd-tick__box" aria-hidden="true">
                   {on || already ? '✓' : ''}
                 </span>
@@ -373,7 +422,13 @@ export function WelcomeCard({
                 </span>
                 <span className="fd-tick__name">{c.title}</span>
                 <span className="fd-tick__meta">
-                  {already ? t('frontDesk.welcome.alreadyIn') : booked ? t('frontDesk.welcome.booked') : t('frontDesk.welcome.willBook')}
+                  {already
+                    ? t('frontDesk.welcome.alreadyIn')
+                    : notYet
+                      ? t('frontDesk.welcome.opensAt', { time: timeOf(new Date(checkInOpensAt(c, opensMinutesBefore)).toISOString()) })
+                      : booked
+                        ? t('frontDesk.welcome.booked')
+                        : t('frontDesk.welcome.willBook')}
                 </span>
               </button>
             );
@@ -393,23 +448,12 @@ export function WelcomeCard({
         <button type="button" className="fd-pill fd-pill--line" onClick={onBack}>
           {short ? t('frontDesk.welcome.notMe') : t('frontDesk.welcome.notThisStudent')}
         </button>
-        <button type="button" className="fd-pill fd-pill--go" onClick={confirm} disabled={picks.length === 0 || checkIn.isPending}>
-          {picks.length ? t('frontDesk.welcome.confirm', { count: picks.length }) : t('frontDesk.welcome.tickOne')}
+        <button type="button" className="fd-pill fd-pill--go" onClick={confirm} disabled={sendable.length === 0 || checkIn.isPending}>
+          {sendable.length ? t('frontDesk.welcome.confirm', { count: sendable.length }) : t('frontDesk.welcome.tickOne')}
         </button>
       </div>
     </div>
   );
-}
-
-/** Open the welcome card from a scanned QR: who it is comes from the token,
- * their name from the School's roster. */
-export function useQrStudent(roster: FrontDeskStudent[] | undefined) {
-  return (token: string): { student: FrontDeskStudent; qr: { token: string; expiresAt: number } } | null => {
-    const read = readStudentQr(token);
-    if (!read) return null;
-    const known = roster?.find((s) => s.id === read.studentId);
-    return { student: known ?? { id: read.studentId, firstName: '', surname: '' }, qr: { token, expiresAt: read.expiresAt } };
-  };
 }
 
 // ---------------------------------------------------------------------------

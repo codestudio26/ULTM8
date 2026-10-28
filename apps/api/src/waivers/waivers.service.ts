@@ -18,6 +18,8 @@ import { UpdateWaiverSettingsDto } from './dto/waiver-settings.dto';
 import type { WaiverSignatureRequestJobData } from '../jobs/waiver-signature-requests.processor';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { WaiverAssignmentService } from './waiver-assignment.service';
+import { hasCountingWaiverSignature } from './waiver-signed-check';
+import { StudentWaiverStatusDto } from './dto/student-waiver-status.dto';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -832,6 +834,27 @@ export class WaiversService {
         "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
       );
     }
+  }
+
+  /** GET /students/{id}/waiver-status?schoolId= — any staff at the School
+   * (Owner/Manager, Branch Staff, Instructor), for a current Student there.
+   * Read in the Student's own tenant context, as booking's waiver check is:
+   * Branch Staff and coaches can't read other people's signatures. */
+  async getStudentWaiverStatus(callerId: string, studentId: string, schoolId: string): Promise<StudentWaiverStatusDto> {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const enrolled = await tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+      if (!enrolled) {
+        throw new NotFoundException("This person isn't a Student at this School.");
+      }
+      const [signed, waivers, signatures] = await Promise.all([
+        hasCountingWaiverSignature(tx, studentId, schoolId),
+        tx.waiver.findMany({ where: { schoolId, archivedAt: null }, orderBy: { createdAt: 'asc' }, select: { id: true, title: true } }),
+        tx.waiverSignature.findMany({ where: { studentId, schoolId, status: 'SIGNED' }, select: { waiverId: true } }),
+      ]);
+      const done = new Set(signatures.map((sig) => sig.waiverId));
+      return { signed, toSign: waivers.filter((w) => !done.has(w.id)).map((w) => ({ waiverId: w.id, title: w.title })) };
+    });
   }
 
   async findMySignatures(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
