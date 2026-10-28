@@ -12,6 +12,7 @@ import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { hasBackend } from './frontDeskFeatures';
 import {
+  DeskCheckInError,
   QrExpiredError,
   errorText,
   useFrontDeskCheckIn,
@@ -356,7 +357,7 @@ function WelcomeCardBody({
   const status = useMembershipStatus(student.id, schoolId);
   const waivers = useWaiverStatus(student.id, schoolId);
   const eligibility = useStudentEligibility(student.id, schoolId);
-  const checkIn = useFrontDeskCheckIn();
+  const checkIn = useFrontDeskCheckIn(schoolId);
   const [error, setError] = useState<string | null>(null);
 
   const progress = (eligibility.data?.items ?? []).map((i) => i.progressBreakdown?.classes).find((c) => c && c.required > 0);
@@ -369,18 +370,25 @@ function WelcomeCardBody({
   const myBooking = (c: ClassResponse) =>
     (bookingsByClass.get(c.id) ?? []).find((b) => b.studentId === student.id && (b.status === 'UPCOMING' || b.status === 'COMPLETED'));
   // Only Classes that can still be checked into right now are sent.
-  const sendable = picks.filter((id) => open.some((c) => c.id === id && canTick(c)));
+  const sendable = picks.filter((id) => open.some((c) => c.id === id && canTick(c) && !mineIn(c, 'COMPLETED')));
 
   function confirm() {
     setError(null);
     checkIn.mutate(
-      { studentId: student.id, classIds: sendable, bookingsByClass, qr, guests: guestPicks },
+      { studentId: student.id, classIds: sendable, qr, guests: guestPicks },
       {
         onSuccess: (ids) => {
           queryClient.invalidateQueries({ queryKey: ['membershipStatus', student.id, schoolId] });
           onDone(ids);
         },
-        onError: (err) => setError(err instanceof QrExpiredError ? t('frontDesk.welcome.qrExpired') : errorText(err, t('frontDesk.welcome.failed'))),
+        onError: (err) =>
+          setError(
+            err instanceof QrExpiredError
+              ? t('frontDesk.welcome.qrExpired')
+              : err instanceof DeskCheckInError
+                ? err.items.map((i) => `${i.classId ? (classes.find((c) => c.id === i.classId)?.title ?? '') : t('frontDesk.welcome.guest')}: ${i.message}`).join(' · ')
+                : errorText(err, t('frontDesk.welcome.failed')),
+          ),
       },
     );
   }

@@ -100,6 +100,28 @@ test('a refusal from the API is shown as the reason, and nothing is checked in',
   expect(await db.booking.count({ where: { studentId: s.newStudent.id } })).toBe(0);
 });
 
+test('one class that can\'t be done stops the whole check-in, and says which (Decision 378)', async ({ page }) => {
+  const fine = await classNow();
+  const full = await classNow({ title: 'Sparring', capacity: 1 });
+  const m = await subscribe(s.newStudent.id);
+  const booking = await db.booking.create({ data: { id: randomUUID(), studentId: s.newStudent.id, classId: fine.id, schoolId: s.schoolId, sourceMembershipId: m.id } });
+  const other = await subscribe(s.student.id);
+  await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: full.id, schoolId: s.schoolId, sourceMembershipId: other.id } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia Park/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: /Sparring/ }).click();
+  await card.getByRole('button', { name: 'Check in to 2 classes' }).click();
+  await expect(card.getByRole('alert')).toContainText('Sparring:');
+  await expect(card.getByRole('alert')).toContainText('full');
+  // All or nothing: the class that was fine wasn't checked in either.
+  expect((await db.booking.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('UPCOMING');
+  expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: full.id } })).toBe(0);
+});
+
 test('the personal code waits for its backend', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');

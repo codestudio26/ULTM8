@@ -493,4 +493,6 @@ export const serverMessages: Record<string, string> = {
   "This person isn't a Student at this School.": "この人はこのスクールの生徒ではありません。",
   "This scan has expired. Ask the Student to show their QR again.": "このスキャンは期限切れです。生徒にもう一度QRを見せてもらってください。",
   "This scan belongs to a different Student.": "このスキャンは別の生徒のものです。",
+  "Pick at least one class or guest to check in.": "チェックインするクラスかゲストを1つ以上選んでください。",
+  "The same guest was listed more than once.": "同じゲストが複数回指定されています。",
 };

@@ -5,6 +5,8 @@
  * - Q2: POST /schools/{schoolId}/front-desk/qr-lookups checks a scanned app QR
  *   once and gives the desk a lookup token to check that Student in with.
  * - Q4: GET /students/{id}/waiver-status for the welcome card.
+ * - Decision 378: POST /schools/{schoolId}/front-desk/check-ins, the welcome
+ *   card's confirm in one all-or-nothing step.
  * - Decision 377: each guest on a booking is checked in on their own.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -65,7 +67,7 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Front Desk School' } });
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Front Desk Other School' } });
-    for (const label of ['ana', 'ben', 'coach', 'coach2', 'outsider']) {
+    for (const label of ['ana', 'ben', 'cara', 'coach', 'coach2', 'outsider']) {
       users[label] = await superuser.user.create({
         data: {
           id: randomUUID(),
@@ -82,6 +84,7 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
     const grants: Array<[string, 'STUDENT' | 'INSTRUCTOR', string]> = [
       ['ana', 'STUDENT', school.id],
       ['ben', 'STUDENT', school.id],
+      ['cara', 'STUDENT', school.id],
       ['coach', 'INSTRUCTOR', school.id],
       ['coach2', 'INSTRUCTOR', school.id],
       ['outsider', 'STUDENT', otherSchool.id],
@@ -236,5 +239,108 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
     const cancelledGuest = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: cancelled.id, schoolId: school.id, membershipId: m.id } });
     const res = await http().post(`/v1/bookings/${cancelled.id}/guests/${cancelledGuest.id}/check-in`).set('Authorization', `Bearer ${tokens.coach}`);
     expect(res.status).toBe(409);
+  });
+  describe('Decision 378: one-step desk check-in', () => {
+    const deskCheckIn = (body: Record<string, unknown>, who = 'coach') =>
+      http().post(`/v1/schools/${school.id}/front-desk/check-ins`).set('Authorization', `Bearer ${tokens[who]}`).send(body);
+
+    async function classAt(startMin: number, capacity: number | null = null) {
+      return superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: `Class ${startMin}`, capacity, membershipInclusion: true, startDate: new Date(Date.now() + startMin * MIN), endDate: new Date(Date.now() + (startMin + 60) * MIN) },
+      });
+    }
+
+    async function pack(studentId: string, credits: number) {
+      const plan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: '10 classes', price: 9000 } });
+      return superuser.membership.create({
+        data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: credits },
+      });
+    }
+
+    it('books where needed and checks into every ticked class at once', async () => {
+      const booked = await classAt(-5);
+      const walkIn = await classAt(10);
+      const m = await member(users.ben.id);
+      const existing = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ben.id, classId: booked.id, schoolId: school.id, sourceMembershipId: m.id } });
+
+      const res = await deskCheckIn({ studentId: users.ben.id, classIds: [booked.id, walkIn.id] });
+      expect(res.status).toBe(200);
+      expect(res.body.done).toBe(true);
+      expect(res.body.classes.every((c: { ok: boolean }) => c.ok)).toBe(true);
+      expect(res.body.classes.find((c: { classId: string }) => c.classId === booked.id).bookingId).toBe(existing.id);
+
+      const rows = await superuser.booking.findMany({ where: { studentId: users.ben.id, classId: { in: [booked.id, walkIn.id] } } });
+      expect(rows).toHaveLength(2);
+      expect(rows.every((r) => r.status === 'COMPLETED' && r.checkInMethod === 'INSTRUCTOR_MANUAL' && r.checkedInById === users.coach.id)).toBe(true);
+    });
+
+    it('does nothing when one class has not opened for check-in, and says which', async () => {
+      const open = await classAt(-5);
+      const later = await classAt(180);
+      const m = await pack(users.cara.id, 5);
+
+      const res = await deskCheckIn({ studentId: users.cara.id, classIds: [open.id, later.id] });
+      expect(res.status).toBe(200);
+      expect(res.body.done).toBe(false);
+      expect(res.body.classes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ classId: open.id, ok: true }),
+          expect.objectContaining({ classId: later.id, ok: false, code: 'CHECK_IN_NOT_OPEN' }),
+        ]),
+      );
+      expect(await superuser.booking.count({ where: { studentId: users.cara.id, classId: { in: [open.id, later.id] } } })).toBe(0);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: m.id } })).classesRemaining).toBe(5);
+    });
+
+    it('rolls everything back when a class turns out full inside the transaction', async () => {
+      const fine = await classAt(-5);
+      const full = await classAt(0, 1);
+      const benM = await member(users.ben.id);
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ben.id, classId: full.id, schoolId: school.id, sourceMembershipId: benM.id } });
+      const m = await pack(users.cara.id, 5);
+
+      const res = await deskCheckIn({ studentId: users.cara.id, classIds: [fine.id, full.id] });
+      expect(res.status).toBe(200);
+      expect(res.body.done).toBe(false);
+      expect(res.body.classes.find((c: { classId: string }) => c.classId === full.id)).toMatchObject({ ok: false, code: 'CLASS_FULL' });
+      // The class that was fine was booked and checked in, then rolled back: no booking, no credit spent.
+      expect(await superuser.booking.count({ where: { studentId: users.cara.id, classId: { in: [fine.id, full.id] } } })).toBe(0);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: m.id } })).classesRemaining).toBe(5);
+    });
+
+    it('checks the member and their ticked guests in together, by QR lookup', async () => {
+      const cls = await classAt(-5, 10);
+      const m = await member(users.ana.id);
+      const booking = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.ana.id, classId: cls.id, schoolId: school.id, sourceMembershipId: m.id } });
+      const guest = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: school.id, membershipId: m.id } });
+      const other = await superuser.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: school.id, membershipId: m.id } });
+      const lookup = await http().post(`/v1/schools/${school.id}/front-desk/qr-lookups`).set('Authorization', `Bearer ${tokens.coach}`).send({ studentToken: await myQr('ana') });
+
+      const stolen = await deskCheckIn({ studentId: users.ana.id, lookupToken: lookup.body.lookupToken, classIds: [cls.id] }, 'coach2');
+      expect(stolen.status).toBe(400);
+
+      const res = await deskCheckIn({ studentId: users.ana.id, lookupToken: lookup.body.lookupToken, classIds: [cls.id], guests: [{ bookingId: booking.id, attendeeId: guest.id }] });
+      expect(res.status).toBe(200);
+      expect(res.body.done).toBe(true);
+      expect(res.body.guests[0]).toMatchObject({ attendeeId: guest.id, ok: true });
+      expect((await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } })).checkInMethod).toBe('INSTRUCTOR_SCAN');
+      const seats = await superuser.bookingAttendee.findMany({ where: { bookingId: booking.id } });
+      expect(seats.find((s) => s.id === guest.id)?.checkedInById).toBe(users.coach.id);
+      expect(seats.find((s) => s.id === other.id)?.checkedInAt).toBeNull();
+
+      // Later, the other guest arrives: the member is already in.
+      const later = await deskCheckIn({ studentId: users.ana.id, classIds: [], guests: [{ bookingId: booking.id, attendeeId: other.id }] });
+      expect(later.body.done).toBe(true);
+      const again = await deskCheckIn({ studentId: users.ana.id, classIds: [], guests: [{ bookingId: booking.id, attendeeId: other.id }] });
+      expect(again.body.done).toBe(false);
+      expect(again.body.guests[0]).toMatchObject({ ok: false, code: 'CONFLICT' });
+    });
+
+    it('refuses someone who is not a student here, students themselves, and an empty confirm', async () => {
+      const cls = await classAt(-5);
+      expect((await deskCheckIn({ studentId: users.outsider.id, classIds: [cls.id] })).status).toBe(404);
+      expect((await deskCheckIn({ studentId: users.ana.id, classIds: [cls.id] }, 'ben')).status).toBe(403);
+      expect((await deskCheckIn({ studentId: users.ana.id, classIds: [] })).status).toBe(400);
+    });
   });
 });

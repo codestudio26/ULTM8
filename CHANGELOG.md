@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Front desk: one-step check-in** (Decision 378) — the welcome card's
+  confirm now books, checks in and checks in the ticked guests in one go. If
+  one class can't be done (full, not open yet, no membership…), nothing is
+  checked in, and the card says which class and why.
 - **Staging deploy readiness (Render + Supabase + Vercel):**
   - **api — the API refuses to start when misconfigured.** With
     `NODE_ENV=production` (every deployed environment), it won't start unless

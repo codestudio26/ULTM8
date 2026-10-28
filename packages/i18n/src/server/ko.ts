@@ -493,4 +493,6 @@ export const serverMessages: Record<string, string> = {
   "This person isn't a Student at this School.": "이 사람은 이 학교의 수련생이 아닙니다.",
   "This scan has expired. Ask the Student to show their QR again.": "이 스캔은 만료되었습니다. 수련생에게 QR을 다시 보여 달라고 하세요.",
   "This scan belongs to a different Student.": "이 스캔은 다른 수련생의 것입니다.",
+  "Pick at least one class or guest to check in.": "체크인할 수업이나 게스트를 하나 이상 고르세요.",
+  "The same guest was listed more than once.": "같은 게스트가 두 번 이상 들어 있습니다.",
 };

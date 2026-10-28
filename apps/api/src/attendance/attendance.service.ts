@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CheckInMethod } from '@prisma/client';
+import { CheckInMethod, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -50,6 +50,9 @@ import { queueReadyCheck } from '../jobs/grading-notifications.types';
  * `qr-attendance-processing` remains a synchronous request handler, not a
  * literal BullMQ job — unchanged from Phase 13's own Decision 93.
  */
+// Same shape PrismaAppService#withTenantContext hands its callback.
+type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -272,7 +275,7 @@ export class AttendanceService {
   // methods (Decision 107) — exempting INSTRUCTOR_MANUAL would turn "just say
   // manual" into an easy bypass of the one anti-fraud/no-show boundary the
   // whole check-in system is built around.
-  private async assertWithinWindow(cls: { schoolId: string; startDate: Date; qrAttendanceEndAt: Date | null; endDate: Date }): Promise<void> {
+  async assertWithinWindow(cls: { schoolId: string; startDate: Date; qrAttendanceEndAt: Date | null; endDate: Date }): Promise<void> {
     const now = new Date();
     // Check-in opens the School's set number of minutes before the Class starts
     // (product owner, 26 Oct 2026; 30 by default). Before this, a Student could be
@@ -299,7 +302,7 @@ export class AttendanceService {
   // Student) has no ConsentRecord at all and must not be blocked by that
   // absence. Unchanged from Phase 13's own reasoning, now shared by both
   // scan() and instructorScan()'s own INSTRUCTOR_SCAN mode.
-  private async assertCameraConsentNotWithdrawn(studentId: string): Promise<void> {
+  async assertCameraConsentNotWithdrawn(studentId: string): Promise<void> {
     const withdrawn = await this.prismaJobs.consentRecord.findFirst({
       where: { studentId, tier: 'CAMERA', status: 'WITHDRAWN' },
       select: { id: true },
@@ -321,36 +324,50 @@ export class AttendanceService {
       // Taken before any row lock, the same as a booking for this Student and
       // Class (lockStudentClass: a booking and a check-in otherwise deadlocked).
       await lockStudentClass(tx, studentId, booking.classId);
-      // Optimistic-concurrency guard, same established pattern as every other
-      // status transition in this codebase — guards against a double-scan
-      // race (any combination of the three methods) or a race against the
-      // no-show sweep.
-      const result = await tx.booking.updateMany({
-        where: { id: booking.id, status: 'UPCOMING' },
-        data: { status: 'COMPLETED', checkInMethod: method, checkedInById },
-      });
-      if (result.count === 0) {
-        throw new ConflictException(
-          'This Booking is no longer Upcoming — it may already have been checked into, cancelled, or marked No-Show.',
-        );
-      }
-
-      // Credit toward the student's next rung in each style the class lists
-      // (roadmap Phase 2b; Decisions 140, 149, 170, 171). This replaces Decision
-      // 90's activities <-> Discipline.name bridge for attendance. Attendance
-      // check-in happens regardless of ranking: a style the student has no rank
-      // in is skipped.
-      await creditAttendance(tx, studentId, booking);
-
-      // Hours trained (Decisions 301 item 1, 306): the class's scheduled
-      // length, per style, as a record only. Separate from the class count
-      // above and never read by grading.
-      await recordCheckInMinutes(tx, studentId, booking);
-
-      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+      return this.completeInTx(tx, studentId, booking, method, checkedInById);
     });
     // The class may have made the student ready to grade (Decision 178).
-    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
+    await this.afterCheckIn(studentId);
     return completed;
+  }
+
+  /** The check-in itself, inside the caller's transaction (in the Student's own
+   * context, after lockStudentClass). completeBooking runs it alone; the front
+   * desk's one-step check-in (Decision 378) runs it for several Classes in one
+   * transaction. Call afterCheckIn once the transaction has committed. */
+  async completeInTx(tx: TenantTx, studentId: string, booking: { id: string; classId: string }, method: CheckInMethod, checkedInById: string | null) {
+    // Optimistic-concurrency guard, same established pattern as every other
+    // status transition in this codebase — guards against a double-scan
+    // race (any combination of the three methods) or a race against the
+    // no-show sweep.
+    const result = await tx.booking.updateMany({
+      where: { id: booking.id, status: 'UPCOMING' },
+      data: { status: 'COMPLETED', checkInMethod: method, checkedInById },
+    });
+    if (result.count === 0) {
+      throw new ConflictException(
+        'This Booking is no longer Upcoming — it may already have been checked into, cancelled, or marked No-Show.',
+      );
+    }
+
+    // Credit toward the student's next rung in each style the class lists
+    // (roadmap Phase 2b; Decisions 140, 149, 170, 171). This replaces Decision
+    // 90's activities <-> Discipline.name bridge for attendance. Attendance
+    // check-in happens regardless of ranking: a style the student has no rank
+    // in is skipped.
+    await creditAttendance(tx, studentId, booking);
+
+    // Hours trained (Decisions 301 item 1, 306): the class's scheduled
+    // length, per style, as a record only. Separate from the class count
+    // above and never read by grading.
+    await recordCheckInMinutes(tx, studentId, booking);
+
+    return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+  }
+
+  /** After a check-in commits: the class may have made the student ready to
+   * grade (Decision 178). */
+  async afterCheckIn(studentId: string): Promise<void> {
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
   }
 }

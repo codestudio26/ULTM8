@@ -493,4 +493,6 @@ export const serverMessages: Record<string, string> = {
   "This person isn't a Student at this School.": "Bu kişi bu okulun öğrencisi değil.",
   "This scan has expired. Ask the Student to show their QR again.": "Bu taramanın süresi doldu. Öğrenciden QR'ını tekrar göstermesini isteyin.",
   "This scan belongs to a different Student.": "Bu tarama başka bir öğrenciye ait.",
+  "Pick at least one class or guest to check in.": "Giriş yapmak için en az bir ders veya misafir seçin.",
+  "The same guest was listed more than once.": "Aynı misafir birden fazla kez listelendi.",
 };

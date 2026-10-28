@@ -502,4 +502,6 @@ export const SERVER_PATTERNS: string[] = [
  "This person isn't a Student at this School.",
  "This scan has expired. Ask the Student to show their QR again.",
  "This scan belongs to a different Student.",
+ "Pick at least one class or guest to check in.",
+ "The same guest was listed more than once.",
 ];
