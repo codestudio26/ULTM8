@@ -174,6 +174,27 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       dispute = await client.disputes.retrieve(objectId);
     }
 
+    // Decision 381 (Transactions G6) — a refund made in the Stripe dashboard (or
+    // anywhere else) is picked up here. Same pre-fetch discipline as the Dispute
+    // above: the Charge's live `amount_refunded` is what the handler syncs to, so
+    // a redelivered or out-of-order event can never leave a stale total. A
+    // charge.refund.updated event's object is the Refund (a refund that later
+    // failed lowers the Charge's total), so its Charge is fetched through it. No
+    // stripeAccountId means a platform charge (ULTM8's own billing), which is
+    // never a Transaction row: left to dispatch()'s log-only branch.
+    let refundedCharge: Stripe.Charge | undefined;
+    if ((eventType === 'charge.refunded' || eventType === 'charge.refund.updated') && stripeAccountId) {
+      const stripe = this.stripeClient.scopedClient(stripeAccountId);
+      let chargeId: string | null = objectId;
+      if (eventType === 'charge.refund.updated') {
+        const refund = await stripe.refunds.retrieve(objectId);
+        chargeId = typeof refund.charge === 'string' ? refund.charge : (refund.charge?.id ?? null);
+      }
+      if (chargeId) {
+        refundedCharge = await stripe.charges.retrieve(chargeId);
+      }
+    }
+
     // Decision 234's own saved-payment-method dependency — same "pre-fetch
     // outside the transaction" discipline as invoice/dispute above, plus one
     // more external call this event specifically needs: Checkout Session's
@@ -213,7 +234,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -339,6 +360,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     invoice: Stripe.Invoice | undefined,
     dispute: Stripe.Dispute | undefined,
     checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
+    refundedCharge?: Stripe.Charge,
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
@@ -395,6 +417,15 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           throw new Error(`dispatch() reached ${eventType} (event ${stripeEventId}) with no Dispute — this should be unreachable; see process()'s own guard.`);
         }
         return this.handleChargeDispute(tx, dispute, stripeEventId);
+      // Decision 381 (G6) — see process()'s own pre-fetch comment.
+      case 'charge.refunded':
+      case 'charge.refund.updated':
+        if (refundedCharge) {
+          await this.handleChargeRefunded(tx, refundedCharge, stripeEventId);
+        } else {
+          this.logger.log(`Stripe event ${stripeEventId} (${eventType}) is not on a School's connected account — recorded, no handler action.`);
+        }
+        return noSideEffects;
       // Decision 234's own saved-payment-method dependency — see process()'s own
       // pre-fetch comment for the full account.
       case 'checkout.session.completed':
@@ -1081,6 +1112,42 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const payment = invoice.payments?.data.find((p) => p.payment.type === 'payment_intent');
     const ref = payment?.payment.payment_intent;
     return typeof ref === 'string' ? ref : ref?.id;
+  }
+
+  /**
+   * Decision 381 (Transactions G6) — a refund made outside ULTM8 (the Stripe
+   * dashboard, Stripe's own API) shows on the Transactions page. Syncs the
+   * matching Transaction to the Charge's live `amount_refunded`: Refunded once
+   * it covers the whole payment, otherwise the partial total in the Refunded
+   * column with the status unchanged, the same rule CancellationService uses
+   * for its own refunds. A refund ULTM8 itself sent arrives here too and finds
+   * the total already recorded, so nothing changes. A refund that later fails
+   * lowers the total and turns a Refunded row back to Successful. A Disputed
+   * row keeps its status (the dispute handler owns it); only its total moves.
+   * Correlated by the Charge's PaymentIntent, as disputes are; a charge with no
+   * Transaction (a franchise fee, another platform's charge) is logged and left.
+   */
+  private async handleChargeRefunded(tx: Prisma.TransactionClient, charge: Stripe.Charge, stripeEventId: string): Promise<void> {
+    const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+    const match = paymentIntentId
+      ? await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } })
+      : null;
+    if (!match) {
+      this.logger.log(`Refund on charge ${charge.id} (event ${stripeEventId}) matches no Transaction — recorded, nothing to update.`);
+      return;
+    }
+    // The same row lock CancellationService takes around its own refunds, so the
+    // two never write the total over each other.
+    await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
+    const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    const refunded = Math.min(charge.amount_refunded, transaction.amount);
+    let status = transaction.status;
+    if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
+    else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
+    const refundedAmount = refunded > 0 ? refunded : null;
+    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return;
+    await tx.transaction.update({ where: { id: transaction.id }, data: { refundedAmount, status } });
+    this.logger.log(`Transaction ${transaction.id} refund total synced from charge ${charge.id}: ${refunded} of ${transaction.amount}, ${status} (event ${stripeEventId}).`);
   }
 
   /**

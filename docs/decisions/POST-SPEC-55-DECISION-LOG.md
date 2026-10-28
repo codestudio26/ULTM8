@@ -6331,3 +6331,33 @@ The API already let a Guardian book, cancel and join the waitlist for a linked c
 
 User (Code), 28 Oct 2026, Waivers thread.
 
+---
+
+## Decision 381 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 111, 291, 339, 346 · **Resolves:** Transactions review gap G6. No database change.
+
+The Transactions review (26 Oct 2026, Decision 339) found that a School owner who refunds a card payment in the Stripe dashboard never sees it in ULTM8: the row stays Successful. The recommendation was to pick these refunds up automatically and mark the payment Refunded. The product owner approved it on 28 Oct 2026 (*"start all three"*).
+
+### Decision
+
+1. **The Stripe webhook handles `charge.refunded` and `charge.refund.updated`.** The job reads the Charge as Stripe holds it now and finds the Transaction by the Charge's PaymentIntent, the same correlation disputes use (Decision 111). That covers membership payments, Subscription renewals and late-cancel fees (Decision 346).
+2. **The Charge's refunded total is the truth.** `Transaction.refundedAmount` is set to it. When it covers the whole payment, a Successful row becomes **Refunded**. A part refund shows its amount in the Refunded column and keeps the row Successful, the same rule as the refunds ULTM8 sends itself (Decision 291). A refund that later fails lowers the total, and a Refunded row goes back to Successful.
+3. **Refunds ULTM8 sent itself change nothing.** Their webhook finds the total already recorded. The handler takes the same row lock as CancellationService, so the two never overwrite each other. Redelivered or out-of-order events are harmless, because each one reads the Charge's current total.
+4. **A Disputed row keeps its status.** The dispute handler owns it; only the refunded total moves.
+5. **Anything else is logged and left alone:** a charge with no Transaction (for example a franchise fee), or a refund on ULTM8's own platform account.
+
+### Setup
+
+The Stripe webhook endpoint (`POST /v1/payments/webhooks/stripe`) must also send **`charge.refunded`** and **`charge.refund.updated`**. Add them in the Stripe dashboard (Developers → Webhooks, the Connect endpoint). Until they're switched on, nothing reaches the API.
+
+### What this does NOT resolve
+
+- **The member keeps their membership and remaining classes.** Ending or reducing a membership when it is refunded in Stripe isn't decided anywhere; ask the product owner before building it.
+- **No notice is sent** to the student or the owner about a Stripe-dashboard refund.
+- The revenue tiles still count a part-refunded payment at its full amount, as they already do for ULTM8's own part refunds.
+- Franchise-fee charges and platform charges refunded in Stripe are unchanged.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, *"start all three"*, on the recommendations the coordinator listed (Transactions G6 was one of them).
