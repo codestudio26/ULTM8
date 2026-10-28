@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Card, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useBookingsSummary } from './dashboardQueries';
 import { useT } from '../i18n/I18nProvider';
+import { BranchFilter } from './BranchFilter';
+import { formatDay } from './dashboardDates';
 
 /**
  * v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. No mockup
@@ -18,14 +20,28 @@ import { useT } from '../i18n/I18nProvider';
  * per-activity-tag view — the same "summary card -> deeper dedicated page" split
  * ClassesPage/ClassDetailPage already establish elsewhere in this app, rather
  * than an in-place expand on this same screen.
+ *
+ * Decision 367 (Dashboard review): cancelled Bookings counted apart, an
+ * Attendance card (Spec 55 §2.1), a Branch filter kept in the address, and the
+ * week shown in the picked language.
  */
 export function DashboardPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: school } = useSchool(schoolId);
-  const summary = useBookingsSummary(schoolId);
+  const [params, setParams] = useSearchParams();
+  const branchId = params.get('branch') ?? '';
+  const summary = useBookingsSummary(schoolId, null, branchId);
 
   if (!schoolId) return null;
+
+  const setBranch = (id: string) => {
+    const next = new URLSearchParams(params);
+    if (id) next.set('branch', id);
+    else next.delete('branch');
+    setParams(next, { replace: true });
+  };
+  const data = summary.data;
 
   return (
     <>
@@ -37,6 +53,9 @@ export function DashboardPage() {
           <Link to="/school#cancellations">{t('schools.cancellations.chooseLink')}</Link>
         </div>
       ) : null}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+        <BranchFilter schoolId={schoolId} value={branchId} onChange={setBranch} />
+      </div>
       <section
         aria-label={t('dashboard.bookingsAria')}
         style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: 16 }}
@@ -47,20 +66,42 @@ export function DashboardPage() {
           <ErrorBanner message={summary.error instanceof ApiError ? summary.error.message : t('dashboard.loadFailed')} />
         ) : (
           <>
-            <StatCard label={t('dashboard.statBookingsThisWeek')} value={summary.data?.totalBookings ?? 0} />
-            <StatCard label={t('dashboard.statUpcoming')} value={summary.data?.upcomingBookings ?? 0} />
+            {/* Decision 367 (Q1) — cancelled Bookings are counted apart. */}
+            <StatCard
+              label={t('dashboard.statBookingsThisWeek')}
+              value={data?.totalBookings ?? 0}
+              note={data && data.cancelledBookings > 0 ? t('dashboard.statCancelled', { count: data.cancelledBookings }) : undefined}
+            />
+            <StatCard label={t('dashboard.statUpcoming')} value={data?.upcomingBookings ?? 0} />
+            {/* Decision 367 (Q2) — Spec 55 §2.1's Attendance card: checked in vs no-show. */}
+            <Card>
+              <div style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)', marginBottom: 4 }}>{t('dashboard.statAttendance')}</div>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.1 }} data-testid="attendance-present">{data?.attendedBookings ?? 0}</div>
+                  <div style={{ fontSize: 13 }}>{t('dashboard.statPresent')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.1 }} data-testid="attendance-absent">{data?.noShowBookings ?? 0}</div>
+                  <div style={{ fontSize: 13 }}>{t('dashboard.statAbsent')}</div>
+                </div>
+              </div>
+            </Card>
           </>
         )}
       </section>
-      {summary.data ? (
+      {data ? (
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
             <p style={{ margin: 0, color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-              {summary.data.from === summary.data.to
-                ? t('dashboard.forDate', { date: summary.data.from })
-                : t('dashboard.dateRange', { from: summary.data.from, to: summary.data.to })}
+              {data.from === data.to
+                ? t('dashboard.forDate', { date: formatDay(data.from, { month: 'short', day: 'numeric' }) })
+                : t('dashboard.dateRange', {
+                    from: formatDay(data.from, { month: 'short', day: 'numeric' }),
+                    to: formatDay(data.to, { month: 'short', day: 'numeric' }),
+                  })}
             </p>
-            <Link to="/bookings-drilldown">{t('dashboard.seeMore')}</Link>
+            <Link to={branchId ? `/bookings-drilldown?branch=${encodeURIComponent(branchId)}` : '/bookings-drilldown'}>{t('dashboard.seeMore')}</Link>
           </div>
         </Card>
       ) : null}
@@ -68,11 +109,12 @@ export function DashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, note }: { label: string; value: number; note?: string }) {
   return (
     <Card>
       <div style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
+      {note ? <div style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)', marginTop: 4 }}>{note}</div> : null}
     </Card>
   );
 }

@@ -482,4 +482,6 @@ export const serverMessages: Record<string, string> = {
   "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe nie mógł zatrzymać subskrypcji tego ucznia, więc nie został on usunięty. Spróbuj ponownie za chwilę.",
   "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "Ręczne dodawanie jest dla dorosłych (18+). Dziecko dołącza przez aplikację swojego opiekuna.",
   "An account with this email already exists — use \"Invite\" instead.": "Konto z tym adresem e-mail już istnieje — użyj zamiast tego „Zaproś”.",
+  "This student has already attended this class.": "Ten uczeń już uczestniczył w tych zajęciach.",
+  "This was just recorded. Check before adding another.": "To zostało właśnie zapisane. Sprawdź, zanim dodasz kolejne.",
 };

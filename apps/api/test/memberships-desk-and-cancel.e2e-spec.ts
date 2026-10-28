@@ -103,7 +103,9 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     app.setGlobalPrefix('v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
-    await app.init();
+    // Listening once: an unbound server makes supertest open a new listener per
+    // request, and parallel requests then reset each other's connections.
+    await app.listen(0);
 
     stripeCancel = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
     jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({ subscriptions: { update: stripeCancel } } as never);
@@ -231,7 +233,13 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       const mine = await http().get('/v1/memberships/me').set('Authorization', `Bearer ${token}`);
       expect(mine.body.items.map((m: { id: string }) => m.id)).toContain(res.body.membership.id);
 
-      // A second friend gets a second, separate pass (Spec 55 §6.1).
+      // A second friend gets a second, separate pass (Spec 55 §6.1), though not
+      // within a minute of the first: that is taken for a double click
+      // (product owner, 28 Oct 2026).
+      const again = await gift(user.id, { membershipPlanId: plan.id });
+      expect(again.status).toBe(409);
+      expect(again.body.error.message).toBe('This was just recorded. Check before adding another.');
+      await superuser.membership.updateMany({ where: { studentId: user.id, membershipPlanId: plan.id }, data: { createdAt: new Date(Date.now() - 61_000) } });
       expect((await gift(user.id, { membershipPlanId: plan.id })).status).toBe(201);
     });
 
@@ -260,6 +268,27 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
 
       expect((await cancel(sub.id, token)).status).toBe(201);
       expect(stripeCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels sent at once call Stripe once and all return the one saved cancellation', async () => {
+      const { user, token } = await mkStudent('cancel-burst');
+      const sub = await mkSubscription(user.id);
+      stripeCancel.mockClear();
+      // A Stripe round trip takes time; without the row lock every request
+      // read cancelAt = null first and each one called Stripe.
+      stripeCancel.mockImplementation(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+        return { cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } };
+      });
+      try {
+        const res = await Promise.all(Array.from({ length: 8 }, (_, i) => cancel(sub.id, i % 2 ? tokenOwner : token)));
+        expect(res.map((r) => r.status)).toEqual(Array(8).fill(201));
+        expect(stripeCancel).toHaveBeenCalledTimes(1);
+        const saved = await superuser.membership.findUniqueOrThrow({ where: { id: sub.id } });
+        expect(res.map((r) => r.body.cancelledById)).toEqual(Array(8).fill(saved.cancelledById));
+      } finally {
+        stripeCancel.mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
+      }
     });
 
     it('the owner cancels for a Student', async () => {

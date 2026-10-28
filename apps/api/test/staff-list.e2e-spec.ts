@@ -180,7 +180,7 @@ describeIfDb('Staff list, Remove from School and instant role changes (Decision 
 
       const res = await as(ownerToken).post(`/v1/schools/${school.id}/staff/${person.id}/remove`);
       expect(res.status).toBe(201);
-      expect(res.body).toEqual({ removedRoles: 2 });
+      expect(res.body).toEqual({ removedRoles: 2, classesReassigned: 0, classesCleared: 0, classesCancelled: 0, slotsReassigned: 0, slotsCleared: 0 });
 
       const live = await superuser.roleGrant.findMany({ where: { userId: person.id, revokedAt: null }, select: { role: true } });
       expect(live).toEqual([{ role: 'STUDENT' }]);

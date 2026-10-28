@@ -3,7 +3,7 @@
  * students, the join checks, profile validation, the next-booking read and
  * home branches on revoke. Real HTTP, real Postgres/RLS.
  */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ServiceUnavailableException, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
@@ -18,6 +18,7 @@ import { Queue } from 'bullmq';
 import * as bcrypt from 'bcryptjs';
 import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
 import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
+import { SchoolsService } from '../src/tenants/schools/schools.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -480,6 +481,29 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(noBranch.status).toBe(400);
       expect(noBranch.body.error.message).toBe('This School has branches: choose your home branch (branchId).');
       expect(send).not.toHaveBeenCalled();
+      send.mockRestore();
+    });
+
+    // Stress test round 3: join() runs its own transaction after the account
+    // is created; when it failed (a timeout under load) the account stayed,
+    // with no enrolment and no passcode, and the same email then got "use
+    // Invite". The account is now removed and the owner can simply retry.
+    it('a failed enrolment leaves no account behind, and the same email can be added again', async () => {
+      const send = jest.spyOn(NotificationDeliveryService.prototype, 'sendEmail').mockResolvedValue(undefined);
+      const join = jest.spyOn(SchoolsService.prototype, 'join').mockRejectedValueOnce(new ServiceUnavailableException('Transaction timed out'));
+      const body = adult();
+      const failed = await addManually('owner', body);
+      expect(failed.status).toBe(503);
+      expect(join).toHaveBeenCalledTimes(1);
+      expect(await superuser.user.count({ where: { email: body.email.toLowerCase() } })).toBe(0);
+      expect(send).not.toHaveBeenCalled();
+      join.mockRestore();
+
+      const retry = await addManually('owner', body);
+      expect(retry.status).toBe(201);
+      userIds.push(retry.body.id);
+      expect(await superuser.roleGrant.count({ where: { userId: retry.body.id, schoolId, role: 'STUDENT', revokedAt: null } })).toBe(1);
+      expect(send).toHaveBeenCalledTimes(1);
       send.mockRestore();
     });
 

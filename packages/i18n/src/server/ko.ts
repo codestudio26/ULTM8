@@ -482,4 +482,6 @@ export const serverMessages: Record<string, string> = {
   "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe에서 이 학생의 구독을 중지하지 못해 학생이 제거되지 않았습니다. 잠시 후 다시 시도하세요.",
   "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "직접 추가는 성인(만 18세 이상)만 가능합니다. 어린이는 보호자의 앱을 통해 가입합니다.",
   "An account with this email already exists — use \"Invite\" instead.": "이 이메일을 사용하는 계정이 이미 있습니다. 대신 '초대'를 사용하세요.",
+  "This student has already attended this class.": "이 학생은 이미 이 수업에 출석했습니다.",
+  "This was just recorded. Check before adding another.": "방금 기록되었습니다. 하나 더 추가하기 전에 확인하세요.",
 };

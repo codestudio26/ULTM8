@@ -1895,49 +1895,6 @@
         ]
       }
     },
-    "/v1/schools/{schoolId}/staff/{userId}/remove": {
-      "post": {
-        "operationId": "RoleGrantsController_removeFromSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "role-grants"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -5845,6 +5802,15 @@
             "required": false,
             "in": "query",
             "description": "Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes held at this Branch of the School.",
             "schema": {
               "type": "string"
             }
@@ -13971,6 +13937,102 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/teaching": {
+      "get": {
+        "operationId": "StaffRemovalController_teaching",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTeachingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/remove": {
+      "post": {
+        "operationId": "StaffRemovalController_removeFromSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveFromSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveFromSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -16548,18 +16610,6 @@
         },
         "required": [
           "items"
-        ]
-      },
-      "RemoveFromSchoolResponseDto": {
-        "type": "object",
-        "properties": {
-          "removedRoles": {
-            "type": "number",
-            "description": "How many roles were ended."
-          }
-        },
-        "required": [
-          "removedRoles"
         ]
       },
       "CreateFranchiseDto": {
@@ -19720,7 +19770,8 @@
         "properties": {
           "activity": {
             "type": "string",
-            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
+            "nullable": true,
+            "description": "The Style name (or, for a Class with no Styles, its free-text activity tag) this row is for; null for a Class with neither."
           },
           "totalBookings": {
             "type": "number"
@@ -19735,12 +19786,60 @@
           "upcomingBookings"
         ]
       },
+      "BookingsSummaryClassDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The IANA time zone the Class runs in (Branch, else School, else UTC)."
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "null = unlimited."
+          },
+          "bookedCount": {
+            "type": "number"
+          },
+          "cancelledCount": {
+            "type": "number"
+          },
+          "cancelled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "startDate",
+          "timeZone",
+          "branchName",
+          "capacity",
+          "bookedCount",
+          "cancelledCount",
+          "cancelled"
+        ]
+      },
       "BookingsSummaryDayDto": {
         "type": "object",
         "properties": {
           "date": {
             "type": "string",
-            "description": "YYYY-MM-DD, the School's own local calendar day."
+            "description": "YYYY-MM-DD, the Classes' own local calendar day."
           },
           "totalBookings": {
             "type": "number"
@@ -19748,10 +19847,19 @@
           "upcomingBookings": {
             "type": "number"
           },
+          "cancelledBookings": {
+            "type": "number"
+          },
           "activities": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BookingsSummaryActivityDto"
+            }
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryClassDto"
             }
           }
         },
@@ -19759,7 +19867,9 @@
           "date",
           "totalBookings",
           "upcomingBookings",
-          "activities"
+          "cancelledBookings",
+          "activities",
+          "classes"
         ]
       },
       "BookingsSummaryResponseDto": {
@@ -19773,10 +19883,24 @@
             "type": "string",
             "description": "Inclusive range end actually used, YYYY-MM-DD."
           },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Branch filter applied, if any."
+          },
           "totalBookings": {
             "type": "number"
           },
           "upcomingBookings": {
+            "type": "number"
+          },
+          "cancelledBookings": {
+            "type": "number"
+          },
+          "attendedBookings": {
+            "type": "number"
+          },
+          "noShowBookings": {
             "type": "number"
           },
           "days": {
@@ -19789,8 +19913,12 @@
         "required": [
           "from",
           "to",
+          "branchId",
           "totalBookings",
           "upcomingBookings",
+          "cancelledBookings",
+          "attendedBookings",
+          "noShowBookings",
           "days"
         ]
       },
@@ -26942,6 +27070,78 @@
         "required": [
           "uploadUrl",
           "publicUrl"
+        ]
+      },
+      "StaffTeachingResponseDto": {
+        "type": "object",
+        "properties": {
+          "upcomingClasses": {
+            "type": "number",
+            "description": "Upcoming classes they teach here (not ended, cancelled or archived)."
+          },
+          "activeSlots": {
+            "type": "number",
+            "description": "Active weekly timetable slots they teach here (on, not archived)."
+          }
+        },
+        "required": [
+          "upcomingClasses",
+          "activeSlots"
+        ]
+      },
+      "RemoveFromSchoolDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "string",
+            "enum": [
+              "REASSIGN",
+              "NONE",
+              "CANCEL"
+            ],
+            "description": "REASSIGN: their upcoming classes and weekly slots go to toUserId. NONE: they run with no instructor. CANCEL: their upcoming classes are cancelled as the School would cancel them; their weekly slots are kept with no instructor."
+          },
+          "toUserId": {
+            "type": "string",
+            "description": "With REASSIGN only: the coach at this School who takes them over (a User id)."
+          }
+        }
+      },
+      "RemoveFromSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "removedRoles": {
+            "type": "number",
+            "description": "How many roles were ended."
+          },
+          "classesReassigned": {
+            "type": "number",
+            "description": "Upcoming classes given to the other coach."
+          },
+          "classesCleared": {
+            "type": "number",
+            "description": "Upcoming classes left with no instructor."
+          },
+          "classesCancelled": {
+            "type": "number",
+            "description": "Upcoming classes cancelled."
+          },
+          "slotsReassigned": {
+            "type": "number",
+            "description": "Weekly timetable slots given to the other coach."
+          },
+          "slotsCleared": {
+            "type": "number",
+            "description": "Weekly timetable slots left with no instructor."
+          }
+        },
+        "required": [
+          "removedRoles",
+          "classesReassigned",
+          "classesCleared",
+          "classesCancelled",
+          "slotsReassigned",
+          "slotsCleared"
         ]
       }
     }

@@ -482,4 +482,6 @@ export const serverMessages: Record<string, string> = {
   "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.": "Stripe 未能停止该学员的订阅，因此未将其移除。请稍后再试。",
   "Add manually is for adults (18 or over). A child joins through their Guardian's app.": "手动添加仅适用于成年人（18 岁及以上）。儿童通过其监护人的应用加入。",
   "An account with this email already exists — use \"Invite\" instead.": "已有使用此邮箱的账户——请改用“邀请”。",
+  "This student has already attended this class.": "该学员已参加过此课程。",
+  "This was just recorded. Check before adding another.": "刚刚已记录。添加另一条之前请先核对。",
 };

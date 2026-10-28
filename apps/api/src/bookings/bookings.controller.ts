@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, ExecutionContext, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { jwtSubTracker } from '../common/throttle/identity-trackers';
+import { bookingTracker, isStaffBookingOnBehalf, jwtSubTracker } from '../common/throttle/identity-trackers';
 import { GuardiansService } from '../guardians/guardians.service';
 import { BookingsService } from './bookings.service';
 import { BookClassDto } from './dto/book-class.dto';
@@ -28,6 +28,18 @@ import { ClassResponseDto } from '../classes/dto/class-response.dto';
 // (per-IP) throttler already applies globally (app.module.ts); this adds the
 // previously entirely-missing per-user half, keyed by the caller's JWT `sub`.
 const BOOKING_ACTION_THROTTLE = { identity: { limit: 20, ttl: 60_000, getTracker: jwtSubTracker } };
+
+// Booking itself: the same 20 a minute for a Student's (or Guardian's) own
+// bookings, but 200 a minute, counted separately, for a staff member booking on
+// someone's behalf (product owner, 28 Oct 2026: a front desk at a busy class hit
+// 20). See isStaffBookingOnBehalf. The per-IP `default` throttler still applies.
+const BOOK_CLASS_THROTTLE = {
+  identity: {
+    ttl: 60_000,
+    limit: (context: ExecutionContext) => (isStaffBookingOnBehalf(context.switchToHttp().getRequest()) ? 200 : 20),
+    getTracker: bookingTracker,
+  },
+};
 
 // Booking creation/cancellation/override + the caller's own read. See
 // BookingsService's own header comment for scope/RLS. `GET /bookings/me` has no
@@ -56,7 +68,7 @@ export class BookingsController {
    * every single call rather than cached from mint time.
    */
   @ApiCreatedResponse({ type: BookingResponseDto })
-  @Throttle(BOOKING_ACTION_THROTTLE)
+  @Throttle(BOOK_CLASS_THROTTLE)
   @Post('classes/:id/book')
   async bookClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: BookClassDto) {
     if (user.kidMode) {
@@ -121,14 +133,14 @@ export class BookingsController {
     return this.bookingsService.findAllForStudent(user.sub, id, schoolId, cursor, limit);
   }
 
-  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. Staff-only
-   * (School Owner/Manager, Branch Staff, or Instructor). See
+  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. School
+   * Owner only since Decision 367. See
    * BookingsService.getWeeklySummary's own header comment for the date-range
    * default/validation and the two disclosed judgment calls on grouping. */
   @ApiOkResponse({ type: BookingsSummaryResponseDto })
   @Get('schools/:schoolId/bookings/summary')
   getWeeklySummary(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: BookingsSummaryQueryDto) {
-    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
+    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to, query.branchId);
   }
 
   /** Decision 291 — the School cancels a whole class. School Owner/Manager or

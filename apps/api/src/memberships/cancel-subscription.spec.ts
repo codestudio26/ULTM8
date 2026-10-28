@@ -6,12 +6,14 @@ import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
   const live = { id: 'm-1', schoolId: 'school-1', status: 'ACTIVE' as const, stripeSubscriptionId: 'sub_1', cancelAt: null };
 
-  function setup(stripeReply: Record<string, unknown>) {
+  /** `row` is the Membership as the locked re-read finds it. */
+  function setup(stripeReply: Record<string, unknown>, row: Record<string, unknown> = live) {
     const update = jest.fn().mockResolvedValue(stripeReply);
     const scopedClient = jest.fn().mockReturnValue({ subscriptions: { update } });
     const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([]),
       paymentAccount: { findUnique: jest.fn().mockResolvedValue({ stripeConnectedAccountId: 'acct_school' }) },
-      membership: { update: jest.fn(async ({ data }) => ({ ...live, ...data })), findUniqueOrThrow: jest.fn().mockResolvedValue(live) },
+      membership: { update: jest.fn(async ({ data }) => ({ ...live, ...data })), findUniqueOrThrow: jest.fn().mockResolvedValue(row) },
     };
     return { update, scopedClient, tx };
   }
@@ -32,10 +34,12 @@ describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
   });
 
   it('does nothing more when already cancelled, and refuses a plan that isn\'t a Subscription or has ended', async () => {
-    const { tx, scopedClient, update } = setup({});
-    await cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, { ...live, cancelAt: new Date() }, 'x');
+    const cancelled = { ...live, cancelAt: new Date() };
+    const { tx, scopedClient, update } = setup({}, cancelled);
+    await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, live, 'x')).resolves.toBe(cancelled);
     expect(update).not.toHaveBeenCalled();
     await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, { ...live, stripeSubscriptionId: null }, 'x')).rejects.toBeInstanceOf(BadRequestException);
-    await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, { ...live, status: 'EXPIRED' }, 'x')).rejects.toBeInstanceOf(BadRequestException);
+    const ended = setup({}, { ...live, status: 'EXPIRED' });
+    await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, ended.tx as never, live, 'x')).rejects.toBeInstanceOf(BadRequestException);
   });
 });

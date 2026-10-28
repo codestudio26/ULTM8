@@ -5843,6 +5843,44 @@ User (Code), 27 Oct 2026: "yes" to website sign-ups following the same rule, the
 
 ---
 
+## Decision 367 — Dashboard review: cancelled bookings apart, Attendance card, by Style, classes per day, Branch filter, Owner only
+
+**Date:** 27 Oct 2026 · **Status:** Product-owner decision · **Follows up:** Decision 224 (drill-down grouped by raw activity tags) · **Builds:** Spec 55 §2.1's Attendance (Present / Absent) Dashboard card
+
+The School Portal Dashboard review (27 Oct 2026) found 9 bugs (D1–D9) and asked 7 questions (Q1–Q7). The owner chose every recommendation.
+
+### Decision
+
+1. **Cancelled bookings are counted apart (Q1).** "Bookings this week", "Upcoming", each day and each style leave cancelled Bookings out; the card shows "N cancelled" underneath, and each day and class show their own.
+2. **Attendance card (Q2).** The Dashboard shows this week's Present (checked in, `COMPLETED`) and Absent (`NO_SHOW`), per Spec 55 §2.1.
+3. **Grouped by Style (Q3).** The Bookings page groups by each class's Styles, by the Style's current name. A class with no Styles keeps its free-text activity tags; one with neither shows as "No style". A class with several Styles still counts once in each Style's row and once in every total (unchanged from Decision 224).
+4. **Classes per day (Q4).** Each day lists its classes: start time on the class's own clock, name (linking to the class page), Branch, booked / seats (or "N booked" when unlimited), cancelled bookings, and "Class cancelled" for a class the School cancelled. An archived class shows only if it has bookings.
+5. **Branch filter (Q5).** Shown on the Dashboard and the Bookings page when the School has two or more open Branches. "All Branches" (the default) also includes School-wide classes; one Branch shows only classes held there. The choice is kept in the page address and carried by "See more".
+6. **Owner only (Q6).** `GET /schools/:schoolId/bookings/summary` now answers only the School Owner; Branch Staff and coaches get 403 (no screen of theirs used it). If Branch Staff get a Dashboard later, it shows their own Branch only.
+7. **Decided-but-unbuilt Dashboard items (Q7)**: Active students (Decision 317 item 5), this week's birthdays (Decision 318 item 2) and the setup checklist (Decision 318 item 1) come next as their own PR; "What's new" (Decision 318 item 3) waits for Platform Admin.
+
+### Bugs fixed with it (no product decision needed)
+
+- **D1** Bookings page day names were one day early anywhere west of London (a calendar day was formatted as UTC midnight in the browser's zone).
+- **D2** No range limit: a half-typed year (0202) made the server build ~666,000 empty days. A range is now at most **92 days**, checked in the page and on the server.
+- **D3** Days and weeks used the School's time zone or UTC, ignoring the Branch's. Each class now lands on its own local day: Branch, else School, else UTC (the Classes page's rule).
+- **D4** A cleared date or To-before-From showed the API's English error; the page now says so in the picked language and doesn't ask.
+- **D5** The Dashboard's week shows as "26 Oct – 1 Nov" in the picked language, not "2026-10-26 – 2026-11-01".
+- **D6** "Unspecified" is now the translated "No style".
+- **D7** The Dashboard refreshes when the Owner returns to the tab and every 5 minutes.
+- **D8** "Upcoming" has its own singular/plural ("1 próxima").
+- **D9** From/To (and the Branch) are kept in the page address.
+
+### Not changed
+
+The week still runs Monday to Sunday. Once the Timetable's "week starts on" setting (Decision 319) is built, the Dashboard should follow it.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, choosing "All recommended" on the Dashboard review's decision card.
+
+---
+
 ## Decision 330 — Closing a Branch: only what is still in use blocks it, "Close branch" moves it, and a Branch with history is kept
 
 **Date:** 26 Oct 2026 · **Status:** Product-owner decision · **Changes:** Decision 252 (Branch archive) · **Builds on:** Decision 293
@@ -6049,6 +6087,30 @@ After the Students review fixes, five questions were left: whether the owner can
 ### Recorded by
 
 User (Code), 27 Oct 2026, answering *"all recommended"* to the five Students questions listed in the status report (add manually for adults only with a sign-in code, list search/branch filter/paging, a Re-enrol button, the Guardian's name on a child's page, and a "You've been added" notice with no accept step).
+
+---
+
+## Decision 372 — Stress test round 3: the product owner's answers
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 331 (no revoke while teaching), 343 (revoke ends bookings), 361 (Remove from School), 364 (every School close stops billing) · **Answers:** `docs/handover/STRESS-TEST-ROUND3.md`, "Waiting on the product owner" (Q1–Q6)
+
+### Decision
+
+1. **Removing a coach who still teaches (Q1).** Remove from School always works, so a dismissed coach loses access at once. In the same step the owner chooses what happens to their upcoming classes:
+   - give them to another coach at the School;
+   - no coach for now: the classes still run, and the owner assigns a coach later;
+   - cancel them, as for any class the School cancels (students told, credit by the School's cancellation settings).
+   Weekly slots they teach follow the same choice.
+2. **One attendance per student per class (Q2).** Once a student has been checked in to a class, another booking for that same class is refused. A cancelled booking doesn't count.
+3. **A desk sale or Friend Pass clicked twice (Q3).** An identical desk sale or Friend Pass for the same student (same plan) within 1 minute is refused with "This was just recorded. Check before adding another."
+4. **A Friend Pass covers a guest only (Q4),** never its holder's own seat.
+5. **Staff booking on someone's behalf (Q5)** may book up to 200 a minute per staff login. A student's own limit is unchanged.
+6. **A payment that arrives after its School closed (Q6)** is refunded and its Stripe subscription cancelled; no Membership is created.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: Q1 "What happens if we have to remove it, for example the coach has been dismissed", then "agreed" to removing in one step with a choice for the classes, and "agreed" to also allow "No coach for now"; Q2 "yes, if the booking is for the same class"; Q3 "agreed"; Q4 "agreed"; Q5 "raise to 1000 per min", then "ok - 200" after the recommendation; Q6 refund "go ahead with your idea".
+
 ## Decision 373 — Sign-in and accounts review fixes
 
 **Date:** 27 Oct 2026 · **Status:** Bug fixes from the Sign-in and accounts review · **Builds on:** Decisions 72, 79, 230/237, 295 and 341

@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes, createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -27,6 +27,11 @@ import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 import { addressWriteData } from '../common/address/postal-address.dto';
 
+// Native `bcrypt`, not `bcryptjs`, everywhere in src/: each hash/compare at
+// cost 12 runs on the libuv threadpool instead of the event loop, so a burst
+// of logins or Add-Manually passcodes no longer stalls every other request
+// (stress test round 3). Same $2a/$2b format: hashes written by bcryptjs
+// (seeds, older rows) still verify.
 const BCRYPT_ROUNDS = 12;
 
 /** Decision 375 (Q2): how old an unverified sign-up must be before a new
@@ -62,7 +67,7 @@ const REFRESH_TOKEN_TTL_DAYS = Number.isFinite(parsedRefreshTokenTtlDays) && par
  * hardcoded here — a hand-typed placeholder previously used here
  * (`$2a$12$invalidinvalidinvalidinvalidinvalidinva`) was the wrong length for a real
  * bcrypt hash (39 chars after the cost prefix instead of the required 22-char salt +
- * 31-char hash = 53), which risked bcryptjs's malformed-input handling itself taking a
+ * 31-char hash = 53), which risked the library's malformed-input handling itself taking a
  * different amount of time than a well-formed comparison — this hash is real output
  * from the library, guaranteed correct shape.
  */
