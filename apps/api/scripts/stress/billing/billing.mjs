@@ -45,10 +45,17 @@ const t0 = t();
 for (const [i, s] of S.entries()) {
   s.card = i % 2 === 0;
   await db.school.update({ where: { id: s.id }, data: { defaultCurrency: 'GBP' } });
-  const acct = await call('setup:payment-account', 'POST', `/schools/${s.id}/payment-accounts`, s.owner.tok, { provider: s.card ? 'STRIPE' : 'CASH', accountTitle: 'Main', country: 'GB' });
+  let acct = await call('setup:payment-account', 'POST', `/schools/${s.id}/payment-accounts`, s.owner.tok, { provider: s.card ? 'STRIPE' : 'CASH', accountTitle: 'Main', country: 'GB' });
+  // A School another stress script already set up (round 3) keeps its account and its provider.
+  if (acct.status === 409) {
+    const existing = await db.paymentAccount.findFirstOrThrow({ where: { schoolId: s.id } });
+    s.card = existing.provider === 'STRIPE';
+    acct = { status: 200, body: existing };
+    s.acct = existing.stripeConnectedAccountId ?? undefined;
+  }
   if (acct.status >= 300) throw new Error('payment account ' + JSON.stringify(acct.body));
   s.paymentAccountId = acct.body.id;
-  if (s.card) {
+  if (s.card && !s.acct) {
     const ob = await call('setup:onboard', 'POST', `/payment-accounts/${acct.body.id}/connect/onboard`, s.owner.tok, {});
     if (ob.status >= 300) throw new Error('onboard ' + JSON.stringify(ob.body));
     s.acct = (await db.paymentAccount.findUnique({ where: { id: acct.body.id } })).stripeConnectedAccountId;

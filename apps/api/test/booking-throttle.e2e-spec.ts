@@ -21,7 +21,6 @@ import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
-import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -48,29 +47,33 @@ describeIfDb('BookingsController/WaitlistController — per-user throttle (Decis
   let classes: Array<{ id: string }> = [];
   const userIds: string[] = [];
 
-  const mkStudent = async (label: string) => {
+  const mkUser = async (label: string, role: 'STUDENT' | 'BRANCH_STAFF') => {
     const user = await superuser.user.create({
       data: {
         id: randomUUID(),
         email: `booking-throttle-http-${label}-${randomUUID()}@example.test`,
         phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: label,
-        surname: 'Student',
+        surname: role === 'STUDENT' ? 'Student' : 'Staff',
         passcodeHash: 'x',
         dateOfBirth: new Date('2000-01-01'),
         phoneVerifiedAt: new Date(),
       },
     });
     userIds.push(user.id);
-    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: user.id, schoolId: school.id } });
-    return jwt.sign({
-      sub: user.id,
-      email: user.email,
-      grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }],
-    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role, userId: user.id, schoolId: school.id } });
+    const token = jwt.sign({ sub: user.id, email: user.email, grants: [{ role, franchiseId: null, schoolId: school.id, branchId: null }] });
+    return { id: user.id, token };
   };
 
+  const mkStudent = async (label: string) => (await mkUser(label, 'STUDENT')).token;
+
   beforeAll(async () => {
+    // These tests send more than the per-IP limit (60 a minute) from one address;
+    // only the per-user limits are under test. Read when AppModule loads, hence
+    // the late import.
+    process.env.THROTTLE_IP_LIMIT_PER_MINUTE = '100000';
+    const { AppModule } = await import('../src/app.module');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('v1');
@@ -130,6 +133,42 @@ describeIfDb('BookingsController/WaitlistController — per-user throttle (Decis
         .post(`/v1/waitlist/${randomUUID()}/claim`)
         .set('Authorization', `Bearer ${token}`)
         .send({});
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 20)).not.toContain(429);
+    expect(statuses[20]).toBe(429);
+  });
+
+  // Product owner, 28 Oct 2026: staff booking on someone's behalf get 200 a
+  // minute, counted apart from their own bookings; a Student keeps 20.
+  it('POST /classes/:id/book — staff booking for a Student go past 20 a minute, up to 200', async () => {
+    const staff = await mkUser('desk', 'BRANCH_STAFF');
+    const student = await mkUser('booked-for', 'STUDENT');
+    const statuses: number[] = [];
+    for (let i = 0; i < 201; i++) {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/classes/${classes[i % classes.length].id}/book`)
+        .set('Authorization', `Bearer ${staff.token}`)
+        .send({ studentId: student.id });
+      statuses.push(res.status);
+    }
+    // Past the throttle into BookingsService (the Student has no Membership).
+    expect(statuses[20]).toBe(400);
+    expect(statuses.slice(0, 200)).not.toContain(429);
+    expect(statuses[200]).toBe(429);
+    // The staff member's own bookings keep their own 20 a minute.
+    const own = await request(app.getHttpServer()).post(`/v1/classes/${classes[0].id}/book`).set('Authorization', `Bearer ${staff.token}`).send({});
+    expect(own.status).not.toBe(429);
+  });
+
+  it('POST /classes/:id/book — a Student naming someone else still gets 429 after 20', async () => {
+    const { token } = await mkUser('not-staff', 'STUDENT');
+    const statuses: number[] = [];
+    for (let i = 0; i < 21; i++) {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/classes/${classes[i].id}/book`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ studentId: randomUUID() });
       statuses.push(res.status);
     }
     expect(statuses.slice(0, 20)).not.toContain(429);

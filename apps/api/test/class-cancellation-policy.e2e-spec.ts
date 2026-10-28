@@ -288,9 +288,20 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
 
   it('A Friend Pass always gets its credit back, even under Auto-refund (fixed rule)', async () => {
     await setSchool({ classCancellationPolicy: 'AUTO_REFUND' });
+    // A Friend Pass covers a guest only (product owner, 28 Oct 2026), so the
+    // Student's own seat is paid by a pack and the pass covers their guest.
+    await mkPack();
     const pass = await mkPack({ planId: friendPlanId, amount: 0, classes: 1 });
-    const res = await cancel((await book((await mkClass()).id)).id);
-    expect(res.body.refundResolution).toBe('REFUNDED');
+    const booked = await request(app.getHttpServer())
+      .post(`/v1/classes/${(await mkClass()).id}/book`)
+      .set('Authorization', `Bearer ${tokenStudent}`)
+      .send({ attendeeMembershipIds: [pass.id] });
+    expect(booked.status).toBe(201);
+    expect(await credits(pass.id)).toBe(0);
+    const res = await cancel(booked.body.id);
+    expect(res.status).toBe(200);
+    const guest = await superuser.bookingAttendee.findFirstOrThrow({ where: { bookingId: booked.body.id } });
+    expect(guest.refundResolution).toBe('REFUNDED');
     expect(await credits(pass.id)).toBe(1);
   });
 

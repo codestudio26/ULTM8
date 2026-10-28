@@ -85,11 +85,15 @@ import { QueueModule } from '../jobs/queue.module';
  * decision is recorded, same direct QueueModule-import pattern
  * MembershipsModule's own header comment already established for its own
  * MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE injection.
+ *
+ * Exports RoleGrantsService for StaffRemovalModule ("Remove from School"),
+ * which can't live here: it cancels classes through BookingsModule, and
+ * BookingsModule imports this module.
  */
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
-  exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
+  exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService],
 })
 export class TenantsModule {}

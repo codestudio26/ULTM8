@@ -22,9 +22,10 @@ import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto'
 import { daysInRange, defaultWeekRange, localDateRangeToInstants, MAX_SUMMARY_RANGE_DAYS, safeZone } from './booking-week';
 import { styleIdsOf } from '../classes/class-styles';
 import { localDay } from '../ranks/engine';
-import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
+import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -168,6 +169,10 @@ export class BookingsService {
     }
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // First, before any row lock (see lockStudentClass).
+      await lockStudentClass(tx, studentId, classId);
+      await lockSchoolOpen(tx, resolvedClass.schoolId);
+      await assertNotAlreadyAttended(tx, studentId, classId);
       if (resolvedClass.termsWaiverRequired) {
         if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
           throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
@@ -180,6 +185,7 @@ export class BookingsService {
 
       const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
       const partySize = 1 + attendeeMembershipIds.length;
+      let locked: LockedClass;
       if (resolvedClass.capacity !== null) {
         // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
         // race — two concurrent bookClass() calls for the same Class can both read
@@ -193,7 +199,9 @@ export class BookingsService {
         // count-then-create, serializing concurrent bookers for THIS Class only
         // (other Classes are entirely unaffected). First use of an explicit lock in
         // this codebase; flagged here rather than silently introduced.
-        await lockClassSeats(tx, classId);
+        // The lock also re-checks that the School hasn't cancelled or archived the
+        // Class since the read above (stress test, 27 Oct 2026).
+        locked = await lockClassSeats(tx, classId);
         const occupied = await this.countOccupiedSeats(classId);
         // Waitlist first (product owner, 26 Oct 2026): a seat offered to a waitlisted
         // Student (NOTIFIED) is held for them, and while anyone is queued a Student
@@ -208,6 +216,10 @@ export class BookingsService {
             message: 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
           });
         }
+      } else {
+        // No seats to count, so a shared lock: it only makes a whole-class cancel
+        // and this booking wait for each other, and re-checks the Class.
+        locked = await lockClassShared(tx, classId);
       }
 
       const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
@@ -220,7 +232,7 @@ export class BookingsService {
             studentId,
             classId,
             schoolId: resolvedClass.schoolId,
-            branchId: resolvedClass.branchId,
+            branchId: locked ? locked.branchId : resolvedClass.branchId,
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,

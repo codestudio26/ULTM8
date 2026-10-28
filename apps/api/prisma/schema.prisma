@@ -698,6 +698,10 @@ model RoleGrant {
   @@index([franchiseId, revokedAt])
   @@index([branchId, revokedAt])
   @@index([userId])
+  // Two partial unique indexes live in the migrations only (Prisma's DSL has
+  // no partial/expression index): RoleGrant_one_active_student_per_school, and
+  // RoleGrant_one_live_per_scope — at most one live grant per user, role and
+  // exact franchise/school/branch scope (20261212000000).
 }
 
 // ---------------------------------------------------------------------------
