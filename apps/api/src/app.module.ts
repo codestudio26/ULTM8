@@ -29,6 +29,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StaffRemovalModule } from './tenants/staff-removal/staff-removal.module';
 
@@ -83,6 +84,7 @@ function ipLimitPerMinute(): number {
     TranslationsModule,
     SubscriptionPlansModule,
     UploadsModule,
+    DashboardModule,
     StaffRemovalModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

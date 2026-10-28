@@ -48,6 +48,8 @@ export function SchoolPage() {
     checkInOpensMinutesBeforeStart: number;
     lateCancelRefundPolicy: 'NO_REFUND_ONCE_STARTED' | 'REFUND_UNTIL_END' | 'ALWAYS_REFUND';
     branchStaffCanRecordPayments: boolean;
+    weekStartsOn: 'MONDAY' | 'SUNDAY';
+    timetableDefaultLayout: 'LIST' | 'GRID';
   } | null>(null);
   const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
@@ -75,6 +77,8 @@ export function SchoolPage() {
       checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
       lateCancelRefundPolicy: school.lateCancelRefundPolicy,
       branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
+      weekStartsOn: school.weekStartsOn,
+      timetableDefaultLayout: school.timetableDefaultLayout,
     });
   }, [school]);
 
@@ -116,6 +120,8 @@ export function SchoolPage() {
         checkInOpensMinutesBeforeStart: form.checkInOpensMinutesBeforeStart,
         lateCancelRefundPolicy: form.lateCancelRefundPolicy,
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
+        weekStartsOn: form.weekStartsOn,
+        timetableDefaultLayout: form.timetableDefaultLayout,
       });
       setSaved(true);
     } catch (err) {
@@ -204,6 +210,29 @@ export function SchoolPage() {
                 { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
                 { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
                 { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
+              ]}
+            />
+          </Field>
+          {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
+          <Field label={t('schools.form.weekStart')} htmlFor="edit-week-start">
+            <SelectField
+              id="edit-week-start"
+              value={form.weekStartsOn}
+              onChange={(e) => set('weekStartsOn', e.target.value as typeof form.weekStartsOn)}
+              options={[
+                { value: 'MONDAY', label: t('schools.form.weekStartMonday') },
+                { value: 'SUNDAY', label: t('schools.form.weekStartSunday') },
+              ]}
+            />
+          </Field>
+          <Field label={t('schools.form.timetableLayout')} htmlFor="edit-timetable-layout">
+            <SelectField
+              id="edit-timetable-layout"
+              value={form.timetableDefaultLayout}
+              onChange={(e) => set('timetableDefaultLayout', e.target.value as typeof form.timetableDefaultLayout)}
+              options={[
+                { value: 'LIST', label: t('schools.form.layoutList') },
+                { value: 'GRID', label: t('schools.form.layoutGrid') },
               ]}
             />
           </Field>

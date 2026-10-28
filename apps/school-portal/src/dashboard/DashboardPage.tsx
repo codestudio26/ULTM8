@@ -4,7 +4,9 @@ import { Card, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
-import { useBookingsSummary } from './dashboardQueries';
+import { useBookingsSummary, useDashboardOverview } from './dashboardQueries';
+import { BirthdaysCard } from './BirthdaysCard';
+import { SetupChecklist } from './SetupChecklist';
 import { useT } from '../i18n/I18nProvider';
 import { BranchFilter } from './BranchFilter';
 import { formatDay } from './dashboardDates';
@@ -23,7 +25,8 @@ import { formatDay } from './dashboardDates';
  *
  * Decision 367 (Dashboard review): cancelled Bookings counted apart, an
  * Attendance card (Spec 55 §2.1), a Branch filter kept in the address, and the
- * week shown in the picked language.
+ * week shown in the picked language. Decision 374: Active students, this
+ * week's birthdays and the setup checklist.
  */
 export function DashboardPage() {
   const t = useT();
@@ -32,6 +35,7 @@ export function DashboardPage() {
   const [params, setParams] = useSearchParams();
   const branchId = params.get('branch') ?? '';
   const summary = useBookingsSummary(schoolId, null, branchId);
+  const overview = useDashboardOverview(schoolId);
 
   if (!schoolId) return null;
 
@@ -53,6 +57,8 @@ export function DashboardPage() {
           <Link to="/school#cancellations">{t('schools.cancellations.chooseLink')}</Link>
         </div>
       ) : null}
+      {/* Decision 374 (Decision 318 item 1). */}
+      {overview.data ? <SetupChecklist schoolId={schoolId} checklist={overview.data.setupChecklist} /> : null}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <BranchFilter schoolId={schoolId} value={branchId} onChange={setBranch} />
       </div>
@@ -73,6 +79,12 @@ export function DashboardPage() {
               note={data && data.cancelledBookings > 0 ? t('dashboard.statCancelled', { count: data.cancelledBookings }) : undefined}
             />
             <StatCard label={t('dashboard.statUpcoming')} value={data?.upcomingBookings ?? 0} />
+            {/* Decision 374 (Decision 317 item 5) — memberships aren't per Branch, so always the whole School. */}
+            <StatCard
+              label={t('dashboard.statActiveStudents')}
+              value={overview.data?.activeStudents ?? 0}
+              note={branchId ? t('dashboard.wholeSchool') : undefined}
+            />
             {/* Decision 367 (Q2) — Spec 55 §2.1's Attendance card: checked in vs no-show. */}
             <Card>
               <div style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)', marginBottom: 4 }}>{t('dashboard.statAttendance')}</div>
@@ -105,6 +117,9 @@ export function DashboardPage() {
           </div>
         </Card>
       ) : null}
+      <div style={{ marginTop: 16 }}>
+        <BirthdaysCard schoolId={schoolId} linkToStudent />
+      </div>
     </>
   );
 }
