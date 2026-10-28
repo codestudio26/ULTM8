@@ -258,6 +258,10 @@ export class ClassesService {
     let movedFor: string[] = [];
     let bookedCount = 0;
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Styles are replaced when sent and kept when omitted (Decision 170).
+      // Resolved first: it share-locks the styles, and a style edit locks its
+      // style before the classes it renames, so this edit must too.
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
       if (branchChanges || startChanges) {
         // Held for the rest of this edit, so nobody books in between the check
         // and the change (bookings take the same lock, booking-gates.ts).
@@ -288,8 +292,6 @@ export class ClassesService {
       if (dto.capacity !== undefined) {
         seatsToOffer = await applyCapacityChange(tx, classId, dto.capacity);
       }
-      // Styles are replaced when sent and kept when omitted (Decision 170).
-      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities, styleIdsOf(existing.styles)) : null;
       return tx.class.update({
         where: { id: classId },
         data: {
