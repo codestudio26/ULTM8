@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff page: main owner and co-owners** (Decision 370) — every School has
+  one main owner; other owners are co-owners. "Give role" can now make someone
+  a co-owner. Any owner can remove a co-owner, but nobody in the School can
+  remove the main owner. The main owner can make a co-owner the main owner
+  after re-entering their passcode, and stays on as a co-owner. ULTM8 support
+  sees a School's owners on the Platform Admin School page and (Full Admin
+  only) can move the main owner role, optionally removing the former main
+  owner; both are audit-logged. Existing Schools: the earliest owner becomes
+  the main owner. Needs the migration `20261213000100_school_main_owner`.
 - **School settings review** (Decision 368) — the School page shows the
   School's join code (copy, make a new one), a logo upload and colour for the
   student app, and asks before a currency change moves membership plans to a

@@ -1938,6 +1938,60 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/main-owner": {
+      "post": {
+        "operationId": "RoleGrantsController_handOverMainOwner",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify — the main owner re-enters their passcode first.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandOverMainOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MainOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -4183,6 +4237,86 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/owners": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_listOwners",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolOwnersResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/main-owner": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_changeMainOwner",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeSchoolMainOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeSchoolMainOwnerResponseDto"
                 }
               }
             }
@@ -16894,6 +17028,10 @@
           "canInviteCoaches": {
             "type": "boolean"
           },
+          "mainOwner": {
+            "type": "boolean",
+            "description": "The School's main owner (Decision 370). Other owners are co-owners."
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -16910,6 +17048,7 @@
           "active",
           "addedAt",
           "canInviteCoaches",
+          "mainOwner",
           "roles"
         ]
       },
@@ -16925,6 +17064,29 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "HandOverMainOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "A co-owner of this School, who becomes its main owner."
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "MainOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "mainOwnerUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mainOwnerUserId"
         ]
       },
       "CreateFranchiseDto": {
@@ -18737,6 +18899,85 @@
           "email",
           "name",
           "subRole"
+        ]
+      },
+      "SchoolOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "mainOwner": {
+            "type": "boolean",
+            "description": "The School's main owner. Every other owner is a co-owner."
+          },
+          "ownerSince": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "mainOwner",
+          "ownerSince"
+        ]
+      },
+      "SchoolOwnersResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Main owner first, then co-owners, earliest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolOwnerDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ChangeSchoolMainOwnerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "A co-owner of this School, who becomes its main owner."
+          },
+          "removeFormerMainOwner": {
+            "type": "boolean",
+            "description": "Also end the former main owner's owner role at this School. Default false."
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "ChangeSchoolMainOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "mainOwnerUserId": {
+            "type": "string"
+          },
+          "formerMainOwnerRemoved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mainOwnerUserId",
+          "formerMainOwnerRemoved"
         ]
       },
       "CreateAdminUserDto": {

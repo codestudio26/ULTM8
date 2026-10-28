@@ -86,6 +86,9 @@ export class StaffMemberDto {
   @ApiProperty()
   canInviteCoaches!: boolean;
 
+  @ApiProperty({ description: "The School's main owner (Decision 370). Other owners are co-owners." })
+  mainOwner!: boolean;
+
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];
 }
@@ -145,4 +148,16 @@ export class StaffTeachingResponseDto {
 
   @ApiProperty({ description: 'Active weekly timetable slots they teach here (on, not archived).' })
   activeSlots!: number;
+}
+
+/** POST /schools/{schoolId}/main-owner (Decision 370). */
+export class HandOverMainOwnerDto {
+  @ApiProperty({ description: 'A co-owner of this School, who becomes its main owner.' })
+  @IsUUID()
+  userId!: string;
+}
+
+export class MainOwnerResponseDto {
+  @ApiProperty()
+  mainOwnerUserId!: string;
 }

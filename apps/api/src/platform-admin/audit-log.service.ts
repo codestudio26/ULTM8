@@ -40,6 +40,9 @@ export const AuditAction = {
   REACTIVATE_SCHOOL_ACCOUNT: 'REACTIVATE_SCHOOL_ACCOUNT',
   CLOSE_FRANCHISE_ACCOUNT: 'CLOSE_FRANCHISE_ACCOUNT',
   REACTIVATE_FRANCHISE_ACCOUNT: 'REACTIVATE_FRANCHISE_ACCOUNT',
+  // Decision 370 — a School's owners, and support moving its main owner role.
+  VIEW_SCHOOL_OWNERS: 'VIEW_SCHOOL_OWNERS',
+  CHANGE_SCHOOL_MAIN_OWNER: 'CHANGE_SCHOOL_MAIN_OWNER',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

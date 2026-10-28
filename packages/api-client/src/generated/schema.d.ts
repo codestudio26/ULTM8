@@ -644,6 +644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/main-owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_handOverMainOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -1438,6 +1454,38 @@ export interface paths {
         get: operations["PlatformAdminSchoolsController_findOne"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminSchoolsController_listOwners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/main-owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_changeMainOwner"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5484,11 +5532,20 @@ export interface components {
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
             canInviteCoaches: boolean;
+            /** @description The School's main owner (Decision 370). Other owners are co-owners. */
+            mainOwner: boolean;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
         StaffListResponseDto: {
             items: components["schemas"]["StaffMemberDto"][];
+        };
+        HandOverMainOwnerDto: {
+            /** @description A co-owner of this School, who becomes its main owner. */
+            userId: string;
+        };
+        MainOwnerResponseDto: {
+            mainOwnerUserId: string;
         };
         CreateFranchiseDto: {
             name: string;
@@ -6037,6 +6094,30 @@ export interface components {
             name: string;
             /** @enum {string} */
             subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
+        };
+        SchoolOwnerDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description The School's main owner. Every other owner is a co-owner. */
+            mainOwner: boolean;
+            /** Format: date-time */
+            ownerSince: string;
+        };
+        SchoolOwnersResponseDto: {
+            /** @description Main owner first, then co-owners, earliest first. */
+            items: components["schemas"]["SchoolOwnerDto"][];
+        };
+        ChangeSchoolMainOwnerDto: {
+            /** @description A co-owner of this School, who becomes its main owner. */
+            userId: string;
+            /** @description Also end the former main owner's owner role at this School. Default false. */
+            removeFormerMainOwner?: boolean;
+        };
+        ChangeSchoolMainOwnerResponseDto: {
+            mainOwnerUserId: string;
+            formerMainOwnerRemoved: boolean;
         };
         CreateAdminUserDto: {
             email: string;
@@ -9804,6 +9885,34 @@ export interface operations {
             };
         };
     };
+    RoleGrantsController_handOverMainOwner: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify — the main owner re-enters their passcode first. */
+                "x-step-up-token": string;
+            };
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandOverMainOwnerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MainOwnerResponseDto"];
+                };
+            };
+        };
+    };
     FranchisesController_findAll: {
         parameters: {
             query?: {
@@ -11093,6 +11202,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_listOwners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolOwnersResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_changeMainOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeSchoolMainOwnerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
                 };
             };
         };
