@@ -6277,3 +6277,23 @@ User (Code), 27 Oct 2026: "All recommended", after the School settings review (S
 
 User (Code), 26–27 Oct 2026, Staff thread (Decision 360 item 3).
 
+## Decision 378 — Front desk: one all-or-nothing check-in for several classes
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F7 · **Follows:** Decision 377 (QR checked on scan, guests one by one)
+
+The product owner asked for the front-desk items whose rules are already decided to be built ("build them", 28 Oct 2026). F7, the handover's recommended single check-in call, comes first because the locked tablet session (F1) uses it.
+
+### Decision
+
+1. **One call for the welcome card's confirm.** `POST /schools/{schoolId}/front-desk/check-ins` `{ studentId, lookupToken?, classIds[], guests?: [{ bookingId, attendeeId }] }`, for staff at the School (Branch Staff only for their Branch's classes and Whole School classes). For each ticked class it books the place where the student has none (a staff booking, with every booking rule: membership, waiver, belt, seats), then checks the student in. Then it checks in the ticked guests.
+2. **All or nothing.** Everything that can be checked first is: the class exists, is not cancelled, check-in is open, the guest is on the student's booking and not already in. Then all of it happens in one transaction. If any item can't be done, nothing is saved: no booking, no credit spent, no check-in.
+3. **The reply says which item stopped it.** It is always `200` with `{ done, classes: [{ classId, ok, bookingId?, code?, message? }], guests: [{ attendeeId, ok, checkedInAt?, code?, message? }] }`. The card shows each reason next to the class's name, in the screen's language.
+4. **How the check-in is recorded doesn't change:** `INSTRUCTOR_SCAN` with a scanned QR's lookup (Decision 377), otherwise `INSTRUCTOR_MANUAL`, with the staff member as `checkedInById`. The per-class `POST /classes/{id}/book` and `POST /classes/{id}/attendance-scan`, and `POST /bookings/{id}/guests/{attendeeId}/check-in`, stay for the other screens.
+
+### Not in this decision
+
+- The School's check-in rules (handover F9) aren't defined yet. When they are, their reasons come back in the same `code`/`message` shape.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.

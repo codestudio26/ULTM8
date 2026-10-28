@@ -12179,6 +12179,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/front-desk/check-ins": {
+      "post": {
+        "operationId": "AttendanceController_deskCheckIn",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeskCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -26300,6 +26345,129 @@
         "required": [
           "attendeeId",
           "checkedInAt"
+        ]
+      },
+      "DeskGuestRefDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "attendeeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookingId",
+          "attendeeId"
+        ]
+      },
+      "DeskCheckInDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL."
+          },
+          "classIds": {
+            "description": "Classes to check the Student into (booked first where needed). Up to 10.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guests": {
+            "description": "Guests on the Student's bookings to check in. Up to 20.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskGuestRefDto"
+            }
+          }
+        },
+        "required": [
+          "studentId",
+          "classIds"
+        ]
+      },
+      "DeskCheckInClassResultDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "False when this Class is why nothing was done."
+          },
+          "bookingId": {
+            "type": "string",
+            "description": "The checked-in booking, when done."
+          },
+          "code": {
+            "type": "string",
+            "description": "Why this Class could not be done, e.g. CHECK_IN_NOT_OPEN or CLASS_FULL."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "classId",
+          "ok"
+        ]
+      },
+      "DeskCheckInGuestResultDto": {
+        "type": "object",
+        "properties": {
+          "attendeeId": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "checkedInAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attendeeId",
+          "ok"
+        ]
+      },
+      "DeskCheckInResponseDto": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "description": "True when everything was checked in. False when something could not be: then nothing was saved, and the item(s) with ok false say why."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskCheckInClassResultDto"
+            }
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskCheckInGuestResultDto"
+            }
+          }
+        },
+        "required": [
+          "done",
+          "classes",
+          "guests"
         ]
       },
       "AcademySummaryDto": {

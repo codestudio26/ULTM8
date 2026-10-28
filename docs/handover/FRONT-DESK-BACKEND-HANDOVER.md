@@ -89,7 +89,9 @@ The School Portal has both front-desk screens, built on the API that already exi
 - **Request:** `{ fullName, dateOfBirth }`. Both must match a member of the School (Decision 362), so nobody can find out who is a member by typing names. The screen already asks for both.
 
 ### F7. One check-in call for several classes (recommended)
-**QR part built 28 Oct 2026 (Decision 377):** `POST /schools/{schoolId}/front-desk/qr-lookups` checks the QR once and returns a 5-minute lookup token; `attendance-scan` takes `lookupToken`. The single all-or-nothing call is still open.
+**QR part built 28 Oct 2026 (Decision 377):** `POST /schools/{schoolId}/front-desk/qr-lookups` checks the QR once and returns a 5-minute lookup token; `attendance-scan` takes `lookupToken`.
+
+**Built 28 Oct 2026 (Decision 378):** `POST /schools/{schoolId}/front-desk/check-ins` `{ studentId, lookupToken?, classIds[], guests? }` books where needed, checks in and checks in the ticked guests in one transaction, and returns `{ done, classes[], guests[] }` with each item's `ok` and reason. The welcome card uses it. The note below is the original ask.
 
 **Today:** the screen loops per ticked class. For each one it calls `POST /classes/{id}/book` (if not booked), then `POST /classes/{id}/attendance-scan`. If the second class fails, the first is already done, and the card shows the error.
 

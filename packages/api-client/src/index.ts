@@ -186,6 +186,13 @@ async function errorMessage(status: number, code: string, message: string): Prom
   return errorMessageTranslator ? await errorMessageTranslator(status, code, message) : message;
 }
 
+/** The translation `unwrap` gives an error's message, for a reason the API
+ * sends inside a successful reply (e.g. the front desk's one-step check-in,
+ * whose items each say why they couldn't be done). */
+export function translateApiErrorMessage(status: number, code: string, message: string): Promise<string> {
+  return errorMessage(status, code, message);
+}
+
 /**
  * Unwraps a `{data, error, response}` result from an openapi-fetch call into either
  * the data or a thrown ApiError — every screen calls its API through this rather than

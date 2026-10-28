@@ -492,4 +492,6 @@ export const serverMessages: Record<string, string> = {
   "This person isn't a Student at this School.": "Diese Person ist kein Schüler dieser Schule.",
   "This scan has expired. Ask the Student to show their QR again.": "Dieser Scan ist abgelaufen. Bitte den Schüler, seinen QR noch einmal zu zeigen.",
   "This scan belongs to a different Student.": "Dieser Scan gehört zu einem anderen Schüler.",
+  "Pick at least one class or guest to check in.": "Wähle mindestens eine Stunde oder einen Gast zum Einchecken.",
+  "The same guest was listed more than once.": "Derselbe Gast wurde mehr als einmal angegeben.",
 };

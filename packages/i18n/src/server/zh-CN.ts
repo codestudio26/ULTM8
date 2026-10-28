@@ -492,4 +492,6 @@ export const serverMessages: Record<string, string> = {
   "This person isn't a Student at this School.": "此人不是本学校的学员。",
   "This scan has expired. Ask the Student to show their QR again.": "此次扫描已过期。请学员再次出示二维码。",
   "This scan belongs to a different Student.": "此次扫描属于另一名学员。",
+  "Pick at least one class or guest to check in.": "请至少选择一节课或一位访客进行签到。",
+  "The same guest was listed more than once.": "同一位访客被列出了不止一次。",
 };

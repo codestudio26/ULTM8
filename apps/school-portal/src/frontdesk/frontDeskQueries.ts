@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, unwrap } from '@ultm8/api-client';
+import { ApiError, translateApiErrorMessage, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
@@ -131,56 +131,55 @@ export class QrExpiredError extends Error {
   }
 }
 
+/** Why the one-step check-in did nothing: each item that stopped it, with its
+ * reason already in the screen's language. */
+export class DeskCheckInError extends Error {
+  constructor(readonly items: Array<{ classId?: string; attendeeId?: string; message: string }>) {
+    super('desk-check-in-not-done');
+  }
+}
+
 /**
- * Checks one student in to the ticked Classes. Each Class needs a booking: an
- * existing Upcoming one is used, otherwise staff book the place for the
- * student first (`POST /classes/{id}/book`, the staff-on-behalf booking every
- * booking rule still applies to). Then `POST /classes/{id}/attendance-scan`
- * records the check-in: with the scanned QR's lookup when there is one (INSTRUCTOR_SCAN),
- * otherwise as staff confirming by name (INSTRUCTOR_MANUAL).
+ * Checks one student in to the ticked Classes and guests in one step
+ * (`POST /schools/{schoolId}/front-desk/check-ins`, Decision 378). The API
+ * books the place first where the student has none (a staff booking, with
+ * every booking rule), records each check-in (INSTRUCTOR_SCAN with the scanned
+ * QR's lookup, otherwise INSTRUCTOR_MANUAL) and checks in the ticked guests.
+ * All or nothing: when one item can't be done, nothing is, and the error says
+ * which items stopped it.
  */
-export function useFrontDeskCheckIn() {
+export function useFrontDeskCheckIn(schoolId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       studentId,
       classIds,
-      bookingsByClass,
       qr,
       guests,
     }: {
       studentId: string;
       classIds: string[];
-      bookingsByClass: Map<string, BookingResponse[]>;
       qr: QrLookup | null;
-      /** Decision 377: guests ticked at the desk, checked in after the classes. */
+      /** Decision 377: the guests ticked at the desk. */
       guests?: Array<{ bookingId: string; attendeeId: string }>;
     }) => {
-      const done: string[] = [];
-      for (const classId of classIds) {
-        if (qr && qr.expiresAt <= Date.now()) throw new QrExpiredError();
-        const mine = (bookingsByClass.get(classId) ?? []).filter((b) => b.studentId === studentId);
-        if (mine.some((b) => b.status === 'COMPLETED')) {
-          done.push(classId);
-          continue;
-        }
-        if (!mine.some((b) => b.status === 'UPCOMING')) {
-          await unwrap(apiClient.POST('/v1/classes/{id}/book', { params: { path: { id: classId } }, body: { studentId } }));
-        }
-        await unwrap(
-          apiClient.POST('/v1/classes/{id}/attendance-scan', {
-            params: { path: { id: classId } },
-            body: qr ? { studentId, lookupToken: qr.lookupToken } : { studentId },
-          }),
-        );
-        done.push(classId);
-      }
-      for (const g of guests ?? []) {
-        await unwrap(
-          apiClient.POST('/v1/bookings/{id}/guests/{attendeeId}/check-in', { params: { path: { id: g.bookingId, attendeeId: g.attendeeId } } }),
+      if (qr && qr.expiresAt <= Date.now()) throw new QrExpiredError();
+      const result = await unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/front-desk/check-ins', {
+          params: { path: { schoolId: schoolId! } },
+          body: { studentId, classIds, guests: guests ?? [], ...(qr ? { lookupToken: qr.lookupToken } : {}) },
+        }),
+      );
+      if (!result.done) {
+        const failed = [
+          ...result.classes.filter((c) => !c.ok).map((c) => ({ classId: c.classId, code: c.code, message: c.message })),
+          ...result.guests.filter((g) => !g.ok).map((g) => ({ attendeeId: g.attendeeId, code: g.code, message: g.message })),
+        ];
+        throw new DeskCheckInError(
+          await Promise.all(failed.map(async ({ code, message, ...item }) => ({ ...item, message: await translateApiErrorMessage(409, code ?? 'CONFLICT', message ?? '') }))),
         );
       }
-      return done;
+      return classIds;
     },
     onSettled: (_data, _err, { classIds, guests }) => {
       classIds.forEach((id) => queryClient.invalidateQueries({ queryKey: ['classBookings', id] }));

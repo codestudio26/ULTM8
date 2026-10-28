@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Class, Prisma, PrismaClient } from '@prisma/client';
 import { assertBookingUnlocked } from '../ranks/booking-unlocks';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
@@ -173,110 +173,127 @@ export class BookingsService {
       // First, before any row lock (see lockStudentClass).
       await lockStudentClass(tx, studentId, classId);
       await lockSchoolOpen(tx, resolvedClass.schoolId);
-      await assertNotAlreadyAttended(tx, studentId, classId);
-      if (resolvedClass.termsWaiverRequired) {
-        if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
-          throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
-        }
-      }
-
-      if (!dto.overrideReason) {
-        await this.assertRankEligible(tx, studentId, resolvedClass);
-      }
-
-      const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
-      const partySize = 1 + attendeeMembershipIds.length;
-      let locked: LockedClass;
-      if (resolvedClass.capacity !== null) {
-        // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
-        // race — two concurrent bookClass() calls for the same Class can both read
-        // the same pre-booking occupancy, both pass the capacity check, and both
-        // commit, overbooking the Class. Unlike a scalar-field race (Membership
-        // credit, Booking status), capacity is an aggregate COUNT across two child
-        // tables (Booking + BookingAttendee), which the established
-        // updateMany+count-guard pattern can't express directly — so this takes an
-        // explicit row lock on the Class itself (taken with NOWAIT and retried — see
-        // lockClassSeats in booking-gates.ts) for the duration of the
-        // count-then-create, serializing concurrent bookers for THIS Class only
-        // (other Classes are entirely unaffected). First use of an explicit lock in
-        // this codebase; flagged here rather than silently introduced.
-        // The lock also re-checks that the School hasn't cancelled or archived the
-        // Class since the read above (stress test, 27 Oct 2026).
-        locked = await lockClassSeats(tx, classId);
-        const occupied = await this.countOccupiedSeats(classId);
-        // Waitlist first (product owner, 26 Oct 2026): a seat offered to a waitlisted
-        // Student (NOTIFIED) is held for them, and while anyone is queued a Student
-        // can't book past the queue. Staff can still book a walk-in into a free seat.
-        const queue = await this.countActiveWaitlist(classId);
-        if (!isStaffAction && queue.waiting + queue.notified > 0) {
-          throw new ConflictException({ code: 'WAITLIST_FIRST', message: 'Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).' });
-        }
-        if (occupied + queue.notified + partySize > resolvedClass.capacity) {
-          throw new ConflictException({
-            code: 'CLASS_FULL',
-            message: 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
-          });
-        }
-      } else {
-        // No seats to count, so a shared lock: it only makes a whole-class cancel
-        // and this booking wait for each other, and re-checks the Class.
-        locked = await lockClassShared(tx, classId);
-      }
-
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
-
-      const bookingId = randomUUID();
-      try {
-        await tx.booking.create({
-          data: {
-            id: bookingId,
-            studentId,
-            classId,
-            schoolId: resolvedClass.schoolId,
-            branchId: locked ? locked.branchId : resolvedClass.branchId,
-            sourceMembershipId: sourceMembership.id,
-            overriddenById: dto.overrideReason ? callerId : null,
-            overrideReason: dto.overrideReason ?? null,
-            bookedViaKidMode: viaKidMode,
-          },
-        });
-      } catch (err) {
-        if (this.isUniqueConstraintViolation(err)) {
-          throw new ConflictException('This Student already has an active Booking for this Class.');
-        }
-        throw err;
-      }
-
-      // Guest attendees — see BookingAttendee's own schema comment for why each
-      // membershipId here must belong to the SAME studentId as the Booking (the
-      // organizing Student), not a separate guest account: Membership's own narrow
-      // RLS policy (studentId = caller) means a genuinely separate guest's Membership
-      // row would be invisible under this transaction's tenant context (studentId,
-      // the organizer) in the first place — a School-gifted Friend Pass is modeled as
-      // a credit the ORGANIZING Student holds and redeems per guest, not a credit
-      // living on a separate guest-registered account. Flagged explicitly as a
-      // Developer-level interpretation of SKILL.md §10's "their own valid Membership
-      // or a School-gifted Friend Pass for that specific guest" — the alternative
-      // reading (a guest who is themselves a separately-registered Student spending
-      // their OWN Membership) would need a real cross-account consent mechanism
-      // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
-      for (const membershipId of attendeeMembershipIds) {
-        const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
-        // Waivers Q9: each guest seat gets its own waiver signing link.
-        const attendeeId = randomUUID();
-        await tx.bookingAttendee.create({
-          data: {
-            id: attendeeId,
-            bookingId,
-            schoolId: resolvedClass.schoolId,
-            membershipId: guestMembership.id,
-            guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
-          },
-        });
-      }
-
-      return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
+      return this.bookInTx(tx, { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode });
     }, BOOKING_TX_OPTIONS));
+  }
+
+  /**
+   * The booking itself, inside the caller's transaction (in the Student's own
+   * context), after lockStudentClass and lockSchoolOpen. bookClass runs it in a
+   * transaction of its own; the front desk's one-step check-in (Decision 378)
+   * runs it for several Classes in one transaction, so a failure books none.
+   * The checks before the transaction (Class visible, who may book, degraded
+   * portal, closed School, assertClassBookable) are the caller's.
+   */
+  async bookInTx(
+    tx: TenantTx,
+    args: { callerId: string; studentId: string; cls: Class; dto: BookClassDto; isStaffAction: boolean; viaKidMode: boolean },
+  ) {
+    const { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode } = args;
+    const classId = resolvedClass.id;
+    await assertNotAlreadyAttended(tx, studentId, classId);
+    if (resolvedClass.termsWaiverRequired) {
+      if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
+        throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
+      }
+    }
+
+    if (!dto.overrideReason) {
+      await this.assertRankEligible(tx, studentId, resolvedClass);
+    }
+
+    const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
+    const partySize = 1 + attendeeMembershipIds.length;
+    let locked: LockedClass;
+    if (resolvedClass.capacity !== null) {
+      // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
+      // race — two concurrent bookClass() calls for the same Class can both read
+      // the same pre-booking occupancy, both pass the capacity check, and both
+      // commit, overbooking the Class. Unlike a scalar-field race (Membership
+      // credit, Booking status), capacity is an aggregate COUNT across two child
+      // tables (Booking + BookingAttendee), which the established
+      // updateMany+count-guard pattern can't express directly — so this takes an
+      // explicit row lock on the Class itself (taken with NOWAIT and retried — see
+      // lockClassSeats in booking-gates.ts) for the duration of the
+      // count-then-create, serializing concurrent bookers for THIS Class only
+      // (other Classes are entirely unaffected). First use of an explicit lock in
+      // this codebase; flagged here rather than silently introduced.
+      // The lock also re-checks that the School hasn't cancelled or archived the
+      // Class since the read above (stress test, 27 Oct 2026).
+      locked = await lockClassSeats(tx, classId);
+      const occupied = await this.countOccupiedSeats(classId);
+      // Waitlist first (product owner, 26 Oct 2026): a seat offered to a waitlisted
+      // Student (NOTIFIED) is held for them, and while anyone is queued a Student
+      // can't book past the queue. Staff can still book a walk-in into a free seat.
+      const queue = await this.countActiveWaitlist(classId);
+      if (!isStaffAction && queue.waiting + queue.notified > 0) {
+        throw new ConflictException({ code: 'WAITLIST_FIRST', message: 'Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlist).' });
+      }
+      if (occupied + queue.notified + partySize > resolvedClass.capacity) {
+        throw new ConflictException({
+          code: 'CLASS_FULL',
+          message: 'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
+        });
+      }
+    } else {
+      // No seats to count, so a shared lock: it only makes a whole-class cancel
+      // and this booking wait for each other, and re-checks the Class.
+      locked = await lockClassShared(tx, classId);
+    }
+
+    const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
+
+    const bookingId = randomUUID();
+    try {
+      await tx.booking.create({
+        data: {
+          id: bookingId,
+          studentId,
+          classId,
+          schoolId: resolvedClass.schoolId,
+          branchId: locked ? locked.branchId : resolvedClass.branchId,
+          sourceMembershipId: sourceMembership.id,
+          overriddenById: dto.overrideReason ? callerId : null,
+          overrideReason: dto.overrideReason ?? null,
+          bookedViaKidMode: viaKidMode,
+        },
+      });
+    } catch (err) {
+      if (this.isUniqueConstraintViolation(err)) {
+        throw new ConflictException('This Student already has an active Booking for this Class.');
+      }
+      throw err;
+    }
+
+    // Guest attendees — see BookingAttendee's own schema comment for why each
+    // membershipId here must belong to the SAME studentId as the Booking (the
+    // organizing Student), not a separate guest account: Membership's own narrow
+    // RLS policy (studentId = caller) means a genuinely separate guest's Membership
+    // row would be invisible under this transaction's tenant context (studentId,
+    // the organizer) in the first place — a School-gifted Friend Pass is modeled as
+    // a credit the ORGANIZING Student holds and redeems per guest, not a credit
+    // living on a separate guest-registered account. Flagged explicitly as a
+    // Developer-level interpretation of SKILL.md §10's "their own valid Membership
+    // or a School-gifted Friend Pass for that specific guest" — the alternative
+    // reading (a guest who is themselves a separately-registered Student spending
+    // their OWN Membership) would need a real cross-account consent mechanism
+    // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
+    for (const membershipId of attendeeMembershipIds) {
+      const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
+      // Waivers Q9: each guest seat gets its own waiver signing link.
+      const attendeeId = randomUUID();
+      await tx.bookingAttendee.create({
+        data: {
+          id: attendeeId,
+          bookingId,
+          schoolId: resolvedClass.schoolId,
+          membershipId: guestMembership.id,
+          guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
+        },
+      });
+    }
+
+    return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
   }
 
   /**

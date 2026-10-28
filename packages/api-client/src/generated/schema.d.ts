@@ -4052,6 +4052,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/front-desk/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_deskCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -8353,6 +8369,43 @@ export interface components {
             attendeeId: string;
             /** Format: date-time */
             checkedInAt: string;
+        };
+        DeskGuestRefDto: {
+            bookingId: string;
+            attendeeId: string;
+        };
+        DeskCheckInDto: {
+            studentId: string;
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL. */
+            lookupToken?: string;
+            /** @description Classes to check the Student into (booked first where needed). Up to 10. */
+            classIds: string[];
+            /** @description Guests on the Student's bookings to check in. Up to 20. */
+            guests?: components["schemas"]["DeskGuestRefDto"][];
+        };
+        DeskCheckInClassResultDto: {
+            classId: string;
+            /** @description False when this Class is why nothing was done. */
+            ok: boolean;
+            /** @description The checked-in booking, when done. */
+            bookingId?: string;
+            /** @description Why this Class could not be done, e.g. CHECK_IN_NOT_OPEN or CLASS_FULL. */
+            code?: string;
+            message?: string;
+        };
+        DeskCheckInGuestResultDto: {
+            attendeeId: string;
+            ok: boolean;
+            /** Format: date-time */
+            checkedInAt?: string;
+            code?: string;
+            message?: string;
+        };
+        DeskCheckInResponseDto: {
+            /** @description True when everything was checked in. False when something could not be: then nothing was saved, and the item(s) with ok false say why. */
+            done: boolean;
+            classes: components["schemas"]["DeskCheckInClassResultDto"][];
+            guests: components["schemas"]["DeskCheckInGuestResultDto"][];
         };
         AcademySummaryDto: {
             id: string;
@@ -15582,6 +15635,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuestCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_deskCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeskCheckInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
                 };
             };
         };
