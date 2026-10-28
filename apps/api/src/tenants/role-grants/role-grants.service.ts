@@ -745,24 +745,34 @@ export class RoleGrantsService {
    * Their account stays, and so does any student role they hold here. Owner
    * roles are not touched: removing an owner is its own, separate rule (main
    * owner and co-owners). Their access ends on their next request.
+   *
+   * `alsoInTx` runs inside the same transaction once the roles are ended (not
+   * at all when there were none): StaffRemovalService uses it to hand over or
+   * clear the person's classes in the same step (Decision 361 follow-up).
    */
-  async removeFromSchool(callerId: string, schoolId: string, userId: string) {
+  async removeFromSchool<T = undefined>(
+    callerId: string,
+    schoolId: string,
+    userId: string,
+    alsoInTx?: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<{ removedRoles: number; also?: T }> {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
-    const removedRoles = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const { count } = await tx.roleGrant.updateMany({
         where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
         data: { revokedAt: new Date() },
       });
-      if (count > 0) await this.clearCoachRightsIfGone(tx, userId, schoolId);
-      return count;
+      if (count === 0) return { removedRoles: 0 };
+      await this.clearCoachRightsIfGone(tx, userId, schoolId);
+      return { removedRoles: count, also: alsoInTx ? await alsoInTx(tx) : undefined };
     });
-    if (removedRoles === 0) {
+    if (result.removedRoles === 0) {
       throw new NotFoundException('This person holds no coach or Branch Staff role at this School.');
     }
     await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
     this.rolesChanged.forget(userId);
-    return { removedRoles };
+    return result;
   }
 
   /** Decision 331 — an Instructor role can't be taken away while it still
