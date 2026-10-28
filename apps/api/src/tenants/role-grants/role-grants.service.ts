@@ -29,7 +29,7 @@ import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-que
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
-import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole } from './dto/staff-list.dto';
+import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 
@@ -677,7 +677,7 @@ export class RoleGrantsService {
   async listStaff(callerId: string, schoolId: string, query: StaffListQueryDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
-    const { grants, branches, inviters, main } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+    const { grants, branches, permissions, main } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       grants: await tx.roleGrant.findMany({
         where: { schoolId, role: { in: [...STAFF_ROLES] } },
         select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, grantedById: true, revokedAt: true },
@@ -685,7 +685,10 @@ export class RoleGrantsService {
       }),
       main: await mainOwnerGrant(tx, schoolId),
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
-      inviters: await tx.staffPermission.findMany({ where: { schoolId, canInviteCoaches: true }, select: { userId: true } }),
+      permissions: await tx.staffPermission.findMany({
+        where: { schoolId },
+        select: { userId: true, canInviteCoaches: true, displayName: true, workPhone: true },
+      }),
     }));
 
     const userIds = [...new Set(grants.map((g) => g.userId))];
@@ -696,7 +699,7 @@ export class RoleGrantsService {
     });
     const userById = new Map(users.map((u) => [u.id, u]));
     const branchName = new Map(branches.map((b) => [b.id, b.name]));
-    const mayInvite = new Set(inviters.map((p) => p.userId));
+    const permissionOf = new Map(permissions.map((p) => [p.userId, p]));
 
     const status = query.status ?? 'active';
     const q = query.q?.toLowerCase();
@@ -712,7 +715,8 @@ export class RoleGrantsService {
       const relevant = own.filter((g) => (status === 'all' ? true : active ? !g.revokedAt : true));
       if (query.role && !relevant.some((g) => g.role === query.role)) continue;
       if (query.branchId && !relevant.some((g) => g.branchId === query.branchId)) continue;
-      if (q && ![`${user.firstName} ${user.surname}`, user.email].some((v) => v.toLowerCase().includes(q))) continue;
+      const permission = permissionOf.get(userId);
+      if (q && ![`${user.firstName} ${user.surname}`, user.email, permission?.displayName ?? ''].some((v) => v.toLowerCase().includes(q))) continue;
 
       const roles = [...own].sort((a, b) => Number(!!a.revokedAt) - Number(!!b.revokedAt) || b.grantedAt.getTime() - a.grantedAt.getTime());
       const granter = (id: string | null) => {
@@ -729,8 +733,10 @@ export class RoleGrantsService {
         active,
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
-        canInviteCoaches: mayInvite.has(userId),
+        canInviteCoaches: permission?.canInviteCoaches ?? false,
         mainOwner: main?.userId === userId,
+        displayName: permission?.displayName ?? null,
+        workPhone: permission?.workPhone ?? null,
         roles: roles.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -748,6 +754,40 @@ export class RoleGrantsService {
         `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`, undefined, { sensitivity: 'base' }),
     );
     return { items };
+  }
+
+  /**
+   * PATCH /schools/{schoolId}/staff/{userId}/details (Decision 381) — an owner
+   * sets the School's own display name and work phone for someone on its
+   * staff. Kept on the School's StaffPermission row, never on the person's
+   * account: their real name, login email and personal phone stay theirs. A
+   * field left out is unchanged; null clears it. Only for people who hold a
+   * staff, coach or owner role here now.
+   */
+  async updateStaffDetails(callerId: string, schoolId: string, userId: string, dto: UpdateStaffDetailsDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const data: { displayName?: string | null; workPhone?: string | null } = {};
+    if (dto.displayName !== undefined) data.displayName = dto.displayName;
+    if (dto.workPhone !== undefined) data.workPhone = dto.workPhone;
+
+    const saved = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const isStaff = await tx.roleGrant.findFirst({
+        where: { userId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null },
+        select: { id: true },
+      });
+      if (!isStaff) {
+        throw new NotFoundException('This person is not on the staff of this School.');
+      }
+      return tx.staffPermission.upsert({
+        where: { schoolId_userId: { schoolId, userId } },
+        create: { id: randomUUID(), schoolId, userId, ...data },
+        update: data,
+        select: { userId: true, displayName: true, workPhone: true },
+      });
+    });
+    return saved;
   }
 
   /**
