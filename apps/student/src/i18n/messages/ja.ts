@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "電話番号の確認",
       resetPasscode: "パスコードの再設定",
       newPasscode: "新しいパスコード",
+      choosePasscode: "パスコード設定",
     },
     app: {
       home: "ULTM8 生徒",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "新しいパスコード",
       confirmNewPasscode: "新しいパスコード（確認）",
       submit: "新しいパスコードを設定",
+    },
+    choosePasscode: {
+      title: "パスコードを設定",
+      intro: "スクールから仮のパスコードが発行されています。ログインを完了するには、6桁のパスコードを自分で設定してください。",
+      submit: "保存してログイン",
     },
     stepUp: {
       prompt: "確認のため、パスコードをもう一度入力してください。",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "キャンセル待ちに登録",
       waitlistPosition: "キャンセル待ちの{position}番目です。",
       leaveWaitlist: "キャンセル待ちをやめる",
+    },
+    guests: {
+      count: "ゲスト：{count}人",
+      add: "ゲストを追加",
+      remove: "ゲストを減らす",
+      passesLeft: "このクラスで使えるフレンドパス：{count}枚",
+      linksIntro: "クラスの前に免責同意書に署名できるよう、各ゲストにリンクを送ってください。",
+      guestNumber: "ゲスト{number}",
+      signed: "免責同意書に署名済み：{name}",
+      unsigned: "まだ免責同意書に署名していません",
+      share: "リンクを共有",
+      shareMessage: "クラスの前に免責同意書に署名してください：{link}",
+      noLink: "署名用リンクを利用できません。スクールに送ってもらってください。",
+      noShare: "ここでは共有できません。上のリンクをコピーしてゲストに送ってください。",
+      loadError: "ゲストを読み込めませんでした。もう一度お試しください。",
     },
     statusLabel: {
       upcoming: "予定",

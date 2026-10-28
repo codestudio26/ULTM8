@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Vérifier le téléphone",
       resetPasscode: "Réinitialiser le code d’accès",
       newPasscode: "Nouveau code d’accès",
+      choosePasscode: "Choisir le code",
     },
     app: {
       home: "ULTM8 Élève",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nouveau code d’accès",
       confirmNewPasscode: "Confirmer le nouveau code d’accès",
       submit: "Définir le nouveau code d’accès",
+    },
+    choosePasscode: {
+      title: "Choisissez votre code d'accès",
+      intro: "Votre école vous a donné un code d'accès temporaire. Choisissez votre propre code à 6 chiffres pour terminer la connexion.",
+      submit: "Enregistrer et se connecter",
     },
     stepUp: {
       prompt: "Saisissez à nouveau votre code d’accès pour confirmer.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Rejoindre la liste d’attente",
       waitlistPosition: "Vous êtes n° {position} sur la liste d’attente.",
       leaveWaitlist: "Quitter la liste d’attente",
+    },
+    guests: {
+      count: "Invités : {count}",
+      add: "Ajouter un invité",
+      remove: "Retirer un invité",
+      passesLeft: "Pass invités utilisables pour ce cours : {count}",
+      linksIntro: "Envoyez à chaque invité son lien pour qu’il signe la décharge avant le cours.",
+      guestNumber: "Invité {number}",
+      signed: "Décharge signée : {name}",
+      unsigned: "N’a pas encore signé la décharge",
+      share: "Partager le lien",
+      shareMessage: "Merci de signer la décharge avant le cours : {link}",
+      noLink: "Le lien de signature n’est pas disponible. Demandez à l’école de l’envoyer.",
+      noShare: "Le partage n’est pas disponible ici. Copiez le lien ci-dessus et envoyez-le à votre invité.",
+      loadError: "Impossible de charger vos invités — veuillez réessayer.",
     },
     statusLabel: {
       upcoming: "À VENIR",

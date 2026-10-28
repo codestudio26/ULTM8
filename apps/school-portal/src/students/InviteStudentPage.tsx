@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
@@ -22,10 +22,9 @@ import { useT } from '../i18n/I18nProvider';
  * Deliberately scoped to someone who ALREADY has a ULTM8 account — the
  * earlier "Enroll a Student" mockup's from-scratch account-creation form was
  * removed per direct product feedback (v1.2 backend backlog, "Invite a
- * Student", 28 Sep update) in favor of this narrower shape. See this PR's
- * own description for the open question that leaves: whether a from-scratch
- * "add a brand-new person" path (the Instructor page's own "Add manually",
- * mirrored) should still exist here too.
+ * Student", 28 Sep update) in favor of this narrower shape. A brand-new
+ * adult is added from scratch on the owner's Add manually page instead
+ * (AddStudentManuallyPage, Decision 371).
  */
 export function InviteStudentPage() {
   const t = useT();
@@ -43,9 +42,12 @@ export function InviteStudentPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  if (!schoolId) return null;
+  // Owner only, like the Students page (Decision 341).
+  if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
-  const needsBranch = branches.length > 0;
+  // Archived branches can't be chosen, so only open ones make a home branch
+  // required (Decision 341), matching the API.
+  const needsBranch = branches.some((b) => !b.archivedAt);
 
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();

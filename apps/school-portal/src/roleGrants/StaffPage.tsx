@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Badge, Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
   fetchInviteCandidate,
-  fetchUserRoleGrants,
   useCreateStaffManually,
   useInviteStaff,
   useRevokeRoleGrant,
   type InviteCandidateResponse,
-  type RoleGrantResponse,
+  type StaffMember,
+  type StaffRoleEntry,
 } from './roleGrantQueries';
+import { StaffListSection } from './StaffListSection';
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
@@ -33,11 +34,9 @@ import { Trans } from '../i18n/Trans';
  * first (GET .../role-grants/invite-candidate, Decision 116: exact match only, never
  * a name search), shows who was found, and only then sends the actual invite.
  *
- * There's no "list my School's staff" endpoint (see roleGrantQueries.ts's header
- * comment) — the lookup section below still looks up one User.id at a time, matching
- * exactly what GET /users/{userId}/role-grants actually supports. That response now
- * resolves the target's name (userFirstName/userSurname, Decision 114) so the lookup
- * results are attributable, not just a table of raw grant rows.
+ * Decision 361 — the page opens on the staff list (StaffListSection), which
+ * replaced looking people up by User ID. "Give role" (formerly "Send invite")
+ * gives the role at once: there is no invite to accept yet.
  *
  * Decision 251 — "Add staff manually" closes the exact gap the "Find" step above
  * used to dead-end on: no fallback existed when no ULTM8 account was found for the
@@ -72,18 +71,12 @@ export function StaffPage() {
   // 246's own temp-passcode email.
   const [addManuallyNotice, setAddManuallyNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
-  const [lookupUserId, setLookupUserId] = useState('');
-  const [lookupResult, setLookupResult] = useState<RoleGrantResponse[] | null>(null);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [confirmingRevoke, setConfirmingRevoke] = useState<RoleGrantResponse | null>(null);
+  const [confirmingRevoke, setConfirmingRevoke] = useState<{ person: StaffMember; role: StaffRoleEntry } | null>(null);
 
   // Owner only (it isn't in the coach nav): anyone else goes to their own
   // home screen rather than a blank page (Decision 296).
   if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
-  const branchName = (id: string | null | undefined) =>
-    id ? branches.find((b) => b.id === id)?.name ?? t('common.none') : t('roleGrants.staff.wholeSchool');
   // Branch Staff always need a branch. An Instructor needs one whenever the
   // School has branches; with none, the School itself is the branch
   // (Decisions 168, 169).
@@ -137,10 +130,14 @@ export function StaffPage() {
         targetUserId: candidate!.id!,
         body: { role, schoolId: schoolId!, branchId: needsBranch ? branchId : undefined },
       });
+      const given = {
+        name: `${candidate!.firstName} ${candidate!.surname}`.trim(),
+        role: role === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : t('roleGrants.staff.roleInstructor'),
+      };
       setInviteNotice(
         granted.emailSent
-          ? { kind: 'ok', text: t('roleGrants.staff.invitedEmailed') }
-          : { kind: 'warn', text: t('roleGrants.staff.invitedNoEmail') },
+          ? { kind: 'ok', text: t('roleGrants.staff.givenEmailed', given) }
+          : { kind: 'warn', text: t('roleGrants.staff.givenNoEmail', given) },
       );
       resetInviteSearch();
     } catch (err) {
@@ -148,25 +145,9 @@ export function StaffPage() {
     }
   }
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    setLookupError(null);
-    setLookupLoading(true);
-    try {
-      const result = await fetchUserRoleGrants(lookupUserId);
-      setLookupResult(result.items.filter((g) => g.schoolId === schoolId));
-    } catch (err) {
-      setLookupError(err instanceof ApiError ? err.message : t('roleGrants.staff.lookupFailed'));
-      setLookupResult(null);
-    } finally {
-      setLookupLoading(false);
-    }
-  }
-
   // Errors show in the confirm dialog (ConfirmDeleteModal), which stays open.
-  async function handleRevoke(grant: RoleGrantResponse) {
-    await revokeGrant.mutateAsync({ targetUserId: grant.userId, roleGrantId: grant.id });
-    setLookupResult((rows) => rows?.map((g) => (g.id === grant.id ? { ...g, revokedAt: new Date().toISOString() } : g)) ?? null);
+  async function handleRevoke({ person, role }: { person: StaffMember; role: StaffRoleEntry }) {
+    await revokeGrant.mutateAsync({ targetUserId: person.userId, roleGrantId: role.grantId });
   }
 
   return (
@@ -183,6 +164,8 @@ export function StaffPage() {
 
       {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
       {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
+
+      <StaffListSection schoolId={schoolId} branches={branches} onRevokeRole={(person, role) => setConfirmingRevoke({ person, role })} />
 
       <Card className="ultm8-field">
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
@@ -247,7 +230,7 @@ export function StaffPage() {
             ) : null}
             <div style={{ display: 'flex', gap: 8 }}>
               <Button type="submit" loading={inviteStaff.isPending}>
-                {t('roleGrants.staff.sendInvite')}
+                {t('roleGrants.staff.giveRole')}
               </Button>
               <Button type="button" variant="secondary" onClick={resetInviteSearch}>
                 {t('roleGrants.staff.searchAgain')}
@@ -259,79 +242,14 @@ export function StaffPage() {
 
       <CoachInvitesSection schoolId={schoolId} />
 
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-          {t('roleGrants.staff.lookupHeading')}
-        </h2>
-        <form onSubmit={handleLookup} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <Field label={t('roleGrants.staff.userIdLabel')} htmlFor="lookup-userId">
-              <TextField required value={lookupUserId} onChange={(e) => setLookupUserId(e.target.value)} />
-            </Field>
-          </div>
-          <Button type="submit" variant="secondary" loading={lookupLoading}>
-            {t('roleGrants.staff.lookUp')}
-          </Button>
-        </form>
-        {lookupError ? <ErrorBanner message={lookupError} /> : null}
-        {lookupLoading ? <Spinner /> : null}
-        {lookupResult ? (
-          lookupResult.length === 0 ? (
-            <p>{t('roleGrants.staff.noGrants')}</p>
-          ) : (
-            <>
-              <p className="ultm8-field">
-                <Trans
-                  k="roleGrants.staff.showingGrants"
-                  nodes={{
-                    name: (
-                      <strong>
-                        {lookupResult[0].userFirstName} {lookupResult[0].userSurname}
-                      </strong>
-                    ),
-                  }}
-                />
-              </p>
-              <Table<RoleGrantResponse>
-                rows={lookupResult}
-                columns={[
-                  { key: 'role', header: t('roleGrants.staff.columnRole'), render: (g) => <Badge variant="accent">{ROLE_LABELS[g.role] ? t(ROLE_LABELS[g.role]!) : g.role}</Badge> },
-                  { key: 'branch', header: t('roleGrants.staff.columnBranch'), render: (g) => branchName(g.branchId) },
-                  {
-                    key: 'status',
-                    header: t('roleGrants.staff.columnStatus'),
-                    render: (g) =>
-                      g.revokedAt ? (
-                        <Badge>{t('roleGrants.staff.revoked')}</Badge>
-                      ) : (
-                        <Badge variant="success">{t('roleGrants.staff.active')}</Badge>
-                      ),
-                  },
-                  {
-                    key: 'actions',
-                    header: '',
-                    render: (g) =>
-                      g.revokedAt ? null : (
-                        <Button variant="danger" onClick={() => setConfirmingRevoke(g)}>
-                          {t('roleGrants.staff.revoke')}
-                        </Button>
-                      ),
-                  },
-                ]}
-              />
-            </>
-          )
-        ) : null}
-      </Card>
-
       {confirmingRevoke ? (
         <ConfirmDeleteModal
           title={t('roleGrants.staff.revokeTitle', {
-            role: ROLE_LABELS[confirmingRevoke.role] ? t(ROLE_LABELS[confirmingRevoke.role]!) : confirmingRevoke.role,
-            name: `${confirmingRevoke.userFirstName} ${confirmingRevoke.userSurname}`,
+            role: ROLE_LABELS[confirmingRevoke.role.role] ? t(ROLE_LABELS[confirmingRevoke.role.role]!) : confirmingRevoke.role.role,
+            name: `${confirmingRevoke.person.firstName} ${confirmingRevoke.person.surname}`.trim(),
           })}
           description={t('roleGrants.staff.revokeDescription', {
-            branch: confirmingRevoke.branchId ? branchName(confirmingRevoke.branchId) : t('roleGrants.coachInvites.wholeSchool'),
+            branch: confirmingRevoke.role.branchName ?? t('roleGrants.coachInvites.wholeSchool'),
           })}
           confirmLabel={t('roleGrants.staff.revoke')}
           genericErrorMessage={t('roleGrants.staff.revokeFailed')}

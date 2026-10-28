@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "インストラクターがこの帯を申告しているため、削除できません。",
     beltDeclaredArchive: "インストラクターがこの帯を申告しているため、アーカイブできません。",
     classHasDependents: "このクラスにはまだ次のものがあるため、アーカイブできません：{items}。",
-    branchHasDependents: "この支店にはまだ次のものがあるため、アーカイブできません：{items}。先に移動または削除してください。",
+    branchHasDependents: "この支店にはまだ次のものがあるため、閉鎖できません：{items}。移動先を選ぶか、先に移動してください。",
     instructorHasDependents: "このインストラクターは次のものに割り当てられているため、アーカイブできません：{items}。先に別の担当者に割り当ててください。",
     schoolHasSubscription: "このスクールにはすでに有効なプラットフォームのサブスクリプションがあります。プラン変更にはまだ対応していません。",
     franchiseHasSubscription: "このフランチャイズにはすでに有効なプラットフォームのサブスクリプションがあります。プラン変更にはまだ対応していません。",
@@ -92,6 +92,9 @@ export const server: PartialMessages<ServerKeys> = {
       },
       activeSlots: {
         other: "有効な時間枠{count}件",
+      },
+      weeklySlots: {
+        other: "週間の時間枠{count}件",
       },
     },
   },
@@ -164,6 +167,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} が {school} をフランチャイズから削除しました。フランチャイズ料金は停止しました。",
     franchiseClosedTitle: "フランチャイズが閉鎖されました",
     franchiseClosedBody: "{franchise} は閉鎖されました。{school} は営業を続け、フランチャイズ料金は停止しました。",
+    studentAddedTitle: "スクールに追加されました",
+    studentAddedBody: "{school} に追加されました。",
     toDecideBody: "{name}さんの{rank}（{style}）への昇級があなたの判断を待っています。昇級させるか、見送るかを決めてください。",
     promotionFeeBody: "{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
     childPromotionFeeBody: "{name}さんの{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",

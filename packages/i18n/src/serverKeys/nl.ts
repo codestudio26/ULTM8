@@ -43,7 +43,7 @@ export const server: PartialMessages<ServerKeys> = {
     beltDeclaredDelete: "Een instructeur heeft deze band opgegeven, dus hij kan niet worden verwijderd.",
     beltDeclaredArchive: "Een instructeur heeft deze band opgegeven, dus hij kan niet worden gearchiveerd.",
     classHasDependents: "Deze les kan nog niet worden gearchiveerd. Er hangt nog het volgende aan: {items}.",
-    branchHasDependents: "Deze vestiging kan nog niet worden gearchiveerd. Er hangt nog het volgende aan: {items}. Verplaats of verwijder dat eerst.",
+    branchHasDependents: "Deze vestiging kan nog niet worden gesloten. Er hangt nog het volgende aan: {items}. Kies waar het heen gaat, of verplaats het eerst.",
     instructorHasDependents: "Deze instructeur kan nog niet worden gearchiveerd, omdat hij of zij nog is toegewezen aan: {items}. Wijs dat eerst aan iemand anders toe.",
     schoolHasSubscription: "Deze school heeft al een actief platformabonnement — van abonnement wisselen kan nog niet.",
     franchiseHasSubscription: "Deze franchise heeft al een actief platformabonnement — van abonnement wisselen kan nog niet.",
@@ -105,6 +105,10 @@ export const server: PartialMessages<ServerKeys> = {
       activeSlots: {
         one: "{count} actief tijdslot in het rooster",
         other: "{count} actieve tijdslots in het rooster",
+      },
+      weeklySlots: {
+        one: "{count} wekelijks tijdslot in het rooster",
+        other: "{count} wekelijkse tijdslots in het rooster",
       },
     },
   },
@@ -177,6 +181,8 @@ export const server: PartialMessages<ServerKeys> = {
     removedFromFranchiseBody: "{franchise} heeft {school} uit de franchise verwijderd. De franchisekosten zijn gestopt.",
     franchiseClosedTitle: "Franchise gesloten",
     franchiseClosedBody: "{franchise} is gesloten. {school} blijft open en de franchisekosten zijn gestopt.",
+    studentAddedTitle: "Toegevoegd aan een school",
+    studentAddedBody: "Je bent toegevoegd aan {school}.",
     toDecideBody: "De promotie van {name} naar {rank} ({style}) wacht op je beslissing. Promoveer, of besluit het niet te doen.",
     promotionFeeBody: "Je promotie naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
     childPromotionFeeBody: "De promotie van {name} naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",

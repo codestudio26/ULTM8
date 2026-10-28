@@ -157,6 +157,12 @@ jobs:
         # changes the TEST RUNNER's own process-exit behavior; it has no effect on
         # application/production code, and does not suppress a genuine assertion
         # failure — Jest still reports pass/fail from the tests themselves first.
+        # NODE_OPTIONS: 100+ spec files each boot their own Nest app in this one
+        # --runInBand process, and the heap now reaches Node's ~4 GB default
+        # (a run on PR #337 died "JavaScript heap out of memory" mid-suite with
+        # no test failing). The runner has 16 GB; 6 GB is what local runs use.
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npx jest --config ./test/jest-e2e.json --runInBand --forceExit
 
   # Everything else that doesn't need a live database (build, unit tests).

@@ -12,6 +12,7 @@ import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
 import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePage';
 import { CoachInvitePage } from './auth/CoachInvitePage';
+import { GuestWaiverPage } from './waivers/GuestWaiverPage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { MyProfilePage } from './profile/MyProfilePage';
@@ -29,6 +30,7 @@ import { StudentsPage } from './students/StudentsPage';
 import { CheckInPage } from './frontdesk/CheckInPage';
 import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { InviteStudentPage } from './students/InviteStudentPage';
+import { AddStudentManuallyPage } from './students/AddStudentManuallyPage';
 import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
@@ -75,6 +77,7 @@ export function App() {
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
       <Route path="/first-login-passcode-change" element={<FirstLoginPasscodeChangePage />} />
       <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
+      <Route path="/guest-waiver/:token" element={<GuestWaiverPage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
@@ -271,6 +274,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <InviteStudentPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students/add"
+        element={
+          <RequireAuth>
+            <Shell>
+              <AddStudentManuallyPage />
             </Shell>
           </RequireAuth>
         }

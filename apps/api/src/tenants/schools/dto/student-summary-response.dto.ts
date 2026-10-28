@@ -16,8 +16,15 @@ export class StudentSummaryResponseDto {
   @ApiProperty()
   surname!: string;
 
+  /** Empty for a Guardian-managed child, whose account has only a placeholder
+   * address (guardianManaged). */
   @ApiProperty()
   email!: string;
+
+  /** A child's account a Guardian manages (GuardiansService.createMinor);
+   * the Students page shows "Managed by a Guardian" for the email (Decision 341). */
+  @ApiProperty()
+  guardianManaged!: boolean;
 
   /** User.profilePhotoUrl — resolved the same way firstName/surname/email already
    * are for this row (a direct User-row select for an ACTIVE-only roster, or
@@ -40,6 +47,15 @@ export class StudentSummaryResponseDto {
    * only a request-side filter value (StudentRosterStatusDto), not a row status. */
   @ApiProperty({ enum: StudentStatusDto, enumName: 'StudentStatus' })
   status!: StudentStatusDto;
+
+  /** The student's home branch at this School (Decision 371, Students Q2).
+   * Null at a School with no branches, for a former student, or for a row the
+   * caller can't see the home branch of. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  homeBranchId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  homeBranchName!: string | null;
 }
 
 export class StudentListResponseDto {

@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Telefon bestätigen",
       resetPasscode: "Zugangscode zurücksetzen",
       newPasscode: "Neuer Zugangscode",
+      choosePasscode: "Zugangscode wählen",
     },
     app: {
       home: "ULTM8 Student",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Neuer Zugangscode",
       confirmNewPasscode: "Neuen Zugangscode bestätigen",
       submit: "Neuen Zugangscode festlegen",
+    },
+    choosePasscode: {
+      title: "Wähle deinen Zugangscode",
+      intro: "Deine Schule hat dir einen vorläufigen Zugangscode gegeben. Wähle deinen eigenen 6-stelligen Zugangscode, um die Anmeldung abzuschließen.",
+      submit: "Speichern und anmelden",
     },
     stepUp: {
       prompt: "Gib deinen Zugangscode zur Bestätigung erneut ein.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Auf die Warteliste",
       waitlistPosition: "Du bist Nr. {position} auf der Warteliste.",
       leaveWaitlist: "Warteliste verlassen",
+    },
+    guests: {
+      count: "Gäste: {count}",
+      add: "Gast hinzufügen",
+      remove: "Gast entfernen",
+      passesLeft: "Freundespässe, die du für diesen Kurs nutzen kannst: {count}",
+      linksIntro: "Schick jedem Gast seinen Link, damit er den Haftungsausschluss vor dem Kurs unterschreiben kann.",
+      guestNumber: "Gast {number}",
+      signed: "Haftungsausschluss unterschrieben: {name}",
+      unsigned: "Hat den Haftungsausschluss noch nicht unterschrieben",
+      share: "Link teilen",
+      shareMessage: "Bitte unterschreibe den Haftungsausschluss vor dem Kurs: {link}",
+      noLink: "Der Link zum Unterschreiben ist nicht verfügbar. Bitte die Schule, ihn zu schicken.",
+      noShare: "Teilen ist hier nicht möglich. Kopiere den Link oben und schick ihn deinem Gast.",
+      loadError: "Deine Gäste konnten nicht geladen werden — bitte versuche es erneut.",
     },
     statusLabel: {
       upcoming: "ANSTEHEND",

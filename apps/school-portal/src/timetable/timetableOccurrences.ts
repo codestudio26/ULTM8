@@ -1,4 +1,4 @@
-import type { TimetableCalendarClass, TimetableCalendarResponse, TimetableSlotResponse } from './timetableQueries';
+import type { ClosureResponse, TimetableCalendarClass, TimetableCalendarResponse, TimetableSlotResponse } from './timetableQueries';
 
 /** Same order TimetablePage.tsx's original weekday-grouped table used. */
 export const WEEKDAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
@@ -67,6 +67,8 @@ export interface DayOccurrences {
   date: string; // YYYY-MM-DD
   weekday: Weekday;
   entries: CalendarEntry[];
+  /** Closures covering this date (Decision 353, Q8). */
+  closures: ClosureResponse[];
 }
 
 /** The start time an entry sorts by. */
@@ -111,7 +113,8 @@ export function occurrencesForRange(
       ...slots.filter((s) => s.weekday === weekday && (s.status !== 'ON' || s.archivedAt)).map((slot) => ({ kind: 'template' as const, slot })),
     ];
     entries.sort((a, b) => entryStart(a).localeCompare(entryStart(b)));
-    days.push({ date, weekday, entries });
+    const closures = (calendar?.closures ?? []).filter((c) => c.startDate <= date && date <= c.endDate);
+    days.push({ date, weekday, entries, closures });
     cursor = addDays(cursor, 1);
   }
   return days;

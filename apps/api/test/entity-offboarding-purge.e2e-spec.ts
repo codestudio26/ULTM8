@@ -164,6 +164,26 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     expect((await superuser.timetableSlot.findUnique({ where: { id: slot.id } }))?.branchId).toBe(branch.id);
   });
 
+  // Decision 330 (fix 7) — a closed Branch with history is kept for good:
+  // deleting it would set its past Classes' branchId to null.
+  it('an archived Branch past purgeAt with a past Class is kept, and its purgeAt is cleared', async () => {
+    const branch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Purge — Branch with history', archivedAt: PAST, purgeAt: PAST } });
+    branchIds.push(branch.id);
+    const past = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const cls = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, branchId: branch.id, title: 'Purge — past class', startDate: past, endDate: new Date(past.getTime() + 60 * 60 * 1000) },
+    });
+    classIds.push(cls.id);
+
+    await processor.process(fakeJob());
+
+    const kept = await superuser.branch.findUnique({ where: { id: branch.id } });
+    expect(kept).not.toBeNull();
+    expect(kept?.purgeAt).toBeNull();
+    expect(kept?.archivedAt).not.toBeNull();
+    expect((await superuser.class.findUnique({ where: { id: cls.id } }))?.branchId).toBe(branch.id);
+  });
+
   it('a Class past purgeAt with no Booking/WaitlistEntry is hard-deleted', async () => {
     const cls = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Purge — plain Class', startDate: FUTURE, endDate: FUTURE, archivedAt: PAST, purgeAt: PAST },

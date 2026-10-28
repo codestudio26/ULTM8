@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Weryfikacja telefonu",
       resetPasscode: "Resetowanie kodu dostępu",
       newPasscode: "Nowy kod dostępu",
+      choosePasscode: "Wybierz kod",
     },
     app: {
       home: "ULTM8 dla uczniów",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nowy kod dostępu",
       confirmNewPasscode: "Potwierdź nowy kod dostępu",
       submit: "Ustaw nowy kod dostępu",
+    },
+    choosePasscode: {
+      title: "Wybierz swój kod dostępu",
+      intro: "Szkoła dała Ci tymczasowy kod dostępu. Wybierz własny 6-cyfrowy kod, aby dokończyć logowanie.",
+      submit: "Zapisz i zaloguj się",
     },
     stepUp: {
       prompt: "Wpisz ponownie kod dostępu, aby potwierdzić.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Dołącz do listy oczekujących",
       waitlistPosition: "Jesteś nr {position} na liście oczekujących.",
       leaveWaitlist: "Opuść listę oczekujących",
+    },
+    guests: {
+      count: "Goście: {count}",
+      add: "Dodaj gościa",
+      remove: "Usuń gościa",
+      passesLeft: "Karnety dla znajomego, których możesz użyć na te zajęcia: {count}",
+      linksIntro: "Wyślij każdemu gościowi jego link, żeby podpisał oświadczenie przed zajęciami.",
+      guestNumber: "Gość {number}",
+      signed: "Oświadczenie podpisane: {name}",
+      unsigned: "Jeszcze nie podpisał(a) oświadczenia",
+      share: "Udostępnij link",
+      shareMessage: "Podpisz oświadczenie przed zajęciami: {link}",
+      noLink: "Link do podpisu jest niedostępny. Poproś Szkołę o jego wysłanie.",
+      noShare: "Udostępnianie nie działa tutaj. Skopiuj link powyżej i wyślij go gościowi.",
+      loadError: "Nie udało się wczytać twoich gości — spróbuj ponownie.",
     },
     statusLabel: {
       upcoming: "NADCHODZĄCA",

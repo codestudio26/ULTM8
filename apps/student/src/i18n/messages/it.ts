@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Verifica telefono",
       resetPasscode: "Reimposta codice di accesso",
       newPasscode: "Nuovo codice di accesso",
+      choosePasscode: "Scegli il codice",
     },
     app: {
       home: "ULTM8 Allievo",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nuovo codice di accesso",
       confirmNewPasscode: "Conferma il nuovo codice di accesso",
       submit: "Imposta il nuovo codice di accesso",
+    },
+    choosePasscode: {
+      title: "Scegli il tuo codice di accesso",
+      intro: "La tua scuola ti ha dato un codice di accesso temporaneo. Scegli il tuo codice di 6 cifre per completare l'accesso.",
+      submit: "Salva e accedi",
     },
     stepUp: {
       prompt: "Inserisci di nuovo il codice di accesso per confermare.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Entra in lista d’attesa",
       waitlistPosition: "Sei n. {position} in lista d’attesa.",
       leaveWaitlist: "Esci dalla lista d’attesa",
+    },
+    guests: {
+      count: "Ospiti: {count}",
+      add: "Aggiungi un ospite",
+      remove: "Togli un ospite",
+      passesLeft: "Pass amico che puoi usare per questa lezione: {count}",
+      linksIntro: "Manda a ogni ospite il suo link, così può firmare la liberatoria prima della lezione.",
+      guestNumber: "Ospite {number}",
+      signed: "Liberatoria firmata: {name}",
+      unsigned: "Non ha ancora firmato la liberatoria",
+      share: "Condividi il link",
+      shareMessage: "Firma la liberatoria prima della lezione: {link}",
+      noLink: "Il link per firmare non è disponibile. Chiedi alla scuola di mandarlo.",
+      noShare: "Qui non è possibile condividere. Copia il link qui sopra e mandalo al tuo ospite.",
+      loadError: "Impossibile caricare i tuoi ospiti — riprova.",
     },
     statusLabel: {
       upcoming: "IN PROGRAMMA",

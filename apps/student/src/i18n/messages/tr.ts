@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Telefonu doğrula",
       resetPasscode: "Giriş kodunu sıfırla",
       newPasscode: "Yeni giriş kodu",
+      choosePasscode: "Kod seç",
     },
     app: {
       home: "ULTM8 Öğrenci",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Yeni giriş kodu",
       confirmNewPasscode: "Yeni giriş kodunu onayla",
       submit: "Yeni giriş kodunu kaydet",
+    },
+    choosePasscode: {
+      title: "Erişim kodunu seç",
+      intro: "Okulun sana geçici bir erişim kodu verdi. Girişi tamamlamak için kendi 6 haneli kodunu seç.",
+      submit: "Kaydet ve giriş yap",
     },
     stepUp: {
       prompt: "Onaylamak için giriş kodunuzu yeniden girin.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Bekleme listesine katıl",
       waitlistPosition: "Bekleme listesinde {position}. sıradasınız.",
       leaveWaitlist: "Bekleme listesinden çık",
+    },
+    guests: {
+      count: "Misafirler: {count}",
+      add: "Misafir ekle",
+      remove: "Misafir çıkar",
+      passesLeft: "Bu derste kullanabileceğin arkadaş kartları: {count}",
+      linksIntro: "Her misafire kendi bağlantısını gönder, böylece dersten önce feragatnameyi imzalayabilir.",
+      guestNumber: "Misafir {number}",
+      signed: "Feragatname imzalandı: {name}",
+      unsigned: "Feragatnameyi henüz imzalamadı",
+      share: "Bağlantıyı paylaş",
+      shareMessage: "Lütfen dersten önce feragatnameyi imzala: {link}",
+      noLink: "İmza bağlantısı kullanılamıyor. Okuldan göndermesini iste.",
+      noShare: "Burada paylaşım yapılamıyor. Yukarıdaki bağlantıyı kopyalayıp misafirine gönder.",
+      loadError: "Misafirlerin yüklenemedi — lütfen tekrar dene.",
     },
     statusLabel: {
       upcoming: "YAKLAŞAN",

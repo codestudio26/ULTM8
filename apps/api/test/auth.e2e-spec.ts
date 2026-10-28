@@ -121,7 +121,7 @@ describeIfDb('AuthController — /auth/login + per-user/per-IP throttling (Decis
 
   it('the identity throttle is phone-keyed and Twilio-independent on /auth/forgot-password (Decision 12/17)', async () => {
     // No Twilio double needed: with Twilio unset every phone gets the same 503
-    // before any lookup (Decision 366), and the throttle runs before that. Same
+    // before any lookup (Decision 373), and the throttle runs before that. Same
     // 5/60s identity-bucket shape as /auth/login's email bucket, just keyed by
     // `phone` instead.
     const phone = randomPhone();

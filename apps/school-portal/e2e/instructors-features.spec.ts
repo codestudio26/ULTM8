@@ -136,3 +136,68 @@ test('Complete your profile starts from what the instructor already saved', asyn
   await expect(page.getByLabel('Activities')).toHaveValue('Judo, BJJ');
   await expect(page.getByText('You already have a certification on file.', { exact: false })).toBeVisible();
 });
+
+// ---------------------------------------------------------------------------
+// Decision 331 — the answers to the open Instructors questions.
+// ---------------------------------------------------------------------------
+
+test('the owner sends a new temporary passcode to someone who has not signed in yet', async ({ page }) => {
+  const fresh = await addProfile('Nia', 'New');
+  await db.user.update({ where: { id: fresh.id }, data: { mustChangePasscode: true } });
+  const before = (await db.user.findUniqueOrThrow({ where: { id: fresh.id } })).passcodeHash;
+  const seasoned = await addProfile('Sol', 'Seasoned');
+
+  await signIn(page, s.ownerToken);
+  await page.goto(`/instructors/${fresh.profileId}`);
+  await page.getByRole('button', { name: 'Resend passcode' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Send Nia New a new temporary passcode?' });
+  await dialog.getByRole('button', { name: 'Send new passcode' }).click();
+  await expect(page.getByText(/A new temporary passcode was (emailed|set)/)).toBeVisible();
+  const after = await db.user.findUniqueOrThrow({ where: { id: fresh.id } });
+  expect(after.passcodeHash).not.toBe(before);
+  expect(after.mustChangePasscode).toBe(true);
+
+  // Someone who has signed in gets no such button.
+  await page.goto(`/instructors/${seasoned.profileId}`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sol Seasoned' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resend passcode' })).toHaveCount(0);
+});
+
+test('an instructor edits their own bio and the phone the School sees', async ({ page }) => {
+  const coach = await addPerson('Bo', 'Bio', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId, bio: 'Old bio' } });
+
+  await signIn(page, coach.token);
+  await page.goto('/complete-instructor-profile');
+  await expect(page.getByLabel('Bio')).toHaveValue('Old bio');
+  await page.getByLabel('Bio').fill('Ten years on the mats.');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Your profile was updated.')).toBeVisible();
+
+  const saved = await db.instructor.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId } });
+  expect(saved.bio).toBe('Ten years on the mats.');
+  expect(saved.phone).toBeNull();
+  await expect(page.getByText('The number your School can reach you on.', { exact: false })).toBeVisible();
+});
+
+test("a colleague does not see an instructor's address or certification", async ({ page }) => {
+  const coach = await addProfile('Pia', 'Private', {
+    address: '9 Hidden Lane, Springfield',
+    certificationKey: `instructor-certifications/${s.schoolId}/x/cert.pdf`,
+    certificationConsentedAt: new Date(),
+  });
+  const colleague = await addPerson('Cal', 'Colleague', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await db.instructor.create({ data: { id: randomUUID(), userId: colleague.id, schoolId: s.schoolId } });
+
+  await signIn(page, s.ownerToken);
+  await page.goto(`/instructors/${coach.profileId}`);
+  await expect(page.getByText('9 Hidden Lane, Springfield')).toBeVisible();
+
+  const res = await page.request.get(`http://localhost:3100/v1/instructors/${coach.profileId}`, {
+    headers: { Authorization: `Bearer ${colleague.token}` },
+  });
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  expect(body.address).toBeNull();
+  expect(body.certificationKey).toBeNull();
+});

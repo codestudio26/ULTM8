@@ -23,6 +23,7 @@ import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booki
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, lockClassSeats, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS } from './booking-gates';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -247,8 +248,16 @@ export class BookingsService {
       // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
       for (const membershipId of attendeeMembershipIds) {
         const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
+        // Waivers Q9: each guest seat gets its own waiver signing link.
+        const attendeeId = randomUUID();
         await tx.bookingAttendee.create({
-          data: { id: randomUUID(), bookingId, schoolId: resolvedClass.schoolId, membershipId: guestMembership.id },
+          data: {
+            id: attendeeId,
+            bookingId,
+            schoolId: resolvedClass.schoolId,
+            membershipId: guestMembership.id,
+            guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
+          },
         });
       }
 
@@ -616,6 +625,38 @@ export class BookingsService {
         const { class: cls, ...rest } = b;
         return { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
       }),
+    };
+  }
+
+  /**
+   * GET /students/{id}/bookings/next — the student page's "Upcoming booking"
+   * (Decision 341, S14): the soonest UPCOMING booking whose class hasn't
+   * started yet, and how many more there are. The paged list above is in id
+   * order, so the page used to pick the soonest from its first 20 only.
+   * Staff who cover this student only (the owner, or by the Grading Board's
+   * branch rule), as for the rest of that page.
+   */
+  async findNextForStudent(callerId: string, studentId: string, schoolId: string) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    await this.tenantAuth.assertStaffCoversStudent(callerId, schoolId, studentId);
+    const where = { studentId, schoolId, status: 'UPCOMING' as const, class: { startDate: { gt: new Date() } } };
+    const [next, total] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.booking.findFirst({
+          where,
+          orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
+          include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+        }),
+        tx.booking.count({ where }),
+      ]),
+    );
+    if (!next) return { next: null, moreUpcoming: 0 };
+    const { class: cls, ...rest } = next;
+    return {
+      next: { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate },
+      moreUpcoming: total - 1,
     };
   }
 

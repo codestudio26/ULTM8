@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "التحقق من الهاتف",
       resetPasscode: "إعادة تعيين رمز الدخول",
       newPasscode: "رمز الدخول الجديد",
+      choosePasscode: "اختيار الرمز",
     },
     app: {
       home: "ULTM8 للطلاب",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "رمز الدخول الجديد",
       confirmNewPasscode: "تأكيد رمز الدخول الجديد",
       submit: "تعيين رمز الدخول الجديد",
+    },
+    choosePasscode: {
+      title: "اختر رمز الدخول",
+      intro: "أعطتك مدرستك رمز دخول مؤقتًا. اختر رمزك المكوّن من 6 أرقام لإكمال تسجيل الدخول.",
+      submit: "حفظ وتسجيل الدخول",
     },
     stepUp: {
       prompt: "أعد إدخال رمز الدخول للتأكيد.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "الانضمام إلى قائمة الانتظار",
       waitlistPosition: "أنت رقم {position} في قائمة الانتظار.",
       leaveWaitlist: "مغادرة قائمة الانتظار",
+    },
+    guests: {
+      count: "الضيوف: {count}",
+      add: "إضافة ضيف",
+      remove: "إزالة ضيف",
+      passesLeft: "تذاكر الصديق التي يمكنك استخدامها لهذا الصف: {count}",
+      linksIntro: "أرسل لكل ضيف رابطه ليوقّع الإقرار قبل الصف.",
+      guestNumber: "الضيف {number}",
+      signed: "تم توقيع الإقرار: {name}",
+      unsigned: "لم يوقّع الإقرار بعد",
+      share: "مشاركة الرابط",
+      shareMessage: "يُرجى توقيع الإقرار قبل الصف: {link}",
+      noLink: "رابط التوقيع غير متاح. اطلب من المدرسة إرساله.",
+      noShare: "المشاركة غير متاحة هنا. انسخ الرابط أعلاه وأرسله إلى ضيفك.",
+      loadError: "تعذّر تحميل ضيوفك، يُرجى المحاولة مرة أخرى.",
     },
     statusLabel: {
       upcoming: "قادم",

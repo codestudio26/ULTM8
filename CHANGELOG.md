@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Sign-in and accounts fixes** (Decision 366) — sign-up and Forgot passcode
+- **Sign-in and accounts fixes** (Decision 373) — sign-up and Forgot passcode
   no longer half-save an account or fail with a server error when text
   messages aren't set up; a first sign-in with a temporary passcode stays
   signed in past 15 minutes; logging in clears the previous person's data;
@@ -23,6 +23,39 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   a Verify link; sign-up refuses blank names and impossible birth dates;
   usernames ignore capitals; My profile can remove its photo; a Franchise
   owner without a School lands on Franchises.
+- **Instructors: resend passcode, self-edit, safer revoke, private details**
+  (Decision 331) — the owner can send a new temporary passcode to an
+  instructor who hasn't signed in yet; instructors can change their own
+  photo, bio and the phone number the School sees on Complete your profile;
+  an Instructor role can't be revoked while they still teach upcoming classes
+  or weekly slots (the page offers "Hand over classes" instead); and an
+  instructor's address and certification are shown only to the School owner
+  and to the instructor, not to colleagues.
+- **Staff page: staff list, Remove from School, "Give role", instant access
+  changes (Decisions 360, 361)** — the Staff page now lists everyone with an
+  owner, coach or Branch Staff role, filterable by role, branch, name and
+  status (removed staff are hidden until "Removed" is picked), replacing the
+  look-up by User ID. "Remove from School" ends all of someone's coach and
+  staff roles at once and keeps their student account. "Send invite" is now
+  "Give role", since it works straight away. A removed or changed role now
+  applies on the person's next click, even if they are signed in, instead of
+  up to 15 minutes later. Names made only of spaces are refused on Add staff
+  manually. Needs the migration `20261211000000_user_roles_changed_at`.
+- **Waivers: guests sign by a shared link** (Decision 366) — members can
+  bring guests on a booking with their Friend Passes in the app, and each
+  guest gets a link to sign the School's waivers on a web page, without an
+  account (a parent or guardian signs for a guest under 18). The class page
+  shows which guests haven't signed, with the link to copy, and the Waivers
+  page lists guest signatures with the wording each one signed.
+- **Close branch** (Decision 330) replaces Archive on the Branches page. Only
+  what is still in use stops a Branch closing (upcoming classes, weekly slots,
+  Instructor profiles, home-branch Students, staff and coach roles); past
+  classes no longer do. The window asks where each group goes (another Branch,
+  or the whole School where that makes sense), moves it all and closes the
+  Branch in one step, and cancels open coach invites there. Nobody is charged
+  or emailed. A closed Branch with history is kept for good; an empty one is
+  removed after 90 days. "Reopen", "Closed" and "Show closed" replace the
+  archive words, in all 15 languages. **Needs a database migration.**
 - **Waivers: settings and follow-ups** (Decision 354) — a new Waivers →
   Settings page lets each School choose whether archived waivers' signatures
   still count, whether members sign again after a set number of months,
@@ -45,6 +78,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise Owner can also remove a member School (same as the School leaving)
   and close their own Franchise after typing its name and their passcode.
   Needs migration `20261204000100_franchise_join_requests`.
+- **Closures (Decision 353, Q8)** — the owner can close the School or one
+  branch for some dates from the Timetable's Closures button; classes on those
+  dates are cancelled under the normal cancellation rule and students are told,
+  new classes skip them, and the calendar shows "Closed". Needs a database
+  migration.
 - **Branch Staff get their branch's timetable (Decision 353, Q4)** — a
   Timetable item in the Branch Staff menu opens the calendar read-only, with
   their branch's and School-wide classes, to book walk-ins; only the owner
@@ -300,6 +338,47 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     "Promotion to decide" first among the tags; the owner waives or cancels; a
     coach promotes or doesn't. A student waiting for a fee has no Grade button
     and no "Ready" tag.
+- **Students section fixes** (Decision 341):
+  - **Branch Staff and coaches see their own branch's students** on the
+    Students list and can open and edit them; before, the list was empty and
+    editing failed for anyone tied to a branch.
+  - **A revoked student can be enrolled again**, and their old branch can be
+    archived. Revoking now clears their home branch.
+  - **Enrolling is refused at a closed School**, and an archived branch can't
+    be picked as a home branch. Staff who aren't the owner are told "Only the
+    School owner can enrol students."
+  - **Edit profile opens with the student's saved details**, emptying a field
+    clears it, and Language and Currency are lists. A date of birth in the
+    future, over 120 years ago or that doesn't exist (30 February) is
+    refused, as is a name made of spaces. Only the owner can change a birth
+    date that turns a child into an adult or the reverse (Decision 342).
+  - **Children enrolled by a Guardian show "Managed by a Guardian"** instead
+    of an internal placeholder email.
+  - **A former student's page shows their name and "Inactive"**, with no
+    grading buttons.
+  - **Revoking a student now cancels their upcoming bookings and removes
+    their waitlist places** (Decision 343), so the seats go to someone else.
+    Class credits come back under the usual cancellation rules, with no
+    late-cancellation fee. The Revoke dialog first lists what they still
+    have: bookings, waitlist places and memberships. Memberships aren't
+    refunded. A Subscription stops renewing and ends when the period already
+    paid for runs out; if Stripe can't be reached, nothing is revoked and the
+    owner is asked to try again.
+  - **"Upcoming Booking" shows the real next class**, however many bookings
+    the student has.
+  - **Coaches opening /students or /students/invite** go to their home screen
+    instead of a blank page.
+  - **Add manually** (Decision 371): the owner can add an adult (18 or over)
+    who has no ULTM8 account yet. They're emailed a temporary passcode and
+    choose their own the first time they sign in to the app. If the email
+    can't be sent, the owner is shown the passcode once to hand over.
+  - **The Students list has a search box, a Branch column and filter, and
+    pages of 25.**
+  - **Re-enrol**: a former student's page has a Re-enrol button for the owner.
+  - **A child's page names their Guardians.**
+  - **"You've been added to [School]"**: a student added by Invite or
+    Re-enrol gets an in-app notice (a child's Guardians get a copy). There is
+    nothing to accept.
 - **Instructors search box is labelled "Search instructors"** — it was
   just "Search", the same name as the header search, so screen readers
   announced two identical boxes on the page. It now matches "Search classes"

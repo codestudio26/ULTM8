@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
-import { countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
+import { branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
  * purgeAt is date-granular (90 days out), not a tight real-time window. See
@@ -200,6 +200,8 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     deleted += signatureOutcome.deleted;
     skipped += signatureOutcome.skipped;
 
+    deleted += await this.sweepGuestWaiverSignatures(now);
+
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +
         `${waiversSkipped} Waiver row(s) past purgeAt deliberately left un-purged (legal-record exception).`,
@@ -210,9 +212,11 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
    * CASCADE or SET NULL, never RESTRICT, so a plain delete always succeeds:
    * anything attached after archiving (a home-branch Student, a staff role,
    * a coach invite, a Class) would be silently deleted or detached. Rechecks
-   * BranchesService.archive()'s own dependents rule right before deleting,
+   * BranchesService.close()'s own dependents rule right before deleting,
    * the same way sweepRanks() does, and leaves the Branch archived if it
-   * fails. */
+   * fails. Decision 330 (fix 7): a Branch with history (past classes, slots,
+   * Instructor profiles or roles) is never deleted; its purgeAt is cleared so
+   * it stops coming back. */
   private async sweepBranches(now: Date): Promise<{ deleted: number; skipped: number }> {
     const due = await this.prismaJobs.branch.findMany({ where: { purgeAt: { lte: now }, purgedAt: null }, select: { id: true } });
     let deleted = 0;
@@ -225,6 +229,12 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
             `entity-offboarding-purge: branch ${id} is no longer safe to remove ` +
               `(${describeBranchDependents(counts).join(', ')}) — left archived, will retry.`,
           );
+          skipped += 1;
+          continue;
+        }
+        if (await branchHasHistory(this.prismaJobs, id)) {
+          await this.prismaJobs.branch.update({ where: { id }, data: { purgeAt: null } });
+          this.logger.log(`entity-offboarding-purge: branch ${id} has history — kept closed, never purged.`);
           skipped += 1;
           continue;
         }
@@ -407,5 +417,21 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
     }
     return { deleted, skipped };
+  }
+
+  /** Guest waiver signatures (Waivers Q9), kept like a student who has left
+   * (Decision 354, W16): 7 years after the class, and for a guest under 18
+   * until they turn 24 (18 + 6) if that's later. For a guest who was 18 or
+   * over at the class, 24 comes before class + 7 years, so both dates having
+   * passed is the whole rule. */
+  private async sweepGuestWaiverSignatures(now: Date): Promise<number> {
+    const sevenYearsAgo = new Date(now);
+    sevenYearsAgo.setUTCFullYear(sevenYearsAgo.getUTCFullYear() - 7);
+    const born24YearsAgo = new Date(now);
+    born24YearsAgo.setUTCFullYear(born24YearsAgo.getUTCFullYear() - 24);
+    const result = await this.prismaJobs.guestWaiverSignature.deleteMany({
+      where: { classStartsAt: { lte: sevenYearsAgo }, guestDateOfBirth: { lte: born24YearsAgo } },
+    });
+    return result.count;
   }
 }

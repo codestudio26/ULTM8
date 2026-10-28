@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Verificar teléfono",
       resetPasscode: "Restablecer código de acceso",
       newPasscode: "Nuevo código de acceso",
+      choosePasscode: "Elegir código",
     },
     app: {
       home: "ULTM8 Alumno",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Nuevo código de acceso",
       confirmNewPasscode: "Confirma el nuevo código de acceso",
       submit: "Guardar nuevo código de acceso",
+    },
+    choosePasscode: {
+      title: "Elige tu código de acceso",
+      intro: "Tu escuela te dio un código de acceso temporal. Elige tu propio código de 6 dígitos para terminar de iniciar sesión.",
+      submit: "Guardar e iniciar sesión",
     },
     stepUp: {
       prompt: "Vuelve a introducir tu código de acceso para confirmar.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Entrar en la lista de espera",
       waitlistPosition: "Eres el n.º {position} en la lista de espera.",
       leaveWaitlist: "Salir de la lista de espera",
+    },
+    guests: {
+      count: "Invitados: {count}",
+      add: "Añadir un invitado",
+      remove: "Quitar un invitado",
+      passesLeft: "Pases de invitado que puedes usar en esta clase: {count}",
+      linksIntro: "Envía a cada invitado su enlace para que firme la exención antes de la clase.",
+      guestNumber: "Invitado {number}",
+      signed: "Exención firmada: {name}",
+      unsigned: "Aún no ha firmado la exención",
+      share: "Compartir enlace",
+      shareMessage: "Firma la exención antes de la clase: {link}",
+      noLink: "El enlace para firmar no está disponible. Pide a la Escuela que lo envíe.",
+      noShare: "Aquí no se puede compartir. Copia el enlace de arriba y envíalo a tu invitado.",
+      loadError: "No se pudieron cargar tus invitados — inténtalo de nuevo.",
     },
     statusLabel: {
       upcoming: "PRÓXIMA",

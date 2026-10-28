@@ -55,6 +55,7 @@ const LIST_ITEMS: Array<[RegExp, string]> = [
   [/^(\d+) active staff\/instructor role grants? scoped to it$/, 'roleGrants'],
   [/^(\d+) upcoming Class(?:es)?$/, 'upcomingClasses'],
   [/^(\d+) active TimetableSlots?$/, 'activeSlots'],
+  [/^(\d+) weekly timetable slots?$/, 'weeklySlots'],
 ];
 
 function translateList(list: string, { t, locale }: Context): string | null {
@@ -110,7 +111,7 @@ const ERROR_RULES: Array<[RegExp, Rule]> = [
     (m, ctx) => withItems(ctx, 'classHasDependents', translateList(m[1], ctx)),
   ],
   [
-    /^This Branch can't be archived while it still has (.+)\. Move or remove them first\.$/,
+    /^This Branch can't be closed while it still has (.+)\. Choose where they go, or move them first\.$/,
     (m, ctx) => withItems(ctx, 'branchHasDependents', translateList(m[1], ctx)),
   ],
   [
@@ -221,6 +222,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Request to join declined': 'joinDeclinedTitle',
   'Removed from the Franchise': 'removedFromFranchiseTitle',
   'Franchise closed': 'franchiseClosedTitle',
+  // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
+  'Added to a School': 'studentAddedTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -309,6 +312,8 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^(.+) has been closed\. (.+) stays open, and its franchise fees have stopped\.$/s,
     (m, { t }) => n(t, 'franchiseClosedBody', { franchise: m[1], school: m[2] }),
   ],
+  // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
+  [/^You've been added to (.+)\.$/s, (m, { t }) => n(t, 'studentAddedBody', { school: m[1] })],
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),
     (m, { t }) => n(t, 'toDecideBody', { name: m[1], rank: m[2], style: m[3] }),

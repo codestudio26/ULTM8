@@ -65,6 +65,23 @@ export class UsersService {
   }
 
   /**
+   * A Student's full profile for a Staff member editing it on their behalf
+   * (SchoolsService.getStudentProfile, Decision 341 S9). Read under the
+   * caller's own context: `user_self_or_shared_school` shows staff the User
+   * rows of the students whose STUDENT grant they can see. Authorization is
+   * the caller's job, as for updateProfileFor.
+   */
+  async getProfileFor(callerId: string, targetUserId: string) {
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.findUnique({ where: { id: targetUserId }, select: SELF_PROFILE_SELECT }),
+    );
+    if (!found) {
+      throw new NotFoundException('User not found');
+    }
+    return found;
+  }
+
+  /**
    * Partial update of the caller's own row only — `email`/`phone` are deliberately
    * absent from UpdateUserDto (see its own header comment), and `id` in the WHERE
    * clause is always `callerId`, never a route/body-supplied id, so there's no path

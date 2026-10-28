@@ -34,6 +34,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyPhone: "Подтверждение телефона",
       resetPasscode: "Сброс кода доступа",
       newPasscode: "Новый код доступа",
+      choosePasscode: "Выбор кода",
     },
     app: {
       home: "ULTM8 для учеников",
@@ -133,6 +134,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       newPasscode: "Новый код доступа",
       confirmNewPasscode: "Подтвердите новый код доступа",
       submit: "Задать новый код доступа",
+    },
+    choosePasscode: {
+      title: "Выберите код доступа",
+      intro: "Школа выдала вам временный код доступа. Выберите свой 6-значный код, чтобы завершить вход.",
+      submit: "Сохранить и войти",
     },
     stepUp: {
       prompt: "Введите код доступа ещё раз для подтверждения.",
@@ -255,6 +261,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       joinWaitlist: "Встать в лист ожидания",
       waitlistPosition: "Вы №{position} в листе ожидания.",
       leaveWaitlist: "Выйти из листа ожидания",
+    },
+    guests: {
+      count: "Гости: {count}",
+      add: "Добавить гостя",
+      remove: "Убрать гостя",
+      passesLeft: "Гостевые абонементы, которые можно использовать на этом занятии: {count}",
+      linksIntro: "Отправьте каждому гостю его ссылку, чтобы он подписал отказ от ответственности до занятия.",
+      guestNumber: "Гость {number}",
+      signed: "Отказ подписан: {name}",
+      unsigned: "Ещё не подписал(а) отказ от ответственности",
+      share: "Поделиться ссылкой",
+      shareMessage: "Пожалуйста, подпишите отказ от ответственности до занятия: {link}",
+      noLink: "Ссылка для подписи недоступна. Попросите Школу отправить её.",
+      noShare: "Здесь нельзя поделиться. Скопируйте ссылку выше и отправьте её гостю.",
+      loadError: "Не удалось загрузить ваших гостей — попробуйте ещё раз.",
     },
     statusLabel: {
       upcoming: "ПРЕДСТОИТ",
