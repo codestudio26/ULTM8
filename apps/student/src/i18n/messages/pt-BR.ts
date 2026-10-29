@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sáb",
       SUNDAY: "Dom",
     },
+    signUpInvites: {
+      title: "Entrar na {school}?",
+      body: "A {school} aprovou seu cadastro na recepção. Aceite para se tornar aluno de lá.",
+      bodyVisitor: "A {school} aprovou seu cadastro na recepção. Aceite para entrar como Visitante, com um passe de visitante grátis.",
+      homeBranch: "Sua filial principal",
+      accept: "Aceitar",
+      decline: "Não, obrigado",
+      failed: "Não foi possível responder ao convite. Tente de novo.",
+    },
     join: {
       me: "Eu",
       loadFailed: "Não foi possível carregar esta Escola — tente novamente.",

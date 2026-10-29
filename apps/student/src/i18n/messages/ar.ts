@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "السبت",
       SUNDAY: "الأحد",
     },
+    signUpInvites: {
+      title: "الانضمام إلى {school}؟",
+      body: "وافقت {school} على تسجيلك عند الاستقبال. اقبل لتصبح طالبًا هناك.",
+      bodyVisitor: "وافقت {school} على تسجيلك عند الاستقبال. اقبل لتنضم بصفة زائر، مع تصريح زائر مجاني.",
+      homeBranch: "فرعك الأساسي",
+      accept: "قبول",
+      decline: "لا، شكرًا",
+      failed: "تعذّر الرد على الدعوة. حاول مرة أخرى.",
+    },
     join: {
       me: "أنا",
       loadFailed: "تعذّر تحميل هذه المدرسة، يُرجى المحاولة مرة أخرى.",

@@ -616,5 +616,9 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
   "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
   "Only the owner or Branch Staff can give a visit pass.": "방문 패스는 소유자나 지점 직원만 줄 수 있습니다.",
+  "Choose one of the listed answers to \"How did you hear about us?\".": "\"저희를 어떻게 알게 되셨나요?\"의 답을 목록에서 골라 주세요.",
+  "This sign-up has already been dealt with.": "이 가입 신청은 이미 처리되었습니다.",
+  "Only the owner or Branch Staff can see sign-ups.": "가입 신청은 원장 또는 지점 직원만 볼 수 있습니다.",
+  "Sign-up not found": "가입 신청을 찾을 수 없습니다",
   "Pack recharge not found": "패키지 재구매를 찾을 수 없습니다",
 };

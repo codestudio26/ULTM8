@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "토",
       SUNDAY: "일",
     },
+    signUpInvites: {
+      title: "{school}에 가입할까요?",
+      body: "{school}에서 데스크 가입 신청을 승인했습니다. 수락하면 수련생이 됩니다.",
+      bodyVisitor: "{school}에서 데스크 가입 신청을 승인했습니다. 수락하면 무료 방문 패스와 함께 방문자로 가입합니다.",
+      homeBranch: "소속 지점",
+      accept: "수락",
+      decline: "괜찮아요",
+      failed: "초대에 응답하지 못했습니다. 다시 시도해 주세요.",
+    },
     join: {
       me: "나",
       loadFailed: "이 도장을 불러오지 못했습니다. 다시 시도해 주세요.",

@@ -421,45 +421,8 @@ export class RoleGrantsService {
     }
 
     const email = dto.email.trim().toLowerCase();
-    const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
-    if (existingUser) {
-      throw new ConflictException('An account with this email already exists — use "Invite" instead.');
-    }
-
-    const userId = randomUUID();
-    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
-    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
-    // The bootstrap trick createStaffManually uses: a User row may only be
-    // inserted under its own (about-to-exist) id.
-    await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
-      await setContext(userId);
-      try {
-        await tx.user.create({
-          data: { id: userId, email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: new Date(dto.dateOfBirth), passcodeHash, mustChangePasscode: true },
-        });
-      } catch (err) {
-        // Two adds of the same email at once: the second loses the unique index.
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          throw new ConflictException('An account with this email already exists — use "Invite" instead.');
-        }
-        throw err;
-      }
-    });
-    try {
-      await this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false });
-    } catch (err) {
-      // join() runs its own transaction, so a failure there (a timeout under
-      // load, a branch archived meanwhile) left an account with no enrolment
-      // and no passcode email, and retrying the same email got "use Invite".
-      // Remove the account just made, then rethrow. Only if it holds no
-      // grant at all: if the enrolment did commit, the account stays.
-      await this.prismaApp
-        .withTenantContext(userId, (tx) => tx.user.deleteMany({ where: { id: userId, roleGrants: { none: {} } } }))
-        .catch((cleanupErr) =>
-          this.logger.error(`Student ${userId}: enrolment failed and the new account could not be removed — ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`),
-        );
-      throw err;
-    }
+    const { userId, tempPasscode } = await this.createStudentAccount({ email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: dto.dateOfBirth });
+    await this.enrolNewAccount(userId, () => this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false }));
 
     let emailSent = true;
     try {
@@ -482,6 +445,68 @@ export class RoleGrantsService {
     // passcode once, to hand over in person, instead of an account nobody can
     // sign in to.
     return { id: userId, firstName: dto.firstName, surname: dto.surname, email, emailSent, temporaryPasscode: emailSent ? null : tempPasscode };
+  }
+
+  /**
+   * A new adult student's account (Decision 371, and tablet sign-ups,
+   * Decision 392): a temporary passcode, changed at first sign-in. 409 if the
+   * email already has an account. Enrol it with enrolNewAccount.
+   */
+  async createStudentAccount(data: { email: string; firstName: string; surname: string; dateOfBirth: string | Date; gender?: string | null }) {
+    const email = data.email.trim().toLowerCase();
+    const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingUser) {
+      throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+    }
+
+    const userId = randomUUID();
+    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+    // The bootstrap trick createStaffManually uses: a User row may only be
+    // inserted under its own (about-to-exist) id.
+    await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
+      await setContext(userId);
+      try {
+        await tx.user.create({
+          data: {
+            id: userId,
+            email,
+            firstName: data.firstName,
+            surname: data.surname,
+            dateOfBirth: new Date(data.dateOfBirth),
+            gender: data.gender ?? undefined,
+            passcodeHash,
+            mustChangePasscode: true,
+          },
+        });
+      } catch (err) {
+        // Two adds of the same email at once: the second loses the unique index.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+        }
+        throw err;
+      }
+    });
+    return { userId, tempPasscode };
+  }
+
+  /** Runs `join` for an account createStudentAccount just made. join() runs
+   * its own transaction, so a failure there (a timeout under load, a branch
+   * archived meanwhile) left an account with no enrolment and no passcode
+   * email, and retrying the same email got "use Invite". The account just
+   * made is removed, then the error rethrown; only if it holds no grant at
+   * all: if the enrolment did commit, the account stays. */
+  async enrolNewAccount<T>(userId: string, join: () => Promise<T>): Promise<T> {
+    try {
+      return await join();
+    } catch (err) {
+      await this.prismaApp
+        .withTenantContext(userId, (tx) => tx.user.deleteMany({ where: { id: userId, roleGrants: { none: {} } } }))
+        .catch((cleanupErr) =>
+          this.logger.error(`Student ${userId}: enrolment failed and the new account could not be removed — ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`),
+        );
+      throw err;
+    }
   }
 
   /**

@@ -15,6 +15,7 @@ import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/fro
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
 import { FrontDeskSessionContext } from './front-desk-sessions.service';
 import { StudentCheckInCodesService } from './student-check-in-codes.service';
+import { heardFromList } from './sign-up-rules';
 import { KioskBookingDto, KioskClassDto, KioskStudentCardDto, KioskStudentDto, KioskTodayDto, KioskTodayQueryDto } from './dto/front-desk.dto';
 
 const NAME_RESULTS = 8;
@@ -61,7 +62,7 @@ export class FrontDeskKioskService {
   async info(session: FrontDeskSessionContext) {
     const school = await this.prismaJobs.school.findUniqueOrThrow({
       where: { id: session.schoolId },
-      select: { name: true, checkInOpensMinutesBeforeStart: true, checkInCodeDigits: true },
+      select: { name: true, checkInOpensMinutesBeforeStart: true, checkInCodeDigits: true, visitorPeriodDays: true, heardFromOptions: true },
     });
     const branch = session.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: session.branchId }, select: { name: true } }) : null;
     return {
@@ -73,6 +74,9 @@ export class FrontDeskKioskService {
       expiresAt: session.expiresAt.toISOString(),
       checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
       checkInCodeDigits: school.checkInCodeDigits,
+      // Decision 392: the sign-up form offers Visitor only with a visitor period.
+      visitorsOn: !!school.visitorPeriodDays,
+      heardFromOptions: heardFromList(school.heardFromOptions),
     };
   }
 

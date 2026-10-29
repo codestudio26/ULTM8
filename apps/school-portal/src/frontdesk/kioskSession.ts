@@ -116,6 +116,30 @@ export function useKioskFindMe() {
   });
 }
 
+/** What the tablet's sign-up form sends (Decision 392). Blank fields are sent
+ * as typed; the API treats them as not given. */
+export type KioskSignUpInput = {
+  kind: 'VISITOR' | 'MEMBER';
+  firstName: string;
+  surname: string;
+  dateOfBirth: string;
+  gender: '' | 'FEMALE' | 'MALE';
+  phone: string;
+  email: string;
+  heardFrom: string;
+  emergencyName: string;
+  emergencyPhone: string;
+  emergencyRelationship: string;
+};
+
+/** Decision 392 (handover F5): a sign-up waiting for staff approval. */
+export function useKioskSignUp() {
+  return useMutation({
+    mutationFn: (input: KioskSignUpInput) =>
+      unwrap(kioskClient.POST('/v1/front-desk/kiosk/sign-ups', { body: { ...input, gender: input.gender || null } })),
+  });
+}
+
 /** Decision 393: the tablet's pack recharge calls (see PackRechargeApi). */
 export function useKioskPackRecharges(): PackRechargeApi {
   return {

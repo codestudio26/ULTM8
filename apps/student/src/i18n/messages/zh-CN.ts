@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "周六",
       SUNDAY: "周日",
     },
+    signUpInvites: {
+      title: "加入 {school}？",
+      body: "{school} 已批准你在前台的报名。接受后即成为那里的学员。",
+      bodyVisitor: "{school} 已批准你在前台的报名。接受后以访客身份加入，并获得一张免费的访客通行证。",
+      homeBranch: "你的所属分校",
+      accept: "接受",
+      decline: "不用了，谢谢",
+      failed: "无法回复邀请，请重试。",
+    },
     join: {
       me: "我",
       loadFailed: "无法加载这所学校，请重试。",

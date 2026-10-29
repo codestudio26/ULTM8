@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
+  tablet (adults; Visitor only when the School has set a visit pass length) and
+  wait for staff. The owner, or Branch Staff with the Students switch, approves
+  or rejects them under Students → Sign-ups. A new email gets an account and a
+  temporary passcode; an email that already has an account gets an invite to
+  accept in the student app. A rejected sign-up gets a polite email, can still
+  be approved for 30 days, then is deleted. Each School edits its own "How did
+  you hear about us?" list in School settings.
 - **Front desk: pack used up** (Decision 393) — when a Class Pack has no
   classes left at check-in, the desk (or the tablet, after a scan) offers the
   same pack. The member, or their Guardian, buys it on the student app's Home,
@@ -51,6 +59,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   on the Check-in page's or the tablet's Code tab opens their welcome card,
   and the check-in shows as "Code". Needs migration
   `20261217000000_student_check_in_codes`.
+- **Transactions: refunds made in Stripe show up** (Decision 382) — a card
+  payment refunded in the Stripe dashboard now shows as Refunded on the
+  Transactions page (or with the refunded amount, for a part refund), in the
+  portal and the student app. A full refund also ends the membership it paid
+  for (future bookings cancelled, Subscription stopped); a part refund keeps
+  it. A refund that later fails turns the payment back to Successful. No
+  database change. Needs the `charge.refunded` and
+  `charge.refund.updated` events switched on for the Stripe webhook.
 - **Front desk: a locked tablet, left with your own staff code** (Decision
   380) — starting front-desk mode signs you out of the device, so it holds no
   staff login; it shows only its Branch's classes and short names, and only

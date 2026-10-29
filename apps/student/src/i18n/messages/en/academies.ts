@@ -26,6 +26,15 @@ export const academies = {
     SATURDAY: 'Sat',
     SUNDAY: 'Sun',
   },
+  signUpInvites: {
+    title: 'Join {school}?',
+    body: '{school} approved your sign-up at their front desk. Accept to become a student there.',
+    bodyVisitor: '{school} approved your sign-up at their front desk. Accept to join as a Visitor, with a free visit pass.',
+    homeBranch: 'Your home branch',
+    accept: 'Accept',
+    decline: 'No thanks',
+    failed: "Couldn't answer the invite. Try again.",
+  },
   join: {
     /** The person themselves, in the "who is joining" list. */
     me: 'Me',

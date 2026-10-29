@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Cmt",
       SUNDAY: "Paz",
     },
+    signUpInvites: {
+      title: "{school} okuluna katılmak ister misiniz?",
+      body: "{school} resepsiyondaki kaydınızı onayladı. Oranın öğrencisi olmak için kabul edin.",
+      bodyVisitor: "{school} resepsiyondaki kaydınızı onayladı. Ücretsiz bir ziyaretçi kartıyla Ziyaretçi olarak katılmak için kabul edin.",
+      homeBranch: "Ana şubeniz",
+      accept: "Kabul et",
+      decline: "Hayır, teşekkürler",
+      failed: "Davete yanıt verilemedi. Tekrar deneyin.",
+    },
     join: {
       me: "Ben",
       loadFailed: "Bu okul yüklenemedi — lütfen tekrar deneyin.",

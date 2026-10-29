@@ -616,5 +616,9 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
   "Only the owner or Branch Staff can give a visit pass.": "只有所有者或分校员工可以发放访客通行证。",
+  "Choose one of the listed answers to \"How did you hear about us?\".": "请从列出的答案中为“你是怎么知道我们的？”选择一项。",
+  "This sign-up has already been dealt with.": "这份报名已经处理过了。",
+  "Only the owner or Branch Staff can see sign-ups.": "只有负责人或分校员工可以查看报名。",
+  "Sign-up not found": "未找到报名",
   "Pack recharge not found": "未找到课时包续购",
 };

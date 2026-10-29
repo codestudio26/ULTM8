@@ -59,6 +59,17 @@ export const schools = {
     subtitle: "You'll become its Owner/Manager automatically.",
     submit: 'Create School',
   },
+  heardFrom: {
+    title: 'How did you hear about us?',
+    subtitle: "The choices on the front-desk sign-up form. Until you change them, the starting list shows in each person's language.",
+    choiceAria: 'Choice {n}',
+    moveUp: 'Move {choice} up',
+    moveDown: 'Move {choice} down',
+    remove: 'Remove',
+    duplicate: 'Each choice can appear only once.',
+    add: 'Add a choice',
+    reset: 'Back to the starting list',
+  },
   cancellations: {
     title: 'Class cancellations',
     subtitle: 'What students get back when a booking is cancelled.',

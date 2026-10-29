@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -14,6 +16,7 @@ import {
   Matches,
   Max,
   MaxLength,
+  MinLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -296,6 +299,21 @@ export class CreateSchoolDto {
   @Min(1)
   @Max(3650)
   visitorPeriodDays?: number | null;
+
+  @ApiPropertyOptional({
+    type: [String],
+    nullable: true,
+    description: 'Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(30)
+  @ArrayUnique((v: string) => (typeof v === 'string' ? v.trim().toLowerCase() : v))
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(60, { each: true })
+  heardFromOptions?: string[] | null;
 
   @ApiPropertyOptional({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members\' personal codes (Decision 315). Default 4. Codes already issued keep their length.' })
   @IsOptional()

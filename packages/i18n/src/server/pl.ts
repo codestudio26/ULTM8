@@ -616,5 +616,9 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Przełączniki dostępu dotyczą personelu oddziału. Instruktorzy mają prawa swojej roli, a właściciele mają wszystkie prawa.",
   "You are not on the staff of this School.": "Nie należysz do personelu tej szkoły.",
   "Only the owner or Branch Staff can give a visit pass.": "Karnet gościa może dać tylko właściciel lub personel oddziału.",
+  "Choose one of the listed answers to \"How did you hear about us?\".": "Wybierz jedną z odpowiedzi z listy na pytanie „Skąd o nas wiesz?”.",
+  "This sign-up has already been dealt with.": "Ten zapis został już rozpatrzony.",
+  "Only the owner or Branch Staff can see sign-ups.": "Zapisy może widzieć tylko właściciel lub personel oddziału.",
+  "Sign-up not found": "Nie znaleziono zapisu",
   "Pack recharge not found": "Nie znaleziono doładowania pakietu",
 };
