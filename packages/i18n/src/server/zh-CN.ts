@@ -620,4 +620,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "这份报名已经处理过了。",
   "Only the owner or Branch Staff can see sign-ups.": "只有负责人或分校员工可以查看报名。",
   "Sign-up not found": "未找到报名",
+  "Pack recharge not found": "未找到课时包续购",
 };

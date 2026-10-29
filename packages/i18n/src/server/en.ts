@@ -629,4 +629,5 @@ export const SERVER_PATTERNS: string[] = [
  "This sign-up has already been dealt with.",
  "Only the owner or Branch Staff can see sign-ups.",
  "Sign-up not found",
+ "Pack recharge not found",
 ];

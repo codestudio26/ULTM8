@@ -620,4 +620,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Bu kayıt zaten işleme alındı.",
   "Only the owner or Branch Staff can see sign-ups.": "Kayıtları yalnızca okul sahibi veya şube personeli görebilir.",
   "Sign-up not found": "Kayıt bulunamadı",
+  "Pack recharge not found": "Paket yenileme bulunamadı",
 };

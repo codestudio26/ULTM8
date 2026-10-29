@@ -421,3 +421,31 @@ test('each guest is ticked on their own; the member\'s check-in doesn\'t check t
   expect((await db.bookingAttendee.findUniqueOrThrow({ where: { id: guests[1].id } })).checkedInAt).not.toBeNull();
 });
 
+
+test('a used-up Class Pack: staff offer the same pack, and the card checks the student in once it is paid (Decision 393)', async ({ page }) => {
+  const cls = await classNow();
+  const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Five classes', price: 4000, currency: 'GBP', classesIncluded: 5 } });
+  await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, frequency: 'ONE_TIME', classesRemaining: 0, createdAt: at(-60 * MIN) },
+  });
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+
+  const note = card.getByTestId('fd-pack-used-up');
+  await expect(note).toContainText('Pack used up');
+  await expect(note).toContainText("Buy the same pack and you're checked in as soon as it's paid.");
+  await note.getByRole('button', { name: 'Offer the same pack in their app' }).click();
+  await expect(note).toContainText('Waiting for payment');
+  await expect(note).toContainText('Five classes');
+
+  // The member buys it in their app (the payment webhook makes the new pack).
+  await db.membership.create({ data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, frequency: 'ONE_TIME', classesRemaining: 5 } });
+  await expect(page.getByText('Checked in ✓')).toBeVisible({ timeout: 15_000 });
+  const booking = await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } });
+  expect(booking.status).toBe('COMPLETED');
+});

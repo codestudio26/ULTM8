@@ -3441,6 +3441,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Opslaan mislukt. Probeer het opnieuw.",
       loadFailed: "Kon je personeel niet laden.",
     },
+    packUsedUp: {
+      title: "Kaart op",
+      body: "Koop dezelfde kaart en je bent ingecheckt zodra die betaald is.",
+      offerStaff: "Dezelfde kaart aanbieden in hun app",
+      offerSelf: "Kopen in mijn app",
+      waitingTitle: "Wachten op betaling",
+      waitingStaff: "{plan} · {price}. Ze kopen hem in de ULTM8-app en zijn hier ingecheckt zodra die betaald is.",
+      waitingSelf: "{plan} · {price}. Open de ULTM8-app en koop hem daar. Je bent ingecheckt zodra die betaald is.",
+      paid: "Betaald. Bezig met inchecken…",
+      expired: "Inchecken voor deze les is gesloten. De kaart kan nog steeds in de app worden gekocht.",
+      failed: "De kaart kon niet worden aangeboden. Vraag het bij de balie.",
+    },
     findMe: {
       title: "Zoek mij",
       name: "Je volledige naam",

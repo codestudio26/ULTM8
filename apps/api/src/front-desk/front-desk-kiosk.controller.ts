@@ -2,6 +2,8 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, Use
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { SignUpsService } from './sign-ups.service';
 import { KioskSignUpCreatedDto, KioskSignUpDto } from './dto/sign-up.dto';
+import { PackRechargesService } from './pack-recharges.service';
+import { CreatePackRechargeDto, PackRechargeDto, PackRechargeStatusDto } from './dto/pack-recharge.dto';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { DeskQrLookupDto } from '../attendance/dto/desk-qr-lookup.dto';
@@ -47,6 +49,7 @@ export class FrontDeskKioskController {
     private readonly kiosk: FrontDeskKioskService,
     private readonly sessions: FrontDeskSessionsService,
     private readonly signUps: SignUpsService,
+    private readonly recharges: PackRechargesService,
   ) {}
 
   /** Decision 392 (handover F5): a sign-up waiting for staff approval. */
@@ -55,6 +58,26 @@ export class FrontDeskKioskController {
   @Post('sign-ups')
   signUp(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskSignUpDto) {
     return this.signUps.submitFromKiosk(session, dto);
+  }
+
+  /** Decision 393 (handover F8): a used-up Class Pack, found by QR or code. */
+  @ApiCreatedResponse({ type: PackRechargeDto })
+  @Post('pack-recharges')
+  createRecharge(@FrontDeskSession() s: FrontDeskSessionContext, @Body() dto: CreatePackRechargeDto) {
+    return this.recharges.create(s.startedById, s.schoolId, dto, { sessionId: s.id, branchId: s.branchId });
+  }
+
+  @ApiOkResponse({ type: PackRechargeStatusDto })
+  @Get('pack-recharges/:id')
+  rechargeStatus(@FrontDeskSession() s: FrontDeskSessionContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.recharges.status(s.startedById, s.schoolId, id, { sessionId: s.id, branchId: s.branchId });
+  }
+
+  @ApiOkResponse({ type: DeskCheckInResponseDto })
+  @HttpCode(200)
+  @Post('pack-recharges/:id/complete')
+  completeRecharge(@FrontDeskSession() s: FrontDeskSessionContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.recharges.complete(s.startedById, s.schoolId, id, { sessionId: s.id, branchId: s.branchId });
   }
 
   @ApiOkResponse({ type: KioskSessionInfoDto })

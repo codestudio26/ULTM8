@@ -3441,6 +3441,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Speichern fehlgeschlagen. Bitte versuch es noch mal.",
       loadFailed: "Mitarbeitende konnten nicht geladen werden.",
     },
+    packUsedUp: {
+      title: "Paket aufgebraucht",
+      body: "Kauf dasselbe Paket, und du bist eingecheckt, sobald es bezahlt ist.",
+      offerStaff: "Dasselbe Paket in der App anbieten",
+      offerSelf: "In meiner App kaufen",
+      waitingTitle: "Warten auf Zahlung",
+      waitingStaff: "{plan} · {price}. Die Person kauft es in der ULTM8-App und ist hier eingecheckt, sobald es bezahlt ist.",
+      waitingSelf: "{plan} · {price}. Öffne die ULTM8-App und kauf es dort. Du bist eingecheckt, sobald es bezahlt ist.",
+      paid: "Bezahlt. Check-in läuft…",
+      expired: "Der Check-in für diesen Kurs ist geschlossen. Das Paket kann weiterhin in der App gekauft werden.",
+      failed: "Das Paket konnte nicht angeboten werden. Bitte frag am Empfang.",
+    },
     findMe: {
       title: "Finde mich",
       name: "Dein vollständiger Name",

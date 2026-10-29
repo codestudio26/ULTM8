@@ -1,5 +1,10 @@
 /** English text: memberships (Decision 323). */
 export const memberships = {
+  recharge: {
+    title: 'Your Class Pack has run out',
+    titleChild: "{name}'s Class Pack has run out",
+    body: "{school} offered the same pack at the front desk. Buy it here, and the check-in finishes as soon as it's paid.",
+  },
   myMemberships: {
     /** Shown when the plan's name isn't known; the API gives only the plan's id. */
     planFallback: 'Plan {planId}',
