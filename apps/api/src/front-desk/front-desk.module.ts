@@ -17,12 +17,14 @@ import { FrontDeskSessionsController } from './front-desk-sessions.controller';
 import { FrontDeskKioskController } from './front-desk-kiosk.controller';
 import { StudentCheckInCodesService } from './student-check-in-codes.service';
 import { StudentCheckInCodesController } from './student-check-in-codes.controller';
+import { MembershipCardsService } from './membership-cards.service';
+import { MembershipCardsController } from './membership-cards.controller';
 
 /** Locked front-desk tablets (Decision 380, handover F1, F2) and personal
  * check-in codes (Decision 384, F3). */
 @Module({
   imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule, NotificationsModule],
-  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController, SignUpsController, PackRechargesController],
-  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService, SignUpsService, PackRechargesService],
+  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController, MembershipCardsController, SignUpsController, PackRechargesController],
+  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService, MembershipCardsService, SignUpsService, PackRechargesService],
 })
 export class FrontDeskModule {}

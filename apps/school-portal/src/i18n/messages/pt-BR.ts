@@ -3526,6 +3526,19 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Sim, novo código",
       failed: "Não foi possível dar um novo código. Tente de novo.",
     },
+    card: {
+      print: "Imprimir carteirinha",
+      pageTitle: "{name}: carteirinha",
+      codeLabel: "Código de check-in",
+      noMembership: "Nenhum plano ativo",
+      classesLeft: {
+        one: "Resta {count} aula",
+        other: "Restam {count} aulas",
+      },
+      until: "Até {date}",
+      printButton: "Imprimir / Salvar como PDF",
+      failed: "Não foi possível carregar a carteirinha. Tente de novo.",
+    },
     heardFrom: {
       friend: "Amigo",
       instagram: "Instagram",

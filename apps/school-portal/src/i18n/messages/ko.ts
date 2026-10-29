@@ -3483,6 +3483,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "네, 새 코드",
       failed: "새 코드를 발급하지 못했습니다. 다시 시도해 주세요.",
     },
+    card: {
+      print: "회원 카드 인쇄",
+      pageTitle: "{name}: 회원 카드",
+      codeLabel: "체크인 코드",
+      noMembership: "현재 회원권 없음",
+      classesLeft: {
+        other: "{count}회 남음",
+      },
+      until: "{date}까지",
+      printButton: "인쇄 / PDF로 저장",
+      failed: "회원 카드를 불러오지 못했어요. 다시 시도해 주세요.",
+    },
     heardFrom: {
       friend: "친구",
       instagram: "Instagram",

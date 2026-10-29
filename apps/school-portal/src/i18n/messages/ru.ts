@@ -3632,6 +3632,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Да, новый код",
       failed: "Не удалось выдать новый код. Попробуйте ещё раз.",
     },
+    card: {
+      print: "Распечатать карту участника",
+      pageTitle: "{name}: карта участника",
+      codeLabel: "Код входа",
+      noMembership: "Нет действующего абонемента",
+      classesLeft: {
+        one: "Осталось {count} занятие",
+        few: "Осталось {count} занятия",
+        many: "Осталось {count} занятий",
+        other: "Осталось {count} занятия",
+      },
+      until: "До {date}",
+      printButton: "Печать / Сохранить в PDF",
+      failed: "Не удалось загрузить карту участника. Попробуйте ещё раз.",
+    },
     heardFrom: {
       friend: "Друг",
       instagram: "Instagram",

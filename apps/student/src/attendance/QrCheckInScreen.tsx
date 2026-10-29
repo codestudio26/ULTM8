@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
-import { useMyQrToken } from './attendanceQueries';
+import { useMyMembershipCards, useMyQrToken } from './attendanceQueries';
+import { MembershipCards } from './MembershipCards';
 import { QrScanner } from './QrScanner';
 import { useT } from '../i18n/I18nProvider';
 
@@ -36,6 +37,7 @@ export function QrCheckInScreen() {
   const t = useT();
   const [mode, setMode] = useState<Mode>('show');
   const { data, isLoading, isError, error, isRefetching } = useMyQrToken(mode === 'show');
+  const cards = useMyMembershipCards(mode === 'show');
 
   return (
     <Screen>
@@ -59,7 +61,7 @@ export function QrCheckInScreen() {
       isError && !data ? (
         <ErrorBanner message={getApiErrorMessage(error, t('attendance.qrCheckIn.loadError'))} />
       ) : (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingBottom: 16 }}>
           {data ? (
             <View style={{ opacity: isRefetching ? 0.6 : 1 }}>
               <QRCode value={data.token} size={260} />
@@ -70,7 +72,9 @@ export function QrCheckInScreen() {
           <Text style={{ color: '#5F6368', fontSize: 14, textAlign: 'center', maxWidth: 280 }}>
             {t('attendance.qrCheckIn.hint')}
           </Text>
-        </View>
+          {/* Backlog 3.11: the membership card, with the code for the desk. */}
+          {cards.data && cards.data.items.length > 0 ? <MembershipCards cards={cards.data.items} /> : null}
+        </ScrollView>
       )}
     </Screen>
   );

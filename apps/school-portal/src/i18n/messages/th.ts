@@ -3483,6 +3483,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "ใช่ ออกรหัสใหม่",
       failed: "ออกรหัสใหม่ไม่สำเร็จ โปรดลองอีกครั้ง",
     },
+    card: {
+      print: "พิมพ์บัตรสมาชิก",
+      pageTitle: "{name}: บัตรสมาชิก",
+      codeLabel: "รหัสเช็กอิน",
+      noMembership: "ไม่มีสมาชิกภาพที่ใช้อยู่",
+      classesLeft: {
+        other: "เหลือ {count} คลาส",
+      },
+      until: "ถึง {date}",
+      printButton: "พิมพ์ / บันทึกเป็น PDF",
+      failed: "โหลดบัตรสมาชิกไม่ได้ โปรดลองอีกครั้ง",
+    },
     heardFrom: {
       friend: "เพื่อน",
       instagram: "Instagram",

@@ -3526,6 +3526,19 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Sì, nuovo codice",
       failed: "Impossibile dare un nuovo codice. Riprova.",
     },
+    card: {
+      print: "Stampa tessera",
+      pageTitle: "{name}: tessera",
+      codeLabel: "Codice di ingresso",
+      noMembership: "Nessun abbonamento in corso",
+      classesLeft: {
+        one: "{count} lezione rimasta",
+        other: "{count} lezioni rimaste",
+      },
+      until: "Fino al {date}",
+      printButton: "Stampa / Salva come PDF",
+      failed: "Impossibile caricare la tessera. Riprova.",
+    },
     heardFrom: {
       friend: "Un amico",
       instagram: "Instagram",
