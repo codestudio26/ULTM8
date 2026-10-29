@@ -192,6 +192,7 @@ export const frontDesk = {
     privacy: 'For your privacy, this device never shows details we already have about you.',
     goCheckIn: 'Go to check-in',
     signUp: 'Sign up',
+    failed: 'We couldn’t check just now. Please try again, or ask at the desk.',
   },
   studentCode: {
     title: 'Check-in code',

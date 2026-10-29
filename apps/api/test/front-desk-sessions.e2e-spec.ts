@@ -3,7 +3,7 @@
  * session for one Branch; the tablet's token reaches only the
  * /front-desk/kiosk endpoints, which return the short form ("Ana D.") for
  * that Branch; a staff member's own code ends it. Decision 384 (F3): personal
- * check-in codes.
+ * check-in codes. Decision 385 (F6): Find me.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -386,6 +386,28 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
     }
     expect(statuses.slice(0, 10).every((x) => x === 404)).toBe(true);
     expect(statuses[10]).toBe(429);
+  });
+
+  // Decision 362 (handover F6): Find me.
+  it('find me says only whether a full name and date of birth match a Student here, and is limited per session', async () => {
+    const s = await start('owner');
+    const findMe = (fullName: string, dateOfBirth: string) =>
+      http().post('/v1/front-desk/kiosk/find-me').set('Authorization', `Bearer ${s.sessionToken}`).send({ fullName, dateOfBirth });
+    const yes = await findMe('Ana Desk', '2000-01-01');
+    expect(yes.status).toBe(200);
+    expect(yes.body).toEqual({ alreadyMember: true });
+    expect((await findMe('  ÁNA   desk ', '2000-01-01')).body.alreadyMember).toBe(true);
+    expect((await findMe('Desk Ana', '2000-01-01')).body.alreadyMember).toBe(true);
+    expect((await findMe('Ana Desk', '2000-01-02')).body.alreadyMember).toBe(false);
+    expect((await findMe('Ana', '2000-01-01')).body.alreadyMember).toBe(false);
+    // Mum has an account but isn't a Student here.
+    expect((await findMe('Mum Desk', '2000-01-01')).body.alreadyMember).toBe(false);
+    expect((await findMe('Ana Desk', '2000-02-30')).status).toBe(400);
+    expect((await http().post('/v1/front-desk/kiosk/find-me').set('Authorization', `Bearer ${tokens.owner}`).send({ fullName: 'Ana Desk', dateOfBirth: '2000-01-01' })).status).toBe(401);
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i++) statuses.push((await findMe('Nobody Here', '1999-09-09')).status);
+    expect(statuses.slice(0, 3)).toEqual([200, 200, 200]);
+    expect(statuses[3]).toBe(429);
   });
 
   it('unlock attempts are limited per session', async () => {

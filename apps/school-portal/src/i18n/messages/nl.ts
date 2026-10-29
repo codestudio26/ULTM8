@@ -3294,6 +3294,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Voor je privacy toont dit apparaat nooit gegevens die we al van je hebben.",
       goCheckIn: "Naar inchecken",
       signUp: "Aanmelden",
+      failed: "We konden het nu niet controleren. Probeer het opnieuw of vraag het bij de balie.",
     },
   },
 };

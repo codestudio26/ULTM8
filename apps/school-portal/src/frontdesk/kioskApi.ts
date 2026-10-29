@@ -30,9 +30,3 @@ export interface SignUpInput {
 export async function submitSignUp(_input: SignUpInput): Promise<void> {
   throw new NotBuiltYetError('Sign-ups from the tablet');
 }
-
-/** Handover F6: `POST /front-desk/find-me` { name, dateOfBirth } → only
- * whether they're already a member. */
-export async function findMe(_name: string, _dateOfBirth: string): Promise<{ alreadyMember: boolean }> {
-  throw new NotBuiltYetError('Find me');
-}

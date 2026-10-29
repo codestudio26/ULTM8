@@ -6437,6 +6437,30 @@ User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules
 
 ---
 
+## Decision 385 — Front desk: Find me on the tablet
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F6 · **Rules from:** Decisions 351 item 1, 362 item 3 · **Follows:** Decision 384
+
+Part of "build them" (28 Oct 2026). Find me (on the tablet's Sign-up screen) was switched off, waiting for this.
+
+### Decision
+
+1. **`POST /front-desk/kiosk/find-me`** `{ fullName, dateOfBirth }` → `{ alreadyMember }`, on the locked tablet only. It is yes only when both the full name and the date of birth match a current Student of the School (Decision 362), and it never returns or fills in anything stored about them (Decision 351).
+2. **The name is compared without case, accents, punctuation or extra spaces**, and in either order (first name then surname, or surname first, as many Japanese, Chinese and Korean names are written).
+3. **Limited to 10 tries a minute per tablet.**
+
+### Not in this decision (open, to confirm)
+
+- **How loosely the name matches** (point 2) is this build's choice. A nickname or a second surname that isn't on the account gives "we couldn't find you". Product owner to confirm.
+- **10 tries a minute** is this build's choice, not a recorded rule.
+- **Visitors** (Decision 315 item 1) aren't a separate status in the API yet, so "member" here means a current Student of the School.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.
+
+---
+
 ## Decision 389 — The plan's cancellation charge is collected when the class has none
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision (class fee first, as recommended) · **Builds on:** Decisions 234, 291, 322, 346, 348; Spec 55 §6.1 · **Migration:** none
