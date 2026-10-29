@@ -19,8 +19,8 @@ export const FRONT_DESK_BACKEND = {
   signUp: false,
   /** "Find me" on the tablet (Decisions 351, 362). Built 28 Oct 2026 (Decision 385). */
   findMe: true,
-  /** Start an unplanned open mat (Decision 304). */
-  openMat: false,
+  /** Start an unplanned open mat (Decision 304). Built 28 Oct 2026 (Decision 386). */
+  openMat: true,
 } as const;
 
 export type FrontDeskFeature = keyof typeof FRONT_DESK_BACKEND;
