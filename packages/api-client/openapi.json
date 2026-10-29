@@ -15513,6 +15513,174 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/open-mats": {
+      "post": {
+        "operationId": "OpenMatsController_start",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartOpenMatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatStartedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/me": {
+      "get": {
+        "operationId": "OpenMatsController_mine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOpenMatPermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/permissions": {
+      "get": {
+        "operationId": "OpenMatsController_listPermissions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatPermissionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/permissions/{userId}": {
+      "put": {
+        "operationId": "OpenMatsController_setPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOpenMatPermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatPermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -30044,6 +30212,149 @@
         },
         "required": [
           "code"
+        ]
+      },
+      "StartOpenMatDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "One of the School's open Branches; null when it has none."
+          },
+          "disciplineId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The style. Required when the School has styles."
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "From 30 minutes ago to 24 hours ahead."
+          },
+          "minutes": {
+            "type": "number",
+            "default": 60,
+            "minimum": 15,
+            "maximum": 480
+          }
+        },
+        "required": [
+          "startsAt"
+        ]
+      },
+      "OpenMatStartedDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notified": {
+            "type": "number",
+            "description": "How many students were told in the app."
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "branchId",
+          "startDate",
+          "endDate",
+          "notified"
+        ]
+      },
+      "MyOpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canStart": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The Branches the caller can start one at; null for any.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "canStart",
+          "branchIds"
+        ]
+      },
+      "OpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BRANCH_STAFF",
+                "INSTRUCTOR"
+              ]
+            }
+          },
+          "canStartOpenMat": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "roles",
+          "canStartOpenMat"
+        ]
+      },
+      "OpenMatPermissionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenMatPermissionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetOpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canStartOpenMat": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canStartOpenMat"
         ]
       }
     }
