@@ -343,7 +343,8 @@ export class CoachInvitesService {
       throw new BadRequestException(
         canInviteCoaches === undefined
           ? '"Can manage disciplines" is for Branch Staff only.'
-          : '"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches (Spec 55 §8.2).',
+          // Spec 55 §8.2
+          : '"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches.',
       );
     }
     await this.prismaApp.withTenantContext(callerId, (tx) =>

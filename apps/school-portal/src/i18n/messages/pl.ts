@@ -2531,7 +2531,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Rozmiar pasa",
       photo: "Zdjęcie",
       photoHint: "Pozostaw bez zmian, aby zachować obecne zdjęcie.",
-      freeTextHint: "Dowolny tekst: nie ustalono jeszcze jednostki ani tabeli rozmiarów (Decyzja 220/246).",
+      freeTextHint: "Dowolny tekst: nie ustalono jeszcze jednostki ani tabeli rozmiarów.",
     },
   },
   membershipPlans: {

@@ -190,8 +190,8 @@ describeIfDb('Bulk promote (Phase 3c)', () => {
     const ev = (sid: string) => events.find((e) => e.studentId === sid)!;
     expect(ev(stripe)).toMatchObject({ type: 'BULK_STRIPE_AWARD', note: 'Spring Grading Day', systemNote: 'Promoted in a batch.', acknowledgedWithoutSkillSignoff: false });
     expect(ev(belt).type).toBe('BULK_PROMOTION');
-    expect(ev(skills)).toMatchObject({ acknowledgedWithoutSkillSignoff: true, systemNote: 'Promoted in a batch; acknowledged: 1 skill not signed off (Decision 130).' });
-    expect(ev(short).systemNote).toBe('Promoted in a batch; acknowledged: 12 days short (Decision 130).');
+    expect(ev(skills)).toMatchObject({ acknowledgedWithoutSkillSignoff: true, systemNote: 'Promoted in a batch; acknowledged: 1 skill not signed off.' });
+    expect(ev(short).systemNote).toBe('Promoted in a batch; acknowledged: 12 days short.');
   });
 
   it('the style\'s "skills required" switch: those students are skipped, the rest promoted', async () => {

@@ -203,7 +203,8 @@ export class SchoolsController {
     @Headers('x-step-up-token') stepUpToken?: string,
   ) {
     if (user.impersonation) {
-      throw new ForbiddenException('Closing a School is not available during an impersonation session (Decision 39).');
+      // Decision 39
+      throw new ForbiddenException('Closing a School is not available during an impersonation session.');
     }
     return this.schoolsService.closeOwnSchool(user.sub, id, dto, stepUpToken);
   }

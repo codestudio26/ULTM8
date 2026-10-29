@@ -2457,7 +2457,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Kuşak bedeni",
       photo: "Fotoğraf",
       photoHint: "Mevcut fotoğrafı korumak için değiştirmeyin.",
-      freeTextHint: "Serbest metin: henüz bir birim veya beden tablosu belirlenmedi (Karar 220/246).",
+      freeTextHint: "Serbest metin: henüz bir birim veya beden tablosu belirlenmedi.",
     },
   },
   membershipPlans: {
