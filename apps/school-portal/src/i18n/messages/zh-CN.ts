@@ -2325,6 +2325,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "已编辑",
       shown: "学员可见",
       staffOnly: "仅员工可见",
+    },
     export: {
       button: "导出",
       title: "导出学员",

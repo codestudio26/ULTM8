@@ -2510,6 +2510,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "معدّلة",
       shown: "ظاهرة للطالب",
       staffOnly: "للموظفين فقط",
+    },
     export: {
       button: "تصدير",
       title: "تصدير الطلاب",

@@ -2362,6 +2362,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "bearbeitet",
       shown: "Dem Schüler gezeigt",
       staffOnly: "Nur Personal",
+    },
     export: {
       button: "Exportieren",
       title: "Schüler exportieren",

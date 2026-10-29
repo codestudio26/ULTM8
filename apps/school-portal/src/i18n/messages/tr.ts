@@ -2362,6 +2362,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "düzenlendi",
       shown: "Öğrenciye gösteriliyor",
       staffOnly: "Yalnızca personel",
+    },
     export: {
       button: "Dışa aktar",
       title: "Öğrencileri dışa aktar",

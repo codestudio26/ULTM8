@@ -2325,6 +2325,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "แก้ไขแล้ว",
       shown: "แสดงให้นักเรียนเห็น",
       staffOnly: "เฉพาะเจ้าหน้าที่",
+    },
     export: {
       button: "ส่งออก",
       title: "ส่งออกนักเรียน",

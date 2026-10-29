@@ -24,6 +24,7 @@ export const students = {
     edited: "edited",
     shown: "Shown to student",
     staffOnly: "Staff only",
+  },
   export: {
     button: "Export",
     title: "Export students",

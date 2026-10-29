@@ -2325,6 +2325,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       edited: "編集済み",
       shown: "生徒に表示",
       staffOnly: "スタッフのみ",
+    },
     export: {
       button: "エクスポート",
       title: "生徒をエクスポート",
