@@ -70,6 +70,7 @@ export const serverMessages: Record<string, string> = {
   "stripeTierId must be a grade on this style's ladder.": "이 스타일의 단계에서 등급을 고르세요.",
   "Downgrade only moves down; pick a lower belt or stripe.": "강등은 아래로만 가능합니다. 더 낮은 띠나 그랄을 선택하세요.",
   "Each item can appear only once.": "각 항목은 한 번만 포함할 수 있습니다.",
+  "Gender must be Female or Male, or left empty.": "성별은 여성 또는 남성이거나 비워 두어야 해요.",
   "Each lesson can appear only once.": "각 레슨은 한 번만 포함할 수 있습니다.",
   "Each stripe id can appear only once.": "각 그랄 ID는 한 번만 포함할 수 있습니다.",
   "Each style can appear only once.": "각 종목은 한 번만 포함할 수 있습니다.",

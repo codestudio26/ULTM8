@@ -70,6 +70,7 @@ export const serverMessages: Record<string, string> = {
   "stripeTierId must be a grade on this style's ladder.": "Kies een graad van de ladder van deze stijl.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Terugzetten kan alleen omlaag: kies een lagere band of streep.",
   "Each item can appear only once.": "Elk item mag maar één keer voorkomen.",
+  "Gender must be Female or Male, or left empty.": "Geslacht moet Vrouw of Man zijn, of leeg blijven.",
   "Each lesson can appear only once.": "Elk lesonderdeel mag maar één keer voorkomen.",
   "Each stripe id can appear only once.": "Elke streep-ID mag maar één keer voorkomen.",
   "Each style can appear only once.": "Elke stijl mag maar één keer voorkomen.",

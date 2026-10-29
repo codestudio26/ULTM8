@@ -16992,7 +16992,13 @@
             "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string"
@@ -18499,8 +18505,12 @@
           },
           "gender": {
             "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string",
@@ -20815,7 +20825,13 @@
             "description": "ISO 8601 date, no time component."
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           }
         },
         "required": [
@@ -21289,8 +21305,12 @@
           },
           "gender": {
             "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string",

@@ -70,6 +70,7 @@ export const serverMessages: Record<string, string> = {
   "stripeTierId must be a grade on this style's ladder.": "请从此风格的段位阶梯中选择一个级别。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降级只能向下；请选择更低的腰带或条纹。",
   "Each item can appear only once.": "每个项目只能出现一次。",
+  "Gender must be Female or Male, or left empty.": "性别必须为女或男，或留空。",
   "Each lesson can appear only once.": "每个课时只能出现一次。",
   "Each stripe id can appear only once.": "每个条纹 ID 只能出现一次。",
   "Each style can appear only once.": "每个项目只能出现一次。",

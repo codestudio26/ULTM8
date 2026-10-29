@@ -80,6 +80,7 @@ export const SERVER_MESSAGES: string[] = [
  "stripeTierId must be a grade on this style's ladder.",
  "Downgrade only moves down; pick a lower belt or stripe.",
  "Each item can appear only once.",
+ "Gender must be Female or Male, or left empty.",
  "Each lesson can appear only once.",
  "Each stripe id can appear only once.",
  "Each style can appear only once.",

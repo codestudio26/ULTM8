@@ -115,10 +115,10 @@ test('a branch coach can open and edit a student of their own branch', async ({ 
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
   await page.getByRole('button', { name: 'Edit profile' }).click();
   await expect(page.getByLabel('First name')).toHaveValue('Sam');
-  await page.getByLabel('Gender').fill('Male');
+  await page.getByLabel('Gender').selectOption('MALE');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
-  expect((await db.user.findUniqueOrThrow({ where: { id: s.student.id } })).gender).toBe('Male');
+  expect((await db.user.findUniqueOrThrow({ where: { id: s.student.id } })).gender).toBe('MALE');
 });
 
 test('Invite needs no home branch when every branch is archived', async ({ page }) => {

@@ -14,6 +14,7 @@ import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
+import { GenderField, type Gender } from '../../common/decorators/gender-field.decorator';
 
 /** Names and username are trimmed before validation, so one made only of
  * spaces is refused as blank (sign-in review A7, as Decision 341 does for
@@ -65,11 +66,8 @@ export class RegisterDto {
   @IsBirthDate()
   dateOfBirth!: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  gender?: string;
+  @GenderField()
+  gender?: Gender | null;
 
   @ApiProperty({ required: false })
   @IsOptional()
