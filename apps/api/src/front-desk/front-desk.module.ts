@@ -1,3 +1,5 @@
+import { PackRechargesController } from './pack-recharges.controller';
+import { PackRechargesService } from './pack-recharges.service';
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MembershipsModule } from '../memberships/memberships.module';
@@ -17,7 +19,7 @@ import { StudentCheckInCodesController } from './student-check-in-codes.controll
  * check-in codes (Decision 384, F3). */
 @Module({
   imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule],
-  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController],
-  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService],
+  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController, PackRechargesController],
+  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService, PackRechargesService],
 })
 export class FrontDeskModule {}
