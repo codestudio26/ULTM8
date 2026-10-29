@@ -6,6 +6,7 @@ import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
+import { VisitorCard } from '../students/VisitorCard';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
@@ -200,6 +201,9 @@ export function StudentGradingPage() {
 
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
+
+      {/* Decision 391: Visitor status and visit passes. */}
+      {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
 
       {/* Decision 348: memberships, selling at the desk, Friend Pass and
           cancelling a Subscription. Owner only, like the API. */}

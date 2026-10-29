@@ -8,7 +8,7 @@ export class LeavingStudentMembershipDto {
   @ApiProperty()
   planTitle!: string;
 
-  @ApiProperty({ enum: ['SUBSCRIPTION', 'CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] })
+  @ApiProperty({ enum: ['SUBSCRIPTION', 'CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP', 'VISIT_PASS'] })
   type!: string;
 
   /** Class Pack / Friend Pass credits left; null for general access. */

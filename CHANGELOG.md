@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Visitors and visit passes** (Decision 391) — each School sets how long a
+  free visit pass lasts (School settings; no default). The owner, or Branch
+  Staff with the Students switch, gives a pass from the student's page; while it
+  lasts the Visitor books and checks in free, and a second pass starts when the
+  first ends. Visitors carry a "Visitor" badge on the Students list. A
+  membership makes them a member.
 - **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
   found by name on the tablet is checked in only to classes they've already
   booked; booking a place there needs the app QR or their own personal

@@ -7749,6 +7749,49 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/visit-passes": {
+      "post": {
+        "operationId": "MembershipsController_giveVisitPass",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
       "post": {
         "operationId": "MembershipsController_giftFriendPass",
@@ -7913,7 +7956,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembershipListResponseDto"
+                  "$ref": "#/components/schemas/MyMembershipListResponseDto"
                 }
               }
             }
@@ -15899,6 +15942,11 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
           },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -16121,6 +16169,11 @@
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
+          },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. Null until the School sets it."
           },
           "checkInCodeDigits": {
             "type": "number",
@@ -16355,6 +16408,11 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
           },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -16522,6 +16580,14 @@
           "homeBranchName": {
             "type": "string",
             "nullable": true
+          },
+          "visitor": {
+            "type": "boolean"
+          },
+          "visitPassEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -16531,7 +16597,8 @@
           "email",
           "guardianManaged",
           "enrolledAt",
-          "status"
+          "status",
+          "visitor"
         ]
       },
       "StudentListResponseDto": {
@@ -16758,7 +16825,8 @@
               "CLASS_PACK",
               "WEEKLY_PASS",
               "FRIEND_PASS",
-              "TRIAL_MEMBERSHIP"
+              "TRIAL_MEMBERSHIP",
+              "VISIT_PASS"
             ]
           },
           "classesRemaining": {
@@ -23550,13 +23618,86 @@
           "plans"
         ]
       },
-      "MembershipListResponseDto": {
+      "MyMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "giftedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "visitPass": {
+            "type": "boolean",
+            "description": "Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list)."
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "membershipPlanId",
+          "schoolId",
+          "status",
+          "startDate",
+          "frequency",
+          "createdAt",
+          "updatedAt",
+          "visitPass"
+        ]
+      },
+      "MyMembershipListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MembershipResponseDto"
+              "$ref": "#/components/schemas/MyMembershipResponseDto"
             }
           },
           "nextCursor": {

@@ -676,6 +676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   memberships: {
     myMemberships: {
       planFallback: "แผน {planId}",
+      visitPass: "บัตรผู้เยี่ยมชม",
       statusLine: "สถานะ: {status} · {frequency}",
       recurring: "ต่ออายุอัตโนมัติ",
       oneTime: "ครั้งเดียว",

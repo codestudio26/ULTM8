@@ -608,4 +608,5 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "Okul sahibi eğitmen davet etmenize izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
+  "Only the owner or Branch Staff can give a visit pass.": "Ziyaretçi kartını yalnızca sahip veya şube personeli verebilir.",
 };

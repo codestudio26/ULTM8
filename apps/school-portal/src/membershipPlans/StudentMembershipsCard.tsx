@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<string, TranslationKey> = {
   WEEKLY_PASS: 'membershipPlans.types.weeklyPass',
   FRIEND_PASS: 'membershipPlans.types.friendPass',
   TRIAL_MEMBERSHIP: 'membershipPlans.types.trialMembership',
+  VISIT_PASS: 'membershipPlans.types.visitPass',
 };
 
 /** Plans the owner can sell at the desk: not a Subscription (card only) or a

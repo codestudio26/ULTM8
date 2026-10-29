@@ -13,7 +13,7 @@ import { DeskPaymentOptionsDto, RecordDeskPaymentDto, RecordDeskPaymentResponseD
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
   DeskMembershipResponseDto,
-  MembershipListResponseDto,
+  MyMembershipListResponseDto,
   MembershipResponseDto,
   MembershipStatusResponseDto,
   PlanMemberListResponseDto,
@@ -157,6 +157,13 @@ export class MembershipsController {
     return this.membershipsService.sellAtDesk(user.sub, schoolId, studentId, dto);
   }
 
+  /** Decision 391: give a Visitor a free visit pass for the School's visitor period. */
+  @ApiCreatedResponse({ type: DeskMembershipResponseDto })
+  @Post('schools/:schoolId/students/:studentId/visit-passes')
+  giveVisitPass(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('studentId') studentId: string) {
+    return this.membershipsService.giveVisitPass(user.sub, schoolId, studentId);
+  }
+
   /** Decision 348: the owner gives a Student a Friend Pass for one guest. */
   @ApiCreatedResponse({ type: DeskMembershipResponseDto })
   @Post('schools/:schoolId/students/:studentId/memberships/gift')
@@ -186,7 +193,7 @@ export class MembershipsController {
     return this.membershipsService.deskPaymentOptions(user.sub, schoolId);
   }
 
-  @ApiOkResponse({ type: MembershipListResponseDto })
+  @ApiOkResponse({ type: MyMembershipListResponseDto })
   @Get('memberships/me')
   findMyMemberships(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
     return this.membershipsService.findMyMemberships(user.sub, query.cursor, query.limit);

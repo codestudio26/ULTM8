@@ -30,10 +30,12 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { VISIT_PASS_TITLE } from './visitors';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
 const DESK_REPEAT_WINDOW_MS = 60_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
@@ -141,13 +143,15 @@ export class MembershipsService {
     await this.schoolsService.findOne(callerId, schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.membershipPlan.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate((args) => tx.membershipPlan.findMany({ ...args, where: { schoolId, type: { not: 'VISIT_PASS' } } }), cursor, limit),
     );
   }
 
   async findOnePlan(callerId: string, planId: string) {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) => tx.membershipPlan.findUnique({ where: { id: planId } }));
-    if (!found) {
+    // Decision 391: the hidden visit-pass plan is only ever used by giveVisitPass,
+    // so every read, edit, archive, sale and purchase by id refuses it here.
+    if (!found || found.type === 'VISIT_PASS') {
       throw new NotFoundException('MembershipPlan not found');
     }
     return found;
@@ -1287,6 +1291,70 @@ export class MembershipsService {
     }
   }
 
+  /**
+   * Decision 391: give a Visitor a free visit pass, lasting the School's
+   * visitor period. The owner, or Branch Staff with the students switch for a
+   * student at their branches; not a coach. A pass
+   * given while one is still running starts when that one ends. Someone who
+   * holds a membership in effect is a member, so gets none.
+   *
+   * Under the Student's own context, like a Friend Pass: they can see their
+   * School's plans and insert their own Membership. The first pass at a School
+   * makes its hidden plan, under a lock so two first passes make one plan.
+   */
+  async giveVisitPass(callerId: string, schoolId: string, studentId: string) {
+    await this.schoolsService.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    // A coach may edit their students but has no say over memberships (Spec 55 §8.2).
+    if (!(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
+      const staff = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
+      );
+      if (!staff) throw new ForbiddenException('Only the owner or Branch Staff can give a visit pass.');
+    }
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId);
+    const days = school.visitorPeriodDays;
+    if (!days) {
+      throw new BadRequestException({ code: 'VISITOR_PERIOD_NOT_SET', message: 'Set how long a visit pass lasts in School settings first.' });
+    }
+    const now = new Date();
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      await lockSchoolOpen(tx, schoolId);
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`visit-pass-plan:${schoolId}`}, 0))`;
+      const plan =
+        (await tx.membershipPlan.findFirst({ where: { schoolId, type: 'VISIT_PASS' }, select: { id: true, type: true, expiryDurationDays: true } })) ??
+        (await tx.membershipPlan.create({
+          data: { schoolId, type: 'VISIT_PASS', title: VISIT_PASS_TITLE, price: 0, visible: false },
+          select: { id: true, type: true, expiryDurationDays: true },
+        }));
+      await assertCanCreateMembership(tx, studentId, schoolId, plan, now);
+      const held = await tx.membership.findMany({
+        where: { studentId, schoolId, status: 'ACTIVE', membershipPlan: { type: { not: 'FRIEND_PASS' } } },
+        select: { status: true, expiryDate: true, classesRemaining: true, membershipPlan: { select: { type: true } } },
+      });
+      const live = held.filter((m) => isMembershipLive(m, now));
+      if (live.some((m) => m.membershipPlan.type !== 'VISIT_PASS')) {
+        throw new ConflictException({ code: 'VISITOR_HAS_MEMBERSHIP', message: 'This student has a membership, so they are a member, not a Visitor.' });
+      }
+      await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
+      const runningUntil = live.reduce<Date>((latest, m) => (m.expiryDate && m.expiryDate > latest ? m.expiryDate : latest), now);
+      const membership = await tx.membership.create({
+        data: {
+          id: randomUUID(),
+          studentId,
+          membershipPlanId: plan.id,
+          schoolId,
+          frequency: 'ONE_TIME',
+          startDate: runningUntil,
+          expiryDate: new Date(runningUntil.getTime() + days * DAY_MS),
+          giftedById: callerId,
+        },
+      });
+      return { membership, transactionId: null };
+    });
+  }
+
   /** The owner gives a Student a Friend Pass for one guest (Spec 55 §6.1:
    * School-gifted, always £0, staff-attributed through giftedById). The
    * Student uses it when booking a guest (BookingsService.consumeGuestMembership). */
@@ -1552,10 +1620,19 @@ export class MembershipsService {
   // Reads
   // ---------------------------------------------------------------------------
 
-  async findMyMemberships(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.membership.findMany({ ...args, where: { studentId: callerId } }), cursor, limit),
-    );
+  async findMyMemberships(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string; visitPass: boolean }>> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const page = await cursorPaginate((args) => tx.membership.findMany({ ...args, where: { studentId: callerId } }), cursor, limit);
+      // Decision 391: the app can't name the hidden visit-pass plan from the
+      // School's plan list, so it is flagged here. A plan the caller can no
+      // longer see (a School they left) is simply not flagged.
+      const visitPlans = await tx.membershipPlan.findMany({
+        where: { id: { in: [...new Set(page.items.map((m) => m.membershipPlanId))] }, type: 'VISIT_PASS' },
+        select: { id: true },
+      });
+      const visit = new Set(visitPlans.map((p) => p.id));
+      return { ...page, items: page.items.map((m) => ({ ...m, visitPass: visit.has(m.membershipPlanId) })) };
+    });
   }
 
   /**

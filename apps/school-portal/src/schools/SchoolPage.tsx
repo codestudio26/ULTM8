@@ -84,6 +84,7 @@ type DetailsForm = {
   waitlistClaimWindowMinutes: string;
   checkInOpensMinutesBeforeStart: string;
   checkInCodeDigits: 4 | 6;
+  visitorPeriodDays: string;
   branchStaffCanRecordPayments: boolean;
   weekStartsOn: 'MONDAY' | 'SUNDAY';
   timetableDefaultLayout: 'LIST' | 'GRID';
@@ -107,6 +108,7 @@ function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsFor
     waitlistClaimWindowMinutes: String(school.waitlistClaimWindowMinutes),
     checkInOpensMinutesBeforeStart: String(school.checkInOpensMinutesBeforeStart),
     checkInCodeDigits: school.checkInCodeDigits === 6 ? 6 : 4,
+    visitorPeriodDays: school.visitorPeriodDays ? String(school.visitorPeriodDays) : '',
     branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
     weekStartsOn: school.weekStartsOn,
     timetableDefaultLayout: school.timetableDefaultLayout,
@@ -168,6 +170,7 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
         waitlistClaimWindowMinutes: Number(form.waitlistClaimWindowMinutes),
         checkInOpensMinutesBeforeStart: Number(form.checkInOpensMinutesBeforeStart),
         checkInCodeDigits: form.checkInCodeDigits,
+        visitorPeriodDays: form.visitorPeriodDays.trim() === '' ? null : Number(form.visitorPeriodDays),
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
         weekStartsOn: form.weekStartsOn,
         timetableDefaultLayout: form.timetableDefaultLayout,
@@ -287,6 +290,18 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
               { value: '4', label: t('schools.form.checkInCodeDigits4') },
               { value: '6', label: t('schools.form.checkInCodeDigits6') },
             ]}
+          />
+        </Field>
+        {/* Decision 391: how long a Visitor's free visit pass lasts. No default. */}
+        <Field label={t('schools.form.visitorPeriod')} htmlFor="edit-visitor-period" hint={t('schools.form.visitorPeriodHint')}>
+          <TextField
+            id="edit-visitor-period"
+            type="number"
+            min={1}
+            max={3650}
+            step={1}
+            value={form.visitorPeriodDays}
+            onChange={(e) => set('visitorPeriodDays', e.target.value)}
           />
         </Field>
         {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}

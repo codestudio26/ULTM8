@@ -2676,6 +2676,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/visit-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_giveVisitPass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
         parameters: {
             query?: never;
@@ -5260,6 +5276,8 @@ export interface components {
             noShowFee?: number | null;
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
+            /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
+            visitorPeriodDays?: number | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -5335,6 +5353,8 @@ export interface components {
             cancellationPolicyChosenAt?: string | null;
             /** @description Minutes before a Class starts that check-in opens. */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
+            visitorPeriodDays?: number | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -5415,6 +5435,8 @@ export interface components {
             noShowFee?: number | null;
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
+            /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
+            visitorPeriodDays?: number | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -5479,6 +5501,9 @@ export interface components {
             status: components["schemas"]["StudentStatus"];
             homeBranchId?: string | null;
             homeBranchName?: string | null;
+            visitor: boolean;
+            /** Format: date-time */
+            visitPassEndsAt?: string | null;
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -5541,7 +5566,7 @@ export interface components {
             id: string;
             planTitle: string;
             /** @enum {string} */
-            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP";
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP" | "VISIT_PASS";
             classesRemaining?: number | null;
             /** Format: date-time */
             expiryDate?: string | null;
@@ -7563,8 +7588,28 @@ export interface components {
             students: components["schemas"]["DeskPaymentStudentDto"][];
             plans: components["schemas"]["DeskPaymentPlanDto"][];
         };
-        MembershipListResponseDto: {
-            items: components["schemas"]["MembershipResponseDto"][];
+        MyMembershipResponseDto: {
+            id: string;
+            studentId: string;
+            membershipPlanId: string;
+            schoolId: string;
+            status: string;
+            startDate: string;
+            frequency: string;
+            classesRemaining?: number | null;
+            expiryDate?: string | null;
+            scopedClassId?: string | null;
+            giftedById?: string | null;
+            /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
+            cancelAt?: string | null;
+            cancelledById?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list). */
+            visitPass: boolean;
+        };
+        MyMembershipListResponseDto: {
+            items: components["schemas"]["MyMembershipResponseDto"][];
             nextCursor?: string | null;
         };
         MembershipStatusResponseDto: {
@@ -13877,6 +13922,28 @@ export interface operations {
             };
         };
     };
+    MembershipsController_giveVisitPass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskMembershipResponseDto"];
+                };
+            };
+        };
+    };
     MembershipsController_giftFriendPass: {
         parameters: {
             query?: never;
@@ -13967,7 +14034,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembershipListResponseDto"];
+                    "application/json": components["schemas"]["MyMembershipListResponseDto"];
                 };
             };
         };
