@@ -35,6 +35,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
+    // A free trial of ULTM8 that ended (backlog 3.14).
+    case 'TRIAL_ENDED':
+      return t('server.codes.trialEnded');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;

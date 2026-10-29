@@ -26,6 +26,7 @@ export const server: PartialMessages<ServerKeys> = {
     signUpUnder18: "18세 미만은 보호자가 ULTM8 앱에서 가입 신청합니다.",
     signUpWaiting: "이 이메일은 이미 여기서 가입 신청했습니다. 직원이 곧 연락드릴 거예요.",
     signUpAlreadyStudent: "이 이메일은 이미 이 도장의 수련생 계정입니다.",
+    trialEnded: "이 도장의 ULTM8 무료 체험이 끝났어요. 구독할 때까지 포털은 읽기 전용이에요. 새 수업, 예약, 결제는 할 수 없어요.",
     visitorPeriodNotSet: "먼저 도장 설정에서 방문 패스 기간을 정하세요.",
     visitorHasMembership: "이 수련생은 회원권이 있으므로 방문자가 아니라 회원입니다.",
     checkInNotOpen: "이 수업의 출석 체크가 아직 시작되지 않았습니다.",

@@ -26,6 +26,7 @@ export const server: PartialMessages<ServerKeys> = {
     signUpUnder18: "未满 18 岁的人由监护人在 ULTM8 应用中报名。",
     signUpWaiting: "这个邮箱已在这里报名。工作人员会与你联系。",
     signUpAlreadyStudent: "这个邮箱已属于本学校的学员。",
+    trialEnded: "该道馆的 ULTM8 免费试用已结束。订阅前门户为只读：不能新增课程、预约或付款。",
     visitorPeriodNotSet: "请先在学校设置中设定访客通行证的时长。",
     visitorHasMembership: "该学员已有会员计划，因此是会员，不是访客。",
     checkInNotOpen: "此课程的签到尚未开放。",

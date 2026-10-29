@@ -879,6 +879,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Ce cours ponctuel nécessite son propre billet. Un abonnement, un pass semaine ou un carnet de cours général ne le couvre pas.",
       checkInNotOpen: "Le pointage pour ce cours n’est pas encore ouvert.",
       checkInNotOpenAt: "Le pointage pour ce cours n’est pas encore ouvert. Il ouvre {time}.",
+      trialEnded: "Cette école ne peut pas accepter de nouvelles réservations ni de paiements dans l’app pour le moment. Renseignez-vous à l’accueil.",
     },
   },
 };

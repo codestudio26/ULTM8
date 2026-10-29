@@ -43,6 +43,9 @@ export const AuditAction = {
   // Decision 370 — a School's owners, and support moving its main owner role.
   VIEW_SCHOOL_OWNERS: 'VIEW_SCHOOL_OWNERS',
   CHANGE_SCHOOL_MAIN_OWNER: 'CHANGE_SCHOOL_MAIN_OWNER',
+  // Backlog 3.14 — a free trial of ULTM8 for a School.
+  START_SCHOOL_TRIAL: 'START_SCHOOL_TRIAL',
+  EXTEND_SCHOOL_TRIAL: 'EXTEND_SCHOOL_TRIAL',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

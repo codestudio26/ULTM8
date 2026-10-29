@@ -9,5 +9,6 @@ export const lib = {
     checkInNotOpen: "Check-in for this class hasn't opened yet.",
     /** `{time}` is a formatted date and time. */
     checkInNotOpenAt: "Check-in for this class hasn't opened yet. It opens {time}.",
+    trialEnded: "This School can't take new bookings or payments in the app right now. Ask at the desk.",
   },
 };

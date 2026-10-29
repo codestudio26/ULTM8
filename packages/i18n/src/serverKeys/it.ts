@@ -26,6 +26,7 @@ export const server: PartialMessages<ServerKeys> = {
     signUpUnder18: "I minori di 18 anni vengono iscritti dal loro tutore nell'app ULTM8.",
     signUpWaiting: "Questa email si è già iscritta qui. Qualcuno dello staff ti contatterà.",
     signUpAlreadyStudent: "Questa email appartiene già a un allievo di questa Scuola.",
+    trialEnded: "La prova gratuita di ULTM8 di questa scuola è terminata. Il portale è in sola lettura finché non si abbona: nessun nuovo corso, prenotazione o pagamento.",
     visitorPeriodNotSet: "Imposta prima nelle impostazioni della scuola quanto dura un pass visitatore.",
     visitorHasMembership: "Questo studente ha un'iscrizione, quindi è un membro, non un visitatore.",
     checkInNotOpen: "Il check-in per questo corso non è ancora aperto.",

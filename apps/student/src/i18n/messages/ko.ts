@@ -855,6 +855,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "이 일회성 수업은 전용 티켓이 필요합니다. 구독, 주간 패스, 일반 수업 패키지로는 예약할 수 없습니다.",
       checkInNotOpen: "이 수업의 출석 체크가 아직 시작되지 않았습니다.",
       checkInNotOpenAt: "이 수업의 출석 체크가 아직 시작되지 않았습니다. {time}에 시작합니다.",
+      trialEnded: "이 도장은 지금 앱에서 새 예약이나 결제를 받을 수 없어요. 프런트에 문의하세요.",
     },
   },
 };

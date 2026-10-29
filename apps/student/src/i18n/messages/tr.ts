@@ -861,6 +861,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Bu tek seferlik ders kendi biletini gerektirir. Abonelik, haftalık kart veya genel ders paketi bu dersi kapsamaz.",
       checkInNotOpen: "Bu ders için giriş henüz açılmadı.",
       checkInNotOpenAt: "Bu ders için giriş henüz açılmadı. Açılış: {time}.",
+      trialEnded: "Bu okul şu anda uygulamada yeni rezervasyon veya ödeme alamıyor. Resepsiyona sorun.",
     },
   },
 };

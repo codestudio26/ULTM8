@@ -861,6 +861,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Voor deze losse les heb je een eigen ticket nodig. Een abonnement, weekpas of algemene strippenkaart dekt hem niet.",
       checkInNotOpen: "Inchecken voor deze les is nog niet geopend.",
       checkInNotOpenAt: "Inchecken voor deze les is nog niet geopend. Het opent: {time}.",
+      trialEnded: "Deze school kan nu geen nieuwe boekingen of betalingen in de app aannemen. Vraag het aan de balie.",
     },
   },
 };

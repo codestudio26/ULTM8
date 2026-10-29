@@ -879,6 +879,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Questa lezione singola richiede un biglietto dedicato. Un abbonamento, un pass settimanale o un carnet generico non la coprono.",
       checkInNotOpen: "Il check-in per questo corso non è ancora aperto.",
       checkInNotOpenAt: "Il check-in per questo corso non è ancora aperto. Apre {time}.",
+      trialEnded: "Questa scuola al momento non può accettare nuove prenotazioni o pagamenti nell’app. Chiedi alla reception.",
     },
   },
 };

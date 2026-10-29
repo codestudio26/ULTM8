@@ -854,6 +854,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "这节单次课程需要专属门票。订阅、周卡或通用课时包都不包含它。",
       checkInNotOpen: "此课程的签到尚未开放。",
       checkInNotOpenAt: "此课程的签到尚未开放，将于 {time} 开放。",
+      trialEnded: "该道馆目前无法在应用中接受新的预约或付款，请到前台咨询。",
     },
   },
 };

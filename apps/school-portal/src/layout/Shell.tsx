@@ -6,6 +6,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
 import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
+import { TrialBanner } from './TrialBanner';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 /** Nav labels are translation keys, resolved at render time. */
@@ -112,6 +113,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       legalFooter={<SchoolFooter />}
     >
       <VerifyBeltsNotice />
+      {isCoachOnly ? null : <TrialBanner />}
       {children}
     </AppShell>
   );

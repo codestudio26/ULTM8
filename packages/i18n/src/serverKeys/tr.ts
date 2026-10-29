@@ -26,6 +26,7 @@ export const server: PartialMessages<ServerKeys> = {
     signUpUnder18: "18 yaş altındakileri Velisi ULTM8 uygulamasından kaydeder.",
     signUpWaiting: "Bu e-postayla burada zaten kayıt yapılmış. Personelden biri sizinle iletişime geçecek.",
     signUpAlreadyStudent: "Bu e-posta zaten bu okulun bir öğrencisine ait.",
+    trialEnded: "Bu okulun ücretsiz ULTM8 deneme süresi sona erdi. Abone olana kadar portal salt okunur: yeni ders, rezervasyon veya ödeme yok.",
     visitorPeriodNotSet: "Önce okul ayarlarında ziyaretçi kartının süresini belirleyin.",
     visitorHasMembership: "Bu öğrencinin üyeliği var; yani ziyaretçi değil, üye.",
     checkInNotOpen: "Bu dersin girişi henüz açılmadı.",

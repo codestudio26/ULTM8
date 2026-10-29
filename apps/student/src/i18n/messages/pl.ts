@@ -898,6 +898,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Te jednorazowe zajęcia wymagają osobnego biletu. Subskrypcja, karnet tygodniowy ani ogólny pakiet zajęć ich nie obejmują.",
       checkInNotOpen: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło.",
       checkInNotOpenAt: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło. Rozpocznie się {time}.",
+      trialEnded: "Ta szkoła nie może teraz przyjmować nowych rezerwacji ani płatności w aplikacji. Zapytaj w recepcji.",
     },
   },
 };

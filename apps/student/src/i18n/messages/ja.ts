@@ -855,6 +855,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "この単発クラスには専用のチケットが必要です。サブスクリプション、週間パス、一般の回数券では予約できません。",
       checkInNotOpen: "このクラスのチェックインはまだ始まっていません。",
       checkInNotOpenAt: "このクラスのチェックインはまだ始まっていません。{time}に開始します。",
+      trialEnded: "この道場は現在アプリで新しい予約や支払いを受け付けられません。受付でお尋ねください。",
     },
   },
 };

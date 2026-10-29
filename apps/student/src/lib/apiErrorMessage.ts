@@ -32,6 +32,9 @@ function codedMessage(err: ApiError): string | null {
         ? translate('lib.apiError.checkInNotOpenAt', { time: formatDateTime(iso) })
         : translate('lib.apiError.checkInNotOpen');
     }
+    // The School's free trial of ULTM8 ended (backlog 3.14).
+    case 'TRIAL_ENDED':
+      return translate('lib.apiError.trialEnded');
     default:
       return null;
   }

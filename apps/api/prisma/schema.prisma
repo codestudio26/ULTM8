@@ -1094,6 +1094,12 @@ model School {
 
   stripePlatformSubscriptionId String?                     @unique
   platformSubscriptionStatus   PlatformSubscriptionStatus?
+  /// Backlog 3.14 (Decision 318 item 5): a free trial of ULTM8 itself, started
+  /// and extended by a Full Platform Admin only, no card needed. When it ends
+  /// without an active platform subscription, the School is read-only (the
+  /// Spec 55 §10.2 degraded state) until it subscribes. Nothing is deleted.
+  platformTrialStartedAt       DateTime?
+  platformTrialEndsAt          DateTime?
 
   /// Phase 56 — Decision 110. Same shape/reasoning as Franchise's own identical
   /// trio above — see that model's own comment for the full account.

@@ -32,6 +32,7 @@ export const server = {
     signUpUnder18: 'Under 18s are signed up by their Guardian in the ULTM8 app.',
     signUpWaiting: 'This email has already signed up here. A member of staff will be in touch.',
     signUpAlreadyStudent: 'This email already belongs to a student of this School.',
+    trialEnded: "This School's free trial of ULTM8 has ended. The portal is read-only until it subscribes: no new Classes, Bookings or payments.",
     visitorPeriodNotSet: 'Set how long a visit pass lasts in School settings first.',
     visitorHasMembership: "This student has a membership, so they're a member, not a Visitor.",
     checkInNotOpen: "Check-in for this class hasn't opened yet.",

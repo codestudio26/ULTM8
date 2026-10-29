@@ -697,6 +697,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Esta clase única necesita su propia entrada. Una suscripción, un pase semanal o un bono de clases general no la cubren.",
       checkInNotOpen: "El check-in de esta clase aún no está abierto.",
       checkInNotOpenAt: "El check-in de esta clase aún no está abierto. Se abre el {time}.",
+      trialEnded: "Esta escuela no puede aceptar nuevas reservas ni pagos en la app ahora mismo. Pregunta en recepción.",
     },
   },
   memberships: {

@@ -172,6 +172,17 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   purgedAt!: string | null;
 
+  /** Backlog 3.14: a free trial of ULTM8. After `platformTrialEndsAt`, without
+   * an active platform subscription, the portal is read-only. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  platformTrialStartedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  platformTrialEndsAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
+  platformSubscriptionStatus!: string | null;
+
   /**
    * Present only on the response from POST /schools (self-service creation) — a
    * freshly-minted token reflecting the caller's new SCHOOL_OWNER_MANAGER grant
