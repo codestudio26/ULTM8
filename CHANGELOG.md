@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Front desk: Find me on the tablet** (Decision 385) — someone about to
+  sign up types their full name and date of birth; the tablet says only
+  whether they're already a member (both must match), and shows nothing
+  stored about them.
 - **Memberships: the plan's cancellation charge is now taken** (Decision 389,
   no migration) — when a student cancels a class too late and the class has no
   cancellation charge of its own, the charge set on their membership plan is

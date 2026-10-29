@@ -278,6 +278,24 @@ export class KioskUnlockDto {
   staffCode!: string;
 }
 
+/** POST /front-desk/kiosk/find-me (Decisions 351, 362; handover F6). */
+export class KioskFindMeDto {
+  @ApiProperty({ description: 'First name and surname, as typed.' })
+  @IsString()
+  @Length(2, 200)
+  fullName!: string;
+
+  @ApiProperty({ description: 'YYYY-MM-DD.', example: '1990-04-21' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  dateOfBirth!: string;
+}
+
+/** Only whether they're already a member: nothing stored is ever returned. */
+export class KioskFindMeResultDto {
+  @ApiProperty()
+  alreadyMember!: boolean;
+}
+
 /** POST /schools/{schoolId}/front-desk/code-lookups and
  * POST /front-desk/kiosk/code-lookups (Decision 384, handover F3). */
 export class CheckInCodeLookupDto {

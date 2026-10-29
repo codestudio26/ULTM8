@@ -3326,6 +3326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Gizliliğiniz için bu cihaz, hakkınızda zaten sahip olduğumuz bilgileri asla göstermez.",
       goCheckIn: "Girişe git",
       signUp: "Kaydol",
+      failed: "Şu anda kontrol edemedik. Lütfen tekrar deneyin veya resepsiyona sorun.",
     },
   },
 };

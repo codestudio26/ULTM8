@@ -5044,6 +5044,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/find-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_findMe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/check-ins": {
         parameters: {
             query?: never;
@@ -9436,6 +9452,18 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             student: components["schemas"]["KioskStudentDto"];
+        };
+        KioskFindMeDto: {
+            /** @description First name and surname, as typed. */
+            fullName: string;
+            /**
+             * @description YYYY-MM-DD.
+             * @example 1990-04-21
+             */
+            dateOfBirth: string;
+        };
+        KioskFindMeResultDto: {
+            alreadyMember: boolean;
         };
         KioskUnlockDto: {
             /** @description A staff member's own code (4 or 6 digits). */
@@ -17937,6 +17965,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KioskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_findMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskFindMeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskFindMeResultDto"];
                 };
             };
         };

@@ -8,8 +8,8 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * Students → Check-in; front-desk mode is a locked tablet that shows a
  * Branch's classes, short names and recent check-ins, and is left with a
  * staff member's own code; a student's personal code opens their card
- * (Decision 384); the parts still waiting for their backend (sign-up, find
- * me) are shown switched off.
+ * (Decision 384); Find me answers only yes or no (Decision 385); sign-up,
+ * still waiting for its backend, is shown switched off.
  */
 let s: GradingSchool;
 const MIN = 60_000;
@@ -252,6 +252,26 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await expect(page.getByRole('heading', { name: /Unlocked by Olive/ })).toBeVisible();
   await page.getByRole('button', { name: 'Staff sign-in' }).click();
   await expect(page).toHaveURL(/\/login/);
+});
+
+test('find me on the tablet says only whether you\'re already a member (Decision 385)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+  await page.getByRole('button', { name: /Sign up/ }).click();
+  await page.getByRole('button', { name: 'Already a member? Find me' }).click();
+
+  await page.getByLabel('Your full name').fill('Sam Lee');
+  await page.getByLabel('Date of birth').fill('2000-01-02');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('We couldn’t find you. You can sign up instead.')).toBeVisible();
+
+  await page.getByLabel('Date of birth').fill('2000-01-01');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('You’re already a member here')).toBeVisible();
+  // Nothing stored about them is shown.
+  await expect(page.getByText(/@/)).toHaveCount(0);
 });
 
 test('staff see a tablet on the Check-in page and can end it there (Decision 380)', async ({ page, browser }) => {

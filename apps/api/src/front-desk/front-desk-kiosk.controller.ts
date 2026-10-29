@@ -9,6 +9,8 @@ import { FrontDeskSessionContext, FrontDeskSessionsService } from './front-desk-
 import { FrontDeskKioskService } from './front-desk-kiosk.service';
 import {
   CheckInCodeLookupDto,
+  KioskFindMeDto,
+  KioskFindMeResultDto,
   KioskQrLookupResponseDto,
   KioskSessionInfoDto,
   KioskStudentCardDto,
@@ -24,6 +26,8 @@ import {
 const UNLOCK_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker } };
 // A code is short, so wrong guesses are kept few (handover F3: per device).
 const CODE_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
+// Find me answers only yes or no, but is still kept to a few tries (Decision 362).
+const FIND_ME_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
 const SEARCH_THROTTLE = { identity: { limit: 30, ttl: 60_000, getTracker: jwtSubTracker } };
 
 /**
@@ -78,6 +82,14 @@ export class FrontDeskKioskController {
   @Post('code-lookups')
   codeLookup(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: CheckInCodeLookupDto) {
     return this.kiosk.codeLookup(session, dto.code);
+  }
+
+  @ApiOkResponse({ type: KioskFindMeResultDto })
+  @Throttle(FIND_ME_THROTTLE)
+  @HttpCode(200)
+  @Post('find-me')
+  findMe(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskFindMeDto) {
+    return this.kiosk.findMe(session, dto.fullName, dto.dateOfBirth);
   }
 
   @ApiOkResponse({ type: DeskCheckInResponseDto })

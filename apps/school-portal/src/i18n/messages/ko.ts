@@ -3283,6 +3283,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "개인정보 보호를 위해 이 기기에는 이미 등록된 정보가 표시되지 않습니다.",
       goCheckIn: "출석 체크로 이동",
       signUp: "가입 신청",
+      failed: "지금은 확인할 수 없습니다. 다시 시도하거나 데스크에 문의하세요.",
     },
   },
 };

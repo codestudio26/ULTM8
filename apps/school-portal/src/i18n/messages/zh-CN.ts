@@ -3283,6 +3283,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "为保护你的隐私，此设备绝不会显示我们已有的你的信息。",
       goCheckIn: "前往签到",
       signUp: "报名",
+      failed: "暂时无法查询。请重试，或到前台咨询。",
     },
   },
 };

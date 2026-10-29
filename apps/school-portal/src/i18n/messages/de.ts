@@ -3326,6 +3326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Zum Schutz deiner Privatsphäre zeigt dieses Gerät nie Daten an, die wir schon über dich haben.",
       goCheckIn: "Zum Check-in",
       signUp: "Anmelden",
+      failed: "Wir konnten das gerade nicht prüfen. Versuch es bitte noch mal oder frag am Empfang.",
     },
   },
 };

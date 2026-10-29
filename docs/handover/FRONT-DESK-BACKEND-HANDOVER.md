@@ -91,6 +91,8 @@ The School Portal has both front-desk screens, built on the API that already exi
   - Website sign-ups (Decision 318) follow the same rules.
 
 ### F6. Find me `findMe` (Decision 351)
+**Built 28 Oct 2026 (Decision 385):** `POST /front-desk/kiosk/find-me` `{ fullName, dateOfBirth }` → `{ alreadyMember }`, tablet only, 10 a minute per tablet. The note below is the original ask.
+
 - **`POST /front-desk/find-me`** returns only `{ alreadyMember: boolean }`. It never returns or fills in stored details.
 - **Request:** `{ fullName, dateOfBirth }`. Both must match a member of the School (Decision 362), so nobody can find out who is a member by typing names. The screen already asks for both.
 

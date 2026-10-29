@@ -3283,6 +3283,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "プライバシー保護のため、この端末に登録済みの情報が表示されることはありません。",
       goCheckIn: "チェックインへ",
       signUp: "入会申込",
+      failed: "今は確認できませんでした。もう一度お試しいただくか、受付でお尋ねください。",
     },
   },
 };

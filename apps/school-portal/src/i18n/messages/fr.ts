@@ -3326,6 +3326,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       privacy: "Pour protéger votre vie privée, cet appareil n'affiche jamais les informations que nous avons déjà sur vous.",
       goCheckIn: "Aller au pointage",
       signUp: "S'inscrire",
+      failed: "Impossible de vérifier pour le moment. Réessayez, ou demandez à l'accueil.",
     },
   },
 };

@@ -108,6 +108,14 @@ export function useKioskCodeLookup() {
   return useMutation({ mutationFn: (code: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/code-lookups', { body: { code } })) });
 }
 
+/** Find me (Decision 385): only whether a full name and date of birth match
+ * a member here. */
+export function useKioskFindMe() {
+  return useMutation({
+    mutationFn: (body: { fullName: string; dateOfBirth: string }) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/find-me', { body })),
+  });
+}
+
 export function useKioskCheckIn() {
   const queryClient = useQueryClient();
   return useDeskCheckIn(
