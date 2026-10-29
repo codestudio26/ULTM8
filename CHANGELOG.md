@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff notes on a student** (backlog 3.10; Decisions 315, 400) — a
+  **Notes** card on the student's page: any staff who can see the student add
+  notes, staff-only or ticked **Show to member**; the author or an owner edits
+  or deletes one. Shown notes appear in the student app (*Notes from your
+  School*, and a child's for their Guardian), on the staff check-in card, and
+  on the front-desk tablet after the member scans their QR or types their
+  code. **Needs a database migration** (`20270101000000_student_notes`).
 - **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
   now a choice of Female, Male or not given, in the portal (Edit profile,
   register) and the student app (profile), and the API refuses anything else.

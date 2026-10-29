@@ -66,6 +66,7 @@ export const frontDesk = {
     waiverSigned: '✓ Waiver signed',
     waiverToSign: 'Waiver to sign: {titles}',
     tick: 'Classes today',
+    notesLabel: "From your School",
     noOpenClasses: 'No more classes today.',
     alreadyIn: 'Checked in',
     booked: 'Booked',

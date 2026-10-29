@@ -15920,6 +15920,15 @@
               "format": "date-time",
               "type": "string"
             }
+          },
+          {
+            "name": "lookupToken",
+            "required": false,
+            "in": "query",
+            "description": "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -16007,6 +16016,15 @@
             "in": "query",
             "schema": {
               "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lookupToken",
+            "required": false,
+            "in": "query",
+            "description": "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400).",
+            "schema": {
               "type": "string"
             }
           }
@@ -16690,6 +16708,239 @@
         },
         "tags": [
           "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/student-notes/me": {
+      "get": {
+        "operationId": "StudentNotesController_mine",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A Guardian's child; leave out for your own notes.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberNoteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/notes": {
+      "get": {
+        "operationId": "StudentNotesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentNotesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/notes/{noteId}": {
+      "patch": {
+        "operationId": "StudentNotesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "StudentNotesController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-notes"
         ],
         "security": [
           {
@@ -31955,6 +32206,13 @@
             "items": {
               "$ref": "#/components/schemas/KioskBookingDto"
             }
+          },
+          "memberNotes": {
+            "description": "Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -31962,7 +32220,8 @@
           "membershipStatus",
           "waiverSigned",
           "waiversToSign",
-          "bookings"
+          "bookings",
+          "memberNotes"
         ]
       },
       "KioskQrLookupResponseDto": {
@@ -32367,6 +32626,134 @@
         "required": [
           "items"
         ]
+      },
+      "MemberNoteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "body",
+          "createdAt"
+        ]
+      },
+      "MemberNoteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberNoteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "showToMember": {
+            "type": "boolean"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The author's name; null once their account is gone."
+          },
+          "authorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "editedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Whether the caller may edit or delete it: its author, or a School owner."
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "showToMember",
+          "createdAt",
+          "canEdit"
+        ]
+      },
+      "StudentNoteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentNoteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateStudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "showToMember": {
+            "type": "boolean",
+            "description": "Shown to the student in the app (a child: to their Guardian). Off by default."
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "UpdateStudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "showToMember": {
+            "type": "boolean"
+          }
+        }
       },
       "StartOpenMatDto": {
         "type": "object",

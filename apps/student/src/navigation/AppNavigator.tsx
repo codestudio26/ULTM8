@@ -22,6 +22,7 @@ import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
 import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
 import { QrCheckInScreen } from '../attendance/QrCheckInScreen';
+import { SchoolNotesScreen } from '../notes/SchoolNotesScreen';
 import { CoachDashboardScreen } from '../coach/CoachDashboardScreen';
 import { GradingBoardScreen } from '../coach/GradingBoardScreen';
 import { CoachStudentScreen } from '../coach/CoachStudentScreen';
@@ -101,6 +102,7 @@ export function AppNavigator() {
       <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: t('navigation.app.kidMode') }} />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: t('navigation.app.needsReview') }} />
       <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: t('navigation.app.checkIn') }} />
+      <Stack.Screen name="SchoolNotes" component={SchoolNotesScreen} options={({ route }) => ({ title: route.params?.name ? t('navigation.app.childNotes', { name: route.params.name }) : t('navigation.app.schoolNotes') })} />
       <Stack.Screen
         name="MyGrading"
         component={MyGradingScreen}

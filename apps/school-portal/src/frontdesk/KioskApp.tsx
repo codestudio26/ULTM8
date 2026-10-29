@@ -372,7 +372,7 @@ function KioskWelcome({
   onBack: () => void;
   onDone: (classIds: string[]) => void;
 }) {
-  const card = useKioskCard(student.id);
+  const card = useKioskCard(student.id, qr?.lookupToken ?? null);
   const checkIn = useKioskCheckIn();
   const recharge = useKioskPackRecharges();
   if (!card.data) {
@@ -391,7 +391,7 @@ function KioskWelcome({
       student={{ ...student, profilePhotoUrl: data.student.profilePhotoUrl }}
       classes={classes}
       mine={mine}
-      info={{ membershipStatus: data.membershipStatus, waivers: { signed: data.waiverSigned, toSign: data.waiversToSign }, progress: data.progress }}
+      info={{ membershipStatus: data.membershipStatus, waivers: { signed: data.waiverSigned, toSign: data.waiversToSign }, progress: data.progress, memberNotes: data.memberNotes }}
       checkIn={checkIn}
       recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => (
