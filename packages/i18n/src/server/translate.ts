@@ -194,6 +194,15 @@ function formatAmount(value: string, currency: string, locale: string): string {
   }
 }
 
+/** A YYYY-MM-DD calendar day in the reader's language (Decision 404's freeze notices). */
+function formatDay(day: string, locale: string): string {
+  try {
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00.000Z`));
+  } catch {
+    return day;
+  }
+}
+
 const NOTIFICATION_TITLES: Record<string, string> = {
   'A spot opened up': 'spotOpenedTitle',
   'Ready to grade': 'readyToGradeTitle',
@@ -212,6 +221,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Cash payment waiting': 'cashWaitingTitle',
   'Payment confirmed': 'paymentConfirmedTitle',
   'Payment cancelled': 'paymentCancelledTitle',
+  // Decision 404 — apps/api/src/memberships/freeze/membership-freezes.service.ts.
+  'Freeze approved': 'freezeApprovedTitle',
+  'Freeze declined': 'freezeDeclinedTitle',
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
@@ -379,6 +391,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
     (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  // Decision 404 — MembershipFreezesService.notifyDecision. Dates are YYYY-MM-DD.
+  [
+    /^Your (.+) membership is frozen from (\d{4}-\d{2}-\d{2})\. You're back on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'freezeApprovedBody', { plan: m[1], start: formatDay(m[2], locale), back: formatDay(m[3], locale) }),
+  ],
+  [
+    /^Your School declined your request to freeze (.+) from (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'freezeDeclinedBody', { plan: m[1], start: formatDay(m[2], locale) }),
   ],
 ];
 
