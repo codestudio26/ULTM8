@@ -6718,3 +6718,25 @@ Check-in had fixed rules: it opened the School's set minutes before a class (Dec
 ### Recorded by
 
 User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.
+
+---
+
+## Decision 395 — Sell the used-up pack at the desk during check-in
+
+**Date:** 29 Oct 2026. **Builds:** front-desk handover F8's desk payment, which Decision 393 left [UNRESOLVED].
+
+### Decision
+
+1. **The "Pack used up" card has a second button, "Sell at the desk"**, next to "Offer the same pack in their app". It sells the same pack with the existing desk sale (Decisions 346 to 348): cash, bank transfer, Pix or card terminal. *(Product owner, 29 Oct 2026: "Build the shortcut".)*
+2. **It adds no payment rule.** It is the same `POST /schools/{schoolId}/desk-payments` the Transactions page uses, with every check it makes (the School's payments set up, the plan still sold, the member one of the caller's students).
+3. **Who sees it:** the owner, and Branch Staff when the School lets them record payments (Decision 347). Coaches and the locked tablet never do; they keep "Offer the same pack in their app".
+4. **Check-in follows the sale.** The card makes the same pack-recharge offer first, so once the sale is recorded the offer is paid and the person is checked in to the ticked classes, as when they buy it in the app.
+
+### How it is built
+
+- `PackRechargeDto` also returns `membershipPlanId`, so the desk knows which pack to sell.
+- School Portal only: the card's button, a "Paid by" choice and "Record payment". No migration.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".

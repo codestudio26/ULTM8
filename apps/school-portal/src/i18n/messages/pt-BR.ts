@@ -3484,6 +3484,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "Pago. Fazendo check-in…",
       expired: "O check-in desta aula foi encerrado. O pacote ainda pode ser comprado no app.",
       failed: "Não foi possível oferecer o pacote. Pergunte na recepção.",
+      sellAtDesk: "Vender na recepção",
+      sellBody: "{plan} · {price}. Receba o pagamento e registre-o aqui. O check-in é feito assim que ele for registrado.",
+      paidBy: "Pago com",
+      recordSale: "Registrar pagamento",
+      sellFailed: "Não foi possível registrar o pagamento. Tente de novo.",
     },
     findMe: {
       title: "Encontre-me",

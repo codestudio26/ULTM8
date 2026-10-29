@@ -3484,6 +3484,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "Payé. Pointage en cours…",
       expired: "Le pointage pour ce cours est fermé. Le carnet peut toujours être acheté dans l'application.",
       failed: "Impossible de proposer le carnet. Veuillez demander à l'accueil.",
+      sellAtDesk: "Vendre à l’accueil",
+      sellBody: "{plan} · {price}. Encaissez le paiement, puis enregistrez-le ici. La personne est enregistrée dès que le paiement l’est.",
+      paidBy: "Payé par",
+      recordSale: "Enregistrer le paiement",
+      sellFailed: "Impossible d’enregistrer le paiement. Veuillez réessayer.",
     },
     findMe: {
       title: "Me retrouver",

@@ -117,6 +117,7 @@ The School Portal has both front-desk screens, built on the API that already exi
 - **for the QR:** verify the token when the welcome card opens (`POST /front-desk/lookup` `{ studentToken }` → a short-lived lookup id), so ticking classes isn't a race.
 
 ### F8. Pack used up: buy the same pack (Decision 316 item 7)
+**Decision 395 (29 Oct 2026):** staff who may record desk payments can also "Sell at the desk" from the card; the existing desk sale, then the same check-in.
 **Built 29 Oct 2026 (Decision 393):** a used-up pack refuses with `PACK_USED_UP`; `POST /schools/{schoolId}/front-desk/pack-recharges` (and `/front-desk/kiosk/pack-recharges`) offers the same pack in the member's app (`GET /pack-recharges/me`); the card polls `GET …/{id}` and finishes with `POST …/{id}/complete` once paid. The note below is the original ask.
 
 **Today:** the API's refusal ("no Active Membership …") is shown.

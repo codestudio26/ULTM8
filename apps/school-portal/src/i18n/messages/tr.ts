@@ -3484,6 +3484,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "Ödendi. Giriş yapılıyor…",
       expired: "Bu ders için giriş kapandı. Paket uygulamadan hâlâ satın alınabilir.",
       failed: "Paket teklif edilemedi. Lütfen resepsiyona sorun.",
+      sellAtDesk: "Resepsiyonda sat",
+      sellBody: "{plan} · {price}. Ödemeyi al ve buraya kaydet. Kaydedildiği anda check-in yapılır.",
+      paidBy: "Ödeme şekli",
+      recordSale: "Ödemeyi kaydet",
+      sellFailed: "Ödeme kaydedilemedi. Lütfen tekrar dene.",
     },
     findMe: {
       title: "Beni bul",

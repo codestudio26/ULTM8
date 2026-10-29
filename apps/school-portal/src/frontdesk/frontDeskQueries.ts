@@ -6,6 +6,7 @@ import { apiClient } from '../api';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
 import type { BookingResponse } from '../bookings/bookingQueries';
+import type { DeskPaymentMethod } from '../membershipPlans/membershipPlanQueries';
 
 export type MembershipStatus = components['schemas']['MembershipStatusResponseDto']['status'];
 
@@ -228,14 +229,29 @@ export function useFrontDeskCheckIn(schoolId: string | null) {
  * person's app, see whether it's paid, then finish the check-in.
  */
 export interface PackRechargeApi {
-  create: (body: { studentId: string; classIds: string[]; lookupToken?: string }) => Promise<{ id: string; planTitle: string; price: number; currency?: string | null }>;
+  create: (body: { studentId: string; classIds: string[]; lookupToken?: string }) => Promise<{ id: string; membershipPlanId: string; planTitle: string; price: number; currency?: string | null }>;
+  /** Decision 395: record the same pack as a desk sale (cash, bank, Pix or card
+   * terminal). Only for staff who may record desk payments; never on the tablet. */
+  sell?: (body: { studentId: string; membershipPlanId: string; paymentMethod: DeskPaymentMethod }) => Promise<unknown>;
   status: (id: string) => Promise<{ paid: boolean; expired: boolean; completed: boolean }>;
   complete: (id: string) => Promise<DeskCheckInResult>;
 }
 
-export function useStaffPackRecharges(schoolId: string | null): PackRechargeApi {
+/** `maySell`: the caller may record desk payments here (Decision 347): the
+ * owner, or Branch Staff when the School allows it. */
+export function useStaffPackRecharges(schoolId: string | null, maySell = false): PackRechargeApi {
+  const queryClient = useQueryClient();
   const path = { schoolId: schoolId! };
   return {
+    ...(maySell
+      ? {
+          sell: async (body: { studentId: string; membershipPlanId: string; paymentMethod: DeskPaymentMethod }) => {
+            const sold = await unwrap(apiClient.POST('/v1/schools/{schoolId}/desk-payments', { params: { path }, body }));
+            await queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] });
+            return sold;
+          },
+        }
+      : {}),
     create: (body) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/pack-recharges', { params: { path }, body })),
     status: (id) => unwrap(apiClient.GET('/v1/schools/{schoolId}/front-desk/pack-recharges/{id}', { params: { path: { ...path, id } } })),
     complete: (id) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete', { params: { path: { ...path, id } } })),

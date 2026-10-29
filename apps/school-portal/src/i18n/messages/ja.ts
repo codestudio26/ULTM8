@@ -3441,6 +3441,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "支払い完了。チェックイン中…",
       expired: "このクラスのチェックインは締め切られました。回数券はアプリで引き続き購入できます。",
       failed: "回数券を案内できませんでした。受付でお尋ねください。",
+      sellAtDesk: "受付で販売",
+      sellBody: "{plan} · {price}。支払いを受け取り、ここで記録してください。記録されるとすぐにチェックインされます。",
+      paidBy: "支払い方法",
+      recordSale: "支払いを記録",
+      sellFailed: "支払いを記録できませんでした。もう一度お試しください。",
     },
     findMe: {
       title: "自分を探す",

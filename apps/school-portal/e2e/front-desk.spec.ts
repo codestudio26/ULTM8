@@ -48,6 +48,8 @@ test.afterEach(async () => {
   await db.trainingLog.deleteMany({ where });
   await db.bookingAttendee.deleteMany({ where });
   await db.booking.deleteMany({ where });
+  await db.transaction.deleteMany({ where });
+  await db.paymentAccount.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
   await db.class.deleteMany({ where });
@@ -499,4 +501,45 @@ test('a check-in rule the person breaks is shown as its reason (Decision 394)', 
   await card.getByRole('button', { name: 'Check in to 1 class' }).click();
   await expect(card.getByRole('alert')).toContainText('This School needs a signed waiver before checking in.');
   expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('UPCOMING');
+});
+
+test('a used-up Class Pack can be sold at the desk, and the card then checks the student in (Decision 395)', async ({ page }) => {
+  const cls = await classNow();
+  // A desk sale needs the School's payments set up, as on the student's page.
+  await db.paymentAccount.create({ data: { id: randomUUID(), schoolId: s.schoolId, provider: 'BANK_TRANSFER', accountTitle: 'Desk', country: 'GB' } });
+  const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Five classes', price: 4000, currency: 'GBP', classesIncluded: 5 } });
+  await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, frequency: 'ONE_TIME', classesRemaining: 0, createdAt: at(-60 * MIN) },
+  });
+
+  // A coach can offer the pack but can't take money at the desk.
+  const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  let card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(card.getByTestId('fd-pack-used-up').getByRole('button', { name: 'Offer the same pack in their app' })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Sell at the desk' })).toHaveCount(0);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  const note = card.getByTestId('fd-pack-used-up');
+  await note.getByRole('button', { name: 'Sell at the desk' }).click();
+  await expect(note).toContainText('Five classes');
+  await expect(note).toContainText('Take the payment, then record it here.');
+  await note.getByLabel('Paid by').selectOption('PIX');
+  await note.getByRole('button', { name: 'Record payment' }).click();
+
+  await expect(page.getByText('Checked in ✓')).toBeVisible({ timeout: 15_000 });
+  expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('COMPLETED');
+  const sale = await db.transaction.findFirstOrThrow({ where: { studentId: s.student.id, membershipPlanId: plan.id } });
+  expect(sale.paymentMethod).toBe('PIX');
 });
