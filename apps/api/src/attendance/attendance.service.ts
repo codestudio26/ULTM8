@@ -13,6 +13,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { queueReadyCheck } from '../jobs/grading-notifications.types';
+import { assertPersonMayCheckIn, checkInClosesAt, loadCheckInRules } from './check-in-rules';
 
 /**
  * Phase 13 built self-service-only QR check-in against a bare `bookingId` — the
@@ -291,13 +292,14 @@ export class AttendanceService {
     // Check-in opens the School's set number of minutes before the Class starts
     // (product owner, 26 Oct 2026; 30 by default). Before this, a Student could be
     // checked into next week's Class and the attendance counted toward grading.
-    // Read via ultm8_jobs: a School setting, not a row the caller owns.
-    const school = await this.prismaJobs.school.findUnique({ where: { id: cls.schoolId }, select: { checkInOpensMinutesBeforeStart: true } });
-    const opensAt = new Date(cls.startDate.getTime() - (school?.checkInOpensMinutesBeforeStart ?? 30) * 60_000);
+    // It closes when the Class ends, or earlier by the School's check-in rules
+    // (Decision 394).
+    const rules = await loadCheckInRules(this.prismaJobs, cls.schoolId);
+    const opensAt = new Date(cls.startDate.getTime() - rules.opensMinutesBeforeStart * 60_000);
     if (now < opensAt) {
       throw new BadRequestException({ code: 'CHECK_IN_NOT_OPEN', message: `Check-in for this Class hasn't opened yet. It opens at ${opensAt.toISOString()}.` });
     }
-    const cutoff = cls.qrAttendanceEndAt ?? cls.endDate;
+    const cutoff = checkInClosesAt(cls, rules);
     if (now > cutoff) {
       throw new BadRequestException('The check-in window for this Class has closed.');
     }
@@ -347,6 +349,10 @@ export class AttendanceService {
    * desk's one-step check-in (Decision 378) runs it for several Classes in one
    * transaction. Call afterCheckIn once the transaction has committed. */
   async completeInTx(tx: TenantTx, studentId: string, booking: { id: string; classId: string }, method: CheckInMethod, checkedInById: string | null) {
+    // The School's check-in rules about the person (Decision 394), for every
+    // way in: waiver, home Branch, visitors.
+    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id);
+
     // Optimistic-concurrency guard, same established pattern as every other
     // status transition in this codebase — guards against a double-scan
     // race (any combination of the three methods) or a race against the

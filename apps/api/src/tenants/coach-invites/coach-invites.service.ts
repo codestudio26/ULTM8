@@ -253,6 +253,10 @@ export class CoachInvitesService {
         data: { acceptedAt: new Date(), acceptedById: callerId },
       });
       if (claimed.count !== 1) throw new ConflictException('This invite can no longer be accepted.');
+      // Decision 390: someone paused gets their roles back when the School
+      // unpauses them, not through an invite.
+      const paused = await tx.roleGrant.findFirst({ where: { userId: callerId, schoolId: invite.schoolId, pausedAt: { not: null } }, select: { id: true } });
+      if (paused) throw new ConflictException('Your roles at this School are paused. Ask the School to unpause you.');
 
       const existing = await tx.roleGrant.findFirst({
         where: { userId: callerId, schoolId: invite.schoolId, branchId: invite.branchId, role: 'INSTRUCTOR', revokedAt: null },

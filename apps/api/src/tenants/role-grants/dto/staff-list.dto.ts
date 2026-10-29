@@ -11,10 +11,13 @@ export type StaffRole = (typeof STAFF_ROLES)[number];
 
 /** GET /schools/{schoolId}/staff filters (Decision 361). */
 export class StaffListQueryDto {
-  @ApiPropertyOptional({ enum: ['active', 'removed', 'all'], description: 'Default active. "removed" = had a staff role here, holds none now.' })
+  @ApiPropertyOptional({
+    enum: ['active', 'paused', 'removed', 'all'],
+    description: 'Default active, which includes paused staff (Decision 390). "paused" = paused only. "removed" = had a staff role here, holds none now and is not paused.',
+  })
   @IsOptional()
-  @IsIn(['active', 'removed', 'all'])
-  status?: 'active' | 'removed' | 'all';
+  @IsIn(['active', 'paused', 'removed', 'all'])
+  status?: 'active' | 'paused' | 'removed' | 'all';
 
   @ApiPropertyOptional({ enum: STAFF_ROLES })
   @IsOptional()
@@ -55,6 +58,9 @@ export class StaffRoleDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   revokedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 390: set while this role is paused (revokedAt is set too). Unpausing gives it back.' })
+  pausedAt!: string | null;
 }
 
 /** Decision 387 — a Branch Staff member's access switches. */
@@ -86,6 +92,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: 'Manage disciplines, belts and skills for the whole School (off by default; Decision 383).' })
   @IsBoolean()
   disciplines!: boolean;
+
+  @ApiProperty({ description: "Change the School's check-in rules (off by default; Decision 394)." })
+  @IsBoolean()
+  checkInRules!: boolean;
 }
 
 export class StaffAccessResponseDto {
@@ -136,6 +146,12 @@ export class StaffMemberDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'When their last staff role here ended, for removed staff.' })
   removedAt!: string | null;
 
+  @ApiProperty({ description: 'Decision 390: an owner paused their coach and Branch Staff roles here; Unpause gives them back. Never true with active.' })
+  paused!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 390: when they were paused.' })
+  pausedAt!: string | null;
+
   @ApiProperty()
   canInviteCoaches!: boolean;
 
@@ -154,7 +170,7 @@ export class StaffMemberDto {
   @ApiPropertyOptional({
     type: StaffAccessDto,
     nullable: true,
-    description: "Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise.",
+    description: "Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise.",
   })
   access!: StaffAccessDto | null;
 
@@ -257,4 +273,31 @@ export class StaffDetailsResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   workPhone!: string | null;
+}
+
+/** POST /schools/{schoolId}/staff/{userId}/pause (Decision 390). */
+export class PauseStaffResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ description: 'How many coach and Branch Staff roles were paused.' })
+  pausedRoles!: number;
+
+  @ApiProperty()
+  pausedAt!: string;
+}
+
+/** POST /schools/{schoolId}/staff/{userId}/unpause (Decision 390). */
+export class UnpauseStaffResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ description: 'How many roles came back.' })
+  restoredRoles!: number;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Branches closed while they were paused: their roles there did not come back. Give them a role at another branch if they need one.',
+  })
+  closedBranches!: string[];
 }

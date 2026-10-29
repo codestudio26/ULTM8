@@ -692,6 +692,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/{userId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_pauseStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/unpause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_unpauseStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
@@ -4292,6 +4324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/check-in-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CheckInRulesController_get"];
+        put: operations["CheckInRulesController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -5739,6 +5787,16 @@ export interface components {
             cancellationPolicyChosenAt?: string | null;
             /** @description Minutes before a Class starts that check-in opens. */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            checkInRequireWaiver: boolean;
+            /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
+            checkInOtherBranches: boolean;
+            /** @description Decision 394: Visitors may check in on their visit pass. */
+            checkInVisitors: boolean;
+            /** @description Decision 394: the front desk may check someone in to several Classes at once. */
+            checkInSeveralClasses: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6336,6 +6394,8 @@ export interface components {
             inviteCoaches: boolean;
             /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
             disciplines: boolean;
+            /** @description Change the School's check-in rules (off by default; Decision 394). */
+            checkInRules: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -6347,6 +6407,8 @@ export interface components {
             grantedAt: string;
             grantedByName?: string | null;
             revokedAt?: string | null;
+            /** @description Decision 390: set while this role is paused (revokedAt is set too). Unpausing gives it back. */
+            pausedAt?: string | null;
         };
         StaffMemberDto: {
             userId: string;
@@ -6361,6 +6423,10 @@ export interface components {
             addedAt: string;
             /** @description When their last staff role here ended, for removed staff. */
             removedAt?: string | null;
+            /** @description Decision 390: an owner paused their coach and Branch Staff roles here; Unpause gives them back. Never true with active. */
+            paused: boolean;
+            /** @description Decision 390: when they were paused. */
+            pausedAt?: string | null;
             canInviteCoaches: boolean;
             /** @description Branch Staff the owner lets edit styles, belts and skills (Decision 383). */
             canManageDisciplines: boolean;
@@ -6370,7 +6436,7 @@ export interface components {
             displayName?: string | null;
             /** @description Decision 381: their work phone at this School (E.164), set by an owner. Null = not set. */
             workPhone?: string | null;
-            /** @description Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise. */
+            /** @description Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise. */
             access?: components["schemas"]["StaffAccessDto"] | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
@@ -6399,6 +6465,19 @@ export interface components {
         StaffAccessResponseDto: {
             userId: string;
             access: components["schemas"]["StaffAccessDto"];
+        };
+        PauseStaffResponseDto: {
+            userId: string;
+            /** @description How many coach and Branch Staff roles were paused. */
+            pausedRoles: number;
+            pausedAt: string;
+        };
+        UnpauseStaffResponseDto: {
+            userId: string;
+            /** @description How many roles came back. */
+            restoredRoles: number;
+            /** @description Branches closed while they were paused: their roles there did not come back. Give them a role at another branch if they need one. */
+            closedBranches: string[];
         };
         HandOverMainOwnerDto: {
             /** @description A co-owner of this School, who becomes its main owner. */
@@ -9342,6 +9421,25 @@ export interface components {
             classes: components["schemas"]["DeskCheckInClassResultDto"][];
             guests: components["schemas"]["DeskCheckInGuestResultDto"][];
         };
+        CheckInRulesDto: {
+            /** @description Minutes before a Class starts that check-in opens (default 30). */
+            opensMinutesBeforeStart: number;
+            /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
+            closesMinutesAfterStart?: number | null;
+            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            requireWaiver: boolean;
+            /** @description Members with a home Branch may check in at the School's other Branches (default on). */
+            otherBranches: boolean;
+            /** @description Visitors may check in on their visit pass (default on; Decision 391). */
+            visitors: boolean;
+            /** @description The front desk may check someone in to several Classes at once (default on; Decision 378). */
+            severalClasses: boolean;
+            /**
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length.
+             * @enum {number}
+             */
+            codeDigits: 4 | 6;
+        };
         AcademySummaryDto: {
             id: string;
             franchiseId?: string | null;
@@ -9876,6 +9974,8 @@ export interface components {
         };
         PackRechargeDto: {
             id: string;
+            /** @description The pack to buy again. The desk can also sell it there (Decision 395). */
+            membershipPlanId: string;
             planTitle: string;
             /** @description Minor units. */
             price: number;
@@ -9900,6 +10000,10 @@ export interface components {
             expiresAt: string;
             /** @description Check-in opens this many minutes before a Class starts (the School's setting). */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: several Classes may be checked in at once. */
+            checkInSeveralClasses: boolean;
             /**
              * @description How many digits staff codes have here.
              * @enum {number}
@@ -11233,8 +11337,8 @@ export interface operations {
     RoleGrantsController_listStaff: {
         parameters: {
             query?: {
-                /** @description Default active. "removed" = had a staff role here, holds none now. */
-                status?: "active" | "removed" | "all";
+                /** @description Default active, which includes paused staff (Decision 390). "paused" = paused only. "removed" = had a staff role here, holds none now and is not paused. */
+                status?: "active" | "paused" | "removed" | "all";
                 role?: "SCHOOL_OWNER_MANAGER" | "INSTRUCTOR" | "BRANCH_STAFF";
                 branchId?: string;
                 /** @description Part of a name or email, any capitals. */
@@ -11327,6 +11431,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_pauseStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseStaffResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_unpauseStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnpauseStaffResponseDto"];
                 };
             };
         };
@@ -17299,6 +17447,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    CheckInRulesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
+                };
+            };
+        };
+    };
+    CheckInRulesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
                 };
             };
         };

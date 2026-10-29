@@ -129,7 +129,7 @@ describeIfDb('Pack used up: buy the same pack (Decision 393)', () => {
 
     const offer = await http().post(`${base()}/pack-recharges`).set(as('owner')).send({ studentId: users.ana.id, classIds: [cls.id] });
     expect(offer.status).toBe(201);
-    expect(offer.body).toMatchObject({ planTitle: 'Five classes', price: 4000, currency: 'GBP' });
+    expect(offer.body).toMatchObject({ membershipPlanId: plan.id, planTitle: 'Five classes', price: 4000, currency: 'GBP' });
 
     const mine = await http().get('/v1/pack-recharges/me').set(as('ana'));
     expect(mine.body.items).toEqual([expect.objectContaining({ id: offer.body.id, schoolName: 'Recharge School', childFirstName: null, plan: expect.objectContaining({ id: plan.id, title: 'Five classes' }) })]);

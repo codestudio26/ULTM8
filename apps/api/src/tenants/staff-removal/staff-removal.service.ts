@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
-import { RoleGrantsService } from '../role-grants/role-grants.service';
+import { LIVE_OR_PAUSED, RoleGrantsService } from '../role-grants/role-grants.service';
 import { CancellationService } from '../../bookings/cancellation.service';
 import { RemoveFromSchoolDto } from '../role-grants/dto/staff-list.dto';
 
@@ -78,7 +78,8 @@ export class StaffRemovalService {
       Promise.all([
         tx.class.findMany({ where: where.classes, select: { id: true, branchId: true } }),
         tx.timetableSlot.findMany({ where: where.slots, select: { id: true, branchId: true } }),
-        tx.roleGrant.count({ where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } } }),
+        // Paused roles count (Decision 390): removing a paused coach still asks about their classes.
+        tx.roleGrant.count({ where: { userId, schoolId, ...LIVE_OR_PAUSED, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } } }),
       ]),
     );
     const done = { classesReassigned: 0, classesCleared: 0, classesCancelled: 0, slotsReassigned: 0, slotsCleared: 0 };

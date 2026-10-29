@@ -44,6 +44,15 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
+    // The School's check-in rules (Decision 394).
+    case 'CHECK_IN_WAIVER_REQUIRED':
+      return t('server.codes.checkInWaiverRequired');
+    case 'CHECK_IN_HOME_BRANCH_ONLY':
+      return t('server.codes.checkInHomeBranchOnly');
+    case 'CHECK_IN_VISITORS_OFF':
+      return t('server.codes.checkInVisitorsOff');
+    case 'CHECK_IN_ONE_CLASS':
+      return t('server.codes.checkInOneClass');
     // Belt correction requests (backlog 3.13).
     case 'CORRECTION_NOT_VERIFIED':
       return t('server.codes.correctionNotVerified');
