@@ -2440,7 +2440,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Gürtelgröße",
       photo: "Foto",
       photoHint: "Unverändert lassen, um das aktuelle Foto zu behalten.",
-      freeTextHint: "Freitext – noch keine Einheit oder Größentabelle festgelegt (Entscheidung 220/246).",
+      freeTextHint: "Freitext – noch keine Einheit oder Größentabelle festgelegt.",
     },
   },
   membershipPlans: {

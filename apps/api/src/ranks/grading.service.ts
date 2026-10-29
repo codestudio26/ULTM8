@@ -82,7 +82,8 @@ const WAITING_MESSAGE = (rung: string) =>
   `This student's promotion to ${rung} is waiting for its fee. It applies once the fee is paid, or the owner can waive or cancel the fee.`;
 
 /** Only active students are graded up (Decision 283): the coach's "Grading Board" setting when there is one, otherwise a live membership at the School (the board's own rule). */
-const INACTIVE_MESSAGE = 'Only active students can be graded (Decision 283). Make the student active on the Grading Board, or give them a live membership.';
+// Decision 283
+const INACTIVE_MESSAGE = 'Only active students can be graded. Make the student active on the Grading Board, or give them a live membership.';
 async function isActiveForGrading(
   tx: Prisma.TransactionClient,
   sr: { boardActiveOverride: boolean | null },
@@ -657,10 +658,12 @@ export class GradingService {
         toIndex = rungIndex(ladder, dto.targetRungId);
         if (toIndex < 0) throw new BadRequestException('targetRungId is not a belt or stripe of this style.');
         if (from && type === 'PROMOTION' && toIndex <= fromIndex) {
-          throw new BadRequestException('Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.');
+          // Decision 128, item 12
+          throw new BadRequestException('Promote only moves up; pick a higher belt or stripe. Use downgrade to move down.');
         }
         if (from && type === 'DOWNGRADE' && toIndex >= fromIndex) {
-          throw new BadRequestException('Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).');
+          // Decision 128, item 12
+          throw new BadRequestException('Downgrade only moves down; pick a lower belt or stripe.');
         }
       } else if (!from) {
         toIndex = 0; // a first grade starts on the style's first rung
@@ -695,7 +698,8 @@ export class GradingService {
       if (missingSkillIds.length > 0) {
         if (discipline.skillsRequiredToGrade) {
           throw new BadRequestException(
-            'This style requires every skill for the next rank to be signed off before grading (Decision 128, item 10). Not signed off yet: ' +
+            // Decision 128, item 10
+            'This style requires every skill for the next rank to be signed off before grading. Not signed off yet: ' +
               missingSkillIds.join(', '),
           );
         }
@@ -714,7 +718,8 @@ export class GradingService {
         if (problem === 'IN_FUTURE') throw new BadRequestException('The grading date can\'t be in the future.');
         if (problem === 'BEFORE_CURRENT_RANK') {
           throw new BadRequestException(
-            `The grading date can't be before the date the student reached their current rank, ${localDay(existing!.dateOfCurrentRank, timeZone)} (Decision 128, item 8).`,
+            // Decision 128, item 8
+            `The grading date can't be before the date the student reached their current rank, ${localDay(existing!.dateOfCurrentRank, timeZone)}.`,
           );
         }
         if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
@@ -873,11 +878,13 @@ export class GradingService {
     if (!given) return { total: 0, byType: null };
     const req = requirementFor(ladder, to.id);
     if (to.timeOnly || (req.kind === 'NEXT' && req.timeOnly)) {
-      throw new BadRequestException('The new rank counts time only, so it starts with no classes (Decision 128, item 3).');
+      // Decision 128, item 3
+      throw new BadRequestException('The new rank counts time only, so it starts with no classes.');
     }
     if (req.kind === 'NEXT' && req.countRules.classCountMode === 'EACH_TYPE') {
       if (dto.startingClasses !== undefined) {
-        throw new BadRequestException('The next rank counts each class type separately: send startingClassesByType, a number per type (Decision 174).');
+        // Decision 174
+        throw new BadRequestException('The next rank counts each class type separately: send startingClassesByType, a number per type.');
       }
       const types = req.countRules.classTypeRequirements.map((r) => r.classType);
       const byType: Record<string, number> = {};
@@ -1153,7 +1160,8 @@ export class GradingService {
 
     if (dateProblems.length > 0) {
       throw new BadRequestException(
-        `The grading date doesn't suit every student — it can't be in the future or before a student's current rank date (Decision 128, item 8): ${dateProblems.join('; ')}.`,
+        // Decision 128, item 8
+        `The grading date doesn't suit every student — it can't be in the future or before a student's current rank date: ${dateProblems.join('; ')}.`,
       );
     }
     const strip = (r: Row & { sameBelt?: boolean; missingSkills?: boolean }): Row => ({
@@ -1171,7 +1179,8 @@ export class GradingService {
     const unacknowledged = needsAcknowledgement.filter((r) => !acknowledged.has(r.studentId));
     if (unacknowledged.length > 0) {
       throw new BadRequestException(
-        `These students need a look: acknowledge them in acknowledgedStudentIds or remove them from the batch (Decision 130): ${unacknowledged
+        // Decision 130
+        `These students need a look: acknowledge them in acknowledgedStudentIds or remove them from the batch: ${unacknowledged
           .map((r) => `${r.studentId} (${r.reasons.join(', ')})`)
           .join('; ')}.`,
       );
@@ -1182,8 +1191,8 @@ export class GradingService {
     // promoted yet, waiting for its fee, one request each (Decision 300 item 6).
     const waitingForFee: Row[] = [];
     for (const row of [...ready, ...needsAcknowledgement]) {
-      const systemNote =
-        row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')} (Decision 130).` : 'Promoted in a batch.';
+      // Decision 130
+      const systemNote = row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')}.` : 'Promoted in a batch.';
       try {
         const result = await this.changeRung(
           callerId,
@@ -1561,11 +1570,13 @@ export class GradingService {
     return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder }) => {
       const req = requirementFor(ladder, sr.currentStripeId ?? '');
       if (req.kind !== 'NEXT') throw new BadRequestException('This student has no next rank to count classes toward.');
-      if (req.timeOnly) throw new BadRequestException('The current rank counts time only, so classes are not counted (Decision 128, item 3).');
+      // Decision 128, item 3
+      if (req.timeOnly) throw new BadRequestException('The current rank counts time only, so classes are not counted.');
       const classType = dto.classType ?? null;
       const ticked = req.countRules.eligibleClassTypes;
       if (ticked.length > 0 && (classType === null || !ticked.includes(classType))) {
-        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')} (Decision 176).`);
+        // Decision 176
+        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')}.`);
       }
       if (ticked.length === 0 && classType !== null && !discipline.classTypesOffered.includes(classType)) {
         throw new BadRequestException(`"${classType}" is not one of this style's class types.`);
@@ -1959,7 +1970,8 @@ export class GradingService {
       const previousEntry = currentEntry ? recent[1] : recent[0];
       if (previousEntry && dto.date < dayOf(previousEntry.effectiveDate)) {
         throw new BadRequestException(
-          `The rank date can't be before the student's previous grading on ${dayOf(previousEntry.effectiveDate)} (Decision 166).`,
+          // Decision 166
+          `The rank date can't be before the student's previous grading on ${dayOf(previousEntry.effectiveDate)}.`,
         );
       }
 
@@ -2094,8 +2106,10 @@ export class GradingService {
           toRankId: tier.rankId,
           toStripeTierId: tier.id,
           systemNote: autoVerified
-            ? 'Declared when joining: the plain first belt, verified automatically (Decision 147).'
-            : 'Declared when joining: waiting to be verified by the School (Decision 137).',
+            // Decision 147
+            ? 'Declared when joining: the plain first belt, verified automatically.'
+            // Decision 137
+            : 'Declared when joining: waiting to be verified by the School.',
         },
       });
       return { studentRank, promotionEvent };
@@ -2179,7 +2193,8 @@ export class GradingService {
             toRankId: target.rankId,
             fromStripeTierId: existing.currentStripeId,
             toStripeTierId: target.stripeTierId,
-            systemNote: 'Self-declared rank corrected while verifying (Decision 147).',
+            // Decision 147
+            systemNote: 'Self-declared rank corrected while verifying.',
             note: dto.note ?? null,
           },
         });

@@ -578,7 +578,8 @@ export class CancellationService {
     if (!booking) throw new NotFoundException('Booking not found');
     const { isOwner } = await this.assertCancellationStaff(callerId, booking.schoolId, booking.branchId);
     if ((action === 'REFUND' || action === 'MARK_PAID') && !isOwner) {
-      throw new ForbiddenException('Only the School Owner/Manager can send money back (Spec §8.2).');
+      // Spec §8.2
+      throw new ForbiddenException('Only the School Owner/Manager can send money back.');
     }
     const attendee = attendeeId ? booking.attendees.find((a) => a.id === attendeeId) : undefined;
     if (attendeeId && !attendee) throw new NotFoundException('Guest not found on this booking');
