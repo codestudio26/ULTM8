@@ -182,6 +182,12 @@ export const frontDesk = {
     sentTitle: 'Thanks',
     sentBody: 'Your sign-up is with the staff. You’ll get an email once they’ve approved it.',
   },
+  heardFrom: {
+    friend: 'Friend',
+    instagram: 'Instagram',
+    google: 'Google',
+    walkedPast: 'Walked past',
+  },
   openMat: {
     title: 'Start an open mat',
     intro: 'A one-off session today. Students with a live membership who train this style at this branch are told in the app.',

@@ -616,4 +616,8 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
   "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
   "Only the owner or Branch Staff can give a visit pass.": "ビジターパスを付与できるのはオーナーか支店スタッフだけです。",
+  "Choose one of the listed answers to \"How did you hear about us?\".": "「どこで知りましたか？」の答えを一覧から選んでください。",
+  "This sign-up has already been dealt with.": "この申込はすでに対応済みです。",
+  "Only the owner or Branch Staff can see sign-ups.": "申込を見られるのはオーナーと支店スタッフだけです。",
+  "Sign-up not found": "申込が見つかりません",
 };

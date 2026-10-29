@@ -15090,6 +15090,42 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/sign-ups": {
+      "post": {
+        "operationId": "FrontDeskKioskController_signUp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskSignUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskSignUpCreatedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/session": {
       "get": {
         "operationId": "FrontDeskKioskController_info",
@@ -15502,6 +15538,250 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups": {
+      "get": {
+        "operationId": "SignUpsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
+            "required": false,
+            "in": "query",
+            "description": "WAITING (default): waiting for staff or for the person to accept. REJECTED: the last 30 days. DONE: approved or declined.",
+            "schema": {
+              "enum": [
+                "WAITING",
+                "REJECTED",
+                "DONE"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups/{id}/approve": {
+      "post": {
+        "operationId": "SignUpsController_approve",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveSignUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveSignUpResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups/{id}/reject": {
+      "post": {
+        "operationId": "SignUpsController_reject",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/me": {
+      "get": {
+        "operationId": "SignUpsController_myInvites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpInviteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/{id}/accept": {
+      "post": {
+        "operationId": "SignUpsController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptSignUpInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptSignUpInviteResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/{id}/decline": {
+      "post": {
+        "operationId": "SignUpsController_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "tags": [
@@ -16115,6 +16395,14 @@
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
           },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -16342,6 +16630,14 @@
             "type": "number",
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. Null until the School sets it."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392: the \"How did you hear about us?\" choices. Null: the starting list, shown in the viewer's language.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "checkInCodeDigits": {
             "type": "number",
@@ -16580,6 +16876,14 @@
             "type": "number",
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "checkInCodeDigits": {
             "type": "number",
@@ -29791,6 +30095,79 @@
           "code"
         ]
       },
+      "KioskSignUpDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "Decision 315 item 15: Female, Male or not given."
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "heardFrom": {
+            "type": "string",
+            "nullable": true,
+            "description": "One of the School's \"How did you hear about us?\" choices, as shown."
+          },
+          "emergencyName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyRelationship": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "kind",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "email"
+        ]
+      },
+      "KioskSignUpCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
       "KioskSessionInfoDto": {
         "type": "object",
         "properties": {
@@ -29826,6 +30203,18 @@
               6
             ],
             "description": "How many digits staff codes have here."
+          },
+          "visitorsOn": {
+            "type": "boolean",
+            "description": "Decision 392: the School has a visitor period, so the sign-up form offers Visitor."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "The School's \"How did you hear about us?\" choices. Null: show the starting list in the tablet's language.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -29834,7 +30223,8 @@
           "schoolName",
           "expiresAt",
           "checkInOpensMinutesBeforeStart",
-          "checkInCodeDigits"
+          "checkInCodeDigits",
+          "visitorsOn"
         ]
       },
       "KioskClassDto": {
@@ -30212,6 +30602,271 @@
         },
         "required": [
           "code"
+        ]
+      },
+      "SignUpDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "INVITED",
+              "APPROVED",
+              "REJECTED",
+              "DECLINED"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "heardFrom": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyRelationship": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasAccount": {
+            "type": "boolean",
+            "description": "The email already has a ULTM8 account: approving sends it an invite to accept in the app."
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The account it became, or the one invited."
+          },
+          "approvedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rejectedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deletesAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "A rejected sign-up is deleted on this day (Decision 362)."
+          },
+          "respondedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "email",
+          "hasAccount",
+          "createdAt"
+        ]
+      },
+      "SignUpListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignUpDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ApproveSignUpDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "The home branch, when the sign-up came from a School-wide tablet at a School with branches."
+          }
+        }
+      },
+      "ApproveSignUpResultDto": {
+        "type": "object",
+        "properties": {
+          "signUp": {
+            "$ref": "#/components/schemas/SignUpDto"
+          },
+          "accountCreated": {
+            "type": "boolean",
+            "description": "A new account was made and its temporary passcode emailed."
+          },
+          "invited": {
+            "type": "boolean",
+            "description": "The email had an account: it was sent an invite to accept."
+          },
+          "visitPassGiven": {
+            "type": "boolean",
+            "description": "A Visitor got a visit pass. False when the School has no visitor period set."
+          },
+          "emailFailed": {
+            "type": "boolean",
+            "description": "The email could not be sent."
+          },
+          "temporaryPasscode": {
+            "type": "string",
+            "nullable": true,
+            "description": "Only when the passcode email failed: hand it over in person."
+          }
+        },
+        "required": [
+          "signUp",
+          "accountCreated",
+          "invited",
+          "visitPassGiven",
+          "emailFailed"
+        ]
+      },
+      "SignUpInviteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "needsBranch": {
+            "type": "boolean",
+            "description": "The School has open branches and the invite names none: choose one when accepting."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "kind",
+          "needsBranch",
+          "createdAt"
+        ]
+      },
+      "SignUpInviteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignUpInviteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptSignUpInviteDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Your home branch, when the School has branches and the invite names none."
+          }
+        }
+      },
+      "AcceptSignUpInviteResultDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "visitPassGiven": {
+            "type": "boolean"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "A fresh access token carrying the new STUDENT grant."
+          }
+        },
+        "required": [
+          "schoolId",
+          "visitPassGiven"
         ]
       },
       "StartOpenMatDto": {

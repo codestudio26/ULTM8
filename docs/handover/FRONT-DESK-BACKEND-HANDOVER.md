@@ -75,6 +75,8 @@ The School Portal has both front-desk screens, built on the API that already exi
 **Needed:** `GET /students/{id}/waiver-status?schoolId=` → `{ allSigned: boolean, missing: [{ waiverId, title }] }`, open to staff at the School and to the kiosk session. A Guardian signs for a child.
 
 ### F5. Sign-up from the tablet `signUp` (Decisions 315, 318, 351)
+**Built 29 Oct 2026 (Decision 392):** `POST /front-desk/kiosk/sign-ups` from the tablet; staff approve or reject under Students → Sign-ups (`GET/POST /schools/{schoolId}/sign-ups…`); an email that already has an account gets an invite it accepts in the student app (`/sign-ups/invites/…`); rejected sign-ups are deleted after 30 days by the daily purge. The note below is the original ask.
+
 **Visitors built 29 Oct 2026 (Decision 391):** a School sets how long a free visit pass lasts (`School.visitorPeriodDays`, no default); `POST /schools/{schoolId}/students/{studentId}/visit-passes` gives one. Until the period is set, the tablet should offer no Visitor sign-up. The sign-up itself is still to build.
 
 - **`POST /schools/{schoolId}/sign-ups`** with:

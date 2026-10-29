@@ -92,6 +92,12 @@ export class KioskSessionInfoDto {
 
   @ApiProperty({ enum: [4, 6], description: 'How many digits staff codes have here.' })
   checkInCodeDigits!: number;
+
+  @ApiProperty({ description: 'Decision 392: the School has a visitor period, so the sign-up form offers Visitor.' })
+  visitorsOn!: boolean;
+
+  @ApiPropertyOptional({ type: [String], nullable: true, description: 'The School\'s "How did you hear about us?" choices. Null: show the starting list in the tablet\'s language.' })
+  heardFromOptions!: string[] | null;
 }
 
 /** "Today" as the tablet's own clock sees it. */

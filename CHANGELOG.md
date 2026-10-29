@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
+  tablet (adults; Visitor only when the School has set a visit pass length) and
+  wait for staff. The owner, or Branch Staff with the Students switch, approves
+  or rejects them under Students → Sign-ups. A new email gets an account and a
+  temporary passcode; an email that already has an account gets an invite to
+  accept in the student app. A rejected sign-up gets a polite email, can still
+  be approved for 30 days, then is deleted. Each School edits its own "How did
+  you hear about us?" list in School settings.
 - **Front desk: start an open mat** (Decision 386) — "+ Open mat session"
   on the Check-in page makes a one-off open mat class today (style, start,
   length), and students who train that style at that branch are told in the

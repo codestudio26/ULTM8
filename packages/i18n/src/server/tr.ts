@@ -616,4 +616,8 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
   "Only the owner or Branch Staff can give a visit pass.": "Ziyaretçi kartını yalnızca sahip veya şube personeli verebilir.",
+  "Choose one of the listed answers to \"How did you hear about us?\".": "“Bizi nereden duydunuz?” için listedeki yanıtlardan birini seçin.",
+  "This sign-up has already been dealt with.": "Bu kayıt zaten işleme alındı.",
+  "Only the owner or Branch Staff can see sign-ups.": "Kayıtları yalnızca okul sahibi veya şube personeli görebilir.",
+  "Sign-up not found": "Kayıt bulunamadı",
 };

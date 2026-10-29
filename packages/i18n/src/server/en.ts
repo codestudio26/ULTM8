@@ -625,4 +625,8 @@ export const SERVER_PATTERNS: string[] = [
  "An open mat starts from 30 minutes ago to 24 hours ahead.",
  "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.",
  "Only the owner or Branch Staff can give a visit pass.",
+ "Choose one of the listed answers to \"How did you hear about us?\".",
+ "This sign-up has already been dealt with.",
+ "Only the owner or Branch Staff can see sign-ups.",
+ "Sign-up not found",
 ];

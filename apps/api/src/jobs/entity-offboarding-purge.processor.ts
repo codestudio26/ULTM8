@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
+import { REJECTED_SIGN_UP_DAYS } from '../front-desk/sign-up-rules';
 import { branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
@@ -201,6 +202,7 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     skipped += signatureOutcome.skipped;
 
     deleted += await this.sweepGuestWaiverSignatures(now);
+    deleted += await this.sweepRejectedSignUps(now);
 
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +
@@ -417,6 +419,15 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
     }
     return { deleted, skipped };
+  }
+
+  /** Decision 362 (and 392): a rejected sign-up is kept 30 days, so staff can
+   * still approve it, then deleted with what the person typed. */
+  private async sweepRejectedSignUps(now: Date): Promise<number> {
+    const result = await this.prismaJobs.signUp.deleteMany({
+      where: { status: 'REJECTED', rejectedAt: { lte: new Date(now.getTime() - REJECTED_SIGN_UP_DAYS * 24 * 60 * 60 * 1000) } },
+    });
+    return result.count;
   }
 
   /** Guest waiver signatures (Waivers Q9), kept like a student who has left
