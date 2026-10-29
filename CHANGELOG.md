@@ -23,6 +23,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   how check-in worked before. The owner, and Branch Staff given the new
   "Change check-in rules" access switch. Needs migration
   `20261225000100_check_in_rules`.
+- **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
+  (base, secondary, tag and stripe colours) now shows preset circles, the
+  School's saved colours and a "+" that opens a colour wheel with Brightness
+  and a colour code box. "Save colour" applies a colour and keeps it for every
+  row and every style at the School; Edit replaces a saved colour, Delete
+  removes it without changing belts that use it. The owner, or Branch Staff
+  who manage disciplines, can change the list. **Needs a database migration**
+  (`20261226000000_saved_belt_colours`).
 - **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
   tablet (adults; Visitor only when the School has set a visit pass length) and
   wait for staff. The owner, or Branch Staff with the Students switch, approves

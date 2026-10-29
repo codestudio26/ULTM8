@@ -1103,6 +1103,108 @@
 .ultm8-colour-group > input[type='radio'] {
   align-self: center;
 }
+.ultm8-colour-group > .ultm8-colour-row {
+  flex: 1 1 260px;
+}
+
+/* Belt editor colour rows (DESIGN.md "Colour choices", backlog 3.18): preset
+   circles, the School's saved colours, a dashed "+", and our own colour panel. */
+.ultm8-colour-row {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+  min-width: 0;
+}
+.ultm8-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ultm8-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ultm8-swatch--on {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+}
+.ultm8-swatch--add {
+  border: 1px dashed var(--text-muted, #6b7280);
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  font-size: 16px;
+  line-height: 1;
+}
+.ultm8-swatch--none {
+  background: linear-gradient(135deg, transparent 46%, var(--text-muted, #6b7280) 47%, var(--text-muted, #6b7280) 53%, transparent 54%);
+}
+.ultm8-swatch--small {
+  width: 16px;
+  height: 16px;
+  cursor: default;
+}
+.ultm8-swatch--preview {
+  width: 48px;
+  height: 48px;
+  cursor: default;
+}
+.ultm8-colour-row__custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: 14px;
+}
+.ultm8-colour-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.ultm8-colour-panel__wheel {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  flex: none;
+}
+.ultm8-colour-panel__wheel canvas {
+  display: block;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+.ultm8-colour-panel__marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.ultm8-colour-panel__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 160px;
+  min-width: 0;
+}
 
 /* Responsive — DESIGN.md "Layout & spacing": phone (default) / tablet ≥768px /
    desktop ≥1024px, same components at every breakpoint, not separate designs. */
