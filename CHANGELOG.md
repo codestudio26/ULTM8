@@ -23,6 +23,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   belts, last visit. The owner can always export; Branch Staff can once the owner
   turns on the new "Export the student list" access switch. Every export is
   logged. **Needs a database migration** (`20261231000000_student_export`).
+- **Fix: confirming many cash payments at once** — confirming or cancelling a
+  cash or bank-transfer payment now waits up to 10 seconds for a free database
+  connection, as booking does, instead of answering "The server is busy" after
+  2 seconds when the desk settles a lot of payments together. No migration.
 - **Membership card** (backlog 3.11; Decision 398) — "Print membership card"
   on the student's page opens a bank-card-sized card to print: the School,
   the student's photo and name, their check-in code and their current
