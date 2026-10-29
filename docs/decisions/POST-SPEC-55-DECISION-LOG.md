@@ -6794,8 +6794,8 @@ User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".
 ### Built as
 
 - **Sign-offs that carry over:** a sign-off moves to the Adult style's skill with the same name, since skills belong to one style. Decision 285 left which ones carry over open; this is the reading used, to confirm.
-- **[UNRESOLVED]** Bulk promote has no Adult group yet (Decision 281 item 2 names it). Its per-student picker lists only the student's own ladder.
-- **[UNRESOLVED]** A student on the top Kids rank isn't a board card, so they are moved from the Ranks tab.
+- **Not built yet:** the Adult group in bulk promote (Decision 281 item 2). Bulk promote still moves everyone one rank, with no per-student "Promote to" picker to hold the group; it comes with that picker.
+- **Not built yet:** a student on the top Kids rank isn't a board card (they have no next Kids rank), so they are moved from the Ranks tab.
 - **[UNRESOLVED]** No promotion fee is asked for on the move.
 
 ### Recorded by
