@@ -123,7 +123,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only that School\'s Owner/Manager may perform this action (Spec §8.2).',
+        // Spec §8.2
+        'Only that School\'s Owner/Manager may perform this action.',
       );
     }
   }
@@ -305,7 +306,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only that Franchise\'s Owner may perform this action (Spec §8.2).',
+        // Spec §8.2
+        'Only that Franchise\'s Owner may perform this action.',
       );
     }
   }
@@ -383,7 +385,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action (Spec §7).',
+        // Spec §7
+        'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.',
       );
     }
   }

@@ -2442,7 +2442,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Taille de ceinture",
       photo: "Photo",
       photoHint: "Laissez tel quel pour conserver la photo actuelle.",
-      freeTextHint: "Texte libre : aucune unité ni grille de tailles n’a encore été retenue (Décision 220/246).",
+      freeTextHint: "Texte libre : aucune unité ni grille de tailles n’a encore été retenue.",
     },
   },
   membershipPlans: {

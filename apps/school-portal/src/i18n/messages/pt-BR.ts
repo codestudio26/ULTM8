@@ -2442,7 +2442,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Tamanho da faixa",
       photo: "Foto",
       photoHint: "Deixe como está para manter a foto atual.",
-      freeTextHint: "Texto livre: ainda não há unidade nem tabela de tamanhos definida (Decisão 220/246).",
+      freeTextHint: "Texto livre: ainda não há unidade nem tabela de tamanhos definida.",
     },
   },
   membershipPlans: {

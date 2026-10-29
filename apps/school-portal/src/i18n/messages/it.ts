@@ -2442,7 +2442,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Taglia della cintura",
       photo: "Foto",
       photoHint: "Lascia invariato per mantenere la foto attuale.",
-      freeTextHint: "Testo libero: non è ancora stata concordata un’unità o una tabella taglie (Decisione 220/246).",
+      freeTextHint: "Testo libero: non è ancora stata concordata un’unità o una tabella taglie.",
     },
   },
   membershipPlans: {

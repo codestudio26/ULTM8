@@ -2405,7 +2405,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "띠 사이즈",
       photo: "사진",
       photoHint: "현재 사진을 유지하려면 변경하지 마세요.",
-      freeTextHint: "자유 입력: 단위나 사이즈표가 아직 정해지지 않았습니다(결정 220/246).",
+      freeTextHint: "자유 입력: 단위나 사이즈표가 아직 정해지지 않았습니다.",
     },
   },
   membershipPlans: {

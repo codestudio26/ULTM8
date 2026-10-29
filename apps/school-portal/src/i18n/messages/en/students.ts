@@ -163,6 +163,6 @@ export const students = {
     beltSize: 'Belt size',
     photo: 'Photo',
     photoHint: 'Leave unchanged to keep the existing photo.',
-    freeTextHint: 'Free text — no unit or size chart has been agreed yet (Decision 220/246).',
+    freeTextHint: 'Free text — no unit or size chart has been agreed yet.',
   },
 };
