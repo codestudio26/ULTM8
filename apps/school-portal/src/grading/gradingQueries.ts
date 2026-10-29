@@ -77,6 +77,20 @@ export function useSetReadyForAdultAge() {
   });
 }
 
+/** Decision 290: "Ranks shown as" Belts or Levels. Refreshes the styles and
+ * their ladders, which carry it for the belt picture. */
+export function useSetRankDisplay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ disciplineId, rankDisplay }: { disciplineId: string; rankDisplay: 'BELTS' | 'LEVELS' }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/rank-display', { params: { path: { id: disciplineId } }, body: { rankDisplay } })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+      await queryClient.invalidateQueries({ queryKey: ['ranks'] });
+    },
+  });
+}
+
 export function useStripeAward(studentId: string, disciplineId: string) {
   return useGradingMutation(studentId, (body: GradingActionInput) =>
     unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/stripe-award', { params: { path: { id: studentId, disciplineId } }, body })),

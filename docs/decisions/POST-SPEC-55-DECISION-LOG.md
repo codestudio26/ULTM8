@@ -6824,3 +6824,21 @@ User (Code), 29 Oct 2026, choosing "Two linked styles" for the Kids/Adult storag
 ### Recorded by
 
 User (Code), 29 Oct 2026, answering whether the printed card should carry a fixed QR.
+
+---
+
+## Decision 401 — How Levels are stored and set
+
+**Date:** 29 Oct 2026. **Builds:** Decision 290 (v1.3 backlog §3.19). **Changes:** nothing Decision 290 decided.
+
+### Decision
+
+1. **One setting per style:** `Discipline.rankDisplay`, `BELTS` (default) or `LEVELS`. It is set when a style is added or edited, and in Grading → Settings ("How ranks are shown") by the owner or a coach with "Change grading settings" for that style (`PUT /disciplines/{id}/rank-display`). It is display only, so it can change while students hold ranks. A duplicated style keeps it; the IBJJF templates stay Belts.
+2. **A level is a rank, its steps are rungs.** The badge colour is the rank's `primaryColour`. A step is a rung with no stripes (`count` 0, no `stripeSegments`). Grading, requirements, the board, promote, bulk promote and history use them as they use stripes.
+3. **The API refuses belt-only drawing on a Levels style** (400): stripes on a step, or a second colour, tag colour or accent on a level. Colours already stored on a style that is switched to Levels stay, unused, until the level is saved again.
+4. **Step names:** a step left unnamed is "{level} {n}" (Beginner 1, 2, 3). A step that still has a generated name (the belt form, from before a switch, or the step form) follows a rename of its level. On a Belts style only the belt form counts as generated, so a custom name such as "Blue Belt 1" is never renamed.
+5. **Every rank and ladder response says how to draw it:** `rankDisplay` on styles and ranks, and `rankDisplay`, `step` and `steps` on the student app's ladder rungs. The badge has a dot per step, filled up to the student's ("●●○" is step 2 of 3), in dark or white to suit the colour.
+
+### Recorded by
+
+Claude, 29 Oct 2026, building Decision 290; it follows the v1.3 backlog's "Suggested build" for §3.19.

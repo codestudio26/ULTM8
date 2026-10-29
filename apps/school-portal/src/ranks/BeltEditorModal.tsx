@@ -114,6 +114,8 @@ function draftFrom(t: RankResponse['stripeTiers'][number], keepId: boolean): Run
 /** The API's own name for a rung left unnamed (RanksService.generatedTierName).
  * Deliberately not translated: it previews the name the API will store. */
 const generatedName = (belt: string, count: number) => (count === 0 ? belt : `${belt} · ${count} Stripe${count === 1 ? '' : 's'}`);
+/** On a Levels style (Decision 290) a step is "{level} {n}", "Beginner 2". */
+const generatedStepName = (level: string, order: number) => `${level} ${order + 1}`;
 const total = (segments: Segment[]) => segments.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
 const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
 
@@ -234,6 +236,9 @@ export function BeltEditorModal({
 }) {
   const t = useT();
   const copying = mode === 'duplicate';
+  // Decision 290: a Levels style's ranks are a badge colour and numbered
+  // steps, with no second colour, tag or stripes.
+  const levels = discipline.rankDisplay === 'LEVELS';
   const [name, setName] = useState(initial ? (copying ? t('ranks.editor.copyName', { name: initial.name }) : initial.name) : '');
   const [primaryColour, setPrimaryColour] = useState(initial?.primaryColour ?? '#FFFFFF');
   const [secondaryColour, setSecondaryColour] = useState(initial?.secondaryColour ?? '');
@@ -252,8 +257,14 @@ export function BeltEditorModal({
   const current = rungs[Math.min(selected, rungs.length - 1)];
   const index = Math.min(selected, rungs.length - 1);
   const beltLabel = name.trim() || t('ranks.editor.unnamedRank');
-  const labelOf = (r: RungDraft) => r.name.trim() || generatedName(beltLabel, total(r.segments));
-  const shortLabel = (r: RungDraft) => (total(r.segments) === 0 ? t('ranks.editor.plainBelt') : t('ranks.editor.stripesShort', { count: total(r.segments) }));
+  const autoName = (r: RungDraft) => (levels ? generatedStepName(beltLabel, Math.max(0, rungs.indexOf(r))) : generatedName(beltLabel, total(r.segments)));
+  const labelOf = (r: RungDraft) => r.name.trim() || autoName(r);
+  const shortLabel = (r: RungDraft, i: number) =>
+    levels
+      ? t('ranks.editor.stepShort', { number: i + 1 })
+      : total(r.segments) === 0
+        ? t('ranks.editor.plainBelt')
+        : t('ranks.editor.stripesShort', { count: total(r.segments) });
   const update = (key: string, patch: Partial<RungDraft>) => setRungs((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const move = (i: number, delta: number) => {
     const j = i + delta;
@@ -283,10 +294,10 @@ export function BeltEditorModal({
   function validate(): string | null {
     if (!name.trim()) return t('ranks.editor.nameRequired');
     if (!primaryColour.trim()) return t('ranks.editor.colourRequired');
-    if (rungs.length === 0) return t('ranks.editor.lineRequired');
+    if (rungs.length === 0) return levels ? t('ranks.editor.stepRequired') : t('ranks.editor.lineRequired');
     for (const [i, r] of rungs.entries()) {
       const label = r.name.trim() || t('ranks.editor.stripeLine', { number: i + 1 });
-      if (r.segments.some((s) => !(Number(s.count) >= 1) || !s.colour.trim())) return t('ranks.editor.segmentInvalid', { label });
+      if (!levels && r.segments.some((s) => !(Number(s.count) >= 1) || !s.colour.trim())) return t('ranks.editor.segmentInvalid', { label });
       if (!r.timeOnly && r.mode === 'EACH_TYPE' && r.types.length === 0) return t('ranks.editor.typesRequired', { label });
       if (fee && r.price.trim() !== '' && !(Number(r.price) >= 0)) return t('ranks.editor.priceInvalid', { label: labelOf(r) });
     }
@@ -300,9 +311,9 @@ export function BeltEditorModal({
         {
           name: name.trim(),
           primaryColour: primaryColour.trim(),
-          secondaryColour: secondaryColour.trim() || null,
-          tagColour: tagColour.trim() || null,
-          stripeTiers: rungs.map((r, i) => toInput(r, i, !!fee)),
+          secondaryColour: levels ? null : secondaryColour.trim() || null,
+          tagColour: levels ? null : tagColour.trim() || null,
+          stripeTiers: rungs.map((r, i) => toInput(levels ? { ...r, segments: [] } : r, i, !!fee)),
         },
         position,
       );
@@ -361,6 +372,7 @@ export function BeltEditorModal({
     primaryColour: primaryColour || '#FFFFFF',
     secondaryColour: secondaryColour.trim() || null,
     tagColour: tagColour.trim() || null,
+    rankDisplay: discipline.rankDisplay,
   } as RankResponse;
   const previewTier = { ...(toInput(current, index, false) as unknown as RankResponse['stripeTiers'][number]), id: current.id ?? 'preview' };
   const pricedSummary = rungs.filter((r) => r.price.trim() !== '' && Number(r.price) > 0);
@@ -372,8 +384,8 @@ export function BeltEditorModal({
         {copying ? <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('ranks.editor.duplicateNote')}</p> : null}
         <div className="ultm8-editor-layout">
           <div style={{ minWidth: 0 }}>
-            <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('ranks.editor.gradesOf', { name: beltLabel })}</h3>
-            <ol aria-label={t('ranks.editor.gradesOf', { name: beltLabel })} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })}</h3>
+            <ol aria-label={levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {rungs.map((r, i) => {
                 const label = labelOf(r);
                 const count = r.id ? holders.get(r.id)?.length ?? 0 : 0;
@@ -390,8 +402,11 @@ export function BeltEditorModal({
                         setGroup(0);
                       }}
                     >
-                      <BeltChip rung={{ id: r.key, rankId: previewRank.id, rank: previewRank, tier: { ...(toInput(r, i, false) as unknown as RankResponse['stripeTiers'][number]) }, index: i, name: label }} />
-                      <span>{shortLabel(r)}</span>
+                      <BeltChip
+                        rung={{ id: r.key, rankId: previewRank.id, rank: previewRank, tier: { ...(toInput(r, i, false) as unknown as RankResponse['stripeTiers'][number]) }, index: i, name: label }}
+                        step={{ n: i + 1, of: rungs.length }}
+                      />
+                      <span>{shortLabel(r, i)}</span>
                       {count > 0 ? <span className="ultm8-grade-pill__count">{count}</span> : null}
                     </button>
                   </li>
@@ -400,7 +415,8 @@ export function BeltEditorModal({
             </ol>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
               <span className="ultm8-field__hint" style={{ flex: 1, minWidth: 160 }}>
-                {t('ranks.editor.gradeOf', { number: index + 1, total: rungs.length })} · {t('ranks.editor.onStripe', { count: held.length })}
+                {levels ? t('ranks.editor.stepOf', { number: index + 1, total: rungs.length }) : t('ranks.editor.gradeOf', { number: index + 1, total: rungs.length })} ·{' '}
+                {t('ranks.editor.onStripe', { count: held.length })}
               </span>
               <Button type="button" variant="secondary" onClick={() => move(index, -1)} disabled={index === 0} aria-label={t('ranks.moveUpAria', { name: labelOf(current) })}>
                 ↑
@@ -419,26 +435,34 @@ export function BeltEditorModal({
                 aria-label={held.length > 0 ? t('ranks.editor.cantRemoveAria', { label: labelOf(current), count: held.length }) : t('ranks.editor.removeAria', { label: labelOf(current) })}
                 title={held.length > 0 ? t('ranks.editor.heldTitle') : undefined}
               >
-                {t('ranks.editor.deleteGrade')}
+                {levels ? t('ranks.editor.deleteStep') : t('ranks.editor.deleteGrade')}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => {
-                  setRungs((rs) => [...rs, nextGrade(rs[rs.length - 1])]);
+                  setRungs((rs) => [...rs, levels ? { ...nextGrade(rs[rs.length - 1]), segments: [] } : nextGrade(rs[rs.length - 1])]);
                   setSelected(rungs.length);
                   setGroup(0);
                 }}
               >
-                {t('ranks.editor.addGrade')}
+                {levels ? t('ranks.editor.addStep') : t('ranks.editor.addGrade')}
               </Button>
             </div>
 
-            <Chapter number="01" title={t('ranks.editor.chapterBelt')}>
+            <Chapter number="01" title={levels ? t('ranks.editor.chapterLevel') : t('ranks.editor.chapterBelt')}>
               <Field label={t('ranks.editor.rankName')} htmlFor="belt-name" hint={t('ranks.editor.rankNameHint')}>
                 <TextField required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
               </Field>
-              <ColourRow id="belt-colour" label={t('ranks.editor.baseColour')} value={primaryColour} onChange={setPrimaryColour} schoolId={discipline.schoolId} />
+              <ColourRow
+                id="belt-colour"
+                label={levels ? t('ranks.editor.badgeColour') : t('ranks.editor.baseColour')}
+                value={primaryColour}
+                onChange={setPrimaryColour}
+                schoolId={discipline.schoolId}
+              />
+              {levels ? null : (
+                <>
               <ColourRow
                 id="belt-colour-2"
                 label={t('ranks.editor.secondaryColour')}
@@ -457,6 +481,8 @@ export function BeltEditorModal({
                 schoolId={discipline.schoolId}
                 optional
               />
+                </>
+              )}
               {mode !== 'edit' ? (
                 <Field label={t('ranks.editor.whereItGoes')} htmlFor="belt-position">
                   <SelectField value={String(position)} onChange={(e) => setPosition(Number(e.target.value))} options={positionOptions} />
@@ -465,11 +491,11 @@ export function BeltEditorModal({
               <Field
                 label={t('ranks.editor.gradeName')}
                 htmlFor={`grade-name-${current.key}`}
-                hint={t('ranks.editor.stripeNameHint', { name: generatedName(beltLabel, total(current.segments)) })}
+                hint={t('ranks.editor.stripeNameHint', { name: autoName(current) })}
               >
-                <TextField maxLength={100} value={current.name} placeholder={generatedName(beltLabel, total(current.segments))} onChange={(e) => update(current.key, { name: e.target.value })} />
+                <TextField maxLength={100} value={current.name} placeholder={autoName(current)} onChange={(e) => update(current.key, { name: e.target.value })} />
               </Field>
-              <StripeGroups r={current} group={group} setGroup={setGroup} schoolId={discipline.schoolId} onChange={(patch) => update(current.key, patch)} />
+              {levels ? null : <StripeGroups r={current} group={group} setGroup={setGroup} schoolId={discipline.schoolId} onChange={(patch) => update(current.key, patch)} />}
             </Chapter>
 
             <Chapter number="02" title={t('ranks.editor.chapterWhatItTakes')}>
@@ -496,9 +522,11 @@ export function BeltEditorModal({
             <div className="ultm8-field__hint" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>
               {t('ranks.editor.preview')}
             </div>
-            <BeltChip large rung={{ id: current.key, rankId: previewRank.id, rank: previewRank, tier: previewTier, index, name: labelOf(current) }} />
+            <BeltChip large rung={{ id: current.key, rankId: previewRank.id, rank: previewRank, tier: previewTier, index, name: labelOf(current) }} step={{ n: index + 1, of: rungs.length }} />
             <strong>{labelOf(current)}</strong>
-            <span className="ultm8-field__hint">{t('ranks.editor.beltOf', { number: ladderPlace + 1, total: ladderSize })}</span>
+            <span className="ultm8-field__hint">
+              {levels ? t('ranks.editor.levelOf', { number: ladderPlace + 1, total: ladderSize }) : t('ranks.editor.beltOf', { number: ladderPlace + 1, total: ladderSize })}
+            </span>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 6 }}>
               <strong style={{ fontSize: 14 }}>{t('ranks.editor.readyTitle')}</strong>
               <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0', display: 'grid', gap: 4, fontSize: 13 }}>

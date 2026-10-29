@@ -93,6 +93,9 @@ export class RankResponseDto {
   @ApiProperty({ type: [RankStripeTierResponseDto] })
   stripeTiers!: RankStripeTierResponseDto[];
 
+  @ApiProperty({ enum: ['BELTS', 'LEVELS'], description: 'How its style shows ranks (Decision 290): as a belt, or as a level badge in primaryColour whose steps are its stripe tiers.' })
+  rankDisplay!: 'BELTS' | 'LEVELS';
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198\'s own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative.' })
   archivedAt!: string | null;
 

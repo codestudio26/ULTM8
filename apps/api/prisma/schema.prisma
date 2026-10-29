@@ -1089,7 +1089,7 @@ model School {
   /// Backlog 3.18: the School's own colours for the belt editor, shared by
   /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
   /// most 24. Deleting one never changes a belt or stripe already using it.
-  savedBeltColours               String[]                    @default([])
+  savedBeltColours               String[]                        @default([])
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -2573,15 +2573,15 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[]  @default([])
+  classTypesOffered     String[]     @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean   @default(false)
+  skillsRequiredToGrade Boolean      @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int       @default(33)
-  boardReadyToGrade     Int       @default(66)
+  boardGettingThere     Int          @default(33)
+  boardReadyToGrade     Int          @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
@@ -2595,6 +2595,10 @@ model Discipline {
   /// program and shows "Ready for Adult program" (Decision 285 item 2). The
   /// IBJJF age, 16, by default.
   readyForAdultAge      Int          @default(16)
+  /// Ranks shown as Belts or as Levels (no belt) (Decision 290, backlog
+  /// 3.19), never a mix. Display only: a level is a badge in the rank's
+  /// primaryColour, and its steps are rungs with no stripes.
+  rankDisplay           RankDisplay  @default(BELTS)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4031,6 +4035,12 @@ enum ConsentTier {
 /// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
 /// with its own withdrawal timestamp)."
 /// How classes count toward a rung (Decisions 140, 149).
+/// How a style's ranks are drawn (Decision 290).
+enum RankDisplay {
+  BELTS
+  LEVELS
+}
+
 enum ClassCountMode {
   ANY_TYPE
   EACH_TYPE
@@ -4452,7 +4462,7 @@ model StaffPermission {
   /// "Can start open mat sessions" (Decision 304 item 4, built as Decision
   /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
   /// at their own Branches; off by default; the owner always can.
-  canStartOpenMat  Boolean @default(false)
+  canStartOpenMat Boolean @default(false)
 
   /// Decision 394: may change the School's check-in rules (Settings on the
   /// Check-in page). Branch Staff only; off by default; owners always can.

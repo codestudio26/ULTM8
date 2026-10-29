@@ -158,7 +158,7 @@ export function LadderSection({
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
                   {rank.archivedAt ? <Badge variant="default">{t('ranks.ladder.archived')}</Badge> : null}
                   <span className="ultm8-field__hint">
-                    {stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}
+                    {rank.rankDisplay === 'LEVELS' ? t('ranks.ladder.steps', { count: tiers.length }) : stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}
                   </span>
                   {onBelt > 0 ? <Badge>{t('ranks.ladder.students', { count: onBelt })}</Badge> : null}
                   {readOnly ? null : (

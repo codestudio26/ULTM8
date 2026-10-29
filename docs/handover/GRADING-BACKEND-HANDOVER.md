@@ -97,7 +97,9 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-### B4. Ranks without a belt: Levels — Decision 290 (v1.3 backlog §3.19)
+### B4. Ranks without a belt: Levels — Decision 290 (v1.3 backlog §3.19) — ✅ built
+
+> **Built** (Decision 401). `Discipline.rankDisplay` (`BELTS | LEVELS`) on create, `PATCH disciplines/:id` and `PUT disciplines/:id/rank-display` (owner, or "Change grading settings"). `rankDisplay` on every style and rank response; `rankDisplay`, `step` and `steps` on the student app's ladder rungs. Stripes, a second colour, tag colour or accent on a Levels style are refused with a 400.
 
 **What it must do:** a style shows its ranks as **Belts** or **Levels**, never a mix. A level is a coloured badge with numbered steps (Beginner 1, 2, 3), each with its own requirements. Grading works exactly as for stripes.
 

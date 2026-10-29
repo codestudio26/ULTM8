@@ -9,6 +9,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { RankDisplayDto } from './dto/create-discipline.dto';
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, MoveToAdultDto, ReadyForAdultAgeDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { ADULT_ALREADY, ADULT_FIRST_BELT, ADULT_NOT_LINKED, ADULT_TOO_YOUNG, hasReachedAge } from './kids-adult';
 import { RequestContext } from '../common/request-context';
@@ -215,7 +216,7 @@ export class GradingService {
       const { items: ranks } = await this.findEligibilityForStudent(studentId, studentId, schoolId);
       if (ranks.length === 0) continue;
       const catalog = await this.prismaApp.withTenantContext(studentId, async (tx) => ({
-        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, archivedAt: true } }),
+        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, archivedAt: true, rankDisplay: true } }),
         belts: await tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       }));
@@ -229,10 +230,11 @@ export class GradingService {
         progressBreakdown: unknown;
         hoursTrained: unknown;
       }>) {
+        const rankDisplay = catalog.styles.find((d) => d.id === row.disciplineId)?.rankDisplay ?? 'BELTS';
         const ladder = catalog.belts
           .filter((b) => b.disciplineId === row.disciplineId)
           .flatMap((b) =>
-            b.stripeTiers.map((t) => ({
+            b.stripeTiers.map((t, i) => ({
               id: t.id,
               name: t.name,
               beltName: b.name,
@@ -241,6 +243,9 @@ export class GradingService {
               stripeColour: t.colour,
               stripeCount: t.count,
               timeOnly: t.timeOnly,
+              rankDisplay,
+              step: i + 1,
+              steps: b.stripeTiers.length,
             })),
           );
         const status = new Map(row.skillStatuses.map((s) => [s.skillId, s.status]));
@@ -308,7 +313,7 @@ export class GradingService {
         return { items: [] };
       }
       const [styles, belts, held] = await Promise.all([
-        tx.discipline.findMany({ where: { schoolId, archivedAt: null }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } }),
+        tx.discipline.findMany({ where: { schoolId, archivedAt: null }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true, rankDisplay: true } }),
         tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         tx.studentRank.findMany({ where: { studentId, schoolId }, select: { disciplineId: true } }),
       ]);
@@ -321,7 +326,7 @@ export class GradingService {
           ladder: belts
             .filter((b) => b.disciplineId === d.id)
             .flatMap((b) =>
-              b.stripeTiers.map((t) => ({
+              b.stripeTiers.map((t, i) => ({
                 id: t.id,
                 rankId: b.id,
                 name: t.name,
@@ -331,6 +336,9 @@ export class GradingService {
                 stripeColour: t.colour,
                 stripeCount: t.count,
                 timeOnly: t.timeOnly,
+                rankDisplay: d.rankDisplay,
+                step: i + 1,
+                steps: b.stripeTiers.length,
               })),
             ),
         }))
@@ -1568,6 +1576,23 @@ export class GradingService {
     }
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.update({ where: { id: disciplineId }, data: { readyForAdultAge: dto.age } }),
+    );
+  }
+
+  /** Decision 290: "Ranks shown as" Belts or Levels, by the owner or whoever
+   * may change this style's grading settings. Display only, so it can change
+   * while students hold ranks. */
+  async setRankDisplay(callerId: string, disciplineId: string, dto: RankDisplayDto) {
+    if (!UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('disciplineId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertMayChangeStyleSettings(callerId, discipline);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.update({ where: { id: disciplineId }, data: { rankDisplay: dto.rankDisplay } }),
     );
   }
 

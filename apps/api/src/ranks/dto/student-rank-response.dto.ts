@@ -287,6 +287,15 @@ export class GradingLadderRungDto {
 
   @ApiProperty()
   timeOnly!: boolean;
+
+  @ApiProperty({ enum: ['BELTS', 'LEVELS'], description: 'How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps.' })
+  rankDisplay!: 'BELTS' | 'LEVELS';
+
+  @ApiProperty({ description: 'This rung\'s place on its rank, from 1 (step 2 of 3 on a level).' })
+  step!: number;
+
+  @ApiProperty({ description: 'How many rungs its rank has.' })
+  steps!: number;
 }
 
 export class GradingSkillDto {
