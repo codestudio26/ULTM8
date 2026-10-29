@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, createApiClient, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { todayWindow, useDeskCheckIn } from './frontDeskQueries';
+import { todayWindow, useDeskCheckIn, type PackRechargeApi } from './frontDeskQueries';
 
 /**
  * The locked front-desk tablet (Decision 380, handover F1, F2). Starting
@@ -114,6 +114,15 @@ export function useKioskFindMe() {
   return useMutation({
     mutationFn: (body: { fullName: string; dateOfBirth: string }) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/find-me', { body })),
   });
+}
+
+/** Decision 393: the tablet's pack recharge calls (see PackRechargeApi). */
+export function useKioskPackRecharges(): PackRechargeApi {
+  return {
+    create: (body) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/pack-recharges', { body })),
+    status: (id) => unwrap(kioskClient.GET('/v1/front-desk/kiosk/pack-recharges/{id}', { params: { path: { id } } })),
+    complete: (id) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/pack-recharges/{id}/complete', { params: { path: { id } } })),
+  };
 }
 
 export function useKioskCheckIn() {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQueryClient, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '@ultm8/ui';
 import { Avatar } from '../lib/Avatar';
 import { QrScanModal } from '../attendance/QrScanModal';
@@ -16,13 +16,16 @@ import {
   QrExpiredError,
   errorText,
   useFrontDeskCheckIn,
+  useStaffPackRecharges,
   useMembershipStatus,
   useBookingGuests,
   useStudentSearch,
   useWaiverStatus,
   type DeskCheckInVars,
+  type PackRechargeApi,
   type QrLookup,
 } from './frontDeskQueries';
+import { formatMoney } from '../lib/money';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
 
@@ -424,6 +427,7 @@ export function WelcomeCard(props: {
   const waivers = useWaiverStatus(student.id, schoolId);
   const eligibility = useStudentEligibility(student.id, schoolId);
   const checkIn = useFrontDeskCheckIn(schoolId);
+  const recharge = useStaffPackRecharges(schoolId);
   if (!props.bookingsReady || !school.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -444,6 +448,7 @@ export function WelcomeCard(props: {
       mine={mine}
       info={{ membershipStatus: status.data?.status, waivers: hasBackend('waiverStatus') ? waivers.data : undefined, progress }}
       checkIn={checkIn}
+      recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => <StaffGuestTicks bookingId={bookingId} disabled={disabled} picked={picked} onToggle={onToggle} />}
       qr={props.qr}
       short={false}
@@ -480,6 +485,7 @@ export function WelcomeCardBody({
   onDone,
   opensMinutesBefore,
   mayBook = true,
+  recharge,
 }: {
   student: FrontDeskStudent;
   classes: DeskClass[];
@@ -493,6 +499,8 @@ export function WelcomeCardBody({
   onDone: (classIds: string[]) => void;
   opensMinutesBefore: number;
   mayBook?: boolean;
+  /** Decision 393: offer the same pack when a Class Pack ran out. */
+  recharge?: PackRechargeApi;
 }) {
   const t = useT();
   const now = Date.now();
@@ -508,6 +516,8 @@ export function WelcomeCardBody({
     return next ? [next.id] : [];
   });
   const [error, setError] = useState<string | null>(null);
+  // Decision 393: the Classes a used-up Class Pack stopped, and the offer made for them.
+  const [packUsedUp, setPackUsedUp] = useState<string[] | null>(null);
 
   const progress = info.progress;
   const tag = info.membershipStatus ? STATUS_TAG[info.membershipStatus] : null;
@@ -521,18 +531,25 @@ export function WelcomeCardBody({
 
   function confirm() {
     setError(null);
+    setPackUsedUp(null);
     checkIn.mutate(
       { studentId: student.id, classIds: sendable, qr, guests: guestPicks },
       {
         onSuccess: (ids) => onDone(ids),
-        onError: (err) =>
+        onError: (err) => {
+          // Only Classes stopped by a used-up pack: offer the same pack instead of an error.
+          if (recharge && err instanceof DeskCheckInError && err.items.length > 0 && err.items.every((i) => i.code === 'PACK_USED_UP')) {
+            setPackUsedUp(sendable);
+            return;
+          }
           setError(
             err instanceof QrExpiredError
               ? t('frontDesk.welcome.qrExpired')
               : err instanceof DeskCheckInError
                 ? err.items.map((i) => `${i.classId ? (classes.find((c) => c.id === i.classId)?.title ?? '') : t('frontDesk.welcome.guest')}: ${i.message}`).join(' · ')
                 : errorText(err, t('frontDesk.welcome.failed')),
-          ),
+          );
+        },
       },
     );
   }
@@ -609,6 +626,16 @@ export function WelcomeCardBody({
           })}
         </div>
       )}
+      {packUsedUp && recharge ? (
+        <PackUsedUp
+          recharge={recharge}
+          studentId={student.id}
+          classIds={packUsedUp}
+          lookupToken={qr && qr.expiresAt > Date.now() ? qr.lookupToken : undefined}
+          short={short}
+          onDone={() => onDone(packUsedUp)}
+        />
+      ) : null}
       {error ? (
         <div className="fd-note" role="alert">
           <span className="fd-note__dot" aria-hidden="true" />
@@ -631,6 +658,91 @@ export function WelcomeCardBody({
                 ? t('frontDesk.welcome.confirmGuests', { count: guestPicks.length })
                 : t('frontDesk.welcome.tickOne')}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Pack used up" (DESIGN.md, Decision 393): a peach note. The person buys the
+ * same pack in their ULTM8 app; this card checks every few seconds and checks
+ * them in as soon as it's paid.
+ */
+function PackUsedUp({
+  recharge,
+  studentId,
+  classIds,
+  lookupToken,
+  short,
+  onDone,
+}: {
+  recharge: PackRechargeApi;
+  studentId: string;
+  classIds: string[];
+  lookupToken?: string;
+  short: boolean;
+  onDone: () => void;
+}) {
+  const t = useT();
+  const [offer, setOffer] = useState<{ id: string; planTitle: string; price: number; currency?: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const status = useQuery({
+    queryKey: ['packRecharge', offer?.id],
+    queryFn: () => recharge.status(offer!.id),
+    enabled: !!offer,
+    refetchInterval: (q) => (q.state.data?.paid || q.state.data?.expired ? false : 3000),
+  });
+  const paid = !!status.data?.paid;
+  useEffect(() => {
+    if (!offer || !paid) return;
+    let gone = false;
+    recharge.complete(offer.id).then(
+      (result) => {
+        if (gone) return;
+        if (result.done) onDone();
+        else setError([...result.classes, ...result.guests].find((r) => !r.ok)?.message ?? t('frontDesk.welcome.failed'));
+      },
+      (err) => !gone && setError(errorText(err, t('frontDesk.welcome.failed'))),
+    );
+    return () => {
+      gone = true;
+    };
+    // Finishes once, when the payment is first seen.
+  }, [offer?.id, paid]);
+
+  async function offerPack() {
+    setBusy(true);
+    setError(null);
+    try {
+      setOffer(await recharge.create({ studentId, classIds, ...(lookupToken ? { lookupToken } : {}) }));
+    } catch (err) {
+      setError(errorText(err, t('frontDesk.packUsedUp.failed')));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fd-note" role="status" data-testid="fd-pack-used-up">
+      <span className="fd-note__dot" aria-hidden="true" style={{ background: '#f4b98f' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="fd-note__title">{offer ? t('frontDesk.packUsedUp.waitingTitle') : t('frontDesk.packUsedUp.title')}</div>
+        <div className="fd-note__body">
+          {!offer
+            ? t('frontDesk.packUsedUp.body')
+            : status.data?.expired && !paid
+              ? t('frontDesk.packUsedUp.expired')
+              : paid
+                ? t('frontDesk.packUsedUp.paid')
+                : t(short ? 'frontDesk.packUsedUp.waitingSelf' : 'frontDesk.packUsedUp.waitingStaff', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })}
+        </div>
+        {error ? <div className="fd-msg fd-msg--bad">{error}</div> : null}
+        {!offer ? (
+          <button type="button" className="fd-pill fd-pill--go" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={offerPack}>
+            {short ? t('frontDesk.packUsedUp.offerSelf') : t('frontDesk.packUsedUp.offerStaff')}
+          </button>
+        ) : null}
       </div>
     </div>
   );

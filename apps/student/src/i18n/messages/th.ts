@@ -674,6 +674,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "แพ็กคลาสของคุณหมดแล้ว",
+      titleChild: "แพ็กคลาสของ {name} หมดแล้ว",
+      body: "{school} เสนอแพ็กเดิมที่เคาน์เตอร์ ซื้อได้ที่นี่ แล้วการเช็กอินจะเสร็จทันทีที่ชำระเงิน",
+    },
     myMemberships: {
       planFallback: "แผน {planId}",
       visitPass: "บัตรผู้เยี่ยมชม",
@@ -839,6 +844,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "คลาสนี้เต็มแล้ว คุณสามารถเข้ารายชื่อรอแทนได้",
+      packUsedUp: "แพ็กคลาสของคุณไม่มีคลาสเหลือแล้ว ซื้อแพ็กใหม่เพื่อจอง",
       waitlistFirst: "มีคนอื่นรอที่นั่งในคลาสนี้อยู่แล้ว เข้ารายชื่อรอเพื่อรอคิวของคุณ",
       bookingClosed: "ปิดรับการจองคลาสนี้แล้ว พนักงานยังสามารถเพิ่มคุณได้",
       classBusy: "ขณะนี้มีคนจองคลาสนี้จำนวนมาก โปรดลองอีกครั้งในอีกสักครู่",

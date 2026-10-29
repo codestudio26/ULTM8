@@ -714,6 +714,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "نفدت باقة الحصص الخاصة بك",
+      titleChild: "نفدت باقة الحصص الخاصة بـ {name}",
+      body: "عرضت {school} الباقة نفسها عند الاستقبال. اشترِها من هنا، وسيكتمل تسجيل الحضور فور الدفع.",
+    },
     myMemberships: {
       planFallback: "الخطة {planId}",
       visitPass: "تصريح زائر",
@@ -905,6 +910,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "هذه الحصة ممتلئة. يمكنك الانضمام إلى قائمة الانتظار بدلًا من ذلك.",
+      packUsedUp: "لم يتبقَّ أي حصص في باقة الحصص الخاصة بك. اشترِ باقة أخرى للحجز.",
       waitlistFirst: "هناك آخرون ينتظرون مكانًا في هذه الحصة بالفعل. انضم إلى قائمة الانتظار لتأخذ دورك.",
       bookingClosed: "أُغلق الحجز لهذه الحصة. لا يزال بإمكان أحد الموظفين إضافتك.",
       classBusy: "يحجز كثيرون هذه الحصة الآن. يُرجى المحاولة مرة أخرى بعد قليل.",

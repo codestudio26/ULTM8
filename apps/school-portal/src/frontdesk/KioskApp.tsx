@@ -14,6 +14,7 @@ import {
   useKioskCard,
   useKioskCheckIn,
   useKioskInfo,
+  useKioskPackRecharges,
   useKioskCodeLookup,
   useKioskQrLookup,
   useKioskStudentSearch,
@@ -358,6 +359,7 @@ function KioskWelcome({
 }) {
   const card = useKioskCard(student.id);
   const checkIn = useKioskCheckIn();
+  const recharge = useKioskPackRecharges();
   if (!card.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -376,6 +378,7 @@ function KioskWelcome({
       mine={mine}
       info={{ membershipStatus: data.membershipStatus, waivers: { signed: data.waiverSigned, toSign: data.waiversToSign }, progress: data.progress }}
       checkIn={checkIn}
+      recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => (
         <GuestTicks
           guests={(data.bookings.find((b) => b.bookingId === bookingId)?.guests ?? []).map((g) => ({

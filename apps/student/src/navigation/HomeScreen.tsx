@@ -7,6 +7,7 @@ import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '
 import { useT } from '../i18n/I18nProvider';
 import { useMyMinors } from '../guardians/guardianQueries';
 import { HomeFeeCards, type FeePerson } from '../grading/HomeFeeCards';
+import { PackRechargeCards } from '../memberships/PackRechargeCards';
 import type { AppStackParamList } from './types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -38,6 +39,8 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
+      {/* Decision 393: a Class Pack ran out at the desk. */}
+      <PackRechargeCards />
       <HomeFeeCards
         people={feePeople}
         onAnswer={(person, request) =>

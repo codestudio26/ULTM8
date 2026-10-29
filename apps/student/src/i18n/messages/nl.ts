@@ -680,6 +680,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Je lessenkaart is op",
+      titleChild: "De lessenkaart van {name} is op",
+      body: "{school} bood dezelfde kaart aan bij de balie. Koop hem hier, dan wordt het inchecken afgerond zodra die betaald is.",
+    },
     myMemberships: {
       planFallback: "Lidmaatschap {planId}",
       visitPass: "Bezoekerspas",
@@ -846,6 +851,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Deze les is vol. Je kunt je in plaats daarvan op de wachtlijst zetten.",
+      packUsedUp: "Je lessenkaart heeft geen lessen meer. Koop een nieuwe kaart om te boeken.",
       waitlistFirst: "Anderen wachten al op een plek in deze les. Zet je op de wachtlijst om je beurt af te wachten.",
       bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
       classBusy: "Er boeken nu veel mensen deze les. Probeer het zo meteen opnieuw.",

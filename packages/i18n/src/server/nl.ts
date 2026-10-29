@@ -616,4 +616,5 @@ export const serverMessages: Record<string, string> = {
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Toegangsschakelaars zijn voor vestigingspersoneel. Instructeurs hebben de rechten van hun rol en eigenaren hebben alle rechten.",
   "You are not on the staff of this School.": "Je hoort niet bij het personeel van deze school.",
   "Only the owner or Branch Staff can give a visit pass.": "Alleen de eigenaar of vestigingsmedewerkers kunnen een bezoekerspas geven.",
+  "Pack recharge not found": "Opwaardering van de kaart niet gevonden",
 };
