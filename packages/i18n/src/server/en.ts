@@ -66,6 +66,8 @@ export const SERVER_MESSAGES: string[] = [
  "Could not verify the provided token.",
  "Device token not found",
  "Discipline not found",
+ "Correction request not found",
+ "stripeTierId must be a grade on this style's ladder.",
  "Downgrade only moves down; pick a lower belt or stripe.",
  "Each item can appear only once.",
  "Each lesson can appear only once.",

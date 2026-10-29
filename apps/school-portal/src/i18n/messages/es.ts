@@ -1820,6 +1820,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Visible de nuevo para el alumno",
       },
     },
+    correction: {
+      title: "Corrección de cinturón pedida",
+      asked: "{name} pidió el {date} corregir su cinturón de {from} a {to}.",
+      theirNote: "Su nota: «{note}»",
+      replyLabel: "Nota para el alumno (opcional)",
+      replyHint: "La verá en la app junto con tu respuesta.",
+      failed: "No se pudo responder la solicitud. Inténtalo de nuevo.",
+      approve: "Aprobar: {rank}",
+      reject: "Rechazar",
+    },
     student: {
       archivedStyleNote: "Este estilo está archivado: el alumno conserva este rango y su historial, pero nadie puede ser graduado en él. Desarchívalo en la página Disciplinas para volver a graduar.",
       loadFailed: "No se pudieron cargar los grados de este alumno.",

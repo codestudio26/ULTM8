@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "Het opgegeven token kon niet worden geverifieerd.",
   "Device token not found": "Apparaattoken niet gevonden",
   "Discipline not found": "Discipline niet gevonden",
+  "Correction request not found": "Correctieaanvraag niet gevonden",
+  "stripeTierId must be a grade on this style's ladder.": "Kies een graad van de ladder van deze stijl.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Terugzetten kan alleen omlaag: kies een lagere band of streep.",
   "Each item can appear only once.": "Elk item mag maar één keer voorkomen.",
   "Each lesson can appear only once.": "Elk lesonderdeel mag maar één keer voorkomen.",

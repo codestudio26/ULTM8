@@ -1820,6 +1820,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Öğrenciye yeniden gösterildi",
       },
     },
+    correction: {
+      title: "Kuşak düzeltmesi istendi",
+      asked: "{name}, {date} tarihinde kuşağının {from} yerine {to} olarak düzeltilmesini istedi.",
+      theirNote: "Notu: “{note}”",
+      replyLabel: "Öğrenciye not (isteğe bağlı)",
+      replyHint: "Yanıtınla birlikte uygulamada görür.",
+      failed: "İsteğe yanıt verilemedi. Tekrar deneyin.",
+      approve: "Onayla: {rank}",
+      reject: "Reddet",
+    },
     student: {
       archivedStyleNote: "Bu stil arşivlendi: öğrenci bu rütbeyi ve geçmişini korur, ancak bu stilde kimse terfi alamaz. Yeniden terfi vermek için Branşlar sayfasından arşivden çıkarın.",
       loadFailed: "Bu öğrencinin kuşak bilgileri yüklenemedi.",

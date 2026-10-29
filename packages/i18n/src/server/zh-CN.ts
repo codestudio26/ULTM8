@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "无法验证所提供的令牌。",
   "Device token not found": "未找到设备令牌",
   "Discipline not found": "未找到项目",
+  "Correction request not found": "未找到更正申请",
+  "stripeTierId must be a grade on this style's ladder.": "请从此风格的段位阶梯中选择一个级别。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降级只能向下；请选择更低的腰带或条纹。",
   "Each item can appear only once.": "每个项目只能出现一次。",
   "Each lesson can appear only once.": "每个课时只能出现一次。",

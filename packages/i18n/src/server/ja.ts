@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "指定されたトークンを検証できませんでした。",
   "Device token not found": "デバイストークンが見つかりません",
   "Discipline not found": "種目が見つかりません",
+  "Correction request not found": "修正依頼が見つかりません",
+  "stripeTierId must be a grade on this style's ladder.": "このスタイルの段位表から級を選んでください。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降級は下位方向にのみ可能です。より低い帯またはストライプを選択してください。",
   "Each item can appear only once.": "各項目は 1 回のみ指定できます。",
   "Each lesson can appear only once.": "各レッスンは 1 回のみ指定できます。",

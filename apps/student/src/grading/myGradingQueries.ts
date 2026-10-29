@@ -68,3 +68,23 @@ export function useAnswerFee(studentId: string | null) {
       ]),
   });
 }
+
+export type RankCorrection = components['schemas']['RankCorrectionDto'];
+
+/** Backlog 3.13: the student's own belt correction requests, newest first. */
+export function useMyCorrections(enabled: boolean) {
+  return useQuery({
+    queryKey: ['my-rank-corrections'],
+    queryFn: () => unwrap(apiClient.GET('/v1/rank-corrections/me')),
+    enabled,
+  });
+}
+
+/** Ask the School to correct a belt: the grade they should have, and why. */
+export function useAskCorrection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { disciplineId: string; stripeTierId: string; note: string }) => unwrap(apiClient.POST('/v1/rank-corrections', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-rank-corrections'] }),
+  });
+}

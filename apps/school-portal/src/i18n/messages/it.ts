@@ -1820,6 +1820,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Di nuovo visibile all'allievo",
       },
     },
+    correction: {
+      title: "Correzione della cintura richiesta",
+      asked: "{name} ha chiesto il {date} di correggere la cintura da {from} a {to}.",
+      theirNote: "La sua nota: «{note}»",
+      replyLabel: "Nota per l’allievo (facoltativa)",
+      replyHint: "La vedrà nell’app con la tua risposta.",
+      failed: "Impossibile rispondere alla richiesta. Riprova.",
+      approve: "Approva: {rank}",
+      reject: "Rifiuta",
+    },
     student: {
       archivedStyleNote: "Questo stile è archiviato: l'allievo mantiene questo grado e lo storico, ma nessuno può essere graduato in esso. Ripristinalo dalla pagina Discipline per graduare di nuovo.",
       loadFailed: "Impossibile caricare i gradi di questo allievo.",
