@@ -6,6 +6,16 @@ export const attendance = {
     loadError: 'Could not generate your check-in code — please try again.',
     hint: 'Show this to your Instructor to check in. It refreshes automatically — no action needed.',
   },
+  membershipCard: {
+    label: "{school} membership card",
+    codeLabel: "Check-in code",
+    noMembership: "No current membership",
+    classesLeft: {
+      one: "{count} class left",
+      other: "{count} classes left",
+    },
+    until: "Until {date}",
+  },
   qrScanner: {
     notACheckInCode: 'That did not look like a Class check-in code — try again.',
     permissionNeeded: 'Camera access is needed to scan the Class check-in code.',

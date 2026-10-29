@@ -230,6 +230,20 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "تعذّر إنشاء رمز تسجيل الحضور الخاص بك، يُرجى المحاولة مرة أخرى.",
       hint: "اعرض هذا الرمز على مدرّبك لتسجيل حضورك. يتجدّد تلقائيًا — لا حاجة لأي إجراء.",
     },
+    membershipCard: {
+      label: "بطاقة عضوية {school}",
+      codeLabel: "رمز تسجيل الحضور",
+      noMembership: "لا توجد عضوية حالية",
+      classesLeft: {
+        zero: "لم يتبقَّ أي حصة",
+        one: "تبقّت حصة واحدة",
+        two: "تبقّت حصتان",
+        few: "تبقّت {count} حصص",
+        many: "تبقّت {count} حصة",
+        other: "تبقّت {count} حصة",
+      },
+      until: "حتى {date}",
+    },
     qrScanner: {
       notACheckInCode: "لا يبدو هذا رمز تسجيل حضور لحصة — حاول مرة أخرى.",
       permissionNeeded: "يلزم الوصول إلى الكاميرا لمسح رمز تسجيل الحضور للحصة.",

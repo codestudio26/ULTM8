@@ -3590,6 +3590,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Tak, nowy kod",
       failed: "Nie udało się nadać nowego kodu. Spróbuj ponownie.",
     },
+    card: {
+      print: "Drukuj kartę członkowską",
+      pageTitle: "{name}: karta członkowska",
+      codeLabel: "Kod wejścia",
+      noMembership: "Brak aktualnego karnetu",
+      classesLeft: {
+        one: "Zostały {count} zajęcia",
+        few: "Zostały {count} zajęcia",
+        many: "Zostało {count} zajęć",
+        other: "Zostało {count} zajęć",
+      },
+      until: "Do {date}",
+      printButton: "Drukuj / Zapisz jako PDF",
+      failed: "Nie udało się wczytać karty członkowskiej. Spróbuj ponownie.",
+    },
     heardFrom: {
       friend: "Znajomy",
       instagram: "Instagram",

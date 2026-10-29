@@ -130,12 +130,26 @@ export function useStudentCheckInCode(schoolId: string | null, studentId: string
   });
 }
 
+/** What a student's membership card shows (backlog 3.11). It has no QR code. */
+export function useMembershipCard(schoolId: string | null, studentId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['membershipCard', schoolId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/membership-card', { params: { path: { schoolId: schoolId!, studentId: studentId! } } })),
+    enabled: enabled && !!schoolId && !!studentId,
+    retry: false,
+  });
+}
+
 export function useNewStudentCheckInCode(schoolId: string | null, studentId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/check-in-code', { params: { path: { schoolId: schoolId!, studentId: studentId! } } })),
-    onSuccess: (data) => queryClient.setQueryData(['studentCheckInCode', schoolId, studentId], data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['studentCheckInCode', schoolId, studentId], data);
+      void queryClient.invalidateQueries({ queryKey: ['membershipCard', schoolId, studentId] });
+    },
   });
 }
 
