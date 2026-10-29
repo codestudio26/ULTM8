@@ -5,9 +5,10 @@ import { useGradingSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
 import { StudentsTabs } from '../students/StudentsTabs';
 import { useT } from '../i18n/I18nProvider';
-import { hasBackend } from './frontDeskFeatures';
 import { codeErrorText, errorText, useCodeLookup, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useMyOpenMat } from './openMatQueries';
+import { OpenMatDialog } from './OpenMatDialog';
 import {
   ClassList,
   CodePad,
@@ -15,7 +16,6 @@ import {
   NameSearch,
   RecentList,
   ScanBox,
-  SoonTag,
   WelcomeCard,
   recentCheckIns,
   timeOf,
@@ -47,6 +47,10 @@ export function CheckInPage() {
   const codeLookup = useCodeLookup(schoolId);
   const school = useSchool(schoolId);
   const codeDigits = school.data?.checkInCodeDigits === 6 ? 6 : 4;
+  // Decision 386: the owner, and staff the owner allows, start an open mat.
+  const myOpenMat = useMyOpenMat(schoolId);
+  const [startingOpenMat, setStartingOpenMat] = useState(false);
+  const openMatBranches = branches.filter((b) => myOpenMat.data?.branchIds == null || myOpenMat.data.branchIds.includes(b.id));
 
   const [method, setMethod] = useState<CheckInMethod>('scan');
   const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
@@ -88,9 +92,11 @@ export function CheckInPage() {
           </h2>
           {today.isLoading ? <Spinner /> : <ClassList classes={today.classes} bookingsByClass={bookingsByClass} schoolId={schoolId} />}
           <div style={{ marginTop: 'auto', paddingTop: 8, display: 'flex', justifyContent: 'center' }}>
-            <button type="button" className="fd-pill fd-pill--line" disabled={!hasBackend('openMat')} title={t('frontDesk.classes.openMatSoon')}>
-              {t('frontDesk.classes.openMat')} {hasBackend('openMat') ? null : <SoonTag />}
-            </button>
+            {myOpenMat.data?.canStart ? (
+              <button type="button" className="fd-pill fd-pill--line" onClick={() => setStartingOpenMat(true)}>
+                {t('frontDesk.classes.openMat')}
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -175,6 +181,18 @@ export function CheckInPage() {
         </Card>
       </div>
       <FrontDeskTablets schoolId={schoolId} />
+      {startingOpenMat ? (
+        <OpenMatDialog
+          schoolId={schoolId}
+          branches={openMatBranches}
+          branchId={branchId}
+          onClose={() => setStartingOpenMat(false)}
+          onStarted={(notified) => {
+            setStartingOpenMat(false);
+            setMsg({ kind: 'ok', text: t('frontDesk.openMat.started', { count: notified }) });
+          }}
+        />
+      ) : null}
     </>
   );
 }
