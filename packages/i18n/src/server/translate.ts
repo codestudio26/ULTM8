@@ -224,6 +224,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Franchise closed': 'franchiseClosedTitle',
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   'Added to a School': 'studentAddedTitle',
+  // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
+  'Open mat': 'openMatTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -314,6 +316,12 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   [/^You've been added to (.+)\.$/s, (m, { t }) => n(t, 'studentAddedBody', { school: m[1] })],
+  // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
+  [
+    /^Open mat \((.+)\) at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s,
+    (m, { t }) => n(t, 'openMatStyleBody', { style: m[1], place: m[2], when: m[3], minutes: m[4] }),
+  ],
+  [/^Open mat at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s, (m, { t }) => n(t, 'openMatBody', { place: m[1], when: m[2], minutes: m[3] })],
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),
     (m, { t }) => n(t, 'toDecideBody', { name: m[1], rank: m[2], style: m[3] }),

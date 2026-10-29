@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Cmt",
       SUNDAY: "Paz",
     },
+    signUpInvites: {
+      title: "{school} okuluna katılmak ister misiniz?",
+      body: "{school} resepsiyondaki kaydınızı onayladı. Oranın öğrencisi olmak için kabul edin.",
+      bodyVisitor: "{school} resepsiyondaki kaydınızı onayladı. Ücretsiz bir ziyaretçi kartıyla Ziyaretçi olarak katılmak için kabul edin.",
+      homeBranch: "Ana şubeniz",
+      accept: "Kabul et",
+      decline: "Hayır, teşekkürler",
+      failed: "Davete yanıt verilemedi. Tekrar deneyin.",
+    },
     join: {
       me: "Ben",
       loadFailed: "Bu okul yüklenemedi — lütfen tekrar deneyin.",
@@ -680,8 +689,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Ders paketiniz bitti",
+      titleChild: "{name} adlı kişinin ders paketi bitti",
+      body: "{school} resepsiyonda aynı paketi teklif etti. Buradan satın alın, ödeme yapılır yapılmaz giriş tamamlanır.",
+    },
     myMemberships: {
       planFallback: "Plan {planId}",
+      visitPass: "Ziyaretçi kartı",
       statusLine: "Durum: {status} · {frequency}",
       recurring: "Yinelenen",
       oneTime: "Tek seferlik",
@@ -845,6 +860,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Bu ders dolu. Bunun yerine bekleme listesine katılabilirsiniz.",
+      packUsedUp: "Ders paketinizde ders kalmadı. Rezervasyon için yeni bir paket satın alın.",
       waitlistFirst: "Bu derste yer için bekleyen başkaları zaten var. Sıranızı almak için bekleme listesine katılın.",
       bookingClosed: "Bu dersin rezervasyonu kapandı. Bir personel sizi yine de ekleyebilir.",
       classBusy: "Şu anda bu derse çok sayıda kişi rezervasyon yapıyor. Lütfen birazdan tekrar deneyin.",

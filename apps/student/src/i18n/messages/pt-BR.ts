@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sáb",
       SUNDAY: "Dom",
     },
+    signUpInvites: {
+      title: "Entrar na {school}?",
+      body: "A {school} aprovou seu cadastro na recepção. Aceite para se tornar aluno de lá.",
+      bodyVisitor: "A {school} aprovou seu cadastro na recepção. Aceite para entrar como Visitante, com um passe de visitante grátis.",
+      homeBranch: "Sua filial principal",
+      accept: "Aceitar",
+      decline: "Não, obrigado",
+      failed: "Não foi possível responder ao convite. Tente de novo.",
+    },
     join: {
       me: "Eu",
       loadFailed: "Não foi possível carregar esta Escola — tente novamente.",
@@ -682,6 +691,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Esta aula está lotada. Você pode entrar na lista de espera.",
+      packUsedUp: "Seu pacote de aulas não tem mais aulas. Compre outro pacote para reservar.",
       waitlistFirst: "Outras pessoas já estão esperando uma vaga nesta aula. Entre na lista de espera para aguardar sua vez.",
       bookingClosed: "As reservas para esta aula foram encerradas. Alguém da equipe ainda pode incluir você.",
       classBusy: "Muitas pessoas estão reservando esta aula agora. Tente novamente em instantes.",
@@ -691,8 +701,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Seu pacote de aulas acabou",
+      titleChild: "O pacote de aulas de {name} acabou",
+      body: "{school} ofereceu o mesmo pacote na recepção. Compre aqui, e o check-in é concluído assim que for pago.",
+    },
     myMemberships: {
       planFallback: "Plano {planId}",
+      visitPass: "Passe de visitante",
       statusLine: "Status: {status} · {frequency}",
       recurring: "Recorrente",
       oneTime: "Única",

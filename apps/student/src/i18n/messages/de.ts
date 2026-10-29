@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sa",
       SUNDAY: "So",
     },
+    signUpInvites: {
+      title: "{school} beitreten?",
+      body: "{school} hat deine Anmeldung am Empfang bestätigt. Nimm an, um dort Schüler zu werden.",
+      bodyVisitor: "{school} hat deine Anmeldung am Empfang bestätigt. Nimm an, um als Besucher mit einem kostenlosen Besucherpass dabei zu sein.",
+      homeBranch: "Deine Stammfiliale",
+      accept: "Annehmen",
+      decline: "Nein, danke",
+      failed: "Die Einladung konnte nicht beantwortet werden. Versuch es noch mal.",
+    },
     join: {
       me: "Ich",
       loadFailed: "Diese Schule konnte nicht geladen werden — bitte versuche es erneut.",
@@ -680,8 +689,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Dein Kurspaket ist aufgebraucht",
+      titleChild: "Das Kurspaket von {name} ist aufgebraucht",
+      body: "{school} hat am Empfang dasselbe Paket angeboten. Kauf es hier, und der Check-in wird abgeschlossen, sobald es bezahlt ist.",
+    },
     myMemberships: {
       planFallback: "Tarif {planId}",
+      visitPass: "Besucherpass",
       statusLine: "Status: {status} · {frequency}",
       recurring: "Wiederkehrend",
       oneTime: "Einmalig",
@@ -845,6 +860,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Dieser Kurs ist ausgebucht. Du kannst dich stattdessen auf die Warteliste setzen.",
+      packUsedUp: "Dein Kurspaket hat keine Kurse mehr. Kauf ein neues Paket, um zu buchen.",
       waitlistFirst: "Andere warten bereits auf einen Platz in diesem Kurs. Setz dich auf die Warteliste, um an die Reihe zu kommen.",
       bookingClosed: "Die Buchung für diesen Kurs ist geschlossen. Ein Mitarbeiter kann dich trotzdem hinzufügen.",
       classBusy: "Gerade buchen viele Leute diesen Kurs. Bitte versuche es gleich noch einmal.",

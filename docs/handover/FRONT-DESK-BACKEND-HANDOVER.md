@@ -75,6 +75,10 @@ The School Portal has both front-desk screens, built on the API that already exi
 **Needed:** `GET /students/{id}/waiver-status?schoolId=` → `{ allSigned: boolean, missing: [{ waiverId, title }] }`, open to staff at the School and to the kiosk session. A Guardian signs for a child.
 
 ### F5. Sign-up from the tablet `signUp` (Decisions 315, 318, 351)
+**Built 29 Oct 2026 (Decision 392):** `POST /front-desk/kiosk/sign-ups` from the tablet; staff approve or reject under Students → Sign-ups (`GET/POST /schools/{schoolId}/sign-ups…`); an email that already has an account gets an invite it accepts in the student app (`/sign-ups/invites/…`); rejected sign-ups are deleted after 30 days by the daily purge. The note below is the original ask.
+
+**Visitors built 29 Oct 2026 (Decision 391):** a School sets how long a free visit pass lasts (`School.visitorPeriodDays`, no default); `POST /schools/{schoolId}/students/{studentId}/visit-passes` gives one. Until the period is set, the tablet should offer no Visitor sign-up. The sign-up itself is still to build.
+
 - **`POST /schools/{schoolId}/sign-ups`** with:
   - `source: FRONT_DESK`
   - `kind` (VISITOR | MEMBER)
@@ -113,6 +117,9 @@ The School Portal has both front-desk screens, built on the API that already exi
 - **for the QR:** verify the token when the welcome card opens (`POST /front-desk/lookup` `{ studentToken }` → a short-lived lookup id), so ticking classes isn't a race.
 
 ### F8. Pack used up: buy the same pack (Decision 316 item 7)
+**Decision 395 (29 Oct 2026):** staff who may record desk payments can also "Sell at the desk" from the card; the existing desk sale, then the same check-in.
+**Built 29 Oct 2026 (Decision 393):** a used-up pack refuses with `PACK_USED_UP`; `POST /schools/{schoolId}/front-desk/pack-recharges` (and `/front-desk/kiosk/pack-recharges`) offers the same pack in the member's app (`GET /pack-recharges/me`); the card polls `GET …/{id}` and finishes with `POST …/{id}/complete` once paid. The note below is the original ask.
+
 **Today:** the API's refusal ("no Active Membership …") is shown.
 
 **Needed:**
@@ -122,9 +129,12 @@ The School Portal has both front-desk screens, built on the API that already exi
 The design's "Pack used up" card is in DESIGN.md and on board 5b.
 
 ### F9. Check-in rules per School (Decision 317; backlog §3.5)
+**Built 29 Oct 2026 (Decision 394):** `GET`/`PUT /schools/{schoolId}/check-in-rules` (the owner, and Branch Staff with the new "Change check-in rules" access switch); Check-in → Check-in rules in the portal. The rules are when check-in opens and closes, a signed waiver, other Branches, visitors on a visit pass, and one class at a time at the desk; refusals come back as `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` and `CHECK_IN_ONE_CLASS`. Every default is today's behaviour. The note below is the original ask.
 The screen already shows any refusal reason the API returns. When the rules exist, return their reasons in the same error shape. No frontend change is needed beyond F7's per-class reasons.
 
 ### F10. Start an open mat `openMat` (Decision 304)
+**Built 28 Oct 2026 (Decision 386):** `POST /schools/{schoolId}/open-mats` `{ branchId, disciplineId, startsAt, minutes }` makes a one-off "Open mat" class and tells matching students in the app; `GET .../open-mats/me`, and the owner's per-person switch at `GET`/`PUT .../open-mats/permissions`. Still to do: the "Open mat uses a class credit" setting, and the student app's banner and push alerts. The note below is the original ask.
+
 The **+ Open mat session** button on the staff tab is shown switched off. It needs the Decision 304 endpoint: style, start time and length; students told in the app.
 
 ## Notes for whoever picks this up

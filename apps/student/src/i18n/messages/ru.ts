@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Сб",
       SUNDAY: "Вс",
     },
+    signUpInvites: {
+      title: "Присоединиться: {school}?",
+      body: "{school} подтверждает вашу заявку с ресепшена. Примите, чтобы стать там учеником.",
+      bodyVisitor: "{school} подтверждает вашу заявку с ресепшена. Примите, чтобы присоединиться как Гость, с бесплатным гостевым пропуском.",
+      homeBranch: "Ваш основной филиал",
+      accept: "Принять",
+      decline: "Нет, спасибо",
+      failed: "Не удалось ответить на приглашение. Попробуйте ещё раз.",
+    },
     join: {
       me: "Я",
       loadFailed: "Не удалось загрузить эту Школу — попробуйте ещё раз.",
@@ -700,8 +709,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Ваш пакет занятий закончился",
+      titleChild: "Пакет занятий {name} закончился",
+      body: "{school} предлагает такой же пакет на ресепшене. Купите его здесь — отметка завершится сразу после оплаты.",
+    },
     myMemberships: {
       planFallback: "Абонемент {planId}",
+      visitPass: "Гостевой пропуск",
       statusLine: "Статус: {status} · {frequency}",
       recurring: "Регулярный",
       oneTime: "Разовый",
@@ -882,6 +897,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "На этом занятии нет мест. Вместо этого можно встать в лист ожидания.",
+      packUsedUp: "В вашем пакете занятий не осталось занятий. Купите новый пакет, чтобы записаться.",
       waitlistFirst: "Другие уже ждут места на этом занятии. Встаньте в лист ожидания, чтобы дождаться своей очереди.",
       bookingClosed: "Запись на это занятие закрыта. Сотрудник всё ещё может вас добавить.",
       classBusy: "Сейчас на это занятие записывается много людей. Попробуйте ещё раз через минуту.",

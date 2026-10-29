@@ -14,6 +14,7 @@ import {
   useKioskCard,
   useKioskCheckIn,
   useKioskInfo,
+  useKioskPackRecharges,
   useKioskCodeLookup,
   useKioskQrLookup,
   useKioskStudentSearch,
@@ -139,7 +140,16 @@ export function KioskApp() {
   const branchName = session.branchName ?? t('frontDesk.kiosk.wholeSchool');
   const next = classes.find((c) => c.id === nextClassId(classes, now));
 
-  if (screen === 'signup') return <SignUpScreen onBack={() => setScreen('home')} onSent={() => setScreen('sent')} onFind={() => setScreen('find')} />;
+  if (screen === 'signup')
+    return (
+      <SignUpScreen
+        onBack={() => setScreen('home')}
+        onSent={() => setScreen('sent')}
+        onFind={() => setScreen('find')}
+        visitorsOn={info.data?.visitorsOn ?? false}
+        heardFromOptions={info.data?.heardFromOptions ?? null}
+      />
+    );
   if (screen === 'find') return <FindMeScreen onBack={() => setScreen('home')} onSignUp={() => setScreen('signup')} />;
   if (screen === 'sent') {
     return (
@@ -263,6 +273,8 @@ export function KioskApp() {
               qr={who.qr}
               classes={classes}
               opensMinutesBefore={session.checkInOpensMinutesBeforeStart}
+              closesMinutesAfterStart={session.checkInClosesMinutesAfterStart ?? null}
+              severalClasses={session.checkInSeveralClasses}
               onBack={() => setWho(null)}
               onDone={(ids) => {
                 setDone({
@@ -346,6 +358,8 @@ function KioskWelcome({
   qr,
   classes,
   opensMinutesBefore,
+  closesMinutesAfterStart,
+  severalClasses,
   onBack,
   onDone,
 }: {
@@ -353,11 +367,14 @@ function KioskWelcome({
   qr: QrLookup | null;
   classes: KioskClass[];
   opensMinutesBefore: number;
+  closesMinutesAfterStart: number | null;
+  severalClasses: boolean;
   onBack: () => void;
   onDone: (classIds: string[]) => void;
 }) {
   const card = useKioskCard(student.id);
   const checkIn = useKioskCheckIn();
+  const recharge = useKioskPackRecharges();
   if (!card.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -376,6 +393,7 @@ function KioskWelcome({
       mine={mine}
       info={{ membershipStatus: data.membershipStatus, waivers: { signed: data.waiverSigned, toSign: data.waiversToSign }, progress: data.progress }}
       checkIn={checkIn}
+      recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => (
         <GuestTicks
           guests={(data.bookings.find((b) => b.bookingId === bookingId)?.guests ?? []).map((g) => ({
@@ -395,6 +413,8 @@ function KioskWelcome({
       onBack={onBack}
       onDone={onDone}
       opensMinutesBefore={opensMinutesBefore}
+      closesMinutesAfterStart={closesMinutesAfterStart}
+      severalClasses={severalClasses}
     />
   );
 }

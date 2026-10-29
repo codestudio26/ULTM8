@@ -28,11 +28,12 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 /** Decision 387 — the owner's access switches for a Branch Staff member.
  * "disciplines" is Decision 383's "Can manage disciplines", shown on the same
- * Access window; the Disciplines module checks it itself. */
-export const STAFF_ACCESS = ['classes', 'bookings', 'students', 'cancelClasses', 'staffList', 'inviteCoaches', 'disciplines'] as const;
+ * Access window; the Disciplines module checks it itself. "checkInRules" is
+ * Decision 394's "Change check-in rules", checked by assertMayManageCheckInRules. */
+export const STAFF_ACCESS = ['classes', 'bookings', 'students', 'cancelClasses', 'staffList', 'inviteCoaches', 'disciplines', 'checkInRules'] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -46,6 +47,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   staffList: false,
   inviteCoaches: false,
   disciplines: false,
+  checkInRules: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -72,6 +74,7 @@ export function staffAccessFrom(row: {
   canSeeStaffList: boolean;
   canInviteCoaches: boolean;
   canManageDisciplines: boolean;
+  canManageCheckInRules: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -82,6 +85,7 @@ export function staffAccessFrom(row: {
     staffList: row.canSeeStaffList,
     inviteCoaches: row.canInviteCoaches,
     disciplines: row.canManageDisciplines,
+    checkInRules: row.canManageCheckInRules,
   };
 }
 
@@ -94,6 +98,7 @@ export const STAFF_ACCESS_SELECT = {
   canSeeStaffList: true,
   canInviteCoaches: true,
   canManageDisciplines: true,
+  canManageCheckInRules: true,
 } as const;
 
 @Injectable()
@@ -118,7 +123,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only that School\'s Owner/Manager may perform this action (Spec §8.2).',
+        // Spec §8.2
+        'Only that School\'s Owner/Manager may perform this action.',
       );
     }
   }
@@ -243,6 +249,24 @@ export class TenantAuthorizationService {
     return false;
   }
 
+  /** Decision 394 — the School's check-in rules are changed by its owners,
+   * and by Branch Staff the owner switches on ("Change check-in rules"). */
+  async assertMayManageCheckInRules(userId: string, schoolId: string): Promise<void> {
+    const allowed = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+      if (grants.length === 0) return false;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canManageCheckInRules: true } });
+      return !!row?.canManageCheckInRules;
+    });
+    if (!allowed) {
+      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you change the check-in rules." });
+    }
+  }
+
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */
   async assertStaffMay(userId: string, schoolId: string, access: GatedStaffAccess, targetBranchId?: string | null): Promise<void> {
     if (await this.staffMay(userId, schoolId, access, targetBranchId)) return;
@@ -282,7 +306,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only that Franchise\'s Owner may perform this action (Spec §8.2).',
+        // Spec §8.2
+        'Only that Franchise\'s Owner may perform this action.',
       );
     }
   }
@@ -360,7 +385,8 @@ export class TenantAuthorizationService {
     );
     if (!grant) {
       throw new ForbiddenException(
-        'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action (Spec §7).',
+        // Spec §7
+        'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.',
       );
     }
   }

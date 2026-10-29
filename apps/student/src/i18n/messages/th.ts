@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "ส.",
       SUNDAY: "อา.",
     },
+    signUpInvites: {
+      title: "เข้าร่วม {school} ไหม",
+      body: "{school} อนุมัติการสมัครของคุณที่เคาน์เตอร์แล้ว ตอบรับเพื่อเป็นนักเรียนที่นั่น",
+      bodyVisitor: "{school} อนุมัติการสมัครของคุณที่เคาน์เตอร์แล้ว ตอบรับเพื่อเข้าร่วมในฐานะผู้เยี่ยมชม พร้อมบัตรผู้เยี่ยมชมฟรี",
+      homeBranch: "สาขาหลักของคุณ",
+      accept: "ตอบรับ",
+      decline: "ไม่เป็นไร ขอบคุณ",
+      failed: "ตอบคำเชิญไม่สำเร็จ โปรดลองอีกครั้ง",
+    },
     join: {
       me: "ฉัน",
       loadFailed: "ไม่สามารถโหลดโรงเรียนนี้ได้ โปรดลองอีกครั้ง",
@@ -674,8 +683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "แพ็กคลาสของคุณหมดแล้ว",
+      titleChild: "แพ็กคลาสของ {name} หมดแล้ว",
+      body: "{school} เสนอแพ็กเดิมที่เคาน์เตอร์ ซื้อได้ที่นี่ แล้วการเช็กอินจะเสร็จทันทีที่ชำระเงิน",
+    },
     myMemberships: {
       planFallback: "แผน {planId}",
+      visitPass: "บัตรผู้เยี่ยมชม",
       statusLine: "สถานะ: {status} · {frequency}",
       recurring: "ต่ออายุอัตโนมัติ",
       oneTime: "ครั้งเดียว",
@@ -838,6 +853,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "คลาสนี้เต็มแล้ว คุณสามารถเข้ารายชื่อรอแทนได้",
+      packUsedUp: "แพ็กคลาสของคุณไม่มีคลาสเหลือแล้ว ซื้อแพ็กใหม่เพื่อจอง",
       waitlistFirst: "มีคนอื่นรอที่นั่งในคลาสนี้อยู่แล้ว เข้ารายชื่อรอเพื่อรอคิวของคุณ",
       bookingClosed: "ปิดรับการจองคลาสนี้แล้ว พนักงานยังสามารถเพิ่มคุณได้",
       classBusy: "ขณะนี้มีคนจองคลาสนี้จำนวนมาก โปรดลองอีกครั้งในอีกสักครู่",

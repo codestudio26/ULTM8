@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { SaveBeltColoursDto } from './dto/belt-colours.dto';
 import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto, RankStripeTierInputDto } from './dto/create-rank.dto';
@@ -266,6 +267,31 @@ export class RanksService {
       }),
     );
     return rows.map(({ _count, ...d }) => ({ ...d, studentCount: _count.studentRanks }));
+  }
+
+  /** Backlog 3.18: the School's saved belt colours, for the belt editor. Anyone
+   * who can open the School can read them; only colour codes are stored. */
+  async findBeltColours(callerId: string, schoolId: string): Promise<{ colours: string[] }> {
+    await this.schoolsService.findOne(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUniqueOrThrow({ where: { id: schoolId }, select: { savedBeltColours: true } }),
+    );
+    return { colours: school.savedBeltColours };
+  }
+
+  /** Backlog 3.18: replace the whole list. The same people who edit the
+   * ladder (the owner, or Branch Staff who manage disciplines, Decision 383).
+   * Codes are stored in capitals and repeats dropped; belts and stripes keep
+   * their own colour values, so removing a saved colour changes none of them. */
+  async saveBeltColours(callerId: string, schoolId: string, dto: SaveBeltColoursDto): Promise<{ colours: string[] }> {
+    await this.schoolsService.findOne(callerId, schoolId);
+    const actor = await this.disciplineManager(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const colours = [...new Set(dto.colours.map((c) => c.toUpperCase()))];
+    const school = await this.prismaApp.withTenantContext(actor, (tx) =>
+      tx.school.update({ where: { id: schoolId }, data: { savedBeltColours: colours }, select: { savedBeltColours: true } }),
+    );
+    return { colours: school.savedBeltColours };
   }
 
   /** One style with its student count, for the API response. */
@@ -723,7 +749,8 @@ export class RanksService {
             throw new BadRequestException('Each stripe id can appear only once.');
           }
           if (sentIds.some((id) => !existingById.has(id))) {
-            throw new BadRequestException('A stripe id is not one of this belt\'s stripes. Stripes can only be reordered within their own belt (Decision 180).');
+            // Decision 180
+            throw new BadRequestException('A stripe id is not one of this belt\'s stripes. Stripes can only be reordered within their own belt.');
           }
         }
         const previousFor = (tier: (typeof dto.stripeTiers)[number]) =>
@@ -746,7 +773,8 @@ export class RanksService {
             });
             const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a stripe'))];
             throw new ConflictException(
-              `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first (Decision 152).`,
+              // Decision 152
+              `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first.`,
             );
           }
           await tx.rankStripeTier.deleteMany({ where: { id: { in: idsToDelete } } });
@@ -1201,7 +1229,8 @@ export class RanksService {
       tx.$queryRaw<Array<{ actor: string | null }>>`SELECT "discipline_manager_context"(${schoolId}) AS actor`,
     );
     if (!row?.actor) {
-      throw new ForbiddenException('Only that School\'s Owner/Manager may perform this action (Spec §8.2).');
+      // Spec §8.2
+      throw new ForbiddenException('Only that School\'s Owner/Manager may perform this action.');
     }
     return row.actor;
   }
@@ -1271,7 +1300,8 @@ export class RanksService {
     const previousSegments = (previous?.stripeSegments ?? []) as unknown as { count: number; colour: string }[];
     if (!tier.stripeSegments && previous && previous.count === tier.count && previous.colour !== tier.colour && previousSegments.length > 1) {
       throw new BadRequestException(
-        `Stripe tier ${tier.order} has mixed stripe colours; change them in its stripeSegments, not its single colour (Decision 165).`,
+        // Decision 165
+        `Stripe tier ${tier.order} has mixed stripe colours; change them in its stripeSegments, not its single colour.`,
       );
     }
     const segments = tier.stripeSegments ?? (keepSegments ? previousSegments : defaultSegments);
@@ -1301,7 +1331,8 @@ export class RanksService {
         required.every((t) => eligibleClassTypes.includes(t));
       if (!sameSet) {
         throw new BadRequestException(
-          `Stripe tier ${tier.order}: with classCountMode EACH_TYPE, give one number in classTypeRequirements for each ticked class type in eligibleClassTypes (Decision 149).`,
+          // Decision 149
+          `Stripe tier ${tier.order}: with classCountMode EACH_TYPE, give one number in classTypeRequirements for each ticked class type in eligibleClassTypes.`,
         );
       }
     }

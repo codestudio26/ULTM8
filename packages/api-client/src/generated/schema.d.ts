@@ -2708,6 +2708,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/visit-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_giveVisitPass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
         parameters: {
             query?: never;
@@ -2958,6 +2974,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["RanksController_unarchiveDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/belt-colours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RanksController_findBeltColours"];
+        put: operations["RanksController_saveBeltColours"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4212,6 +4244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/check-in-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CheckInRulesController_get"];
+        put: operations["CheckInRulesController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -4980,6 +5028,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/sign-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_signUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/pack-recharges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_createRecharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/pack-recharges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_rechargeStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/pack-recharges/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_completeRecharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/session": {
         parameters: {
             query?: never;
@@ -5140,6 +5252,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/sign-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignUpsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/sign-ups/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/sign-ups/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignUpsController_myInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PackRechargesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PackRechargesController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PackRechargesController_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pack-recharges/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PackRechargesController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpenMatsController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpenMatsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpenMatsController_listPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/open-mats/permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["OpenMatsController_setPermission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5292,6 +5628,10 @@ export interface components {
             noShowFee?: number | null;
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
+            /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
+            visitorPeriodDays?: number | null;
+            /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -5367,6 +5707,20 @@ export interface components {
             cancellationPolicyChosenAt?: string | null;
             /** @description Minutes before a Class starts that check-in opens. */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            checkInRequireWaiver: boolean;
+            /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
+            checkInOtherBranches: boolean;
+            /** @description Decision 394: Visitors may check in on their visit pass. */
+            checkInVisitors: boolean;
+            /** @description Decision 394: the front desk may check someone in to several Classes at once. */
+            checkInSeveralClasses: boolean;
+            /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
+            visitorPeriodDays?: number | null;
+            /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -5447,6 +5801,10 @@ export interface components {
             noShowFee?: number | null;
             /** @description Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end. */
             checkInOpensMinutesBeforeStart?: number;
+            /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
+            visitorPeriodDays?: number | null;
+            /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -5511,6 +5869,9 @@ export interface components {
             status: components["schemas"]["StudentStatus"];
             homeBranchId?: string | null;
             homeBranchName?: string | null;
+            visitor: boolean;
+            /** Format: date-time */
+            visitPassEndsAt?: string | null;
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -5573,7 +5934,7 @@ export interface components {
             id: string;
             planTitle: string;
             /** @enum {string} */
-            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP";
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP" | "VISIT_PASS";
             classesRemaining?: number | null;
             /** Format: date-time */
             expiryDate?: string | null;
@@ -5953,6 +6314,8 @@ export interface components {
             inviteCoaches: boolean;
             /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
             disciplines: boolean;
+            /** @description Change the School's check-in rules (off by default; Decision 394). */
+            checkInRules: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -7614,8 +7977,28 @@ export interface components {
             students: components["schemas"]["DeskPaymentStudentDto"][];
             plans: components["schemas"]["DeskPaymentPlanDto"][];
         };
-        MembershipListResponseDto: {
-            items: components["schemas"]["MembershipResponseDto"][];
+        MyMembershipResponseDto: {
+            id: string;
+            studentId: string;
+            membershipPlanId: string;
+            schoolId: string;
+            status: string;
+            startDate: string;
+            frequency: string;
+            classesRemaining?: number | null;
+            expiryDate?: string | null;
+            scopedClassId?: string | null;
+            giftedById?: string | null;
+            /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
+            cancelAt?: string | null;
+            cancelledById?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list). */
+            visitPass: boolean;
+        };
+        MyMembershipListResponseDto: {
+            items: components["schemas"]["MyMembershipResponseDto"][];
             nextCursor?: string | null;
         };
         MembershipStatusResponseDto: {
@@ -7727,6 +8110,24 @@ export interface components {
             skillsRequiredToGrade?: boolean;
             /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
             renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
+        };
+        BeltColoursResponseDto: {
+            /**
+             * @example [
+             *       "#2A9D8F"
+             *     ]
+             */
+            colours: string[];
+        };
+        SaveBeltColoursDto: {
+            /**
+             * @description Colour codes like #2A9D8F, in order. Repeats are dropped. At most 24.
+             * @example [
+             *       "#2A9D8F",
+             *       "#E76F51"
+             *     ]
+             */
+            colours: string[];
         };
         StripeSegmentInputDto: {
             count: number;
@@ -8897,6 +9298,25 @@ export interface components {
             classes: components["schemas"]["DeskCheckInClassResultDto"][];
             guests: components["schemas"]["DeskCheckInGuestResultDto"][];
         };
+        CheckInRulesDto: {
+            /** @description Minutes before a Class starts that check-in opens (default 30). */
+            opensMinutesBeforeStart: number;
+            /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
+            closesMinutesAfterStart?: number | null;
+            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            requireWaiver: boolean;
+            /** @description Members with a home Branch may check in at the School's other Branches (default on). */
+            otherBranches: boolean;
+            /** @description Visitors may check in on their visit pass (default on; Decision 391). */
+            visitors: boolean;
+            /** @description The front desk may check someone in to several Classes at once (default on; Decision 378). */
+            severalClasses: boolean;
+            /**
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length.
+             * @enum {number}
+             */
+            codeDigits: 4 | 6;
+        };
         AcademySummaryDto: {
             id: string;
             franchiseId?: string | null;
@@ -9399,6 +9819,54 @@ export interface components {
             /** @description A Student's personal check-in code (4 or 6 digits). */
             code: string;
         };
+        KioskSignUpDto: {
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            firstName: string;
+            surname: string;
+            /** @description YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app. */
+            dateOfBirth: string;
+            /**
+             * @description Decision 315 item 15: Female, Male or not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
+            email: string;
+            phone?: string | null;
+            /** @description One of the School's "How did you hear about us?" choices, as shown. */
+            heardFrom?: string | null;
+            emergencyName?: string | null;
+            emergencyPhone?: string | null;
+            emergencyRelationship?: string | null;
+        };
+        KioskSignUpCreatedDto: {
+            id: string;
+        };
+        CreatePackRechargeDto: {
+            studentId: string;
+            /** @description The QR or code lookup the person was found with. Needed on a tablet (Decision 388). */
+            lookupToken?: string;
+            /** @description The Classes to check in to once paid. Up to 10. */
+            classIds: string[];
+        };
+        PackRechargeDto: {
+            id: string;
+            /** @description The pack to buy again. The desk can also sell it there (Decision 395). */
+            membershipPlanId: string;
+            planTitle: string;
+            /** @description Minor units. */
+            price: number;
+            currency?: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        PackRechargeStatusDto: {
+            /** @description The same pack has been bought since the recharge was asked for. */
+            paid: boolean;
+            /** @description The Classes' check-in has closed: the offer is over. */
+            expired: boolean;
+            completed: boolean;
+        };
         KioskSessionInfoDto: {
             sessionId: string;
             schoolId: string;
@@ -9409,11 +9877,19 @@ export interface components {
             expiresAt: string;
             /** @description Check-in opens this many minutes before a Class starts (the School's setting). */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: several Classes may be checked in at once. */
+            checkInSeveralClasses: boolean;
             /**
              * @description How many digits staff codes have here.
              * @enum {number}
              */
             checkInCodeDigits: 4 | 6;
+            /** @description Decision 392: the School has a visitor period, so the sign-up form offers Visitor. */
+            visitorsOn: boolean;
+            /** @description The School's "How did you hear about us?" choices. Null: show the starting list in the tablet's language. */
+            heardFromOptions?: string[] | null;
         };
         KioskClassDto: {
             id: string;
@@ -9527,6 +10003,147 @@ export interface components {
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
             code: string;
+        };
+        SignUpDto: {
+            id: string;
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            /** @enum {string} */
+            status: "PENDING" | "INVITED" | "APPROVED" | "REJECTED" | "DECLINED";
+            firstName: string;
+            surname: string;
+            /** Format: date-time */
+            dateOfBirth: string;
+            gender?: string | null;
+            email: string;
+            phone?: string | null;
+            heardFrom?: string | null;
+            emergencyName?: string | null;
+            emergencyPhone?: string | null;
+            emergencyRelationship?: string | null;
+            branchId?: string | null;
+            branchName?: string | null;
+            /** @description The email already has a ULTM8 account: approving sends it an invite to accept in the app. */
+            hasAccount: boolean;
+            /** @description The account it became, or the one invited. */
+            userId?: string | null;
+            approvedByName?: string | null;
+            /** Format: date-time */
+            approvedAt?: string | null;
+            rejectedByName?: string | null;
+            /** Format: date-time */
+            rejectedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description A rejected sign-up is deleted on this day (Decision 362).
+             */
+            deletesAt?: string | null;
+            /** Format: date-time */
+            respondedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SignUpListDto: {
+            items: components["schemas"]["SignUpDto"][];
+        };
+        ApproveSignUpDto: {
+            /** @description The home branch, when the sign-up came from a School-wide tablet at a School with branches. */
+            branchId?: string;
+        };
+        ApproveSignUpResultDto: {
+            signUp: components["schemas"]["SignUpDto"];
+            /** @description A new account was made and its temporary passcode emailed. */
+            accountCreated: boolean;
+            /** @description The email had an account: it was sent an invite to accept. */
+            invited: boolean;
+            /** @description A Visitor got a visit pass. False when the School has no visitor period set. */
+            visitPassGiven: boolean;
+            /** @description The email could not be sent. */
+            emailFailed: boolean;
+            /** @description Only when the passcode email failed: hand it over in person. */
+            temporaryPasscode?: string | null;
+        };
+        SignUpInviteDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            branchId?: string | null;
+            /** @description The School has open branches and the invite names none: choose one when accepting. */
+            needsBranch: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SignUpInviteListDto: {
+            items: components["schemas"]["SignUpInviteDto"][];
+        };
+        AcceptSignUpInviteDto: {
+            /** @description Your home branch, when the School has branches and the invite names none. */
+            branchId?: string;
+        };
+        AcceptSignUpInviteResultDto: {
+            schoolId: string;
+            visitPassGiven: boolean;
+            /** @description A fresh access token carrying the new STUDENT grant. */
+            accessToken?: string;
+        };
+        MyPackRechargeDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            /** @description Whose pack: the caller, or a child the caller is Guardian of. */
+            studentId: string;
+            /** @description The child's first name when it isn't the caller's own pack. */
+            childFirstName?: string | null;
+            plan: components["schemas"]["AcademyMembershipPlanDto"];
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        MyPackRechargeListDto: {
+            items: components["schemas"]["MyPackRechargeDto"][];
+        };
+        StartOpenMatDto: {
+            /** @description One of the School's open Branches; null when it has none. */
+            branchId?: string | null;
+            /** @description The style. Required when the School has styles. */
+            disciplineId?: string | null;
+            /**
+             * Format: date-time
+             * @description From 30 minutes ago to 24 hours ahead.
+             */
+            startsAt: string;
+            /** @default 60 */
+            minutes: number;
+        };
+        OpenMatStartedDto: {
+            classId: string;
+            title: string;
+            branchId: string | null;
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: string;
+            /** @description How many students were told in the app. */
+            notified: number;
+        };
+        MyOpenMatPermissionDto: {
+            canStart: boolean;
+            /** @description The Branches the caller can start one at; null for any. */
+            branchIds: string[] | null;
+        };
+        OpenMatPermissionDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            roles: ("BRANCH_STAFF" | "INSTRUCTOR")[];
+            canStartOpenMat: boolean;
+        };
+        OpenMatPermissionListDto: {
+            items: components["schemas"]["OpenMatPermissionDto"][];
+        };
+        SetOpenMatPermissionDto: {
+            canStartOpenMat: boolean;
         };
     };
     responses: never;
@@ -13972,6 +14589,28 @@ export interface operations {
             };
         };
     };
+    MembershipsController_giveVisitPass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskMembershipResponseDto"];
+                };
+            };
+        };
+    };
     MembershipsController_giftFriendPass: {
         parameters: {
             query?: never;
@@ -14062,7 +14701,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembershipListResponseDto"];
+                    "application/json": components["schemas"]["MyMembershipListResponseDto"];
                 };
             };
         };
@@ -14431,6 +15070,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_findBeltColours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeltColoursResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_saveBeltColours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveBeltColoursDto"];
+            };
+        };
+        responses: {
+            /** @description The whole list, as saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeltColoursResponseDto"];
                 };
             };
         };
@@ -16524,6 +17210,52 @@ export interface operations {
             };
         };
     };
+    CheckInRulesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
+                };
+            };
+        };
+    };
+    CheckInRulesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
+                };
+            };
+        };
+    };
     AcademiesController_findAll: {
         parameters: {
             query?: {
@@ -17931,6 +18663,94 @@ export interface operations {
             };
         };
     };
+    FrontDeskKioskController_signUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskSignUpDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskSignUpCreatedDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_createRecharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePackRechargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_rechargeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeStatusDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_completeRecharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_info: {
         parameters: {
             query?: never;
@@ -18173,6 +18993,322 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_list: {
+        parameters: {
+            query?: {
+                /** @description WAITING (default): waiting for staff or for the person to accept. REJECTED: the last 30 days. DONE: approved or declined. */
+                view?: "WAITING" | "REJECTED" | "DONE";
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpListDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveSignUpDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveSignUpResultDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_myInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpInviteListDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptSignUpInviteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptSignUpInviteResultDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PackRechargesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePackRechargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeStatusDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPackRechargeListDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartOpenMatDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatStartedDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyOpenMatPermissionDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_listPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatPermissionListDto"];
+                };
+            };
+        };
+    };
+    OpenMatsController_setPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOpenMatPermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenMatPermissionDto"];
                 };
             };
         };

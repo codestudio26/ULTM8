@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "za",
       SUNDAY: "zo",
     },
+    signUpInvites: {
+      title: "Lid worden van {school}?",
+      body: "{school} heeft je aanmelding bij de balie goedgekeurd. Accepteer om daar leerling te worden.",
+      bodyVisitor: "{school} heeft je aanmelding bij de balie goedgekeurd. Accepteer om mee te doen als Bezoeker, met een gratis bezoekerspas.",
+      homeBranch: "Je thuisvestiging",
+      accept: "Accepteren",
+      decline: "Nee, bedankt",
+      failed: "Kon de uitnodiging niet beantwoorden. Probeer het opnieuw.",
+    },
     join: {
       me: "Ik",
       loadFailed: "Deze school kon niet worden geladen — probeer het opnieuw.",
@@ -680,8 +689,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Je lessenkaart is op",
+      titleChild: "De lessenkaart van {name} is op",
+      body: "{school} bood dezelfde kaart aan bij de balie. Koop hem hier, dan wordt het inchecken afgerond zodra die betaald is.",
+    },
     myMemberships: {
       planFallback: "Lidmaatschap {planId}",
+      visitPass: "Bezoekerspas",
       statusLine: "Status: {status} · {frequency}",
       recurring: "Terugkerend",
       oneTime: "Eenmalig",
@@ -845,6 +860,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Deze les is vol. Je kunt je in plaats daarvan op de wachtlijst zetten.",
+      packUsedUp: "Je lessenkaart heeft geen lessen meer. Koop een nieuwe kaart om te boeken.",
       waitlistFirst: "Anderen wachten al op een plek in deze les. Zet je op de wachtlijst om je beurt af te wachten.",
       bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
       classBusy: "Er boeken nu veel mensen deze les. Probeer het zo meteen opnieuw.",

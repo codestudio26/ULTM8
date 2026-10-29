@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sam",
       SUNDAY: "Dim",
     },
+    signUpInvites: {
+      title: "Rejoindre {school} ?",
+      body: "{school} a validé votre inscription à son accueil. Acceptez pour y devenir élève.",
+      bodyVisitor: "{school} a validé votre inscription à son accueil. Acceptez pour rejoindre l'école en tant que Visiteur, avec un pass visiteur gratuit.",
+      homeBranch: "Votre succursale principale",
+      accept: "Accepter",
+      decline: "Non merci",
+      failed: "Impossible de répondre à l'invitation. Réessayez.",
+    },
     join: {
       me: "Moi",
       loadFailed: "Impossible de charger cette école — veuillez réessayer.",
@@ -693,8 +702,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Votre carnet de cours est épuisé",
+      titleChild: "Le carnet de cours de {name} est épuisé",
+      body: "{school} a proposé le même carnet à l'accueil. Achetez-le ici, et le pointage se termine dès qu'il est payé.",
+    },
     myMemberships: {
       planFallback: "Formule {planId}",
+      visitPass: "Pass visiteur",
       statusLine: "Statut : {status} · {frequency}",
       recurring: "Récurrente",
       oneTime: "Ponctuelle",
@@ -863,6 +878,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Ce cours est complet. Vous pouvez rejoindre la liste d’attente à la place.",
+      packUsedUp: "Votre carnet de cours n'a plus de cours. Achetez un autre carnet pour réserver.",
       waitlistFirst: "D’autres personnes attendent déjà une place dans ce cours. Rejoignez la liste d’attente pour attendre votre tour.",
       bookingClosed: "Les réservations pour ce cours sont closes. Un membre du personnel peut encore vous ajouter.",
       classBusy: "Beaucoup de personnes réservent ce cours en ce moment. Veuillez réessayer dans un instant.",

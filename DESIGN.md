@@ -649,6 +649,8 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - A chosen custom colour shows a line under the row: "Custom colour #2A9D8F", with **Edit** and **Delete**. If the colour isn't saved yet, it says "· not saved" and offers **Save** instead of Delete.
   - **Edit** reopens the panel and replaces that saved colour.
   - **Delete** removes it from the saved colours only. Belts already using it keep their colour.
+  - **Presets** are the colours of the built-in belt templates: white, grey, yellow, orange, green, blue, purple, brown, black and red.
+  - The optional rows (secondary and tag colour) start with a **No colour** circle.
   - A wrong code shows "Use a colour code like #2A9D8F." and Save stays off.
   - The wheel is our own, not the browser's colour picker. The browser's picker closes when the page updates, and it looks different on every device.
 - **"Change grading settings"** (Decision 297). The coach right that was "Change board %" is now "Change grading settings" on the Permissions page, per coach and per style. Its tooltip: everything in Grading → Settings for that style (board %, how ranks are shown, the Ready for Adult age, open mat hours), never the promotion fee.

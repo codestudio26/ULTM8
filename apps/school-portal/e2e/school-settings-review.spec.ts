@@ -43,7 +43,7 @@ test('S1: switching School shows that School’s cancellation and footer setting
   await expect(page.getByLabel('About us')).toHaveValue('Second about');
   await expect(page.getByLabel('Default cutoff (hours before class)')).toHaveValue('9');
 
-  const footer = page.locator('form').filter({ hasText: 'About us' });
+  const footer = page.locator('form').filter({ hasText: /About us/ });
   await footer.getByRole('button', { name: 'Save changes' }).click();
   await expect(footer.getByText('Saved.')).toBeVisible();
   expect((await db.school.findUniqueOrThrow({ where: { id: firstId } })).footerAboutUs).toBe('First about');
@@ -56,7 +56,7 @@ test('S2 and S5: saving the footer keeps unsaved School details, and a bare link
   await expect(page.getByRole('heading', { name: 'Bookings and check-in' })).toBeVisible();
   await page.getByLabel('Description').fill('Typed, not saved yet');
 
-  const footer = page.locator('form').filter({ hasText: 'About us' });
+  const footer = page.locator('form').filter({ hasText: /About us/ });
   await footer.getByLabel('Instagram URL').fill('instagram.com/myschool');
   await footer.getByRole('button', { name: 'Save changes' }).click();
   await expect(footer.getByText('Saved.')).toBeVisible();

@@ -8,6 +8,7 @@ import { BookingsService } from '../bookings/bookings.service';
 import { assertClassBookable, assertNotAlreadyAttended, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { AttendanceService } from './attendance.service';
+import { CHECK_IN_RULE_MESSAGES, loadCheckInRules } from './check-in-rules';
 import { QrTokenService } from './qr-token.service';
 import { DeskCheckInClassResultDto, DeskCheckInDto, DeskCheckInGuestResultDto, DeskCheckInResponseDto } from './dto/desk-check-in.dto';
 
@@ -29,7 +30,7 @@ export function frontDeskLookupOwner(sessionId: string): string {
 
 /** A locked tablet only checks people in to its own Branch's Classes, and the
  * whole School's (Decision 380). */
-function assertAtKioskBranch(kiosk: { branchId: string | null } | undefined, classBranchId: string | null) {
+export function assertAtKioskBranch(kiosk: { branchId: string | null } | undefined, classBranchId: string | null) {
   if (kiosk?.branchId && classBranchId && classBranchId !== kiosk.branchId) {
     throw new ForbiddenException({ code: 'OTHER_BRANCH', message: 'This class is at another Branch.' });
   }
@@ -39,7 +40,7 @@ function assertAtKioskBranch(kiosk: { branchId: string | null } | undefined, cla
  * nothing about who is standing there. So on the tablet a place is booked only
  * with a scanned app QR (or a personal code, which gives the same lookup);
  * found by name, a student can only be checked in to Classes already booked. */
-const KIOSK_BOOK_FIRST: Reason = {
+export const KIOSK_BOOK_FIRST: Reason = {
   code: 'KIOSK_BOOK_FIRST',
   message: 'Not booked into this class. Book it in the app, or scan the app QR, to check in here.',
 };
@@ -77,7 +78,16 @@ export class FrontDeskCheckInService {
   /** `kiosk`: a locked front-desk tablet (Decision 380) checks in as the staff
    * member who started it, only for Classes at its Branch (or the whole
    * School's), with QR lookups made on that tablet. */
-  async checkIn(callerId: string, schoolId: string, dto: DeskCheckInDto, kiosk?: { sessionId: string; branchId: string | null }): Promise<DeskCheckInResponseDto> {
+  async checkIn(
+    callerId: string,
+    schoolId: string,
+    dto: DeskCheckInDto,
+    kiosk?: { sessionId: string; branchId: string | null },
+    /** Decision 393: the person was identified when a pack recharge was asked
+     * for, and paid in their own app since; the check-in records that method
+     * and may book, as the scan or code it came from could. */
+    proven?: { method: CheckInMethod },
+  ): Promise<DeskCheckInResponseDto> {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
@@ -94,8 +104,8 @@ export class FrontDeskCheckInService {
       throw new NotFoundException({ code: 'NOT_A_STUDENT_HERE', message: "This person isn't a Student at this School." });
     }
 
-    let method: CheckInMethod = 'INSTRUCTOR_MANUAL';
-    if (dto.lookupToken) {
+    let method: CheckInMethod = proven?.method ?? 'INSTRUCTOR_MANUAL';
+    if (dto.lookupToken && !proven) {
       // The app QR or personal code was checked when it was looked up.
       const lookup = this.qrTokens.verifyDeskLookup(dto.lookupToken);
       const lookupOwner = kiosk ? frontDeskLookupOwner(kiosk.sessionId) : callerId;
@@ -116,6 +126,13 @@ export class FrontDeskCheckInService {
     const failClass = (classId: string, reason: Reason) => Object.assign(classResults.find((r) => r.classId === classId)!, { ok: false, ...reason });
     const failGuest = (attendeeId: string, reason: Reason) => Object.assign(guestResults.find((r) => r.attendeeId === attendeeId)!, { ok: false, ...reason });
     const outcome = (done: boolean): DeskCheckInResponseDto => ({ done, classes: classResults, guests: guestResults });
+
+    // The School may check people in to one class at a time (Decision 394).
+    const rules = await loadCheckInRules(this.prismaJobs, schoolId);
+    if (!rules.severalClasses && dto.classIds.length > 1) {
+      for (const r of classResults) failClass(r.classId, { code: 'CHECK_IN_ONE_CLASS', message: CHECK_IN_RULE_MESSAGES.severalClasses });
+      return outcome(false);
+    }
 
     // 1. Everything that can be checked before the transaction, so the reply
     // can name every item that can't be done, not just the first.
@@ -140,7 +157,7 @@ export class FrontDeskCheckInService {
 
     // A tablet without a scan can't book (KIOSK_BOOK_FIRST). Read in the
     // Student's own context, as the transaction below does.
-    const mayBook = !kiosk || !!dto.lookupToken;
+    const mayBook = !kiosk || !!dto.lookupToken || !!proven;
     if (!mayBook && dto.classIds.length > 0) {
       const held = await this.prismaApp.withTenantContext(studentId, (tx) =>
         tx.booking.findMany({ where: { studentId, classId: { in: dto.classIds }, status: { in: ['UPCOMING', 'COMPLETED'] } }, select: { classId: true } }),

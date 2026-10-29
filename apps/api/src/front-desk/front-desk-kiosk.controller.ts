@@ -1,5 +1,9 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { SignUpsService } from './sign-ups.service';
+import { KioskSignUpCreatedDto, KioskSignUpDto } from './dto/sign-up.dto';
+import { PackRechargesService } from './pack-recharges.service';
+import { CreatePackRechargeDto, PackRechargeDto, PackRechargeStatusDto } from './dto/pack-recharge.dto';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { DeskQrLookupDto } from '../attendance/dto/desk-qr-lookup.dto';
@@ -28,6 +32,8 @@ const UNLOCK_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubT
 const CODE_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
 // Find me answers only yes or no, but is still kept to a few tries (Decision 362).
 const FIND_ME_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
+// Decision 392: a sign-up is a few a minute at most from one tablet.
+const SIGN_UP_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker } };
 const SEARCH_THROTTLE = { identity: { limit: 30, ttl: 60_000, getTracker: jwtSubTracker } };
 
 /**
@@ -42,7 +48,37 @@ export class FrontDeskKioskController {
   constructor(
     private readonly kiosk: FrontDeskKioskService,
     private readonly sessions: FrontDeskSessionsService,
+    private readonly signUps: SignUpsService,
+    private readonly recharges: PackRechargesService,
   ) {}
+
+  /** Decision 392 (handover F5): a sign-up waiting for staff approval. */
+  @ApiCreatedResponse({ type: KioskSignUpCreatedDto })
+  @Throttle(SIGN_UP_THROTTLE)
+  @Post('sign-ups')
+  signUp(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskSignUpDto) {
+    return this.signUps.submitFromKiosk(session, dto);
+  }
+
+  /** Decision 393 (handover F8): a used-up Class Pack, found by QR or code. */
+  @ApiCreatedResponse({ type: PackRechargeDto })
+  @Post('pack-recharges')
+  createRecharge(@FrontDeskSession() s: FrontDeskSessionContext, @Body() dto: CreatePackRechargeDto) {
+    return this.recharges.create(s.startedById, s.schoolId, dto, { sessionId: s.id, branchId: s.branchId });
+  }
+
+  @ApiOkResponse({ type: PackRechargeStatusDto })
+  @Get('pack-recharges/:id')
+  rechargeStatus(@FrontDeskSession() s: FrontDeskSessionContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.recharges.status(s.startedById, s.schoolId, id, { sessionId: s.id, branchId: s.branchId });
+  }
+
+  @ApiOkResponse({ type: DeskCheckInResponseDto })
+  @HttpCode(200)
+  @Post('pack-recharges/:id/complete')
+  completeRecharge(@FrontDeskSession() s: FrontDeskSessionContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.recharges.complete(s.startedById, s.schoolId, id, { sessionId: s.id, branchId: s.branchId });
+  }
 
   @ApiOkResponse({ type: KioskSessionInfoDto })
   @Get('session')

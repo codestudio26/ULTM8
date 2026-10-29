@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sab",
       SUNDAY: "Dom",
     },
+    signUpInvites: {
+      title: "Unirti a {school}?",
+      body: "{school} ha approvato la tua iscrizione alla sua reception. Accetta per diventarne allievo.",
+      bodyVisitor: "{school} ha approvato la tua iscrizione alla sua reception. Accetta per unirti come Visitatore, con un pass visitatore gratuito.",
+      homeBranch: "La tua sede principale",
+      accept: "Accetta",
+      decline: "No, grazie",
+      failed: "Impossibile rispondere all'invito. Riprova.",
+    },
     join: {
       me: "Io",
       loadFailed: "Impossibile caricare questa scuola — riprova.",
@@ -693,8 +702,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Il tuo pacchetto lezioni è esaurito",
+      titleChild: "Il pacchetto lezioni di {name} è esaurito",
+      body: "{school} ti ha offerto lo stesso pacchetto alla reception. Acquistalo qui e il check-in si completa appena viene pagato.",
+    },
     myMemberships: {
       planFallback: "Piano {planId}",
+      visitPass: "Pass visitatore",
       statusLine: "Stato: {status} · {frequency}",
       recurring: "Ricorrente",
       oneTime: "Una tantum",
@@ -863,6 +878,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Questo corso è pieno. Puoi entrare in lista d’attesa.",
+      packUsedUp: "Il tuo pacchetto lezioni non ha più lezioni. Acquista un altro pacchetto per prenotare.",
       waitlistFirst: "Altre persone sono già in attesa di un posto in questo corso. Entra in lista d’attesa per aspettare il tuo turno.",
       bookingClosed: "Le prenotazioni per questo corso sono chiuse. Un membro dello staff può ancora aggiungerti.",
       classBusy: "Molte persone stanno prenotando questo corso in questo momento. Riprova tra poco.",

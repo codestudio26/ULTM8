@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "토",
       SUNDAY: "일",
     },
+    signUpInvites: {
+      title: "{school}에 가입할까요?",
+      body: "{school}에서 데스크 가입 신청을 승인했습니다. 수락하면 수련생이 됩니다.",
+      bodyVisitor: "{school}에서 데스크 가입 신청을 승인했습니다. 수락하면 무료 방문 패스와 함께 방문자로 가입합니다.",
+      homeBranch: "소속 지점",
+      accept: "수락",
+      decline: "괜찮아요",
+      failed: "초대에 응답하지 못했습니다. 다시 시도해 주세요.",
+    },
     join: {
       me: "나",
       loadFailed: "이 도장을 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -675,8 +684,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "수업 패키지가 모두 소진되었습니다",
+      titleChild: "{name}님의 수업 패키지가 모두 소진되었습니다",
+      body: "{school}에서 프런트 데스크를 통해 같은 패키지를 제안했습니다. 여기서 구매하면 결제되는 즉시 출석 체크가 완료됩니다.",
+    },
     myMemberships: {
       planFallback: "플랜 {planId}",
+      visitPass: "방문 패스",
       statusLine: "상태: {status} · {frequency}",
       recurring: "정기",
       oneTime: "1회",
@@ -839,6 +854,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "이 수업은 정원이 찼습니다. 대신 대기자 명단에 등록할 수 있습니다.",
+      packUsedUp: "수업 패키지에 남은 수업이 없습니다. 예약하려면 새 패키지를 구매하세요.",
       waitlistFirst: "이 수업은 이미 자리를 기다리는 사람이 있습니다. 대기자 명단에 등록해 차례를 기다리세요.",
       bookingClosed: "이 수업의 예약이 마감되었습니다. 직원은 여전히 추가해 줄 수 있습니다.",
       classBusy: "지금 많은 사람이 이 수업을 예약하고 있습니다. 잠시 후 다시 시도해 주세요.",

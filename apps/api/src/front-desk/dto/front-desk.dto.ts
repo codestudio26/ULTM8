@@ -90,8 +90,20 @@ export class KioskSessionInfoDto {
   @ApiProperty({ description: "Check-in opens this many minutes before a Class starts (the School's setting)." })
   checkInOpensMinutesBeforeStart!: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends.' })
+  checkInClosesMinutesAfterStart!: number | null;
+
+  @ApiProperty({ description: 'Decision 394: several Classes may be checked in at once.' })
+  checkInSeveralClasses!: boolean;
+
   @ApiProperty({ enum: [4, 6], description: 'How many digits staff codes have here.' })
   checkInCodeDigits!: number;
+
+  @ApiProperty({ description: 'Decision 392: the School has a visitor period, so the sign-up form offers Visitor.' })
+  visitorsOn!: boolean;
+
+  @ApiPropertyOptional({ type: [String], nullable: true, description: 'The School\'s "How did you hear about us?" choices. Null: show the starting list in the tablet\'s language.' })
+  heardFromOptions!: string[] | null;
 }
 
 /** "Today" as the tablet's own clock sees it. */

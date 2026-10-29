@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQueryClient, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '@ultm8/ui';
 import { Avatar } from '../lib/Avatar';
 import { QrScanModal } from '../attendance/QrScanModal';
@@ -8,6 +8,9 @@ import type { BookingResponse } from '../bookings/bookingQueries';
 import { useInstructors } from '../instructors/instructorQueries';
 import { useStudentEligibility } from '../grading/gradingQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
+import { DESK_PAYMENT_METHODS, type DeskPaymentMethod } from '../membershipPlans/membershipPlanQueries';
+import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { hasBackend } from './frontDeskFeatures';
@@ -16,13 +19,16 @@ import {
   QrExpiredError,
   errorText,
   useFrontDeskCheckIn,
+  useStaffPackRecharges,
   useMembershipStatus,
   useBookingGuests,
   useStudentSearch,
   useWaiverStatus,
   type DeskCheckInVars,
+  type PackRechargeApi,
   type QrLookup,
 } from './frontDeskQueries';
+import { formatMoney } from '../lib/money';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
 
@@ -56,9 +62,12 @@ export function timeOf(iso: string): string {
 }
 
 /** A Class is still open for check-in until it ends (the API keeps the exact
- * window: Class.qrAttendanceEndAt, else its end). */
-export function isOver(c: DeskClass, now = Date.now()): boolean {
-  return new Date(c.qrAttendanceEndAt ?? c.endDate).getTime() < now;
+ * window: Class.qrAttendanceEndAt, else its end), or until the School's
+ * "latest check-in" after the start, when that comes first (Decision 394). */
+export function isOver(c: DeskClass, now = Date.now(), closesMinutesAfterStart: number | null = null): boolean {
+  let closes = new Date(c.qrAttendanceEndAt ?? c.endDate).getTime();
+  if (closesMinutesAfterStart !== null) closes = Math.min(closes, new Date(c.startDate).getTime() + closesMinutesAfterStart * 60_000);
+  return closes < now;
 }
 
 /** When check-in opens: the School's set number of minutes before the start
@@ -424,6 +433,10 @@ export function WelcomeCard(props: {
   const waivers = useWaiverStatus(student.id, schoolId);
   const eligibility = useStudentEligibility(student.id, schoolId);
   const checkIn = useFrontDeskCheckIn(schoolId);
+  // Decision 395: "Sell at the desk" for those who may record desk payments.
+  const myAccess = useMyStaffAccess(schoolId);
+  const maySell = !!myAccess.data && (myAccess.data.owner || (myAccess.data.branchStaff && !!school.data?.branchStaffCanRecordPayments));
+  const recharge = useStaffPackRecharges(schoolId, maySell);
   if (!props.bookingsReady || !school.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -444,6 +457,7 @@ export function WelcomeCard(props: {
       mine={mine}
       info={{ membershipStatus: status.data?.status, waivers: hasBackend('waiverStatus') ? waivers.data : undefined, progress }}
       checkIn={checkIn}
+      recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => <StaffGuestTicks bookingId={bookingId} disabled={disabled} picked={picked} onToggle={onToggle} />}
       qr={props.qr}
       short={false}
@@ -453,6 +467,8 @@ export function WelcomeCard(props: {
         props.onDone(ids);
       }}
       opensMinutesBefore={school.data.checkInOpensMinutesBeforeStart}
+      closesMinutesAfterStart={school.data.checkInClosesMinutesAfterStart ?? null}
+      severalClasses={school.data.checkInSeveralClasses ?? true}
     />
   );
 }
@@ -465,7 +481,8 @@ export function WelcomeCard(props: {
  * someone found by name: Decision 388) a Class they haven't booked can't be
  * ticked either; booking there needs the app QR. Anything the API refuses (no live
  * membership, rank gate, full) comes back as its reason and is shown in place
- * of the Confirm button's result.
+ * of the Confirm button's result. When the School checks people in to one
+ * class at a time (Decision 394), ticking a Class unticks the others.
  */
 export function WelcomeCardBody({
   student,
@@ -479,7 +496,10 @@ export function WelcomeCardBody({
   onBack,
   onDone,
   opensMinutesBefore,
+  closesMinutesAfterStart = null,
+  severalClasses = true,
   mayBook = true,
+  recharge,
 }: {
   student: FrontDeskStudent;
   classes: DeskClass[];
@@ -492,26 +512,32 @@ export function WelcomeCardBody({
   onBack: () => void;
   onDone: (classIds: string[]) => void;
   opensMinutesBefore: number;
+  closesMinutesAfterStart?: number | null;
+  severalClasses?: boolean;
   mayBook?: boolean;
+  /** Decision 393: offer the same pack when a Class Pack ran out. */
+  recharge?: PackRechargeApi;
 }) {
   const t = useT();
   const now = Date.now();
-  const open = classes.filter((c) => !isOver(c, now));
+  const open = classes.filter((c) => !isOver(c, now, closesMinutesAfterStart));
   const mineIn = (c: DeskClass, status: DeskBooking['status']) => mine.get(c.id)?.status === status;
   const needsBooking = (c: DeskClass) => !mayBook && !mineIn(c, 'UPCOMING') && !mineIn(c, 'COMPLETED');
   const canTick = (c: DeskClass) => checkInOpensAt(c, opensMinutesBefore) <= Date.now() && !needsBooking(c);
   const [picks, setPicks] = useState<string[]>(() => {
     const ready = open.filter(canTick);
     const booked = ready.filter((c) => mineIn(c, 'UPCOMING')).map((c) => c.id);
-    if (booked.length) return booked;
+    if (booked.length) return severalClasses ? booked : booked.slice(0, 1);
     const next = ready.find((c) => !mineIn(c, 'COMPLETED'));
     return next ? [next.id] : [];
   });
   const [error, setError] = useState<string | null>(null);
+  // Decision 393: the Classes a used-up Class Pack stopped, and the offer made for them.
+  const [packUsedUp, setPackUsedUp] = useState<string[] | null>(null);
 
   const progress = info.progress;
   const tag = info.membershipStatus ? STATUS_TAG[info.membershipStatus] : null;
-  const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : severalClasses ? [...p, id] : [id]));
   // Guests are ticked one by one, only those who came (Decision 377).
   const [guestPicks, setGuestPicks] = useState<Array<{ bookingId: string; attendeeId: string }>>([]);
   const toggleGuest = (bookingId: string, attendeeId: string) =>
@@ -521,18 +547,25 @@ export function WelcomeCardBody({
 
   function confirm() {
     setError(null);
+    setPackUsedUp(null);
     checkIn.mutate(
       { studentId: student.id, classIds: sendable, qr, guests: guestPicks },
       {
         onSuccess: (ids) => onDone(ids),
-        onError: (err) =>
+        onError: (err) => {
+          // Only Classes stopped by a used-up pack: offer the same pack instead of an error.
+          if (recharge && err instanceof DeskCheckInError && err.items.length > 0 && err.items.every((i) => i.code === 'PACK_USED_UP')) {
+            setPackUsedUp(sendable);
+            return;
+          }
           setError(
             err instanceof QrExpiredError
               ? t('frontDesk.welcome.qrExpired')
               : err instanceof DeskCheckInError
                 ? err.items.map((i) => `${i.classId ? (classes.find((c) => c.id === i.classId)?.title ?? '') : t('frontDesk.welcome.guest')}: ${i.message}`).join(' · ')
                 : errorText(err, t('frontDesk.welcome.failed')),
-          ),
+          );
+        },
       },
     );
   }
@@ -609,6 +642,16 @@ export function WelcomeCardBody({
           })}
         </div>
       )}
+      {packUsedUp && recharge ? (
+        <PackUsedUp
+          recharge={recharge}
+          studentId={student.id}
+          classIds={packUsedUp}
+          lookupToken={qr && qr.expiresAt > Date.now() ? qr.lookupToken : undefined}
+          short={short}
+          onDone={() => onDone(packUsedUp)}
+        />
+      ) : null}
       {error ? (
         <div className="fd-note" role="alert">
           <span className="fd-note__dot" aria-hidden="true" />
@@ -631,6 +674,136 @@ export function WelcomeCardBody({
                 ? t('frontDesk.welcome.confirmGuests', { count: guestPicks.length })
                 : t('frontDesk.welcome.tickOne')}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Pack used up" (DESIGN.md, Decision 393): a peach note. The person buys the
+ * same pack in their ULTM8 app; this card checks every few seconds and checks
+ * them in as soon as it's paid. Staff who may record desk payments can also
+ * sell the same pack there and then (Decision 395): the existing desk sale,
+ * after which the same check finds it paid and checks them in.
+ */
+function PackUsedUp({
+  recharge,
+  studentId,
+  classIds,
+  lookupToken,
+  short,
+  onDone,
+}: {
+  recharge: PackRechargeApi;
+  studentId: string;
+  classIds: string[];
+  lookupToken?: string;
+  short: boolean;
+  onDone: () => void;
+}) {
+  const t = useT();
+  const [offer, setOffer] = useState<{ id: string; membershipPlanId: string; planTitle: string; price: number; currency?: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [selling, setSelling] = useState(false);
+  const [method, setMethod] = useState<DeskPaymentMethod>('CASH');
+  const sell = short ? undefined : recharge.sell;
+  const [error, setError] = useState<string | null>(null);
+  const status = useQuery({
+    queryKey: ['packRecharge', offer?.id],
+    queryFn: () => recharge.status(offer!.id),
+    enabled: !!offer,
+    refetchInterval: (q) => (q.state.data?.paid || q.state.data?.expired ? false : 3000),
+  });
+  const paid = !!status.data?.paid;
+  useEffect(() => {
+    if (!offer || !paid) return;
+    let gone = false;
+    recharge.complete(offer.id).then(
+      (result) => {
+        if (gone) return;
+        if (result.done) onDone();
+        else setError([...result.classes, ...result.guests].find((r) => !r.ok)?.message ?? t('frontDesk.welcome.failed'));
+      },
+      (err) => !gone && setError(errorText(err, t('frontDesk.welcome.failed'))),
+    );
+    return () => {
+      gone = true;
+    };
+    // Finishes once, when the payment is first seen.
+  }, [offer?.id, paid]);
+
+  async function offerPack(atDesk = false) {
+    setBusy(true);
+    setError(null);
+    try {
+      setOffer(await recharge.create({ studentId, classIds, ...(lookupToken ? { lookupToken } : {}) }));
+      setSelling(atDesk);
+    } catch (err) {
+      setError(errorText(err, t('frontDesk.packUsedUp.failed')));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recordSale() {
+    if (!offer || !sell) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await sell({ studentId, membershipPlanId: offer.membershipPlanId, paymentMethod: method });
+      await status.refetch();
+    } catch (err) {
+      setError(errorText(err, t('frontDesk.packUsedUp.sellFailed')));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fd-note" role="status" data-testid="fd-pack-used-up">
+      <span className="fd-note__dot" aria-hidden="true" style={{ background: '#f4b98f' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="fd-note__title">{offer ? t('frontDesk.packUsedUp.waitingTitle') : t('frontDesk.packUsedUp.title')}</div>
+        <div className="fd-note__body">
+          {!offer
+            ? t('frontDesk.packUsedUp.body')
+            : status.data?.expired && !paid
+              ? t('frontDesk.packUsedUp.expired')
+              : paid
+                ? t('frontDesk.packUsedUp.paid')
+                : selling
+                  ? t('frontDesk.packUsedUp.sellBody', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })
+                  : t(short ? 'frontDesk.packUsedUp.waitingSelf' : 'frontDesk.packUsedUp.waitingStaff', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })}
+        </div>
+        {error ? <div className="fd-msg fd-msg--bad">{error}</div> : null}
+        {!offer ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="fd-pill fd-pill--go" disabled={busy} onClick={() => offerPack()}>
+              {short ? t('frontDesk.packUsedUp.offerSelf') : t('frontDesk.packUsedUp.offerStaff')}
+            </button>
+            {sell ? (
+              <button type="button" className="fd-pill fd-pill--line" disabled={busy} onClick={() => offerPack(true)}>
+                {t('frontDesk.packUsedUp.sellAtDesk')}
+              </button>
+            ) : null}
+          </div>
+        ) : selling && sell && !paid && !status.data?.expired ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <label className="fd-class__meta" htmlFor="fd-pack-method">
+              {t('frontDesk.packUsedUp.paidBy')}
+            </label>
+            <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
+              {DESK_PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {t(PAYMENT_METHOD_LABELS[m])}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="fd-pill fd-pill--go" disabled={busy} onClick={recordSale}>
+              {t('frontDesk.packUsedUp.recordSale')}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

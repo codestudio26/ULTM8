@@ -48,6 +48,20 @@ export class MembershipResponseDto {
   updatedAt!: string;
 }
 
+/** GET /memberships/me: a row of the caller's own memberships. */
+export class MyMembershipResponseDto extends MembershipResponseDto {
+  @ApiProperty({ description: 'Decision 391: a Visitor\'s free visit pass (its plan is hidden from the School\'s plan list).' })
+  visitPass!: boolean;
+}
+
+export class MyMembershipListResponseDto {
+  @ApiProperty({ type: [MyMembershipResponseDto] })
+  items!: MyMembershipResponseDto[];
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  nextCursor!: string | null;
+}
+
 export class MembershipListResponseDto {
   @ApiProperty({ type: [MembershipResponseDto] })
   items!: MembershipResponseDto[];

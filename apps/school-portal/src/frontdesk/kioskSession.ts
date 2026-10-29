@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, createApiClient, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { todayWindow, useDeskCheckIn } from './frontDeskQueries';
+import { todayWindow, useDeskCheckIn, type PackRechargeApi } from './frontDeskQueries';
 
 /**
  * The locked front-desk tablet (Decision 380, handover F1, F2). Starting
@@ -114,6 +114,39 @@ export function useKioskFindMe() {
   return useMutation({
     mutationFn: (body: { fullName: string; dateOfBirth: string }) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/find-me', { body })),
   });
+}
+
+/** What the tablet's sign-up form sends (Decision 392). Blank fields are sent
+ * as typed; the API treats them as not given. */
+export type KioskSignUpInput = {
+  kind: 'VISITOR' | 'MEMBER';
+  firstName: string;
+  surname: string;
+  dateOfBirth: string;
+  gender: '' | 'FEMALE' | 'MALE';
+  phone: string;
+  email: string;
+  heardFrom: string;
+  emergencyName: string;
+  emergencyPhone: string;
+  emergencyRelationship: string;
+};
+
+/** Decision 392 (handover F5): a sign-up waiting for staff approval. */
+export function useKioskSignUp() {
+  return useMutation({
+    mutationFn: (input: KioskSignUpInput) =>
+      unwrap(kioskClient.POST('/v1/front-desk/kiosk/sign-ups', { body: { ...input, gender: input.gender || null } })),
+  });
+}
+
+/** Decision 393: the tablet's pack recharge calls (see PackRechargeApi). */
+export function useKioskPackRecharges(): PackRechargeApi {
+  return {
+    create: (body) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/pack-recharges', { body })),
+    status: (id) => unwrap(kioskClient.GET('/v1/front-desk/kiosk/pack-recharges/{id}', { params: { path: { id } } })),
+    complete: (id) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/pack-recharges/{id}/complete', { params: { path: { id } } })),
+  };
 }
 
 export function useKioskCheckIn() {

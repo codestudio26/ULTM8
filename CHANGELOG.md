@@ -15,6 +15,53 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
+  card on Check-in also has "Sell at the desk": choose how it was paid (cash,
+  bank transfer, Pix or card terminal), record it, and the person is checked
+  in. The owner, and Branch Staff allowed to record payments. No migration.
+- **Check-in rules** (Decision 394) — Check-in → Check-in rules sets, for
+  every way in (app, coach's scan, front desk, tablet), when check-in opens
+  and closes, whether a signed waiver is needed, whether members may check
+  in at other branches, whether visitors check in on a visit pass, and
+  whether the desk checks in to several classes at once. Every default is
+  how check-in worked before. The owner, and Branch Staff given the new
+  "Change check-in rules" access switch. Needs migration
+  `20261225000100_check_in_rules`.
+- **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
+  (base, secondary, tag and stripe colours) now shows preset circles, the
+  School's saved colours and a "+" that opens a colour wheel with Brightness
+  and a colour code box. "Save colour" applies a colour and keeps it for every
+  row and every style at the School; Edit replaces a saved colour, Delete
+  removes it without changing belts that use it. The owner, or Branch Staff
+  who manage disciplines, can change the list. **Needs a database migration**
+  (`20261226000000_saved_belt_colours`).
+- **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
+  tablet (adults; Visitor only when the School has set a visit pass length) and
+  wait for staff. The owner, or Branch Staff with the Students switch, approves
+  or rejects them under Students → Sign-ups. A new email gets an account and a
+  temporary passcode; an email that already has an account gets an invite to
+  accept in the student app. A rejected sign-up gets a polite email, can still
+  be approved for 30 days, then is deleted. Each School edits its own "How did
+  you hear about us?" list in School settings.
+- **No more decision numbers in messages** (backlog 3.17) — error messages and
+  grading history notes no longer end with internal references such as
+  "(Decision 147)", in every language. Saved history notes are cleaned too.
+  **Needs a database migration** (`20261225000000_clean_system_notes`).
+- **Front desk: pack used up** (Decision 393) — when a Class Pack has no
+  classes left at check-in, the desk (or the tablet, after a scan) offers the
+  same pack. The member, or their Guardian, buys it on the student app's Home,
+  and the check-in finishes on its own as soon as it's paid.
+- **Front desk: start an open mat** (Decision 386) — "+ Open mat session"
+  on the Check-in page makes a one-off open mat class today (style, start,
+  length), and students who train that style at that branch are told in the
+  app. The owner, and staff given "Can start open mat sessions" on the
+  Staff page. Needs migration `20261221000000_open_mat_permission`.
+- **Visitors and visit passes** (Decision 391) — each School sets how long a
+  free visit pass lasts (School settings; no default). The owner, or Branch
+  Staff with the Students switch, gives a pass from the student's page; while it
+  lasts the Visitor books and checks in free, and a second pass starts when the
+  first ends. Visitors carry a "Visitor" badge on the Students list. A
+  membership makes them a member.
 - **Staff page: Pause and Unpause** (Decision 390). An owner can pause a
   coach or a Branch Staff member. All their roles at the School stop straight
   away, even if they are signed in. Everything set for them is kept: access
@@ -44,6 +91,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   on the Check-in page's or the tablet's Code tab opens their welcome card,
   and the check-in shows as "Code". Needs migration
   `20261217000000_student_check_in_codes`.
+- **Transactions: refunds made in Stripe show up** (Decision 382) — a card
+  payment refunded in the Stripe dashboard now shows as Refunded on the
+  Transactions page (or with the refunded amount, for a part refund), in the
+  portal and the student app. A full refund also ends the membership it paid
+  for (future bookings cancelled, Subscription stopped); a part refund keeps
+  it. A refund that later fails turns the payment back to Successful. No
+  database change. Needs the `charge.refunded` and
+  `charge.refund.updated` events switched on for the Stripe webhook.
 - **Front desk: a locked tablet, left with your own staff code** (Decision
   380) — starting front-desk mode signs you out of the device, so it holds no
   staff login; it shows only its Branch's classes and short names, and only

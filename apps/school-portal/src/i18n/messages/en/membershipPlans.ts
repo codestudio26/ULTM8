@@ -6,6 +6,7 @@ export const membershipPlans = {
     weeklyPass: 'Weekly Pass',
     friendPass: 'Friend Pass',
     trialMembership: 'Trial Membership',
+    visitPass: 'Visit pass',
   },
   list: {
     title: 'Membership Plans',

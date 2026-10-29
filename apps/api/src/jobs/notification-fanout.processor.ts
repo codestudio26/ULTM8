@@ -79,7 +79,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
   }
 
   async process(job: Job<NotificationFanoutJobData>): Promise<void> {
-    const { notificationId, userId, title, body, type, guardianCopyOf, schoolId, targetType, targetId } = job.data;
+    const { notificationId, userId, title, body, type, guardianCopyOf, schoolId, targetType, targetId, inAppOnly } = job.data;
 
     // Decision 355: the School's name is copied onto the row now, since the
     // reader can't always see the School itself (see the Notification model).
@@ -129,6 +129,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
               schoolId,
               targetType,
               targetId,
+              inAppOnly,
             };
             return { name: 'notify', data, opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } } };
           }),
@@ -137,6 +138,8 @@ export class NotificationFanoutProcessor extends WorkerHost {
         if (user.email.endsWith(MINOR_PLACEHOLDER_EMAIL_DOMAIN)) return;
       }
     }
+
+    if (inAppOnly) return;
 
     // Push first, and only on the first attempt: it is caught (never fails the
     // job), so a retry exists only to re-try EMAIL — re-sending push on it would

@@ -6333,6 +6333,37 @@ User (Code), 28 Oct 2026, Waivers thread.
 
 ---
 
+## Decision 382 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 111, 291, 339, 346 · **Resolves:** Transactions review gap G6. No database change.
+
+The Transactions review (26 Oct 2026, Decision 339) found that a School owner who refunds a card payment in the Stripe dashboard never sees it in ULTM8: the row stays Successful. The recommendation was to pick these refunds up automatically and mark the payment Refunded. The product owner approved it on 28 Oct 2026 (*"start all three"*).
+
+### Decision
+
+1. **The Stripe webhook handles `charge.refunded` and `charge.refund.updated`.** The job reads the Charge as Stripe holds it now and finds the Transaction by the Charge's PaymentIntent, the same correlation disputes use (Decision 111). That covers membership payments, Subscription renewals and late-cancel fees (Decision 346).
+2. **The Charge's refunded total is the truth.** `Transaction.refundedAmount` is set to it. When it covers the whole payment, a Successful row becomes **Refunded**. A part refund shows its amount in the Refunded column and keeps the row Successful, the same rule as the refunds ULTM8 sends itself (Decision 291). A refund that later fails lowers the total, and a Refunded row goes back to Successful.
+3. **Refunds ULTM8 sent itself change nothing.** Their webhook finds the total already recorded. The handler takes the same row lock as CancellationService, so the two never overwrite each other. Redelivered or out-of-order events are harmless, because each one reads the Charge's current total.
+4. **A Disputed row keeps its status.** The dispute handler owns it; only the refunded total moves.
+5. **Anything else is logged and left alone:** a charge with no Transaction (for example a franchise fee), or a refund on ULTM8's own platform account.
+6. **A full refund ends the membership it paid for** (the purchase or a Subscription renewal), the same way a lost dispute does (Decisions 55, 122): the Membership becomes Expired, its future bookings are cancelled (seats go to the waitlist), and a Subscription is cancelled in Stripe so it stops billing. Late-cancel fees pay for no membership, so nothing else changes for them. This happens only when ULTM8 turns the row Refunded; a payment ULTM8 had already marked Refunded itself is not ended a second time.
+7. **A part refund does not end the membership.** It only records the refunded amount; the member keeps the membership and its remaining classes. The owner can still cancel the membership in ULTM8 if that's what the refund was for.
+8. **A refund that later fails does not bring an ended membership back.** The row goes back to Successful, but the owner sells or restarts the membership by hand if needed.
+
+### Setup
+
+The Stripe webhook endpoint (`POST /v1/payments/webhooks/stripe`) must also send **`charge.refunded`** and **`charge.refund.updated`**. Add them in the Stripe dashboard (Developers → Webhooks, the Connect endpoint). Until they're switched on, nothing reaches the API.
+
+### What this does NOT resolve
+
+- **No notice is sent** to the student or the owner about a Stripe-dashboard refund.
+- The revenue tiles still count a part-refunded payment at its full amount, as they already do for ULTM8's own part refunds.
+- Franchise-fee charges and platform charges refunded in Stripe are unchanged.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, *"start all three"*, on the recommendations the coordinator listed (Transactions G6 was one of them). Items 6–8: user (Code), 28 Oct 2026, *"It should end the membership"*; the part-refund and failed-refund rules (7, 8) are Claude's recommendation, recorded as such. The user also said the Stripe webhook events will be switched on in v1.3 or later, so none of this works live before then.
+
 ## Decision 380 — Front desk: the locked tablet, left with a staff member's own code
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F1, F2 · **Rules from:** Decisions 317, 320, 351 · **Follows:** Decision 378
@@ -6517,6 +6548,31 @@ User (Code), 28 Oct 2026: *"start all three"*, which includes the Memberships ca
 
 ---
 
+## Decision 386 — Front desk: starting an unplanned open mat
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F10 · **Rules from:** Decision 304 items 1, 2, 4, 5 · **Follows:** Decision 385
+
+Part of "build them" (28 Oct 2026). The "+ Open mat session" button on the Check-in page was switched off, waiting for this.
+
+### Decision
+
+1. **`POST /schools/{schoolId}/open-mats`** `{ branchId, disciplineId, startsAt, minutes }` makes a one-off Class titled "Open mat", with the class type **"Open mat"** for its style (Decision 304 item 1), so booking, check-in, attendance and hours work as for any class, and the hours switch (Decision 301) applies. Length defaults to 60 minutes. Membership covers it, like any class (Decision 304 item 3's "uses a class credit", on by default).
+2. **Who can start one** (Decision 304 item 4): the School owner, always; Branch Staff and coaches only with the owner's per-person **"Can start open mat sessions"** switch (off by default), and only at their own Branches. The owner sets it in a new "Open mat sessions" card on the Staff page (`GET`/`PUT /schools/{schoolId}/open-mats/permissions[/{userId}]`); `GET /schools/{schoolId}/open-mats/me` tells the Check-in page whether to show the button.
+3. **Students are told in their Notifications** (Decision 304 item 5): those with a live membership at the School, whose home Branch is that Branch, and who train that style, i.e. hold a rank in it. In the app only: no email, and no push until the "Open mat alerts" setting exists.
+4. **The start time** is today, from 30 minutes ago to 24 hours ahead, and the length 15 minutes to 8 hours (the screen offers 30, 45, 60, 90 and 120 minutes).
+
+### Not in this decision (open, to confirm)
+
+- **"Who train that style"** is read as "holds a rank in that style". Product owner to confirm.
+- **The time limits** (point 4) are this build's choice.
+- **Not built yet from Decision 304:** the School setting "Open mat uses a class credit" (item 3; today it always does, which is the default), the home-screen banner and the "Open mat alerts" push setting in the student app (item 5, Track B; push also needs the Firebase/APNs credentials, v1.3).
+
+### Recorded by
+
+User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.
+
+---
+
 ## Decision 388 — Front desk: the locked tablet only books with a scan; too many wrong staff codes end it; a closed Branch ends it
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decisions 378 and 380 (the locked tablet) · **Found by:** a review of #360
@@ -6565,3 +6621,159 @@ The Staff build plan described Pause as: *"temporarily switches off all their st
 ### Recorded by
 
 User (Code), 27 Oct 2026, "all recommended" on the Staff build plan (Decision 360 item 6: "Remove now and Pause next"). Built 29 Oct 2026 in the Staff thread.
+
+---
+
+## Decision 391 — Visitors and visit passes
+
+**Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** Decision 315 item 1 (Visitors are their own status) · **Needed by:** front-desk sign-up F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), whose form asks Visitor or Member
+
+### Decision
+
+1. **A visit pass lets a Visitor book and check in free while it lasts**, under the School's usual booking and check-in rules and waivers. It is separate from a Trial Membership: Trial's 30-day caps (Decisions 54, 64) don't apply to it.
+2. **When a pass ends, the person stays a Visitor but can't book** until staff give another pass or they get a membership. A membership makes them a member.
+3. **There is no default visitor period.** Each School sets how long a pass lasts in School settings (1 to 3,650 days). Until it does, no pass can be given (and the front-desk tablet won't offer a Visitor sign-up). Clearing it turns new passes off; passes already given run to their end.
+4. **Who gives a pass:** the owner, and Branch Staff with the Students access switch (Decision 387), for students at their own branches. Coaches can't: memberships aren't among their rights (Spec 55 §8.2). Only the owner sets the School's period, like every School setting. *(Product owner, 29 Oct 2026: tablet sign-ups are approved by the owner and by staff with the Students switch; the same people give passes.)*
+5. **Several passes in a row:** a pass given while one is still running starts when that one ends. Someone who holds a membership in effect (other than a Friend Pass, which only covers a guest) is a member and gets no pass. The same pass clicked twice within a minute is refused, as for desk sales.
+
+### How it is built
+
+- A visit pass is a free Membership (`giftedById` = the staff member) on the School's one hidden `VISIT_PASS` plan, which ULTM8 makes the first time a pass is given there. So booking, check-in, waivers and the expiry sweep need no change. The plan is never listed, read, edited, sold or bought: every by-id path refuses it (`findOnePlan`), and it can't be created through the plan form.
+- `POST /schools/{schoolId}/students/{studentId}/visit-passes` gives a pass. `School.visitorPeriodDays` holds the period. The Students roster returns `visitor` and `visitPassEndsAt`. `GET /memberships/me` flags `visitPass` so the student app can name it.
+- **Who counts as a Visitor:** someone who has had a visit pass and no other membership (Friend Passes aside) since their latest one. Visit passes are £0 and not among the Dashboard's active-student types or the franchise headcount, so they count in neither (Decision 315 item 5 wants Visitors as a separate number; that number isn't built yet).
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether a School can turn a Visitor into a member other than by a membership (for example a "make member" button), and whether Visitors appear as a separate Dashboard number (Decision 315 item 5). Neither is built.
+- **[UNRESOLVED]** Decision 315 item 1 also says "the owner and staff the owner allows set the visitor period". This entry reads that as giving passes (point 4); the School-wide length stays the owner's.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, starting front-desk sign-up (F5): chose to build the Visitor status too; "Yes, free during the pass"; "Stays Visitor, can't book"; "There is not default period, it should be set up by the school"; approvers "Owner + Students switch".
+
+## Decision 392 — Sign-ups from the front-desk tablet, staff approval, and invites for existing accounts
+
+**Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** handover F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), Decisions 351 item 5, 362, 365, and Decision 315 item 6 (the School's "How did you hear about us?" list) · **Uses:** Decision 391 (Visitors)
+
+### Decision
+
+1. **A sign-up on the tablet waits for staff** (Decision 351). It records Visitor or Member, name, date of birth, gender (Female, Male or not given), email, phone, "How did you hear about us?", and an emergency contact. Name, date of birth and email are needed (the account and its emails use them); the rest may be left blank. It is not a member until approved. One waiting sign-up per email at a School.
+2. **Adults only on the tablet.** An under-18 is refused: a child is signed up by their Guardian in the ULTM8 app. *(Product owner, 29 Oct 2026: "Refuse under-18 for now".)*
+3. **Visitor is offered only when the School has set its visit pass length** (Decision 391).
+4. **Who approves:** the owner, for every Branch; Branch Staff with the Students access switch (Decision 387), for sign-ups from their own Branches (all of them with a School-wide grant). Coaches don't. *(Product owner, 29 Oct 2026.)* They see them under Students → Sign-ups: Waiting, Rejected and Done.
+5. **Approving a new email** makes the account with a temporary passcode emailed (as "Add manually", Decision 371) and enrols it at the tablet's Branch (staff choose the Branch for a School-wide tablet). A Visitor also gets a visit pass, given by the approver. If the email can't be sent, staff see the passcode once to hand over.
+6. **Approving an email that already has an account sends that account an invite** (email, and a card in the student app). It joins only when it accepts in the app (a Visitor then gets a visit pass); it can decline. Staff can withdraw an invite not yet answered. An email that already belongs to a student of the School is refused. *(Product owner, 29 Oct 2026: "Build an accept step".)*
+7. **Rejecting** (Decisions 362, 365): a polite email saying the sign-up wasn't accepted and to talk to the front desk, with no reason. The sign-up stays in Rejected for 30 days, where staff can still approve it; then the daily purge deletes it with everything typed. Who rejected and who approved are both kept.
+8. **The emergency contact and "heard from" stay on the sign-up**, where staff see them before and after approval. Putting them on the member's profile (Decision 315 item 5) is separate work. *(Product owner, 29 Oct 2026.)*
+9. **"How did you hear about us?" is each School's own list** (Decision 315 item 6), edited in School settings (add, rename, reorder, remove; 1 to 30 choices). Until a School edits it, the starting list (Friend, Instagram, Google, Walked past) shows in each viewer's language; saving keeps the list as written. *(Product owner, 29 Oct 2026: "Build the School's list".)*
+
+### How it is built
+
+- `SignUp` table (status PENDING, INVITED, APPROVED, REJECTED, DECLINED), read and written only on the jobs connection after the API's own checks; RLS is on with no grant to `ultm8_app`.
+- Tablet: `POST /front-desk/kiosk/sign-ups` (5 a minute per tablet); `GET /front-desk/kiosk/session` returns `visitorsOn` and `heardFromOptions`.
+- Staff: `GET /schools/{schoolId}/sign-ups?view=WAITING|REJECTED|DONE`, `POST …/sign-ups/{id}/approve`, `POST …/sign-ups/{id}/reject`.
+- The invited account: `GET /sign-ups/invites/me`, `POST /sign-ups/invites/{id}/accept`, `POST /sign-ups/invites/{id}/decline`.
+- `School.heardFromOptions` (null = the starting list), set through `PATCH /schools/{id}`.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** A Guardian signing up a child on the tablet (with consent). Refused for now (point 2).
+- **[UNRESOLVED]** Website sign-up forms and per-School form sections (Decision 318 item 9). Only the tablet's fixed form is built.
+- **[UNRESOLVED]** Whether an unanswered invite should expire. It stays until answered or withdrawn.
+- **[UNRESOLVED]** Emails are in English, like the other account emails today.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "yes start with sign-up from the tablet", then the answers quoted above.
+## Decision 393 — Pack used up at check-in: buy the same pack in the app
+
+**Date:** 29 Oct 2026 · **Status:** Built from Decision 316 item 7 · **Builds:** handover F8 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`) and DESIGN.md's "Pack used up" card
+
+### Decision (Decision 316 item 7, as built)
+
+1. **When a Class Pack has no classes left at check-in, and nothing else pays for the seat,** the check-in says so with its own reason (`PACK_USED_UP`), instead of "no active membership". The welcome card shows the peach "Pack used up" note: "Buy the same pack and you're checked in as soon as it's paid."
+2. **The desk offers the same pack.** Staff (or the person on the tablet) tap the button. The person, or their Guardian for a child, then sees that pack on the student app's Home and buys it there with the existing purchase flow.
+3. **The check-in completes once it's paid.** The card checks every few seconds. When a new pack on the same plan exists, it checks the person in to the same Classes, recording the same method (scan, code or name) as when they were found. On the tablet the offer needs a scan or personal code, as booking does (Decision 388); the finished check-in may book, since they paid in their own app.
+4. **The offer lasts while the Classes can still be checked in to.** After that it disappears from the app. A pack bought later is still theirs; it just doesn't check them in.
+
+### How it is built
+
+- `PackRecharge` (the offer: person, plan, Classes, how they were found, until when). Jobs connection only, RLS on with no `ultm8_app` grant.
+- Desk: `POST /schools/{schoolId}/front-desk/pack-recharges`, `GET …/{id}`, `POST …/{id}/complete`. Tablet: the same under `/front-desk/kiosk/pack-recharges`, limited to its own offers. App: `GET /pack-recharges/me` (own and children's open offers).
+- "The same pack" is the most recent used-up Class Pack's plan. A plan the School has archived isn't offered (`PACK_NOT_FOR_SALE`). Asking again for the same person and pack updates the open offer.
+- The student app's purchase row can now buy for a child (the API already allowed it); a saved card isn't offered then, as the API requires.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Paying at the desk instead (cash or card terminal) during the same check-in. Staff can still sell the pack from the student's page and check in again.
+- **[UNRESOLVED]** Whether the member should also get a push notification. Only the Home card shows it.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "start on F8 after 372 merges and build any other task you have all the answers for". Rules from Decision 316 item 7; nothing new was decided here.
+
+---
+
+## Decision 394 — Check-in rules per School
+
+**Date:** 29 Oct 2026. **Builds:** Decision 317 item 1 and the front-desk handover's F9 (backlog §3.5).
+
+### Context
+
+Check-in had fixed rules: it opened the School's set minutes before a class (Decision 380's School page setting), closed at the class's own check-in end or its end, and the desk could check someone in to several classes at once (Decision 378). A School could not change who may check in.
+
+### Decision
+
+1. **One set of rules for every way in**: the app QR and code, the coach's scan, the front desk and the locked tablet. They are checked where every check-in ends (`AttendanceService.assertWithinWindow` and `completeInTx`), so no way in can skip them.
+2. **Every default is today's behaviour**, so nothing changes for a School until its owner changes a rule.
+3. **The rules** (Settings → Check-in → Check-in rules):
+   - Check-in opens N minutes before the start (0 to 1440; the existing setting, default 30).
+   - Check-in closes when the class ends (default), or N minutes after the start (0 to 1440). A class's own check-in end time still applies when it comes first.
+   - Need a signed waiver to check in (default off): any counting signature at the School (Decision 354's archived-signature setting applies), for every class.
+   - Members may check in at other Branches (default on). When off, a member with a home Branch checks in only at classes of that Branch or School-wide classes; a member with no home Branch is not refused.
+   - Check visitors in on a visit pass (default on). When off, a booking paid by a visit pass (Decision 391) is not checked in.
+   - Check in to several classes at once (default on). When off, the desk and the tablet tick one class at a time, and the API refuses more than one.
+   - Check-in code length (4 or 6; the existing setting).
+4. **Who changes them:** the owner, and Branch Staff with a new access switch, "Change check-in rules" (Decision 387's Access window, off by default and in neither preset). Coaches don't.
+5. **No frozen-member rule for now.** *(Product owner, 29 Oct 2026: "all recommended".)*
+
+### How it is built
+
+- Migration `20261225000100_check_in_rules`: `School.checkInClosesMinutesAfterStart` (null), `checkInRequireWaiver` (false), `checkInOtherBranches`, `checkInVisitors`, `checkInSeveralClasses` (true); `StaffPermission.canManageCheckInRules` (false).
+- `GET`/`PUT /schools/{schoolId}/check-in-rules`; refused with `STAFF_ACCESS_OFF` without the switch.
+- Refusal codes: `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` (403) and `CHECK_IN_ONE_CLASS` (a per-class reason from the desk's one-step check-in).
+- The tablet's session returns `checkInClosesMinutesAfterStart` and `checkInSeveralClasses`; the School returns all of them.
+- The School page keeps its two existing check-in fields; both pages write the same settings.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** A rule that needs a live membership to check in, separate from booking. Booking already needs one, and the desk books where needed, so today it is always needed.
+- **[UNRESOLVED]** A rule that refuses check-in to members with an overdue payment. `paymentRestrictedAt` only blocks purchases today.
+- **[UNRESOLVED]** Checking in without a booking (walk-ins without a place). Every way in still needs a booking, as before.
+- **[UNRESOLVED]** A frozen-membership rule. Left out for now (point 5).
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.
+
+---
+
+## Decision 395 — Sell the used-up pack at the desk during check-in
+
+**Date:** 29 Oct 2026. **Builds:** front-desk handover F8's desk payment, which Decision 393 left [UNRESOLVED].
+
+### Decision
+
+1. **The "Pack used up" card has a second button, "Sell at the desk"**, next to "Offer the same pack in their app". It sells the same pack with the existing desk sale (Decisions 346 to 348): cash, bank transfer, Pix or card terminal. *(Product owner, 29 Oct 2026: "Build the shortcut".)*
+2. **It adds no payment rule.** It is the same `POST /schools/{schoolId}/desk-payments` the Transactions page uses, with every check it makes (the School's payments set up, the plan still sold, the member one of the caller's students).
+3. **Who sees it:** the owner, and Branch Staff when the School lets them record payments (Decision 347). Coaches and the locked tablet never do; they keep "Offer the same pack in their app".
+4. **Check-in follows the sale.** The card makes the same pack-recharge offer first, so once the sale is recorded the offer is paid and the person is checked in to the ticked classes, as when they buy it in the app.
+
+### How it is built
+
+- `PackRechargeDto` also returns `membershipPlanId`, so the desk knows which pack to sell.
+- School Portal only: the card's button, a "Paid by" choice and "Record payment". No migration.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".

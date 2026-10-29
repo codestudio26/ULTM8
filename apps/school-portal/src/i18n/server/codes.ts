@@ -23,6 +23,36 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // The locked tablet, someone found by name (Decision 388).
     case 'KIOSK_BOOK_FIRST':
       return t('server.codes.kioskBookFirst');
+    // Pack used up at check-in (Decision 393).
+    case 'PACK_USED_UP':
+      return t('server.codes.packUsedUp');
+    case 'NO_PACK_TO_RECHARGE':
+      return t('server.codes.noPackToRecharge');
+    case 'PACK_NOT_FOR_SALE':
+      return t('server.codes.packNotForSale');
+    case 'RECHARGE_NOT_PAID':
+      return t('server.codes.rechargeNotPaid');
+    // Visit passes (Decision 391).
+    case 'VISITOR_PERIOD_NOT_SET':
+      return t('server.codes.visitorPeriodNotSet');
+    case 'VISITOR_HAS_MEMBERSHIP':
+      return t('server.codes.visitorHasMembership');
+    // Sign-ups from the tablet (Decision 392).
+    case 'SIGN_UP_UNDER_18':
+      return t('server.codes.signUpUnder18');
+    case 'SIGN_UP_WAITING':
+      return t('server.codes.signUpWaiting');
+    case 'SIGN_UP_ALREADY_STUDENT':
+      return t('server.codes.signUpAlreadyStudent');
+    // The School's check-in rules (Decision 394).
+    case 'CHECK_IN_WAIVER_REQUIRED':
+      return t('server.codes.checkInWaiverRequired');
+    case 'CHECK_IN_HOME_BRANCH_ONLY':
+      return t('server.codes.checkInHomeBranchOnly');
+    case 'CHECK_IN_VISITORS_OFF':
+      return t('server.codes.checkInVisitorsOff');
+    case 'CHECK_IN_ONE_CLASS':
+      return t('server.codes.checkInOneClass');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;

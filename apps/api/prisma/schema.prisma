@@ -293,6 +293,9 @@ enum MembershipPlanType {
   WEEKLY_PASS
   FRIEND_PASS
   TRIAL_MEMBERSHIP
+  /// Decision 391: a Visitor's free visit pass. One hidden plan per School,
+  /// made by ULTM8 the first time a pass is given; never listed, sold or edited.
+  VISIT_PASS
 }
 
 /// Decision 259 — see MembershipPlan.newMemberBillingStrategy's own comment.
@@ -530,6 +533,10 @@ model User {
   deviceTokens                      DeviceToken[]
   refreshTokens                     RefreshToken[]
   guestWaiverSignaturesBooked       GuestWaiverSignature[]      @relation("GuestWaiverSignatureBookedBy")
+  signUps                           SignUp[]                    @relation("SignUpUser")
+  signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
+  signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
+  packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
 
   @@index([email])
   @@index([phone])
@@ -1053,6 +1060,34 @@ model School {
   /// Length of ULTM8-generated check-in codes here: staff kiosk codes (Decision
   /// 320) and members' personal codes (Decision 315). 4 (default) or 6.
   checkInCodeDigits              Int                             @default(4)
+  /// Check-in rules (Decision 394, Decision 317 item 1, handover F9). Each
+  /// default is what check-in did before the rules existed. Applied to every
+  /// way in: app QR and code, the coach's scan, the front desk and the tablet.
+  /// A School-wide signed waiver needed at check-in, beyond a Class's own
+  /// "needs a waiver" (which is checked at booking). Off: only the Class's.
+  checkInRequireWaiver           Boolean                         @default(false)
+  /// Members with a home Branch may check in at the School's other Branches.
+  checkInOtherBranches           Boolean                         @default(true)
+  /// Visitors may check in on their visit pass (Decision 391).
+  checkInVisitors                Boolean                         @default(true)
+  /// The front desk may check someone in to several Classes at once (Decision 378).
+  checkInSeveralClasses          Boolean                         @default(true)
+  /// Check-in closes this many minutes after a Class starts (0 = at the start).
+  /// Null: when the Class ends (or its own QR end time), as before.
+  checkInClosesMinutesAfterStart Int?
+  /// Decision 391 (Decision 315 item 1): days a Visitor's visit pass lasts. No
+  /// default: until the School sets it, no pass can be given and the tablet
+  /// offers no Visitor sign-up.
+  visitorPeriodDays              Int?
+  /// Decision 392 (Decision 315 item 6): the School's "How did you hear about
+  /// us?" choices, in order. Null until the School edits them: the apps then
+  /// show the starting list (Friend, Instagram, Google, Walked past) in the
+  /// viewer's language.
+  heardFromOptions               Json?
+  /// Backlog 3.18: the School's own colours for the belt editor, shared by
+  /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
+  /// most 24. Deleting one never changes a belt or stripe already using it.
+  savedBeltColours               String[]                    @default([])
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -1134,6 +1169,8 @@ model School {
   studentCheckInCodes   StudentCheckInCode[]
 
   notificationBroadcasts NotificationBroadcast[]
+  signUps                SignUp[]
+  packRecharges          PackRecharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1222,6 +1259,7 @@ model Branch {
   coachInvites      CoachInvite[]
 
   notificationBroadcasts NotificationBroadcast[]
+  signUps                SignUp[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -1981,9 +2019,10 @@ model MembershipPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  Membership[]
-  transactions Transaction[]
-  priceChanges MembershipPlanPriceChange[]
+  memberships   Membership[]
+  transactions  Transaction[]
+  priceChanges  MembershipPlanPriceChange[]
+  packRecharges PackRecharge[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -4356,10 +4395,12 @@ model GradingPermission {
   @@index([disciplineId])
 }
 
-/// Staff permissions beyond grading (Decision 183), one row per Branch Staff
-/// member per School. "Can invite coaches" lets them send coach invites for
-/// their own branches. The owner sets it; Instructors can't hold it (Spec 55
-/// §8.2: no instructor management). RLS: the owner, or the user themselves.
+/// Staff permissions beyond grading (Decision 183), one row per staff member
+/// per School. "Can invite coaches" lets Branch Staff send coach invites for
+/// their own branches; Instructors can't hold it (Spec 55 §8.2: no instructor
+/// management). "Can start open mat sessions" (Decision 386) is for Branch
+/// Staff and coaches alike. The owner sets both. RLS: the owner, or the user
+/// themselves.
 model StaffPermission {
   id String @id @default(uuid())
 
@@ -4387,6 +4428,15 @@ model StaffPermission {
   /// untouched. Null = not set (the account's own is shown).
   displayName String?
   workPhone   String?
+
+  /// "Can start open mat sessions" (Decision 304 item 4, built as Decision
+  /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
+  /// at their own Branches; off by default; the owner always can.
+  canStartOpenMat  Boolean @default(false)
+
+  /// Decision 394: may change the School's check-in rules (Settings on the
+  /// Check-in page). Branch Staff only; off by default; owners always can.
+  canManageCheckInRules Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -4704,4 +4754,110 @@ model StudentCheckInCode {
   @@unique([schoolId, studentId])
   @@unique([schoolId, code])
   @@index([studentId])
+}
+
+/// Decision 392: who is signing up, as chosen on the tablet.
+enum SignUpKind {
+  VISITOR
+  MEMBER
+}
+
+/// Decision 392. PENDING waits for staff. INVITED: approved, but the email
+/// already had an account, which accepts or declines in the app. APPROVED:
+/// enrolled. REJECTED: kept 30 days (Decision 362), during which staff can
+/// still approve it. DECLINED: the invited account said no.
+enum SignUpStatus {
+  PENDING
+  INVITED
+  APPROVED
+  REJECTED
+  DECLINED
+}
+
+/// Decision 392 (handover F5; Decisions 351, 362, 365): a sign-up made on
+/// the front-desk tablet, waiting for staff approval. Not a member until
+/// approved. Read and written only on the jobs connection, after the API's
+/// own checks (owner, or Branch Staff with the students switch for the
+/// sign-up's Branch; the invited account for its own invite).
+model SignUp {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  /// The tablet's Branch. Null for a School-wide tablet.
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  kind   SignUpKind
+  status SignUpStatus @default(PENDING)
+
+  firstName   String
+  surname     String
+  dateOfBirth DateTime
+  /// FEMALE, MALE or null (Decision 315 item 15).
+  gender      String?
+  email       String
+  phone       String?
+  /// The School's choice as shown on the tablet (its label, kept as typed).
+  heardFrom   String?
+
+  /// Decision 315 item 5: not a Guardian, no account.
+  emergencyName         String?
+  emergencyPhone        String?
+  emergencyRelationship String?
+
+  /// The account this sign-up became, or the existing account it invited.
+  userId String?
+  user   User?   @relation("SignUpUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  approvedById String?
+  approvedBy   User?     @relation("SignUpApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime?
+  rejectedById String?
+  rejectedBy   User?     @relation("SignUpRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  rejectedAt   DateTime?
+  /// When the invited account accepted or declined.
+  respondedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, status])
+  @@index([userId])
+}
+
+/// Decision 393 (Decision 316 item 7, handover F8): a Class Pack ran out at
+/// check-in, so the member was offered the same pack in the app. Once a new
+/// Membership on that plan exists (paid in the app), the desk finishes the
+/// check-in for these Classes. Read and written on the jobs connection only,
+/// after the API's own checks.
+model PackRecharge {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("PackRechargeStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Cascade)
+
+  /// The Classes to check in to once paid.
+  classIds String[]
+
+  /// The staff member who asked (the tablet's starter for a tablet).
+  requestedById      String
+  /// The tablet session, for a tablet request.
+  frontDeskSessionId String?
+  /// How the person was identified when asked: the check-in records the same.
+  checkInMethod      CheckInMethod
+
+  /// After this the offer is no longer shown (the last Class's check-in closes).
+  expiresAt   DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([studentId, completedAt])
+  @@index([schoolId])
 }

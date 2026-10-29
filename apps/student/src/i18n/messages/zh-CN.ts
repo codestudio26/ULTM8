@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "周六",
       SUNDAY: "周日",
     },
+    signUpInvites: {
+      title: "加入 {school}？",
+      body: "{school} 已批准你在前台的报名。接受后即成为那里的学员。",
+      bodyVisitor: "{school} 已批准你在前台的报名。接受后以访客身份加入，并获得一张免费的访客通行证。",
+      homeBranch: "你的所属分校",
+      accept: "接受",
+      decline: "不用了，谢谢",
+      failed: "无法回复邀请，请重试。",
+    },
     join: {
       me: "我",
       loadFailed: "无法加载这所学校，请重试。",
@@ -674,8 +683,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "你的课时包已用完",
+      titleChild: "{name} 的课时包已用完",
+      body: "{school} 已在前台为你提供同样的课时包。在这里购买，付款后即可完成签到。",
+    },
     myMemberships: {
       planFallback: "方案 {planId}",
+      visitPass: "访客通行证",
       statusLine: "状态：{status} · {frequency}",
       recurring: "定期",
       oneTime: "一次性",
@@ -838,6 +853,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "此课程已满员。你可以改为加入候补名单。",
+      packUsedUp: "你的课时包已没有剩余课时。请购买新的课时包后再预约。",
       waitlistFirst: "已有其他人在候补此课程的名额。加入候补名单即可排队等候。",
       bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
       classBusy: "目前很多人正在预约此课程，请稍后再试。",

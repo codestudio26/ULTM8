@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "Sb",
       SUNDAY: "Nd",
     },
+    signUpInvites: {
+      title: "Dołączyć do: {school}?",
+      body: "{school} zatwierdza Twój zapis z recepcji. Zaakceptuj, aby zostać tam uczniem.",
+      bodyVisitor: "{school} zatwierdza Twój zapis z recepcji. Zaakceptuj, aby dołączyć jako Gość, z bezpłatnym karnetem gościa.",
+      homeBranch: "Twój oddział macierzysty",
+      accept: "Akceptuj",
+      decline: "Nie, dziękuję",
+      failed: "Nie udało się odpowiedzieć na zaproszenie. Spróbuj ponownie.",
+    },
     join: {
       me: "Ja",
       loadFailed: "Nie udało się wczytać tej Szkoły — spróbuj ponownie.",
@@ -700,8 +709,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Twój pakiet zajęć się wyczerpał",
+      titleChild: "Pakiet zajęć {name} się wyczerpał",
+      body: "{school} zaproponowała ten sam pakiet w recepcji. Kup go tutaj, a meldowanie zakończy się, gdy tylko zostanie opłacony.",
+    },
     myMemberships: {
       planFallback: "Plan {planId}",
+      visitPass: "Karnet gościa",
       statusLine: "Status: {status} · {frequency}",
       recurring: "Cykliczne",
       oneTime: "Jednorazowe",
@@ -882,6 +897,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Te zajęcia są pełne. Zamiast tego możesz dołączyć do listy oczekujących.",
+      packUsedUp: "W Twoim pakiecie zajęć nie ma już zajęć. Kup kolejny pakiet, aby zarezerwować.",
       waitlistFirst: "Inni już czekają na miejsce na tych zajęciach. Dołącz do listy oczekujących, aby poczekać na swoją kolej.",
       bookingClosed: "Rezerwacja na te zajęcia została zamknięta. Członek personelu nadal może Cię dopisać.",
       classBusy: "Wiele osób rezerwuje teraz te zajęcia. Spróbuj ponownie za chwilę.",

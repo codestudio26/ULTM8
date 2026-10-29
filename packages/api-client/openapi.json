@@ -7836,6 +7836,49 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/visit-passes": {
+      "post": {
+        "operationId": "MembershipsController_giveVisitPass",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/memberships/gift": {
       "post": {
         "operationId": "MembershipsController_giftFriendPass",
@@ -8000,7 +8043,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembershipListResponseDto"
+                  "$ref": "#/components/schemas/MyMembershipListResponseDto"
                 }
               }
             }
@@ -8727,6 +8770,84 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/belt-colours": {
+      "get": {
+        "operationId": "RanksController_findBeltColours",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeltColoursResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "RanksController_saveBeltColours",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBeltColoursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The whole list, as saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeltColoursResponseDto"
                 }
               }
             }
@@ -12608,6 +12729,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/check-in-rules": {
+      "get": {
+        "operationId": "CheckInRulesController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CheckInRulesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -15134,6 +15333,148 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/sign-ups": {
+      "post": {
+        "operationId": "FrontDeskKioskController_signUp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskSignUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskSignUpCreatedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/pack-recharges": {
+      "post": {
+        "operationId": "FrontDeskKioskController_createRecharge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackRechargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/pack-recharges/{id}": {
+      "get": {
+        "operationId": "FrontDeskKioskController_rechargeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/pack-recharges/{id}/complete": {
+      "post": {
+        "operationId": "FrontDeskKioskController_completeRecharge",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/session": {
       "get": {
         "operationId": "FrontDeskKioskController_info",
@@ -15550,6 +15891,575 @@
         },
         "tags": [
           "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups": {
+      "get": {
+        "operationId": "SignUpsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
+            "required": false,
+            "in": "query",
+            "description": "WAITING (default): waiting for staff or for the person to accept. REJECTED: the last 30 days. DONE: approved or declined.",
+            "schema": {
+              "enum": [
+                "WAITING",
+                "REJECTED",
+                "DONE"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups/{id}/approve": {
+      "post": {
+        "operationId": "SignUpsController_approve",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveSignUpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveSignUpResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/sign-ups/{id}/reject": {
+      "post": {
+        "operationId": "SignUpsController_reject",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/me": {
+      "get": {
+        "operationId": "SignUpsController_myInvites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpInviteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/{id}/accept": {
+      "post": {
+        "operationId": "SignUpsController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptSignUpInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptSignUpInviteResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sign-ups/invites/{id}/decline": {
+      "post": {
+        "operationId": "SignUpsController_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges": {
+      "post": {
+        "operationId": "PackRechargesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackRechargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}": {
+      "get": {
+        "operationId": "PackRechargesController_status",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete": {
+      "post": {
+        "operationId": "PackRechargesController_complete",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/pack-recharges/me": {
+      "get": {
+        "operationId": "PackRechargesController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPackRechargeListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats": {
+      "post": {
+        "operationId": "OpenMatsController_start",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartOpenMatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatStartedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/me": {
+      "get": {
+        "operationId": "OpenMatsController_mine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyOpenMatPermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/permissions": {
+      "get": {
+        "operationId": "OpenMatsController_listPermissions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatPermissionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/open-mats/permissions/{userId}": {
+      "put": {
+        "operationId": "OpenMatsController_setPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOpenMatPermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenMatPermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "open-mats"
         ],
         "security": [
           {
@@ -15986,6 +16896,19 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
           },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -16209,6 +17132,40 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends."
+          },
+          "checkInRequireWaiver": {
+            "type": "boolean",
+            "description": "Decision 394: a signed waiver is needed to check in, whatever the Class says."
+          },
+          "checkInOtherBranches": {
+            "type": "boolean",
+            "description": "Decision 394: members with a home Branch may check in at the School's other Branches."
+          },
+          "checkInVisitors": {
+            "type": "boolean",
+            "description": "Decision 394: Visitors may check in on their visit pass."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: the front desk may check someone in to several Classes at once."
+          },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. Null until the School sets it."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392: the \"How did you hear about us?\" choices. Null: the starting list, shown in the viewer's language.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -16290,6 +17247,10 @@
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
+          "checkInRequireWaiver",
+          "checkInOtherBranches",
+          "checkInVisitors",
+          "checkInSeveralClasses",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -16441,6 +17402,19 @@
           "checkInOpensMinutesBeforeStart": {
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens (default 30). Check-in closes at the Class's check-in end time, or its end."
+          },
+          "visitorPeriodDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "checkInCodeDigits": {
             "type": "number",
@@ -16609,6 +17583,14 @@
           "homeBranchName": {
             "type": "string",
             "nullable": true
+          },
+          "visitor": {
+            "type": "boolean"
+          },
+          "visitPassEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -16618,7 +17600,8 @@
           "email",
           "guardianManaged",
           "enrolledAt",
-          "status"
+          "status",
+          "visitor"
         ]
       },
       "StudentListResponseDto": {
@@ -16845,7 +17828,8 @@
               "CLASS_PACK",
               "WEEKLY_PASS",
               "FRIEND_PASS",
-              "TRIAL_MEMBERSHIP"
+              "TRIAL_MEMBERSHIP",
+              "VISIT_PASS"
             ]
           },
           "classesRemaining": {
@@ -18147,6 +19131,10 @@
           "disciplines": {
             "type": "boolean",
             "description": "Manage disciplines, belts and skills for the whole School (off by default; Decision 383)."
+          },
+          "checkInRules": {
+            "type": "boolean",
+            "description": "Change the School's check-in rules (off by default; Decision 394)."
           }
         },
         "required": [
@@ -18156,7 +19144,8 @@
           "cancelClasses",
           "staffList",
           "inviteCoaches",
-          "disciplines"
+          "disciplines",
+          "checkInRules"
         ]
       },
       "StaffRoleDto": {
@@ -23696,13 +24685,86 @@
           "plans"
         ]
       },
-      "MembershipListResponseDto": {
+      "MyMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "giftedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Subscription only: set once the Student or the owner cancels; the date the paid period ends."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "visitPass": {
+            "type": "boolean",
+            "description": "Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list)."
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "membershipPlanId",
+          "schoolId",
+          "status",
+          "startDate",
+          "frequency",
+          "createdAt",
+          "updatedAt",
+          "visitPass"
+        ]
+      },
+      "MyMembershipListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MembershipResponseDto"
+              "$ref": "#/components/schemas/MyMembershipResponseDto"
             }
           },
           "nextCursor": {
@@ -24104,6 +25166,42 @@
             }
           }
         }
+      },
+      "BeltColoursResponseDto": {
+        "type": "object",
+        "properties": {
+          "colours": {
+            "example": [
+              "#2A9D8F"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "colours"
+        ]
+      },
+      "SaveBeltColoursDto": {
+        "type": "object",
+        "properties": {
+          "colours": {
+            "example": [
+              "#2A9D8F",
+              "#E76F51"
+            ],
+            "description": "Colour codes like #2A9D8F, in order. Repeats are dropped. At most 24.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "colours"
+        ]
       },
       "StripeSegmentInputDto": {
         "type": "object",
@@ -27838,6 +28936,52 @@
           "guests"
         ]
       },
+      "CheckInRulesDto": {
+        "type": "object",
+        "properties": {
+          "opensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens (default 30)."
+          },
+          "closesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time."
+          },
+          "requireWaiver": {
+            "type": "boolean",
+            "description": "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)."
+          },
+          "otherBranches": {
+            "type": "boolean",
+            "description": "Members with a home Branch may check in at the School's other Branches (default on)."
+          },
+          "visitors": {
+            "type": "boolean",
+            "description": "Visitors may check in on their visit pass (default on; Decision 391)."
+          },
+          "severalClasses": {
+            "type": "boolean",
+            "description": "The front desk may check someone in to several Classes at once (default on; Decision 378)."
+          },
+          "codeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length."
+          }
+        },
+        "required": [
+          "opensMinutesBeforeStart",
+          "requireWaiver",
+          "otherBranches",
+          "visitors",
+          "severalClasses",
+          "codeDigits"
+        ]
+      },
       "AcademySummaryDto": {
         "type": "object",
         "properties": {
@@ -29628,6 +30772,157 @@
           "code"
         ]
       },
+      "KioskSignUpDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "Decision 315 item 15: Female, Male or not given."
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "heardFrom": {
+            "type": "string",
+            "nullable": true,
+            "description": "One of the School's \"How did you hear about us?\" choices, as shown."
+          },
+          "emergencyName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyRelationship": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "kind",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "email"
+        ]
+      },
+      "KioskSignUpCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CreatePackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "The QR or code lookup the person was found with. Needed on a tablet (Decision 388)."
+          },
+          "classIds": {
+            "description": "The Classes to check in to once paid. Up to 10.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentId",
+          "classIds"
+        ]
+      },
+      "PackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string",
+            "description": "The pack to buy again. The desk can also sell it there (Decision 395)."
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "membershipPlanId",
+          "planTitle",
+          "price",
+          "expiresAt"
+        ]
+      },
+      "PackRechargeStatusDto": {
+        "type": "object",
+        "properties": {
+          "paid": {
+            "type": "boolean",
+            "description": "The same pack has been bought since the recharge was asked for."
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "The Classes' check-in has closed: the offer is over."
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paid",
+          "expired",
+          "completed"
+        ]
+      },
       "KioskSessionInfoDto": {
         "type": "object",
         "properties": {
@@ -29656,6 +30951,15 @@
             "type": "number",
             "description": "Check-in opens this many minutes before a Class starts (the School's setting)."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: several Classes may be checked in at once."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -29663,6 +30967,18 @@
               6
             ],
             "description": "How many digits staff codes have here."
+          },
+          "visitorsOn": {
+            "type": "boolean",
+            "description": "Decision 392: the School has a visitor period, so the sign-up form offers Visitor."
+          },
+          "heardFromOptions": {
+            "nullable": true,
+            "description": "The School's \"How did you hear about us?\" choices. Null: show the starting list in the tablet's language.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -29671,7 +30987,9 @@
           "schoolName",
           "expiresAt",
           "checkInOpensMinutesBeforeStart",
-          "checkInCodeDigits"
+          "checkInSeveralClasses",
+          "checkInCodeDigits",
+          "visitorsOn"
         ]
       },
       "KioskClassDto": {
@@ -30049,6 +31367,466 @@
         },
         "required": [
           "code"
+        ]
+      },
+      "SignUpDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "INVITED",
+              "APPROVED",
+              "REJECTED",
+              "DECLINED"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "heardFrom": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyName": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyRelationship": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasAccount": {
+            "type": "boolean",
+            "description": "The email already has a ULTM8 account: approving sends it an invite to accept in the app."
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The account it became, or the one invited."
+          },
+          "approvedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rejectedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deletesAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "A rejected sign-up is deleted on this day (Decision 362)."
+          },
+          "respondedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "email",
+          "hasAccount",
+          "createdAt"
+        ]
+      },
+      "SignUpListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignUpDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ApproveSignUpDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "The home branch, when the sign-up came from a School-wide tablet at a School with branches."
+          }
+        }
+      },
+      "ApproveSignUpResultDto": {
+        "type": "object",
+        "properties": {
+          "signUp": {
+            "$ref": "#/components/schemas/SignUpDto"
+          },
+          "accountCreated": {
+            "type": "boolean",
+            "description": "A new account was made and its temporary passcode emailed."
+          },
+          "invited": {
+            "type": "boolean",
+            "description": "The email had an account: it was sent an invite to accept."
+          },
+          "visitPassGiven": {
+            "type": "boolean",
+            "description": "A Visitor got a visit pass. False when the School has no visitor period set."
+          },
+          "emailFailed": {
+            "type": "boolean",
+            "description": "The email could not be sent."
+          },
+          "temporaryPasscode": {
+            "type": "string",
+            "nullable": true,
+            "description": "Only when the passcode email failed: hand it over in person."
+          }
+        },
+        "required": [
+          "signUp",
+          "accountCreated",
+          "invited",
+          "visitPassGiven",
+          "emailFailed"
+        ]
+      },
+      "SignUpInviteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VISITOR",
+              "MEMBER"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "needsBranch": {
+            "type": "boolean",
+            "description": "The School has open branches and the invite names none: choose one when accepting."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "kind",
+          "needsBranch",
+          "createdAt"
+        ]
+      },
+      "SignUpInviteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignUpInviteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptSignUpInviteDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Your home branch, when the School has branches and the invite names none."
+          }
+        }
+      },
+      "AcceptSignUpInviteResultDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "visitPassGiven": {
+            "type": "boolean"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "A fresh access token carrying the new STUDENT grant."
+          }
+        },
+        "required": [
+          "schoolId",
+          "visitPassGiven"
+        ]
+      },
+      "MyPackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string",
+            "description": "Whose pack: the caller, or a child the caller is Guardian of."
+          },
+          "childFirstName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The child's first name when it isn't the caller's own pack."
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AcademyMembershipPlanDto"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "studentId",
+          "plan",
+          "expiresAt"
+        ]
+      },
+      "MyPackRechargeListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyPackRechargeDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StartOpenMatDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "One of the School's open Branches; null when it has none."
+          },
+          "disciplineId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The style. Required when the School has styles."
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "From 30 minutes ago to 24 hours ahead."
+          },
+          "minutes": {
+            "type": "number",
+            "default": 60,
+            "minimum": 15,
+            "maximum": 480
+          }
+        },
+        "required": [
+          "startsAt"
+        ]
+      },
+      "OpenMatStartedDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notified": {
+            "type": "number",
+            "description": "How many students were told in the app."
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "branchId",
+          "startDate",
+          "endDate",
+          "notified"
+        ]
+      },
+      "MyOpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canStart": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The Branches the caller can start one at; null for any.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "canStart",
+          "branchIds"
+        ]
+      },
+      "OpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BRANCH_STAFF",
+                "INSTRUCTOR"
+              ]
+            }
+          },
+          "canStartOpenMat": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "roles",
+          "canStartOpenMat"
+        ]
+      },
+      "OpenMatPermissionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenMatPermissionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetOpenMatPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canStartOpenMat": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canStartOpenMat"
         ]
       }
     }

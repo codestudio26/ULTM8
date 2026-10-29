@@ -92,6 +92,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: 'Manage disciplines, belts and skills for the whole School (off by default; Decision 383).' })
   @IsBoolean()
   disciplines!: boolean;
+
+  @ApiProperty({ description: "Change the School's check-in rules (off by default; Decision 394)." })
+  @IsBoolean()
+  checkInRules!: boolean;
 }
 
 export class StaffAccessResponseDto {
