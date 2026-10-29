@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "Notiz nicht gefunden",
   "Only the note's author or a School owner can change it.": "Nur wer die Notiz geschrieben hat oder ein Schulinhaber kann sie ändern.",
   "A note can't be empty.": "Eine Notiz darf nicht leer sein.",
+  "The School owner hasn't let you export the student list.": "Der Schulinhaber hat dir nicht erlaubt, die Schülerliste zu exportieren.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Zugriffsschalter gelten für Standortpersonal. Trainer haben die Rechte ihrer Rolle, und Inhaber haben alle Rechte.",
   "You are not on the staff of this School.": "Du gehörst nicht zum Personal dieser Schule.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "Inhaber können nicht pausiert werden. Pausieren gilt für Trainer und Filialmitarbeiter.",

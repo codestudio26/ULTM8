@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "メモが見つかりません",
   "Only the note's author or a School owner can change it.": "メモを変更できるのは、書いた人かスクールのオーナーだけです。",
   "A note can't be empty.": "メモを空にすることはできません。",
+  "The School owner hasn't let you export the student list.": "スクールのオーナーが生徒リストのエクスポートを許可していません。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
   "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "オーナーは一時停止できません。一時停止はコーチと支店スタッフが対象です。",

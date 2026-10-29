@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "ไม่พบบันทึก",
   "Only the note's author or a School owner can change it.": "มีเพียงผู้เขียนบันทึกหรือเจ้าของโรงเรียนเท่านั้นที่แก้ไขได้",
   "A note can't be empty.": "บันทึกต้องไม่ว่างเปล่า",
+  "The School owner hasn't let you export the student list.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณส่งออกรายชื่อนักเรียน",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "สวิตช์การเข้าถึงมีไว้สำหรับพนักงานสาขา โค้ชมีสิทธิ์ตามบทบาท และเจ้าของมีสิทธิ์ทั้งหมด",
   "You are not on the staff of this School.": "คุณไม่ได้เป็นพนักงานของโรงเรียนนี้",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "ไม่สามารถพักเจ้าของได้ การพักใช้กับโค้ชและพนักงานสาขาเท่านั้น",

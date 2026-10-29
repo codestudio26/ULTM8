@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "메모를 찾을 수 없어요",
   "Only the note's author or a School owner can change it.": "메모는 작성자나 학교 소유자만 바꿀 수 있어요.",
   "A note can't be empty.": "메모는 비워 둘 수 없어요.",
+  "The School owner hasn't let you export the student list.": "학교 소유자가 학생 목록 내보내기를 허용하지 않았어요.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
   "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "소유자는 일시 중지할 수 없습니다. 일시 중지는 코치와 지점 직원에게만 적용됩니다.",

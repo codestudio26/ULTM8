@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "لم يتم العثور على الملاحظة",
   "Only the note's author or a School owner can change it.": "لا يمكن تغيير الملاحظة إلا لكاتبها أو لمالك المدرسة.",
   "A note can't be empty.": "لا يمكن أن تكون الملاحظة فارغة.",
+  "The School owner hasn't let you export the student list.": "لم يسمح لك مالك المدرسة بتصدير قائمة الطلاب.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "مفاتيح الوصول مخصصة لموظفي الفرع. للمدربين صلاحيات دورهم، وللمالكين كل الصلاحيات.",
   "You are not on the staff of this School.": "أنت لست من موظفي هذه المدرسة.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "لا يمكن إيقاف المالكين مؤقتًا. الإيقاف المؤقت للمدربين وموظفي الفروع.",

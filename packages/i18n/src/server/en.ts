@@ -531,6 +531,7 @@ export const SERVER_MESSAGES: string[] = [
   "Note not found",
   "Only the note's author or a School owner can change it.",
   "A note can't be empty.",
+  "The School owner hasn't let you export the student list.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",
   "You are not on the staff of this School.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.",

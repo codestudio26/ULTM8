@@ -630,6 +630,7 @@ export const serverMessages: Record<string, string> = {
   "Note not found": "Not bulunamadı",
   "Only the note's author or a School owner can change it.": "Notu yalnızca yazan kişi veya bir okul sahibi değiştirebilir.",
   "A note can't be empty.": "Not boş olamaz.",
+  "The School owner hasn't let you export the student list.": "Okul sahibi öğrenci listesini dışa aktarmana izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "Sahipler duraklatılamaz. Duraklatma, eğitmenler ve şube personeli içindir.",

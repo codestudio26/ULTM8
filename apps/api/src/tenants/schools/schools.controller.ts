@@ -16,6 +16,8 @@ import { CloseOwnSchoolDto, CloseOwnSchoolResponseDto } from './dto/close-own-sc
 import { FranchiseJoinRequestResponseDto, SchoolFranchiseJoinRequestResponseDto } from '../franchises/dto/franchise-join-request.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
+import { StudentExportQueryDto, StudentExportResponseDto } from './dto/student-export.dto';
+import { StudentExportService } from './student-export.service';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { UserResponseDto } from '../../users/dto/user-response.dto';
@@ -31,7 +33,10 @@ import { StudentGuardiansResponseDto } from './dto/student-guardians-response.dt
 @UseGuards(JwtAuthGuard)
 @Controller('schools')
 export class SchoolsController {
-  constructor(private readonly schoolsService: SchoolsService) {}
+  constructor(
+    private readonly schoolsService: SchoolsService,
+    private readonly studentExport: StudentExportService,
+  ) {}
 
   @ApiCreatedResponse({ type: SchoolResponseDto })
   @Post()
@@ -78,6 +83,14 @@ export class SchoolsController {
   @Get(':id/students')
   findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
     return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status, query.search);
+  }
+
+  /** Backlog 3.9 (Decision 399): the student list to export, for the owner or
+   * Branch Staff the owner allows. Logged. */
+  @ApiOkResponse({ type: StudentExportResponseDto })
+  @Get(':id/students/export')
+  exportStudents(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query() query: StudentExportQueryDto) {
+    return this.studentExport.export(user.sub, id, query.filter);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch

@@ -541,6 +541,7 @@ model User {
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
+  studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
 
   @@index([email])
   @@index([phone])
@@ -1181,6 +1182,7 @@ model School {
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
+  studentExportLogs      StudentExportLog[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
 
@@ -4461,6 +4463,10 @@ model StaffPermission {
   /// Check-in page). Branch Staff only; off by default; owners always can.
   canManageCheckInRules Boolean @default(false)
 
+  /// Decision 399 (backlog 3.9): may export the student list. Branch Staff
+  /// only; off by default; owners always can.
+  canExportStudents Boolean @default(false)
+
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
 
@@ -4953,4 +4959,24 @@ model StudentNote {
 
   @@index([schoolId, studentId, createdAt])
   @@index([studentId, showToMember])
+}
+
+/// Backlog 3.9 (Decision 399): one row per student-list export, who made it
+/// and when. Jobs connection only (RLS on, no app grant).
+model StudentExportLog {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  exportedById String
+  exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
+
+  /// ALL, ACTIVE, MEMBERS or VISITORS.
+  filter   String
+  rowCount Int
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
 }
