@@ -121,7 +121,7 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
     const res = await request(app.getHttpServer())
       .post('/v1/guardians/me/minors')
       .set('Authorization', `Bearer ${tokenGuardianA}`)
-      .send({ firstName: 'Minor', surname: 'Child', dateOfBirth: '2015-06-01', gender: 'other' });
+      .send({ firstName: 'Minor', surname: 'Child', dateOfBirth: '2015-06-01', gender: 'MALE' });
     expect(res.status).toBe(201);
     expect(res.body.studentId).toBeDefined();
     minorId = res.body.studentId;

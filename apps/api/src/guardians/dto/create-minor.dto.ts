@@ -1,5 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDateString, IsString, MaxLength, MinLength } from 'class-validator';
+import { GenderField, type Gender } from '../../common/decorators/gender-field.decorator';
 
 /**
  * POST /guardians/me/minors body. SKILL.md §14's own parenthetical for a linked
@@ -27,9 +28,6 @@ export class CreateMinorDto {
   @IsDateString()
   dateOfBirth!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  gender?: string;
+  @GenderField()
+  gender?: Gender | null;
 }

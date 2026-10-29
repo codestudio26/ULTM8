@@ -22,6 +22,9 @@ export const profile = {
     /** Date format hint and placeholder; translate the letters if your language uses others. */
     dateFormat: 'YYYY-MM-DD',
     gender: 'Gender',
+    genderFemale: "Female",
+    genderMale: "Male",
+    genderNotGiven: "Not given",
     nationality: 'Nationality',
     address: 'Address',
     weightCategory: 'Weight category',

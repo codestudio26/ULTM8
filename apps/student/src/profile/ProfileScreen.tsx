@@ -130,7 +130,7 @@ export function ProfileScreen() {
         // blank-means-clear safe here).
         username: form.username.trim() || null,
         dateOfBirth: form.dateOfBirth.trim(),
-        gender: form.gender.trim() || null,
+        gender: form.gender === 'FEMALE' || form.gender === 'MALE' ? form.gender : null,
         nationality: form.nationality.trim() || null,
         // Left out when untouched: this screen still edits the one-line text,
         // and sending it would clear a structured (Decision 276) address the
@@ -237,7 +237,18 @@ export function ProfileScreen() {
         <TextField value={form.dateOfBirth} onChangeText={(v) => set('dateOfBirth', v)} placeholder={t('profile.screen.dateFormat')} />
       </Field>
       <Field label={t('profile.screen.gender')}>
-        <TextField value={form.gender} onChangeText={(v) => set('gender', v)} />
+        {/* Decision 315 item 15: Female, Male or not given. */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(['FEMALE', 'MALE', ''] as const).map((g) => (
+            <View key={g || 'none'} style={{ flex: 1 }}>
+              <Button
+                title={g === 'FEMALE' ? t('profile.screen.genderFemale') : g === 'MALE' ? t('profile.screen.genderMale') : t('profile.screen.genderNotGiven')}
+                variant={form.gender === g ? 'primary' : 'secondary'}
+                onPress={() => set('gender', g)}
+              />
+            </View>
+          ))}
+        </View>
       </Field>
       <Field label={t('profile.screen.nationality')}>
         <TextField value={form.nationality} onChangeText={(v) => set('nationality', v)} />
