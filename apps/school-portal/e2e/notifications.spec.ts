@@ -287,7 +287,8 @@ test('Mark all read, the School label, and clicking a notification opens its cla
   await expect(markAll).toBeEnabled();
   await markAll.click();
   await expect(markAll).toBeDisabled();
-  expect((await db.notification.findUniqueOrThrow({ where: { id: plain.id } })).read).toBe(true);
+  // The button is also disabled while the request is still running, so wait for the row.
+  await expect.poll(async () => (await db.notification.findUniqueOrThrow({ where: { id: plain.id } })).read).toBe(true);
 });
 
 test('Sent broadcasts — the Owner sees what was sent, by whom, to whom and how many (Decision 363)', async ({ page }) => {

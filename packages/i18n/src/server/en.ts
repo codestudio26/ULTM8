@@ -518,8 +518,14 @@ export const SERVER_MESSAGES: string[] = [
   "The School owner hasn't let you cancel classes or give credit back.",
   "The School owner hasn't let you see the staff list.",
   "The School owner hasn't let you invite coaches.",
+  "The School owner hasn't let you change the check-in rules.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",
   "You are not on the staff of this School.",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.",
+  "This person is already paused.",
+  "This person is not paused.",
+  "This person is paused at this School. Unpause them to give their roles back.",
+  "Your roles at this School are paused. Ask the School to unpause you.",
 ];
 
 export const SERVER_PATTERNS: string[] = [

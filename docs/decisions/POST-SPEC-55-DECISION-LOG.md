@@ -6587,6 +6587,43 @@ User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules
 
 User (Code), 28 Oct 2026, reviewing #360: "yes fix 1 and 3, and A for 2", to the recommendations (end the session after about 10 wrong codes; end a closed Branch's tablet; option A: on the tablet, name search only checks in to classes already booked, and booking there needs the app QR or a personal code).
 
+---
+
+## Decision 390 — Staff page: Pause and Unpause
+
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 6), order of work (e) · **Migration:** `20261221000000_staff_pause`
+
+(Decisions 386 and 388 are taken by the Check-in thread's open work.)
+
+The Staff build plan described Pause as: *"temporarily switches off all their staff access (holiday, investigation) without losing setup. Unpausing restores the same roles and permissions."* The product owner chose to build it right after Remove from School (Decision 360, item 6).
+
+### Decision
+
+1. **What Pause does.** `POST /schools/:schoolId/staff/:userId/pause` (owner only) ends each of the person's coach and Branch Staff roles at the School, at every branch, in one step. Each role is ended the ordinary way (`RoleGrant.revokedAt`) and marked paused (`pausedAt`, `pausedById`), so every access check, RLS helper and job already treats it as gone. Their access stops on their next request, even if they are signed in (Decision 361).
+2. **What Pause keeps.** Their access switches (Decision 387), grading permissions, "Can invite coaches", display name and work phone (Decision 381), coach profile, and the classes and weekly slots they teach all stay as they are. A paused coach is still the coach on their classes.
+3. **Unpause.** `POST /schools/:schoolId/staff/:userId/unpause` (owner only) gives back the same roles: the same rows, at the same branches, with their original "added" dates. A role at a branch that was closed while they were paused stays ended, because nobody joins a closed branch (Decision 296). The answer names those branches.
+4. **Who can be paused.** Coaches and Branch Staff only. Owners are not paused: an owner has every right, and removing one is its own rule (Decision 370). A closed School can't pause or unpause anyone.
+5. **While paused.**
+   - The person stays on the Staff list with the active staff, shown as "Paused" with the date. The list has a new "Paused" status filter, and paused people never appear under "Removed".
+   - The owner can still change their access switches and details.
+   - They can't be given a new coach or Branch Staff role (409 `STAFF_PAUSED`), and they can't accept a coach invite at that School. Unpause gives their roles back.
+   - **Remove from School** still works and ends the pause for good. It asks about their classes, as it does for anyone who teaches. Removing one paused role on its own (the existing role revoke) also ends that role for good.
+   - Branch Staff who can see the staff list (Decision 387) see current staff only, so not paused people.
+6. The new API messages are translated into all 14 languages, and the Staff page text into all 15.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether a pause should end by itself on a chosen date. Nothing in the plan says so, so Pause lasts until an owner unpauses.
+- **[UNRESOLVED]** Whether the paused person, or the School's other staff, should be told (email or notification). Nothing is sent.
+- **[UNRESOLVED]** Whether pausing a coach should also ask what happens to their upcoming classes, as Remove from School does. Classes are left as they are, to match "without losing setup".
+- **[UNRESOLVED]** Whether owners and co-owners can be paused. This build says no.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "all recommended" on the Staff build plan (Decision 360 item 6: "Remove now and Pause next"). Built 29 Oct 2026 in the Staff thread.
+
+---
+
 ## Decision 391 — Visitors and visit passes
 
 **Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** Decision 315 item 1 (Visitors are their own status) · **Needed by:** front-desk sign-up F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), whose form asks Visitor or Member
@@ -6674,3 +6711,69 @@ User (Code), 29 Oct 2026: "yes start with sign-up from the tablet", then the ans
 ### Recorded by
 
 User (Code), 29 Oct 2026: "start on F8 after 372 merges and build any other task you have all the answers for". Rules from Decision 316 item 7; nothing new was decided here.
+
+---
+
+## Decision 394 — Check-in rules per School
+
+**Date:** 29 Oct 2026. **Builds:** Decision 317 item 1 and the front-desk handover's F9 (backlog §3.5).
+
+### Context
+
+Check-in had fixed rules: it opened the School's set minutes before a class (Decision 380's School page setting), closed at the class's own check-in end or its end, and the desk could check someone in to several classes at once (Decision 378). A School could not change who may check in.
+
+### Decision
+
+1. **One set of rules for every way in**: the app QR and code, the coach's scan, the front desk and the locked tablet. They are checked where every check-in ends (`AttendanceService.assertWithinWindow` and `completeInTx`), so no way in can skip them.
+2. **Every default is today's behaviour**, so nothing changes for a School until its owner changes a rule.
+3. **The rules** (Settings → Check-in → Check-in rules):
+   - Check-in opens N minutes before the start (0 to 1440; the existing setting, default 30).
+   - Check-in closes when the class ends (default), or N minutes after the start (0 to 1440). A class's own check-in end time still applies when it comes first.
+   - Need a signed waiver to check in (default off): any counting signature at the School (Decision 354's archived-signature setting applies), for every class.
+   - Members may check in at other Branches (default on). When off, a member with a home Branch checks in only at classes of that Branch or School-wide classes; a member with no home Branch is not refused.
+   - Check visitors in on a visit pass (default on). When off, a booking paid by a visit pass (Decision 391) is not checked in.
+   - Check in to several classes at once (default on). When off, the desk and the tablet tick one class at a time, and the API refuses more than one.
+   - Check-in code length (4 or 6; the existing setting).
+4. **Who changes them:** the owner, and Branch Staff with a new access switch, "Change check-in rules" (Decision 387's Access window, off by default and in neither preset). Coaches don't.
+5. **No frozen-member rule for now.** *(Product owner, 29 Oct 2026: "all recommended".)*
+
+### How it is built
+
+- Migration `20261225000100_check_in_rules`: `School.checkInClosesMinutesAfterStart` (null), `checkInRequireWaiver` (false), `checkInOtherBranches`, `checkInVisitors`, `checkInSeveralClasses` (true); `StaffPermission.canManageCheckInRules` (false).
+- `GET`/`PUT /schools/{schoolId}/check-in-rules`; refused with `STAFF_ACCESS_OFF` without the switch.
+- Refusal codes: `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` (403) and `CHECK_IN_ONE_CLASS` (a per-class reason from the desk's one-step check-in).
+- The tablet's session returns `checkInClosesMinutesAfterStart` and `checkInSeveralClasses`; the School returns all of them.
+- The School page keeps its two existing check-in fields; both pages write the same settings.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** A rule that needs a live membership to check in, separate from booking. Booking already needs one, and the desk books where needed, so today it is always needed.
+- **[UNRESOLVED]** A rule that refuses check-in to members with an overdue payment. `paymentRestrictedAt` only blocks purchases today.
+- **[UNRESOLVED]** Checking in without a booking (walk-ins without a place). Every way in still needs a booking, as before.
+- **[UNRESOLVED]** A frozen-membership rule. Left out for now (point 5).
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.
+
+---
+
+## Decision 395 — Sell the used-up pack at the desk during check-in
+
+**Date:** 29 Oct 2026. **Builds:** front-desk handover F8's desk payment, which Decision 393 left [UNRESOLVED].
+
+### Decision
+
+1. **The "Pack used up" card has a second button, "Sell at the desk"**, next to "Offer the same pack in their app". It sells the same pack with the existing desk sale (Decisions 346 to 348): cash, bank transfer, Pix or card terminal. *(Product owner, 29 Oct 2026: "Build the shortcut".)*
+2. **It adds no payment rule.** It is the same `POST /schools/{schoolId}/desk-payments` the Transactions page uses, with every check it makes (the School's payments set up, the plan still sold, the member one of the caller's students).
+3. **Who sees it:** the owner, and Branch Staff when the School lets them record payments (Decision 347). Coaches and the locked tablet never do; they keep "Offer the same pack in their app".
+4. **Check-in follows the sale.** The card makes the same pack-recharge offer first, so once the sale is recorded the offer is paid and the person is checked in to the ticked classes, as when they buy it in the app.
+
+### How it is built
+
+- `PackRechargeDto` also returns `membershipPlanId`, so the desk knows which pack to sell.
+- School Portal only: the card's button, a "Paid by" choice and "Record payment". No migration.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".

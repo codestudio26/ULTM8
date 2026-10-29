@@ -720,6 +720,13 @@ model RoleGrant {
   /// migration 20261213000100_school_main_owner).
   isMainOwner Boolean @default(false)
 
+  /// Decision 390 — set, with revokedAt, when an owner pauses this coach or
+  /// Branch Staff role ("Pause" on the Staff page). Unpausing clears both, so
+  /// the same role comes back. Never set on a live row (CHECK
+  /// RoleGrant_paused_is_revoked). pausedById is the owner who paused it.
+  pausedAt   DateTime?
+  pausedById String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   // Two partial unique indexes live in the migrations only (Prisma's DSL has
@@ -1053,6 +1060,21 @@ model School {
   /// Length of ULTM8-generated check-in codes here: staff kiosk codes (Decision
   /// 320) and members' personal codes (Decision 315). 4 (default) or 6.
   checkInCodeDigits              Int                             @default(4)
+  /// Check-in rules (Decision 394, Decision 317 item 1, handover F9). Each
+  /// default is what check-in did before the rules existed. Applied to every
+  /// way in: app QR and code, the coach's scan, the front desk and the tablet.
+  /// A School-wide signed waiver needed at check-in, beyond a Class's own
+  /// "needs a waiver" (which is checked at booking). Off: only the Class's.
+  checkInRequireWaiver           Boolean                         @default(false)
+  /// Members with a home Branch may check in at the School's other Branches.
+  checkInOtherBranches           Boolean                         @default(true)
+  /// Visitors may check in on their visit pass (Decision 391).
+  checkInVisitors                Boolean                         @default(true)
+  /// The front desk may check someone in to several Classes at once (Decision 378).
+  checkInSeveralClasses          Boolean                         @default(true)
+  /// Check-in closes this many minutes after a Class starts (0 = at the start).
+  /// Null: when the Class ends (or its own QR end time), as before.
+  checkInClosesMinutesAfterStart Int?
   /// Decision 391 (Decision 315 item 1): days a Visitor's visit pass lasts. No
   /// default: until the School sets it, no pass can be given and the tablet
   /// offers no Visitor sign-up.
@@ -4417,6 +4439,10 @@ model StaffPermission {
   /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
   /// at their own Branches; off by default; the owner always can.
   canStartOpenMat  Boolean @default(false)
+
+  /// Decision 394: may change the School's check-in rules (Settings on the
+  /// Check-in page). Branch Staff only; off by default; owners always can.
+  canManageCheckInRules Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

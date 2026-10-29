@@ -25,6 +25,7 @@ export class CreatePackRechargeDto {
 
 export class PackRechargeDto {
   @ApiProperty() id!: string;
+  @ApiProperty({ description: 'The pack to buy again. The desk can also sell it there (Decision 395).' }) membershipPlanId!: string;
   @ApiProperty() planTitle!: string;
   @ApiProperty({ description: 'Minor units.' }) price!: number;
   @ApiPropertyOptional({ type: String, nullable: true }) currency!: string | null;

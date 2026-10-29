@@ -5,6 +5,8 @@ import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { QrTokenService } from './qr-token.service';
 import { FrontDeskCheckInService } from './front-desk-check-in.service';
+import { CheckInRulesController } from './check-in-rules.controller';
+import { CheckInRulesService } from './check-in-rules.service';
 import { BookingsModule } from '../bookings/bookings.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 
@@ -18,11 +20,12 @@ import { SubscriptionPlansModule } from '../subscription-plans/subscription-plan
  * QueueModule: a check-in queues a "ready to grade" check (Decision 178).
  * BookingsModule and SubscriptionPlansModule: the front desk's one-step
  * check-in books where needed, with a staff booking's gates (Decision 378).
+ * Check-in rules (Decision 394): Settings, and the checks every check-in runs.
  */
 @Module({
   imports: [TenantsModule, QueueModule, BookingsModule, SubscriptionPlansModule],
-  controllers: [AttendanceController],
-  providers: [AttendanceService, QrTokenService, FrontDeskCheckInService],
+  controllers: [AttendanceController, CheckInRulesController],
+  providers: [AttendanceService, QrTokenService, FrontDeskCheckInService, CheckInRulesService],
   // The locked front-desk tablet (FrontDeskModule, Decision 380) checks in through these.
   exports: [AttendanceService, FrontDeskCheckInService, QrTokenService],
 })

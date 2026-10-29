@@ -86,7 +86,7 @@ export class PackRechargesService {
     const recharge = open
       ? await this.prismaJobs.packRecharge.update({ where: { id: open.id }, data })
       : await this.prismaJobs.packRecharge.create({ data: { ...data, schoolId, studentId, membershipPlanId: plan.id } });
-    return { id: recharge.id, planTitle: plan.title, price: plan.price, currency: plan.currency, expiresAt: recharge.expiresAt };
+    return { id: recharge.id, membershipPlanId: plan.id, planTitle: plan.title, price: plan.price, currency: plan.currency, expiresAt: recharge.expiresAt };
   }
 
   async status(callerId: string, schoolId: string, id: string, kiosk?: Kiosk): Promise<PackRechargeStatusDto> {

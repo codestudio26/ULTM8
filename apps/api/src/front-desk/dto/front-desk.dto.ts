@@ -90,6 +90,12 @@ export class KioskSessionInfoDto {
   @ApiProperty({ description: "Check-in opens this many minutes before a Class starts (the School's setting)." })
   checkInOpensMinutesBeforeStart!: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends.' })
+  checkInClosesMinutesAfterStart!: number | null;
+
+  @ApiProperty({ description: 'Decision 394: several Classes may be checked in at once.' })
+  checkInSeveralClasses!: boolean;
+
   @ApiProperty({ enum: [4, 6], description: 'How many digits staff codes have here.' })
   checkInCodeDigits!: number;
 

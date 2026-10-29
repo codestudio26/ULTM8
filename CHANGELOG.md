@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
+  card on Check-in also has "Sell at the desk": choose how it was paid (cash,
+  bank transfer, Pix or card terminal), record it, and the person is checked
+  in. The owner, and Branch Staff allowed to record payments. No migration.
+- **Check-in rules** (Decision 394) — Check-in → Check-in rules sets, for
+  every way in (app, coach's scan, front desk, tablet), when check-in opens
+  and closes, whether a signed waiver is needed, whether members may check
+  in at other branches, whether visitors check in on a visit pass, and
+  whether the desk checks in to several classes at once. Every default is
+  how check-in worked before. The owner, and Branch Staff given the new
+  "Change check-in rules" access switch. Needs migration
+  `20261225000100_check_in_rules`.
 - **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
   (base, secondary, tag and stripe colours) now shows preset circles, the
   School's saved colours and a "+" that opens a colour wheel with Brightness
@@ -57,6 +69,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   lasts the Visitor books and checks in free, and a second pass starts when the
   first ends. Visitors carry a "Visitor" badge on the Students list. A
   membership makes them a member.
+- **Staff page: Pause and Unpause** (Decision 390). An owner can pause a
+  coach or a Branch Staff member. All their roles at the School stop straight
+  away, even if they are signed in. Everything set for them is kept: access
+  switches, grading permissions, display name, and the classes they teach.
+  Unpause gives the same roles back, except at a branch that was closed in
+  the meantime. Paused people stay on the Staff list with a "Paused" badge and
+  have their own status filter. Owners can't be paused. Remove from School
+  still works on someone who is paused.
 - **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
   found by name on the tablet is checked in only to classes they've already
   booked; booking a place there needs the app QR or their own personal

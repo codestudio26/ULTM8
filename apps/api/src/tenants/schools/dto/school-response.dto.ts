@@ -128,6 +128,21 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Minutes before a Class starts that check-in opens.' })
   checkInOpensMinutesBeforeStart!: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends.' })
+  checkInClosesMinutesAfterStart!: number | null;
+
+  @ApiProperty({ description: 'Decision 394: a signed waiver is needed to check in, whatever the Class says.' })
+  checkInRequireWaiver!: boolean;
+
+  @ApiProperty({ description: "Decision 394: members with a home Branch may check in at the School's other Branches." })
+  checkInOtherBranches!: boolean;
+
+  @ApiProperty({ description: 'Decision 394: Visitors may check in on their visit pass.' })
+  checkInVisitors!: boolean;
+
+  @ApiProperty({ description: 'Decision 394: the front desk may check someone in to several Classes at once.' })
+  checkInSeveralClasses!: boolean;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 

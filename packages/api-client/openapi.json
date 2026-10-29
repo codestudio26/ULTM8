@@ -1875,10 +1875,11 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Default active. \"removed\" = had a staff role here, holds none now.",
+            "description": "Default active, which includes paused staff (Decision 390). \"paused\" = paused only. \"removed\" = had a staff role here, holds none now and is not paused.",
             "schema": {
               "enum": [
                 "active",
+                "paused",
                 "removed",
                 "all"
               ],
@@ -2064,6 +2065,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StaffAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/pause": {
+      "post": {
+        "operationId": "RoleGrantsController_pauseStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseStaffResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/unpause": {
+      "post": {
+        "operationId": "RoleGrantsController_unpauseStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnpauseStaffResponseDto"
                 }
               }
             }
@@ -12732,6 +12819,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/check-in-rules": {
+      "get": {
+        "operationId": "CheckInRulesController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CheckInRulesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -17057,6 +17222,27 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends."
+          },
+          "checkInRequireWaiver": {
+            "type": "boolean",
+            "description": "Decision 394: a signed waiver is needed to check in, whatever the Class says."
+          },
+          "checkInOtherBranches": {
+            "type": "boolean",
+            "description": "Decision 394: members with a home Branch may check in at the School's other Branches."
+          },
+          "checkInVisitors": {
+            "type": "boolean",
+            "description": "Decision 394: Visitors may check in on their visit pass."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: the front desk may check someone in to several Classes at once."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -17168,6 +17354,10 @@
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
+          "checkInRequireWaiver",
+          "checkInOtherBranches",
+          "checkInVisitors",
+          "checkInSeveralClasses",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -19048,6 +19238,10 @@
           "disciplines": {
             "type": "boolean",
             "description": "Manage disciplines, belts and skills for the whole School (off by default; Decision 383)."
+          },
+          "checkInRules": {
+            "type": "boolean",
+            "description": "Change the School's check-in rules (off by default; Decision 394)."
           }
         },
         "required": [
@@ -19057,7 +19251,8 @@
           "cancelClasses",
           "staffList",
           "inviteCoaches",
-          "disciplines"
+          "disciplines",
+          "checkInRules"
         ]
       },
       "StaffRoleDto": {
@@ -19093,6 +19288,11 @@
           "revokedAt": {
             "type": "string",
             "nullable": true
+          },
+          "pausedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 390: set while this role is paused (revokedAt is set too). Unpausing gives it back."
           }
         },
         "required": [
@@ -19137,6 +19337,15 @@
             "nullable": true,
             "description": "When their last staff role here ended, for removed staff."
           },
+          "paused": {
+            "type": "boolean",
+            "description": "Decision 390: an owner paused their coach and Branch Staff roles here; Unpause gives them back. Never true with active."
+          },
+          "pausedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 390: when they were paused."
+          },
           "canInviteCoaches": {
             "type": "boolean"
           },
@@ -19160,7 +19369,7 @@
           },
           "access": {
             "nullable": true,
-            "description": "Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise.",
+            "description": "Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/StaffAccessDto"
@@ -19182,6 +19391,7 @@
           "email",
           "active",
           "addedAt",
+          "paused",
           "canInviteCoaches",
           "canManageDisciplines",
           "mainOwner",
@@ -19275,6 +19485,50 @@
         "required": [
           "userId",
           "access"
+        ]
+      },
+      "PauseStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "pausedRoles": {
+            "type": "number",
+            "description": "How many coach and Branch Staff roles were paused."
+          },
+          "pausedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "pausedRoles",
+          "pausedAt"
+        ]
+      },
+      "UnpauseStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "restoredRoles": {
+            "type": "number",
+            "description": "How many roles came back."
+          },
+          "closedBranches": {
+            "description": "Branches closed while they were paused: their roles there did not come back. Give them a role at another branch if they need one.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "restoredRoles",
+          "closedBranches"
         ]
       },
       "HandOverMainOwnerDto": {
@@ -28820,6 +29074,52 @@
           "guests"
         ]
       },
+      "CheckInRulesDto": {
+        "type": "object",
+        "properties": {
+          "opensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens (default 30)."
+          },
+          "closesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time."
+          },
+          "requireWaiver": {
+            "type": "boolean",
+            "description": "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)."
+          },
+          "otherBranches": {
+            "type": "boolean",
+            "description": "Members with a home Branch may check in at the School's other Branches (default on)."
+          },
+          "visitors": {
+            "type": "boolean",
+            "description": "Visitors may check in on their visit pass (default on; Decision 391)."
+          },
+          "severalClasses": {
+            "type": "boolean",
+            "description": "The front desk may check someone in to several Classes at once (default on; Decision 378)."
+          },
+          "codeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length."
+          }
+        },
+        "required": [
+          "opensMinutesBeforeStart",
+          "requireWaiver",
+          "otherBranches",
+          "visitors",
+          "severalClasses",
+          "codeDigits"
+        ]
+      },
       "AcademySummaryDto": {
         "type": "object",
         "properties": {
@@ -30712,6 +31012,10 @@
           "id": {
             "type": "string"
           },
+          "membershipPlanId": {
+            "type": "string",
+            "description": "The pack to buy again. The desk can also sell it there (Decision 395)."
+          },
           "planTitle": {
             "type": "string"
           },
@@ -30730,6 +31034,7 @@
         },
         "required": [
           "id",
+          "membershipPlanId",
           "planTitle",
           "price",
           "expiresAt"
@@ -30784,6 +31089,15 @@
             "type": "number",
             "description": "Check-in opens this many minutes before a Class starts (the School's setting)."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: several Classes may be checked in at once."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -30811,6 +31125,7 @@
           "schoolName",
           "expiresAt",
           "checkInOpensMinutesBeforeStart",
+          "checkInSeveralClasses",
           "checkInCodeDigits",
           "visitorsOn"
         ]

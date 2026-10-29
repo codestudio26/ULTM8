@@ -10,7 +10,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
 import { StaffAccessModal, presetOf } from './StaffAccessModal';
-import { useHandOverMainOwner, useStaffList, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
+import { useHandOverMainOwner, usePauseStaff, useStaffList, useUnpauseStaff, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
 
 /** Table rows need an `id`. */
 type StaffRow = StaffMember & { id: string };
@@ -39,6 +39,11 @@ type StaffRow = StaffMember & { id: string };
  * (StaffAccessModal); their row shows the preset they match. Branch Staff
  * whose owner lets them see the staff list get this list read only
  * (`readOnly`): their branches' current staff, no menu, no Removed filter.
+ *
+ * Decision 390 — "Pause" stops all of a coach's or Branch Staff member's
+ * access here at once and keeps everything set for them; "Unpause" gives the
+ * same roles back. Paused people stay in the list (with the active ones, and
+ * under their own "Paused" status) and can still be removed from the School.
  */
 export function StaffListSection({
   schoolId,
@@ -72,6 +77,10 @@ export function StaffListSection({
   const [savedFor, setSavedFor] = useState<string | null>(null);
   const [settingAccess, setSettingAccess] = useState<StaffMember | null>(null);
   const [accessSavedFor, setAccessSavedFor] = useState<string | null>(null);
+  const [pausing, setPausing] = useState<StaffMember | null>(null);
+  const [pauseNotice, setPauseNotice] = useState<string | null>(null);
+  const [unpauseError, setUnpauseError] = useState<string | null>(null);
+  const unpauseStaff = useUnpauseStaff(schoolId);
 
   const filtering = !!(q || role || branchId || status !== 'active');
   const people: StaffRow[] = (data?.items ?? []).map((p) => ({ ...p, id: p.userId }));
@@ -88,8 +97,24 @@ export function StaffListSection({
   const date = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
   // The main owner's owner role is never removed from this list (Decision 370).
   const removable = (p: StaffMember) => p.roles.filter((r) => !r.revokedAt && !(r.role === 'SCHOOL_OWNER_MANAGER' && p.mainOwner));
-  // "Remove from School" ends coach and Branch Staff roles only.
-  const coachRoles = (p: StaffMember) => p.roles.filter((r) => !r.revokedAt && r.role !== 'SCHOOL_OWNER_MANAGER');
+  // "Remove from School" ends coach and Branch Staff roles only, paused ones too.
+  const coachRoles = (p: StaffMember) => p.roles.filter((r) => (!r.revokedAt || r.pausedAt) && r.role !== 'SCHOOL_OWNER_MANAGER');
+  // Owners are never paused (Decision 390).
+  const pausable = (p: StaffMember) => p.active && !p.roles.some((r) => !r.revokedAt && r.role === 'SCHOOL_OWNER_MANAGER') && coachRoles(p).length > 0;
+  async function unpause(p: StaffMember) {
+    setPauseNotice(null);
+    setUnpauseError(null);
+    try {
+      const { closedBranches: closed } = await unpauseStaff.mutateAsync(p.userId);
+      setPauseNotice(
+        closed.length > 0
+          ? t('roleGrants.list.unpausedClosed', { name: shownName(p), branches: closed.join(', ') })
+          : t('roleGrants.list.unpausedDone', { name: shownName(p) }),
+      );
+    } catch (err) {
+      setUnpauseError(err instanceof ApiError ? err.message : t('roleGrants.list.unpauseFailed'));
+    }
+  }
   const iAmMainOwner = (data?.items ?? []).some((p) => p.userId === claims?.sub && p.mainOwner);
   const isCoOwner = (p: StaffMember) => !p.mainOwner && p.roles.some((r) => !r.revokedAt && r.role === 'SCHOOL_OWNER_MANAGER');
 
@@ -140,6 +165,7 @@ export function StaffListSection({
               onChange={(e) => setStatus(e.target.value as StaffListFilters['status'])}
               options={[
                 { value: 'active', label: t('roleGrants.list.statusActive') },
+                { value: 'paused', label: t('roleGrants.list.statusPaused') },
                 { value: 'removed', label: t('roleGrants.list.statusRemoved') },
                 { value: 'all', label: t('roleGrants.list.statusAll') },
               ]}
@@ -152,6 +178,8 @@ export function StaffListSection({
       {handedOverTo ? <SuccessBanner message={t('roleGrants.list.handOverDone', { name: handedOverTo })} /> : null}
       {savedFor ? <SuccessBanner message={t('roleGrants.list.detailsSaved', { name: savedFor })} /> : null}
       {accessSavedFor ? <SuccessBanner message={t('roleGrants.access.saved', { name: accessSavedFor })} /> : null}
+      {pauseNotice ? <SuccessBanner message={pauseNotice} /> : null}
+      {unpauseError ? <ErrorBanner message={unpauseError} /> : null}
       {error ? <ErrorBanner message={t('roleGrants.list.loadFailed')} /> : null}
       {isLoading ? (
         <Spinner />
@@ -198,7 +226,7 @@ export function StaffListSection({
               key: 'roles',
               header: t('roleGrants.list.columnRoles'),
               render: (p) => {
-                const shown = p.active ? p.roles.filter((r) => !r.revokedAt) : p.roles;
+                const shown = p.active ? p.roles.filter((r) => !r.revokedAt) : p.paused ? p.roles.filter((r) => r.pausedAt) : p.roles;
                 return (
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {shown.map((r) => (
@@ -218,6 +246,8 @@ export function StaffListSection({
               render: (p) =>
                 p.active ? (
                   <Badge variant="success">{t('roleGrants.list.statusActive')}</Badge>
+                ) : p.paused ? (
+                  <Badge variant="warning">{t('roleGrants.list.pausedOn', { date: date(p.pausedAt!) })}</Badge>
                 ) : (
                   <Badge>{t('roleGrants.list.removedOn', { date: date(p.removedAt!) })}</Badge>
                 ),
@@ -228,7 +258,7 @@ export function StaffListSection({
               render: (p) => {
                 if (readOnly) return null;
                 const actions = [
-                  ...(p.active ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
+                  ...(p.active || p.paused ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
                   ...(p.access ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
@@ -238,6 +268,8 @@ export function StaffListSection({
                       ? { label: t('roleGrants.list.removeCoOwner'), onClick: () => onRevokeRole(p, r) }
                       : { label: t('roleGrants.list.removeRole', { role: roleText(r) }), onClick: () => onRevokeRole(p, r) },
                   ),
+                  ...(pausable(p) ? [{ label: t('roleGrants.list.pause'), onClick: () => setPausing(p) }] : []),
+                  ...(p.paused ? [{ label: t('roleGrants.list.unpause'), onClick: () => void unpause(p) }] : []),
                   ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
                 ];
                 if (actions.length === 0) return null;
@@ -255,6 +287,21 @@ export function StaffListSection({
           name={`${confirmingRemove.firstName} ${confirmingRemove.surname}`.trim()}
           description={t('roleGrants.list.removeDescription', { roles: coachRoles(confirmingRemove).map((r) => roleText(r)).join(', ') })}
           onClose={() => setConfirmingRemove(null)}
+        />
+      ) : null}
+
+      {pausing ? (
+        <PauseStaffModal
+          schoolId={schoolId}
+          person={pausing}
+          name={shownName(pausing)}
+          roles={coachRoles(pausing).map((r) => roleText(r)).join(', ')}
+          onDone={() => {
+            setUnpauseError(null);
+            setPauseNotice(t('roleGrants.list.pausedDone', { name: shownName(pausing) }));
+            setPausing(null);
+          }}
+          onClose={() => setPausing(null)}
         />
       ) : null}
 
@@ -295,6 +342,53 @@ export function StaffListSection({
         />
       ) : null}
     </Card>
+  );
+}
+
+/** Decision 390 — confirms "Pause": their roles stop at once, everything set
+ * for them is kept, and Unpause gives the same roles back. */
+function PauseStaffModal({
+  schoolId,
+  person,
+  name,
+  roles,
+  onDone,
+  onClose,
+}: {
+  schoolId: string;
+  person: StaffMember;
+  name: string;
+  roles: string;
+  onDone: () => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const pause = usePauseStaff(schoolId);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePause() {
+    setError(null);
+    try {
+      await pause.mutateAsync(person.userId);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('roleGrants.list.pauseFailed'));
+    }
+  }
+
+  return (
+    <Modal title={t('roleGrants.list.pauseTitle', { name })} onClose={onClose}>
+      <p>{t('roleGrants.list.pauseBody', { roles })}</p>
+      {error ? <ErrorBanner message={error} /> : null}
+      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <Button type="button" loading={pause.isPending} onClick={() => void handlePause()}>
+          {t('roleGrants.list.pause')}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 
