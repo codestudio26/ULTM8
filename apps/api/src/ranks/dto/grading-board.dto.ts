@@ -145,6 +145,9 @@ export class GradingBoardItemDto {
 
   @ApiPropertyOptional({ type: BoardFeeRequestDto, nullable: true, description: 'The request behind feeStatus.' })
   feeRequest!: BoardFeeRequestDto | null;
+
+  @ApiProperty({ description: 'Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles.' })
+  readyForAdult!: boolean;
 }
 
 export class GradingBoardResponseDto {

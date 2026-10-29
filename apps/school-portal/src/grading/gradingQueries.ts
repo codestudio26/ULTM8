@@ -58,6 +58,39 @@ export function usePromote(studentId: string, disciplineId: string) {
   );
 }
 
+/** Backlog 3.20: grade a Kids student into the linked Adult program. The
+ * student then has a rank in the Adult style instead, so every style's
+ * grading reads are refreshed (useGradingMutation's student and board keys). */
+export function useMoveToAdult(studentId: string, kidsDisciplineId: string) {
+  return useGradingMutation(studentId, (body: components['schemas']['MoveToAdultDto']) =>
+    unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/move-to-adult', { params: { path: { id: studentId, disciplineId: kidsDisciplineId } }, body })),
+  );
+}
+
+/** Backlog 3.20: "Ready for Adult from age" on a Kids style. */
+export function useSetReadyForAdultAge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ disciplineId, age }: { disciplineId: string; age: number }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/ready-for-adult-age', { params: { path: { id: disciplineId } }, body: { age } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
+  });
+}
+
+/** Decision 290: "Ranks shown as" Belts or Levels. Refreshes the styles and
+ * their ladders, which carry it for the belt picture. */
+export function useSetRankDisplay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ disciplineId, rankDisplay }: { disciplineId: string; rankDisplay: 'BELTS' | 'LEVELS' }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/rank-display', { params: { path: { id: disciplineId } }, body: { rankDisplay } })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+      await queryClient.invalidateQueries({ queryKey: ['ranks'] });
+    },
+  });
+}
+
 export function useStripeAward(studentId: string, disciplineId: string) {
   return useGradingMutation(studentId, (body: GradingActionInput) =>
     unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/stripe-award', { params: { path: { id: studentId, disciplineId } }, body })),
@@ -478,5 +511,37 @@ export function useSetOpenMatHours(schoolId: string) {
     mutationFn: (openMatCountsTowardHours: boolean) =>
       unwrap(apiClient.PUT('/v1/schools/{schoolId}/grading-settings/open-mat-hours', { params: { path: { schoolId } }, body: { openMatCountsTowardHours } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['open-mat-hours', schoolId] }),
+  });
+}
+
+export type RankCorrection = components['schemas']['RankCorrectionDto'];
+
+/** Backlog 3.13: a student's waiting belt correction requests that the caller
+ * may answer (the owner, or a coach with "Verify ranks" for that style). */
+export function useStudentCorrections(schoolId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['rank-corrections', schoolId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/rank-corrections', { params: { path: { schoolId: schoolId! }, query: { studentId: studentId! } } })),
+    enabled: !!schoolId && !!studentId,
+  });
+}
+
+/** Approve (the student moves, with a history entry) or reject a request. */
+export function useAnswerCorrection(studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, answer, note }: { id: string; answer: 'approve' | 'reject'; note: string }) =>
+      unwrap(
+        answer === 'approve'
+          ? apiClient.POST('/v1/rank-corrections/{id}/approve', { params: { path: { id } }, body: { note: note.trim() || null } })
+          : apiClient.POST('/v1/rank-corrections/{id}/reject', { params: { path: { id } }, body: { note: note.trim() || null } }),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['rank-corrections'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+      ]),
   });
 }

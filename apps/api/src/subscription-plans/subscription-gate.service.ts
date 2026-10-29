@@ -35,6 +35,20 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
  * endpoints, not this one) is deliberately out of this phase's own scope — flagged
  * as a real, confirmed, but not-yet-built follow-up, not silently folded in here.
  */
+/** Backlog 3.14 (Decision 318 item 5): a free trial that ended without an
+ * active (or still-retrying) platform subscription leaves the School
+ * read-only, the same state as a canceled subscription. A School that never
+ * had a trial is unaffected, as before. */
+export function trialEndedUnpaid(school: { platformSubscriptionStatus: string | null; platformTrialEndsAt: Date | null }, now = new Date()): boolean {
+  if (!school.platformTrialEndsAt || school.platformTrialEndsAt > now) return false;
+  return school.platformSubscriptionStatus !== 'ACTIVE' && school.platformSubscriptionStatus !== 'PAST_DUE';
+}
+
+export const TRIAL_ENDED = {
+  code: 'TRIAL_ENDED',
+  message: "This School's free trial of ULTM8 has ended. The portal is read-only until it subscribes: no new Classes, Bookings or payments.",
+};
+
 @Injectable()
 export class SubscriptionGateService {
   constructor(private readonly prismaApp: PrismaAppService) {}
@@ -49,12 +63,15 @@ export class SubscriptionGateService {
    */
   async assertNotDegraded(viewerId: string, schoolId: string): Promise<void> {
     const school = await this.prismaApp.withTenantContext(viewerId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { platformSubscriptionStatus: true } }),
+      tx.school.findUnique({ where: { id: schoolId }, select: { platformSubscriptionStatus: true, platformTrialEndsAt: true } }),
     );
     if (school?.platformSubscriptionStatus === 'CANCELED') {
       throw new ForbiddenException(
         'This School\'s platform subscription is canceled — portal access is read-only until it is reactivated. No new Classes, Bookings, or payments can be created.',
       );
+    }
+    if (school && trialEndedUnpaid(school)) {
+      throw new ForbiddenException(TRIAL_ENDED);
     }
   }
 }

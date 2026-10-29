@@ -54,3 +54,18 @@ export function hsvToHex(hsv: Hsv): string {
     .join('')
     .toUpperCase()}`;
 }
+
+/** Dark or white text to suit a background colour (the level badge,
+ * Decision 290): dark on light colours, white on dark ones. A colour that
+ * isn't a #RRGGBB code gets dark text. */
+export function textOn(background: string): '#17181A' | '#FFFFFF' {
+  if (!isColourCode(background)) return '#17181A';
+  const n = parseInt(normalColour(background).slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  // The luminance where white and near-black text have the same contrast.
+  return luminance > 0.18 ? '#17181A' : '#FFFFFF';
+}

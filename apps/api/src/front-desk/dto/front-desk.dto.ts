@@ -115,6 +115,12 @@ export class KioskTodayQueryDto {
   @ApiProperty({ type: String, format: 'date-time' })
   @IsISO8601()
   startsTo!: string;
+
+  @ApiPropertyOptional({ description: "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400)." })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  lookupToken?: string;
 }
 
 export class KioskClassDto {
@@ -269,6 +275,9 @@ export class KioskStudentCardDto {
 
   @ApiProperty({ type: [KioskBookingDto], description: "The student's bookings in today's Classes here." })
   bookings!: KioskBookingDto[];
+
+  @ApiProperty({ type: [String], description: 'Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400).' })
+  memberNotes!: string[];
 }
 
 export class KioskQrLookupResponseDto {
@@ -327,4 +336,53 @@ export class StudentCheckInCodeDto {
 export class KioskUnlockedDto {
   @ApiProperty({ description: 'First name of the staff member whose code it was.' })
   unlockedBy!: string;
+}
+
+export class MembershipCardMembershipDto {
+  @ApiProperty({ description: "The membership plan's name." })
+  title!: string;
+
+  @ApiProperty({ enum: ['SUBSCRIPTION', 'CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP', 'VISIT_PASS'] })
+  type!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'When it ends, if it has an end date.' })
+  expiryDate!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Classes left on a pack.' })
+  classesRemaining!: number | null;
+}
+
+/** Backlog 3.11: what the membership card shows. It never carries a QR code. */
+export class MembershipCardDto {
+  @ApiProperty()
+  schoolId!: string;
+
+  @ApiProperty()
+  schoolName!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  schoolLogoUrl!: string | null;
+
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  photoUrl!: string | null;
+
+  @ApiProperty({ description: 'The personal check-in code, typed at the front desk.' })
+  checkInCode!: string;
+
+  @ApiProperty({ type: [MembershipCardMembershipDto], description: 'Memberships in effect now; empty when there are none.' })
+  memberships!: MembershipCardMembershipDto[];
+}
+
+export class MembershipCardListDto {
+  @ApiProperty({ type: [MembershipCardDto] })
+  items!: MembershipCardDto[];
 }

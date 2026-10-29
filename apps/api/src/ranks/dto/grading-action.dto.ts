@@ -157,3 +157,43 @@ export class VerifyRankDto {
   @MaxLength(1000)
   note?: string;
 }
+
+/** Backlog 3.20 (Decisions 281, 285, 298): grade a Kids student into the
+ * linked Adult program, onto any adult rank from the one above its first belt
+ * (e.g. Blue Belt). */
+export class MoveToAdultDto {
+  @ApiProperty({ description: 'The rung (stripe tier id) on the Adult style to move to.' })
+  @IsUUID()
+  targetRungId!: string;
+
+  @ApiPropertyOptional({ description: 'As on promote: refused (409) if the student has moved since.', nullable: true, type: String })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsUUID()
+  expectedCurrentRungId?: string | null;
+
+  @ApiPropertyOptional({ description: 'As on promote: YYYY-MM-DD, not in the future, not before the current rank date. Default today.', example: '2026-03-01' })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @MaxLength(10)
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: "The grader's own note on this history entry." })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+
+  @ApiPropertyOptional({ description: 'As on promote: needed when skills for the next Kids rank are not signed off.' })
+  @IsOptional()
+  @IsBoolean()
+  acknowledgeWithoutSkillSignoff?: boolean;
+}
+
+/** Backlog 3.20: "Ready for Adult from age" on a Kids style (Decision 285 item 2). */
+export class ReadyForAdultAgeDto {
+  @ApiProperty({ minimum: 1, maximum: 99, example: 16 })
+  @IsInt()
+  @Min(1)
+  @Max(99)
+  age!: number;
+}

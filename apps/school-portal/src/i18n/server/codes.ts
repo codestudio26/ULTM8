@@ -44,6 +44,15 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
+    // Kids and Adult programs (backlog 3.20).
+    case 'ADULT_NOT_LINKED':
+      return t('server.codes.adultNotLinked');
+    case 'ADULT_TOO_YOUNG':
+      return t('server.codes.adultTooYoung');
+    case 'ADULT_ALREADY':
+      return t('server.codes.adultAlready');
+    case 'ADULT_FIRST_BELT':
+      return t('server.codes.adultFirstBelt');
     // The School's check-in rules (Decision 394).
     case 'CHECK_IN_WAIVER_REQUIRED':
       return t('server.codes.checkInWaiverRequired');
@@ -53,6 +62,22 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.checkInVisitorsOff');
     case 'CHECK_IN_ONE_CLASS':
       return t('server.codes.checkInOneClass');
+    // A free trial of ULTM8 that ended (backlog 3.14).
+    case 'TRIAL_ENDED':
+      return t('server.codes.trialEnded');
+    // Belt correction requests (backlog 3.13).
+    case 'CORRECTION_NOT_VERIFIED':
+      return t('server.codes.correctionNotVerified');
+    case 'CORRECTION_PENDING':
+      return t('server.codes.correctionPending');
+    case 'CORRECTION_SAME_RANK':
+      return t('server.codes.correctionSameRank');
+    case 'CORRECTION_STALE':
+      return t('server.codes.correctionStale');
+    case 'CORRECTION_RUNG_GONE':
+      return t('server.codes.correctionRungGone');
+    case 'CORRECTION_ANSWERED':
+      return t('server.codes.correctionAnswered');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;

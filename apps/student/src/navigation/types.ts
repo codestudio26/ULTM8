@@ -55,6 +55,8 @@ export type AppStackParamList = {
   KidModeBooking: undefined;
   PendingReview: undefined;
   QrCheckIn: undefined;
+  /** Decision 400: notes the School shows the student; a guardian passes the child's id. */
+  SchoolNotes: { studentId?: string; name?: string } | undefined;
   CoachDashboard: undefined;
   /** No params: the signed-in student's own grading; a guardian passes the minor's id. */
   /** `openFeeId` opens that promotion fee's answer straight away (the Home card). */

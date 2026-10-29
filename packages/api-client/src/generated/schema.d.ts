@@ -260,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_exportStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students/{studentId}/home-branch": {
         parameters: {
             query?: never;
@@ -1582,6 +1598,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PlatformAdminSchoolsController_changeMainOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_startTrial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/trial/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_extendTrial"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3284,6 +3332,22 @@ export interface paths {
         patch: operations["GradingController_editRankDate"];
         trace?: never;
     };
+    "/v1/students/{id}/ranks/{disciplineId}/move-to-adult": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_moveToAdult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
         parameters: {
             query?: never;
@@ -3421,6 +3485,38 @@ export interface paths {
         };
         get: operations["GradingController_getGradingBoard"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/ready-for-adult-age": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setReadyForAdultAge"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/rank-display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setRankDisplay"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3758,6 +3854,86 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PromotionFeeController_dismiss"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RankCorrectionsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rank-corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RankCorrectionsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_reject"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5268,6 +5444,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-cards/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipCardsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/membership-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipCardsController_card"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/sign-ups": {
         parameters: {
             query?: never;
@@ -5428,6 +5636,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/student-notes/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentNotesController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentNotesController_list"];
+        put?: never;
+        post: operations["StudentNotesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentNotesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StudentNotesController_update"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/open-mats": {
         parameters: {
             query?: never;
@@ -5523,7 +5779,11 @@ export interface components {
             passcodeConfirm: string;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth: string;
-            gender?: string;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             nationality?: string;
             language?: string;
             currency?: string;
@@ -5763,6 +6023,10 @@ export interface components {
             archivedAt?: string | null;
             purgeAt?: string | null;
             purgedAt?: string | null;
+            platformTrialStartedAt?: string | null;
+            platformTrialEndsAt?: string | null;
+            /** @enum {string|null} */
+            platformSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             accessToken?: string;
         };
         SchoolListResponseDto: {
@@ -5892,6 +6156,46 @@ export interface components {
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
         };
+        /** @enum {string} */
+        StudentExportFilter: "ALL" | "ACTIVE" | "MEMBERS" | "VISITORS";
+        StudentExportBeltDto: {
+            style: string;
+            /** @description The belt or stripe the student holds in that style. */
+            rank: string;
+        };
+        StudentExportGuardianDto: {
+            name: string;
+            email: string;
+        };
+        StudentExportRowDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            /** @description Empty for a child whose Guardian manages the account. */
+            email: string;
+            phone?: string | null;
+            /** @description YYYY-MM-DD. */
+            dateOfBirth?: string | null;
+            status: components["schemas"]["StudentStatus"];
+            enrolledAt: string;
+            homeBranchName?: string | null;
+            visitor: boolean;
+            /** @description Memberships in effect now, by plan name. */
+            memberships: string[];
+            /**
+             * @description ACTIVE with a membership in effect, EXPIRED when they only had earlier ones, NONE when they never had one.
+             * @enum {string}
+             */
+            billingStatus: "ACTIVE" | "EXPIRED" | "NONE";
+            belts: components["schemas"]["StudentExportBeltDto"][];
+            /** @description Start of the last class they were checked in to. */
+            lastVisitAt?: string | null;
+            /** @description A child's Guardians. */
+            guardians: components["schemas"]["StudentExportGuardianDto"][];
+        };
+        StudentExportResponseDto: {
+            items: components["schemas"]["StudentExportRowDto"][];
+        };
         SetHomeBranchDto: {
             /** @description A branch of this School. */
             branchId: string;
@@ -5970,8 +6274,11 @@ export interface components {
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth?: string;
-            /** @description Null clears it. */
-            gender?: string | null;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             /** @description Null clears it. */
             nationality?: string | null;
             /** @description A code from GET /settings/languages. Null clears it. */
@@ -6332,6 +6639,8 @@ export interface components {
             disciplines: boolean;
             /** @description Change the School's check-in rules (off by default; Decision 394). */
             checkInRules: boolean;
+            /** @description Export the student list as a spreadsheet (off by default; Decision 399). */
+            exportStudents: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -6679,7 +6988,11 @@ export interface components {
             surname: string;
             /** @description ISO 8601 date, no time component. */
             dateOfBirth: string;
-            gender?: string;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
         };
         MinorResponseDto: {
             linkId: string;
@@ -6816,8 +7129,11 @@ export interface components {
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth?: string;
-            /** @description Null clears it. */
-            gender?: string | null;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             /** @description Null clears it. */
             nationality?: string | null;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
@@ -7030,6 +7346,16 @@ export interface components {
         ChangeSchoolMainOwnerResponseDto: {
             mainOwnerUserId: string;
             formerMainOwnerRemoved: boolean;
+        };
+        SchoolTrialDaysDto: {
+            /** @description Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended). */
+            days: number;
+        };
+        SchoolTrialResponseDto: {
+            /** Format: date-time */
+            platformTrialStartedAt: string;
+            /** Format: date-time */
+            platformTrialEndsAt: string;
         };
         CreateAdminUserDto: {
             email: string;
@@ -8105,6 +8431,11 @@ export interface components {
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one.
+             * @enum {string}
+             */
+            rankDisplay?: "BELTS" | "LEVELS";
         };
         DisciplineResponseDto: {
             id: string;
@@ -8119,6 +8450,15 @@ export interface components {
             boardReadyToGrade: number;
             /** @description Archived (retired) at (Decision 309); null while in use. */
             archivedAt?: string | null;
+            /** @description On a Kids style: its Adult style (backlog 3.20, Decision 281). Null otherwise. */
+            adultDisciplineId?: string | null;
+            /** @description On a Kids style: "Ready for Adult from age" (Decision 285 item 2). Default 16. */
+            readyForAdultAge: number;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
             /** @description Students with a rank in this style (Decision 309). */
             studentCount: number;
             createdAt: string;
@@ -8156,8 +8496,18 @@ export interface components {
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one.
+             * @enum {string}
+             */
+            rankDisplay?: "BELTS" | "LEVELS";
             /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
             renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
+            /**
+             * Format: uuid
+             * @description Backlog 3.20: makes this a Kids style whose students can be graded into this Adult style of the same School. null unlinks. A style that is itself linked, or that another Kids style uses as its Adult style, cannot be linked.
+             */
+            adultDisciplineId?: string | null;
         };
         BeltColoursResponseDto: {
             /**
@@ -8277,6 +8627,11 @@ export interface components {
             tagColour?: string | null;
             coralAccent?: string | null;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
+            /**
+             * @description How its style shows ranks (Decision 290): as a belt, or as a level badge in primaryColour whose steps are its stripe tiers.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
             /** @description Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198's own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Rank once this elapses, re-checking the same holders/history/declared conditions deleteRank() already enforces. */
@@ -8490,6 +8845,8 @@ export interface components {
             /** @description null when there is no next rank. */
             progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
             hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
+            /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age". False on other styles. */
+            readyForAdult: boolean;
         };
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
@@ -8505,6 +8862,15 @@ export interface components {
             stripeColour: string;
             stripeCount: number;
             timeOnly: boolean;
+            /**
+             * @description How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
+            /** @description This rung's place on its rank, from 1 (step 2 of 3 on a level). */
+            step: number;
+            /** @description How many rungs its rank has. */
+            steps: number;
         };
         GradingSkillDto: {
             id: string;
@@ -8615,6 +8981,21 @@ export interface components {
             /** @description An optional note for the history entry. */
             note?: string;
         };
+        MoveToAdultDto: {
+            /** @description The rung (stripe tier id) on the Adult style to move to. */
+            targetRungId: string;
+            /** @description As on promote: refused (409) if the student has moved since. */
+            expectedCurrentRungId?: string | null;
+            /**
+             * @description As on promote: YYYY-MM-DD, not in the future, not before the current rank date. Default today.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description The grader's own note on this history entry. */
+            note?: string;
+            /** @description As on promote: needed when skills for the next Kids rank are not signed off. */
+            acknowledgeWithoutSkillSignoff?: boolean;
+        };
         GradingActionDto: {
             /** @description Defaults to false when omitted. */
             acknowledgeWithoutSkillSignoff?: boolean;
@@ -8670,6 +9051,15 @@ export interface components {
             stripeColour: string;
             stripeCount: number;
             timeOnly: boolean;
+            /**
+             * @description How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
+            /** @description This rung's place on its rank, from 1 (step 2 of 3 on a level). */
+            step: number;
+            /** @description How many rungs its rank has. */
+            steps: number;
             /** @description The belt (Rank) this rung belongs to; send it with the rung id to declare. */
             rankId: string;
         };
@@ -8760,6 +9150,8 @@ export interface components {
             feeStatus?: "waiting" | "declined" | "toDecide" | null;
             /** @description The request behind feeStatus. */
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
+            /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
+            readyForAdult: boolean;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
@@ -8768,6 +9160,14 @@ export interface components {
             hiddenInactive: number;
             /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
             atTopRank: number;
+        };
+        ReadyForAdultAgeDto: {
+            /** @example 16 */
+            age: number;
+        };
+        RankDisplayDto: {
+            /** @enum {string} */
+            rankDisplay: "BELTS" | "LEVELS";
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -8990,6 +9390,49 @@ export interface components {
         PromotionFeeRequestListResponseDto: {
             items: components["schemas"]["PromotionFeeRequestResponseDto"][];
             nextCursor?: string | null;
+        };
+        CreateRankCorrectionDto: {
+            /** Format: uuid */
+            disciplineId: string;
+            /**
+             * Format: uuid
+             * @description The grade they should have: a belt's plain grade or one of its stripes, on this style's ladder.
+             */
+            stripeTierId: string;
+            /** @description Why the recorded belt is wrong. Required. */
+            note: string;
+        };
+        RankCorrectionRungDto: {
+            rankId: string;
+            rankName: string;
+            stripeTierId: string | null;
+            stripeName: string | null;
+        };
+        RankCorrectionDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            from: components["schemas"]["RankCorrectionRungDto"];
+            requested: components["schemas"]["RankCorrectionRungDto"];
+            note: string;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            reviewNote: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RankCorrectionListDto: {
+            items: components["schemas"]["RankCorrectionDto"][];
+        };
+        ReviewRankCorrectionDto: {
+            /** @description An optional note to the student. */
+            note?: string | null;
         };
         CreateWaiverDto: {
             title: string;
@@ -10020,6 +10463,8 @@ export interface components {
             progress?: components["schemas"]["KioskProgressDto"] | null;
             /** @description The student's bookings in today's Classes here. */
             bookings: components["schemas"]["KioskBookingDto"][];
+            /** @description Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400). */
+            memberNotes: string[];
         };
         KioskQrLookupResponseDto: {
             /** @description Pass to POST /front-desk/kiosk/check-ins within 5 minutes. */
@@ -10051,6 +10496,32 @@ export interface components {
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
             code: string;
+        };
+        MembershipCardMembershipDto: {
+            /** @description The membership plan's name. */
+            title: string;
+            /** @enum {string} */
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP" | "VISIT_PASS";
+            /** @description When it ends, if it has an end date. */
+            expiryDate?: string | null;
+            /** @description Classes left on a pack. */
+            classesRemaining?: number | null;
+        };
+        MembershipCardDto: {
+            schoolId: string;
+            schoolName: string;
+            schoolLogoUrl?: string | null;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            photoUrl?: string | null;
+            /** @description The personal check-in code, typed at the front desk. */
+            checkInCode: string;
+            /** @description Memberships in effect now; empty when there are none. */
+            memberships: components["schemas"]["MembershipCardMembershipDto"][];
+        };
+        MembershipCardListDto: {
+            items: components["schemas"]["MembershipCardDto"][];
         };
         SignUpDto: {
             id: string;
@@ -10150,6 +10621,41 @@ export interface components {
         };
         MyPackRechargeListDto: {
             items: components["schemas"]["MyPackRechargeDto"][];
+        };
+        MemberNoteDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            body: string;
+            authorName?: string | null;
+            createdAt: string;
+        };
+        MemberNoteListDto: {
+            items: components["schemas"]["MemberNoteDto"][];
+        };
+        StudentNoteDto: {
+            id: string;
+            body: string;
+            showToMember: boolean;
+            /** @description The author's name; null once their account is gone. */
+            authorName?: string | null;
+            authorId?: string | null;
+            createdAt: string;
+            editedAt?: string | null;
+            /** @description Whether the caller may edit or delete it: its author, or a School owner. */
+            canEdit: boolean;
+        };
+        StudentNoteListDto: {
+            items: components["schemas"]["StudentNoteDto"][];
+        };
+        CreateStudentNoteDto: {
+            body: string;
+            /** @description Shown to the student in the app (a child: to their Guardian). Off by default. */
+            showToMember?: boolean;
+        };
+        UpdateStudentNoteDto: {
+            body?: string;
+            showToMember?: boolean;
         };
         StartOpenMatDto: {
             /** @description One of the School's open Branches; null when it has none. */
@@ -10611,6 +11117,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentListResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_exportStudents: {
+        parameters: {
+            query?: {
+                /** @description Defaults to ACTIVE. */
+                filter?: components["schemas"]["StudentExportFilter"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentExportResponseDto"];
                 };
             };
         };
@@ -12813,6 +13343,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_startTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTrialDaysDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTrialResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_extendTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTrialDaysDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTrialResponseDto"];
                 };
             };
         };
@@ -15758,6 +16338,32 @@ export interface operations {
             };
         };
     };
+    GradingController_moveToAdult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveToAdultDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
     GradingController_promote: {
         parameters: {
             query?: never;
@@ -15971,6 +16577,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GradingBoardResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setReadyForAdultAge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadyForAdultAgeDto"];
+            };
+        };
+        responses: {
+            /** @description The Kids style, with its new age. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setRankDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankDisplayDto"];
+            };
+        };
+        responses: {
+            /** @description The style, with its ranks now shown as Belts or Levels. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
                 };
             };
         };
@@ -16507,6 +17165,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRankCorrectionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionListDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_list: {
+        parameters: {
+            query?: {
+                /** @description Waiting (the default), or answered (newest 50). */
+                status?: "PENDING" | "ANSWERED";
+                /** @description Only this student's requests. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionListDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRankCorrectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRankCorrectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
                 };
             };
         };
@@ -18869,6 +19645,8 @@ export interface operations {
             query: {
                 startsFrom: string;
                 startsTo: string;
+                /** @description The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400). */
+                lookupToken?: string;
             };
             header?: never;
             path?: never;
@@ -18913,6 +19691,8 @@ export interface operations {
             query: {
                 startsFrom: string;
                 startsTo: string;
+                /** @description The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400). */
+                lookupToken?: string;
             };
             header?: never;
             path: {
@@ -19087,6 +19867,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    MembershipCardsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipCardListDto"];
+                };
+            };
+        };
+    };
+    MembershipCardsController_card: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipCardDto"];
                 };
             };
         };
@@ -19310,6 +20131,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyPackRechargeListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_mine: {
+        parameters: {
+            query?: {
+                /** @description A Guardian's child; leave out for your own notes. */
+                studentId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberNoteListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStudentNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentNotesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStudentNoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteDto"];
                 };
             };
         };

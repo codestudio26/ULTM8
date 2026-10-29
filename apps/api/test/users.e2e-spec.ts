@@ -269,7 +269,7 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
         username: `clear-me-${randomUUID()}`,
-        gender: 'non-binary',
+        gender: 'FEMALE',
         nationality: 'Testland',
         language: 'en',
         currency: 'USD',
@@ -302,7 +302,7 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
     const setRes = await request(app.getHttpServer())
       .patch('/v1/users/me')
       .set('Authorization', `Bearer ${tokenB}`)
-      .send({ gender: 'woman', nationality: 'Testlandia' });
+      .send({ gender: 'MALE', nationality: 'Testlandia' });
     expect(setRes.status).toBe(200);
 
     const untouchedRes = await request(app.getHttpServer())
@@ -310,7 +310,18 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
       .set('Authorization', `Bearer ${tokenB}`)
       .send({ firstName: 'StillB' });
     expect(untouchedRes.status).toBe(200);
-    expect(untouchedRes.body.gender).toBe('woman');
+    expect(untouchedRes.body.gender).toBe('MALE');
     expect(untouchedRes.body.nationality).toBe('Testlandia');
+  });
+
+  it('gender is Female, Male or empty only (Decision 315 item 15)', async () => {
+    const patch = (body: object) => request(app.getHttpServer()).patch('/v1/users/me').set('Authorization', `Bearer ${tokenA}`).send(body);
+    const refused = await patch({ gender: 'non-binary' });
+    expect(refused.status).toBe(400);
+    expect(JSON.stringify(refused.body)).toContain('Gender must be Female or Male, or left empty.');
+    expect((await patch({ gender: 'FEMALE' })).body.gender).toBe('FEMALE');
+    expect((await patch({ gender: '' })).body.gender).toBeNull();
+    // The database refuses anything else too.
+    await expect(superuser.$executeRaw`UPDATE "User" SET "gender" = 'other' WHERE id = ${userA.id}`).rejects.toThrow();
   });
 });

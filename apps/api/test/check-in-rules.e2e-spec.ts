@@ -38,7 +38,7 @@ const DEFAULT_RULES: {
   severalClasses: true,
   codeDigits: 4,
 };
-const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false };
+const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
 
 describeIfDb('Check-in rules (Decision 394)', () => {
   let app: INestApplication;

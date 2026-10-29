@@ -58,3 +58,18 @@ export function useChangeSchoolMainOwner(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['platform-admin-school-owners', schoolId] }),
   });
 }
+
+/** POST /platform-admin/schools/:id/trial and /trial/extend (backlog 3.14) —
+ * a free trial of ULTM8, FULL_ADMIN only server-side. */
+export function useSchoolTrial(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ action, days }: { action: 'start' | 'extend'; days: number }) =>
+      unwrap(
+        action === 'start'
+          ? apiClient.POST('/v1/platform-admin/schools/{id}/trial', { params: { path: { id: schoolId } }, body: { days } })
+          : apiClient.POST('/v1/platform-admin/schools/{id}/trial/extend', { params: { path: { id: schoolId } }, body: { days } }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['platform-admin-school', schoolId] }),
+  });
+}

@@ -107,7 +107,15 @@ export const disciplines = {
     addClassType: 'Add class type',
     nameRequired: 'Enter a name.',
     classTypeTwice: '"{name}" is listed twice.',
-    skillsRequired:
+    rankDisplayLabel: "Ranks shown as",
+    rankDisplayBelts: "Belts",
+    rankDisplayLevels: "Levels (no belt)",
+    rankDisplayHint: "Levels show each rank as a coloured badge with numbered steps, such as Beginner 1, 2, 3, instead of a belt with stripes.",
+    adultProgramLabel: "Adult program (for a Kids style)",
+    adultProgramHint: "Kids students can be graded into this style from the age set in Grading → Settings.",
+    adultProgramNone: "None",
+    isAdultProgram: "This style is the Adult program of a Kids style, so it can't be a Kids style itself.",
+   skillsRequired:
       'Skills required to grade: block grading until every skill for the next rank is signed off (otherwise the coach can grade with a written acknowledgement)',
   },
   stylePicker: {

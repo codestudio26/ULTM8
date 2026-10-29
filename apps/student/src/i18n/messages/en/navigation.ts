@@ -28,6 +28,8 @@ export const navigation = {
     kidMode: 'Kid Mode',
     needsReview: 'Needs Your Review',
     checkIn: 'Check In',
+    schoolNotes: "Notes from your School",
+    childNotes: "Notes for {name}",
     myGrading: 'My Grading',
     /** {name} is a child's name, for a guardian viewing their grading. */
     childGrading: "{name}'s grading",

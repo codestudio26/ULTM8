@@ -6782,7 +6782,7 @@ User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".
 
 ## Decision 396 — Staff page: "New staff must accept first"
 
-**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (f) · **Migration:** `20261227000000_staff_must_accept`
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (f) · **Migration:** `20270103000000_staff_must_accept`
 
 The Staff build plan said: *"New staff must accept first", off by default. When it's on, "Give role" sends an invite link the person accepts, the same way coach invites already work, extended to Branch Staff.* The product owner chose this ("all recommended").
 
@@ -6803,3 +6803,117 @@ The Staff build plan said: *"New staff must accept first", off by default. When 
 ### Recorded by
 
 User (Code), 27 Oct 2026, "all recommended" on the Staff build plan (Decision 360, order of work (f)). Built 29 Oct 2026 in the Staff thread.
+
+---
+
+## Decision 397 — Kids and Adult programs are two linked styles
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.20 (Decisions 281, 285 and 297), whose "Suggested build" left the storage to the design pass.
+
+### Decision
+
+1. **Kids and Adult stay two styles, linked Kids → Adult.** A Kids style has an optional `adultDisciplineId` pointing to its Adult style, and its own `readyForAdultAge` (default 16). Each keeps its own ladder, skills and settings, as every style does today. *(Product owner, 29 Oct 2026: "Two linked styles".)*
+2. **One level only.** A style can't be its own Adult program, an Adult style can't be a Kids style too, and a Kids style can't be another style's Adult program. Both must be in the same School and in use.
+3. **The link is set in Edit discipline** ("Adult program (for a Kids style)"), by whoever may edit styles. The age is set in Grading → Settings by the owner and coaches with "Change grading settings" (Decision 297).
+4. **The move** (Decision 285): from the age, the Grade dialog lists the Adult ranks after the Adult ladder's first belt under an "Adult program" heading. Picking one moves the student's rank to the Adult style at that rank, keeps history and notes, restarts the class count and writes "Moved to Adult program." on the history. It needs `canPromote` on the Kids style.
+
+### Built as
+
+- **Sign-offs that carry over:** a sign-off moves to the Adult style's skill with the same name, since skills belong to one style. Decision 285 left which ones carry over open; this is the reading used, to confirm.
+- **Not built yet:** the Adult group in bulk promote (Decision 281 item 2). Bulk promote still moves everyone one rank, with no per-student "Promote to" picker to hold the group; it comes with that picker.
+- **Not built yet:** a student on the top Kids rank isn't a board card (they have no next Kids rank), so they are moved from the Ranks tab.
+- **[UNRESOLVED]** No promotion fee is asked for on the move.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, choosing "Two linked styles" for the Kids/Adult storage.
+
+---
+
+## Decision 398 — The membership card has no fixed QR code
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.11 (PR5, MC1, Q50). **Changes:** §3.11's "their QR code" and "Scanning the printed QR at check-in works".
+
+### Decision
+
+1. **No QR on a printed card.** Check-in's QR changes every 20 seconds. A QR on paper would have to stay the same for ever, so anyone with a copy or a photo of the card could check in as that member. The printed card leaves the QR off. *(Product owner, 29 Oct 2026: "No fixed QR on the card, leave it off".)*
+2. **The printed card shows:** the School's name and logo, the student's photo (or initials) and name, their personal check-in code (Decision 384), and the memberships in effect now. It is printed from the student's page in the portal, bank-card size, by staff who can see the student's check-in code.
+3. **The app card** shows the same details under the live QR on "Show my code", one card for each School. The live QR stays the only QR.
+4. **At the desk,** a member with a printed card types or reads out the code, as Decision 384 already allows.
+
+### How it is built
+
+- `GET /membership-cards/me` (the student's own cards) and `GET /schools/{schoolId}/students/{studentId}/membership-card` (the student, their Guardian, or staff who cover them, the same check as the check-in code). No migration.
+- **Memberships in effect now** are the live ones (Decision 26): active, not past their end date, and not a used-up pack.
+- **Not built yet:** a Guardian's view of their child's card in the app. The endpoint already allows it.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, answering whether the printed card should carry a fixed QR.
+
+---
+
+## Decision 399 — Export the student list
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.9 (L3, IE3, Q26), whose open point Decision 315 item 11 answered: *"Export the member list (CSV, all members including children): the owner and staff the owner grants the right."*
+
+### Decision
+
+1. **Who:** the owner, and Branch Staff the owner switches on with a new **"Export the student list"** right on their Access page (Decision 319), in the Members group. It's off by default and in neither preset, since it hands over members' personal data. As with the other switches, it is for Branch Staff (Decision 387); coaches and students can't export.
+2. **Which students:** the ones the exporter can already see on the Students list. That is the whole School for the owner, and the students they cover for Branch Staff. Children are included, with their Guardian's name and email. A child's made-up account email and phone are left out.
+3. **Filters,** as Gymdesk has them: **Active only** (the default), **Active and former** (adds students who left), **Members only** (current students who aren't Visitors), and **Visitors only** (Decision 391).
+4. **Columns:** first name, surname, email, phone, date of birth, age, status (Active or Former), joined, home branch (at a School with branches), Visitor, the memberships in effect now, billing (Active, Expired or None), belts per style, last visit (the last class they were checked in to), and the Guardians. The headers are in the reader's language.
+5. **Every export is logged:** who, when, which filter and how many rows. The log has no screen yet.
+6. **Download CSV or Print,** from an **Export** button on the Students page. The CSV stops a spreadsheet reading a cell that starts with `=`, `+`, `-` or `@` as a formula, as the Transactions export does.
+
+### How it is built
+
+- `GET /schools/{id}/students/export?filter=` returns the rows; the portal builds the CSV and the printable page. `StaffPermission.canExportStudents` and the `StudentExportLog` table (jobs connection only) come with migration `20261231000000_student_export`.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, under "build any task you have all the answers for".
+
+---
+
+## Decision 400 — Staff notes on a student, with "Show to member"
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.10 (PR10, Q48). **Answers:** who adds and changes notes, the one point Decision 315 item 8 left.
+
+### Decision
+
+1. **Who adds notes:** any staff who can see the student. That is the owner, Branch Staff and coaches who cover the student. *(Product owner, 29 Oct 2026: "Any staff adds; author or owner edits".)*
+2. **Who edits or deletes a note:** its author, or a School owner.
+3. **Who reads them** (Decision 315 item 8): staff-only notes are seen by any staff who can see the student. A note ticked **"Show to member"** is also shown to the student in the app (*Notes from your School*), and to a child's Guardian.
+4. **At check-in:** the staff check-in card shows up to three shown notes for staff to pass on. The front-desk tablet shows them to the member only after they identify themselves there with their QR or personal check-in code. Someone found by name may not be the person at the tablet, so they see none.
+5. **Kept** while the student's account exists and erased with it (Decision 315 item 8). A note stays when its author's account is erased, without an author.
+6. **No tasks or reminders,** as the 20 Oct 2026 answer said.
+
+### How it is built
+
+- The `StudentNote` table (jobs connection only) comes with migration `20270101000000_student_notes`.
+- **Staff:** `GET`, `POST`, `PATCH` and `DELETE /schools/{schoolId}/students/{studentId}/notes`.
+- **Members and Guardians:** `GET /student-notes/me?studentId=` returns the shown notes from every School they're still enrolled at.
+- **Tablet:** the kiosk card takes the tablet's own QR or code `lookupToken` to include them.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, answering who may add, edit and delete staff notes.
+
+---
+
+## Decision 401 — How Levels are stored and set
+
+**Date:** 29 Oct 2026. **Builds:** Decision 290 (v1.3 backlog §3.19). **Changes:** nothing Decision 290 decided.
+
+### Decision
+
+1. **One setting per style:** `Discipline.rankDisplay`, `BELTS` (default) or `LEVELS`. It is set when a style is added or edited, and in Grading → Settings ("How ranks are shown") by the owner or a coach with "Change grading settings" for that style (`PUT /disciplines/{id}/rank-display`). It is display only, so it can change while students hold ranks. A duplicated style keeps it; the IBJJF templates stay Belts.
+2. **A level is a rank, its steps are rungs.** The badge colour is the rank's `primaryColour`. A step is a rung with no stripes (`count` 0, no `stripeSegments`). Grading, requirements, the board, promote, bulk promote and history use them as they use stripes.
+3. **The API refuses belt-only drawing on a Levels style** (400): stripes on a step, or a second colour, tag colour or accent on a level. Colours already stored on a style that is switched to Levels stay, unused, until the level is saved again.
+4. **Step names:** a step left unnamed is "{level} {n}" (Beginner 1, 2, 3). A step that still has a generated name (the belt form, from before a switch, or the step form) follows a rename of its level. On a Belts style only the belt form counts as generated, so a custom name such as "Blue Belt 1" is never renamed.
+5. **Every rank and ladder response says how to draw it:** `rankDisplay` on styles and ranks, and `rankDisplay`, `step` and `steps` on the student app's ladder rungs. The badge has a dot per step, filled up to the student's ("●●○" is step 2 of 3), in dark or white to suit the colour.
+
+### Recorded by
+
+Claude, 29 Oct 2026, building Decision 290; it follows the v1.3 backlog's "Suggested build" for §3.19.

@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react-native';
 import { ApiError } from '@ultm8/api-client';
 import { QrCheckInScreen } from './QrCheckInScreen';
-import { useMyQrToken, type QrTokenResponse } from './attendanceQueries';
+import { useMyMembershipCards, useMyQrToken, type QrTokenResponse } from './attendanceQueries';
 
 jest.mock('./attendanceQueries', () => ({
   useMyQrToken: jest.fn(),
+  useMyMembershipCards: jest.fn(() => ({ data: undefined })),
   useScanAttendance: jest.fn(),
 }));
 jest.mock('expo-camera', () => ({
@@ -106,5 +107,33 @@ describe('QrCheckInScreen', () => {
 
     expect(queryByText(/show this to your instructor to check in/i)).toBeNull();
     expect(getByText('Allow camera access')).toBeTruthy();
+  });
+
+  it('shows the membership card under the QR: School, name, check-in code and memberships, no second QR', async () => {
+    mockUseMyQrToken.mockReturnValue(fakeResult({
+      data: { token: 'student-abc123', expiresAt: new Date().toISOString() },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isRefetching: false,
+    }));
+    (useMyMembershipCards as jest.Mock).mockReturnValue({
+      data: {
+        items: [
+          {
+            schoolId: 's1', schoolName: 'Lotus BJJ', schoolLogoUrl: null, studentId: 'u1', firstName: 'Ana', surname: 'Lee', photoUrl: null, checkInCode: '4821',
+            memberships: [{ title: '10 classes', type: 'CLASS_PACK', expiryDate: null, classesRemaining: 3 }],
+          },
+          { schoolId: 's2', schoolName: 'Other Gym', schoolLogoUrl: null, studentId: 'u1', firstName: 'Ana', surname: 'Lee', photoUrl: null, checkInCode: '9910', memberships: [] },
+        ],
+      },
+    });
+
+    const { getByText, getByLabelText } = await render(<QrCheckInScreen />);
+
+    expect(getByLabelText('Lotus BJJ membership card')).toBeTruthy();
+    expect(getByText('4821')).toBeTruthy();
+    expect(getByText('10 classes · 3 classes left')).toBeTruthy();
+    expect(getByText('No current membership')).toBeTruthy();
   });
 });

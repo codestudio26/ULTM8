@@ -6,6 +6,12 @@ export const home = {
   browseAcademies: 'Browse academies',
   checkIn: 'Check in',
   myGrading: 'My grading',
+  schoolNotes: "Notes from your School",
+  notesScreen: {
+    empty: "No notes from your School yet.",
+    loadError: "Could not load the notes — please try again.",
+    by: "{name} · {date}",
+  },
   myBookings: 'My bookings',
   myMemberships: 'My memberships',
   paymentHistory: 'Payment history',

@@ -27,6 +27,7 @@ async function lockLadder(tx: Pick<Prisma.TransactionClient, '$queryRaw'>, disci
 
 const RANK_INCLUDE = {
   stripeTiers: { orderBy: { order: 'asc' as const }, include: { requiredSkills: true } },
+  discipline: { select: { rankDisplay: true } },
 } satisfies Prisma.RankInclude;
 
 type Tx = Prisma.TransactionClient;
@@ -133,7 +134,14 @@ export class RanksService {
     return this.prismaApp.withTenantContext(actor, async (tx) => {
       await assertDisciplineNameFree(tx, schoolId, dto.name);
       const created = await tx.discipline.create({
-        data: { id, schoolId, name: dto.name, classTypesOffered: cleanClassTypes(dto.classTypesOffered ?? []), skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false },
+        data: {
+          id,
+          schoolId,
+          name: dto.name,
+          classTypesOffered: cleanClassTypes(dto.classTypesOffered ?? []),
+          skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false,
+          rankDisplay: dto.rankDisplay ?? 'BELTS',
+        },
       });
       return { ...created, studentCount: 0 };
     });
@@ -222,6 +230,7 @@ export class RanksService {
           skillsRequiredToGrade: source.skillsRequiredToGrade,
           boardGettingThere: source.boardGettingThere,
           boardReadyToGrade: source.boardReadyToGrade,
+          rankDisplay: source.rankDisplay,
         },
       });
       const skillMap = new Map<string, string>();
@@ -232,7 +241,7 @@ export class RanksService {
       }
       const ranks = await tx.rank.findMany({ where: { disciplineId, archivedAt: null }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
       for (const [order, rank] of ranks.entries()) {
-        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, archivedAt: _a, purgeAt: _p, purgedAt: _pd, stripeTiers, ...rankFields } = rank;
+        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, archivedAt: _a, purgeAt: _p, purgedAt: _pd, discipline: _disc, stripeTiers, ...rankFields } = rank;
         const rankId = randomUUID();
         await tx.rank.create({ data: { ...rankFields, order, id: rankId, disciplineId: copy.id } });
         for (const tier of stripeTiers) {
@@ -334,8 +343,8 @@ export class RanksService {
     this.assertDisciplineActive(existing);
     // PartialType re-adds @IsOptional(), which lets `null` past validation:
     // refused here as a 400, not a 500 (Decision 308).
-    if (dto.name === null || dto.classTypesOffered === null || dto.skillsRequiredToGrade === null) {
-      throw new BadRequestException('name, classTypesOffered and skillsRequiredToGrade cannot be null; omit them to leave them unchanged.');
+    if (dto.name === null || dto.classTypesOffered === null || dto.skillsRequiredToGrade === null || dto.rankDisplay === null) {
+      throw new BadRequestException('name, classTypesOffered, skillsRequiredToGrade and rankDisplay cannot be null; omit them to leave them unchanged.');
     }
     if (dto.renameClassTypes?.length && dto.classTypesOffered === undefined) {
       throw new BadRequestException('Send classTypesOffered (the list after the renames) with renameClassTypes.');
@@ -358,9 +367,19 @@ export class RanksService {
         await this.carryDisciplineName(tx, current, dto.name!);
       }
 
+      if (dto.adultDisciplineId !== undefined) {
+        await assertAdultLink(tx, current, dto.adultDisciplineId);
+      }
+
       const updated = await tx.discipline.update({
         where: { id: disciplineId },
-        data: { name: dto.name, classTypesOffered: classTypes, skillsRequiredToGrade: dto.skillsRequiredToGrade },
+        data: {
+          name: dto.name,
+          classTypesOffered: classTypes,
+          skillsRequiredToGrade: dto.skillsRequiredToGrade,
+          adultDisciplineId: dto.adultDisciplineId,
+          rankDisplay: dto.rankDisplay,
+        },
       });
       return { ...updated, studentCount: await tx.studentRank.count({ where: { disciplineId, ...enrolledAt(updated.schoolId) } }) };
     });
@@ -586,8 +605,10 @@ export class RanksService {
     const showPrices = await this.assertPricesAllowed(callerId, actor, discipline.schoolId, disciplineId, dto.stripeTiers);
 
     await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
-    const rankName = dto.name ?? `Belt ${dto.order + 1}`;
-    const tierData = dto.stripeTiers.map((tier) => this.tierFields(tier, rankName));
+    const levels = discipline.rankDisplay === 'LEVELS';
+    RanksService.assertLevelColours(levels, dto);
+    const rankName = dto.name ?? (levels ? `Level ${dto.order + 1}` : `Belt ${dto.order + 1}`);
+    const tierData = dto.stripeTiers.map((tier) => this.tierFields(tier, rankName, levels));
 
     // FOUND ON REVIEW (self-check before this ever ran): withTenantContext
     // already wraps its own callback in one $transaction — its `tx` parameter's
@@ -677,7 +698,10 @@ export class RanksService {
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
-    this.assertDisciplineActive(await this.findOneDiscipline(callerId, existing.disciplineId));
+    const discipline = await this.findOneDiscipline(callerId, existing.disciplineId);
+    this.assertDisciplineActive(discipline);
+    const levels = discipline.rankDisplay === 'LEVELS';
+    RanksService.assertLevelColours(levels, dto);
 
     // UpdateRankDto's PartialType re-adds @IsOptional(), which lets `null`
     // past validation; refused here so it is a 400, not a 500 (found on
@@ -791,7 +815,7 @@ export class RanksService {
           // sends stripeTiers without the per-rung fields, which used to reset
           // a custom name, mixed stripe colours and timeOnly on every save.
           // Omitted per-rung fields are now kept (see tierFields).
-          const fields = this.tierFields(tier, rankName, previous && { ...previous, rankName: existing.name });
+          const fields = this.tierFields(tier, rankName, levels, previous && { ...previous, rankName: existing.name });
           const existingId = previous?.id;
           let tierId: string;
           if (existingId) {
@@ -817,10 +841,10 @@ export class RanksService {
       } else if (dto.name !== undefined && dto.name !== existing.name) {
         // Belt renamed without sending rungs: rung names that were generated
         // from the old belt name follow the new one; custom names are kept.
-        const tiers = await tx.rankStripeTier.findMany({ where: { rankId }, select: { id: true, name: true, count: true } });
+        const tiers = await tx.rankStripeTier.findMany({ where: { rankId }, select: { id: true, name: true, count: true, order: true } });
         for (const t of tiers) {
-          if (t.name === RanksService.generatedTierName(existing.name, t.count)) {
-            await tx.rankStripeTier.update({ where: { id: t.id }, data: { name: RanksService.generatedTierName(dto.name, t.count) } });
+          if (RanksService.isGeneratedTierName(t.name, existing.name, t.count, t.order, levels)) {
+            await tx.rankStripeTier.update({ where: { id: t.id }, data: { name: RanksService.generatedTierName(dto.name, t.count, t.order, levels) } });
           }
         }
       }
@@ -1153,9 +1177,10 @@ export class RanksService {
     // promotion fee is on; with it off they are left out of every response.
     showPrices: boolean,
   ) {
-    const { stripeTiers, ...rest } = rank;
+    const { stripeTiers, discipline, ...rest } = rank;
     return {
       ...rest,
+      rankDisplay: discipline.rankDisplay,
       stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, promotionFeeMinor, ...tier }) => ({
         ...tier,
         ...(showPrices ? { promotionFeeMinor } : {}),
@@ -1256,9 +1281,27 @@ export class RanksService {
     }
   }
 
-  /** "Blue Belt · 2 Stripes"; a rung with no stripes is just the belt name. */
-  private static generatedTierName(rankName: string, count: number): string {
+  /** "Blue Belt · 2 Stripes"; a rung with no stripes is just the belt name.
+   * On a Levels style (Decision 290) a step is "{level} {n}", "Beginner 2". */
+  private static generatedTierName(rankName: string, count: number, order: number, levels: boolean): string {
+    if (levels) return `${rankName} ${order + 1}`;
     return count === 0 ? rankName : `${rankName} · ${count} Stripe${count === 1 ? '' : 's'}`;
+  }
+
+  /** Whether a rung still has a generated name, so it follows a rename. On a
+   * Levels style a belt-style generated name counts too, so a style switched
+   * to Levels takes step names; on a Belts style only the belt form does, so
+   * a custom "Blue Belt 1" is never renamed. */
+  private static isGeneratedTierName(name: string, rankName: string, count: number, order: number, levels: boolean): boolean {
+    return name === RanksService.generatedTierName(rankName, count, order, false) || (levels && name === RanksService.generatedTierName(rankName, count, order, true));
+  }
+
+  /** A level is one badge colour (Decision 290): no second colour, tag or
+   * coral accent. Omitted fields are fine; only a colour sent is refused. */
+  private static assertLevelColours(levels: boolean, dto: { secondaryColour?: string | null; tagColour?: string | null; coralAccent?: string | null }) {
+    if (levels && (dto.secondaryColour || dto.tagColour || dto.coralAccent)) {
+      throw new BadRequestException('A level has one badge colour. Leave the second colour, tag colour and accent empty.');
+    }
   }
 
   /** Builds one rung's stored fields from its input (grading foundation PR 2,
@@ -1283,6 +1326,7 @@ export class RanksService {
   private tierFields(
     tier: RankStripeTierInputDto,
     rankName: string,
+    levels: boolean,
     previous?: {
       name: string;
       count: number;
@@ -1293,8 +1337,13 @@ export class RanksService {
       classTypeRequirements: Prisma.JsonValue;
       bookingUnlocksClassTypes: string[];
       rankName: string;
+      order: number;
     },
   ) {
+    // Decision 290: a level's steps are rungs with no stripes.
+    if (levels && (tier.count !== 0 || tier.stripeSegments?.length)) {
+      throw new BadRequestException('This style shows its ranks as levels, so a step has no stripes. Send count 0 and no stripeSegments.');
+    }
     const defaultSegments = tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : [];
     const keepSegments = previous && previous.count === tier.count && previous.colour === tier.colour;
     const previousSegments = (previous?.stripeSegments ?? []) as unknown as { count: number; colour: string }[];
@@ -1336,8 +1385,8 @@ export class RanksService {
         );
       }
     }
-    const generatedName = RanksService.generatedTierName(rankName, tier.count);
-    const keepName = previous && previous.name !== RanksService.generatedTierName(previous.rankName, previous.count);
+    const generatedName = RanksService.generatedTierName(rankName, tier.count, tier.order, levels);
+    const keepName = previous && !RanksService.isGeneratedTierName(previous.name, previous.rankName, previous.count, previous.order, levels);
     return {
       count: tier.count,
       colour: segments.length ? segments[0].colour : tier.colour,
@@ -1392,5 +1441,25 @@ export class RanksService {
     if (found.length !== skillIds.length) {
       throw new BadRequestException('requiredSkillIds must all reference Skills belonging to this Rank\'s Discipline');
     }
+  }
+}
+
+/** Backlog 3.20 (Decision 281): a Kids style links to an Adult style of the
+ * same School. Only one level: the Adult style is not itself linked, and a
+ * style that is some Kids style's Adult style is not linked to another. */
+async function assertAdultLink(tx: Tx, kids: { id: string; schoolId: string }, adultId: string | null): Promise<void> {
+  if (adultId === null) return;
+  if (adultId === kids.id) {
+    throw new BadRequestException('A style can\'t be its own Adult program.');
+  }
+  const adult = await tx.discipline.findUnique({ where: { id: adultId }, select: { schoolId: true, archivedAt: true, adultDisciplineId: true } });
+  if (!adult || adult.schoolId !== kids.schoolId || adult.archivedAt) {
+    throw new BadRequestException('Pick an Adult style of this School that is in use.');
+  }
+  if (adult.adultDisciplineId) {
+    throw new BadRequestException('That style is a Kids program itself, so it can\'t be an Adult program.');
+  }
+  if (await tx.discipline.count({ where: { adultDisciplineId: kids.id } })) {
+    throw new BadRequestException('This style is the Adult program of a Kids style, so it can\'t be a Kids program too.');
   }
 }

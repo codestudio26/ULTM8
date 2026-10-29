@@ -65,3 +65,16 @@ export function useEnterCheckInCode() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
   });
 }
+
+export type MembershipCard = components['schemas']['MembershipCardDto'];
+
+/** The Student's membership cards, one per School (backlog 3.11): the School,
+ * their photo and name, their personal check-in code and their memberships.
+ * Shown under the live QR, which is the only QR the card ever has. */
+export function useMyMembershipCards(enabled: boolean) {
+  return useQuery({
+    queryKey: ['myMembershipCards'],
+    queryFn: () => unwrap(apiClient.GET('/v1/membership-cards/me', {})),
+    enabled,
+  });
+}

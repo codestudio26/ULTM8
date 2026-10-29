@@ -4,6 +4,7 @@ import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Sel
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
+import { StudentNotesCard } from '../students/StudentNotesCard';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { VisitorCard } from '../students/VisitorCard';
@@ -33,10 +34,14 @@ import {
   useSetBoardActive,
   useMyGrading,
   useStudentEligibility,
+  useStudentCorrections,
   useStudentFeeRequests,
+  type RankCorrection,
 } from './gradingQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { useAdultProgram } from './adultProgram';
+import { CorrectionRequestBox } from './CorrectionRequestBox';
 import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
@@ -90,6 +95,8 @@ export function StudentGradingPage() {
   const [showVoided, setShowVoided] = useState(false);
   const history = useRankHistory(studentId, schoolId, showVoided);
   const feeRequests = useStudentFeeRequests(studentId, schoolId);
+  // Belt correction requests this caller may answer (backlog 3.13).
+  const corrections = useStudentCorrections(schoolId, studentId);
   const feeSettings = usePromotionFeeSettings(schoolId);
   // v1.2 backend backlog — "Upcoming Booking" and "Revoke Enrollment", both
   // additions to this real page (the de facto Student Detail screen at
@@ -202,6 +209,9 @@ export function StudentGradingPage() {
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
 
+      {/* Decision 400: staff notes, some shown to the member. */}
+      {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
+
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
 
@@ -236,6 +246,8 @@ export function StudentGradingPage() {
             studentName={studentName}
             feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
             feeCurrency={feeSettings.data?.currency ?? null}
+            styles={disciplines.data?.items ?? []}
+            corrections={(corrections.data?.items ?? []).filter((c) => c.disciplineId === discipline.id)}
           />
         ))
       )}
@@ -354,6 +366,8 @@ function DisciplineGradingCard({
   studentName,
   feeRequests,
   feeCurrency,
+  styles,
+  corrections,
 }: {
   studentId: string;
   schoolId: string;
@@ -374,6 +388,10 @@ function DisciplineGradingCard({
   /** This style's promotion fee requests (Decisions 300, 307, 313). */
   feeRequests: StudentFeeRequest[];
   feeCurrency: string | null;
+  /** Every style of the School, for the Kids style's linked Adult program (backlog 3.20). */
+  styles: DisciplineResponse[];
+  /** Waiting belt correction requests in this style the caller may answer (backlog 3.13). */
+  corrections: RankCorrection[];
 }) {
   const can = (toggle: GradingToggle) => (archived ? toggle === 'canVoidHistory' && canInStyle(toggle) : canInStyle(toggle));
   const ranks = useRanks(discipline.id);
@@ -386,6 +404,8 @@ function DisciplineGradingCard({
   const mayEditNotes = canInStyle('canPromote') || canInStyle('canDowngrade');
 
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
+  const studentReadyForAdult = !!studentRank?.readyForAdult;
+  const adultProgram = useAdultProgram(discipline, styles, studentReadyForAdult && !archived);
   const current = studentRank ? ladder.find((r) => r.id === studentRank.currentStripeId) ?? null : null;
   const eligibility = (studentRank?.eligibility ?? null) as Eligibility | null;
   const entries = studentRank ? history.filter((h) => h.studentRankId === studentRank.id) : [];
@@ -416,6 +436,7 @@ function DisciplineGradingCard({
                 <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
                 {fee ? <FeeBadge status={fee.status} /> : null}
                 {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
+                {studentReadyForAdult ? <Badge variant="info">{t('grading.board.card.readyForAdult')}</Badge> : null}
                 {!archived && eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
               </div>
             )}
@@ -452,6 +473,10 @@ function DisciplineGradingCard({
             />
           </p>
         ) : null}
+
+        {!archived && can('canVerifyRanks')
+          ? corrections.map((c) => <CorrectionRequestBox key={c.id} request={c} studentId={studentId} firstName={firstName} />)
+          : null}
 
         {fee ? (
           <FeeBox
@@ -523,7 +548,7 @@ function DisciplineGradingCard({
       </Card>
 
       {dialog === 'grade' ? (
-        <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} onClose={() => setDialog(null)} />
+        <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} adult={adultProgram} onClose={() => setDialog(null)} />
       ) : null}
       {dialog && typeof dialog === 'object' && 'promoteTo' in dialog ? (
         <GradeModal
@@ -533,6 +558,7 @@ function DisciplineGradingCard({
           current={current}
           eligibility={eligibility}
           initialTargetId={dialog.promoteTo}
+          adult={adultProgram}
           onClose={() => setDialog(null)}
         />
       ) : null}

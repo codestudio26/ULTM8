@@ -207,6 +207,8 @@ export const roleGrants = {
     disciplinesHint: 'Add and edit styles, belts and skills for the whole School. Grade prices stay yours.',
     checkInRules: 'Change check-in rules',
     checkInRulesHint: 'Change when check-in opens and closes and who can check in, for the whole School.',
+    exportStudents: "Export the student list",
+    exportStudentsHint: "Download the students they can see as a spreadsheet, children included. Every export is logged.",
     ownerOnly: "Money (payments, refunds, plans and prices), School settings and owners always stay with the School's owners.",
     saved: 'Access saved for {name}.',
     readOnlyIntro: "The staff at your branches. Only the School's owners can change roles or access.",

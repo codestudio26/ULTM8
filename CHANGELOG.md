@@ -20,7 +20,54 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Instructor or Branch Staff role emails them an invite link instead, and
   they get the role when they accept it (co-owners still get it at once).
   Coach invites can now also be Branch Staff invites, from the owner only.
-  Needs migration `20261227000000_staff_must_accept`.
+  Needs migration `20270103000000_staff_must_accept`.
+- **Ranks without a belt: Levels** (backlog 3.19; Decisions 290, 401) — a style
+  can now show its ranks as **Levels (no belt)** instead of belts: each rank is
+  a coloured badge with numbered steps (Beginner 1, 2, 3), each step with its
+  own requirements. Set it in Add/Edit discipline or in Grading → Settings
+  ("How ranks are shown"). The rank editor then has a badge colour and steps
+  instead of belt colours and stripes, and the board, student pages and the
+  student app draw the badge. Grading works exactly as for stripes. **Needs a
+  database migration** (`20270102000000_rank_levels`).
+- **Staff notes on a student** (backlog 3.10; Decisions 315, 400) — a
+  **Notes** card on the student's page: any staff who can see the student add
+  notes, staff-only or ticked **Show to member**; the author or an owner edits
+  or deletes one. Shown notes appear in the student app (*Notes from your
+  School*, and a child's for their Guardian), on the staff check-in card, and
+  on the front-desk tablet after the member scans their QR or types their
+  code. **Needs a database migration** (`20270101000000_student_notes`).
+- **Export the student list** (backlog 3.9; Decisions 315, 399) — an **Export**
+  button on the Students page downloads a CSV, or opens a page to print, of
+  active students, active and former, members only or visitors only. Children
+  are included, with their Guardian. Columns: name, contact, date of birth and
+  age, status, joined, home branch, Visitor, current memberships, billing,
+  belts, last visit. The owner can always export; Branch Staff can once the owner
+  turns on the new "Export the student list" access switch. Every export is
+  logged. **Needs a database migration** (`20261231000000_student_export`).
+- **Fix: confirming many cash payments at once** — confirming or cancelling a
+  cash or bank-transfer payment now waits up to 10 seconds for a free database
+  connection, as booking does, instead of answering "The server is busy" after
+  2 seconds when the desk settles a lot of payments together. No migration.
+- **Membership card** (backlog 3.11; Decision 398) — "Print membership card"
+  on the student's page opens a bank-card-sized card to print: the School,
+  the student's photo and name, their check-in code and their current
+  memberships. It has no QR code, because a printed one would never change. In
+  the app, the same card sits under the live QR on "Show my code". No
+  migration.
+- **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
+  now a choice of Female, Male or not given, in the portal (Edit profile,
+  register) and the student app (profile), and the API refuses anything else.
+  **Needs a database migration** (`20261230000000_gender_female_male`). It turns
+  "female"/"male" in any letter case into the new values and clears every other
+  saved value, which was sample data.
+- **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
+  discipline links a Kids style to its Adult style. From "Ready for Adult from
+  age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult
+  program", and Grade lists the Adult ranks from the second Adult belt under an
+  "Adult program" heading: the student moves to the Adult style, keeps their
+  history and matching skill sign-offs, and starts the class count again. The
+  Grading Board has a Kids · Adult switch. **Needs a database migration**
+  (`20261229000000_kids_adult_programs`).
 - **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
   card on Check-in also has "Sell at the desk": choose how it was paid (cash,
   bank transfer, Pix or card terminal), record it, and the person is checked
@@ -41,6 +88,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   removes it without changing belts that use it. The owner, or Branch Staff
   who manage disciplines, can change the list. **Needs a database migration**
   (`20261226000000_saved_belt_colours`).
+- **Free trial of ULTM8 for Schools** (backlog 3.14; Decision 318 item 5) — a
+  Full Platform Admin starts or extends a School's free trial in Platform Admin
+  (Schools → look up), with no card. The owner sees how many days are left at
+  the top of the portal. When it ends without a platform subscription, the
+  School is read-only (no new classes, bookings or payments) until it
+  subscribes; nothing is deleted. **Needs a database migration**
+  (`20261228000000_platform_trial`).
+- **Students can ask for a belt correction** (backlog 3.13; Decisions 286,
+  299) — in the student app, a student whose recorded belt is wrong picks the
+  belt they should have, anywhere on the style's ladder, and says why. The
+  owner, or a coach with "Verify ranks" for that style and the student's
+  branch, approves it on the student's page (the student moves, and the history
+  shows the correction and who made it) or rejects it, with an optional note
+  back. **Needs a database migration** (`20261227000000_rank_correction_requests`).
 - **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
   tablet (adults; Visitor only when the School has set a visit pass length) and
   wait for staff. The owner, or Branch Staff with the Students switch, approves

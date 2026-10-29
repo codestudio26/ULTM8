@@ -644,6 +644,50 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/export": {
+      "get": {
+        "operationId": "SchoolsController_exportStudents",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Defaults to ACTIVE.",
+            "schema": {
+              "$ref": "#/components/schemas/StudentExportFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentExportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students/{studentId}/home-branch": {
       "put": {
         "operationId": "SchoolsController_setStudentHomeBranch",
@@ -4623,6 +4667,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChangeSchoolMainOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/trial": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_startTrial",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTrialDaysDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTrialResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/trial/extend": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_extendTrial",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTrialDaysDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTrialResponseDto"
                 }
               }
             }
@@ -9901,6 +10035,59 @@
         ]
       }
     },
+    "/v1/students/{id}/ranks/{disciplineId}/move-to-adult": {
+      "post": {
+        "operationId": "GradingController_moveToAdult",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveToAdultDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
       "post": {
         "operationId": "GradingController_promote",
@@ -10312,6 +10499,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GradingBoardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/ready-for-adult-age": {
+      "put": {
+        "operationId": "GradingController_setReadyForAdultAge",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadyForAdultAgeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The Kids style, with its new age.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/rank-display": {
+      "put": {
+        "operationId": "GradingController_setRankDisplay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankDisplayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its ranks now shown as Belts or Levels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
                 }
               }
             }
@@ -11320,6 +11597,216 @@
         },
         "tags": [
           "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections": {
+      "post": {
+        "operationId": "RankCorrectionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/me": {
+      "get": {
+        "operationId": "RankCorrectionsController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rank-corrections": {
+      "get": {
+        "operationId": "RankCorrectionsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Waiting (the default), or answered (newest 50).",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "ANSWERED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Only this student's requests.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/{id}/approve": {
+      "post": {
+        "operationId": "RankCorrectionsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/{id}/reject": {
+      "post": {
+        "operationId": "RankCorrectionsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
         ],
         "security": [
           {
@@ -15600,6 +16087,15 @@
               "format": "date-time",
               "type": "string"
             }
+          },
+          {
+            "name": "lookupToken",
+            "required": false,
+            "in": "query",
+            "description": "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15687,6 +16183,15 @@
             "in": "query",
             "schema": {
               "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lookupToken",
+            "required": false,
+            "in": "query",
+            "description": "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400).",
+            "schema": {
               "type": "string"
             }
           }
@@ -15962,6 +16467,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StudentCheckInCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-cards/me": {
+      "get": {
+        "operationId": "MembershipCardsController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipCardListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/membership-card": {
+      "get": {
+        "operationId": "MembershipCardsController_card",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipCardDto"
                 }
               }
             }
@@ -16378,6 +16952,239 @@
         ]
       }
     },
+    "/v1/student-notes/me": {
+      "get": {
+        "operationId": "StudentNotesController_mine",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A Guardian's child; leave out for your own notes.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberNoteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/notes": {
+      "get": {
+        "operationId": "StudentNotesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentNotesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudentNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/notes/{noteId}": {
+      "patch": {
+        "operationId": "StudentNotesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentNoteDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "StudentNotesController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "noteId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-notes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/open-mats": {
       "post": {
         "operationId": "OpenMatsController_start",
@@ -16628,7 +17435,13 @@
             "description": "ISO 8601 date, no time component. Not in the future, not more than 120 years ago."
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string"
@@ -17307,6 +18120,23 @@
             "type": "string",
             "nullable": true
           },
+          "platformTrialStartedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "platformTrialEndsAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "platformSubscriptionStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ]
+          },
           "accessToken": {
             "type": "string"
           }
@@ -17696,6 +18526,147 @@
           "items"
         ]
       },
+      "StudentExportFilter": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ACTIVE",
+          "MEMBERS",
+          "VISITORS"
+        ]
+      },
+      "StudentExportBeltDto": {
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "string",
+            "description": "The belt or stripe the student holds in that style."
+          }
+        },
+        "required": [
+          "style",
+          "rank"
+        ]
+      },
+      "StudentExportGuardianDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "StudentExportRowDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "description": "Empty for a child whose Guardian manages the account."
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentStatus"
+          },
+          "enrolledAt": {
+            "type": "string"
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "visitor": {
+            "type": "boolean"
+          },
+          "memberships": {
+            "description": "Memberships in effect now, by plan name.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "billingStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "NONE"
+            ],
+            "description": "ACTIVE with a membership in effect, EXPIRED when they only had earlier ones, NONE when they never had one."
+          },
+          "belts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportBeltDto"
+            }
+          },
+          "lastVisitAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Start of the last class they were checked in to."
+          },
+          "guardians": {
+            "description": "A child's Guardians.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportGuardianDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email",
+          "status",
+          "enrolledAt",
+          "visitor",
+          "memberships",
+          "billingStatus",
+          "belts",
+          "guardians"
+        ]
+      },
+      "StudentExportResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportRowDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "SetHomeBranchDto": {
         "type": "object",
         "properties": {
@@ -17977,8 +18948,12 @@
           },
           "gender": {
             "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string",
@@ -19213,6 +20188,10 @@
           "checkInRules": {
             "type": "boolean",
             "description": "Change the School's check-in rules (off by default; Decision 394)."
+          },
+          "exportStudents": {
+            "type": "boolean",
+            "description": "Export the student list as a spreadsheet (off by default; Decision 399)."
           }
         },
         "required": [
@@ -19223,7 +20202,8 @@
           "staffList",
           "inviteCoaches",
           "disciplines",
-          "checkInRules"
+          "checkInRules",
+          "exportStudents"
         ]
       },
       "StaffRoleDto": {
@@ -20355,7 +21335,13 @@
             "description": "ISO 8601 date, no time component."
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           }
         },
         "required": [
@@ -20829,8 +21815,12 @@
           },
           "gender": {
             "type": "string",
-            "description": "Null clears it.",
-            "nullable": true
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
           },
           "nationality": {
             "type": "string",
@@ -21491,6 +22481,37 @@
         "required": [
           "mainOwnerUserId",
           "formerMainOwnerRemoved"
+        ]
+      },
+      "SchoolTrialDaysDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended)."
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "SchoolTrialResponseDto": {
+        "type": "object",
+        "properties": {
+          "platformTrialStartedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "platformTrialEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "platformTrialStartedAt",
+          "platformTrialEndsAt"
         ]
       },
       "CreateAdminUserDto": {
@@ -25128,6 +26149,14 @@
           "skillsRequiredToGrade": {
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one."
           }
         },
         "required": [
@@ -25169,6 +26198,23 @@
             "nullable": true,
             "description": "Archived (retired) at (Decision 309); null while in use."
           },
+          "adultDisciplineId": {
+            "type": "string",
+            "nullable": true,
+            "description": "On a Kids style: its Adult style (backlog 3.20, Decision 281). Null otherwise."
+          },
+          "readyForAdultAge": {
+            "type": "number",
+            "description": "On a Kids style: \"Ready for Adult from age\" (Decision 285 item 2). Default 16."
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290."
+          },
           "studentCount": {
             "type": "number",
             "description": "Students with a rank in this style (Decision 309)."
@@ -25188,6 +26234,8 @@
           "skillsRequiredToGrade",
           "boardGettingThere",
           "boardReadyToGrade",
+          "readyForAdultAge",
+          "rankDisplay",
           "studentCount",
           "createdAt",
           "updatedAt"
@@ -25303,12 +26351,26 @@
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one."
+          },
           "renameClassTypes": {
             "description": "Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409).",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ClassTypeRenameDto"
             }
+          },
+          "adultDisciplineId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Backlog 3.20: makes this a Kids style whose students can be graded into this Adult style of the same School. null unlinks. A style that is itself linked, or that another Kids style uses as its Adult style, cannot be linked."
           }
         }
       },
@@ -25668,6 +26730,14 @@
               "$ref": "#/components/schemas/RankStripeTierResponseDto"
             }
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How its style shows ranks (Decision 290): as a belt, or as a level badge in primaryColour whose steps are its stripe tiers."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -25698,6 +26768,7 @@
           "name",
           "primaryColour",
           "stripeTiers",
+          "rankDisplay",
           "createdAt",
           "updatedAt"
         ]
@@ -26355,6 +27426,10 @@
           },
           "hoursTrained": {
             "$ref": "#/components/schemas/HoursTrainedResponseDto"
+          },
+          "readyForAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: on a Kids style, the student has reached \"Ready for Adult from age\". False on other styles."
           }
         },
         "required": [
@@ -26372,7 +27447,8 @@
           "createdAt",
           "updatedAt",
           "eligibility",
-          "hoursTrained"
+          "hoursTrained",
+          "readyForAdult"
         ]
       },
       "StudentEligibilityListResponseDto": {
@@ -26418,6 +27494,22 @@
           },
           "timeOnly": {
             "type": "boolean"
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps."
+          },
+          "step": {
+            "type": "number",
+            "description": "This rung's place on its rank, from 1 (step 2 of 3 on a level)."
+          },
+          "steps": {
+            "type": "number",
+            "description": "How many rungs its rank has."
           }
         },
         "required": [
@@ -26427,7 +27519,10 @@
           "primaryColour",
           "stripeColour",
           "stripeCount",
-          "timeOnly"
+          "timeOnly",
+          "rankDisplay",
+          "step",
+          "steps"
         ]
       },
       "GradingSkillDto": {
@@ -26803,6 +27898,36 @@
           "date"
         ]
       },
+      "MoveToAdultDto": {
+        "type": "object",
+        "properties": {
+          "targetRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) on the Adult style to move to."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "As on promote: refused (409) if the student has moved since.",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "As on promote: YYYY-MM-DD, not in the future, not before the current rank date. Default today.",
+            "example": "2026-03-01"
+          },
+          "note": {
+            "type": "string",
+            "description": "The grader's own note on this history entry."
+          },
+          "acknowledgeWithoutSkillSignoff": {
+            "type": "boolean",
+            "description": "As on promote: needed when skills for the next Kids rank are not signed off."
+          }
+        },
+        "required": [
+          "targetRungId"
+        ]
+      },
       "GradingActionDto": {
         "type": "object",
         "properties": {
@@ -26920,6 +28045,22 @@
           "timeOnly": {
             "type": "boolean"
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps."
+          },
+          "step": {
+            "type": "number",
+            "description": "This rung's place on its rank, from 1 (step 2 of 3 on a level)."
+          },
+          "steps": {
+            "type": "number",
+            "description": "How many rungs its rank has."
+          },
           "rankId": {
             "type": "string",
             "description": "The belt (Rank) this rung belongs to; send it with the rung id to declare."
@@ -26933,6 +28074,9 @@
           "stripeColour",
           "stripeCount",
           "timeOnly",
+          "rankDisplay",
+          "step",
+          "steps",
           "rankId"
         ]
       },
@@ -27200,6 +28344,10 @@
                 "$ref": "#/components/schemas/BoardFeeRequestDto"
               }
             ]
+          },
+          "readyForAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: on a Kids style, the student has reached \"Ready for Adult from age\" (\"Ready for Adult program\" tag). Always false on other styles."
           }
         },
         "required": [
@@ -27214,7 +28362,8 @@
           "hasActiveMembership",
           "hardBlocked",
           "eligibility",
-          "noHomeBranch"
+          "noHomeBranch",
+          "readyForAdult"
         ]
       },
       "GradingBoardResponseDto": {
@@ -27240,6 +28389,35 @@
           "items",
           "hiddenInactive",
           "atTopRank"
+        ]
+      },
+      "ReadyForAdultAgeDto": {
+        "type": "object",
+        "properties": {
+          "age": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99,
+            "example": 16
+          }
+        },
+        "required": [
+          "age"
+        ]
+      },
+      "RankDisplayDto": {
+        "type": "object",
+        "properties": {
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ]
+          }
+        },
+        "required": [
+          "rankDisplay"
         ]
       },
       "BoardThresholdsDto": {
@@ -27976,6 +29154,152 @@
         "required": [
           "items"
         ]
+      },
+      "CreateRankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stripeTierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The grade they should have: a belt's plain grade or one of its stripes, on this style's ladder."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why the recorded belt is wrong. Required."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "stripeTierId",
+          "note"
+        ]
+      },
+      "RankCorrectionRungDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string"
+          },
+          "rankName": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "rankId",
+          "rankName",
+          "stripeTierId",
+          "stripeName"
+        ]
+      },
+      "RankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "from": {
+            "$ref": "#/components/schemas/RankCorrectionRungDto"
+          },
+          "requested": {
+            "$ref": "#/components/schemas/RankCorrectionRungDto"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "reviewNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "from",
+          "requested",
+          "note",
+          "status",
+          "reviewNote",
+          "reviewedAt",
+          "createdAt"
+        ]
+      },
+      "RankCorrectionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankCorrectionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReviewRankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "description": "An optional note to the student."
+          }
+        }
       },
       "CreateWaiverDto": {
         "type": "object",
@@ -31418,6 +32742,13 @@
             "items": {
               "$ref": "#/components/schemas/KioskBookingDto"
             }
+          },
+          "memberNotes": {
+            "description": "Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -31425,7 +32756,8 @@
           "membershipStatus",
           "waiverSigned",
           "waiversToSign",
-          "bookings"
+          "bookings",
+          "memberNotes"
         ]
       },
       "KioskQrLookupResponseDto": {
@@ -31512,6 +32844,102 @@
         },
         "required": [
           "code"
+        ]
+      },
+      "MembershipCardMembershipDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The membership plan's name."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP",
+              "VISIT_PASS"
+            ]
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "When it ends, if it has an end date."
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true,
+            "description": "Classes left on a pack."
+          }
+        },
+        "required": [
+          "title",
+          "type"
+        ]
+      },
+      "MembershipCardDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "schoolLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkInCode": {
+            "type": "string",
+            "description": "The personal check-in code, typed at the front desk."
+          },
+          "memberships": {
+            "description": "Memberships in effect now; empty when there are none.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCardMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "studentId",
+          "firstName",
+          "surname",
+          "checkInCode",
+          "memberships"
+        ]
+      },
+      "MembershipCardListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCardDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "SignUpDto": {
@@ -31830,6 +33258,134 @@
         "required": [
           "items"
         ]
+      },
+      "MemberNoteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "body",
+          "createdAt"
+        ]
+      },
+      "MemberNoteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberNoteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "showToMember": {
+            "type": "boolean"
+          },
+          "authorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The author's name; null once their account is gone."
+          },
+          "authorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "editedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "canEdit": {
+            "type": "boolean",
+            "description": "Whether the caller may edit or delete it: its author, or a School owner."
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "showToMember",
+          "createdAt",
+          "canEdit"
+        ]
+      },
+      "StudentNoteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentNoteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateStudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "showToMember": {
+            "type": "boolean",
+            "description": "Shown to the student in the app (a child: to their Guardian). Off by default."
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "UpdateStudentNoteDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "showToMember": {
+            "type": "boolean"
+          }
+        }
       },
       "StartOpenMatDto": {
         "type": "object",

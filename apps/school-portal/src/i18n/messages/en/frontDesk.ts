@@ -66,6 +66,7 @@ export const frontDesk = {
     waiverSigned: '✓ Waiver signed',
     waiverToSign: 'Waiver to sign: {titles}',
     tick: 'Classes today',
+    notesLabel: "From your School",
     noOpenClasses: 'No more classes today.',
     alreadyIn: 'Checked in',
     booked: 'Booked',
@@ -276,5 +277,18 @@ export const frontDesk = {
     confirm: 'The old code will stop working. Give a new one?',
     confirmYes: 'Yes, new code',
     failed: 'Could not give a new code. Please try again.',
+  },
+  card: {
+    print: "Print membership card",
+    pageTitle: "{name}: membership card",
+    codeLabel: "Check-in code",
+    noMembership: "No current membership",
+    classesLeft: {
+      one: "{count} class left",
+      other: "{count} classes left",
+    },
+    until: "Until {date}",
+    printButton: "Print / Save as PDF",
+    failed: "Could not load the membership card. Please try again.",
   },
 };

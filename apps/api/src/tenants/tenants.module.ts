@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { SchoolsController } from './schools/schools.controller';
 import { SchoolsService } from './schools/schools.service';
+import { StudentExportService } from './schools/student-export.service';
 import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { RoleGrantsController } from './role-grants/role-grants.controller';
@@ -93,7 +94,7 @@ import { QueueModule } from '../jobs/queue.module';
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
-  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
+  providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService],
 })
 export class TenantsModule {}

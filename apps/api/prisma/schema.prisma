@@ -537,6 +537,11 @@ model User {
   signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
   signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
   packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
+  rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
+  rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
+  studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
+  studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
+  studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
 
   @@index([email])
   @@index([phone])
@@ -1092,7 +1097,7 @@ model School {
   /// Backlog 3.18: the School's own colours for the belt editor, shared by
   /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
   /// most 24. Deleting one never changes a belt or stripe already using it.
-  savedBeltColours               String[]                    @default([])
+  savedBeltColours               String[]                        @default([])
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -1126,6 +1131,12 @@ model School {
 
   stripePlatformSubscriptionId String?                     @unique
   platformSubscriptionStatus   PlatformSubscriptionStatus?
+  /// Backlog 3.14 (Decision 318 item 5): a free trial of ULTM8 itself, started
+  /// and extended by a Full Platform Admin only, no card needed. When it ends
+  /// without an active platform subscription, the School is read-only (the
+  /// Spec 55 §10.2 degraded state) until it subscribes. Nothing is deleted.
+  platformTrialStartedAt       DateTime?
+  platformTrialEndsAt          DateTime?
 
   /// Phase 56 — Decision 110. Same shape/reasoning as Franchise's own identical
   /// trio above — see that model's own comment for the full account.
@@ -1174,6 +1185,9 @@ model School {
   studentCheckInCodes   StudentCheckInCode[]
 
   notificationBroadcasts NotificationBroadcast[]
+  rankCorrectionRequests RankCorrectionRequest[]
+  studentNotes           StudentNote[]
+  studentExportLogs      StudentExportLog[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
 
@@ -2569,18 +2583,32 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[]  @default([])
+  classTypesOffered     String[]     @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean   @default(false)
+  skillsRequiredToGrade Boolean      @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int       @default(33)
-  boardReadyToGrade     Int       @default(66)
+  boardGettingThere     Int          @default(33)
+  boardReadyToGrade     Int          @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
+  /// Kids and Adult programs (Decisions 281, 285, 298; backlog 3.20): a Kids
+  /// style points to its Adult style. Screens pair them as one discipline with
+  /// a Kids · Adult switch; grading a kid into Adult moves their rank to it.
+  adultDisciplineId     String?
+  adultDiscipline       Discipline?  @relation("KidsAdultProgram", fields: [adultDisciplineId], references: [id], onDelete: SetNull)
+  kidsDisciplines       Discipline[] @relation("KidsAdultProgram")
+  /// On a Kids style: from this age a student may be graded into the Adult
+  /// program and shows "Ready for Adult program" (Decision 285 item 2). The
+  /// IBJJF age, 16, by default.
+  readyForAdultAge      Int          @default(16)
+  /// Ranks shown as Belts or as Levels (no belt) (Decision 290, backlog
+  /// 3.19), never a mix. Display only: a level is a badge in the rank's
+  /// primaryColour, and its steps are rungs with no stripes.
+  rankDisplay           RankDisplay  @default(BELTS)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2594,6 +2622,7 @@ model Discipline {
   trainingLogs       TrainingLog[]
 
   @@index([schoolId])
+  @@index([adultDisciplineId])
 }
 
 /// Rank (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline; ordered ladder
@@ -4016,6 +4045,12 @@ enum ConsentTier {
 /// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
 /// with its own withdrawal timestamp)."
 /// How classes count toward a rung (Decisions 140, 149).
+/// How a style's ranks are drawn (Decision 290).
+enum RankDisplay {
+  BELTS
+  LEVELS
+}
+
 enum ClassCountMode {
   ANY_TYPE
   EACH_TYPE
@@ -4437,11 +4472,15 @@ model StaffPermission {
   /// "Can start open mat sessions" (Decision 304 item 4, built as Decision
   /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
   /// at their own Branches; off by default; the owner always can.
-  canStartOpenMat  Boolean @default(false)
+  canStartOpenMat Boolean @default(false)
 
   /// Decision 394: may change the School's check-in rules (Settings on the
   /// Check-in page). Branch Staff only; off by default; owners always can.
   canManageCheckInRules Boolean @default(false)
+
+  /// Decision 399 (backlog 3.9): may export the student list. Branch Staff
+  /// only; off by default; owners always can.
+  canExportStudents Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -4868,4 +4907,94 @@ model PackRecharge {
 
   @@index([studentId, completedAt])
   @@index([schoolId])
+}
+
+/// Backlog 3.13 (Decisions 286, 299): a student asks the School to correct
+/// their belt in one style. PENDING waits for a reviewer: the owner, or a
+/// coach with "Verify ranks" for the style who covers the student's branch.
+/// APPROVED moved the student to the requested rung with a RANK_CORRECTION
+/// history entry; REJECTED changed nothing. The rung ids are plain ids: the
+/// ladder can change while a request waits, so approval checks them again.
+/// Read and written only on the jobs connection, after the API's own checks.
+enum RankCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RankCorrectionRequest {
+  id String @id @default(uuid())
+
+  schoolId     String
+  school       School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User   @relation("RankCorrectionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  disciplineId String
+
+  /// Where the student was when they asked; approval needs them still there.
+  fromRankId            String
+  fromStripeTierId      String?
+  requestedRankId       String
+  requestedStripeTierId String
+  /// Required: why the recorded belt is wrong.
+  note                  String
+
+  status       RankCorrectionStatus @default(PENDING)
+  reviewedById String?
+  reviewedBy   User?                @relation("RankCorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  /// The reviewer's optional note to the student.
+  reviewNote   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, status])
+  @@index([studentId, disciplineId])
+}
+
+/// Backlog 3.10 (Decision 400): a staff note on a student. Staff-only notes
+/// are seen by any staff who cover the student; showToMember notes also by the
+/// student (a child's by their Guardian). Jobs connection only (RLS on, no
+/// app grant).
+model StudentNote {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentNoteStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Null once the author's own account is erased.
+  authorId String?
+  author   User?   @relation("StudentNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  body         String
+  showToMember Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  @@index([schoolId, studentId, createdAt])
+  @@index([studentId, showToMember])
+}
+
+/// Backlog 3.9 (Decision 399): one row per student-list export, who made it
+/// and when. Jobs connection only (RLS on, no app grant).
+model StudentExportLog {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  exportedById String
+  exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
+
+  /// ALL, ACTIVE, MEMBERS or VISITORS.
+  filter   String
+  rowCount Int
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
 }
