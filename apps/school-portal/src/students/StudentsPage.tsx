@@ -165,6 +165,7 @@ export function StudentsPage() {
                       <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link>
                     </div>
                     <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
+                    {s.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{emailOf(s)}</p>
                   {hasBranches ? <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.homeBranchName ?? t('students.branchNone')}</p> : null}
@@ -187,7 +188,13 @@ export function StudentsPage() {
                 {
                   key: 'status',
                   header: t('students.columnStatus'),
-                  render: (s) => <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>,
+                  render: (s) => (
+                    <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
+                      <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
+                      {/* Decision 391 */}
+                      {s.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
+                    </span>
+                  ),
                 },
                 { key: 'enrolledAt', header: t('students.columnEnrolled'), render: (s) => new Date(s.enrolledAt).toLocaleDateString(formatLocale()) },
               ]}

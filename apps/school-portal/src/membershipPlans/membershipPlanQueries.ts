@@ -215,6 +215,16 @@ export function useGiftFriendPass(schoolId: string, studentId: string) {
   });
 }
 
+/** Decision 391: give a Visitor a free visit pass for the School's visitor period. */
+export function useGiveVisitPass(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/visit-passes', { params: { path: { schoolId, studentId } } })),
+    onSuccess: () => Promise.all([invalidateMembershipViews(queryClient, schoolId, studentId), queryClient.invalidateQueries({ queryKey: ['students', schoolId] })]),
+  });
+}
+
 /** Cancel a Subscription at the end of its paid period. */
 export function useCancelMembership(schoolId: string, studentId: string) {
   const queryClient = useQueryClient();

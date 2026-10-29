@@ -29,6 +29,8 @@ export const server = {
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
     classBusy: 'Lots of people are booking this class right now. Please try again in a moment.',
     kioskBookFirst: 'Not booked into this class. Book it in the app, or scan the app QR, to check in here.',
+    visitorPeriodNotSet: 'Set how long a visit pass lasts in School settings first.',
+    visitorHasMembership: "This student has a membership, so they're a member, not a Visitor.",
     checkInNotOpen: "Check-in for this class hasn't opened yet.",
     checkInOpensAt: "Check-in for this class hasn't opened yet. It opens {time}.",
     capacityBelowBooked: 'Students already booked: {count}. Set the capacity to {count} or more, or cancel some bookings first.',

@@ -6561,3 +6561,30 @@ User (Code), 28 Oct 2026: *"start all three"*, which includes the Memberships ca
 ### Recorded by
 
 User (Code), 28 Oct 2026, reviewing #360: "yes fix 1 and 3, and A for 2", to the recommendations (end the session after about 10 wrong codes; end a closed Branch's tablet; option A: on the tablet, name search only checks in to classes already booked, and booking there needs the app QR or a personal code).
+
+## Decision 391 — Visitors and visit passes
+
+**Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** Decision 315 item 1 (Visitors are their own status) · **Needed by:** front-desk sign-up F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), whose form asks Visitor or Member
+
+### Decision
+
+1. **A visit pass lets a Visitor book and check in free while it lasts**, under the School's usual booking and check-in rules and waivers. It is separate from a Trial Membership: Trial's 30-day caps (Decisions 54, 64) don't apply to it.
+2. **When a pass ends, the person stays a Visitor but can't book** until staff give another pass or they get a membership. A membership makes them a member.
+3. **There is no default visitor period.** Each School sets how long a pass lasts in School settings (1 to 3,650 days). Until it does, no pass can be given (and the front-desk tablet won't offer a Visitor sign-up). Clearing it turns new passes off; passes already given run to their end.
+4. **Who gives a pass:** the owner, and Branch Staff with the Students access switch (Decision 387), for students at their own branches. Coaches can't: memberships aren't among their rights (Spec 55 §8.2). Only the owner sets the School's period, like every School setting. *(Product owner, 29 Oct 2026: tablet sign-ups are approved by the owner and by staff with the Students switch; the same people give passes.)*
+5. **Several passes in a row:** a pass given while one is still running starts when that one ends. Someone who holds a membership in effect (other than a Friend Pass, which only covers a guest) is a member and gets no pass. The same pass clicked twice within a minute is refused, as for desk sales.
+
+### How it is built
+
+- A visit pass is a free Membership (`giftedById` = the staff member) on the School's one hidden `VISIT_PASS` plan, which ULTM8 makes the first time a pass is given there. So booking, check-in, waivers and the expiry sweep need no change. The plan is never listed, read, edited, sold or bought: every by-id path refuses it (`findOnePlan`), and it can't be created through the plan form.
+- `POST /schools/{schoolId}/students/{studentId}/visit-passes` gives a pass. `School.visitorPeriodDays` holds the period. The Students roster returns `visitor` and `visitPassEndsAt`. `GET /memberships/me` flags `visitPass` so the student app can name it.
+- **Who counts as a Visitor:** someone who has had a visit pass and no other membership (Friend Passes aside) since their latest one. Visit passes are £0 and not among the Dashboard's active-student types or the franchise headcount, so they count in neither (Decision 315 item 5 wants Visitors as a separate number; that number isn't built yet).
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether a School can turn a Visitor into a member other than by a membership (for example a "make member" button), and whether Visitors appear as a separate Dashboard number (Decision 315 item 5). Neither is built.
+- **[UNRESOLVED]** Decision 315 item 1 also says "the owner and staff the owner allows set the visitor period". This entry reads that as giving passes (point 4); the School-wide length stays the owner's.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, starting front-desk sign-up (F5): chose to build the Visitor status too; "Yes, free during the pass"; "Stays Visitor, can't book"; "There is not default period, it should be set up by the school"; approvers "Owner + Students switch".

@@ -3,6 +3,7 @@ export const memberships = {
   myMemberships: {
     /** Shown when the plan's name isn't known; the API gives only the plan's id. */
     planFallback: 'Plan {planId}',
+    visitPass: 'Visit pass',
     /** {status} is one of `statusLabel` below;
      * {frequency} is one of the two frequency texts below. */
     statusLine: 'Status: {status} · {frequency}',

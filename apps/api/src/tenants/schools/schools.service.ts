@@ -23,6 +23,7 @@ import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { loadVisitorStatuses, VisitorStatus } from '../../memberships/visitors';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
@@ -175,6 +176,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           checkInCodeDigits: dto.checkInCodeDigits,
+          visitorPeriodDays: dto.visitorPeriodDays,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,
@@ -830,8 +832,9 @@ export class SchoolsService {
       items.push(...covered.filter((c) => !seen.has(c.id)));
       const matched = items.filter((g) => !search || matchesPersonName(g.firstName, g.surname, search));
       const homes = await this.homeBranchesOf(callerId, schoolId, matched.map((g) => g.id));
+      const visitors = await this.visitorStatusesOf(schoolId, matched.map((g) => g.id));
       return {
-        items: matched.map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id) })),
+        items: matched.map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id) })),
       };
     }
 
@@ -894,7 +897,16 @@ export class SchoolsService {
     rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
 
     const homes = await this.homeBranchesOf(callerId, schoolId, rows.map((r) => r.id));
-    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id) })) };
+    const visitors = await this.visitorStatusesOf(schoolId, rows.map((r) => r.id));
+    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id) })) };
+  }
+
+  /** Decision 391: which listed students are Visitors. Branch Staff can't read
+   * students' memberships under RLS, so they are read on the jobs connection,
+   * for the students the caller was already allowed to list; only the flag and
+   * the pass's end date leave. */
+  private visitorStatusesOf(schoolId: string, studentIds: string[]) {
+    return loadVisitorStatuses(this.prismaJobs, schoolId, studentIds);
   }
 
   /** Decision 371 (Students Q2) — each student's home branch, for the list's
@@ -960,6 +972,7 @@ export class SchoolsService {
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
           checkInCodeDigits: dto.checkInCodeDigits,
+          visitorPeriodDays: dto.visitorPeriodDays,
           lateCancelRefundPolicy: dto.lateCancelRefundPolicy,
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,
@@ -1159,7 +1172,7 @@ export class SchoolsService {
    * Enrolment is read under the student's own context, as grading's
    * assertEnrolledStudent does, so a student outside the caller's branches
    * gets the branch message rather than "not a Student". */
-  private async assertStaffCanEditStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
+  async assertStaffCanEditStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
@@ -1188,6 +1201,10 @@ export function withoutBillingIds<T extends { stripeFranchiseFeeSubscriptionId?:
 ): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
   const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: _status, ...rest } = school;
   return rest;
+}
+
+function visitorOf(statuses: Map<string, VisitorStatus>, studentId: string): VisitorStatus {
+  return statuses.get(studentId) ?? { visitor: false, visitPassEndsAt: null };
 }
 
 function homeBranchOf(homes: Map<string, { id: string; name: string }>, studentId: string) {

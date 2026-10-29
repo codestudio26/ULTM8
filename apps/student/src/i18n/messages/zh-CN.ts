@@ -676,6 +676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   memberships: {
     myMemberships: {
       planFallback: "方案 {planId}",
+      visitPass: "访客通行证",
       statusLine: "状态：{status} · {frequency}",
       recurring: "定期",
       oneTime: "一次性",
