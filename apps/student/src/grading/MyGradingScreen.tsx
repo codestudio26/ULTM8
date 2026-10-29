@@ -10,8 +10,9 @@ import type { AppStackParamList } from '../navigation/types';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/types';
-import { useAnswerFee, useGradingOverview, useMyCorrections, useMyFeeRequests, type FeeRequest, type GradingRung, type GradingStyle, type RankCorrection } from './myGradingQueries';
+import { useAnswerFee, useGradingOverview, useMyCorrections, useMyFeeRequests, type FeeRequest, type GradingStyle, type RankCorrection } from './myGradingQueries';
 import { CorrectionCard } from './CorrectionCard';
+import { BeltSwatch } from './BeltSwatch';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyGrading'>;
 
@@ -77,22 +78,7 @@ export function MyGradingScreen({ route, navigation }: Props) {
   );
 }
 
-export function BeltSwatch({ rung }: { rung: GradingRung }) {
-  return (
-    <View
-      accessibilityElementsHidden
-      style={{
-        width: 36,
-        height: 14,
-        borderRadius: 3,
-        backgroundColor: rung.primaryColour,
-        borderWidth: 1,
-        borderColor: rung.secondaryColour ?? theme.borderStrong,
-        marginRight: spacing[2],
-      }}
-    />
-  );
-}
+export { BeltSwatch };
 
 function StyleCard({ item, correction, onHistory }: { item: GradingStyle; correction: { latest: RankCorrection | null } | null; onHistory: () => void }) {
   const t = useT();

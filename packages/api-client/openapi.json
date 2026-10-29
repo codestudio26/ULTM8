@@ -10481,6 +10481,51 @@
         ]
       }
     },
+    "/v1/disciplines/{id}/rank-display": {
+      "put": {
+        "operationId": "GradingController_setRankDisplay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankDisplayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its ranks now shown as Belts or Levels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/disciplines/{id}/board-thresholds": {
       "put": {
         "operationId": "GradingController_setBoardThresholds",
@@ -25959,6 +26004,14 @@
           "skillsRequiredToGrade": {
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one."
           }
         },
         "required": [
@@ -26009,6 +26062,14 @@
             "type": "number",
             "description": "On a Kids style: \"Ready for Adult from age\" (Decision 285 item 2). Default 16."
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290."
+          },
           "studentCount": {
             "type": "number",
             "description": "Students with a rank in this style (Decision 309)."
@@ -26029,6 +26090,7 @@
           "boardGettingThere",
           "boardReadyToGrade",
           "readyForAdultAge",
+          "rankDisplay",
           "studentCount",
           "createdAt",
           "updatedAt"
@@ -26143,6 +26205,14 @@
           "skillsRequiredToGrade": {
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one."
           },
           "renameClassTypes": {
             "description": "Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409).",
@@ -26515,6 +26585,14 @@
               "$ref": "#/components/schemas/RankStripeTierResponseDto"
             }
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How its style shows ranks (Decision 290): as a belt, or as a level badge in primaryColour whose steps are its stripe tiers."
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -26545,6 +26623,7 @@
           "name",
           "primaryColour",
           "stripeTiers",
+          "rankDisplay",
           "createdAt",
           "updatedAt"
         ]
@@ -27270,6 +27349,22 @@
           },
           "timeOnly": {
             "type": "boolean"
+          },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps."
+          },
+          "step": {
+            "type": "number",
+            "description": "This rung's place on its rank, from 1 (step 2 of 3 on a level)."
+          },
+          "steps": {
+            "type": "number",
+            "description": "How many rungs its rank has."
           }
         },
         "required": [
@@ -27279,7 +27374,10 @@
           "primaryColour",
           "stripeColour",
           "stripeCount",
-          "timeOnly"
+          "timeOnly",
+          "rankDisplay",
+          "step",
+          "steps"
         ]
       },
       "GradingSkillDto": {
@@ -27802,6 +27900,22 @@
           "timeOnly": {
             "type": "boolean"
           },
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ],
+            "description": "How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps."
+          },
+          "step": {
+            "type": "number",
+            "description": "This rung's place on its rank, from 1 (step 2 of 3 on a level)."
+          },
+          "steps": {
+            "type": "number",
+            "description": "How many rungs its rank has."
+          },
           "rankId": {
             "type": "string",
             "description": "The belt (Rank) this rung belongs to; send it with the rung id to declare."
@@ -27815,6 +27929,9 @@
           "stripeColour",
           "stripeCount",
           "timeOnly",
+          "rankDisplay",
+          "step",
+          "steps",
           "rankId"
         ]
       },
@@ -28141,6 +28258,21 @@
         },
         "required": [
           "age"
+        ]
+      },
+      "RankDisplayDto": {
+        "type": "object",
+        "properties": {
+          "rankDisplay": {
+            "type": "string",
+            "enum": [
+              "BELTS",
+              "LEVELS"
+            ]
+          }
+        },
+        "required": [
+          "rankDisplay"
         ]
       },
       "BoardThresholdsDto": {

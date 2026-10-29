@@ -29,9 +29,10 @@ function MyRankRow({ studentRank, disciplineName }: { studentRank: StudentRank; 
           style={{
             width: 22,
             height: 22,
-            borderRadius: 5,
+            // A level (Decision 290) is a round badge with one colour.
+            borderRadius: rank.rankDisplay === 'LEVELS' ? 11 : 5,
             backgroundColor: rank.primaryColour,
-            borderWidth: rank.secondaryColour ? 3 : 0,
+            borderWidth: rank.secondaryColour && rank.rankDisplay !== 'LEVELS' ? 3 : 0,
             borderColor: rank.secondaryColour ?? undefined,
             marginRight: 12,
           }}

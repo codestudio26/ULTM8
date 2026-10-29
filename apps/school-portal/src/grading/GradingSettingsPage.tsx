@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -10,15 +10,17 @@ import {
   usePromotionFeeSettings,
   useSetAnyBoardThresholds,
   useSetOpenMatHours,
+  useSetRankDisplay,
   useSetReadyForAdultAge,
   useUpdatePromotionFeeSettings,
 } from './gradingQueries';
 import { GradingTabs } from './GradingTabs';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
-type About = 'columns' | 'fee' | 'gradeBeforePaid' | 'openMat' | 'who';
+type About = 'display' | 'columns' | 'fee' | 'gradeBeforePaid' | 'openMat' | 'who';
 
 const ABOUT: Record<About, { title: TranslationKey; body: TranslationKey }> = {
+  display: { title: 'grading.settings.displayTitle', body: 'grading.settings.about.display' },
   columns: { title: 'grading.settings.columns.title', body: 'grading.settings.about.columns' },
   fee: { title: 'grading.settings.fee.enabled', body: 'grading.settings.about.fee' },
   gradeBeforePaid: { title: 'grading.settings.fee.gradeBeforePaid', body: 'grading.settings.about.gradeBeforePaid' },
@@ -35,7 +37,8 @@ const ABOUT: Record<About, { title: TranslationKey; body: TranslationKey }> = {
  * a coach with "Change board %" for any style; Decisions 301, 304, 306).
  * A Kids style linked to its Adult style also has "Ready for Adult from age"
  * (backlog 3.20; Decision 285 items 2 and 4), with the same right as its
- * columns. Belts/Levels come with B4.
+ * columns. "Ranks shown as" Belts or Levels per style (Decision 290), with
+ * the same right too.
  */
 export function GradingSettingsPage() {
   const schoolId = useGradingSchoolId();
@@ -48,11 +51,13 @@ export function GradingSettingsPage() {
   const setOpenMat = useSetOpenMatHours(schoolId ?? '');
   const setThresholds = useSetAnyBoardThresholds();
   const setAdultAge = useSetReadyForAdultAge();
+  const setRankDisplay = useSetRankDisplay();
   const styles = useMemo(() => (disciplines.data?.items ?? []).filter((d) => !d.archivedAt && my.mayGradeStyle(d.id)), [disciplines.data, my]);
 
   // The page's working copy; Save sends only what changed.
   const [columns, setColumns] = useState<Record<string, { g: string; r: string }>>({});
   const [adultAges, setAdultAges] = useState<Record<string, string>>({});
+  const [displays, setDisplays] = useState<Record<string, DisciplineResponse['rankDisplay']>>({});
   const [feeOn, setFeeOn] = useState(false);
   const [beforePaid, setBeforePaid] = useState(false);
   const [openMatOn, setOpenMatOn] = useState(false);
@@ -64,12 +69,13 @@ export function GradingSettingsPage() {
   const reset = () => {
     setColumns(Object.fromEntries(styles.map((d) => [d.id, { g: String(d.boardGettingThere), r: String(d.boardReadyToGrade) }])));
     setAdultAges(Object.fromEntries(styles.map((d) => [d.id, String(d.readyForAdultAge)])));
+    setDisplays(Object.fromEntries(styles.map((d) => [d.id, d.rankDisplay])));
     setFeeOn(fee.data?.promotionFeeEnabled ?? false);
     setBeforePaid(fee.data?.gradeBeforeFeePaid ?? false);
     setOpenMatOn(openMat.data?.openMatCountsTowardHours ?? false);
   };
   // Reset when the saved values change, not on every render (the style list is rebuilt each time).
-  const savedKey = styles.map((d) => `${d.id}:${d.boardGettingThere}:${d.boardReadyToGrade}:${d.readyForAdultAge}`).join(',');
+  const savedKey = styles.map((d) => `${d.id}:${d.boardGettingThere}:${d.boardReadyToGrade}:${d.readyForAdultAge}:${d.rankDisplay}`).join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(reset, [savedKey, fee.data, openMat.data]);
 
@@ -91,9 +97,10 @@ export function GradingSettingsPage() {
   });
   const ageProblem = (v: string) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 99 ? null : t('grading.settings.columns.adultAgeInvalid'));
   const changedAges = styles.filter((d) => d.adultDisciplineId && canColumns(d) && adultAges[d.id] !== undefined && adultAges[d.id] !== String(d.readyForAdultAge));
+  const changedDisplays = styles.filter((d) => canColumns(d) && displays[d.id] !== undefined && displays[d.id] !== d.rankDisplay);
   const feeChanged = my.isOwner && (feeOn !== (fee.data?.promotionFeeEnabled ?? false) || beforePaid !== (fee.data?.gradeBeforeFeePaid ?? false));
   const openMatChanged = canOpenMat && openMatOn !== (openMat.data?.openMatCountsTowardHours ?? false);
-  const dirty = changedColumns.length > 0 || changedAges.length > 0 || feeChanged || openMatChanged;
+  const dirty = changedColumns.length > 0 || changedAges.length > 0 || changedDisplays.length > 0 || feeChanged || openMatChanged;
   const invalid = changedColumns.some((d) => columnProblem(columns[d.id]) !== null) || changedAges.some((d) => ageProblem(adultAges[d.id]) !== null);
 
   async function save() {
@@ -106,6 +113,9 @@ export function GradingSettingsPage() {
       }
       for (const d of changedAges) {
         await setAdultAge.mutateAsync({ disciplineId: d.id, age: Number(adultAges[d.id]) });
+      }
+      for (const d of changedDisplays) {
+        await setRankDisplay.mutateAsync({ disciplineId: d.id, rankDisplay: displays[d.id] });
       }
       if (feeChanged) await updateFee.mutateAsync({ promotionFeeEnabled: feeOn, ...(feeOn ? { gradeBeforeFeePaid: beforePaid } : {}) });
       if (openMatChanged) await setOpenMat.mutateAsync(openMatOn);
@@ -131,6 +141,41 @@ export function GradingSettingsPage() {
       {saved && !dirty ? <SuccessBanner message={t('grading.settings.saved')} /> : null}
       <div className="ultm8-settings-layout">
         <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+          {styles.length ? (
+            <Card>
+              <section aria-label={t('grading.settings.displayTitle')}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0, flex: 1 }}>
+                    {t('grading.settings.displayTitle')}
+                  </h2>
+                  {aboutButton('display')}
+                </div>
+                <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
+                  {styles.map((d) => {
+                    const editable = canColumns(d);
+                    return (
+                      <div key={d.id} className="ultm8-settings-row">
+                        <label className="ultm8-settings-inline">
+                          <strong>{d.name}</strong>
+                          <SelectField
+                            value={displays[d.id] ?? d.rankDisplay}
+                            disabled={!editable}
+                            aria-label={t('grading.settings.displayAria', { style: d.name })}
+                            onChange={(e) => setDisplays((x) => ({ ...x, [d.id]: e.target.value as DisciplineResponse['rankDisplay'] }))}
+                            options={[
+                              { value: 'BELTS', label: t('disciplines.form.rankDisplayBelts') },
+                              { value: 'LEVELS', label: t('disciplines.form.rankDisplayLevels') },
+                            ]}
+                          />
+                        </label>
+                        {editable ? null : <span className="ultm8-field__hint">{t('grading.settings.columns.noRight')}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </Card>
+          ) : null}
           <Card>
             <section aria-label={t('grading.settings.columns.title')}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

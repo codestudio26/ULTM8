@@ -31,6 +31,9 @@ export class DisciplineResponseDto {
   @ApiProperty({ description: 'On a Kids style: "Ready for Adult from age" (Decision 285 item 2). Default 16.' })
   readyForAdultAge!: number;
 
+  @ApiProperty({ enum: ['BELTS', 'LEVELS'], description: 'Ranks shown as Belts or as Levels (no belt), Decision 290.' })
+  rankDisplay!: 'BELTS' | 'LEVELS';
+
   @ApiProperty({ description: 'Students with a rank in this style (Decision 309).' })
   studentCount!: number;
 

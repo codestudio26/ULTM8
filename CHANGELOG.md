@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Ranks without a belt: Levels** (backlog 3.19; Decisions 290, 401) — a style
+  can now show its ranks as **Levels (no belt)** instead of belts: each rank is
+  a coloured badge with numbered steps (Beginner 1, 2, 3), each step with its
+  own requirements. Set it in Add/Edit discipline or in Grading → Settings
+  ("How ranks are shown"). The rank editor then has a badge colour and steps
+  instead of belt colours and stripes, and the board, student pages and the
+  student app draw the badge. Grading works exactly as for stripes. **Needs a
+  database migration** (`20270102000000_rank_levels`).
 - **Staff notes on a student** (backlog 3.10; Decisions 315, 400) — a
   **Notes** card on the student's page: any staff who can see the student add
   notes, staff-only or ticked **Show to member**; the author or an owner edits

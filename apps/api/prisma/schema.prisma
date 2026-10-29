@@ -2600,6 +2600,10 @@ model Discipline {
   /// program and shows "Ready for Adult program" (Decision 285 item 2). The
   /// IBJJF age, 16, by default.
   readyForAdultAge      Int          @default(16)
+  /// Ranks shown as Belts or as Levels (no belt) (Decision 290, backlog
+  /// 3.19), never a mix. Display only: a level is a badge in the rank's
+  /// primaryColour, and its steps are rungs with no stripes.
+  rankDisplay           RankDisplay  @default(BELTS)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4036,6 +4040,12 @@ enum ConsentTier {
 /// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
 /// with its own withdrawal timestamp)."
 /// How classes count toward a rung (Decisions 140, 149).
+/// How a style's ranks are drawn (Decision 290).
+enum RankDisplay {
+  BELTS
+  LEVELS
+}
+
 enum ClassCountMode {
   ANY_TYPE
   EACH_TYPE

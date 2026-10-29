@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { theme, spacing, fontSize, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
+import { BeltSwatch } from './BeltSwatch';
 import { useAskCorrection, type GradingStyle, type RankCorrection } from './myGradingQueries';
 
 const NOTE_MAX = 500;
@@ -86,7 +87,7 @@ export function CorrectionCard({ item, latest }: { item: GradingStyle; latest: R
                     borderColor: on ? theme.fillAccent : theme.border,
                   }}
                 >
-                  <View style={{ width: 28, height: 10, borderRadius: 2, backgroundColor: r.primaryColour, borderWidth: 1, borderColor: theme.borderStrong, marginRight: spacing[2] }} />
+                  <BeltSwatch rung={r} small />
                   <Text style={{ flex: 1, fontWeight: on ? '600' : '400' }}>{r.name}</Text>
                 </Pressable>
               );

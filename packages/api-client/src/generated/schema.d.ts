@@ -3492,6 +3492,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/disciplines/{id}/rank-display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setRankDisplay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/disciplines/{id}/board-thresholds": {
         parameters: {
             query?: never;
@@ -8367,6 +8383,11 @@ export interface components {
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one.
+             * @enum {string}
+             */
+            rankDisplay?: "BELTS" | "LEVELS";
         };
         DisciplineResponseDto: {
             id: string;
@@ -8385,6 +8406,11 @@ export interface components {
             adultDisciplineId?: string | null;
             /** @description On a Kids style: "Ready for Adult from age" (Decision 285 item 2). Default 16. */
             readyForAdultAge: number;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
             /** @description Students with a rank in this style (Decision 309). */
             studentCount: number;
             createdAt: string;
@@ -8422,6 +8448,11 @@ export interface components {
             classTypesOffered?: string[];
             /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
             skillsRequiredToGrade?: boolean;
+            /**
+             * @description Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one.
+             * @enum {string}
+             */
+            rankDisplay?: "BELTS" | "LEVELS";
             /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
             renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
             /**
@@ -8548,6 +8579,11 @@ export interface components {
             tagColour?: string | null;
             coralAccent?: string | null;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
+            /**
+             * @description How its style shows ranks (Decision 290): as a belt, or as a level badge in primaryColour whose steps are its stripe tiers.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
             /** @description Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198's own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Rank once this elapses, re-checking the same holders/history/declared conditions deleteRank() already enforces. */
@@ -8778,6 +8814,15 @@ export interface components {
             stripeColour: string;
             stripeCount: number;
             timeOnly: boolean;
+            /**
+             * @description How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
+            /** @description This rung's place on its rank, from 1 (step 2 of 3 on a level). */
+            step: number;
+            /** @description How many rungs its rank has. */
+            steps: number;
         };
         GradingSkillDto: {
             id: string;
@@ -8958,6 +9003,15 @@ export interface components {
             stripeColour: string;
             stripeCount: number;
             timeOnly: boolean;
+            /**
+             * @description How the style shows ranks (Decision 290). On LEVELS draw a badge in primaryColour with step of steps.
+             * @enum {string}
+             */
+            rankDisplay: "BELTS" | "LEVELS";
+            /** @description This rung's place on its rank, from 1 (step 2 of 3 on a level). */
+            step: number;
+            /** @description How many rungs its rank has. */
+            steps: number;
             /** @description The belt (Rank) this rung belongs to; send it with the rung id to declare. */
             rankId: string;
         };
@@ -9062,6 +9116,10 @@ export interface components {
         ReadyForAdultAgeDto: {
             /** @example 16 */
             age: number;
+        };
+        RankDisplayDto: {
+            /** @enum {string} */
+            rankDisplay: "BELTS" | "LEVELS";
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -16445,6 +16503,32 @@ export interface operations {
         };
         responses: {
             /** @description The Kids style, with its new age. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setRankDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankDisplayDto"];
+            };
+        };
+        responses: {
+            /** @description The style, with its ranks now shown as Belts or Levels. */
             200: {
                 headers: {
                     [name: string]: unknown;

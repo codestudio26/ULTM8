@@ -77,6 +77,8 @@ export const grading = {
     discard: 'Discard',
     save: 'Save changes',
     wholeSchool: 'Whole school',
+    displayTitle: "How ranks are shown",
+    displayAria: "{style}: ranks shown as",
     columns: {
       title: 'Grading Board columns',
       intro: 'Where each style splits its students into Just Starting, Getting There and Ready to Grade.',
@@ -113,6 +115,7 @@ export const grading = {
       link: 'Grading permissions ›',
     },
     about: {
+      display: "Each style shows its ranks as belts with stripes, or as levels: a coloured badge with numbered steps (Beginner 1, 2, 3). It only changes how ranks look. Grading, requirements and history work the same, so you can change it while students hold ranks.",
       columns: "Each style's board puts a student in a column by their progress toward the next rank. A student below the first number is Just Starting; from the second number they are Ready to Grade. Moving the numbers moves students between columns; it never changes their progress.",
       fee: 'With the fee on, a promotion to a priced belt or stripe asks the student (or their Guardian) to accept the fee first. Nothing is charged until they accept. You can waive or cancel a fee at any time on the Grading Board.',
       gradeBeforePaid: 'On: the promotion happens now and the fee waits. Off: the promotion waits until the fee is accepted and paid. Waiving a waiting promotion applies it straight away. Cancelling it, or waiving a declined fee, never promotes on its own: a coach decides.',

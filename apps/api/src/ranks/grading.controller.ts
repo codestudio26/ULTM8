@@ -9,6 +9,7 @@ import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentE
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
+import { RankDisplayDto } from './dto/create-discipline.dto';
 import { Throttle } from '@nestjs/throttler';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
@@ -232,6 +233,12 @@ export class GradingController {
   @Put('disciplines/:id/ready-for-adult-age')
   setReadyForAdultAge(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReadyForAdultAgeDto) {
     return this.gradingService.setReadyForAdultAge(user.sub, id, dto);
+  }
+
+  @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its ranks now shown as Belts or Levels.' })
+  @Put('disciplines/:id/rank-display')
+  setRankDisplay(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RankDisplayDto) {
+    return this.gradingService.setRankDisplay(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its new board columns.' })

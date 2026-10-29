@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
+
+export const RANK_DISPLAYS = ['BELTS', 'LEVELS'] as const;
+export type RankDisplayValue = (typeof RANK_DISPLAYS)[number];
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -42,4 +45,19 @@ export class CreateDisciplineDto {
   @ValidateIf((_o: unknown, v: unknown) => v !== undefined)
   @IsBoolean()
   skillsRequiredToGrade?: boolean;
+
+  @ApiPropertyOptional({
+    enum: RANK_DISPLAYS,
+    description: 'Ranks shown as Belts or as Levels (no belt), Decision 290. Display only, so it can change while students hold ranks. When omitted: BELTS on a new style; kept on an existing one.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined)
+  @IsIn(RANK_DISPLAYS, { message: 'Ranks are shown as Belts or as Levels.' })
+  rankDisplay?: RankDisplayValue;
+}
+
+/** "Ranks shown as" in Grading → Settings (Decision 290). */
+export class RankDisplayDto {
+  @ApiProperty({ enum: RANK_DISPLAYS })
+  @IsIn(RANK_DISPLAYS, { message: 'Ranks are shown as Belts or as Levels.' })
+  rankDisplay!: RankDisplayValue;
 }

@@ -8,6 +8,8 @@ export interface DisciplineFormValues {
   name: string;
   classTypesOffered: string[];
   skillsRequiredToGrade: boolean;
+  /** Decision 290: ranks shown as Belts or as Levels (no belt). */
+  rankDisplay: 'BELTS' | 'LEVELS';
   /** Class types renamed in this edit (Decision 309); always empty when adding. */
   renameClassTypes: Array<{ from: string; to: string }>;
   /** Backlog 3.20: the Adult style this Kids style links to; only sent when editing. */
@@ -53,6 +55,7 @@ export function DisciplineFormModal({
   const [skillsRequiredToGrade, setSkillsRequired] = useState(initial?.skillsRequiredToGrade ?? false);
   const [types, setTypes] = useState<TypeRow[]>(() => (initial?.classTypesOffered ?? []).map((c) => row(c)));
   const [adultId, setAdultId] = useState(initial?.adultDisciplineId ?? '');
+  const [rankDisplay, setRankDisplay] = useState<'BELTS' | 'LEVELS'>(initial?.rankDisplay ?? 'BELTS');
   const [error, setError] = useState<string | null>(null);
 
   const update = (key: number, value: string) => setTypes((rows) => rows.map((r) => (r.key === key ? { ...r, value } : r)));
@@ -93,6 +96,7 @@ export function DisciplineFormModal({
         name: name.trim(),
         classTypesOffered: kept.map((r) => r.value.trim()),
         skillsRequiredToGrade,
+        rankDisplay,
         renameClassTypes: kept
           .filter((r) => r.original !== null && r.original !== r.value.trim())
           .map((r) => ({ from: r.original as string, to: r.value.trim() })),
@@ -138,6 +142,17 @@ export function DisciplineFormModal({
             {t('disciplines.form.addClassType')}
           </Button>
         </fieldset>
+        <Field label={t('disciplines.form.rankDisplayLabel')} htmlFor="discipline-rank-display" hint={t('disciplines.form.rankDisplayHint')}>
+          <SelectField
+            id="discipline-rank-display"
+            value={rankDisplay}
+            onChange={(e) => setRankDisplay(e.target.value as 'BELTS' | 'LEVELS')}
+            options={[
+              { value: 'BELTS', label: t('disciplines.form.rankDisplayBelts') },
+              { value: 'LEVELS', label: t('disciplines.form.rankDisplayLevels') },
+            ]}
+          />
+        </Field>
         <Checkbox label={t('disciplines.form.skillsRequired')} checked={skillsRequiredToGrade} onChange={(e) => setSkillsRequired(e.target.checked)} />
         {adultChoices ? (
           <Field label={t('disciplines.form.adultProgramLabel')} htmlFor="discipline-adult" hint={t('disciplines.form.adultProgramHint')}>

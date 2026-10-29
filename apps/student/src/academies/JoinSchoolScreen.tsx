@@ -7,7 +7,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { useMyMinors } from '../guardians/guardianQueries';
-import { BeltSwatch } from '../grading/MyGradingScreen';
+import { BeltSwatch } from '../grading/BeltSwatch';
 import { theme, spacing, fontSize, fontWeight, radius, minTouchTarget } from '../theme/tokens';
 import { useAcademy } from './academyQueries';
 import { type DeclareStyle, useDeclareBelt, useDeclareOptions, useJoinSchool } from './joinQueries';
