@@ -6777,3 +6777,29 @@ User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.
 ### Recorded by
 
 User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".
+
+---
+
+## Decision 396 — Staff page: "New staff must accept first"
+
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (f) · **Migration:** `20261227000000_staff_must_accept`
+
+The Staff build plan said: *"New staff must accept first", off by default. When it's on, "Give role" sends an invite link the person accepts, the same way coach invites already work, extended to Branch Staff.* The product owner chose this ("all recommended").
+
+### Decision
+
+1. **The setting.** `School.staffMustAcceptFirst`, off by default. The owner turns it on or off with the "New staff must accept first" switch in the Staff page's "Give a role" card (`GET`/`PUT /schools/:schoolId/staff/settings`, owner only; a closed School can't change it). Turning it off leaves invites already sent working.
+2. **When it is on.** Giving an existing account the coach (Instructor) or Branch Staff role (`POST /users/:userId/role-grants`) is refused with 409 `STAFF_MUST_ACCEPT`. The portal then sends that person an invite link to their account's email instead, through the coach-invite flow (Decision 183): single use, 7 days, cancellable, listed under Coach invites. They get the role when they accept, signed in with that email. On the Staff page the button reads "Send invite". The same happens on the Instructors page ("Invite existing user", "Give Instructor role back").
+3. **Branch Staff invites.** A coach invite now carries a role, `INSTRUCTOR` (as before) or `BRANCH_STAFF`. A Branch Staff invite is the owner's only and needs a branch: staff with "Can invite coaches" can't send, see or cancel one (also enforced in RLS), and one sent by anyone but an owner can't be accepted. The email, the invite page and the "accepted" message say "staff" instead of "coach". Accepting keeps any other role the account has, as a coach invite does.
+4. The new Staff, Instructors and invite-page text is translated into all 15 languages. The refusal is caught by the portal, so it needs no API translation.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Co-owners. This build gives a co-owner the role at once even with the setting on, because the plan only names coach invites "extended to Branch Staff".
+- **[UNRESOLVED]** "Add staff manually" and "Add instructor manually" (new accounts with a temporary passcode) are not changed: the person already has to sign in and change the passcode.
+- **[UNRESOLVED]** Unpause (Decision 390) gives roles back at once, even with the setting on, since they are the same roles, not new ones.
+- **[UNRESOLVED]** The link's life is the coach invite's 7 days. No separate length was asked for.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "all recommended" on the Staff build plan (Decision 360, order of work (f)). Built 29 Oct 2026 in the Staff thread.

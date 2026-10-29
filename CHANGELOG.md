@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **New staff must accept first** (Decision 396) — a new switch in the Staff
+  page's "Give a role" card, off by default. When it's on, giving someone the
+  Instructor or Branch Staff role emails them an invite link instead, and
+  they get the role when they accept it (co-owners still get it at once).
+  Coach invites can now also be Branch Staff invites, from the owner only.
+  Needs migration `20261227000000_staff_must_accept`.
 - **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
   card on Check-in also has "Sell at the desk": choose how it was paid (cash,
   bank transfer, Pix or card terminal), record it, and the person is checked

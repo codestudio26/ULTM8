@@ -2080,6 +2080,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/settings": {
+      "get": {
+        "operationId": "RoleGrantsController_getStaffSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "RoleGrantsController_setStaffSettings",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/{userId}/pause": {
       "post": {
         "operationId": "RoleGrantsController_pauseStaff",
@@ -19380,6 +19458,29 @@
           "access"
         ]
       },
+      "StaffSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "mustAcceptFirst": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mustAcceptFirst"
+        ]
+      },
+      "StaffSettingsDto": {
+        "type": "object",
+        "properties": {
+          "mustAcceptFirst": {
+            "type": "boolean",
+            "description": "When on, \"Give role\" for a coach or Branch Staff sends an invite link the person accepts."
+          }
+        },
+        "required": [
+          "mustAcceptFirst"
+        ]
+      },
       "PauseStaffResponseDto": {
         "type": "object",
         "properties": {
@@ -19881,6 +19982,14 @@
           "branchId": {
             "type": "string",
             "description": "Required when the School has branches; the branch they will coach at."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ],
+            "description": "Decision 396: BRANCH_STAFF invites are the School owner's only and need branchId. Defaults to INSTRUCTOR."
           }
         },
         "required": [
@@ -19906,6 +20015,14 @@
           },
           "email": {
             "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ],
+            "description": "The role accepting gives (Decision 396)."
           },
           "status": {
             "type": "string",
@@ -19954,6 +20071,7 @@
           "branchId",
           "branchName",
           "email",
+          "role",
           "status",
           "invitedById",
           "invitedByName",
@@ -19983,6 +20101,14 @@
           },
           "email": {
             "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ],
+            "description": "The role accepting gives (Decision 396)."
           },
           "status": {
             "type": "string",
@@ -20027,6 +20153,7 @@
           "branchId",
           "branchName",
           "email",
+          "role",
           "status",
           "invitedById",
           "invitedByName",
@@ -20060,14 +20187,23 @@
             "type": "string",
             "nullable": true
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ],
+            "description": "The role this gave (Decision 396)."
+          },
           "accessToken": {
             "type": "string",
-            "description": "A new access token that includes the coach role."
+            "description": "A new access token that includes the new role."
           }
         },
         "required": [
           "schoolId",
           "branchId",
+          "role",
           "accessToken"
         ]
       },
@@ -20174,6 +20310,14 @@
             "type": "string",
             "description": "The email the invite was sent to; sign in or sign up with it."
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ],
+            "description": "The role accepting gives (Decision 396)."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -20192,6 +20336,7 @@
           "schoolName",
           "branchName",
           "email",
+          "role",
           "status",
           "expiresAt"
         ]

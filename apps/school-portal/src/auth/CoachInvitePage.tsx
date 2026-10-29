@@ -16,6 +16,9 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * email, "Accept" makes the account a coach there; other roles are kept.
  * Signed out, it sends them to log in, or to create their account, and
  * brings them back here afterwards.
+ *
+ * Decision 396: the same link also invites Branch Staff, when the School asks
+ * new staff to accept first; the words then say staff, not coach.
  */
 export function CoachInvitePage() {
   const t = useT();
@@ -38,13 +41,16 @@ export function CoachInvitePage() {
   }
 
   const invite = link.data;
+  const staff = invite.role === 'BRANCH_STAFF';
   const where = invite.branchName ? `${invite.schoolName} — ${invite.branchName}` : invite.schoolName;
 
   if (accepted) {
     return (
-      <AuthCard title={t('auth.coachInvite.title')}>
-        <SuccessBanner message={t('auth.coachInvite.accepted', { where })} />
-        <Button onClick={() => navigate('/coach')}>{t('auth.coachInvite.goToDashboard')}</Button>
+      <AuthCard title={t(staff ? 'auth.coachInvite.staffTitle' : 'auth.coachInvite.title')}>
+        <SuccessBanner message={t(staff ? 'auth.coachInvite.staffAccepted' : 'auth.coachInvite.accepted', { where })} />
+        <Button onClick={() => navigate(staff ? '/' : '/coach')}>
+          {t(staff ? 'auth.coachInvite.staffGoToPortal' : 'auth.coachInvite.goToDashboard')}
+        </Button>
       </AuthCard>
     );
   }
@@ -70,7 +76,7 @@ export function CoachInvitePage() {
   }
 
   return (
-    <AuthCard title={t('auth.coachInvite.invitedTitle')} subtitle={where}>
+    <AuthCard title={t(staff ? 'auth.coachInvite.staffInvitedTitle' : 'auth.coachInvite.invitedTitle')} subtitle={where}>
       {error ? <ErrorBanner message={error} /> : null}
       {closedText ? (
         <ErrorBanner message={closedText} />
@@ -95,7 +101,7 @@ export function CoachInvitePage() {
       ) : rightAccount ? (
         <>
           <p>
-            <Trans k="auth.coachInvite.acceptBody" nodes={{ where: <strong>{where}</strong> }} />
+            <Trans k={staff ? 'auth.coachInvite.staffAcceptBody' : 'auth.coachInvite.acceptBody'} nodes={{ where: <strong>{where}</strong> }} />
           </p>
           <Button onClick={handleAccept} loading={accept.isPending}>
             {t('auth.coachInvite.acceptButton')}

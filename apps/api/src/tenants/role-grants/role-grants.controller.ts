@@ -25,6 +25,8 @@ import {
   StaffDetailsResponseDto,
   StaffListQueryDto,
   StaffListResponseDto,
+  StaffSettingsDto,
+  StaffSettingsResponseDto,
   UnpauseStaffResponseDto,
   UpdateStaffDetailsDto,
 } from './dto/staff-list.dto';
@@ -158,6 +160,19 @@ export class RoleGrantsController {
     @Body() dto: StaffAccessDto,
   ) {
     return this.roleGrantsService.setStaffAccess(user.sub, schoolId, userId, dto);
+  }
+
+  /** Decision 396 — "New staff must accept first". Owner only. */
+  @ApiOkResponse({ type: StaffSettingsResponseDto })
+  @Get('schools/:schoolId/staff/settings')
+  getStaffSettings(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.roleGrantsService.getStaffSettings(user.sub, schoolId);
+  }
+
+  @ApiOkResponse({ type: StaffSettingsResponseDto })
+  @Put('schools/:schoolId/staff/settings')
+  setStaffSettings(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: StaffSettingsDto) {
+    return this.roleGrantsService.setStaffSettings(user.sub, schoolId, dto.mustAcceptFirst);
   }
 
   /** Decision 390 — the owner pauses a coach or Branch Staff member: all

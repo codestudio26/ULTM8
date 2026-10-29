@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsOptional, IsUUID, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsUUID, MaxLength } from 'class-validator';
 import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 
 /** Invite one person, by email, to coach (Decision 183). */
@@ -14,7 +14,18 @@ export class CreateCoachInviteDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @ApiPropertyOptional({
+    enum: ['INSTRUCTOR', 'BRANCH_STAFF'],
+    description: 'Decision 396: BRANCH_STAFF invites are the School owner\'s only and need branchId. Defaults to INSTRUCTOR.',
+  })
+  @IsOptional()
+  @IsIn(['INSTRUCTOR', 'BRANCH_STAFF'])
+  role?: InviteRole;
 }
+
+export const INVITE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
+export type InviteRole = (typeof INVITE_ROLES)[number];
 
 export const COACH_INVITE_STATUSES = ['PENDING', 'ACCEPTED', 'CANCELLED', 'EXPIRED'] as const;
 export type CoachInviteStatus = (typeof COACH_INVITE_STATUSES)[number];
@@ -34,6 +45,9 @@ export class CoachInviteResponseDto {
 
   @ApiProperty()
   email!: string;
+
+  @ApiProperty({ enum: INVITE_ROLES, description: 'The role accepting gives (Decision 396).' })
+  role!: InviteRole;
 
   @ApiProperty({ enum: COACH_INVITE_STATUSES })
   status!: CoachInviteStatus;
@@ -78,6 +92,9 @@ export class CoachInvitePreviewDto {
   @ApiProperty({ description: 'The email the invite was sent to; sign in or sign up with it.' })
   email!: string;
 
+  @ApiProperty({ enum: INVITE_ROLES, description: 'The role accepting gives (Decision 396).' })
+  role!: InviteRole;
+
   @ApiProperty({ enum: COACH_INVITE_STATUSES })
   status!: CoachInviteStatus;
 
@@ -92,7 +109,10 @@ export class AcceptCoachInviteResponseDto {
   @ApiProperty({ type: String, nullable: true })
   branchId!: string | null;
 
-  @ApiProperty({ description: 'A new access token that includes the coach role.' })
+  @ApiProperty({ enum: INVITE_ROLES, description: 'The role this gave (Decision 396).' })
+  role!: InviteRole;
+
+  @ApiProperty({ description: 'A new access token that includes the new role.' })
   accessToken!: string;
 }
 

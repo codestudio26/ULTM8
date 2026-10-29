@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
@@ -11,6 +11,8 @@ import {
   useInviteStaff,
   useMyStaffAccess,
   useRevokeRoleGrant,
+  useSetStaffSettings,
+  useStaffSettings,
   type InviteCandidateResponse,
   type StaffMember,
   type StaffRoleEntry,
@@ -41,6 +43,10 @@ import { Trans } from '../i18n/Trans';
  * replaced looking people up by User ID. "Give role" (formerly "Send invite")
  * gives the role at once: there is no invite to accept yet.
  *
+ * Decision 396 — unless "New staff must accept first" is on: then "Send
+ * invite" emails a coach or Branch Staff an invite link, and they get the
+ * role when they accept it. Co-owners still get it at once.
+ *
  * Decision 251 — "Add staff manually" closes the exact gap the "Find" step above
  * used to dead-end on: no fallback existed when no ULTM8 account was found for the
  * searched email/phone. Mirrors AddInstructorManuallyModal/InstructorsPage's own
@@ -55,6 +61,9 @@ export function StaffPage() {
   const inviteStaff = useInviteStaff();
   const revokeGrant = useRevokeRoleGrant();
   const createStaffManually = useCreateStaffManually(schoolId ?? '');
+  const staffSettings = useStaffSettings(schoolId);
+  const setStaffSettings = useSetStaffSettings(schoolId ?? '');
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
@@ -86,6 +95,9 @@ export function StaffPage() {
   // (Decisions 168, 169).
   // A co-owner is School-wide: never a branch (Decision 370).
   const needsBranch = role === 'BRANCH_STAFF' || (role === 'INSTRUCTOR' && branches.length > 0);
+  const mustAccept = !!staffSettings.data?.mustAcceptFirst;
+  // What "Give role" does now: an invite, or the role at once.
+  const sendsInvite = mustAccept && role !== 'SCHOOL_OWNER_MANAGER';
   const roleName = (r: typeof role) =>
     r === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : r === 'SCHOOL_OWNER_MANAGER' ? t('roleGrants.staff.roleCoOwner') : t('roleGrants.staff.roleInstructor');
 
@@ -135,20 +147,38 @@ export function StaffPage() {
     try {
       const granted = await inviteStaff.mutateAsync({
         targetUserId: candidate!.id!,
+        email: candidate!.email ?? '',
         body: { role, schoolId: schoolId!, branchId: needsBranch ? branchId : undefined },
       });
       const given = {
         name: `${candidate!.firstName} ${candidate!.surname}`.trim(),
         role: roleName(role),
       };
-      setInviteNotice(
-        granted.emailSent
-          ? { kind: 'ok', text: t('roleGrants.staff.givenEmailed', given) }
-          : { kind: 'warn', text: t('roleGrants.staff.givenNoEmail', given) },
-      );
+      if (granted.invited) {
+        setInviteNotice(
+          granted.emailSent
+            ? { kind: 'ok', text: t('roleGrants.staff.invitedEmailed', given) }
+            : { kind: 'warn', text: t('roleGrants.staff.invitedNoEmail', given) },
+        );
+      } else {
+        setInviteNotice(
+          granted.emailSent
+            ? { kind: 'ok', text: t('roleGrants.staff.givenEmailed', given) }
+            : { kind: 'warn', text: t('roleGrants.staff.givenNoEmail', given) },
+        );
+      }
       resetInviteSearch();
     } catch (err) {
       setInviteError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  async function handleMustAccept(on: boolean) {
+    setSettingsError(null);
+    try {
+      await setStaffSettings.mutateAsync(on);
+    } catch (err) {
+      setSettingsError(err instanceof ApiError ? err.message : t('roleGrants.staff.mustAcceptSaveFailed'));
     }
   }
 
@@ -181,6 +211,17 @@ export function StaffPage() {
         <p className="ultm8-field">
           {t('roleGrants.staff.inviteIntro')}
         </p>
+        {settingsError ? <ErrorBanner message={settingsError} /> : null}
+        <div className="ultm8-field">
+          <Switch
+            id="staff-must-accept"
+            label={t('roleGrants.staff.mustAcceptLabel')}
+            description={t('roleGrants.staff.mustAcceptHint')}
+            checked={setStaffSettings.isPending ? !!setStaffSettings.variables : mustAccept}
+            disabled={staffSettings.isLoading || setStaffSettings.isPending}
+            onChange={handleMustAccept}
+          />
+        </div>
         {inviteNotice?.kind === 'ok' ? <SuccessBanner message={inviteNotice.text} /> : null}
         {inviteNotice?.kind === 'warn' ? <ErrorBanner message={inviteNotice.text} /> : null}
         {!candidate ? (
@@ -239,7 +280,7 @@ export function StaffPage() {
             ) : null}
             <div style={{ display: 'flex', gap: 8 }}>
               <Button type="submit" loading={inviteStaff.isPending}>
-                {t('roleGrants.staff.giveRole')}
+                {sendsInvite ? t('roleGrants.staff.sendInvite') : t('roleGrants.staff.giveRole')}
               </Button>
               <Button type="button" variant="secondary" onClick={resetInviteSearch}>
                 {t('roleGrants.staff.searchAgain')}

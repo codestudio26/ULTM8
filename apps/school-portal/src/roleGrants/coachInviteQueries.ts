@@ -19,7 +19,7 @@ export function useCoachInvites(schoolId: string | null) {
 export function useSendCoachInvite(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { email: string; branchId?: string }) =>
+    mutationFn: (body: { email: string; branchId?: string; role?: 'INSTRUCTOR' | 'BRANCH_STAFF' }) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/coach-invites', { params: { path: { schoolId } }, body })) as Promise<CreatedCoachInvite>,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coach-invites', schoolId] }),
   });

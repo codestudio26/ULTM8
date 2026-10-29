@@ -301,3 +301,15 @@ export class UnpauseStaffResponseDto {
   })
   closedBranches!: string[];
 }
+
+/** "New staff must accept first" (Decision 396). */
+export class StaffSettingsDto {
+  @ApiProperty({ description: 'When on, "Give role" for a coach or Branch Staff sends an invite link the person accepts.' })
+  @IsBoolean()
+  mustAcceptFirst!: boolean;
+}
+
+export class StaffSettingsResponseDto {
+  @ApiProperty()
+  mustAcceptFirst!: boolean;
+}

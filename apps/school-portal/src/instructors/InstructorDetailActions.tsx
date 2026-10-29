@@ -83,7 +83,9 @@ export function GiveRoleBackModal({
 }: {
   schoolId: string;
   instructor: InstructorResponse;
-  onDone: () => Promise<void>;
+  /** `invited`: the School asks new staff to accept first (Decision 396),
+   * so an invite went out instead of the role. */
+  onDone: (invited: boolean) => Promise<void>;
   onClose: () => void;
 }) {
   const t = useT();
@@ -98,11 +100,12 @@ export function GiveRoleBackModal({
     e.preventDefault();
     setError(null);
     try {
-      await invite.mutateAsync({
+      const result = await invite.mutateAsync({
         targetUserId: instructor.userId,
+        email: instructor.email,
         body: { role: 'INSTRUCTOR', schoolId, ...(branchId ? { branchId } : {}) },
       });
-      await onDone();
+      await onDone(result.invited);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('instructors.detail.giveRoleBackFailed'));
     }

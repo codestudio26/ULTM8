@@ -126,6 +126,16 @@ export function CoachInvitesSection({
             rows={invites.data!.items}
             columns={[
               { key: 'email', header: t('roleGrants.coachInvites.columnEmail'), render: (i) => i.email },
+              // Decision 396: Branch Staff invites, from "New staff must accept first".
+              ...(invites.data!.items.some((i) => i.role === 'BRANCH_STAFF')
+                ? [
+                    {
+                      key: 'role',
+                      header: t('roleGrants.coachInvites.columnRole'),
+                      render: (i: CoachInvite) => (i.role === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : t('roleGrants.staff.roleInstructor')),
+                    },
+                  ]
+                : []),
               ...(branches.length > 0 ? [{ key: 'branch', header: t('roleGrants.coachInvites.columnBranch'), render: (i: CoachInvite) => i.branchName ?? branchName(i.branchId) }] : []),
               { key: 'status', header: t('roleGrants.coachInvites.columnStatus'), render: (i) => <Badge variant={STATUS[i.status].variant}>{t(STATUS[i.status].label)}</Badge> },
               {

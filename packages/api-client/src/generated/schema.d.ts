@@ -692,6 +692,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_getStaffSettings"];
+        put: operations["RoleGrantsController_setStaffSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/{userId}/pause": {
         parameters: {
             query?: never;
@@ -6386,6 +6402,13 @@ export interface components {
             userId: string;
             access: components["schemas"]["StaffAccessDto"];
         };
+        StaffSettingsResponseDto: {
+            mustAcceptFirst: boolean;
+        };
+        StaffSettingsDto: {
+            /** @description When on, "Give role" for a coach or Branch Staff sends an invite link the person accepts. */
+            mustAcceptFirst: boolean;
+        };
         PauseStaffResponseDto: {
             userId: string;
             /** @description How many coach and Branch Staff roles were paused. */
@@ -6539,6 +6562,11 @@ export interface components {
             email: string;
             /** @description Required when the School has branches; the branch they will coach at. */
             branchId?: string;
+            /**
+             * @description Decision 396: BRANCH_STAFF invites are the School owner's only and need branchId. Defaults to INSTRUCTOR.
+             * @enum {string}
+             */
+            role?: "INSTRUCTOR" | "BRANCH_STAFF";
         };
         CreatedCoachInviteResponseDto: {
             id: string;
@@ -6546,6 +6574,11 @@ export interface components {
             branchId: string | null;
             branchName: string | null;
             email: string;
+            /**
+             * @description The role accepting gives (Decision 396).
+             * @enum {string}
+             */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
             /** @enum {string} */
             status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
             invitedById: string | null;
@@ -6568,6 +6601,11 @@ export interface components {
             branchId: string | null;
             branchName: string | null;
             email: string;
+            /**
+             * @description The role accepting gives (Decision 396).
+             * @enum {string}
+             */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
             /** @enum {string} */
             status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
             invitedById: string | null;
@@ -6588,7 +6626,12 @@ export interface components {
         AcceptCoachInviteResponseDto: {
             schoolId: string;
             branchId: string | null;
-            /** @description A new access token that includes the coach role. */
+            /**
+             * @description The role this gave (Decision 396).
+             * @enum {string}
+             */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            /** @description A new access token that includes the new role. */
             accessToken: string;
         };
         MyStaffPermissionResponseDto: {
@@ -6621,6 +6664,11 @@ export interface components {
             branchName: string | null;
             /** @description The email the invite was sent to; sign in or sign up with it. */
             email: string;
+            /**
+             * @description The role accepting gives (Decision 396).
+             * @enum {string}
+             */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
             /** @enum {string} */
             status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
             /** Format: date-time */
@@ -11308,6 +11356,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_getStaffSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffSettingsResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_setStaffSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffSettingsResponseDto"];
                 };
             };
         };
