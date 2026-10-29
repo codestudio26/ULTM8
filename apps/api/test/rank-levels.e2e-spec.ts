@@ -93,6 +93,7 @@ describeIfDb('Ranks shown as Levels (backlog 3.19, Decision 290)', () => {
     await superuser.discipline.deleteMany({ where });
     await superuser.membership.deleteMany({ where });
     await superuser.roleGrant.deleteMany({ where });
+    await superuser.notification.deleteMany({ where: { userId: { in: Object.values(users) } } });
     await superuser.user.deleteMany({ where: { id: { in: Object.values(users) } } });
     await superuser.school.deleteMany({ where: { id: school.id } });
     await superuser.$disconnect();
