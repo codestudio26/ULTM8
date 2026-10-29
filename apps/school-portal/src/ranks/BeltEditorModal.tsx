@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
 import { BeltChip } from '../grading/BeltChip';
+import { ColourRow } from './ColourRow';
 import { moveItem, useDragReorder } from './dragReorder';
 import type { RankResponse, RankStripeTierInput } from './rankQueries';
 import { formatMoney } from '../lib/money';
@@ -437,17 +438,25 @@ export function BeltEditorModal({
               <Field label={t('ranks.editor.rankName')} htmlFor="belt-name" hint={t('ranks.editor.rankNameHint')}>
                 <TextField required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
               </Field>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Field label={t('ranks.editor.baseColour')} htmlFor="belt-colour">
-                  <TextField type="color" value={/^#[0-9a-fA-F]{6}$/.test(primaryColour) ? primaryColour : '#ffffff'} onChange={(e) => setPrimaryColour(e.target.value)} />
-                </Field>
-                <Field label={t('ranks.editor.secondaryColour')} htmlFor="belt-colour-2" hint={t('ranks.editor.secondaryColourHint')}>
-                  <TextField value={secondaryColour} placeholder={t('ranks.editor.secondaryColourPlaceholder')} onChange={(e) => setSecondaryColour(e.target.value)} />
-                </Field>
-                <Field label={t('ranks.editor.tagColour')} htmlFor="belt-tag" hint={t('ranks.editor.tagColourHint')}>
-                  <TextField value={tagColour} placeholder="#000000" onChange={(e) => setTagColour(e.target.value)} />
-                </Field>
-              </div>
+              <ColourRow id="belt-colour" label={t('ranks.editor.baseColour')} value={primaryColour} onChange={setPrimaryColour} schoolId={discipline.schoolId} />
+              <ColourRow
+                id="belt-colour-2"
+                label={t('ranks.editor.secondaryColour')}
+                hint={t('ranks.editor.secondaryColourHint')}
+                value={secondaryColour}
+                onChange={setSecondaryColour}
+                schoolId={discipline.schoolId}
+                optional
+              />
+              <ColourRow
+                id="belt-tag"
+                label={t('ranks.editor.tagColour')}
+                hint={t('ranks.editor.tagColourHint')}
+                value={tagColour}
+                onChange={setTagColour}
+                schoolId={discipline.schoolId}
+                optional
+              />
               {mode !== 'edit' ? (
                 <Field label={t('ranks.editor.whereItGoes')} htmlFor="belt-position">
                   <SelectField value={String(position)} onChange={(e) => setPosition(Number(e.target.value))} options={positionOptions} />
@@ -460,7 +469,7 @@ export function BeltEditorModal({
               >
                 <TextField maxLength={100} value={current.name} placeholder={generatedName(beltLabel, total(current.segments))} onChange={(e) => update(current.key, { name: e.target.value })} />
               </Field>
-              <StripeGroups r={current} group={group} setGroup={setGroup} onChange={(patch) => update(current.key, patch)} />
+              <StripeGroups r={current} group={group} setGroup={setGroup} schoolId={discipline.schoolId} onChange={(patch) => update(current.key, patch)} />
             </Chapter>
 
             <Chapter number="02" title={t('ranks.editor.chapterWhatItTakes')}>
@@ -536,7 +545,19 @@ function ReadyLine({ ok, children }: { ok: boolean; children: React.ReactNode })
 /** "Stripes on this grade" as colour groups (DESIGN.md → "Stripe colours"):
  * each group is a box with a round selector; one Remove button removes the
  * selected group and names it; a new group is selected as soon as it's added. */
-function StripeGroups({ r, group, setGroup, onChange }: { r: RungDraft; group: number; setGroup: (i: number) => void; onChange: (patch: Partial<RungDraft>) => void }) {
+function StripeGroups({
+  r,
+  group,
+  setGroup,
+  schoolId,
+  onChange,
+}: {
+  r: RungDraft;
+  group: number;
+  setGroup: (i: number) => void;
+  schoolId: string;
+  onChange: (patch: Partial<RungDraft>) => void;
+}) {
   const t = useT();
   const setSegment = (i: number, patch: Partial<Segment>) => onChange({ segments: r.segments.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
   const picked = Math.min(group, r.segments.length - 1);
@@ -559,9 +580,7 @@ function StripeGroups({ r, group, setGroup, onChange }: { r: RungDraft; group: n
             <Field label={t('ranks.editor.number')} htmlFor={`${r.key}-seg-${i}-count`}>
               <TextField type="number" min={1} max={12} value={s.count} onChange={(e) => setSegment(i, { count: e.target.value })} />
             </Field>
-            <Field label={t('ranks.editor.colour')} htmlFor={`${r.key}-seg-${i}-colour`}>
-              <TextField type="color" value={/^#[0-9a-fA-F]{6}$/.test(s.colour) ? s.colour : '#ffffff'} onChange={(e) => setSegment(i, { colour: e.target.value })} />
-            </Field>
+            <ColourRow id={`${r.key}-seg-${i}-colour`} label={t('ranks.editor.colour')} value={s.colour} onChange={(colour) => setSegment(i, { colour })} schoolId={schoolId} />
           </div>
         ))}
       </div>
@@ -570,7 +589,7 @@ function StripeGroups({ r, group, setGroup, onChange }: { r: RungDraft; group: n
           type="button"
           variant="secondary"
           onClick={() => {
-            onChange({ segments: [...r.segments, { count: '1', colour: '#ffffff' }] });
+            onChange({ segments: [...r.segments, { count: '1', colour: '#FFFFFF' }] });
             setGroup(r.segments.length);
           }}
         >

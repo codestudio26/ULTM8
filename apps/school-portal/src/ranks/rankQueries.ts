@@ -90,3 +90,22 @@ export function useReorderRanks(disciplineId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
   });
 }
+
+/** Backlog 3.18: the School's saved belt colours, shared by every colour row
+ * and every style in the belt editor. */
+export function useBeltColours(schoolId: string) {
+  return useQuery({
+    queryKey: ['beltColours', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/belt-colours', { params: { path: { schoolId } } })),
+  });
+}
+
+/** Replaces the whole list (the owner, or Branch Staff who manage disciplines). */
+export function useSaveBeltColours(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (colours: string[]) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/belt-colours', { params: { path: { schoolId } }, body: { colours } })),
+    onSuccess: (data) => queryClient.setQueryData(['beltColours', schoolId], data),
+  });
+}

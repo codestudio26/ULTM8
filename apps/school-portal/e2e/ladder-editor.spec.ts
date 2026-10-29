@@ -62,7 +62,7 @@ test('editing a rung: name, "each type" numbers and time in rank only', async ({
   await dialog.getByRole('button', { name: 'Edit White 0' }).click();
   await dialog.getByLabel(/Time in rank only/).check();
   await dialog.getByLabel('Min. years in rank').fill('2');
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
 
   const [w0, w1, w2] = await rungsOf('White');
@@ -86,7 +86,7 @@ test('a rung nobody holds can be removed; a held one can\'t', async ({ page }) =
   await expect(dialog.getByRole('button', { name: "White 1 can't be removed: 1 student(s) on it" })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Edit White 2' }).click();
   await dialog.getByRole('button', { name: 'Remove White 2' }).click();
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden(); // nobody's place changed: no confirmation
   expect((await rungsOf('White')).map((t) => t.id)).toEqual([before[0].id, before[1].id]);
 });
@@ -98,11 +98,11 @@ test('reordering rungs names the students affected, and they keep their rung', a
   const dialog = page.getByRole('dialog', { name: 'Edit White' });
   await dialog.getByRole('button', { name: 'Edit White 1' }).click();
   await dialog.getByRole('button', { name: 'Move White 1 down' }).click();
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
   const confirm = page.getByRole('dialog', { name: 'Reorder stripes?' });
   await expect(confirm.getByText('Sam Lee')).toBeVisible();
-  await confirm.getByRole('button', { name: 'Save' }).click();
+  await confirm.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(confirm).toBeHidden();
 
   expect((await rungsOf('White')).map((t) => t.id)).toEqual([before[0].id, before[2].id, before[1].id]);
@@ -131,11 +131,11 @@ test('stripes can be reordered by dragging within their belt, with the same conf
   // White 2 to the place of White 1.
   await dialog.getByTitle('Drag to reorder White 2').dragTo(dialog.getByRole('listitem', { name: 'Stripe line 2: White 1' }));
   await expect(dialog.getByRole('listitem', { name: 'Stripe line 2: White 2' })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
   const confirm = page.getByRole('dialog', { name: 'Reorder stripes?' });
   await expect(confirm.getByText('Sam Lee')).toBeVisible();
-  await confirm.getByRole('button', { name: 'Save' }).click();
+  await confirm.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(confirm).toBeHidden();
   expect((await rungsOf('White')).map((t) => t.id)).toEqual([before[0].id, before[2].id, before[1].id]);
 });
@@ -150,7 +150,7 @@ test('adds a belt at the top of the ladder, with mixed stripe colours', async ({
   await dialog.getByLabel('Number').nth(0).fill('2');
   await dialog.getByLabel('Number').nth(1).fill('1');
   await dialog.getByLabel('Classes required').fill('40');
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
 
   expect(await beltOrder()).toEqual(['White', 'Blue', 'Purple']);
