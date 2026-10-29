@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MoveToAdultDto, ReadyForAdultAgeDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
@@ -113,6 +113,18 @@ export class GradingController {
     return this.gradingService.editRankDate(user.sub, id, disciplineId, dto);
   }
 
+  /** Backlog 3.20: grade a Kids student into the linked Adult program. */
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/ranks/:disciplineId/move-to-adult')
+  moveToAdult(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('disciplineId', ParseUUIDPipe) disciplineId: string,
+    @Body() dto: MoveToAdultDto,
+  ) {
+    return this.gradingService.moveToAdult(user.sub, id, disciplineId, dto);
+  }
+
   @ApiOkResponse({ type: PromotionEventResponseDto })
   @Post('students/:id/ranks/:disciplineId/promote')
   promote(
@@ -214,6 +226,12 @@ export class GradingController {
     @Query('activeOnly') activeOnly?: string,
   ) {
     return this.gradingService.getGradingBoard(user.sub, schoolId, disciplineId, { search, activeOnly: activeOnly === 'true' });
+  }
+
+  @ApiOkResponse({ type: DisciplineResponseDto, description: 'The Kids style, with its new age.' })
+  @Put('disciplines/:id/ready-for-adult-age')
+  setReadyForAdultAge(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReadyForAdultAgeDto) {
+    return this.gradingService.setReadyForAdultAge(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its new board columns.' })

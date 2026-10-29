@@ -4,11 +4,13 @@ import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Discipline, Prisma, PrismaClient, PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, MoveToAdultDto, ReadyForAdultAgeDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ADULT_ALREADY, ADULT_FIRST_BELT, ADULT_NOT_LINKED, ADULT_TOO_YOUNG, hasReachedAge } from './kids-adult';
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { GradingFeeRequestedJobData, GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
@@ -121,6 +123,9 @@ export class GradingService {
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
     @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
+    // Backlog 3.20: dates of birth for "Ready for Adult program" on the board,
+    // read for the students the caller's board already shows.
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -1404,6 +1409,15 @@ export class GradingService {
         ...this.boardFee(feeRequestsOf.get(student.id) ?? [], sr.currentStripeId),
       });
     }
+    // Backlog 3.20 (Decision 281 item 3, 285 item 2): a Kids style's students
+    // who have reached "Ready for Adult from age" get the tag.
+    const readyForAdult = new Set<string>();
+    if (discipline.adultDisciplineId && items.length > 0) {
+      const today = localDay(now, schoolTimeZone ?? 'UTC');
+      const births = await this.prismaJobs.user.findMany({ where: { id: { in: items.map((i) => i.studentId) } }, select: { id: true, dateOfBirth: true } });
+      for (const b of births) if (hasReachedAge(b.dateOfBirth, discipline.readyForAdultAge, today)) readyForAdult.add(b.id);
+    }
+    for (const item of items) Object.assign(item, { readyForAdult: readyForAdult.has(item.studentId) });
     items.sort(
       (a, b) =>
         b.eligibility.progressPercent - a.eligibility.progressPercent ||
@@ -1505,22 +1519,211 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    if (!(await this.isSchoolOwner(callerId, discipline.schoolId))) {
-      await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
-      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
-      );
-      if (!permission || permission.schoolId !== discipline.schoolId || !permission.canChangeBoardThresholds) {
-        throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
-      }
-    }
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
+    await this.assertMayChangeStyleSettings(callerId, discipline);
     if (dto.gettingThere >= dto.readyToGrade) {
       throw new BadRequestException('"Getting There" must start below "Ready to Grade".');
     }
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.update({ where: { id: disciplineId }, data: { boardGettingThere: dto.gettingThere, boardReadyToGrade: dto.readyToGrade } }),
     );
+  }
+
+  /** A style's grading settings (the board %, and "Ready for Adult from age",
+   * Decision 297): the owner, or a coach with the "Change grading settings"
+   * toggle (canChangeBoardThresholds) for this style. */
+  private async assertMayChangeStyleSettings(callerId: string, discipline: Discipline): Promise<void> {
+    if (!(await this.isSchoolOwner(callerId, discipline.schoolId))) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId: discipline.id } } }),
+      );
+      if (!permission || permission.schoolId !== discipline.schoolId || !permission.canChangeBoardThresholds) {
+        throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
+      }
+    }
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
+  }
+
+  /** Backlog 3.20 (Decision 285 items 2 and 4): "Ready for Adult from age" on
+   * a Kids style, by the owner or whoever may change its grading settings. */
+  async setReadyForAdultAge(callerId: string, disciplineId: string, dto: ReadyForAdultAgeDto) {
+    if (!UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('disciplineId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertMayChangeStyleSettings(callerId, discipline);
+    if (!discipline.adultDisciplineId) {
+      throw new ConflictException(ADULT_NOT_LINKED);
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.update({ where: { id: disciplineId }, data: { readyForAdultAge: dto.age } }),
+    );
+  }
+
+  /**
+   * Backlog 3.20 (Decisions 281 item 2, 285, 298): grade a Kids student into
+   * the linked Adult program. The caller grades in the Kids style (canPromote
+   * there), from the Kids style's "Ready for Adult from age", onto any adult
+   * rank above the Adult ladder's first belt. The student's rank row moves to
+   * the Adult style, so their history and notes go with it; skill sign-offs
+   * count on the Adult ladder where it has a skill of exactly the same name,
+   * and the rest stay visible in their history. Only the class count starts
+   * again from zero. Recorded as a promotion, "Moved to Adult program."
+   */
+  async moveToAdult(callerId: string, studentId: string, disciplineId: string, dto: MoveToAdultDto) {
+    const kids = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!kids) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertCanGrade(callerId, kids.schoolId, disciplineId, studentId, 'canPromote');
+    await this.assertSchoolAcceptsGradingWrites(callerId, kids.schoolId, kids);
+    if (!kids.adultDisciplineId) {
+      throw new ConflictException(ADULT_NOT_LINKED);
+    }
+    const adult = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: kids.adultDisciplineId! } }));
+    if (!adult || adult.schoolId !== kids.schoolId) {
+      throw new ConflictException(ADULT_NOT_LINKED);
+    }
+    await this.assertSchoolAcceptsGradingWrites(callerId, adult.schoolId, adult);
+
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const existing = await tx.studentRank.findUnique({
+        where: { studentId_disciplineId: { studentId, disciplineId } },
+        include: { skillStatuses: { include: { skill: { select: { name: true } } } } },
+      });
+      if (!existing) {
+        throw new BadRequestException('This Student has no existing rank in this Discipline to grade from.');
+      }
+      if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId: adult.id } }, select: { id: true } })) {
+        throw new ConflictException(ADULT_ALREADY);
+      }
+      if (!(await isActiveForGrading(tx, existing, studentId, kids.schoolId))) {
+        throw new BadRequestException(INACTIVE_MESSAGE);
+      }
+      if (dto.expectedCurrentRungId !== undefined && existing.currentStripeId !== dto.expectedCurrentRungId) {
+        throw new ConflictException('This student\'s rank has changed since you opened it. Reload and try again.');
+      }
+      const timeZone = await studentTimeZone(tx, studentId, kids.schoolId);
+      const today = localDay(new Date(), timeZone);
+      const student = await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } });
+      if (!hasReachedAge(student?.dateOfBirth ?? null, kids.readyForAdultAge, today)) {
+        throw new ConflictException(ADULT_TOO_YOUNG);
+      }
+
+      const kidsLadder = await loadLadder(tx, disciplineId);
+      const fromIndex = existing.currentStripeId ? rungIndex(kidsLadder, existing.currentStripeId) : -1;
+      if (fromIndex < 0) {
+        throw new BadRequestException('This Student\'s current belt and stripe can\'t be found on the ladder; correct their rank first.');
+      }
+      const from = kidsLadder[fromIndex];
+      const adultLadder = await loadLadder(tx, adult.id);
+      const toIndex = rungIndex(adultLadder, dto.targetRungId);
+      if (toIndex < 0) {
+        throw new BadRequestException('targetRungId is not a belt or stripe of the Adult program.');
+      }
+      const to = adultLadder[toIndex];
+      if (to.rankId === adultLadder[0].rankId) {
+        throw new BadRequestException(ADULT_FIRST_BELT);
+      }
+
+      // The checks for the student's next Kids rank still apply, as for any skip.
+      let missingSkillIds: string[] = [];
+      const req = requirementFor(kidsLadder, from.id);
+      if (req.kind === 'NEXT' && !req.timeOnly) {
+        const signed = new Set(existing.skillStatuses.filter((st) => st.status === 'SIGNED_OFF').map((st) => st.skillId));
+        missingSkillIds = req.requiredSkillIds.filter((id) => !signed.has(id));
+      }
+      if (missingSkillIds.length > 0) {
+        if (kids.skillsRequiredToGrade) {
+          throw new BadRequestException(
+            'This style requires every skill for the next rank to be signed off before grading. Not signed off yet: ' + missingSkillIds.join(', '),
+          );
+        }
+        if (!dto.acknowledgeWithoutSkillSignoff) {
+          throw new BadRequestException(
+            'This Student has required Skills for their next rank not yet Signed Off. Set acknowledgeWithoutSkillSignoff=true to grade anyway (always recorded).',
+          );
+        }
+      }
+
+      let rankDate = new Date();
+      if (dto.effectiveDate !== undefined) {
+        const problem = gradingDateProblem(dto.effectiveDate, today, localDay(existing.dateOfCurrentRank, timeZone));
+        if (problem === 'INVALID') throw new BadRequestException('effectiveDate must be a real calendar date, as YYYY-MM-DD.');
+        if (problem === 'IN_FUTURE') throw new BadRequestException('The grading date can\'t be in the future.');
+        if (problem === 'BEFORE_CURRENT_RANK') {
+          throw new BadRequestException(
+            `The grading date can't be before the date the student reached their current rank, ${localDay(existing.dateOfCurrentRank, timeZone)}.`,
+          );
+        }
+        if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
+      }
+
+      const updated = await tx.studentRank.updateMany({
+        where: { id: existing.id, disciplineId, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
+        data: {
+          disciplineId: adult.id,
+          currentRankId: to.rankId,
+          currentStripeId: to.id,
+          dateOfCurrentRank: rankDate,
+          // Decision 285 item 3: everything carries over but the class count.
+          classesAttendedTowardCheckpoint: 0,
+          classesAttendedByType: {},
+          countingSince: new Date(),
+          readyNotifiedAt: null,
+        },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
+      }
+      // Decision 298: a Kids sign-off counts on the Adult ladder where it has a
+      // skill of exactly the same name. Kids sign-offs stay as they are.
+      const signedNames = new Set(existing.skillStatuses.filter((st) => st.status === 'SIGNED_OFF').map((st) => st.skill.name));
+      if (signedNames.size > 0) {
+        const adultSkills = await tx.skill.findMany({ where: { disciplineId: adult.id, name: { in: [...signedNames] } }, select: { id: true } });
+        for (const skill of adultSkills) {
+          await tx.studentRankSkillStatus.upsert({
+            where: { studentRankId_skillId: { studentRankId: existing.id, skillId: skill.id } },
+            create: { id: randomUUID(), studentRankId: existing.id, schoolId: existing.schoolId, studentId, skillId: skill.id, status: 'SIGNED_OFF' },
+            update: { status: 'SIGNED_OFF' },
+          });
+        }
+      }
+      const promotionEvent = await tx.promotionEvent.create({
+        data: {
+          id: randomUUID(),
+          studentRankId: existing.id,
+          schoolId: kids.schoolId,
+          studentId,
+          type: 'PROMOTION',
+          performedById: callerId,
+          fromRankId: from.rankId,
+          toRankId: to.rankId,
+          fromStripeTierId: from.id,
+          toStripeTierId: to.id,
+          acknowledgedWithoutSkillSignoff: missingSkillIds.length > 0,
+          effectiveDate: rankDate,
+          note: dto.note ?? null,
+          systemNote: 'Moved to Adult program.',
+          startingClasses: 0,
+        },
+      });
+      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+      return { studentRank, promotionEvent, toRungName: to.name };
+    });
+
+    await this.notifyOfGradingAction({
+      promotionEventId: result.promotionEvent.id,
+      studentId,
+      disciplineName: adult.name,
+      toRungName: result.toRungName,
+      kind: 'PROMOTED',
+    });
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId, adult.id);
+    return result;
   }
 
   /** Board drag (Decision 128, item 13; prototype dropOnBand): rewrites the
