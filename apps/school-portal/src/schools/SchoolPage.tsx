@@ -4,7 +4,6 @@ import { ApiError } from '@ultm8/api-client';
 import { useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
-import { titleCase } from '../lib/text';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -30,6 +29,9 @@ import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid } from '../cancellations/CancellationSettingsFields';
+
+/** Stripe's card brand ("visa", "mastercard") as shown: "Visa", "Mastercard". */
+const cardBrand = (brand: string) => brand.charAt(0).toUpperCase() + brand.slice(1);
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
@@ -783,7 +785,7 @@ function FranchiseFeeSection({ schoolId, closed }: { schoolId: string; closed: b
           <p style={{ margin: 0 }} data-testid="franchise-fee-card">
             {card.hasCard
               ? card.brand && card.last4
-                ? t('schools.franchise.cardOnFile', { brand: titleCase(card.brand), last4: card.last4 })
+                ? t('schools.franchise.cardOnFile', { brand: cardBrand(card.brand), last4: card.last4 })
                 : t('schools.franchise.cardSaved')
               : t('schools.franchise.noCard')}
           </p>
