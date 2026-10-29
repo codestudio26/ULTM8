@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
+import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { VisitorCard } from '../students/VisitorCard';
@@ -208,6 +209,9 @@ export function StudentGradingPage() {
 
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
+
+      {/* Decision 403: a new temporary passcode while the account is unused. Owner only. */}
+      {!inactive && my.isOwner ? <TemporaryPasscodeCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 400: staff notes, some shown to the member. */}
       {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
