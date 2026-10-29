@@ -158,7 +158,13 @@ export class GradingService {
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const timeZone = await studentTimeZone(tx, studentId, schoolId);
       // Each style's own board columns (Decisions 75, 136, 181).
-      const styles = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, boardGettingThere: true, boardReadyToGrade: true } });
+      const styles = await tx.discipline.findMany({
+        where: { schoolId },
+        select: { id: true, boardGettingThere: true, boardReadyToGrade: true, adultDisciplineId: true, readyForAdultAge: true },
+      });
+      // Backlog 3.20: "Ready for Adult program" on a Kids style.
+      const born = (await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } }))?.dateOfBirth ?? null;
+      const today = localDay(new Date(), timeZone);
       const items: Array<Record<string, unknown>> = [];
       for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string; studentId: string; schoolId: string }>) {
         const style = styles.find((d) => d.id === row.disciplineId);
@@ -171,6 +177,7 @@ export class GradingService {
           // never fed back into it.
           progressBreakdown: progressBreakdown(eligibility),
           hoursTrained: await hoursTrained(tx, row),
+          readyForAdult: !!style?.adultDisciplineId && hasReachedAge(born, style.readyForAdultAge, today),
         });
       }
       return { items };

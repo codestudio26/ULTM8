@@ -214,6 +214,9 @@ export class StudentEligibilityResponseDto extends StudentRankResponseDto {
 
   @ApiProperty({ type: HoursTrainedResponseDto })
   hoursTrained!: HoursTrainedResponseDto;
+
+  @ApiProperty({ description: 'Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age". False on other styles.' })
+  readyForAdult!: boolean;
 }
 
 export class StudentEligibilityListResponseDto {

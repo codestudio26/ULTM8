@@ -23,6 +23,7 @@ import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
 import { GradingTabs } from './GradingTabs';
 import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
+import { programPair, useAdultProgram } from './adultProgram';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 /** Column labels are translation keys, resolved at render time. */
@@ -95,6 +96,9 @@ export function GradingBoardPage() {
   const ranks = useRanks(disciplineId);
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
   const style = styles.find((d) => d.id === disciplineId) ?? null;
+  // Backlog 3.20: Kids and Adult are two linked styles, shown with a switch.
+  const pair = programPair(style, disciplines.data?.items ?? []);
+  const adultProgram = useAdultProgram(style, disciplines.data?.items ?? [], !!promotingOne?.item.readyForAdult);
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
     for (const i of instructors.data?.items ?? []) names.set(i.userId, `${i.firstName} ${i.surname}`.trim());
@@ -243,6 +247,31 @@ export function GradingBoardPage() {
                   />
                 </Field>
               </div>
+              {pair ? (
+                <div role="group" aria-label={t('grading.board.programLabel')} className="ultm8-view-toggle" style={{ alignSelf: 'flex-end' }}>
+                  {(['kids', 'adult'] as const).map((which) => {
+                    const target = pair[which];
+                    const allowed = styles.some((d) => d.id === target.id);
+                    return (
+                      <Button
+                        key={which}
+                        type="button"
+                        variant={target.id === disciplineId ? 'primary' : 'secondary'}
+                        aria-pressed={target.id === disciplineId}
+                        disabled={!allowed}
+                        onClick={() => {
+                          setDisciplineId(target.id);
+                          setSelected([]);
+                          setExpanded([]);
+                          setPanel(null);
+                        }}
+                      >
+                        {which === 'kids' ? t('grading.board.programKids') : t('grading.board.programAdult')}
+                      </Button>
+                    );
+                  })}
+                </div>
+              ) : null}
               <div style={{ minWidth: 200 }}>
                 <Field label={t('grading.board.searchLabel')} htmlFor="board-search">
                   <TextField type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -494,6 +523,7 @@ export function GradingBoardPage() {
           eligibility={promotingOne.item.eligibility}
           title={t('grading.board.promoteOneTitle', { name: fullName(promotingOne.item) })}
           initialTargetId={promotingOne.targetRungId}
+          adult={adultProgram}
           onClose={() => setPromotingOne(null)}
         />
       ) : null}
@@ -566,6 +596,7 @@ function Tags({ item }: { item: GradingBoardItem }) {
       {daysShort > 0 ? <Badge variant="accent">{t('grading.board.card.daysShort', { count: daysShort })}</Badge> : null}
       {item.active ? null : <Badge>{t('grading.board.card.inactive')}</Badge>}
       {item.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.board.card.notVerified')}</Badge> : null}
+      {item.readyForAdult ? <Badge variant="info">{t('grading.board.card.readyForAdult')}</Badge> : null}
     </>
   );
 }

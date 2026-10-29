@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from './disciplineQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -10,6 +10,8 @@ export interface DisciplineFormValues {
   skillsRequiredToGrade: boolean;
   /** Class types renamed in this edit (Decision 309); always empty when adding. */
   renameClassTypes: Array<{ from: string; to: string }>;
+  /** Backlog 3.20: the Adult style this Kids style links to; only sent when editing. */
+  adultDisciplineId?: string | null;
 }
 
 /** One row of the class type list. `original` is the stored name the row
@@ -31,12 +33,17 @@ const row = (original: string | null, value = original ?? ''): TypeRow => ({ key
 export function DisciplineFormModal({
   title,
   initial,
+  adultChoices,
   submitting,
   onSubmit,
   onClose,
 }: {
   title: string;
   initial?: Partial<DisciplineResponse>;
+  /** Backlog 3.20: when editing, the styles this one can link to as its Adult
+   * program. Null when it can't be a Kids style (it is another style's Adult
+   * program); undefined hides the field (adding a style). */
+  adultChoices?: DisciplineResponse[] | null;
   submitting: boolean;
   onSubmit: (values: DisciplineFormValues) => Promise<void>;
   onClose: () => void;
@@ -45,6 +52,7 @@ export function DisciplineFormModal({
   const [name, setName] = useState(initial?.name ?? '');
   const [skillsRequiredToGrade, setSkillsRequired] = useState(initial?.skillsRequiredToGrade ?? false);
   const [types, setTypes] = useState<TypeRow[]>(() => (initial?.classTypesOffered ?? []).map((c) => row(c)));
+  const [adultId, setAdultId] = useState(initial?.adultDisciplineId ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const update = (key: number, value: string) => setTypes((rows) => rows.map((r) => (r.key === key ? { ...r, value } : r)));
@@ -88,6 +96,7 @@ export function DisciplineFormModal({
         renameClassTypes: kept
           .filter((r) => r.original !== null && r.original !== r.value.trim())
           .map((r) => ({ from: r.original as string, to: r.value.trim() })),
+        ...(adultChoices && adultId !== (initial?.adultDisciplineId ?? '') ? { adultDisciplineId: adultId || null } : {}),
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -130,6 +139,18 @@ export function DisciplineFormModal({
           </Button>
         </fieldset>
         <Checkbox label={t('disciplines.form.skillsRequired')} checked={skillsRequiredToGrade} onChange={(e) => setSkillsRequired(e.target.checked)} />
+        {adultChoices ? (
+          <Field label={t('disciplines.form.adultProgramLabel')} htmlFor="discipline-adult" hint={t('disciplines.form.adultProgramHint')}>
+            <SelectField
+              id="discipline-adult"
+              value={adultId}
+              onChange={(e) => setAdultId(e.target.value)}
+              options={[{ value: '', label: t('disciplines.form.adultProgramNone') }, ...adultChoices.map((d) => ({ value: d.id, label: d.name }))]}
+            />
+          </Field>
+        ) : adultChoices === null ? (
+          <p className="ultm8-field__hint">{t('disciplines.form.isAdultProgram')}</p>
+        ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}

@@ -1572,6 +1572,16 @@
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
 }
+/* Backlog 3.20: a group heading in the list, e.g. "ADULT PROGRAM". */
+.ultm8-rank-picker__heading {
+  padding: 10px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  list-style: none;
+}
 .ultm8-rank-picker__option {
   display: flex;
   align-items: center;

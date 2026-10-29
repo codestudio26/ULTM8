@@ -9823,6 +9823,59 @@
         ]
       }
     },
+    "/v1/students/{id}/ranks/{disciplineId}/move-to-adult": {
+      "post": {
+        "operationId": "GradingController_moveToAdult",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveToAdultDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
       "post": {
         "operationId": "GradingController_promote",
@@ -10234,6 +10287,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GradingBoardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/ready-for-adult-age": {
+      "put": {
+        "operationId": "GradingController_setReadyForAdultAge",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadyForAdultAgeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The Kids style, with its new age.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
                 }
               }
             }
@@ -25024,6 +25122,15 @@
             "nullable": true,
             "description": "Archived (retired) at (Decision 309); null while in use."
           },
+          "adultDisciplineId": {
+            "type": "string",
+            "nullable": true,
+            "description": "On a Kids style: its Adult style (backlog 3.20, Decision 281). Null otherwise."
+          },
+          "readyForAdultAge": {
+            "type": "number",
+            "description": "On a Kids style: \"Ready for Adult from age\" (Decision 285 item 2). Default 16."
+          },
           "studentCount": {
             "type": "number",
             "description": "Students with a rank in this style (Decision 309)."
@@ -25043,6 +25150,7 @@
           "skillsRequiredToGrade",
           "boardGettingThere",
           "boardReadyToGrade",
+          "readyForAdultAge",
           "studentCount",
           "createdAt",
           "updatedAt"
@@ -25164,6 +25272,12 @@
             "items": {
               "$ref": "#/components/schemas/ClassTypeRenameDto"
             }
+          },
+          "adultDisciplineId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Backlog 3.20: makes this a Kids style whose students can be graded into this Adult style of the same School. null unlinks. A style that is itself linked, or that another Kids style uses as its Adult style, cannot be linked."
           }
         }
       },
@@ -26210,6 +26324,10 @@
           },
           "hoursTrained": {
             "$ref": "#/components/schemas/HoursTrainedResponseDto"
+          },
+          "readyForAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: on a Kids style, the student has reached \"Ready for Adult from age\". False on other styles."
           }
         },
         "required": [
@@ -26227,7 +26345,8 @@
           "createdAt",
           "updatedAt",
           "eligibility",
-          "hoursTrained"
+          "hoursTrained",
+          "readyForAdult"
         ]
       },
       "StudentEligibilityListResponseDto": {
@@ -26658,6 +26777,36 @@
           "date"
         ]
       },
+      "MoveToAdultDto": {
+        "type": "object",
+        "properties": {
+          "targetRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) on the Adult style to move to."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "As on promote: refused (409) if the student has moved since.",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "As on promote: YYYY-MM-DD, not in the future, not before the current rank date. Default today.",
+            "example": "2026-03-01"
+          },
+          "note": {
+            "type": "string",
+            "description": "The grader's own note on this history entry."
+          },
+          "acknowledgeWithoutSkillSignoff": {
+            "type": "boolean",
+            "description": "As on promote: needed when skills for the next Kids rank are not signed off."
+          }
+        },
+        "required": [
+          "targetRungId"
+        ]
+      },
       "GradingActionDto": {
         "type": "object",
         "properties": {
@@ -27055,6 +27204,10 @@
                 "$ref": "#/components/schemas/BoardFeeRequestDto"
               }
             ]
+          },
+          "readyForAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: on a Kids style, the student has reached \"Ready for Adult from age\" (\"Ready for Adult program\" tag). Always false on other styles."
           }
         },
         "required": [
@@ -27069,7 +27222,8 @@
           "hasActiveMembership",
           "hardBlocked",
           "eligibility",
-          "noHomeBranch"
+          "noHomeBranch",
+          "readyForAdult"
         ]
       },
       "GradingBoardResponseDto": {
@@ -27095,6 +27249,20 @@
           "items",
           "hiddenInactive",
           "atTopRank"
+        ]
+      },
+      "ReadyForAdultAgeDto": {
+        "type": "object",
+        "properties": {
+          "age": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99,
+            "example": 16
+          }
+        },
+        "required": [
+          "age"
         ]
       },
       "BoardThresholdsDto": {

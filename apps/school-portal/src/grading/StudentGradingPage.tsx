@@ -37,6 +37,7 @@ import {
 } from './gradingQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { useAdultProgram } from './adultProgram';
 import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
@@ -236,6 +237,7 @@ export function StudentGradingPage() {
             studentName={studentName}
             feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
             feeCurrency={feeSettings.data?.currency ?? null}
+            styles={disciplines.data?.items ?? []}
           />
         ))
       )}
@@ -354,6 +356,7 @@ function DisciplineGradingCard({
   studentName,
   feeRequests,
   feeCurrency,
+  styles,
 }: {
   studentId: string;
   schoolId: string;
@@ -374,6 +377,8 @@ function DisciplineGradingCard({
   /** This style's promotion fee requests (Decisions 300, 307, 313). */
   feeRequests: StudentFeeRequest[];
   feeCurrency: string | null;
+  /** Every style of the School, for the Kids style's linked Adult program (backlog 3.20). */
+  styles: DisciplineResponse[];
 }) {
   const can = (toggle: GradingToggle) => (archived ? toggle === 'canVoidHistory' && canInStyle(toggle) : canInStyle(toggle));
   const ranks = useRanks(discipline.id);
@@ -386,6 +391,8 @@ function DisciplineGradingCard({
   const mayEditNotes = canInStyle('canPromote') || canInStyle('canDowngrade');
 
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
+  const studentReadyForAdult = !!studentRank?.readyForAdult;
+  const adultProgram = useAdultProgram(discipline, styles, studentReadyForAdult && !archived);
   const current = studentRank ? ladder.find((r) => r.id === studentRank.currentStripeId) ?? null : null;
   const eligibility = (studentRank?.eligibility ?? null) as Eligibility | null;
   const entries = studentRank ? history.filter((h) => h.studentRankId === studentRank.id) : [];
@@ -416,6 +423,7 @@ function DisciplineGradingCard({
                 <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
                 {fee ? <FeeBadge status={fee.status} /> : null}
                 {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
+                {studentReadyForAdult ? <Badge variant="info">{t('grading.board.card.readyForAdult')}</Badge> : null}
                 {!archived && eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
               </div>
             )}
@@ -523,7 +531,7 @@ function DisciplineGradingCard({
       </Card>
 
       {dialog === 'grade' ? (
-        <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} onClose={() => setDialog(null)} />
+        <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} adult={adultProgram} onClose={() => setDialog(null)} />
       ) : null}
       {dialog && typeof dialog === 'object' && 'promoteTo' in dialog ? (
         <GradeModal
@@ -533,6 +541,7 @@ function DisciplineGradingCard({
           current={current}
           eligibility={eligibility}
           initialTargetId={dialog.promoteTo}
+          adult={adultProgram}
           onClose={() => setDialog(null)}
         />
       ) : null}

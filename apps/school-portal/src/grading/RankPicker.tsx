@@ -17,6 +17,7 @@ export function RankPicker({
   value,
   onChange,
   suffix,
+  heading,
 }: {
   id: string;
   options: Rung[];
@@ -24,6 +25,8 @@ export function RankPicker({
   onChange: (rungId: string) => void;
   /** Extra text after an option's name, e.g. "· Adult program". */
   suffix?: (rung: Rung) => string | null;
+  /** A small grey heading shown above this option, e.g. "ADULT PROGRAM" (backlog 3.20). */
+  heading?: (rung: Rung) => string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -109,9 +112,15 @@ export function RankPicker({
         <ul id={listId} ref={listRef} role="listbox" aria-labelledby={id} className="ultm8-rank-picker__list">
           {options.map((r, i) => {
             const selected = r.id === value;
+            const title = heading?.(r);
             return (
+              <React.Fragment key={r.id}>
+              {title ? (
+                <li role="presentation" className="ultm8-rank-picker__heading">
+                  {title}
+                </li>
+              ) : null}
               <li
-                key={r.id}
                 id={`${id}-opt-${i}`}
                 data-index={i}
                 role="option"
@@ -131,6 +140,7 @@ export function RankPicker({
                 <span style={{ flex: 1 }}>{label(r)}</span>
                 {selected ? <span aria-hidden="true">✓</span> : null}
               </li>
+              </React.Fragment>
             );
           })}
         </ul>

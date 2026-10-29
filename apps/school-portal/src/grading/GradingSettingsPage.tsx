@@ -10,6 +10,7 @@ import {
   usePromotionFeeSettings,
   useSetAnyBoardThresholds,
   useSetOpenMatHours,
+  useSetReadyForAdultAge,
   useUpdatePromotionFeeSettings,
 } from './gradingQueries';
 import { GradingTabs } from './GradingTabs';
@@ -32,7 +33,9 @@ const ABOUT: Record<About, { title: TranslationKey; body: TranslationKey }> = {
  * for that style); the promotion fee for the whole school (owner only,
  * Decisions 297, 300, 307); and "Open mat counts toward hours" (the owner, or
  * a coach with "Change board %" for any style; Decisions 301, 304, 306).
- * Ready-for-Adult age and Belts/Levels come with B1/B4.
+ * A Kids style linked to its Adult style also has "Ready for Adult from age"
+ * (backlog 3.20; Decision 285 items 2 and 4), with the same right as its
+ * columns. Belts/Levels come with B4.
  */
 export function GradingSettingsPage() {
   const schoolId = useGradingSchoolId();
@@ -44,10 +47,12 @@ export function GradingSettingsPage() {
   const updateFee = useUpdatePromotionFeeSettings(schoolId ?? '');
   const setOpenMat = useSetOpenMatHours(schoolId ?? '');
   const setThresholds = useSetAnyBoardThresholds();
+  const setAdultAge = useSetReadyForAdultAge();
   const styles = useMemo(() => (disciplines.data?.items ?? []).filter((d) => !d.archivedAt && my.mayGradeStyle(d.id)), [disciplines.data, my]);
 
   // The page's working copy; Save sends only what changed.
   const [columns, setColumns] = useState<Record<string, { g: string; r: string }>>({});
+  const [adultAges, setAdultAges] = useState<Record<string, string>>({});
   const [feeOn, setFeeOn] = useState(false);
   const [beforePaid, setBeforePaid] = useState(false);
   const [openMatOn, setOpenMatOn] = useState(false);
@@ -58,12 +63,13 @@ export function GradingSettingsPage() {
 
   const reset = () => {
     setColumns(Object.fromEntries(styles.map((d) => [d.id, { g: String(d.boardGettingThere), r: String(d.boardReadyToGrade) }])));
+    setAdultAges(Object.fromEntries(styles.map((d) => [d.id, String(d.readyForAdultAge)])));
     setFeeOn(fee.data?.promotionFeeEnabled ?? false);
     setBeforePaid(fee.data?.gradeBeforeFeePaid ?? false);
     setOpenMatOn(openMat.data?.openMatCountsTowardHours ?? false);
   };
   // Reset when the saved values change, not on every render (the style list is rebuilt each time).
-  const savedKey = styles.map((d) => `${d.id}:${d.boardGettingThere}:${d.boardReadyToGrade}`).join(',');
+  const savedKey = styles.map((d) => `${d.id}:${d.boardGettingThere}:${d.boardReadyToGrade}:${d.readyForAdultAge}`).join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(reset, [savedKey, fee.data, openMat.data]);
 
@@ -83,10 +89,12 @@ export function GradingSettingsPage() {
     const c = columns[d.id];
     return c && canColumns(d) && (c.g !== String(d.boardGettingThere) || c.r !== String(d.boardReadyToGrade));
   });
+  const ageProblem = (v: string) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 99 ? null : t('grading.settings.columns.adultAgeInvalid'));
+  const changedAges = styles.filter((d) => d.adultDisciplineId && canColumns(d) && adultAges[d.id] !== undefined && adultAges[d.id] !== String(d.readyForAdultAge));
   const feeChanged = my.isOwner && (feeOn !== (fee.data?.promotionFeeEnabled ?? false) || beforePaid !== (fee.data?.gradeBeforeFeePaid ?? false));
   const openMatChanged = canOpenMat && openMatOn !== (openMat.data?.openMatCountsTowardHours ?? false);
-  const dirty = changedColumns.length > 0 || feeChanged || openMatChanged;
-  const invalid = changedColumns.some((d) => columnProblem(columns[d.id]) !== null);
+  const dirty = changedColumns.length > 0 || changedAges.length > 0 || feeChanged || openMatChanged;
+  const invalid = changedColumns.some((d) => columnProblem(columns[d.id]) !== null) || changedAges.some((d) => ageProblem(adultAges[d.id]) !== null);
 
   async function save() {
     setSaving(true);
@@ -95,6 +103,9 @@ export function GradingSettingsPage() {
     try {
       for (const d of changedColumns) {
         await setThresholds.mutateAsync({ disciplineId: d.id, gettingThere: Number(columns[d.id].g), readyToGrade: Number(columns[d.id].r) });
+      }
+      for (const d of changedAges) {
+        await setAdultAge.mutateAsync({ disciplineId: d.id, age: Number(adultAges[d.id]) });
       }
       if (feeChanged) await updateFee.mutateAsync({ promotionFeeEnabled: feeOn, ...(feeOn ? { gradeBeforeFeePaid: beforePaid } : {}) });
       if (openMatChanged) await setOpenMat.mutateAsync(openMatOn);
@@ -164,6 +175,25 @@ export function GradingSettingsPage() {
                             onChange={(e) => setColumns((x) => ({ ...x, [d.id]: { ...c, r: e.target.value } }))}
                           />
                         </label>
+                        {d.adultDisciplineId ? (
+                          <label className="ultm8-settings-inline">
+                            {t('grading.settings.columns.adultAge')}
+                            <TextField
+                              type="number"
+                              min={1}
+                              max={99}
+                              value={adultAges[d.id] ?? String(d.readyForAdultAge)}
+                              disabled={!editable}
+                              aria-label={t('grading.settings.columns.adultAgeAria', { style: d.name })}
+                              onChange={(e) => setAdultAges((x) => ({ ...x, [d.id]: e.target.value }))}
+                            />
+                          </label>
+                        ) : null}
+                        {d.adultDisciplineId && editable && adultAges[d.id] !== undefined && ageProblem(adultAges[d.id]) ? (
+                          <p role="alert" className="ultm8-field__error" style={{ flexBasis: '100%', margin: 0 }}>
+                            {ageProblem(adultAges[d.id])}
+                          </p>
+                        ) : null}
                         {editable ? null : <span className="ultm8-field__hint">{t('grading.settings.columns.noRight')}</span>}
                         {problem ? (
                           <p role="alert" className="ultm8-field__error" style={{ flexBasis: '100%', margin: 0 }}>
