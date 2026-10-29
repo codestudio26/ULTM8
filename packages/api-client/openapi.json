@@ -1875,10 +1875,11 @@
             "name": "status",
             "required": false,
             "in": "query",
-            "description": "Default active. \"removed\" = had a staff role here, holds none now.",
+            "description": "Default active, which includes paused staff (Decision 390). \"paused\" = paused only. \"removed\" = had a staff role here, holds none now and is not paused.",
             "schema": {
               "enum": [
                 "active",
+                "paused",
                 "removed",
                 "all"
               ],
@@ -2064,6 +2065,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StaffAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/pause": {
+      "post": {
+        "operationId": "RoleGrantsController_pauseStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseStaffResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/unpause": {
+      "post": {
+        "operationId": "RoleGrantsController_unpauseStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnpauseStaffResponseDto"
                 }
               }
             }
@@ -18105,6 +18192,11 @@
           "revokedAt": {
             "type": "string",
             "nullable": true
+          },
+          "pausedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 390: set while this role is paused (revokedAt is set too). Unpausing gives it back."
           }
         },
         "required": [
@@ -18149,6 +18241,15 @@
             "nullable": true,
             "description": "When their last staff role here ended, for removed staff."
           },
+          "paused": {
+            "type": "boolean",
+            "description": "Decision 390: an owner paused their coach and Branch Staff roles here; Unpause gives them back. Never true with active."
+          },
+          "pausedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 390: when they were paused."
+          },
           "canInviteCoaches": {
             "type": "boolean"
           },
@@ -18172,7 +18273,7 @@
           },
           "access": {
             "nullable": true,
-            "description": "Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise.",
+            "description": "Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/StaffAccessDto"
@@ -18194,6 +18295,7 @@
           "email",
           "active",
           "addedAt",
+          "paused",
           "canInviteCoaches",
           "canManageDisciplines",
           "mainOwner",
@@ -18287,6 +18389,50 @@
         "required": [
           "userId",
           "access"
+        ]
+      },
+      "PauseStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "pausedRoles": {
+            "type": "number",
+            "description": "How many coach and Branch Staff roles were paused."
+          },
+          "pausedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "pausedRoles",
+          "pausedAt"
+        ]
+      },
+      "UnpauseStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "restoredRoles": {
+            "type": "number",
+            "description": "How many roles came back."
+          },
+          "closedBranches": {
+            "description": "Branches closed while they were paused: their roles there did not come back. Give them a role at another branch if they need one.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "restoredRoles",
+          "closedBranches"
         ]
       },
       "HandOverMainOwnerDto": {

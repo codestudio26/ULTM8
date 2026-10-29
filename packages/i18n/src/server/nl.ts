@@ -608,4 +608,9 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "De schooleigenaar heeft je niet toegestaan instructeurs uit te nodigen.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Toegangsschakelaars zijn voor vestigingspersoneel. Instructeurs hebben de rechten van hun rol en eigenaren hebben alle rechten.",
   "You are not on the staff of this School.": "Je hoort niet bij het personeel van deze school.",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.": "Eigenaren kunnen niet worden gepauzeerd. Pauzeren is voor trainers en vestigingsmedewerkers.",
+  "This person is already paused.": "Deze persoon is al gepauzeerd.",
+  "This person is not paused.": "Deze persoon is niet gepauzeerd.",
+  "This person is paused at this School. Unpause them to give their roles back.": "Deze persoon is gepauzeerd bij deze school. Hef de pauze op om de rollen terug te geven.",
+  "Your roles at this School are paused. Ask the School to unpause you.": "Je rollen bij deze school zijn gepauzeerd. Vraag de school de pauze op te heffen.",
 };

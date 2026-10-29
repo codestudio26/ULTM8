@@ -608,4 +608,9 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "学校所有者未允许你邀请教练。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.": "所有者不能被暂停。暂停仅适用于教练和分校员工。",
+  "This person is already paused.": "此人已被暂停。",
+  "This person is not paused.": "此人未被暂停。",
+  "This person is paused at this School. Unpause them to give their roles back.": "此人在本学校已被暂停。取消暂停即可恢复其角色。",
+  "Your roles at this School are paused. Ask the School to unpause you.": "你在本学校的角色已被暂停。请联系学校取消暂停。",
 };

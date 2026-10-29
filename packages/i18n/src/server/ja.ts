@@ -608,4 +608,9 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "スクールオーナーはコーチの招待を許可していません。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
   "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.": "オーナーは一時停止できません。一時停止はコーチと支店スタッフが対象です。",
+  "This person is already paused.": "この人はすでに一時停止中です。",
+  "This person is not paused.": "この人は一時停止されていません。",
+  "This person is paused at this School. Unpause them to give their roles back.": "この人はこのスクールで一時停止中です。役割を戻すには一時停止を解除してください。",
+  "Your roles at this School are paused. Ask the School to unpause you.": "このスクールでのあなたの役割は一時停止中です。スクールに解除を依頼してください。",
 };

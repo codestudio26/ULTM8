@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff page: Pause and Unpause** (Decision 390). An owner can pause a
+  coach or a Branch Staff member. All their roles at the School stop straight
+  away, even if they are signed in. Everything set for them is kept: access
+  switches, grading permissions, display name, and the classes they teach.
+  Unpause gives the same roles back, except at a branch that was closed in
+  the meantime. Paused people stay on the Staff list with a "Paused" badge and
+  have their own status filter. Owners can't be paused. Remove from School
+  still works on someone who is paused.
 - **Front desk: Find me on the tablet** (Decision 385) — someone about to
   sign up types their full name and date of birth; the tablet says only
   whether they're already a member (both must match), and shows nothing

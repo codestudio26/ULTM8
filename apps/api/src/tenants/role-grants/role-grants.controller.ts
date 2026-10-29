@@ -19,11 +19,13 @@ import {
   HandOverMainOwnerDto,
   MainOwnerResponseDto,
   MyStaffAccessResponseDto,
+  PauseStaffResponseDto,
   StaffAccessDto,
   StaffAccessResponseDto,
   StaffDetailsResponseDto,
   StaffListQueryDto,
   StaffListResponseDto,
+  UnpauseStaffResponseDto,
   UpdateStaffDetailsDto,
 } from './dto/staff-list.dto';
 
@@ -156,6 +158,21 @@ export class RoleGrantsController {
     @Body() dto: StaffAccessDto,
   ) {
     return this.roleGrantsService.setStaffAccess(user.sub, schoolId, userId, dto);
+  }
+
+  /** Decision 390 — the owner pauses a coach or Branch Staff member: all
+   * their staff access here stops until they are unpaused. */
+  @ApiCreatedResponse({ type: PauseStaffResponseDto })
+  @Post('schools/:schoolId/staff/:userId/pause')
+  pauseStaff(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('userId') userId: string) {
+    return this.roleGrantsService.pauseStaff(user.sub, schoolId, userId);
+  }
+
+  /** Decision 390 — gives a paused person their roles back. */
+  @ApiCreatedResponse({ type: UnpauseStaffResponseDto })
+  @Post('schools/:schoolId/staff/:userId/unpause')
+  unpauseStaff(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('userId') userId: string) {
+    return this.roleGrantsService.unpauseStaff(user.sub, schoolId, userId);
   }
 
   // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in

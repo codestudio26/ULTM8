@@ -608,4 +608,9 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "Okul sahibi eğitmen davet etmenize izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.": "Sahipler duraklatılamaz. Duraklatma, eğitmenler ve şube personeli içindir.",
+  "This person is already paused.": "Bu kişi zaten duraklatılmış.",
+  "This person is not paused.": "Bu kişi duraklatılmamış.",
+  "This person is paused at this School. Unpause them to give their roles back.": "Bu kişi bu okulda duraklatılmış. Rollerini geri vermek için duraklatmayı kaldırın.",
+  "Your roles at this School are paused. Ask the School to unpause you.": "Bu okuldaki rolleriniz duraklatıldı. Okuldan duraklatmayı kaldırmasını isteyin.",
 };

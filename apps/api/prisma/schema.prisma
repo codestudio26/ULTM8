@@ -713,6 +713,13 @@ model RoleGrant {
   /// migration 20261213000100_school_main_owner).
   isMainOwner Boolean @default(false)
 
+  /// Decision 390 — set, with revokedAt, when an owner pauses this coach or
+  /// Branch Staff role ("Pause" on the Staff page). Unpausing clears both, so
+  /// the same role comes back. Never set on a live row (CHECK
+  /// RoleGrant_paused_is_revoked). pausedById is the owner who paused it.
+  pausedAt   DateTime?
+  pausedById String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   // Two partial unique indexes live in the migrations only (Prisma's DSL has

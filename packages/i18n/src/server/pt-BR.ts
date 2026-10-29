@@ -608,4 +608,9 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "O proprietário da escola não permitiu que você convide instrutores.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da filial. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
   "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
+  "Owners can't be paused. Pause is for coaches and Branch Staff.": "Proprietários não podem ser pausados. A pausa é para instrutores e equipe da filial.",
+  "This person is already paused.": "Esta pessoa já está pausada.",
+  "This person is not paused.": "Esta pessoa não está pausada.",
+  "This person is paused at this School. Unpause them to give their roles back.": "Esta pessoa está pausada nesta escola. Retome-a para devolver os papéis dela.",
+  "Your roles at this School are paused. Ask the School to unpause you.": "Seus papéis nesta escola estão pausados. Peça à escola para retomá-los.",
 };
