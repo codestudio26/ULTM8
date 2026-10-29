@@ -606,6 +606,7 @@ export const SERVER_PATTERNS: string[] = [
  "Front-desk session not found, or already ended.",
  "This front-desk session has ended. Ask a member of staff to start it again.",
  "That staff code isn't right.",
+ "That check-in code isn't right.",
  "This class is at another Branch.",
  "The tablet's day is out of range. Check the tablet's date and time.",
 ];

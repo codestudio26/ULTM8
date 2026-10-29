@@ -7,12 +7,20 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * Decisions 315, 317, 320, 351, 380). Staff check a student in by name from
  * Students → Check-in; front-desk mode is a locked tablet that shows a
  * Branch's classes, short names and recent check-ins, and is left with a
- * staff member's own code; the parts still waiting for their backend
- * (personal code, sign-up, find me) are shown switched off.
+ * staff member's own code; a student's personal code opens their card
+ * (Decision 384); the parts still waiting for their backend (sign-up, find
+ * me) are shown switched off.
  */
 let s: GradingSchool;
 const MIN = 60_000;
 const at = (ms: number) => new Date(Date.now() + ms);
+
+// The Check-in page asks for "today" by the browser's own day, and these
+// tests seed classes from 10 minutes ago to 4 hours ahead. Run the browser in
+// a fixed-offset zone where it is about 9 in the morning, so "today" never
+// ends mid-test, whatever time CI runs. (Etc/GMT-N is UTC+N.)
+const offset = ((9 - new Date().getUTCHours() + 36) % 24) - 12;
+test.use({ timezoneId: offset === 0 ? 'Etc/GMT' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}` });
 
 async function subscribe(studentId: string) {
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: `Unlimited ${randomUUID().slice(0, 4)}`, price: 5000 } });
@@ -33,6 +41,7 @@ test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.frontDeskSession.deleteMany({ where });
   await db.staffKioskCode.deleteMany({ where });
+  await db.studentCheckInCode.deleteMany({ where });
   await db.waiverSignature.deleteMany({ where });
   await db.waiver.deleteMany({ where });
   await db.trainingLog.deleteMany({ where });
@@ -125,12 +134,57 @@ test('one class that can\'t be done stops the whole check-in, and says which (De
   expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: full.id } })).toBe(0);
 });
 
-test('the personal code waits for its backend', async ({ page }) => {
+test('a student\'s personal code is on their page, and typing it at the desk checks them in as a code (Decision 384)', async ({ page }) => {
+  const cls = await classNow();
+  await subscribe(s.student.id);
   await signIn(page, s.ownerToken);
+  await page.goto(`/students/${s.student.id}`);
+  const code = ((await page.getByTestId('student-check-in-code').textContent()) ?? '').trim();
+  expect(code).toMatch(/^\d{4}$/);
+
   await page.goto('/check-in');
   await page.getByRole('tab', { name: 'Code' }).click();
-  await expect(page.getByText('Personal check-in codes are coming. Use Scan or Name for now.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Check in' })).toBeDisabled();
+  const typeCode = async (c: string) => {
+    for (const d of c) await page.getByRole('button', { name: d, exact: true }).click();
+    await page.getByRole('button', { name: 'Check in', exact: true }).click();
+  };
+  await typeCode(code === '0000' ? '1111' : '0000');
+  await expect(page.getByText('We couldn’t find that code. Try again, or find your name.')).toBeVisible();
+  await typeCode(code);
+  const card = page.getByTestId('fd-welcome');
+  await expect(card).toContainText('Sam');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('Checked in ✓')).toBeVisible();
+  const booking = await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } });
+  expect(booking.checkInMethod).toBe('PERSONAL_CODE');
+
+  // A new code replaces the old one.
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Give a new code' }).click();
+  await page.getByRole('button', { name: 'Yes, new code' }).click();
+  await expect(page.getByTestId('student-check-in-code')).not.toHaveText(code);
+});
+
+test('on the tablet, a 4-digit code still works after the School moves to 6 digits (Decision 384)', async ({ page }) => {
+  const cls = await classNow();
+  await subscribe(s.newStudent.id);
+  await db.studentCheckInCode.create({ data: { schoolId: s.schoolId, studentId: s.newStudent.id, code: '4821' } });
+  await db.school.update({ where: { id: s.schoolId }, data: { checkInCodeDigits: 6 } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+
+  await page.getByRole('tab', { name: 'Code' }).click();
+  await expect(page.getByText('Your 6-digit check-in code. Ask at the desk if you don’t know it.')).toBeVisible();
+  for (const d of '4821') await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('button', { name: 'Check in', exact: true }).click();
+  const card = page.getByTestId('fd-welcome');
+  await expect(card).toContainText('Welcome back, Nia');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('You’re in, Nia')).toBeVisible();
+  const booking = await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.newStudent.id } });
+  expect(booking.checkInMethod).toBe('PERSONAL_CODE');
 });
 
 test('front-desk mode: a locked tablet with the branch\'s classes, short names, check-in, and exit with a staff code (Decision 380)', async ({ page }) => {

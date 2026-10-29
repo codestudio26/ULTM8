@@ -2966,6 +2966,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "تسجيل ذاتي",
       methodInstructorScan: "مسحته أنت",
       methodInstructorManual: "أكّدته أنت",
+      methodPersonalCode: "رمز شخصي عند الاستقبال",
       present: "حاضر ✓",
       scan: "مسح",
       confirmPresent: "تأكيد الحضور",
@@ -3310,7 +3311,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "أدخل رمز الطالب",
       kioskTitle: "أدخل رمز تسجيل حضورك",
-      hint: "4 أرقام، على بطاقة العضوية وفي تطبيق ULTM8",
+      hint: "رمز تسجيل الحضور الخاص بك من {digits} أرقام. اسأل عند الاستقبال إذا كنت لا تعرفه.",
+      staffHint: "رمز الطالب المكون من {digits} أرقام، ويظهر في صفحة الطالب.",
+      checking: "جارٍ التحقق من الرمز…",
       soonHint: "رموز تسجيل الحضور الشخصية قادمة قريبًا. استخدم المسح أو الاسم حاليًا.",
       delete: "حذف",
       submit: "تسجيل الحضور",
@@ -3472,6 +3475,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "تعذّر إرسال تسجيلك. يُرجى السؤال عند الاستقبال.",
       sentTitle: "شكرًا",
       sentBody: "تسجيلك الآن لدى الموظفين. ستصلك رسالة بريد إلكتروني بعد الموافقة عليه.",
+    },
+    studentCode: {
+      title: "رمز تسجيل الحضور",
+      hint: "يُكتب عند الاستقبال عندما يتعذر عرض رمز QR في التطبيق. لا يمكن للطالب تغييره.",
+      renew: "إصدار رمز جديد",
+      confirm: "سيتوقف الرمز القديم عن العمل. هل تريد إصدار رمز جديد؟",
+      confirmYes: "نعم، رمز جديد",
+      failed: "تعذر إصدار رمز جديد. يُرجى المحاولة مرة أخرى.",
     },
     findMe: {
       title: "ابحث عني",

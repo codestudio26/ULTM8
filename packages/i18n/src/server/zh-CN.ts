@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "找不到前台会话，或它已结束。",
   "This front-desk session has ended. Ask a member of staff to start it again.": "此前台会话已结束。请工作人员重新开启。",
   "That staff code isn't right.": "这个员工代码不对。",
+  "That check-in code isn't right.": "这个签到码不对。",
   "This class is at another Branch.": "这节课在另一个分校。",
   "The tablet's day is out of range. Check the tablet's date and time.": "平板的日期超出范围。请检查平板的日期和时间。",
   "This booking was cancelled, so its guests can no longer be checked in.": "该预约已取消，其访客无法再签到。",

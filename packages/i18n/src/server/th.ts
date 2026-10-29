@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "ไม่พบเซสชันเคาน์เตอร์ต้อนรับ หรือสิ้นสุดไปแล้ว",
   "This front-desk session has ended. Ask a member of staff to start it again.": "เซสชันเคาน์เตอร์ต้อนรับนี้สิ้นสุดแล้ว ขอให้พนักงานเริ่มใหม่อีกครั้ง",
   "That staff code isn't right.": "รหัสพนักงานนั้นไม่ถูกต้อง",
+  "That check-in code isn't right.": "รหัสเช็กอินนั้นไม่ถูกต้อง",
   "This class is at another Branch.": "คลาสนี้อยู่ที่สาขาอื่น",
   "The tablet's day is out of range. Check the tablet's date and time.": "วันที่ของแท็บเล็ตอยู่นอกช่วง ตรวจสอบวันที่และเวลาของแท็บเล็ต",
   "This booking was cancelled, so its guests can no longer be checked in.": "การจองนี้ถูกยกเลิกแล้ว จึงเช็กอินแขกของการจองนี้ไม่ได้อีก",

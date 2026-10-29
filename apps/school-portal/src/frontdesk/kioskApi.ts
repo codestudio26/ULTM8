@@ -25,12 +25,6 @@ export interface SignUpInput {
   emergencyRelationship: string;
 }
 
-/** Handover F3: `POST /front-desk/check-in-code` { code } → the student the
- * personal code belongs to, for the welcome card. */
-export async function findByPersonalCode(_code: string): Promise<{ studentId: string; firstName: string; surname: string; profilePhotoUrl: string | null }> {
-  throw new NotBuiltYetError('Personal check-in codes');
-}
-
 /** Handover F5: `POST /schools/{schoolId}/sign-ups` (source FRONT_DESK) → a
  * sign-up waiting for staff approval. */
 export async function submitSignUp(_input: SignUpInput): Promise<void> {

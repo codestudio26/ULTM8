@@ -29,7 +29,9 @@ export const frontDesk = {
   code: {
     staffTitle: 'Enter the student’s code',
     kioskTitle: 'Enter your check-in code',
-    hint: '4 digits, on the membership card and in the ULTM8 app',
+    hint: 'Your {digits}-digit check-in code. Ask at the desk if you don’t know it.',
+    staffHint: 'The student’s {digits}-digit code, shown on their student page.',
+    checking: 'Checking the code…',
     soonHint: 'Personal check-in codes are coming. Use Scan or Name for now.',
     delete: 'Delete',
     submit: 'Check in',
@@ -190,5 +192,13 @@ export const frontDesk = {
     privacy: 'For your privacy, this device never shows details we already have about you.',
     goCheckIn: 'Go to check-in',
     signUp: 'Sign up',
+  },
+  studentCode: {
+    title: 'Check-in code',
+    hint: 'Typed at the front desk when the app’s QR can’t be shown. The student can’t change it.',
+    renew: 'Give a new code',
+    confirm: 'The old code will stop working. Give a new one?',
+    confirmYes: 'Yes, new code',
+    failed: 'Could not give a new code. Please try again.',
   },
 };

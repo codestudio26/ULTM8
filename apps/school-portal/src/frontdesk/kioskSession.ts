@@ -103,6 +103,11 @@ export function useKioskQrLookup() {
   return useMutation({ mutationFn: (studentToken: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/qr-lookups', { body: { studentToken } })) });
 }
 
+/** A personal check-in code typed on the tablet (Decision 384). */
+export function useKioskCodeLookup() {
+  return useMutation({ mutationFn: (code: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/code-lookups', { body: { code } })) });
+}
+
 export function useKioskCheckIn() {
   const queryClient = useQueryClient();
   return useDeskCheckIn(

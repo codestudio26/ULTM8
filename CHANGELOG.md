@@ -20,6 +20,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cancellation charge of its own, the charge set on their membership plan is
   taken from their saved card, the same way a class's charge already is. One
   fee per cancellation, never both.
+- **Front desk: personal check-in codes** (Decision 384) — each student has
+  a 4- or 6-digit code, shown on their page with "Give a new code". Typing it
+  on the Check-in page's or the tablet's Code tab opens their welcome card,
+  and the check-in shows as "Code". Needs migration
+  `20261217000000_student_check_in_codes`.
 - **Front desk: a locked tablet, left with your own staff code** (Decision
   380) — starting front-desk mode signs you out of the device, so it holds no
   staff login; it shows only its Branch's classes and short names, and only

@@ -278,6 +278,22 @@ export class KioskUnlockDto {
   staffCode!: string;
 }
 
+/** POST /schools/{schoolId}/front-desk/code-lookups and
+ * POST /front-desk/kiosk/code-lookups (Decision 384, handover F3). */
+export class CheckInCodeLookupDto {
+  @ApiProperty({ description: "A Student's personal check-in code (4 or 6 digits)." })
+  @IsString()
+  @Length(4, 6)
+  @Matches(/^\d+$/)
+  code!: string;
+}
+
+/** GET/POST /schools/{schoolId}/students/{studentId}/check-in-code. */
+export class StudentCheckInCodeDto {
+  @ApiProperty({ description: 'The personal check-in code, typed at the front desk in place of the app QR.' })
+  code!: string;
+}
+
 export class KioskUnlockedDto {
   @ApiProperty({ description: 'First name of the staff member whose code it was.' })
   unlockedBy!: string;

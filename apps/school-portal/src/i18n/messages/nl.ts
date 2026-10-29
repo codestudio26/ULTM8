@@ -2802,6 +2802,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Zelf ingecheckt",
       methodInstructorScan: "Door jou gescand",
       methodInstructorManual: "Door jou bevestigd",
+      methodPersonalCode: "Persoonlijke code bij de balie",
       present: "Aanwezig ✓",
       scan: "Scannen",
       confirmPresent: "Aanwezigheid bevestigen",
@@ -3124,7 +3125,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Voer de code van de leerling in",
       kioskTitle: "Voer je incheckcode in",
-      hint: "4 cijfers, op de lidmaatschapskaart en in de ULTM8-app",
+      hint: "Je incheckcode van {digits} cijfers. Vraag het bij de balie als je hem niet weet.",
+      staffHint: "De code van {digits} cijfers van de leerling, te zien op de leerlingpagina.",
+      checking: "Code controleren…",
       soonHint: "Persoonlijke incheckcodes komen eraan. Gebruik voorlopig Scannen of Naam.",
       delete: "Wissen",
       submit: "Inchecken",
@@ -3272,6 +3275,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Je aanmelding kon niet worden verstuurd. Vraag het bij de balie.",
       sentTitle: "Bedankt",
       sentBody: "Je aanmelding ligt bij de medewerkers. Je krijgt een e-mail zodra ze is goedgekeurd.",
+    },
+    studentCode: {
+      title: "Incheckcode",
+      hint: "Wordt bij de balie ingetypt als de QR van de app niet getoond kan worden. De leerling kan hem niet wijzigen.",
+      renew: "Nieuwe code geven",
+      confirm: "De oude code werkt dan niet meer. Een nieuwe geven?",
+      confirmYes: "Ja, nieuwe code",
+      failed: "Kon geen nieuwe code geven. Probeer het opnieuw.",
     },
     findMe: {
       title: "Zoek mij",
