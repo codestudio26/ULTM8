@@ -3300,6 +3300,22 @@ export interface paths {
         patch: operations["GradingController_editRankDate"];
         trace?: never;
     };
+    "/v1/students/{id}/ranks/{disciplineId}/move-to-adult": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_moveToAdult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
         parameters: {
             query?: never;
@@ -3437,6 +3453,22 @@ export interface paths {
         };
         get: operations["GradingController_getGradingBoard"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/ready-for-adult-age": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setReadyForAdultAge"];
         post?: never;
         delete?: never;
         options?: never;
@@ -8197,6 +8229,10 @@ export interface components {
             boardReadyToGrade: number;
             /** @description Archived (retired) at (Decision 309); null while in use. */
             archivedAt?: string | null;
+            /** @description On a Kids style: its Adult style (backlog 3.20, Decision 281). Null otherwise. */
+            adultDisciplineId?: string | null;
+            /** @description On a Kids style: "Ready for Adult from age" (Decision 285 item 2). Default 16. */
+            readyForAdultAge: number;
             /** @description Students with a rank in this style (Decision 309). */
             studentCount: number;
             createdAt: string;
@@ -8236,6 +8272,11 @@ export interface components {
             skillsRequiredToGrade?: boolean;
             /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
             renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
+            /**
+             * Format: uuid
+             * @description Backlog 3.20: makes this a Kids style whose students can be graded into this Adult style of the same School. null unlinks. A style that is itself linked, or that another Kids style uses as its Adult style, cannot be linked.
+             */
+            adultDisciplineId?: string | null;
         };
         BeltColoursResponseDto: {
             /**
@@ -8568,6 +8609,8 @@ export interface components {
             /** @description null when there is no next rank. */
             progressBreakdown?: components["schemas"]["ProgressBreakdownResponseDto"] | null;
             hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
+            /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age". False on other styles. */
+            readyForAdult: boolean;
         };
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
@@ -8692,6 +8735,21 @@ export interface components {
             date: string;
             /** @description An optional note for the history entry. */
             note?: string;
+        };
+        MoveToAdultDto: {
+            /** @description The rung (stripe tier id) on the Adult style to move to. */
+            targetRungId: string;
+            /** @description As on promote: refused (409) if the student has moved since. */
+            expectedCurrentRungId?: string | null;
+            /**
+             * @description As on promote: YYYY-MM-DD, not in the future, not before the current rank date. Default today.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description The grader's own note on this history entry. */
+            note?: string;
+            /** @description As on promote: needed when skills for the next Kids rank are not signed off. */
+            acknowledgeWithoutSkillSignoff?: boolean;
         };
         GradingActionDto: {
             /** @description Defaults to false when omitted. */
@@ -8838,6 +8896,8 @@ export interface components {
             feeStatus?: "waiting" | "declined" | "toDecide" | null;
             /** @description The request behind feeStatus. */
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
+            /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
+            readyForAdult: boolean;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
@@ -8846,6 +8906,10 @@ export interface components {
             hiddenInactive: number;
             /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
             atTopRank: number;
+        };
+        ReadyForAdultAgeDto: {
+            /** @example 16 */
+            age: number;
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -15883,6 +15947,32 @@ export interface operations {
             };
         };
     };
+    GradingController_moveToAdult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveToAdultDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
     GradingController_promote: {
         parameters: {
             query?: never;
@@ -16096,6 +16186,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GradingBoardResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setReadyForAdultAge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadyForAdultAgeDto"];
+            };
+        };
+        responses: {
+            /** @description The Kids style, with its new age. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
                 };
             };
         };

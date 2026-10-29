@@ -25,6 +25,12 @@ export class DisciplineResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Archived (retired) at (Decision 309); null while in use.' })
   archivedAt!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'On a Kids style: its Adult style (backlog 3.20, Decision 281). Null otherwise.' })
+  adultDisciplineId!: string | null;
+
+  @ApiProperty({ description: 'On a Kids style: "Ready for Adult from age" (Decision 285 item 2). Default 16.' })
+  readyForAdultAge!: number;
+
   @ApiProperty({ description: 'Students with a rank in this style (Decision 309).' })
   studentCount!: number;
 

@@ -58,6 +58,25 @@ export function usePromote(studentId: string, disciplineId: string) {
   );
 }
 
+/** Backlog 3.20: grade a Kids student into the linked Adult program. The
+ * student then has a rank in the Adult style instead, so every style's
+ * grading reads are refreshed (useGradingMutation's student and board keys). */
+export function useMoveToAdult(studentId: string, kidsDisciplineId: string) {
+  return useGradingMutation(studentId, (body: components['schemas']['MoveToAdultDto']) =>
+    unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/move-to-adult', { params: { path: { id: studentId, disciplineId: kidsDisciplineId } }, body })),
+  );
+}
+
+/** Backlog 3.20: "Ready for Adult from age" on a Kids style. */
+export function useSetReadyForAdultAge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ disciplineId, age }: { disciplineId: string; age: number }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/ready-for-adult-age', { params: { path: { id: disciplineId } }, body: { age } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
+  });
+}
+
 export function useStripeAward(studentId: string, disciplineId: string) {
   return useGradingMutation(studentId, (body: GradingActionInput) =>
     unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/stripe-award', { params: { path: { id: studentId, disciplineId } }, body })),

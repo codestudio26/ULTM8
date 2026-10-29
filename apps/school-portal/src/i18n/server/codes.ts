@@ -44,6 +44,15 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
+    // Kids and Adult programs (backlog 3.20).
+    case 'ADULT_NOT_LINKED':
+      return t('server.codes.adultNotLinked');
+    case 'ADULT_TOO_YOUNG':
+      return t('server.codes.adultTooYoung');
+    case 'ADULT_ALREADY':
+      return t('server.codes.adultAlready');
+    case 'ADULT_FIRST_BELT':
+      return t('server.codes.adultFirstBelt');
     // The School's check-in rules (Decision 394).
     case 'CHECK_IN_WAIVER_REQUIRED':
       return t('server.codes.checkInWaiverRequired');

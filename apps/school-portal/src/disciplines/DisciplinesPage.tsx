@@ -189,7 +189,7 @@ export function DisciplinesPage() {
       ) : null}
 
       {editing ? (
-        <EditDisciplineModal schoolId={schoolId} discipline={editing} onClose={() => setEditing(null)} />
+        <EditDisciplineModal schoolId={schoolId} discipline={editing} styles={disciplines} onClose={() => setEditing(null)} />
       ) : null}
     </>
   );
@@ -198,18 +198,24 @@ export function DisciplinesPage() {
 function EditDisciplineModal({
   schoolId,
   discipline,
+  styles,
   onClose,
 }: {
   schoolId: string;
   discipline: DisciplineResponse;
+  styles: DisciplineResponse[];
   onClose: () => void;
 }) {
   const t = useT();
   const updateDiscipline = useUpdateDiscipline(schoolId, discipline.id);
+  // Backlog 3.20: a Kids style links to an Adult style; one level only.
+  const isAdultOfAnother = styles.some((d) => d.adultDisciplineId === discipline.id);
+  const adultChoices = isAdultOfAnother ? null : styles.filter((d) => d.id !== discipline.id && !d.archivedAt && !d.adultDisciplineId);
   return (
     <DisciplineFormModal
       title={t('disciplines.list.editTitle')}
       initial={discipline}
+      adultChoices={adultChoices}
       submitting={updateDiscipline.isPending}
       onSubmit={async (values) => {
         await updateDiscipline.mutateAsync(values);

@@ -13,6 +13,7 @@ import {
   usePromote,
   useStripeAward,
   useLogClass,
+  useMoveToAdult,
   useRecentStyleClasses,
   useVerifyRank,
   useVoidEntry,
@@ -71,6 +72,7 @@ export function GradeModal({
   eligibility,
   title,
   initialTargetId,
+  adult,
   onClose,
 }: {
   studentId: string;
@@ -82,12 +84,19 @@ export function GradeModal({
   title?: string;
   /** Start on this rank, e.g. the planned rank of a promotion "to decide". */
   initialTargetId?: string;
+  /** Backlog 3.20: a Kids student who has reached "Ready for Adult from age"
+   * can also be graded into the linked Adult program, from the rank above its
+   * first belt (Decision 285 item 1). */
+  adult?: { discipline: DisciplineResponse; ladder: Rung[] } | null;
   onClose: () => void;
 }) {
   const promote = usePromote(studentId, discipline.id);
   const stripeAward = useStripeAward(studentId, discipline.id);
+  const moveToAdult = useMoveToAdult(studentId, discipline.id);
   const t = useT();
-  const options = ladder.filter((r) => !current || r.index > current.index);
+  const adultOptions = current && adult && adult.ladder.length > 0 ? adult.ladder.filter((r) => r.rankId !== adult.ladder[0].rankId) : [];
+  const adultIds = new Set(adultOptions.map((r) => r.id));
+  const options = [...ladder.filter((r) => !current || r.index > current.index), ...adultOptions];
   const [targetId, setTargetId] = useState(
     (initialTargetId && options.some((r) => r.id === initialTargetId) ? initialTargetId : undefined) ??
     (eligibility?.hasNext && eligibility.nextRungId && options.some((r) => r.id === eligibility.nextRungId) ? eligibility.nextRungId : options[0]?.id) ?? '',
@@ -100,9 +109,11 @@ export function GradeModal({
   const [error, setError] = useState<string | null>(null);
 
   const target = options.find((r) => r.id === targetId) ?? null;
-  const isNextStripe = !!current && !!target && target.index === current.index + 1 && target.rankId === current.rankId;
-  const skipped = current && target ? target.index - current.index - 1 : 0;
-  const starting = target ? startingClassesFor(ladder, target) : { kind: 'NONE' as const };
+  const toAdult = !!target && adultIds.has(target.id);
+  const isNextStripe = !toAdult && !!current && !!target && target.index === current.index + 1 && target.rankId === current.rankId;
+  const skipped = !toAdult && current && target ? target.index - current.index - 1 : 0;
+  // Into Adult, the class count starts again from zero (Decision 285 item 3).
+  const starting = target && !toAdult ? startingClassesFor(ladder, target) : { kind: 'NONE' as const };
   const missingSkills = current && eligibility?.hasNext && !eligibility.timeOnly ? eligibility.missingSkillIds ?? [] : [];
   const blockedBySkills = missingSkills.length > 0 && discipline.skillsRequiredToGrade;
   const needsAck = missingSkills.length > 0 && !discipline.skillsRequiredToGrade;
@@ -123,7 +134,15 @@ export function GradeModal({
       if (Object.keys(byType).length > 0) body.startingClassesByType = byType;
     }
     try {
-      if (isNextStripe) await stripeAward.mutateAsync(body);
+      if (toAdult) {
+        await moveToAdult.mutateAsync({
+          targetRungId: target.id,
+          expectedCurrentRungId: body.expectedCurrentRungId,
+          acknowledgeWithoutSkillSignoff: body.acknowledgeWithoutSkillSignoff,
+          ...(body.effectiveDate ? { effectiveDate: body.effectiveDate } : {}),
+          ...(body.note ? { note: body.note } : {}),
+        });
+      } else if (isNextStripe) await stripeAward.mutateAsync(body);
       else await promote.mutateAsync({ ...body, targetRungId: target.id });
       onClose();
     } catch (err) {
@@ -143,8 +162,20 @@ export function GradeModal({
         ) : (
           <>
             <Field label={t('grading.modals.newRankLabel')} htmlFor="grade-target" hint={current ? t('grading.modals.grade.now', { rank: current.name }) : undefined}>
-              <RankPicker id="grade-target" value={targetId} onChange={setTargetId} options={options} />
+              <RankPicker
+                id="grade-target"
+                value={targetId}
+                onChange={setTargetId}
+                options={options}
+                suffix={(r) => (adultIds.has(r.id) ? t('grading.modals.grade.adultSuffix') : null)}
+                heading={(r) => (r.id === adultOptions[0]?.id ? t('grading.modals.grade.adultHeading') : null)}
+              />
             </Field>
+            {toAdult ? (
+              <p role="note" style={{ margin: '0 0 12px', padding: '8px 12px', borderRadius: 8, background: 'var(--bg-accent)', color: 'var(--text-primary)' }}>
+                {t('grading.modals.grade.adultNote')}
+              </p>
+            ) : null}
             {skipped > 0 ? (
               <Warning>{t('grading.modals.grade.skips', { count: skipped })}</Warning>
             ) : null}
@@ -192,7 +223,7 @@ export function GradeModal({
           </>
         )}
         <Actions
-          submitting={promote.isPending || stripeAward.isPending}
+          submitting={promote.isPending || stripeAward.isPending || moveToAdult.isPending}
           disabled={!target || blockedBySkills || (needsAck && !acknowledged)}
           label={isNextStripe ? t('grading.modals.grade.awardStripe') : t('grading.modals.grade.submit')}
           onClose={onClose}

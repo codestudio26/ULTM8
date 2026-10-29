@@ -2585,6 +2585,16 @@ model Discipline {
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
+  /// Kids and Adult programs (Decisions 281, 285, 298; backlog 3.20): a Kids
+  /// style points to its Adult style. Screens pair them as one discipline with
+  /// a Kids · Adult switch; grading a kid into Adult moves their rank to it.
+  adultDisciplineId     String?
+  adultDiscipline       Discipline?  @relation("KidsAdultProgram", fields: [adultDisciplineId], references: [id], onDelete: SetNull)
+  kidsDisciplines       Discipline[] @relation("KidsAdultProgram")
+  /// On a Kids style: from this age a student may be graded into the Adult
+  /// program and shows "Ready for Adult program" (Decision 285 item 2). The
+  /// IBJJF age, 16, by default.
+  readyForAdultAge      Int          @default(16)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2598,6 +2608,7 @@ model Discipline {
   trainingLogs       TrainingLog[]
 
   @@index([schoolId])
+  @@index([adultDisciplineId])
 }
 
 /// Rank (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline; ordered ladder

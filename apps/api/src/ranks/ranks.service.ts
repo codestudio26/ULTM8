@@ -358,9 +358,13 @@ export class RanksService {
         await this.carryDisciplineName(tx, current, dto.name!);
       }
 
+      if (dto.adultDisciplineId !== undefined) {
+        await assertAdultLink(tx, current, dto.adultDisciplineId);
+      }
+
       const updated = await tx.discipline.update({
         where: { id: disciplineId },
-        data: { name: dto.name, classTypesOffered: classTypes, skillsRequiredToGrade: dto.skillsRequiredToGrade },
+        data: { name: dto.name, classTypesOffered: classTypes, skillsRequiredToGrade: dto.skillsRequiredToGrade, adultDisciplineId: dto.adultDisciplineId },
       });
       return { ...updated, studentCount: await tx.studentRank.count({ where: { disciplineId, ...enrolledAt(updated.schoolId) } }) };
     });
@@ -1392,5 +1396,25 @@ export class RanksService {
     if (found.length !== skillIds.length) {
       throw new BadRequestException('requiredSkillIds must all reference Skills belonging to this Rank\'s Discipline');
     }
+  }
+}
+
+/** Backlog 3.20 (Decision 281): a Kids style links to an Adult style of the
+ * same School. Only one level: the Adult style is not itself linked, and a
+ * style that is some Kids style's Adult style is not linked to another. */
+async function assertAdultLink(tx: Tx, kids: { id: string; schoolId: string }, adultId: string | null): Promise<void> {
+  if (adultId === null) return;
+  if (adultId === kids.id) {
+    throw new BadRequestException('A style can\'t be its own Adult program.');
+  }
+  const adult = await tx.discipline.findUnique({ where: { id: adultId }, select: { schoolId: true, archivedAt: true, adultDisciplineId: true } });
+  if (!adult || adult.schoolId !== kids.schoolId || adult.archivedAt) {
+    throw new BadRequestException('Pick an Adult style of this School that is in use.');
+  }
+  if (adult.adultDisciplineId) {
+    throw new BadRequestException('That style is a Kids program itself, so it can\'t be an Adult program.');
+  }
+  if (await tx.discipline.count({ where: { adultDisciplineId: kids.id } })) {
+    throw new BadRequestException('This style is the Adult program of a Kids style, so it can\'t be a Kids program too.');
   }
 }
