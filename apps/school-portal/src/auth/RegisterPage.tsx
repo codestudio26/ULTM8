@@ -72,7 +72,7 @@ export function RegisterPage() {
             passcode: form.passcode,
             passcodeConfirm: form.passcodeConfirm,
             dateOfBirth: form.dateOfBirth,
-            gender: form.gender || undefined,
+            gender: form.gender === 'FEMALE' || form.gender === 'MALE' ? form.gender : undefined,
             nationality: form.nationality || undefined,
             language: form.language || undefined,
             currency: form.currency || undefined,
@@ -155,7 +155,17 @@ export function RegisterPage() {
             <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
           </Field>
           <Field label={t('auth.register.gender')} htmlFor="reg-gender">
-            <TextField value={form.gender} onChange={(e) => set('gender', e.target.value)} />
+            {/* Decision 315 item 15: Female, Male or not given. */}
+            <SelectField
+              id="reg-gender"
+              value={form.gender}
+              onChange={(e) => set('gender', e.target.value)}
+              options={[
+                { value: '', label: t('schools.form.notSet') },
+                { value: 'FEMALE', label: t('frontDesk.signUp.female') },
+                { value: 'MALE', label: t('frontDesk.signUp.male') },
+              ]}
+            />
           </Field>
           <Field label={t('auth.register.nationality')} htmlFor="reg-nationality">
             <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />

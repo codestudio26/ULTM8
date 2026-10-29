@@ -70,6 +70,7 @@ export const serverMessages: Record<string, string> = {
   "stripeTierId must be a grade on this style's ladder.": "Escolha um grau da graduação deste estilo.",
   "Downgrade only moves down; pick a lower belt or stripe.": "O rebaixamento só desce; escolha uma faixa ou grau inferior.",
   "Each item can appear only once.": "Cada item só pode aparecer uma vez.",
+  "Gender must be Female or Male, or left empty.": "O gênero deve ser Feminino ou Masculino, ou ficar em branco.",
   "Each lesson can appear only once.": "Cada lição só pode aparecer uma vez.",
   "Each stripe id can appear only once.": "Cada id de grau só pode aparecer uma vez.",
   "Each style can appear only once.": "Cada estilo só pode aparecer uma vez.",

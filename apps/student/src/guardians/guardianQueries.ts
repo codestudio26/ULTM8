@@ -29,7 +29,7 @@ export function useMyConsentRecords() {
 export function useAddMinor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { firstName: string; surname: string; dateOfBirth: string; gender?: string }) =>
+    mutationFn: (dto: { firstName: string; surname: string; dateOfBirth: string; gender?: 'FEMALE' | 'MALE' | null }) =>
       unwrap(apiClient.POST('/v1/guardians/me/minors', { body: dto })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-minors'] }),
   });
