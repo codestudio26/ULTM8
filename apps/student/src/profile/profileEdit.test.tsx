@@ -25,7 +25,7 @@ const PROFILE = {
   surname: 'Lee',
   dateOfBirth: '2010-05-01T00:00:00.000Z',
   username: 'jamie-lee',
-  gender: 'non-binary',
+  gender: 'FEMALE',
   nationality: 'Testland',
   address: '123 Test St',
   weightCategory: '-73kg',
@@ -54,9 +54,9 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     mocked(q.useCurrencies).mockReturnValue({ data: [{ code: 'USD', name: 'US Dollar' }], isLoading: false });
   });
 
-  it('clearing gender to empty and saving sends gender: null', async () => {
-    const { getByDisplayValue, getByText } = await render(<ProfileScreen />);
-    await fireEvent.changeText(getByDisplayValue('non-binary'), '');
+  it('choosing "Not given" for gender and saving sends gender: null', async () => {
+    const { getByText } = await render(<ProfileScreen />);
+    await fireEvent.press(getByText('Not given'));
     await fireEvent.press(getByText('Save'));
 
     expect(updateProfile.mutate).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     await fireEvent.press(getByText('Save'));
 
     const call = updateProfile.mutate.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(call.gender).toBe('non-binary');
+    expect(call.gender).toBe('FEMALE');
     expect(call.nationality).toBe('Testland');
     expect(call.username).toBe('jamie-lee');
   });

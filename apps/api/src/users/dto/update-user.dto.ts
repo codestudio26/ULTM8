@@ -3,6 +3,7 @@ import { IsDateString, IsOptional, IsString, IsUrl, MaxLength, MinLength, Valida
 import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
+import { GenderField, type Gender } from '../../common/decorators/gender-field.decorator';
 
 /** Names and username are trimmed before validation, so one made only of
  * spaces is refused as blank (Decision 341, S7). */
@@ -79,11 +80,8 @@ export class UpdateUserDto {
   @IsBirthDate()
   dateOfBirth?: string;
 
-  @ApiPropertyOptional({ description: 'Null clears it.', type: String, nullable: true })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  gender?: string | null;
+  @GenderField()
+  gender?: Gender | null;
 
   @ApiPropertyOptional({ description: 'Null clears it.', type: String, nullable: true })
   @IsOptional()

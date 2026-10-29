@@ -19,6 +19,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cash or bank-transfer payment now waits up to 10 seconds for a free database
   connection, as booking does, instead of answering "The server is busy" after
   2 seconds when the desk settles a lot of payments together. No migration.
+- **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
+  now a choice of Female, Male or not given, in the portal (Edit profile,
+  register) and the student app (profile), and the API refuses anything else.
+  **Needs a database migration** (`20261230000000_gender_female_male`). It turns
+  "female"/"male" in any letter case into the new values and clears every other
+  saved value, which was sample data.
 - **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
   discipline links a Kids style to its Adult style. From "Ready for Adult from
   age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult

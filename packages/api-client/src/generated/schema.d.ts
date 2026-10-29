@@ -5651,7 +5651,11 @@ export interface components {
             passcodeConfirm: string;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth: string;
-            gender?: string;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             nationality?: string;
             language?: string;
             currency?: string;
@@ -6102,8 +6106,11 @@ export interface components {
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth?: string;
-            /** @description Null clears it. */
-            gender?: string | null;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             /** @description Null clears it. */
             nationality?: string | null;
             /** @description A code from GET /settings/languages. Null clears it. */
@@ -6779,7 +6786,11 @@ export interface components {
             surname: string;
             /** @description ISO 8601 date, no time component. */
             dateOfBirth: string;
-            gender?: string;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
         };
         MinorResponseDto: {
             linkId: string;
@@ -6916,8 +6927,11 @@ export interface components {
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
             dateOfBirth?: string;
-            /** @description Null clears it. */
-            gender?: string | null;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
             /** @description Null clears it. */
             nationality?: string | null;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
