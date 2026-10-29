@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "괜찮아요",
       failed: "초대에 응답하지 못했습니다. 다시 시도해 주세요.",
     },
+    childInvites: {
+      title: "{child}님을 {school}에 추가할까요?",
+      body: "{school}에서 회원님을 보호자로 하여 {child}님을 수련생으로 추가하려고 합니다. 수락하면 {child}님이 계정에 추가되고 등록됩니다.",
+    },
     join: {
       me: "나",
       loadFailed: "이 도장을 불러오지 못했습니다. 다시 시도해 주세요.",

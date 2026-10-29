@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "スクールの国ではカード手数料は認められていません。",
   "Set a card surcharge above 0%, up to 3%.": "カード手数料は0%より大きく、3%以下で設定してください。",
   "Confirm that card surcharges are legal where your School operates.": "スクールの所在地でカード手数料が合法であることを確認してください。",
+  "Student not found": "生徒が見つかりません",
+  "This invite has already been answered or withdrawn.": "この招待はすでに回答済みか、取り消されています。",
+  "This is for children (under 18). Add an adult with their own email instead.": "これは子ども（18歳未満）用です。大人は本人のメールアドレスで追加してください。",
+  "A Guardian must be 18 or over.": "保護者は18歳以上である必要があります。",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "この保護者にはすでにこの子どもへの招待があります。アプリで回答されるまでお待ちください。",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "新しい仮パスコードを作成できるのは、あなたのスクールが作成し、まだ誰もサインインしていないアカウントだけです。",
+  "This temporary passcode has expired. Ask your School for a new one.": "この仮パスコードは有効期限が切れています。スクールに新しいパスコードを依頼してください。",
 };

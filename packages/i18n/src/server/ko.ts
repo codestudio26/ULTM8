@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "학교가 있는 국가에서는 카드 수수료가 허용되지 않습니다.",
   "Set a card surcharge above 0%, up to 3%.": "카드 수수료를 0%보다 크고 최대 3%까지로 설정하세요.",
   "Confirm that card surcharges are legal where your School operates.": "학교가 운영되는 곳에서 카드 수수료가 합법임을 확인하세요.",
+  "Student not found": "수련생을 찾을 수 없습니다",
+  "This invite has already been answered or withdrawn.": "이 초대는 이미 응답되었거나 취소되었습니다.",
+  "This is for children (under 18). Add an adult with their own email instead.": "이 기능은 어린이(18세 미만)용입니다. 성인은 본인 이메일로 추가하세요.",
+  "A Guardian must be 18 or over.": "보호자는 18세 이상이어야 합니다.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "이 보호자에게 이미 이 자녀에 대한 초대가 있습니다. 앱에서 응답할 때까지 기다려 주세요.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "새 임시 비밀번호는 내 도장이 만들었고 아직 아무도 로그인하지 않은 계정에만 만들 수 있습니다.",
+  "This temporary passcode has expired. Ask your School for a new one.": "이 임시 비밀번호는 만료되었습니다. 도장에 새 비밀번호를 요청하세요.",
 };

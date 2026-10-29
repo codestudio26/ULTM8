@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "Okulunuzun ülkesinde kart ek ücretine izin verilmiyor.",
   "Set a card surcharge above 0%, up to 3%.": "%0'ın üzerinde, en fazla %3 bir kart ek ücreti belirleyin.",
   "Confirm that card surcharges are legal where your School operates.": "Okulunuzun faaliyet gösterdiği yerde kart ek ücretlerinin yasal olduğunu onaylayın.",
+  "Student not found": "Öğrenci bulunamadı",
+  "This invite has already been answered or withdrawn.": "Bu davet zaten yanıtlandı veya geri çekildi.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Bu, çocuklar (18 yaş altı) içindir. Bir yetişkini kendi e-posta adresiyle ekleyin.",
+  "A Guardian must be 18 or over.": "Veli 18 yaşında veya daha büyük olmalıdır.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "Bu velinin bu çocuk için zaten bir daveti var. Uygulamada yanıtlamasını bekleyin.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Yeni geçici şifre yalnızca okulunuzun oluşturduğu ve henüz kimsenin giriş yapmadığı bir hesap için oluşturulabilir.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Bu geçici şifrenin süresi doldu. Okulunuzdan yenisini isteyin.",
 };

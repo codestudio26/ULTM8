@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "رسوم البطاقة الإضافية غير مسموح بها في بلد مدرستك.",
   "Set a card surcharge above 0%, up to 3%.": "حدد رسومًا إضافية للبطاقة أكثر من 0% وحتى 3%.",
   "Confirm that card surcharges are legal where your School operates.": "أكّد أن رسوم البطاقة الإضافية قانونية حيث تعمل مدرستك.",
+  "Student not found": "الطالب غير موجود",
+  "This invite has already been answered or withdrawn.": "تمت الإجابة عن هذه الدعوة أو سحبها بالفعل.",
+  "This is for children (under 18). Add an adult with their own email instead.": "هذا للأطفال (دون 18 عامًا). أضف البالغ ببريده الإلكتروني الخاص بدلًا من ذلك.",
+  "A Guardian must be 18 or over.": "يجب أن يكون ولي الأمر في الثامنة عشرة أو أكبر.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "لدى ولي الأمر هذا دعوة لهذا الطفل بالفعل. انتظر حتى يرد عليها في التطبيق.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "لا يمكن إنشاء رمز مرور مؤقت جديد إلا لحساب أنشأته مدرستك ولم يُسجَّل الدخول إليه بعد.",
+  "This temporary passcode has expired. Ask your School for a new one.": "انتهت صلاحية رمز المرور المؤقت هذا. اطلب رمزًا جديدًا من مدرستك.",
 };

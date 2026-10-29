@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "Hayır, teşekkürler",
       failed: "Davete yanıt verilemedi. Tekrar deneyin.",
     },
+    childInvites: {
+      title: "{child}, {school} okuluna eklensin mi?",
+      body: "{school}, {child} adlı çocuğu sizi veli olarak öğrenci eklemek istiyor. {child} hesabınıza eklensin ve kaydedilsin diye kabul edin.",
+    },
     join: {
       me: "Ben",
       loadFailed: "Bu okul yüklenemedi — lütfen tekrar deneyin.",

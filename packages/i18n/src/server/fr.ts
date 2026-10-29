@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "Les frais de carte ne sont pas autorisés dans le pays de votre école.",
   "Set a card surcharge above 0%, up to 3%.": "Indiquez des frais de carte supérieurs à 0 %, jusqu'à 3 %.",
   "Confirm that card surcharges are legal where your School operates.": "Confirmez que les frais de carte sont légaux là où votre école exerce.",
+  "Student not found": "Élève introuvable",
+  "This invite has already been answered or withdrawn.": "Cette invitation a déjà reçu une réponse ou a été retirée.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Ceci est réservé aux enfants (moins de 18 ans). Ajoutez plutôt un adulte avec sa propre adresse e-mail.",
+  "A Guardian must be 18 or over.": "Un tuteur doit avoir 18 ans ou plus.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "Ce tuteur a déjà une invitation pour cet enfant. Attendez qu’il y réponde dans l’application.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Seul un compte créé par votre école et auquel personne ne s’est encore connecté peut recevoir un nouveau code temporaire.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Ce code temporaire a expiré. Demandez-en un nouveau à votre école.",
 };

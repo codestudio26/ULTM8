@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "Надбавки за оплату картой не разрешены в стране вашей школы.",
   "Set a card surcharge above 0%, up to 3%.": "Укажите надбавку за оплату картой больше 0% и не выше 3%.",
   "Confirm that card surcharges are legal where your School operates.": "Подтвердите, что надбавки за оплату картой законны там, где работает ваша школа.",
+  "Student not found": "Ученик не найден",
+  "This invite has already been answered or withdrawn.": "На это приглашение уже ответили, или его отозвали.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Это для детей (младше 18 лет). Взрослого добавьте с его собственной электронной почтой.",
+  "A Guardian must be 18 or over.": "Опекуну должно быть 18 лет или больше.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "У этого опекуна уже есть приглашение для этого ребёнка. Дождитесь, пока он ответит в приложении.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Новый временный код можно создать только для учётной записи, которую создала ваша школа и в которую ещё никто не входил.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Срок действия этого временного кода истёк. Попросите новый в своей школе.",
 };

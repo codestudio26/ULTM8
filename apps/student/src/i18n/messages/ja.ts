@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "今回はやめておく",
       failed: "招待に回答できませんでした。もう一度お試しください。",
     },
+    childInvites: {
+      title: "{child} さんを {school} に追加しますか？",
+      body: "{school} が、あなたを保護者として {child} さんを生徒に追加したいと考えています。承認すると {child} さんがあなたのアカウントに追加され、登録されます。",
+    },
     join: {
       me: "自分",
       loadFailed: "このスクールを読み込めませんでした。もう一度お試しください。",

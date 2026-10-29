@@ -654,4 +654,11 @@ export const serverMessages: Record<string, string> = {
   "Card surcharges are not allowed in your School's country.": "你的学校所在国家/地区不允许收取刷卡附加费。",
   "Set a card surcharge above 0%, up to 3%.": "请设置大于 0%、不超过 3% 的刷卡附加费。",
   "Confirm that card surcharges are legal where your School operates.": "请确认在你的学校经营所在地收取刷卡附加费是合法的。",
+  "Student not found": "未找到学员",
+  "This invite has already been answered or withdrawn.": "此邀请已被回复或撤回。",
+  "This is for children (under 18). Add an adult with their own email instead.": "此功能用于儿童（未满 18 岁）。成年人请用其本人邮箱添加。",
+  "A Guardian must be 18 or over.": "监护人必须年满 18 岁。",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "该监护人已有此孩子的邀请。请等待其在应用中回复。",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "只有贵校创建且尚无人登录的账户，才能生成新的临时密码。",
+  "This temporary passcode has expired. Ask your School for a new one.": "此临时密码已过期。请向你的学校索取新的密码。",
 };

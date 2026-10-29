@@ -8,6 +8,7 @@ import { useT } from '../i18n/I18nProvider';
 import { useMyMinors } from '../guardians/guardianQueries';
 import { HomeFeeCards, type FeePerson } from '../grading/HomeFeeCards';
 import { SignUpInvites } from '../academies/SignUpInvites';
+import { ChildInvites } from '../academies/ChildInvites';
 import { PackRechargeCards } from '../memberships/PackRechargeCards';
 import type { AppStackParamList } from './types';
 
@@ -42,6 +43,7 @@ export function HomeScreen({ navigation }: Props) {
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
       {/* Decision 392: a School approved a sign-up made at its front desk. */}
       <SignUpInvites />
+      <ChildInvites />
       {/* Decision 393: a Class Pack ran out at the desk. */}
       <PackRechargeCards />
       <HomeFeeCards

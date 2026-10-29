@@ -23,6 +23,7 @@ import { GuardiansModule } from './guardians/guardians.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
+import { StudentAccessModule } from './student-access/student-access.module';
 import { OpenMatsModule } from './open-mats/open-mats.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { AcademiesModule } from './academies/academies.module';
@@ -92,6 +93,7 @@ import { validateEnv } from './common/config/validate-env';
     HealthModule,
     FrontDeskModule,
     StudentNotesModule,
+    StudentAccessModule,
     OpenMatsModule,
     CardSurchargeModule,
   ],
