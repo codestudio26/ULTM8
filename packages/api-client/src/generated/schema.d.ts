@@ -2948,6 +2948,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/belt-colours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RanksController_findBeltColours"];
+        put: operations["RanksController_saveBeltColours"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/styles/{disciplineId}/ranks": {
         parameters: {
             query?: never;
@@ -8015,6 +8031,24 @@ export interface components {
             skillsRequiredToGrade?: boolean;
             /** @description Class types renamed in this edit (Decision 309). Send with classTypesOffered. Without it, a class type that classes, slots or rungs use cannot be removed (409). */
             renameClassTypes?: components["schemas"]["ClassTypeRenameDto"][];
+        };
+        BeltColoursResponseDto: {
+            /**
+             * @example [
+             *       "#2A9D8F"
+             *     ]
+             */
+            colours: string[];
+        };
+        SaveBeltColoursDto: {
+            /**
+             * @description Colour codes like #2A9D8F, in order. Repeats are dropped. At most 24.
+             * @example [
+             *       "#2A9D8F",
+             *       "#E76F51"
+             *     ]
+             */
+            colours: string[];
         };
         StripeSegmentInputDto: {
             count: number;
@@ -14888,6 +14922,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_findBeltColours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeltColoursResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_saveBeltColours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveBeltColoursDto"];
+            };
+        };
+        responses: {
+            /** @description The whole list, as saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeltColoursResponseDto"];
                 };
             };
         };

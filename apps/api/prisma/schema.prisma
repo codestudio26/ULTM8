@@ -1062,6 +1062,10 @@ model School {
   /// show the starting list (Friend, Instagram, Google, Walked past) in the
   /// viewer's language.
   heardFromOptions               Json?
+  /// Backlog 3.18: the School's own colours for the belt editor, shared by
+  /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
+  /// most 24. Deleting one never changes a belt or stripe already using it.
+  savedBeltColours               String[]                    @default([])
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or

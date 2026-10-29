@@ -15,6 +15,7 @@ import { UpdateSkillDto } from './dto/update-skill.dto';
 import { DisciplineListResponseDto, DisciplineResponseDto } from './dto/discipline-response.dto';
 import { RankListResponseDto, RankResponseDto } from './dto/rank-response.dto';
 import { SkillListResponseDto, SkillResponseDto } from './dto/skill-response.dto';
+import { BeltColoursResponseDto, SaveBeltColoursDto } from './dto/belt-colours.dto';
 
 // Discipline/Rank/Skill catalog CRUD only this controller — grading actions
 // (promote/downgrade/stripe-award/skill-signoff) and StudentRank reads live in
@@ -97,6 +98,20 @@ export class RanksController {
   @Delete('disciplines/:id')
   async deleteDiscipline(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.ranksService.deleteDiscipline(user.sub, id);
+  }
+
+  // ---- Backlog 3.18: the School's saved belt colours ----
+
+  @ApiOkResponse({ type: BeltColoursResponseDto })
+  @Get('schools/:schoolId/belt-colours')
+  findBeltColours(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.ranksService.findBeltColours(user.sub, schoolId);
+  }
+
+  @ApiOkResponse({ type: BeltColoursResponseDto, description: 'The whole list, as saved.' })
+  @Put('schools/:schoolId/belt-colours')
+  saveBeltColours(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: SaveBeltColoursDto) {
+    return this.ranksService.saveBeltColours(user.sub, schoolId, dto);
   }
 
   // ---- Rank — confirmed route literal is "/styles/{id}/ranks" (Spec 55 §7);

@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
+  (base, secondary, tag and stripe colours) now shows preset circles, the
+  School's saved colours and a "+" that opens a colour wheel with Brightness
+  and a colour code box. "Save colour" applies a colour and keeps it for every
+  row and every style at the School; Edit replaces a saved colour, Delete
+  removes it without changing belts that use it. The owner, or Branch Staff
+  who manage disciplines, can change the list. **Needs a database migration**
+  (`20261226000000_saved_belt_colours`).
 - **Free trial of ULTM8 for Schools** (backlog 3.14; Decision 318 item 5) — a
   Full Platform Admin starts or extends a School's free trial in Platform Admin
   (Schools → look up), with no card. The owner sees how many days are left at

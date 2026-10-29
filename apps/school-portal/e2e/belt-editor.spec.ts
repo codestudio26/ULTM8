@@ -34,7 +34,7 @@ test('a new stripe grade copies the previous grade\'s numbers, and is picked to 
   await expect(dialog.getByText('Grade 2 of 2')).toBeVisible();
   await expect(dialog.getByLabel('Classes required')).toHaveValue('30');
   await expect(dialog.getByRole('button', { name: 'Edit Blue · 1 Stripe' })).toHaveAttribute('aria-pressed', 'true');
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
   const [b0, b1] = await rungsOf('Blue');
   expect(b0.classesRequired).toBe(30);
@@ -49,7 +49,7 @@ test('Add rank asks where it goes, and saves it there', async ({ page }) => {
   await dialog.getByLabel('Where it goes in the ladder').selectOption({ label: 'After White' });
   await expect(dialog.getByText('Belt 2 of 3')).toBeVisible();
   await dialog.getByLabel('Classes required').fill('10');
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
   expect(await beltOrder()).toEqual(['White', 'Grey', 'Blue']);
   await expect(ladder(page).getByRole('listitem', { name: '2. Grey' })).toBeVisible();
@@ -63,7 +63,7 @@ test('Duplicate copies every grade, with no students, right after the original',
   await expect(dialog.getByLabel('Rank name')).toHaveValue('White (copy)');
   await expect(dialog.getByLabel('Where it goes in the ladder')).toHaveValue('1');
   await dialog.getByLabel('Rank name').fill('Grey');
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
   expect(await beltOrder()).toEqual(['White', 'Grey', 'Blue']);
   const white = await rungsOf('White');
@@ -102,7 +102,7 @@ test('with the promotion fee on, the owner sets a price per grade', async ({ pag
   const dialog = page.getByRole('dialog', { name: 'Edit Blue' });
   await dialog.getByLabel('Price for this grade').fill('40');
   await expect(dialog.getByText(/Priced grades of this rank: Blue 0: 40\.00/)).toBeVisible();
-  await dialog.getByRole('button', { name: 'Save' }).click();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
   const [b0] = await rungsOf('Blue');
   expect(b0.promotionFeeMinor).toBe(4000);
