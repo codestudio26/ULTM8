@@ -169,7 +169,11 @@ export async function addBranch(s: GradingSchool, name: string) {
 }
 
 /** A coach invite as the API makes it (Decision 183); returns the link's token. */
-export async function addCoachInvite(s: GradingSchool, email: string, opts: { branchId?: string; expiresAt?: Date } = {}) {
+export async function addCoachInvite(
+  s: GradingSchool,
+  email: string,
+  opts: { branchId?: string; expiresAt?: Date; role?: 'INSTRUCTOR' | 'BRANCH_STAFF' } = {},
+) {
   const token = randomBytes(32).toString('base64url');
   await db.coachInvite.create({
     data: {
@@ -177,6 +181,7 @@ export async function addCoachInvite(s: GradingSchool, email: string, opts: { br
       schoolId: s.schoolId,
       branchId: opts.branchId ?? null,
       email: email.toLowerCase(),
+      role: opts.role ?? 'INSTRUCTOR',
       tokenHash: createHash('sha256').update(token).digest('hex'),
       invitedById: s.ownerId,
       expiresAt: opts.expiresAt ?? new Date(Date.now() + 7 * 86_400_000),

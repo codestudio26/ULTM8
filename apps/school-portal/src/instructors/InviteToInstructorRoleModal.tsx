@@ -39,7 +39,7 @@ export function InviteToInstructorRoleModal({
   schoolId: string;
   branches: BranchResponse[];
   submitting: boolean;
-  onSubmit: (values: { targetUserId: string; branchId?: string }) => Promise<void>;
+  onSubmit: (values: { targetUserId: string; email: string; branchId?: string }) => Promise<void>;
   onClose: () => void;
 }) {
   const t = useT();
@@ -93,7 +93,7 @@ export function InviteToInstructorRoleModal({
       return;
     }
     try {
-      await onSubmit({ targetUserId: candidate!.id!, ...(requiresBranch ? { branchId } : {}) });
+      await onSubmit({ targetUserId: candidate!.id!, email: candidate!.email ?? '', ...(requiresBranch ? { branchId } : {}) });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }

@@ -318,11 +318,23 @@ export function InstructorsPage() {
           schoolId={schoolId}
           branches={branches}
           submitting={inviteToInstructorRole.isPending}
-          onSubmit={async ({ targetUserId, branchId }) => {
+          onSubmit={async ({ targetUserId, email, branchId }) => {
             const granted = await inviteToInstructorRole.mutateAsync({
               targetUserId,
+              email,
               body: { role: 'INSTRUCTOR', schoolId, branchId },
             });
+            // Decision 396: the School asks new staff to accept first, so an
+            // invite went out instead; the profile comes after they accept.
+            if (granted.invited) {
+              setInviteRoleNotice(
+                granted.emailSent
+                  ? { kind: 'ok', text: t('instructors.roleInviteSent') }
+                  : { kind: 'warn', text: t('instructors.roleInviteEmailFailed') },
+              );
+              setInvitingExisting(false);
+              return;
+            }
             // The role grant alone doesn't create an Instructor profile (a
             // deliberately separate concern — see InstructorsService.create()'s
             // own header comment) — point the owner at "Add instructor" next,

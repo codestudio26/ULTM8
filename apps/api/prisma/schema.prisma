@@ -982,6 +982,11 @@ model School {
   /// Remind members again every N days until they sign; null = off.
   waiverReminderDays            Int?
 
+  /// Decision 396: "New staff must accept first". When on, "Give role" for a
+  /// coach or Branch Staff sends an invite link the person accepts instead of
+  /// giving the role at once.
+  staffMustAcceptFirst Boolean @default(false)
+
   defaultLanguage String?
   defaultCurrency String?
   /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
@@ -4567,6 +4572,9 @@ model CoachInvite {
   /// Lower-cased.
   email     String
   tokenHash String @unique
+
+  /// Decision 396: the role accepting gives, INSTRUCTOR or BRANCH_STAFF.
+  role Role @default(INSTRUCTOR)
 
   invitedById String?
   invitedBy   User?   @relation("CoachInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)

@@ -1,5 +1,5 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -192,15 +192,53 @@ export function useUpdateStaffDetails(schoolId: string) {
   });
 }
 
+/**
+ * "Give role". Decision 396: when the School has "New staff must accept
+ * first" on, the API refuses a coach or Branch Staff role (STAFF_MUST_ACCEPT)
+ * and this sends the person an invite link to their email instead.
+ * `invited` says which happened.
+ */
 export function useInviteStaff() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ targetUserId, body }: { targetUserId: string; body: CreateRoleGrantInput }) =>
-      unwrap(apiClient.POST('/v1/users/{userId}/role-grants', { params: { path: { userId: targetUserId } }, body })),
-    onSuccess: (_data, variables) => {
+    mutationFn: async ({ targetUserId, email, body }: { targetUserId: string; email: string; body: CreateRoleGrantInput }) => {
+      try {
+        const grant = await unwrap(apiClient.POST('/v1/users/{userId}/role-grants', { params: { path: { userId: targetUserId } }, body }));
+        return { invited: false, emailSent: grant.emailSent };
+      } catch (err) {
+        if (!(err instanceof ApiError && err.code === 'STAFF_MUST_ACCEPT') || body.role === 'SCHOOL_OWNER_MANAGER') throw err;
+        const invite = await unwrap(
+          apiClient.POST('/v1/schools/{schoolId}/coach-invites', {
+            params: { path: { schoolId: body.schoolId } },
+            body: { email, role: body.role, ...(body.branchId ? { branchId: body.branchId } : {}) },
+          }),
+        );
+        return { invited: true, emailSent: invite.emailSent };
+      }
+    },
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', variables.targetUserId] });
+      if (data.invited) queryClient.invalidateQueries({ queryKey: ['coach-invites', variables.body.schoolId] });
       invalidateStaffLists(queryClient);
     },
+  });
+}
+
+/** "New staff must accept first" (Decision 396). Owner only. */
+export function useStaffSettings(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['staff-settings', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/staff/settings', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+export function useSetStaffSettings(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (mustAcceptFirst: boolean) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/staff/settings', { params: { path: { schoolId } }, body: { mustAcceptFirst } })),
+    onSuccess: (data) => queryClient.setQueryData(['staff-settings', schoolId], data),
   });
 }
 

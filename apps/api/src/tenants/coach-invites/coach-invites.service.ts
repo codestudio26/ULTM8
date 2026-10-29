@@ -9,14 +9,14 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { AuthService } from '../../auth/auth.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
-import { CoachInviteStatus, CreateCoachInviteDto } from './dto/coach-invite.dto';
+import { CoachInviteStatus, CreateCoachInviteDto, InviteRole } from './dto/coach-invite.dto';
 
 /** Decision 183: a coach invite link works for 7 days. */
 export const COACH_INVITE_TTL_DAYS = 7;
@@ -28,6 +28,8 @@ interface InviteRow {
   schoolId: string;
   branchId: string | null;
   email: string;
+  /** INSTRUCTOR or BRANCH_STAFF (CoachInvite_role_check). */
+  role: Role;
   invitedById: string | null;
   createdAt: Date;
   expiresAt: Date;
@@ -52,6 +54,11 @@ function statusOf(invite: Pick<InviteRow, 'acceptedAt' | 'cancelledAt' | 'expire
  * invited email, gives that account an INSTRUCTOR RoleGrant at the School (and
  * branch); any other role it holds, such as STUDENT, is kept. Instructors can't
  * be given "Can invite coaches" (Spec 55 §8.2: no instructor management).
+ *
+ * Decision 396: the owner may also invite someone as Branch Staff, which is
+ * how "Give role" works when the School's "New staff must accept first" is
+ * on. A Branch Staff invite is the owner's only: staff with "Can invite
+ * coaches" neither send nor see one.
  */
 @Injectable()
 export class CoachInvitesService {
@@ -67,7 +74,7 @@ export class CoachInvitesService {
 
   /** The owner may invite to any branch; Branch Staff with "Can invite
    * coaches" only to a branch where they are Branch Staff. */
-  private async assertMayInvite(callerId: string, schoolId: string, branchId: string | null) {
+  private async assertMayInvite(callerId: string, schoolId: string, branchId: string | null, role: Role = 'INSTRUCTOR') {
     const [ownerGrant, permission, staffGrant] = await this.prismaApp.withTenantContext(callerId, (tx) =>
       Promise.all([
         tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { id: true } }),
@@ -76,6 +83,7 @@ export class CoachInvitesService {
       ]),
     );
     if (ownerGrant) return;
+    if (role === 'BRANCH_STAFF') throw new ForbiddenException('Only the School owner can invite Branch Staff.');
     if (permission?.canInviteCoaches && staffGrant) return;
     if (permission?.canInviteCoaches) throw new ForbiddenException('You can only invite coaches to your own branches.');
     throw new ForbiddenException('Only the School owner, or staff given "Can invite coaches", can invite coaches.');
@@ -90,6 +98,7 @@ export class CoachInvitesService {
   async create(callerId: string, schoolId: string, dto: CreateCoachInviteDto) {
     const email = dto.email.trim().toLowerCase();
     const branchId = dto.branchId ?? null;
+    const role: InviteRole = dto.role ?? 'INSTRUCTOR';
     const baseUrl = this.portalBaseUrl();
 
     const { school, caller, branches } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
@@ -101,8 +110,9 @@ export class CoachInvitesService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Before the branch checks: staff only see their own branches, so a
     // branch they aren't at would otherwise read as "not this School's".
-    await this.assertMayInvite(callerId, schoolId, branchId);
+    await this.assertMayInvite(callerId, schoolId, branchId, role);
 
+    if (role === 'BRANCH_STAFF' && !branchId) throw new BadRequestException('Branch Staff need a branch (branchId).');
     // Decision 169: a coach belongs to a branch when the School has branches.
     if (branches.length > 0 && !branchId) {
       throw new BadRequestException('This School has branches: choose the branch this coach will be at (branchId).');
@@ -121,12 +131,12 @@ export class CoachInvitesService {
     const expiresAt = new Date(Date.now() + COACH_INVITE_TTL_DAYS * 86_400_000);
     const invite = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const pending = await tx.coachInvite.findFirst({
-        where: { schoolId, branchId, email, acceptedAt: null, cancelledAt: null, expiresAt: { gt: new Date() } },
+        where: { schoolId, branchId, email, role, acceptedAt: null, cancelledAt: null, expiresAt: { gt: new Date() } },
         select: { id: true },
       });
       if (pending) throw new ConflictException('This person already has a pending invite here. Cancel it to send a new one.');
       return tx.coachInvite.create({
-        data: { id: randomUUID(), schoolId, branchId, email, tokenHash: hashToken(token), invitedById: callerId, expiresAt },
+        data: { id: randomUUID(), schoolId, branchId, email, role, tokenHash: hashToken(token), invitedById: callerId, expiresAt },
       });
     });
 
@@ -136,9 +146,11 @@ export class CoachInvitesService {
     try {
       await this.delivery.sendEmail(
         email,
-        `You're invited to coach at ${school.name}`,
+        role === 'BRANCH_STAFF' ? `You're invited to join the staff at ${school.name}` : `You're invited to coach at ${school.name}`,
         [
-          `${inviter} has invited you to coach at ${where} on ULTM8.`,
+          role === 'BRANCH_STAFF'
+            ? `${inviter} has invited you to join the staff at ${where} on ULTM8, as Branch Staff.`
+            : `${inviter} has invited you to coach at ${where} on ULTM8.`,
           '',
           `Open this link to accept. Sign in, or create your account, with this email address (${email}):`,
           `${baseUrl}/coach-invite/${token}`,
@@ -187,7 +199,7 @@ export class CoachInvitesService {
   async cancel(callerId: string, inviteId: string) {
     const invite = await this.prismaApp.withTenantContext(callerId, (tx) => tx.coachInvite.findUnique({ where: { id: inviteId } }));
     if (!invite) throw new NotFoundException('Invite not found');
-    await this.assertMayInvite(callerId, invite.schoolId, invite.branchId);
+    await this.assertMayInvite(callerId, invite.schoolId, invite.branchId, invite.role);
     if (invite.acceptedAt) throw new ConflictException('This invite has already been accepted. Remove the coach role on the Staff page instead.');
     let updated = invite;
     if (!invite.cancelledAt) {
@@ -225,7 +237,7 @@ export class CoachInvitesService {
     // An invite from someone who may no longer invite, or to a closed School,
     // can't be accepted: shown as cancelled.
     const status = statusOf(invite) === 'PENDING' && !this.stillValid(invite) ? 'CANCELLED' : statusOf(invite);
-    return { schoolName: invite.schoolName, branchName: invite.branchName, email: invite.email, status, expiresAt: invite.expiresAt };
+    return { schoolName: invite.schoolName, branchName: invite.branchName, email: invite.email, role: invite.role as InviteRole, status, expiresAt: invite.expiresAt };
   }
 
   /** Accept, signed in with the invited email: the account gets the coach
@@ -259,13 +271,13 @@ export class CoachInvitesService {
       if (paused) throw new ConflictException('Your roles at this School are paused. Ask the School to unpause you.');
 
       const existing = await tx.roleGrant.findFirst({
-        where: { userId: callerId, schoolId: invite.schoolId, branchId: invite.branchId, role: 'INSTRUCTOR', revokedAt: null },
+        where: { userId: callerId, schoolId: invite.schoolId, branchId: invite.branchId, role: invite.role, revokedAt: null },
       });
       if (existing) return existing;
       return tx.roleGrant.create({
         data: {
           id: randomUUID(),
-          role: 'INSTRUCTOR',
+          role: invite.role,
           userId: callerId,
           schoolId: invite.schoolId,
           branchId: invite.branchId,
@@ -285,7 +297,7 @@ export class CoachInvitesService {
     // Same as SchoolsService.join(): re-mint after the grant commits so the
     // new token carries the coach role.
     const accessToken = await this.authService.issueAccessToken(callerId);
-    return { schoolId: grant.schoolId!, branchId: grant.branchId, accessToken };
+    return { schoolId: grant.schoolId!, branchId: grant.branchId, role: invite.role as InviteRole, accessToken };
   }
 
   /** The caller's own invite rights here (Decision 184), for the portal. */
@@ -386,6 +398,7 @@ export class CoachInvitesService {
       branchId: invite.branchId,
       branchName,
       email: invite.email,
+      role: invite.role as InviteRole,
       status: statusOf(invite),
       invitedById: invite.invitedById,
       invitedByName,

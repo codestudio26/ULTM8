@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **New staff must accept first** (Decision 396) — a new switch in the Staff
+  page's "Give a role" card, off by default. When it's on, giving someone the
+  Instructor or Branch Staff role emails them an invite link instead, and
+  they get the role when they accept it (co-owners still get it at once).
+  Coach invites can now also be Branch Staff invites, from the owner only.
+  Needs migration `20270103000000_staff_must_accept`.
 - **Ranks without a belt: Levels** (backlog 3.19; Decisions 290, 401) — a style
   can now show its ranks as **Levels (no belt)** instead of belts: each rank is
   a coloured badge with numbered steps (Beginner 1, 2, 3), each step with its

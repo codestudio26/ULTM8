@@ -162,7 +162,7 @@ export class RoleGrantsService {
     }
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true, name: true } }),
+      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true, name: true, staffMustAcceptFirst: true } }),
     );
     if (!school) {
       throw new NotFoundException('School not found');
@@ -217,6 +217,13 @@ export class RoleGrantsService {
     // Decision 390: a paused person gets their roles back with Unpause. A new
     // coach or Branch Staff role meanwhile would quietly end the pause.
     if (dto.role !== 'SCHOOL_OWNER_MANAGER') await this.assertNotPaused(callerId, dto.schoolId, targetUserId);
+    // Decision 396: with "New staff must accept first" on, a coach or Branch
+    // Staff role is given by an invite the person accepts (POST
+    // /schools/{schoolId}/coach-invites with the role). Co-owners stay
+    // immediate.
+    if (school.staffMustAcceptFirst && dto.role !== 'SCHOOL_OWNER_MANAGER') {
+      throw new ConflictException({ code: 'STAFF_MUST_ACCEPT', message: 'This School asks new staff to accept first. Send them an invite instead.' });
+    }
 
     const roleGrantId = randomUUID();
     let grant;
@@ -1119,6 +1126,26 @@ export class RoleGrantsService {
 
   /** Decision 390 — refuses a new coach or Branch Staff role for someone who
    * is paused here: Unpause gives their roles back. */
+  /** "New staff must accept first" (Decision 396). Owner only. */
+  async getStaffSettings(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { staffMustAcceptFirst: true } }),
+    );
+    if (!school) throw new NotFoundException('School not found');
+    return { mustAcceptFirst: school.staffMustAcceptFirst };
+  }
+
+  /** Turning it off leaves invites already sent working (Decision 396). */
+  async setStaffSettings(callerId: string, schoolId: string, mustAcceptFirst: boolean) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.update({ where: { id: schoolId }, data: { staffMustAcceptFirst: mustAcceptFirst }, select: { staffMustAcceptFirst: true } }),
+    );
+    return { mustAcceptFirst: school.staffMustAcceptFirst };
+  }
+
   async assertNotPaused(callerId: string, schoolId: string, userId: string) {
     const paused = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, pausedAt: { not: null } }, select: { id: true } }),

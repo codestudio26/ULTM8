@@ -84,5 +84,10 @@ export const auth = {
     acceptButton: 'Accept invite',
     wrongAccountBody: "This invite is for {email}, but you're logged in as {signedInAs}.",
     logInAs: 'Log in as {email}',
+    staffTitle: 'Staff invite',
+    staffInvitedTitle: "You're invited to join the staff",
+    staffAcceptBody: 'Accept to become Branch Staff at {where}. Anything else your account has here, like your student membership, stays as it is.',
+    staffAccepted: "You're now Branch Staff at {where}.",
+    staffGoToPortal: 'Go to the School portal',
   },
 };

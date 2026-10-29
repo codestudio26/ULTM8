@@ -323,11 +323,11 @@ export function InstructorDetailPage() {
         <GiveRoleBackModal
           schoolId={schoolId}
           instructor={instructor}
-          onDone={async () => {
+          onDone={async (invited) => {
             setGivingRoleBack(false);
             await queryClient.invalidateQueries({ queryKey: ['instructors'] });
             await queryClient.invalidateQueries({ queryKey: ['instructor-belts'] });
-            setNotice(t('instructors.detail.giveRoleBackDone', { name }));
+            setNotice(t(invited ? 'instructors.detail.giveRoleBackInvited' : 'instructors.detail.giveRoleBackDone', { name }));
           }}
           onClose={() => setGivingRoleBack(false)}
         />

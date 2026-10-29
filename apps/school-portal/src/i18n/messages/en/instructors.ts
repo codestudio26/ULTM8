@@ -49,6 +49,10 @@ export const instructors = {
     'Instructor role granted — they were emailed to let them know. Use "Add instructor" to add their profile.',
   roleGrantedEmailFailed:
     'Instructor role granted, but the notification email could not be sent. Use "Add instructor" to add their profile.',
+  roleInviteSent:
+    'This School asks new staff to accept first, so we emailed them an invite. Once they accept, use "Add instructor" to add their profile.',
+  roleInviteEmailFailed:
+    "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it on the Staff page and send it again.",
   detail: {
     back: '← Instructors',
     loadFailed: 'Could not load this Instructor.',
@@ -83,6 +87,7 @@ export const instructors = {
     giveRoleBackBranch: 'Branch',
     giveRoleBackConfirm: 'Give role back',
     giveRoleBackDone: '{name} is an instructor here again.',
+    giveRoleBackInvited: 'This School asks new staff to accept first, so we emailed {name} an invite. They are an instructor here again once they accept.',
     giveRoleBackFailed: 'Could not give the role back. Please try again.',
     classesHeading: 'Classes',
     upcomingHeading: 'Upcoming classes',
