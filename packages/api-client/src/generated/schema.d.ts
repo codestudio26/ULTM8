@@ -5396,6 +5396,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-cards/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipCardsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/membership-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipCardsController_card"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/sign-ups": {
         parameters: {
             query?: never;
@@ -10250,6 +10282,32 @@ export interface components {
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
             code: string;
+        };
+        MembershipCardMembershipDto: {
+            /** @description The membership plan's name. */
+            title: string;
+            /** @enum {string} */
+            type: "SUBSCRIPTION" | "CLASS_PACK" | "WEEKLY_PASS" | "FRIEND_PASS" | "TRIAL_MEMBERSHIP" | "VISIT_PASS";
+            /** @description When it ends, if it has an end date. */
+            expiryDate?: string | null;
+            /** @description Classes left on a pack. */
+            classesRemaining?: number | null;
+        };
+        MembershipCardDto: {
+            schoolId: string;
+            schoolName: string;
+            schoolLogoUrl?: string | null;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            photoUrl?: string | null;
+            /** @description The personal check-in code, typed at the front desk. */
+            checkInCode: string;
+            /** @description Memberships in effect now; empty when there are none. */
+            memberships: components["schemas"]["MembershipCardMembershipDto"][];
+        };
+        MembershipCardListDto: {
+            items: components["schemas"]["MembershipCardDto"][];
         };
         SignUpDto: {
             id: string;
@@ -19460,6 +19518,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    MembershipCardsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipCardListDto"];
+                };
+            };
+        };
+    };
+    MembershipCardsController_card: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipCardDto"];
                 };
             };
         };

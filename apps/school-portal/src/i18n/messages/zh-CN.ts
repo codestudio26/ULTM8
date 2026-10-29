@@ -3441,6 +3441,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "是，发放新码",
       failed: "无法发放新签到码，请重试。",
     },
+    card: {
+      print: "打印会员卡",
+      pageTitle: "{name}：会员卡",
+      codeLabel: "签到码",
+      noMembership: "当前没有会员资格",
+      classesLeft: {
+        other: "剩余 {count} 节课",
+      },
+      until: "至 {date}",
+      printButton: "打印 / 另存为 PDF",
+      failed: "无法加载会员卡，请重试。",
+    },
     heardFrom: {
       friend: "朋友",
       instagram: "Instagram",

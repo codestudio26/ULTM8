@@ -3484,6 +3484,19 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Evet, yeni kod",
       failed: "Yeni kod verilemedi. Lütfen tekrar deneyin.",
     },
+    card: {
+      print: "Üyelik kartını yazdır",
+      pageTitle: "{name}: üyelik kartı",
+      codeLabel: "Giriş kodu",
+      noMembership: "Geçerli üyelik yok",
+      classesLeft: {
+        one: "{count} ders kaldı",
+        other: "{count} ders kaldı",
+      },
+      until: "{date} tarihine kadar",
+      printButton: "Yazdır / PDF olarak kaydet",
+      failed: "Üyelik kartı yüklenemedi. Lütfen tekrar deneyin.",
+    },
     heardFrom: {
       friend: "Arkadaş",
       instagram: "Instagram",

@@ -16297,6 +16297,75 @@
         ]
       }
     },
+    "/v1/membership-cards/me": {
+      "get": {
+        "operationId": "MembershipCardsController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipCardListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/membership-card": {
+      "get": {
+        "operationId": "MembershipCardsController_card",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipCardDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/sign-ups": {
       "get": {
         "operationId": "SignUpsController_list",
@@ -32049,6 +32118,102 @@
         },
         "required": [
           "code"
+        ]
+      },
+      "MembershipCardMembershipDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The membership plan's name."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP",
+              "VISIT_PASS"
+            ]
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "When it ends, if it has an end date."
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true,
+            "description": "Classes left on a pack."
+          }
+        },
+        "required": [
+          "title",
+          "type"
+        ]
+      },
+      "MembershipCardDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "schoolLogoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkInCode": {
+            "type": "string",
+            "description": "The personal check-in code, typed at the front desk."
+          },
+          "memberships": {
+            "description": "Memberships in effect now; empty when there are none.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCardMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "studentId",
+          "firstName",
+          "surname",
+          "checkInCode",
+          "memberships"
+        ]
+      },
+      "MembershipCardListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipCardDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "SignUpDto": {

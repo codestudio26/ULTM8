@@ -19,6 +19,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   cash or bank-transfer payment now waits up to 10 seconds for a free database
   connection, as booking does, instead of answering "The server is busy" after
   2 seconds when the desk settles a lot of payments together. No migration.
+- **Membership card** (backlog 3.11; Decision 398) — "Print membership card"
+  on the student's page opens a bank-card-sized card to print: the School,
+  the student's photo and name, their check-in code and their current
+  memberships. It has no QR code, because a printed one would never change. In
+  the app, the same card sits under the live QR on "Show my code". No
+  migration.
 - **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
   now a choice of Female, Male or not given, in the portal (Edit profile,
   register) and the student app (profile), and the API refuses anything else.

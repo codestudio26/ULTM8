@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Button, Card, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
-import { useNewStudentCheckInCode, useStudentCheckInCode } from './frontDeskQueries';
+import { useMembershipCard, useNewStudentCheckInCode, useStudentCheckInCode } from './frontDeskQueries';
+import { membershipCardHtml } from './membershipCardHtml';
 
 /**
  * A student's personal check-in code on their page (Decision 384, handover
@@ -14,8 +15,16 @@ export function StudentCheckInCodeCard({ schoolId, studentId }: { schoolId: stri
   const t = useT();
   const code = useStudentCheckInCode(schoolId, studentId);
   const renew = useNewStudentCheckInCode(schoolId, studentId);
+  const card = useMembershipCard(schoolId, studentId, !!code.data);
   const [confirming, setConfirming] = useState(false);
   if (!code.data) return null;
+
+  // Backlog 3.11: a bank-card-sized page to print, with no QR code.
+  function printCard() {
+    if (!card.data) return;
+    const url = URL.createObjectURL(new Blob([membershipCardHtml(t, card.data)], { type: 'text/html' }));
+    window.open(url, '_blank');
+  }
   return (
     <div style={{ marginBottom: 24 }}>
       <Card>
@@ -42,10 +51,16 @@ export function StudentCheckInCodeCard({ schoolId, studentId }: { schoolId: stri
             </Button>
           </div>
         ) : (
-          <Button variant="secondary" onClick={() => setConfirming(true)}>
-            {t('frontDesk.studentCode.renew')}
-          </Button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Button variant="secondary" onClick={() => setConfirming(true)}>
+              {t('frontDesk.studentCode.renew')}
+            </Button>
+            <Button variant="secondary" onClick={printCard} disabled={!card.data}>
+              {t('frontDesk.card.print')}
+            </Button>
+          </div>
         )}
+        {card.isError ? <p className="ultm8-field__hint">{t('frontDesk.card.failed')}</p> : null}
       </Card>
     </div>
   );

@@ -230,6 +230,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Dein Check-in-Code konnte nicht erstellt werden — bitte versuche es erneut.",
       hint: "Zeig das deinem Ausbilder, um einzuchecken. Der Code aktualisiert sich automatisch — du musst nichts tun.",
     },
+    membershipCard: {
+      label: "Mitgliedskarte {school}",
+      codeLabel: "Check-in-Code",
+      noMembership: "Keine aktuelle Mitgliedschaft",
+      classesLeft: {
+        one: "Noch {count} Stunde",
+        other: "Noch {count} Stunden",
+      },
+      until: "Bis {date}",
+    },
     qrScanner: {
       notACheckInCode: "Das sah nicht nach einem Check-in-Code für einen Kurs aus — versuche es erneut.",
       permissionNeeded: "Zum Scannen des Check-in-Codes für den Kurs wird Kamerazugriff benötigt.",
