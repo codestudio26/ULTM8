@@ -5604,6 +5604,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/student-notes/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentNotesController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentNotesController_list"];
+        put?: never;
+        post: operations["StudentNotesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentNotesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StudentNotesController_update"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/open-mats": {
         parameters: {
             query?: never;
@@ -10309,6 +10357,8 @@ export interface components {
             progress?: components["schemas"]["KioskProgressDto"] | null;
             /** @description The student's bookings in today's Classes here. */
             bookings: components["schemas"]["KioskBookingDto"][];
+            /** @description Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400). */
+            memberNotes: string[];
         };
         KioskQrLookupResponseDto: {
             /** @description Pass to POST /front-desk/kiosk/check-ins within 5 minutes. */
@@ -10465,6 +10515,41 @@ export interface components {
         };
         MyPackRechargeListDto: {
             items: components["schemas"]["MyPackRechargeDto"][];
+        };
+        MemberNoteDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            body: string;
+            authorName?: string | null;
+            createdAt: string;
+        };
+        MemberNoteListDto: {
+            items: components["schemas"]["MemberNoteDto"][];
+        };
+        StudentNoteDto: {
+            id: string;
+            body: string;
+            showToMember: boolean;
+            /** @description The author's name; null once their account is gone. */
+            authorName?: string | null;
+            authorId?: string | null;
+            createdAt: string;
+            editedAt?: string | null;
+            /** @description Whether the caller may edit or delete it: its author, or a School owner. */
+            canEdit: boolean;
+        };
+        StudentNoteListDto: {
+            items: components["schemas"]["StudentNoteDto"][];
+        };
+        CreateStudentNoteDto: {
+            body: string;
+            /** @description Shown to the student in the app (a child: to their Guardian). Off by default. */
+            showToMember?: boolean;
+        };
+        UpdateStudentNoteDto: {
+            body?: string;
+            showToMember?: boolean;
         };
         StartOpenMatDto: {
             /** @description One of the School's open Branches; null when it has none. */
@@ -19382,6 +19467,8 @@ export interface operations {
             query: {
                 startsFrom: string;
                 startsTo: string;
+                /** @description The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400). */
+                lookupToken?: string;
             };
             header?: never;
             path?: never;
@@ -19426,6 +19513,8 @@ export interface operations {
             query: {
                 startsFrom: string;
                 startsTo: string;
+                /** @description The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400). */
+                lookupToken?: string;
             };
             header?: never;
             path: {
@@ -19864,6 +19953,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyPackRechargeListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_mine: {
+        parameters: {
+            query?: {
+                /** @description A Guardian's child; leave out for your own notes. */
+                studentId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberNoteListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteListDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStudentNoteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteDto"];
+                };
+            };
+        };
+    };
+    StudentNotesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentNotesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStudentNoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentNoteDto"];
                 };
             };
         };

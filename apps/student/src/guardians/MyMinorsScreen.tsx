@@ -104,6 +104,12 @@ export function MyMinorsScreen({ navigation }: Props) {
             variant="secondary"
             onPress={() => navigation.navigate('Lessons', { studentId: minor.studentId, name: minor.firstName })}
           />
+          {/* Notes their School shows them (Decision 400). */}
+          <Button
+            title={t('guardians.myMinors.notes')}
+            variant="secondary"
+            onPress={() => navigation.navigate('SchoolNotes', { studentId: minor.studentId, name: minor.firstName })}
+          />
         </Pressable>
       ))}
 

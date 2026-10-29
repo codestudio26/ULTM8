@@ -6847,3 +6847,29 @@ User (Code), 29 Oct 2026, answering whether the printed card should carry a fixe
 ### Recorded by
 
 User (Code), 29 Oct 2026, under "build any task you have all the answers for".
+
+---
+
+## Decision 400 — Staff notes on a student, with "Show to member"
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.10 (PR10, Q48). **Answers:** who adds and changes notes, the one point Decision 315 item 8 left.
+
+### Decision
+
+1. **Who adds notes:** any staff who can see the student. That is the owner, Branch Staff and coaches who cover the student. *(Product owner, 29 Oct 2026: "Any staff adds; author or owner edits".)*
+2. **Who edits or deletes a note:** its author, or a School owner.
+3. **Who reads them** (Decision 315 item 8): staff-only notes are seen by any staff who can see the student. A note ticked **"Show to member"** is also shown to the student in the app (*Notes from your School*), and to a child's Guardian.
+4. **At check-in:** the staff check-in card shows up to three shown notes for staff to pass on. The front-desk tablet shows them to the member only after they identify themselves there with their QR or personal check-in code. Someone found by name may not be the person at the tablet, so they see none.
+5. **Kept** while the student's account exists and erased with it (Decision 315 item 8). A note stays when its author's account is erased, without an author.
+6. **No tasks or reminders,** as the 20 Oct 2026 answer said.
+
+### How it is built
+
+- The `StudentNote` table (jobs connection only) comes with migration `20270101000000_student_notes`.
+- **Staff:** `GET`, `POST`, `PATCH` and `DELETE /schools/{schoolId}/students/{studentId}/notes`.
+- **Members and Guardians:** `GET /student-notes/me?studentId=` returns the shown notes from every School they're still enrolled at.
+- **Tablet:** the kiosk card takes the tablet's own QR or code `lookupToken` to include them.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, answering who may add, edit and delete staff notes.

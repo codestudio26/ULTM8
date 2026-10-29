@@ -539,6 +539,8 @@ model User {
   packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
+  studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
+  studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
 
   @@index([email])
@@ -1179,6 +1181,7 @@ model School {
 
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
+  studentNotes           StudentNote[]
   studentExportLogs      StudentExportLog[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
@@ -4929,6 +4932,33 @@ model RankCorrectionRequest {
 
   @@index([schoolId, status])
   @@index([studentId, disciplineId])
+}
+
+/// Backlog 3.10 (Decision 400): a staff note on a student. Staff-only notes
+/// are seen by any staff who cover the student; showToMember notes also by the
+/// student (a child's by their Guardian). Jobs connection only (RLS on, no
+/// app grant).
+model StudentNote {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentNoteStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Null once the author's own account is erased.
+  authorId String?
+  author   User?   @relation("StudentNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  body         String
+  showToMember Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  @@index([schoolId, studentId, createdAt])
+  @@index([studentId, showToMember])
 }
 
 /// Backlog 3.9 (Decision 399): one row per student-list export, who made it

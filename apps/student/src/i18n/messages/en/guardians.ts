@@ -6,6 +6,7 @@ export const guardians = {
     born: 'Born {date}',
     grading: 'Grading',
     lessons: 'Lessons',
+    notes: "Notes",
     firstName: 'First name',
     surname: 'Surname',
     dateOfBirth: 'Date of birth',

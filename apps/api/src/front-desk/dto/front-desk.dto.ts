@@ -115,6 +115,12 @@ export class KioskTodayQueryDto {
   @ApiProperty({ type: String, format: 'date-time' })
   @IsISO8601()
   startsTo!: string;
+
+  @ApiPropertyOptional({ description: "The QR or code lookup that found this student on this tablet; with it the card also has the notes shown to them (Decision 400)." })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  lookupToken?: string;
 }
 
 export class KioskClassDto {
@@ -269,6 +275,9 @@ export class KioskStudentCardDto {
 
   @ApiProperty({ type: [KioskBookingDto], description: "The student's bookings in today's Classes here." })
   bookings!: KioskBookingDto[];
+
+  @ApiProperty({ type: [String], description: 'Up to 3 notes the School shows to this member, newest first; only after a QR or code lookup (Decision 400).' })
+  memberNotes!: string[];
 }
 
 export class KioskQrLookupResponseDto {
