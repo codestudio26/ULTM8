@@ -4212,6 +4212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/check-in-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CheckInRulesController_get"];
+        put: operations["CheckInRulesController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -5659,6 +5675,16 @@ export interface components {
             cancellationPolicyChosenAt?: string | null;
             /** @description Minutes before a Class starts that check-in opens. */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            checkInRequireWaiver: boolean;
+            /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
+            checkInOtherBranches: boolean;
+            /** @description Decision 394: Visitors may check in on their visit pass. */
+            checkInVisitors: boolean;
+            /** @description Decision 394: the front desk may check someone in to several Classes at once. */
+            checkInSeveralClasses: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6256,6 +6282,8 @@ export interface components {
             inviteCoaches: boolean;
             /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
             disciplines: boolean;
+            /** @description Change the School's check-in rules (off by default; Decision 394). */
+            checkInRules: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -9219,6 +9247,25 @@ export interface components {
             classes: components["schemas"]["DeskCheckInClassResultDto"][];
             guests: components["schemas"]["DeskCheckInGuestResultDto"][];
         };
+        CheckInRulesDto: {
+            /** @description Minutes before a Class starts that check-in opens (default 30). */
+            opensMinutesBeforeStart: number;
+            /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
+            closesMinutesAfterStart?: number | null;
+            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            requireWaiver: boolean;
+            /** @description Members with a home Branch may check in at the School's other Branches (default on). */
+            otherBranches: boolean;
+            /** @description Visitors may check in on their visit pass (default on; Decision 391). */
+            visitors: boolean;
+            /** @description The front desk may check someone in to several Classes at once (default on; Decision 378). */
+            severalClasses: boolean;
+            /**
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length.
+             * @enum {number}
+             */
+            codeDigits: 4 | 6;
+        };
         AcademySummaryDto: {
             id: string;
             franchiseId?: string | null;
@@ -9777,6 +9824,10 @@ export interface components {
             expiresAt: string;
             /** @description Check-in opens this many minutes before a Class starts (the School's setting). */
             checkInOpensMinutesBeforeStart: number;
+            /** @description Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends. */
+            checkInClosesMinutesAfterStart?: number | null;
+            /** @description Decision 394: several Classes may be checked in at once. */
+            checkInSeveralClasses: boolean;
             /**
              * @description How many digits staff codes have here.
              * @enum {number}
@@ -17058,6 +17109,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    CheckInRulesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
+                };
+            };
+        };
+    };
+    CheckInRulesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInRulesDto"];
                 };
             };
         };

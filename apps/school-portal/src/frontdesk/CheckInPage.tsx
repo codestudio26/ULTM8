@@ -8,6 +8,7 @@ import { useT } from '../i18n/I18nProvider';
 import { codeErrorText, errorText, useCodeLookup, useQrLookup, useTodayBookings, useTodayClasses, type QrLookup } from './frontDeskQueries';
 import { useSchool } from '../schools/schoolQueries';
 import { useMyOpenMat } from './openMatQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { OpenMatDialog } from './OpenMatDialog';
 import {
   ClassList,
@@ -51,6 +52,8 @@ export function CheckInPage() {
   const myOpenMat = useMyOpenMat(schoolId);
   const [startingOpenMat, setStartingOpenMat] = useState(false);
   const openMatBranches = branches.filter((b) => myOpenMat.data?.branchIds == null || myOpenMat.data.branchIds.includes(b.id));
+  // Decision 394: the owner, and Branch Staff with "Change check-in rules".
+  const myAccess = useMyStaffAccess(schoolId);
 
   const [method, setMethod] = useState<CheckInMethod>('scan');
   const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
@@ -65,9 +68,16 @@ export function CheckInPage() {
         title={isCoachOnly ? t('frontDesk.page.title') : t('students.title')}
         subtitle={t('frontDesk.page.subtitle')}
         actions={
-          <Link to="/front-desk" className="fd-pill fd-pill--line">
-            {t('frontDesk.page.openKiosk')}
-          </Link>
+          <>
+            {myAccess.data?.access.checkInRules ? (
+              <Link to="/check-in/rules" className="fd-pill fd-pill--line">
+                {t('frontDesk.page.rules')}
+              </Link>
+            ) : null}
+            <Link to="/front-desk" className="fd-pill fd-pill--line">
+              {t('frontDesk.page.openKiosk')}
+            </Link>
+          </>
         }
       />
       {isCoachOnly ? null : <StudentsTabs />}

@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Check-in rules** (Decision 394) — Check-in → Check-in rules sets, for
+  every way in (app, coach's scan, front desk, tablet), when check-in opens
+  and closes, whether a signed waiver is needed, whether members may check
+  in at other branches, whether visitors check in on a visit pass, and
+  whether the desk checks in to several classes at once. Every default is
+  how check-in worked before. The owner, and Branch Staff given the new
+  "Change check-in rules" access switch. Needs migration
+  `20261225000100_check_in_rules`.
 - **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
   (base, secondary, tag and stripe colours) now shows preset circles, the
   School's saved colours and a "+" that opens a colour wheel with Brightness

@@ -29,6 +29,7 @@ import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorP
 import { StudentsPage } from './students/StudentsPage';
 import { SignUpsPage } from './students/SignUpsPage';
 import { CheckInPage } from './frontdesk/CheckInPage';
+import { CheckInRulesPage } from './frontdesk/CheckInRulesPage';
 import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
 import { KioskApp } from './frontdesk/KioskApp';
 import { InviteStudentPage } from './students/InviteStudentPage';
@@ -257,6 +258,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <CheckInPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Decision 394: the School's check-in rules (owner, or Branch Staff with the switch). */}
+      <Route
+        path="/check-in/rules"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CheckInRulesPage />
             </Shell>
           </RequireAuth>
         }

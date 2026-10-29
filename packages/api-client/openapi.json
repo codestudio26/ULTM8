@@ -12642,6 +12642,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/check-in-rules": {
+      "get": {
+        "operationId": "CheckInRulesController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CheckInRulesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -16967,6 +17045,27 @@
             "type": "number",
             "description": "Minutes before a Class starts that check-in opens."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends."
+          },
+          "checkInRequireWaiver": {
+            "type": "boolean",
+            "description": "Decision 394: a signed waiver is needed to check in, whatever the Class says."
+          },
+          "checkInOtherBranches": {
+            "type": "boolean",
+            "description": "Decision 394: members with a home Branch may check in at the School's other Branches."
+          },
+          "checkInVisitors": {
+            "type": "boolean",
+            "description": "Decision 394: Visitors may check in on their visit pass."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: the front desk may check someone in to several Classes at once."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -17061,6 +17160,10 @@
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
           "checkInOpensMinutesBeforeStart",
+          "checkInRequireWaiver",
+          "checkInOtherBranches",
+          "checkInVisitors",
+          "checkInSeveralClasses",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -18941,6 +19044,10 @@
           "disciplines": {
             "type": "boolean",
             "description": "Manage disciplines, belts and skills for the whole School (off by default; Decision 383)."
+          },
+          "checkInRules": {
+            "type": "boolean",
+            "description": "Change the School's check-in rules (off by default; Decision 394)."
           }
         },
         "required": [
@@ -18950,7 +19057,8 @@
           "cancelClasses",
           "staffList",
           "inviteCoaches",
-          "disciplines"
+          "disciplines",
+          "checkInRules"
         ]
       },
       "StaffRoleDto": {
@@ -28682,6 +28790,52 @@
           "guests"
         ]
       },
+      "CheckInRulesDto": {
+        "type": "object",
+        "properties": {
+          "opensMinutesBeforeStart": {
+            "type": "number",
+            "description": "Minutes before a Class starts that check-in opens (default 30)."
+          },
+          "closesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time."
+          },
+          "requireWaiver": {
+            "type": "boolean",
+            "description": "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)."
+          },
+          "otherBranches": {
+            "type": "boolean",
+            "description": "Members with a home Branch may check in at the School's other Branches (default on)."
+          },
+          "visitors": {
+            "type": "boolean",
+            "description": "Visitors may check in on their visit pass (default on; Decision 391)."
+          },
+          "severalClasses": {
+            "type": "boolean",
+            "description": "The front desk may check someone in to several Classes at once (default on; Decision 378)."
+          },
+          "codeDigits": {
+            "type": "number",
+            "enum": [
+              4,
+              6
+            ],
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length."
+          }
+        },
+        "required": [
+          "opensMinutesBeforeStart",
+          "requireWaiver",
+          "otherBranches",
+          "visitors",
+          "severalClasses",
+          "codeDigits"
+        ]
+      },
       "AcademySummaryDto": {
         "type": "object",
         "properties": {
@@ -30646,6 +30800,15 @@
             "type": "number",
             "description": "Check-in opens this many minutes before a Class starts (the School's setting)."
           },
+          "checkInClosesMinutesAfterStart": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 394: check-in closes this many minutes after a Class starts (0 = at the start). Null: when the Class ends."
+          },
+          "checkInSeveralClasses": {
+            "type": "boolean",
+            "description": "Decision 394: several Classes may be checked in at once."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -30673,6 +30836,7 @@
           "schoolName",
           "expiresAt",
           "checkInOpensMinutesBeforeStart",
+          "checkInSeveralClasses",
           "checkInCodeDigits",
           "visitorsOn"
         ]

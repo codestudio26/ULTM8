@@ -613,6 +613,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you cancel classes or give credit back.": "Il titolare della scuola non ti ha permesso di annullare corsi o restituire crediti.",
   "The School owner hasn't let you see the staff list.": "Il titolare della scuola non ti ha permesso di vedere l’elenco del personale.",
   "The School owner hasn't let you invite coaches.": "Il titolare della scuola non ti ha permesso di invitare istruttori.",
+  "The School owner hasn't let you change the check-in rules.": "Il proprietario della Scuola non ti ha permesso di modificare le regole di check-in.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Gli interruttori di accesso sono per il personale della sede. Gli istruttori hanno i diritti del loro ruolo e i titolari hanno tutti i diritti.",
   "You are not on the staff of this School.": "Non fai parte del personale di questa scuola.",
   "Only the owner or Branch Staff can give a visit pass.": "Solo il titolare o lo staff di sede possono dare un pass visitatore.",

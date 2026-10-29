@@ -1082,5 +1082,6 @@ function toPermissionColumns(access: StaffAccessSet) {
     canSeeStaffList: access.staffList,
     canInviteCoaches: access.inviteCoaches,
     canManageDisciplines: access.disciplines,
+    canManageCheckInRules: access.checkInRules,
   };
 }

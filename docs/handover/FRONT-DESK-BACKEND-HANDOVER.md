@@ -128,6 +128,7 @@ The School Portal has both front-desk screens, built on the API that already exi
 The design's "Pack used up" card is in DESIGN.md and on board 5b.
 
 ### F9. Check-in rules per School (Decision 317; backlog §3.5)
+**Built 29 Oct 2026 (Decision 394):** `GET`/`PUT /schools/{schoolId}/check-in-rules` (the owner, and Branch Staff with the new "Change check-in rules" access switch); Check-in → Check-in rules in the portal. The rules are when check-in opens and closes, a signed waiver, other Branches, visitors on a visit pass, and one class at a time at the desk; refusals come back as `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` and `CHECK_IN_ONE_CLASS`. Every default is today's behaviour. The note below is the original ask.
 The screen already shows any refusal reason the API returns. When the rules exist, return their reasons in the same error shape. No frontend change is needed beyond F7's per-class reasons.
 
 ### F10. Start an open mat `openMat` (Decision 304)
