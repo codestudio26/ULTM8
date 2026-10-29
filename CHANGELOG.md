@@ -42,6 +42,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   School is read-only (no new classes, bookings or payments) until it
   subscribes; nothing is deleted. **Needs a database migration**
   (`20261228000000_platform_trial`).
+- **Students can ask for a belt correction** (backlog 3.13; Decisions 286,
+  299) — in the student app, a student whose recorded belt is wrong picks the
+  belt they should have, anywhere on the style's ladder, and says why. The
+  owner, or a coach with "Verify ranks" for that style and the student's
+  branch, approves it on the student's page (the student moves, and the history
+  shows the correction and who made it) or rejects it, with an optional note
+  back. **Needs a database migration** (`20261227000000_rank_correction_requests`).
 - **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
   tablet (adults; Visitor only when the School has set a visit pass length) and
   wait for staff. The owner, or Branch Staff with the Students switch, approves

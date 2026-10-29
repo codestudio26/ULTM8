@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "연장할 체험 기간이 없어요. 먼저 시작하세요.",
   "Only a Full Platform Admin may manage a School’s free trial.": "도장의 무료 체험은 Full Platform Admin만 관리할 수 있어요.",
   "This School is closed. Reactivate it first.": "이 도장은 폐쇄되었어요. 먼저 다시 활성화하세요.",
+  "Correction request not found": "수정 요청을 찾을 수 없어요",
+  "stripeTierId must be a grade on this style's ladder.": "이 스타일의 단계에서 등급을 고르세요.",
   "Downgrade only moves down; pick a lower belt or stripe.": "강등은 아래로만 가능합니다. 더 낮은 띠나 그랄을 선택하세요.",
   "Each item can appear only once.": "각 항목은 한 번만 포함할 수 있습니다.",
   "Each lesson can appear only once.": "각 레슨은 한 번만 포함할 수 있습니다.",

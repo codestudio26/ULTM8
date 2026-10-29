@@ -1824,6 +1824,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Weer zichtbaar voor de leerling",
       },
     },
+    correction: {
+      title: "Bandcorrectie gevraagd",
+      asked: "{name} vroeg op {date} om de band te corrigeren van {from} naar {to}.",
+      theirNote: "Notitie: ‘{note}’",
+      replyLabel: "Notitie aan de leerling (optioneel)",
+      replyHint: "De leerling ziet die met je antwoord in de app.",
+      failed: "De aanvraag kon niet worden beantwoord. Probeer het opnieuw.",
+      approve: "Goedkeuren: {rank}",
+      reject: "Afwijzen",
+    },
     student: {
       archivedStyleNote: "Deze stijl is gearchiveerd: de leerling houdt deze rang en geschiedenis, maar niemand kan erin gegradeerd worden. Zet hem terug op de pagina Disciplines om weer te graderen.",
       loadFailed: "De graderingen van deze leerling konden niet worden geladen.",

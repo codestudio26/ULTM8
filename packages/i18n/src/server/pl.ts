@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "Ta szkoła nie ma okresu próbnego do przedłużenia. Najpierw go rozpocznij.",
   "Only a Full Platform Admin may manage a School’s free trial.": "Tylko Full Platform Admin może zarządzać bezpłatnym okresem próbnym szkoły.",
   "This School is closed. Reactivate it first.": "Ta szkoła jest zamknięta. Najpierw ją aktywuj.",
+  "Correction request not found": "Nie znaleziono prośby o korektę",
+  "stripeTierId must be a grade on this style's ladder.": "Wybierz stopień z drabiny tego stylu.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Obniżenie stopnia działa tylko w dół — wybierz niższy pas lub belkę.",
   "Each item can appear only once.": "Każdy element może wystąpić tylko raz.",
   "Each lesson can appear only once.": "Każda lekcja może wystąpić tylko raz.",

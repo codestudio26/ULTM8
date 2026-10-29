@@ -480,3 +480,35 @@ export function useSetOpenMatHours(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['open-mat-hours', schoolId] }),
   });
 }
+
+export type RankCorrection = components['schemas']['RankCorrectionDto'];
+
+/** Backlog 3.13: a student's waiting belt correction requests that the caller
+ * may answer (the owner, or a coach with "Verify ranks" for that style). */
+export function useStudentCorrections(schoolId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['rank-corrections', schoolId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/rank-corrections', { params: { path: { schoolId: schoolId! }, query: { studentId: studentId! } } })),
+    enabled: !!schoolId && !!studentId,
+  });
+}
+
+/** Approve (the student moves, with a history entry) or reject a request. */
+export function useAnswerCorrection(studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, answer, note }: { id: string; answer: 'approve' | 'reject'; note: string }) =>
+      unwrap(
+        answer === 'approve'
+          ? apiClient.POST('/v1/rank-corrections/{id}/approve', { params: { path: { id } }, body: { note: note.trim() || null } })
+          : apiClient.POST('/v1/rank-corrections/{id}/reject', { params: { path: { id } }, body: { note: note.trim() || null } }),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['rank-corrections'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+      ]),
+  });
+}

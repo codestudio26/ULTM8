@@ -537,6 +537,8 @@ model User {
   signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
   signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
   packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
+  rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
+  rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
 
   @@index([email])
   @@index([phone])
@@ -1175,6 +1177,7 @@ model School {
   studentCheckInCodes   StudentCheckInCode[]
 
   notificationBroadcasts NotificationBroadcast[]
+  rankCorrectionRequests RankCorrectionRequest[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
 
@@ -4866,4 +4869,47 @@ model PackRecharge {
 
   @@index([studentId, completedAt])
   @@index([schoolId])
+}
+
+/// Backlog 3.13 (Decisions 286, 299): a student asks the School to correct
+/// their belt in one style. PENDING waits for a reviewer: the owner, or a
+/// coach with "Verify ranks" for the style who covers the student's branch.
+/// APPROVED moved the student to the requested rung with a RANK_CORRECTION
+/// history entry; REJECTED changed nothing. The rung ids are plain ids: the
+/// ladder can change while a request waits, so approval checks them again.
+/// Read and written only on the jobs connection, after the API's own checks.
+enum RankCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RankCorrectionRequest {
+  id String @id @default(uuid())
+
+  schoolId     String
+  school       School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User   @relation("RankCorrectionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  disciplineId String
+
+  /// Where the student was when they asked; approval needs them still there.
+  fromRankId            String
+  fromStripeTierId      String?
+  requestedRankId       String
+  requestedStripeTierId String
+  /// Required: why the recorded belt is wrong.
+  note                  String
+
+  status       RankCorrectionStatus @default(PENDING)
+  reviewedById String?
+  reviewedBy   User?                @relation("RankCorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  /// The reviewer's optional note to the student.
+  reviewNote   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, status])
+  @@index([studentId, disciplineId])
 }

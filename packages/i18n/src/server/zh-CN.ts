@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "该道馆没有可延长的试用期，请先开始试用。",
   "Only a Full Platform Admin may manage a School’s free trial.": "只有完整平台管理员可以管理道馆的免费试用。",
   "This School is closed. Reactivate it first.": "该道馆已关闭，请先重新启用。",
+  "Correction request not found": "未找到更正申请",
+  "stripeTierId must be a grade on this style's ladder.": "请从此风格的段位阶梯中选择一个级别。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降级只能向下；请选择更低的腰带或条纹。",
   "Each item can appear only once.": "每个项目只能出现一次。",
   "Each lesson can appear only once.": "每个课时只能出现一次。",

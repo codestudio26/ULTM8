@@ -70,6 +70,8 @@ export const SERVER_MESSAGES: string[] = [
  "This School has no trial to extend. Start one first.",
  "Only a Full Platform Admin may manage a School’s free trial.",
  "This School is closed. Reactivate it first.",
+ "Correction request not found",
+ "stripeTierId must be a grade on this style's ladder.",
  "Downgrade only moves down; pick a lower belt or stripe.",
  "Each item can appear only once.",
  "Each lesson can appear only once.",

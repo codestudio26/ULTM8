@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "โรงเรียนนี้ไม่มีช่วงทดลองให้ขยาย เริ่มช่วงทดลองก่อน",
   "Only a Full Platform Admin may manage a School’s free trial.": "มีเพียง Full Platform Admin เท่านั้นที่จัดการช่วงทดลองใช้ฟรีของโรงเรียนได้",
   "This School is closed. Reactivate it first.": "โรงเรียนนี้ปิดแล้ว เปิดใช้งานอีกครั้งก่อน",
+  "Correction request not found": "ไม่พบคำขอแก้ไข",
+  "stripeTierId must be a grade on this style's ladder.": "เลือกระดับจากลำดับสายของสไตล์นี้",
   "Downgrade only moves down; pick a lower belt or stripe.": "การลดระดับทำได้เฉพาะลงเท่านั้น โปรดเลือกสายคาดหรือแถบที่ต่ำกว่า",
   "Each item can appear only once.": "แต่ละรายการระบุได้เพียงครั้งเดียว",
   "Each lesson can appear only once.": "แต่ละบทเรียนระบุได้เพียงครั้งเดียว",

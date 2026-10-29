@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "У этой школы нет пробного периода для продления. Сначала начните его.",
   "Only a Full Platform Admin may manage a School’s free trial.": "Только Full Platform Admin может управлять бесплатным пробным периодом школы.",
   "This School is closed. Reactivate it first.": "Эта школа закрыта. Сначала активируйте её снова.",
+  "Correction request not found": "Запрос на исправление не найден",
+  "stripeTierId must be a grade on this style's ladder.": "Выберите ступень из лестницы этого стиля.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Понижение возможно только вниз; выберите более низкий пояс или полоску.",
   "Each item can appear only once.": "Каждый элемент можно указать только один раз.",
   "Each lesson can appear only once.": "Каждый урок можно указать только один раз.",

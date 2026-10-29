@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "Bu okulun uzatılacak bir deneme süresi yok. Önce bir tane başlatın.",
   "Only a Full Platform Admin may manage a School’s free trial.": "Bir okulun ücretsiz deneme süresini yalnızca Full Platform Admin yönetebilir.",
   "This School is closed. Reactivate it first.": "Bu okul kapalı. Önce yeniden etkinleştirin.",
+  "Correction request not found": "Düzeltme isteği bulunamadı",
+  "stripeTierId must be a grade on this style's ladder.": "Bu stilin sıralamasından bir derece seçin.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Derece düşürme yalnızca aşağı doğru yapılır; daha düşük bir kuşak veya şerit seçin.",
   "Each item can appear only once.": "Her öğe yalnızca bir kez yer alabilir.",
   "Each lesson can appear only once.": "Her ders içeriği yalnızca bir kez yer alabilir.",

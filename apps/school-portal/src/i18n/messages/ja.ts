@@ -1795,6 +1795,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "生徒に再表示",
       },
     },
+    correction: {
+      title: "帯の修正依頼",
+      asked: "{name} さんが {date} に帯を {from} から {to} へ修正するよう依頼しました。",
+      theirNote: "メモ:「{note}」",
+      replyLabel: "生徒へのメモ（任意）",
+      replyHint: "回答と一緒にアプリに表示されます。",
+      failed: "依頼に回答できませんでした。もう一度お試しください。",
+      approve: "承認: {rank}",
+      reject: "却下",
+    },
     student: {
       archivedStyleNote: "このスタイルはアーカイブ済みです。生徒のランクと履歴は残りますが、このスタイルでは誰も昇級できません。再び昇級させるには「種目」ページでアーカイブを解除してください。",
       loadFailed: "この生徒の昇級情報を読み込めませんでした。",

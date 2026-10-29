@@ -11340,6 +11340,216 @@
         ]
       }
     },
+    "/v1/rank-corrections": {
+      "post": {
+        "operationId": "RankCorrectionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/me": {
+      "get": {
+        "operationId": "RankCorrectionsController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rank-corrections": {
+      "get": {
+        "operationId": "RankCorrectionsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Waiting (the default), or answered (newest 50).",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "ANSWERED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Only this student's requests.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/{id}/approve": {
+      "post": {
+        "operationId": "RankCorrectionsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/rank-corrections/{id}/reject": {
+      "post": {
+        "operationId": "RankCorrectionsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRankCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankCorrectionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "grading"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers": {
       "post": {
         "operationId": "WaiversController_createWaiver",
@@ -27969,6 +28179,152 @@
         "required": [
           "items"
         ]
+      },
+      "CreateRankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stripeTierId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The grade they should have: a belt's plain grade or one of its stripes, on this style's ladder."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why the recorded belt is wrong. Required."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "stripeTierId",
+          "note"
+        ]
+      },
+      "RankCorrectionRungDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string"
+          },
+          "rankName": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "rankId",
+          "rankName",
+          "stripeTierId",
+          "stripeName"
+        ]
+      },
+      "RankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "from": {
+            "$ref": "#/components/schemas/RankCorrectionRungDto"
+          },
+          "requested": {
+            "$ref": "#/components/schemas/RankCorrectionRungDto"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "reviewNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "from",
+          "requested",
+          "note",
+          "status",
+          "reviewNote",
+          "reviewedAt",
+          "createdAt"
+        ]
+      },
+      "RankCorrectionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankCorrectionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReviewRankCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "nullable": true,
+            "description": "An optional note to the student."
+          }
+        }
       },
       "CreateWaiverDto": {
         "type": "object",

@@ -60,6 +60,8 @@ export const serverMessages: Record<string, string> = {
   "This School has no trial to extend. Start one first.": "Deze school heeft geen proefperiode om te verlengen. Start er eerst een.",
   "Only a Full Platform Admin may manage a School’s free trial.": "Alleen een Full Platform Admin mag de gratis proefperiode van een school beheren.",
   "This School is closed. Reactivate it first.": "Deze school is gesloten. Heractiveer hem eerst.",
+  "Correction request not found": "Correctieaanvraag niet gevonden",
+  "stripeTierId must be a grade on this style's ladder.": "Kies een graad van de ladder van deze stijl.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Terugzetten kan alleen omlaag: kies een lagere band of streep.",
   "Each item can appear only once.": "Elk item mag maar één keer voorkomen.",
   "Each lesson can appear only once.": "Elk lesonderdeel mag maar één keer voorkomen.",
