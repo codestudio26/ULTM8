@@ -69,6 +69,7 @@ export const frontDesk = {
     alreadyIn: 'Checked in',
     booked: 'Booked',
     willBook: 'Books a place',
+    bookInApp: 'Not booked: book in the app, or scan the app QR',
     opensAt: 'Check-in opens at {time}',
     notCheckedIn: 'Not checked in',
     failed: 'Could not check in. Please try again.',

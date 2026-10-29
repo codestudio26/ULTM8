@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "Choisissez un des styles de l’école pour ce tatami libre.",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "Un tatami libre commence entre il y a 30 minutes et dans 24 heures.",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "« Peut lancer des séances de tatami libre » est réservé au personnel d’agence et aux coachs de cette école.",
+  "The School owner hasn't let you manage classes and the timetable here.": "Le propriétaire de l’école ne vous a pas autorisé à gérer les cours et le planning ici.",
+  "The School owner hasn't let you manage bookings and check-in here.": "Le propriétaire de l’école ne vous a pas autorisé à gérer les réservations et l’enregistrement ici.",
+  "The School owner hasn't let you see or edit students.": "Le propriétaire de l’école ne vous a pas autorisé à voir ou modifier les élèves.",
+  "The School owner hasn't let you cancel classes or give credit back.": "Le propriétaire de l’école ne vous a pas autorisé à annuler des cours ou à rendre des crédits.",
+  "The School owner hasn't let you see the staff list.": "Le propriétaire de l’école ne vous a pas autorisé à voir la liste du personnel.",
+  "The School owner hasn't let you invite coaches.": "Le propriétaire de l’école ne vous a pas autorisé à inviter des instructeurs.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Les autorisations d’accès concernent le personnel de l’antenne. Les instructeurs ont les droits de leur rôle, et les propriétaires ont tous les droits.",
+  "You are not on the staff of this School.": "Vous ne faites pas partie du personnel de cette école.",
 };

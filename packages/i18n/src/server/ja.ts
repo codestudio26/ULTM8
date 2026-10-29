@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "このオープンマットのために、スクールのスタイルを1つ選んでください。",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "オープンマットの開始時刻は30分前から24時間後までです。",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "「オープンマットを開始できる」は、このスクールの支店スタッフとコーチ向けです。",
+  "The School owner hasn't let you manage classes and the timetable here.": "スクールオーナーはここでクラスと時間割を管理することを許可していません。",
+  "The School owner hasn't let you manage bookings and check-in here.": "スクールオーナーはここで予約とチェックインを管理することを許可していません。",
+  "The School owner hasn't let you see or edit students.": "スクールオーナーは生徒の閲覧や編集を許可していません。",
+  "The School owner hasn't let you cancel classes or give credit back.": "スクールオーナーはクラスのキャンセルやクレジットの返却を許可していません。",
+  "The School owner hasn't let you see the staff list.": "スクールオーナーはスタッフ一覧の閲覧を許可していません。",
+  "The School owner hasn't let you invite coaches.": "スクールオーナーはコーチの招待を許可していません。",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
+  "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
 };

@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "이 오픈 매트를 위해 학교의 스타일 중 하나를 선택하세요.",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "오픈 매트는 30분 전부터 24시간 후 사이에 시작해야 합니다.",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "\"오픈 매트 시작 가능\"은 이 학교의 지점 직원과 코치용입니다.",
+  "The School owner hasn't let you manage classes and the timetable here.": "학교 소유자가 여기에서 수업과 시간표를 관리하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you manage bookings and check-in here.": "학교 소유자가 여기에서 예약과 체크인을 관리하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you see or edit students.": "학교 소유자가 학생을 보거나 편집하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you cancel classes or give credit back.": "학교 소유자가 수업을 취소하거나 크레딧을 돌려주도록 허용하지 않았습니다.",
+  "The School owner hasn't let you see the staff list.": "학교 소유자가 직원 목록을 보도록 허용하지 않았습니다.",
+  "The School owner hasn't let you invite coaches.": "학교 소유자가 코치를 초대하도록 허용하지 않았습니다.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
+  "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
 };

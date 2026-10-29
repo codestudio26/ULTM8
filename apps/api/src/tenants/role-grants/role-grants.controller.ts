@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../../common/throttle/identity-trackers';
@@ -18,6 +18,9 @@ import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-
 import {
   HandOverMainOwnerDto,
   MainOwnerResponseDto,
+  MyStaffAccessResponseDto,
+  StaffAccessDto,
+  StaffAccessResponseDto,
   StaffDetailsResponseDto,
   StaffListQueryDto,
   StaffListResponseDto,
@@ -112,7 +115,9 @@ export class RoleGrantsController {
     return this.roleGrantsService.createStudentManually(user.sub, schoolId, dto);
   }
 
-  /** Decision 361 — the Staff page's list. See RoleGrantsService.listStaff. */
+  /** Decision 361 — the Staff page's list. See RoleGrantsService.listStaff.
+   * Branch Staff with "See the staff list" get a read-only view of their
+   * branches (Decision 387). */
   @ApiOkResponse({ type: StaffListResponseDto })
   @Get('schools/:schoolId/staff')
   listStaff(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: StaffListQueryDto) {
@@ -130,6 +135,27 @@ export class RoleGrantsController {
     @Body() dto: UpdateStaffDetailsDto,
   ) {
     return this.roleGrantsService.updateStaffDetails(user.sub, schoolId, userId, dto);
+  }
+
+  /** Decision 387 — what the caller may do at this School. Declared before
+   * the :userId routes. See RoleGrantsService.myStaffAccess. */
+  @ApiOkResponse({ type: MyStaffAccessResponseDto })
+  @Get('schools/:schoolId/staff/me/access')
+  myStaffAccess(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.roleGrantsService.myStaffAccess(user.sub, schoolId);
+  }
+
+  /** Decision 387 — the owner sets a Branch Staff member's access switches.
+   * See RoleGrantsService.setStaffAccess. */
+  @ApiOkResponse({ type: StaffAccessResponseDto })
+  @Put('schools/:schoolId/staff/:userId/access')
+  setStaffAccess(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('userId') userId: string,
+    @Body() dto: StaffAccessDto,
+  ) {
+    return this.roleGrantsService.setStaffAccess(user.sub, schoolId, userId, dto);
   }
 
   // "Remove from School" (POST schools/:schoolId/staff/:userId/remove) lives in

@@ -5,7 +5,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { BookingsService } from '../bookings/bookings.service';
-import { assertClassBookable, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
+import { assertClassBookable, assertNotAlreadyAttended, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { AttendanceService } from './attendance.service';
 import { QrTokenService } from './qr-token.service';
@@ -34,6 +34,15 @@ function assertAtKioskBranch(kiosk: { branchId: string | null } | undefined, cla
     throw new ForbiddenException({ code: 'OTHER_BRANCH', message: 'This class is at another Branch.' });
   }
 }
+
+/** Decision 388: a locked tablet may be unattended, and its name search proves
+ * nothing about who is standing there. So on the tablet a place is booked only
+ * with a scanned app QR (or a personal code, which gives the same lookup);
+ * found by name, a student can only be checked in to Classes already booked. */
+const KIOSK_BOOK_FIRST: Reason = {
+  code: 'KIOSK_BOOK_FIRST',
+  message: 'Not booked into this class. Book it in the app, or scan the app QR, to check in here.',
+};
 
 /** Thrown inside the transaction to roll it back while saying which item failed. */
 class ItemFailed extends Error {
@@ -70,6 +79,7 @@ export class FrontDeskCheckInService {
    * School's), with QR lookups made on that tablet. */
   async checkIn(callerId: string, schoolId: string, dto: DeskCheckInDto, kiosk?: { sessionId: string; branchId: string | null }): Promise<DeskCheckInResponseDto> {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
     const guestRefs = dto.guests ?? [];
     if (dto.classIds.length === 0 && guestRefs.length === 0) {
@@ -118,12 +128,25 @@ export class FrontDeskCheckInService {
       }
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, cls.branchId);
+        await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', cls.branchId);
         assertAtKioskBranch(kiosk, cls.branchId);
         if (cls.cancelledAt) throw new ConflictException('This class has been cancelled by the school.');
         await this.attendance.assertWithinWindow(cls);
       } catch (err) {
         if (!(err instanceof HttpException)) throw err;
         failClass(classId, reasonOf(err));
+      }
+    }
+
+    // A tablet without a scan can't book (KIOSK_BOOK_FIRST). Read in the
+    // Student's own context, as the transaction below does.
+    const mayBook = !kiosk || !!dto.lookupToken;
+    if (!mayBook && dto.classIds.length > 0) {
+      const held = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.booking.findMany({ where: { studentId, classId: { in: dto.classIds }, status: { in: ['UPCOMING', 'COMPLETED'] } }, select: { classId: true } }),
+      );
+      for (const r of classResults) {
+        if (r.ok && !held.some((b) => b.classId === r.classId)) failClass(r.classId, KIOSK_BOOK_FIRST);
       }
     }
 
@@ -142,6 +165,7 @@ export class FrontDeskCheckInService {
       }
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, booking.branchId);
+        await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', booking.branchId);
         assertAtKioskBranch(kiosk, booking.class.branchId);
         if (seat.checkedInAt) throw new ConflictException('This guest is already checked in.');
         // The member's booking is either already in, or checked in by this call.
@@ -178,6 +202,11 @@ export class FrontDeskCheckInService {
             for (const cls of ordered) {
               try {
                 let booking = await tx.booking.findFirst({ where: { studentId, classId: cls.id, status: 'UPCOMING' }, select: { id: true, classId: true } });
+                if (!booking && !mayBook) {
+                  // Cancelled since the check above: still never booked here.
+                  await assertNotAlreadyAttended(tx, studentId, cls.id);
+                  throw new ItemFailed({ classId: cls.id }, KIOSK_BOOK_FIRST);
+                }
                 if (!booking) {
                   assertClassBookable(cls, { byStaff: true });
                   booking = await this.bookings.bookInTx(tx, { callerId, studentId, cls, dto: { studentId }, isStaffAction: true, viaKidMode: false });

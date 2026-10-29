@@ -19,7 +19,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   on the Check-in page makes a one-off open mat class today (style, start,
   length), and students who train that style at that branch are told in the
   app. The owner, and staff given "Can start open mat sessions" on the
-  Staff page. Needs migration `20261218000000_open_mat_permission`.
+  Staff page. Needs migration `20261221000000_open_mat_permission`.
+- **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
+  found by name on the tablet is checked in only to classes they've already
+  booked; booking a place there needs the app QR or their own personal
+  check-in code, so nobody can spend another member's credit by typing their
+  name. Ten wrong staff codes end the tablet's session, and closing a Branch
+  ends its tablet. The staff Check-in page is unchanged. **Needs a database
+  migration** (`20261220000000_front_desk_wrong_codes`).
 - **Front desk: Find me on the tablet** (Decision 385) — someone about to
   sign up types their full name and date of birth; the tablet says only
   whether they're already a member (both must match), and shows nothing
@@ -122,6 +129,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: access switches** (Decision 387) — an owner chooses what each
+  Branch Staff member may do ("Access" in the person's menu): manage classes
+  and the timetable, bookings and check-in, students, cancelling classes with
+  credit, seeing the staff list, and inviting coaches, with "Front desk" and
+  "Branch manager" presets. Defaults keep what Branch Staff could already do.
+  Branch Staff's menus, Classes, Timetable, Students and a read-only Staff list
+  follow their switches. The "What Branch Staff can do" card moves into
+  Access too, including "Manage disciplines" (Decision 383), which no preset
+  ticks. Instructors and owners are unchanged. Needs the migration
+  `20261219000000_staff_access`.
 - **Staff page: display name and work phone** (Decision 381) — an owner can
   set the name and work phone the School uses for a staff member ("Edit
   details" in the person's menu). The Staff list shows them first, with the

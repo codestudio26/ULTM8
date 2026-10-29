@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "Escolha um dos estilos da escola para este treino livre.",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "Um treino livre começa entre 30 minutos atrás e daqui a 24 horas.",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "\"Pode iniciar sessões de treino livre\" é para a equipe das filiais e os instrutores desta escola.",
+  "The School owner hasn't let you manage classes and the timetable here.": "O proprietário da escola não permitiu que você gerencie aulas e a grade horária aqui.",
+  "The School owner hasn't let you manage bookings and check-in here.": "O proprietário da escola não permitiu que você gerencie reservas e check-in aqui.",
+  "The School owner hasn't let you see or edit students.": "O proprietário da escola não permitiu que você veja ou edite alunos.",
+  "The School owner hasn't let you cancel classes or give credit back.": "O proprietário da escola não permitiu que você cancele aulas ou devolva créditos.",
+  "The School owner hasn't let you see the staff list.": "O proprietário da escola não permitiu que você veja a lista da equipe.",
+  "The School owner hasn't let you invite coaches.": "O proprietário da escola não permitiu que você convide instrutores.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da filial. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
+  "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
 };

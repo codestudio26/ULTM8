@@ -22,6 +22,7 @@ export const server: PartialMessages<ServerKeys> = {
     waitlistFirst: "このクラスにはすでに空きを待っている生徒がいます。キャンセル待ちに登録して順番をお待ちください。",
     bookingClosed: "このクラスの予約受付は終了しました。スタッフであれば引き続き追加できます。",
     classBusy: "現在このクラスには予約が集中しています。しばらくしてからもう一度お試しください。",
+    kioskBookFirst: "このクラスは予約されていません。ここでチェックインするには、アプリで予約するか、アプリのQRコードをスキャンしてください。",
     checkInNotOpen: "このクラスのチェックインはまだ始まっていません。",
     checkInOpensAt: "このクラスのチェックインはまだ始まっていません。開始時刻：{time}",
     capacityBelowBooked: "すでに予約済みの生徒：{count}人。定員を {count} 以上に設定するか、先に一部の予約をキャンセルしてください。",

@@ -22,6 +22,7 @@ export const server: PartialMessages<ServerKeys> = {
     waitlistFirst: "已有学员在等待此课程的名额。请加入候补名单排队等候。",
     bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
     classBusy: "目前预约此课程的人很多，请稍后再试。",
+    kioskBookFirst: "未预约此课程。如需在此签到，请在应用中预约，或扫描应用中的二维码。",
     checkInNotOpen: "此课程的签到尚未开放。",
     checkInOpensAt: "此课程的签到尚未开放。开放时间：{time}。",
     capacityBelowBooked: "已预约学员：{count} 名。请将名额设为 {count} 或以上，或先取消部分预约。",

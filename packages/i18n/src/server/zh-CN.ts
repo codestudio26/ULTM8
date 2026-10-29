@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "请为这次自由练习选择学校的一种风格。",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "自由练习的开始时间须在 30 分钟前到 24 小时后之间。",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "“可以开始自由练习”仅适用于本校的分校员工和教练。",
+  "The School owner hasn't let you manage classes and the timetable here.": "学校所有者未允许你在此管理课程和课表。",
+  "The School owner hasn't let you manage bookings and check-in here.": "学校所有者未允许你在此管理预约和签到。",
+  "The School owner hasn't let you see or edit students.": "学校所有者未允许你查看或编辑学员。",
+  "The School owner hasn't let you cancel classes or give credit back.": "学校所有者未允许你取消课程或退还额度。",
+  "The School owner hasn't let you see the staff list.": "学校所有者未允许你查看员工列表。",
+  "The School owner hasn't let you invite coaches.": "学校所有者未允许你邀请教练。",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
+  "You are not on the staff of this School.": "你不是这所学校的员工。",
 };

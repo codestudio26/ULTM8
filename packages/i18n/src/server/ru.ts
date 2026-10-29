@@ -607,4 +607,12 @@ export const serverMessages: Record<string, string> = {
   "Pick one of the School's styles for this open mat.": "Выберите один из стилей школы для этого открытого ковра.",
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "Открытый ковёр начинается не раньше чем 30 минут назад и не позже чем через 24 часа.",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "«Может начинать открытый ковёр» — для сотрудников филиалов и тренеров этой школы.",
+  "The School owner hasn't let you manage classes and the timetable here.": "Владелец школы не разрешил вам управлять занятиями и расписанием здесь.",
+  "The School owner hasn't let you manage bookings and check-in here.": "Владелец школы не разрешил вам управлять бронированиями и отметкой здесь.",
+  "The School owner hasn't let you see or edit students.": "Владелец школы не разрешил вам просматривать или редактировать учеников.",
+  "The School owner hasn't let you cancel classes or give credit back.": "Владелец школы не разрешил вам отменять занятия или возвращать кредиты.",
+  "The School owner hasn't let you see the staff list.": "Владелец школы не разрешил вам просматривать список персонала.",
+  "The School owner hasn't let you invite coaches.": "Владелец школы не разрешил вам приглашать инструкторов.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Переключатели доступа предназначены для персонала филиала. У инструкторов есть права их роли, а у владельцев — все права.",
+  "You are not on the staff of this School.": "Вы не входите в персонал этой школы.",
 };

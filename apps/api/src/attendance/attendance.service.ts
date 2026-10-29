@@ -77,6 +77,7 @@ export class AttendanceService {
       throw new NotFoundException('Class not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    await this.tenantAuth.assertStaffMay(callerId, cls.schoolId, 'bookings', cls.branchId);
     const { token, expiresAt } = this.qrTokenService.signClassToken(classId);
     const { code } = this.qrTokenService.deriveClassCheckInCode(classId);
     return { token, expiresAt, code };
@@ -168,6 +169,7 @@ export class AttendanceService {
       throw new NotFoundException('Class not found');
     }
     await this.tenantAuth.assertStaffAtSchool(instructorId, cls.schoolId, cls.branchId);
+    await this.tenantAuth.assertStaffMay(instructorId, cls.schoolId, 'bookings', cls.branchId);
 
     let method: CheckInMethod;
     if (dto.lookupToken) {
@@ -216,6 +218,7 @@ export class AttendanceService {
    * session, not its starter (Decision 380, frontDeskLookupOwner). */
   async deskQrLookup(callerId: string, schoolId: string, studentToken: string, lookupOwner: string = callerId) {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const studentId = this.qrTokenService.verifyStudentToken(studentToken);
     // Read via ultm8_jobs: Branch Staff and coaches can't see every RoleGrant.
     const enrolled = await this.prismaJobs.roleGrant.findFirst({
@@ -255,6 +258,7 @@ export class AttendanceService {
       throw new NotFoundException('Booking not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, booking.schoolId, booking.branchId);
+    await this.tenantAuth.assertStaffMay(callerId, booking.schoolId, 'bookings', booking.branchId);
     if (!booking.attendees.some((a) => a.id === attendeeId)) {
       throw new NotFoundException('Guest not found on this booking');
     }

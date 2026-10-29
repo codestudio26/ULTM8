@@ -10,6 +10,7 @@ import { titleCase } from '../lib/text';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useCancelClass } from '../cancellations/cancellationQueries';
 import { useClassGuestWaivers, type BookingGuests } from '../waivers/guestWaiverQueries';
 
@@ -273,7 +274,13 @@ export function ClassDetailPage() {
   const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
   const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
   const guestWaivers = useClassGuestWaivers(classId ?? undefined);
-  const mayCancel = !!useOwnedSchoolId() || !!useCoachSchoolId();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  // Decision 387: staff book and cancel seats with the bookings switch (a
+  // coach by role), and cancel the whole class with the cancel-classes one.
+  const access = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId).data?.access;
+  const mayCancel = !!ownedSchoolId || (!!coachSchoolId && (access?.bookings ?? false));
+  const mayCancelClass = !!ownedSchoolId || (!!coachSchoolId && (access?.cancelClasses ?? false));
   const [adding, setAdding] = useState(false);
   const [cancelling, setCancelling] = useState<BookingResponse | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -322,7 +329,7 @@ export function ClassDetailPage() {
                 : '')
             : undefined
         }
-        actions={cls && mayCancel && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
+        actions={cls && mayCancelClass && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
       />
       {done ? <SuccessBanner message={done} /> : null}
       {cls?.cancelledAt ? (
