@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Membership card** (backlog 3.11; Decision 398) — "Print membership card"
+  on the student's page opens a bank-card-sized card to print: the School,
+  the student's photo and name, their check-in code and their current
+  memberships. It has no QR code, because a printed one would never change. In
+  the app, the same card sits under the live QR on "Show my code". No
+  migration.
 - **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
   discipline links a Kids style to its Adult style. From "Ready for Adult from
   age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult

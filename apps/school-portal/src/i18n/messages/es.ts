@@ -3484,6 +3484,19 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Sí, código nuevo",
       failed: "No se pudo dar un código nuevo. Inténtalo de nuevo.",
     },
+    card: {
+      print: "Imprimir tarjeta de socio",
+      pageTitle: "{name}: tarjeta de socio",
+      codeLabel: "Código de entrada",
+      noMembership: "Sin membresía actual",
+      classesLeft: {
+        one: "Queda {count} clase",
+        other: "Quedan {count} clases",
+      },
+      until: "Hasta el {date}",
+      printButton: "Imprimir / Guardar como PDF",
+      failed: "No se pudo cargar la tarjeta de socio. Inténtalo de nuevo.",
+    },
     heardFrom: {
       friend: "Un amigo",
       instagram: "Instagram",

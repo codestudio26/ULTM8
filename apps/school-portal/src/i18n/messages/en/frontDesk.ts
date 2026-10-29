@@ -277,4 +277,17 @@ export const frontDesk = {
     confirmYes: 'Yes, new code',
     failed: 'Could not give a new code. Please try again.',
   },
+  card: {
+    print: "Print membership card",
+    pageTitle: "{name}: membership card",
+    codeLabel: "Check-in code",
+    noMembership: "No current membership",
+    classesLeft: {
+      one: "{count} class left",
+      other: "{count} classes left",
+    },
+    until: "Until {date}",
+    printButton: "Print / Save as PDF",
+    failed: "Could not load the membership card. Please try again.",
+  },
 };

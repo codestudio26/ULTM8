@@ -6801,3 +6801,26 @@ User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".
 ### Recorded by
 
 User (Code), 29 Oct 2026, choosing "Two linked styles" for the Kids/Adult storage.
+
+---
+
+## Decision 398 — The membership card has no fixed QR code
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.11 (PR5, MC1, Q50). **Changes:** §3.11's "their QR code" and "Scanning the printed QR at check-in works".
+
+### Decision
+
+1. **No QR on a printed card.** Check-in's QR changes every 20 seconds. A QR on paper would have to stay the same for ever, so anyone with a copy or a photo of the card could check in as that member. The printed card leaves the QR off. *(Product owner, 29 Oct 2026: "No fixed QR on the card, leave it off".)*
+2. **The printed card shows:** the School's name and logo, the student's photo (or initials) and name, their personal check-in code (Decision 384), and the memberships in effect now. It is printed from the student's page in the portal, bank-card size, by staff who can see the student's check-in code.
+3. **The app card** shows the same details under the live QR on "Show my code", one card for each School. The live QR stays the only QR.
+4. **At the desk,** a member with a printed card types or reads out the code, as Decision 384 already allows.
+
+### How it is built
+
+- `GET /membership-cards/me` (the student's own cards) and `GET /schools/{schoolId}/students/{studentId}/membership-card` (the student, their Guardian, or staff who cover them, the same check as the check-in code). No migration.
+- **Memberships in effect now** are the live ones (Decision 26): active, not past their end date, and not a used-up pack.
+- **Not built yet:** a Guardian's view of their child's card in the app. The endpoint already allows it.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, answering whether the printed card should carry a fixed QR.

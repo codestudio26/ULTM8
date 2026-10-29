@@ -230,6 +230,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "ไม่สามารถสร้างรหัสเช็กอินของคุณได้ โปรดลองอีกครั้ง",
       hint: "แสดงรหัสนี้ให้ผู้ฝึกสอนเพื่อเช็กอิน รหัสจะรีเฟรชอัตโนมัติ คุณไม่ต้องทำอะไร",
     },
+    membershipCard: {
+      label: "บัตรสมาชิก {school}",
+      codeLabel: "รหัสเช็กอิน",
+      noMembership: "ไม่มีสมาชิกภาพที่ใช้อยู่",
+      classesLeft: {
+        other: "เหลือ {count} คลาส",
+      },
+      until: "ถึง {date}",
+    },
     qrScanner: {
       notACheckInCode: "รหัสนี้ไม่ใช่รหัสเช็กอินคลาส โปรดลองอีกครั้ง",
       permissionNeeded: "ต้องอนุญาตให้เข้าถึงกล้องเพื่อสแกนรหัสเช็กอินคลาส",

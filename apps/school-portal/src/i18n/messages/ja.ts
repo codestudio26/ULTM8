@@ -3441,6 +3441,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "はい、新しいコード",
       failed: "新しいコードを発行できませんでした。もう一度お試しください。",
     },
+    card: {
+      print: "会員カードを印刷",
+      pageTitle: "{name}：会員カード",
+      codeLabel: "チェックインコード",
+      noMembership: "有効な会員プランはありません",
+      classesLeft: {
+        other: "残り{count}回",
+      },
+      until: "{date}まで",
+      printButton: "印刷 / PDFとして保存",
+      failed: "会員カードを読み込めませんでした。もう一度お試しください。",
+    },
     heardFrom: {
       friend: "友人",
       instagram: "Instagram",

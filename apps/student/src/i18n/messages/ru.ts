@@ -230,6 +230,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Не удалось создать ваш код отметки — попробуйте ещё раз.",
       hint: "Покажите это инструктору, чтобы отметиться. Код обновляется автоматически — ничего делать не нужно.",
     },
+    membershipCard: {
+      label: "Карта участника {school}",
+      codeLabel: "Код входа",
+      noMembership: "Нет действующего абонемента",
+      classesLeft: {
+        one: "Осталось {count} занятие",
+        few: "Осталось {count} занятия",
+        many: "Осталось {count} занятий",
+        other: "Осталось {count} занятия",
+      },
+      until: "До {date}",
+    },
     qrScanner: {
       notACheckInCode: "Это не похоже на код отметки на занятии — попробуйте ещё раз.",
       permissionNeeded: "Чтобы отсканировать код отметки на занятии, нужен доступ к камере.",

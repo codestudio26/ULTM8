@@ -230,6 +230,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "チェックインコードを作成できませんでした。もう一度お試しください。",
       hint: "インストラクターにこの画面を見せてチェックインしてください。コードは自動で更新されるので、操作は不要です。",
     },
+    membershipCard: {
+      label: "{school}の会員カード",
+      codeLabel: "チェックインコード",
+      noMembership: "有効な会員プランはありません",
+      classesLeft: {
+        other: "残り{count}回",
+      },
+      until: "{date}まで",
+    },
     qrScanner: {
       notACheckInCode: "クラスのチェックインコードではないようです。もう一度お試しください。",
       permissionNeeded: "クラスのチェックインコードを読み取るには、カメラへのアクセスが必要です。",

@@ -230,6 +230,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "无法生成你的签到码，请重试。",
       hint: "向你的教练员出示此码即可签到。它会自动刷新，无需任何操作。",
     },
+    membershipCard: {
+      label: "{school} 会员卡",
+      codeLabel: "签到码",
+      noMembership: "当前没有会员资格",
+      classesLeft: {
+        other: "剩余 {count} 节课",
+      },
+      until: "至 {date}",
+    },
     qrScanner: {
       notACheckInCode: "这似乎不是课程签到码，请重试。",
       permissionNeeded: "需要相机权限才能扫描课程签到码。",

@@ -230,6 +230,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "출석 체크 코드를 만들지 못했습니다. 다시 시도해 주세요.",
       hint: "사범에게 이 화면을 보여 주고 출석 체크하세요. 코드는 자동으로 새로 고쳐지므로 따로 할 일이 없습니다.",
     },
+    membershipCard: {
+      label: "{school} 회원 카드",
+      codeLabel: "체크인 코드",
+      noMembership: "현재 회원권 없음",
+      classesLeft: {
+        other: "{count}회 남음",
+      },
+      until: "{date}까지",
+    },
     qrScanner: {
       notACheckInCode: "수업 출석 체크 코드가 아닌 것 같습니다. 다시 시도해 주세요.",
       permissionNeeded: "수업 출석 체크 코드를 스캔하려면 카메라 접근 권한이 필요합니다.",
