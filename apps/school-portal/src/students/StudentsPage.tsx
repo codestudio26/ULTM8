@@ -6,6 +6,8 @@ import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
+import { StudentExportModal } from './StudentExportModal';
+import { useSchool } from '../schools/schoolQueries';
 import { StudentsTabs } from './StudentsTabs';
 import { useBranches } from '../branches/branchQueries';
 import { matchesSearch } from './studentSearch';
@@ -57,6 +59,10 @@ export function StudentsPage() {
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const school = useSchool(schoolId);
+  // Decision 399: the owner, or Branch Staff the owner let export.
+  const mayExport = !!ownedSchoolId || !!myAccess.data?.access.exportStudents;
   // A new filter starts again on page 1.
   useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter]);
 
@@ -91,16 +97,28 @@ export function StudentsPage() {
         title={t('students.title')}
         subtitle={t('students.subtitle')}
         actions={
-          ownedSchoolId ? (
+          ownedSchoolId || mayExport ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {mayExport ? (
+                <Button variant="secondary" onClick={() => setExporting(true)}>
+                  {t('students.export.button')}
+                </Button>
+              ) : null}
+              {ownedSchoolId ? (
+                <>
               <Button variant="secondary" onClick={() => navigate('/students/add')}>
                 {t('students.addManuallyButton')}
               </Button>
               <Button onClick={() => navigate('/students/invite')}>{t('students.inviteButton')}</Button>
+                </>
+              ) : null}
             </div>
           ) : undefined
         }
       />
+      {exporting ? (
+        <StudentExportModal schoolId={schoolId} schoolName={school.data?.name ?? ''} withBranch={hasBranches} onClose={() => setExporting(false)} />
+      ) : null}
       <StudentsTabs />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>

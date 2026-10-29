@@ -6824,3 +6824,26 @@ User (Code), 29 Oct 2026, choosing "Two linked styles" for the Kids/Adult storag
 ### Recorded by
 
 User (Code), 29 Oct 2026, answering whether the printed card should carry a fixed QR.
+
+---
+
+## Decision 399 — Export the student list
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.9 (L3, IE3, Q26), whose open point Decision 315 item 11 answered: *"Export the member list (CSV, all members including children): the owner and staff the owner grants the right."*
+
+### Decision
+
+1. **Who:** the owner, and Branch Staff the owner switches on with a new **"Export the student list"** right on their Access page (Decision 319), in the Members group. It's off by default and in neither preset, since it hands over members' personal data. As with the other switches, it is for Branch Staff (Decision 387); coaches and students can't export.
+2. **Which students:** the ones the exporter can already see on the Students list. That is the whole School for the owner, and the students they cover for Branch Staff. Children are included, with their Guardian's name and email. A child's made-up account email and phone are left out.
+3. **Filters,** as Gymdesk has them: **Active only** (the default), **Active and former** (adds students who left), **Members only** (current students who aren't Visitors), and **Visitors only** (Decision 391).
+4. **Columns:** first name, surname, email, phone, date of birth, age, status (Active or Former), joined, home branch (at a School with branches), Visitor, the memberships in effect now, billing (Active, Expired or None), belts per style, last visit (the last class they were checked in to), and the Guardians. The headers are in the reader's language.
+5. **Every export is logged:** who, when, which filter and how many rows. The log has no screen yet.
+6. **Download CSV or Print,** from an **Export** button on the Students page. The CSV stops a spreadsheet reading a cell that starts with `=`, `+`, `-` or `@` as a formula, as the Transactions export does.
+
+### How it is built
+
+- `GET /schools/{id}/students/export?filter=` returns the rows; the portal builds the CSV and the printable page. `StaffPermission.canExportStudents` and the `StudentExportLog` table (jobs connection only) come with migration `20261231000000_student_export`.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, under "build any task you have all the answers for".
