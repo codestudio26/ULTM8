@@ -12,6 +12,7 @@ import { GradingService } from '../ranks/grading.service';
 import { ProgressBreakdownResponseDto } from '../ranks/dto/student-rank-response.dto';
 import { AttendanceService } from '../attendance/attendance.service';
 import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/front-desk-check-in.service';
+import { QrTokenService } from '../attendance/qr-token.service';
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
 import { FrontDeskSessionContext } from './front-desk-sessions.service';
 import { StudentCheckInCodesService } from './student-check-in-codes.service';
@@ -57,6 +58,7 @@ export class FrontDeskKioskService {
     private readonly attendance: AttendanceService,
     private readonly deskCheckIn: FrontDeskCheckInService,
     private readonly checkInCodes: StudentCheckInCodesService,
+    private readonly qrTokens: QrTokenService,
   ) {}
 
   async info(session: FrontDeskSessionContext) {
@@ -201,7 +203,30 @@ export class FrontDeskKioskService {
       waiversToSign: waivers.toSign.map((w) => ({ waiverId: w.waiverId, title: w.title })),
       progress: classes ? { counted: classes.counted, required: classes.required, percent: classes.percent } : null,
       bookings: withGuests,
+      memberNotes: await this.memberNotes(session, studentId, query.lookupToken),
     };
+  }
+
+  /** Backlog 3.10 (Decision 400): the notes shown to the member, newest
+   * first, only when they identified themselves on this tablet with their QR
+   * or personal code. Someone found by name may not be the person at the
+   * tablet, so they get none. */
+  private async memberNotes(session: FrontDeskSessionContext, studentId: string, lookupToken?: string): Promise<string[]> {
+    if (!lookupToken) return [];
+    let lookup;
+    try {
+      lookup = this.qrTokens.verifyDeskLookup(lookupToken);
+    } catch {
+      return [];
+    }
+    if (lookup.deskStudentId !== studentId || lookup.schoolId !== session.schoolId || lookup.staffId !== frontDeskLookupOwner(session.id)) return [];
+    const notes = await this.prismaJobs.studentNote.findMany({
+      where: { schoolId: session.schoolId, studentId, showToMember: true },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+      select: { body: true },
+    });
+    return notes.map((n) => n.body);
   }
 
   /** A scanned app QR, checked once (Decision 377); the lookup it gives only

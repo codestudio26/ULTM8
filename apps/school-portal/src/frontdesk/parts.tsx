@@ -28,6 +28,7 @@ import {
   type PackRechargeApi,
   type QrLookup,
 } from './frontDeskQueries';
+import { useStudentNotes } from '../students/studentNotesQueries';
 import { formatMoney } from '../lib/money';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
@@ -395,6 +396,8 @@ export interface WelcomeInfo {
   membershipStatus?: string;
   waivers?: { signed: boolean; toSign: Array<{ title: string }> };
   progress?: { counted: number; required: number; percent: number } | null;
+  /** Decision 400: notes the School shows the member, newest first. */
+  memberNotes?: string[];
 }
 
 /** One guest on a booking, as the welcome card ticks them (Decision 377). */
@@ -437,6 +440,8 @@ export function WelcomeCard(props: {
   const myAccess = useMyStaffAccess(schoolId);
   const maySell = !!myAccess.data && (myAccess.data.owner || (myAccess.data.branchStaff && !!school.data?.branchStaffCanRecordPayments));
   const recharge = useStaffPackRecharges(schoolId, maySell);
+  // Decision 400: the notes shown to the member, for staff to pass on.
+  const notes = useStudentNotes(schoolId, student.id);
   if (!props.bookingsReady || !school.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -455,7 +460,12 @@ export function WelcomeCard(props: {
       student={student}
       classes={classes}
       mine={mine}
-      info={{ membershipStatus: status.data?.status, waivers: hasBackend('waiverStatus') ? waivers.data : undefined, progress }}
+      info={{
+        membershipStatus: status.data?.status,
+        waivers: hasBackend('waiverStatus') ? waivers.data : undefined,
+        progress,
+        memberNotes: (notes.data?.items ?? []).filter((n) => n.showToMember).slice(0, 3).map((n) => n.body),
+      }}
       checkIn={checkIn}
       recharge={recharge}
       renderGuests={(bookingId, disabled, picked, onToggle) => <StaffGuestTicks bookingId={bookingId} disabled={disabled} picked={picked} onToggle={onToggle} />}
@@ -594,6 +604,16 @@ export function WelcomeCardBody({
         <div className="fd-bar fd-bar--progress" aria-hidden="true">
           <span style={{ width: `${Math.min(100, progress.percent)}%` }} />
         </div>
+      ) : null}
+      {info.memberNotes && info.memberNotes.length > 0 ? (
+        <section aria-label={t('frontDesk.welcome.notesLabel')} className="fd-notes">
+          <p className="fd-eyebrow">{t('frontDesk.welcome.notesLabel')}</p>
+          {info.memberNotes.map((note, i) => (
+            <p key={i} className="fd-class__meta" style={{ whiteSpace: 'pre-wrap', margin: '0 0 6px' }}>
+              {note}
+            </p>
+          ))}
+        </section>
       ) : null}
       <p className="fd-eyebrow">{t('frontDesk.welcome.tick')}</p>
       {open.length === 0 ? (

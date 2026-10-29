@@ -92,10 +92,17 @@ export function useKioskStudentSearch(term: string) {
   });
 }
 
-export function useKioskCard(studentId: string) {
+/** `lookupToken`: the QR or code lookup that found them; with it the card
+ * also has the notes the School shows them (Decision 400). */
+export function useKioskCard(studentId: string, lookupToken?: string | null) {
   return useQuery({
-    queryKey: ['kiosk', 'card', studentId],
-    queryFn: () => unwrap(kioskClient.GET('/v1/front-desk/kiosk/students/{id}/card', { params: { path: { id: studentId }, query: todayWindow() } })),
+    queryKey: ['kiosk', 'card', studentId, lookupToken ?? null],
+    queryFn: () =>
+      unwrap(
+        kioskClient.GET('/v1/front-desk/kiosk/students/{id}/card', {
+          params: { path: { id: studentId }, query: { ...todayWindow(), ...(lookupToken ? { lookupToken } : {}) } },
+        }),
+      ),
   });
 }
 
