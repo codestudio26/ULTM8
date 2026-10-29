@@ -1,3 +1,6 @@
+import { NotificationsModule } from '../notifications/notifications.module';
+import { SignUpsController } from './sign-ups.controller';
+import { SignUpsService } from './sign-ups.service';
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MembershipsModule } from '../memberships/memberships.module';
@@ -16,8 +19,8 @@ import { StudentCheckInCodesController } from './student-check-in-codes.controll
 /** Locked front-desk tablets (Decision 380, handover F1, F2) and personal
  * check-in codes (Decision 384, F3). */
 @Module({
-  imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule],
-  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController],
-  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService],
+  imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule, NotificationsModule],
+  controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController, SignUpsController],
+  providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService, SignUpsService],
 })
 export class FrontDeskModule {}

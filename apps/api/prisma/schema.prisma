@@ -533,6 +533,9 @@ model User {
   deviceTokens                      DeviceToken[]
   refreshTokens                     RefreshToken[]
   guestWaiverSignaturesBooked       GuestWaiverSignature[]      @relation("GuestWaiverSignatureBookedBy")
+  signUps                           SignUp[]                    @relation("SignUpUser")
+  signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
+  signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
 
   @@index([email])
   @@index([phone])
@@ -1053,6 +1056,11 @@ model School {
   /// default: until the School sets it, no pass can be given and the tablet
   /// offers no Visitor sign-up.
   visitorPeriodDays              Int?
+  /// Decision 392 (Decision 315 item 6): the School's "How did you hear about
+  /// us?" choices, in order. Null until the School edits them: the apps then
+  /// show the starting list (Friend, Instagram, Google, Walked past) in the
+  /// viewer's language.
+  heardFromOptions               Json?
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -1134,6 +1142,7 @@ model School {
   studentCheckInCodes   StudentCheckInCode[]
 
   notificationBroadcasts NotificationBroadcast[]
+  signUps                SignUp[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1222,6 +1231,7 @@ model Branch {
   coachInvites      CoachInvite[]
 
   notificationBroadcasts NotificationBroadcast[]
+  signUps                SignUp[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -4704,4 +4714,74 @@ model StudentCheckInCode {
   @@unique([schoolId, studentId])
   @@unique([schoolId, code])
   @@index([studentId])
+}
+
+/// Decision 392: who is signing up, as chosen on the tablet.
+enum SignUpKind {
+  VISITOR
+  MEMBER
+}
+
+/// Decision 392. PENDING waits for staff. INVITED: approved, but the email
+/// already had an account, which accepts or declines in the app. APPROVED:
+/// enrolled. REJECTED: kept 30 days (Decision 362), during which staff can
+/// still approve it. DECLINED: the invited account said no.
+enum SignUpStatus {
+  PENDING
+  INVITED
+  APPROVED
+  REJECTED
+  DECLINED
+}
+
+/// Decision 392 (handover F5; Decisions 351, 362, 365): a sign-up made on
+/// the front-desk tablet, waiting for staff approval. Not a member until
+/// approved. Read and written only on the jobs connection, after the API's
+/// own checks (owner, or Branch Staff with the students switch for the
+/// sign-up's Branch; the invited account for its own invite).
+model SignUp {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  /// The tablet's Branch. Null for a School-wide tablet.
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  kind   SignUpKind
+  status SignUpStatus @default(PENDING)
+
+  firstName   String
+  surname     String
+  dateOfBirth DateTime
+  /// FEMALE, MALE or null (Decision 315 item 15).
+  gender      String?
+  email       String
+  phone       String?
+  /// The School's choice as shown on the tablet (its label, kept as typed).
+  heardFrom   String?
+
+  /// Decision 315 item 5: not a Guardian, no account.
+  emergencyName         String?
+  emergencyPhone        String?
+  emergencyRelationship String?
+
+  /// The account this sign-up became, or the existing account it invited.
+  userId String?
+  user   User?   @relation("SignUpUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  approvedById String?
+  approvedBy   User?     @relation("SignUpApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime?
+  rejectedById String?
+  rejectedBy   User?     @relation("SignUpRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  rejectedAt   DateTime?
+  /// When the invited account accepted or declined.
+  respondedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, status])
+  @@index([userId])
 }
