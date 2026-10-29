@@ -35,6 +35,40 @@ function codedMessage(err: ApiError): string | null {
         ? translate('lib.apiError.checkInNotOpenAt', { time: formatDateTime(iso) })
         : translate('lib.apiError.checkInNotOpen');
     }
+    // Freezing a membership (Decision 404): the shared wording in @ultm8/i18n.
+    case 'MEMBERSHIP_FROZEN':
+      return translate('server.codes.membershipFrozen');
+    case 'FREEZE_OVER_LIMIT': {
+      const max = Number(err.message.match(/at most (\d+) frozen days/)?.[1]);
+      const left = Number(err.message.match(/(\d+) days are left/)?.[1]);
+      return Number.isFinite(max) && Number.isFinite(left) ? translate('server.codes.freezeOverLimit', { max, left }) : null;
+    }
+    case 'FREEZE_TOO_SHORT':
+      return translate('server.codes.freezeTooShort');
+    case 'FREEZE_START_PASSED':
+      return translate('server.codes.freezeStartPassed');
+    case 'FREEZE_DATES_REQUIRED':
+      return translate('server.codes.freezeDatesRequired');
+    case 'FREEZE_OVERLAP':
+      return translate('server.codes.freezeOverlap');
+    case 'FREEZE_CLASS_PACK':
+      return translate('server.codes.freezeClassPack');
+    case 'FREEZE_NOT_FREEZABLE':
+      return translate('server.codes.freezeNotFreezable');
+    case 'FREEZE_MEMBERSHIP_ENDED':
+      return translate('server.codes.freezeMembershipEnded');
+    case 'FREEZE_CANCELLING':
+      return translate('server.codes.freezeCancelling');
+    case 'FREEZE_AFTER_END':
+      return translate('server.codes.freezeAfterEnd');
+    case 'FREEZE_ALREADY_DECIDED':
+      return translate('server.codes.freezeAlreadyDecided');
+    case 'FREEZE_NOT_RUNNING':
+      return translate('server.codes.freezeNotRunning');
+    case 'FREEZE_NOT_FOUND':
+      return translate('server.codes.freezeNotFound');
+    case 'FREEZE_FEE_NO_PAYMENTS':
+      return translate('server.codes.freezeFeeNoPayments');
     // The School's free trial of ULTM8 ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return translate('lib.apiError.trialEnded');
