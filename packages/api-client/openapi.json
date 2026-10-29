@@ -30728,6 +30728,10 @@
           "id": {
             "type": "string"
           },
+          "membershipPlanId": {
+            "type": "string",
+            "description": "The pack to buy again. The desk can also sell it there (Decision 395)."
+          },
           "planTitle": {
             "type": "string"
           },
@@ -30746,6 +30750,7 @@
         },
         "required": [
           "id",
+          "membershipPlanId",
           "planTitle",
           "price",
           "expiresAt"

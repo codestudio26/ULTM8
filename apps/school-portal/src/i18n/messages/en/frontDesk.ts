@@ -222,6 +222,11 @@ export const frontDesk = {
     paid: 'Paid. Checking in…',
     expired: 'Check-in for this class has closed. The pack can still be bought in the app.',
     failed: "Couldn't offer the pack. Please ask at the desk.",
+    sellAtDesk: 'Sell at the desk',
+    sellBody: '{plan} · {price}. Take the payment, then record it here. They’re checked in as soon as it’s recorded.',
+    paidBy: 'Paid by',
+    recordSale: 'Record payment',
+    sellFailed: "Couldn't record the payment. Please try again.",
   },
   findMe: {
     title: 'Find me',

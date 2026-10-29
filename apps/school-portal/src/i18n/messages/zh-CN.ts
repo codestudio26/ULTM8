@@ -3441,6 +3441,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "已付款，正在签到…",
       expired: "此课程的签到已关闭。课时包仍可在 App 中购买。",
       failed: "无法提供课时包。请到前台咨询。",
+      sellAtDesk: "在前台销售",
+      sellBody: "{plan} · {price}。收款后在此记录，记录后立即签到。",
+      paidBy: "付款方式",
+      recordSale: "记录付款",
+      sellFailed: "无法记录付款，请重试。",
     },
     findMe: {
       title: "找到我",

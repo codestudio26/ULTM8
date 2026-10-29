@@ -3484,6 +3484,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "Betaald. Bezig met inchecken…",
       expired: "Inchecken voor deze les is gesloten. De kaart kan nog steeds in de app worden gekocht.",
       failed: "De kaart kon niet worden aangeboden. Vraag het bij de balie.",
+      sellAtDesk: "Verkopen aan de balie",
+      sellBody: "{plan} · {price}. Neem de betaling aan en leg die hier vast. Zodra die is vastgelegd, is de persoon ingecheckt.",
+      paidBy: "Betaald met",
+      recordSale: "Betaling vastleggen",
+      sellFailed: "De betaling kon niet worden vastgelegd. Probeer het opnieuw.",
     },
     findMe: {
       title: "Zoek mij",

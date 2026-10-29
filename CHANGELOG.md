@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
+  card on Check-in also has "Sell at the desk": choose how it was paid (cash,
+  bank transfer, Pix or card terminal), record it, and the person is checked
+  in. The owner, and Branch Staff allowed to record payments. No migration.
 - **Check-in rules** (Decision 394) — Check-in → Check-in rules sets, for
   every way in (app, coach's scan, front desk, tablet), when check-in opens
   and closes, whether a signed waiver is needed, whether members may check

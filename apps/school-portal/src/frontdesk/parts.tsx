@@ -8,6 +8,9 @@ import type { BookingResponse } from '../bookings/bookingQueries';
 import { useInstructors } from '../instructors/instructorQueries';
 import { useStudentEligibility } from '../grading/gradingQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
+import { DESK_PAYMENT_METHODS, type DeskPaymentMethod } from '../membershipPlans/membershipPlanQueries';
+import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { hasBackend } from './frontDeskFeatures';
@@ -430,7 +433,10 @@ export function WelcomeCard(props: {
   const waivers = useWaiverStatus(student.id, schoolId);
   const eligibility = useStudentEligibility(student.id, schoolId);
   const checkIn = useFrontDeskCheckIn(schoolId);
-  const recharge = useStaffPackRecharges(schoolId);
+  // Decision 395: "Sell at the desk" for those who may record desk payments.
+  const myAccess = useMyStaffAccess(schoolId);
+  const maySell = !!myAccess.data && (myAccess.data.owner || (myAccess.data.branchStaff && !!school.data?.branchStaffCanRecordPayments));
+  const recharge = useStaffPackRecharges(schoolId, maySell);
   if (!props.bookingsReady || !school.data) {
     return (
       <div className="fd-welcome" data-testid="fd-welcome">
@@ -676,7 +682,9 @@ export function WelcomeCardBody({
 /**
  * "Pack used up" (DESIGN.md, Decision 393): a peach note. The person buys the
  * same pack in their ULTM8 app; this card checks every few seconds and checks
- * them in as soon as it's paid.
+ * them in as soon as it's paid. Staff who may record desk payments can also
+ * sell the same pack there and then (Decision 395): the existing desk sale,
+ * after which the same check finds it paid and checks them in.
  */
 function PackUsedUp({
   recharge,
@@ -694,8 +702,11 @@ function PackUsedUp({
   onDone: () => void;
 }) {
   const t = useT();
-  const [offer, setOffer] = useState<{ id: string; planTitle: string; price: number; currency?: string | null } | null>(null);
+  const [offer, setOffer] = useState<{ id: string; membershipPlanId: string; planTitle: string; price: number; currency?: string | null } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selling, setSelling] = useState(false);
+  const [method, setMethod] = useState<DeskPaymentMethod>('CASH');
+  const sell = short ? undefined : recharge.sell;
   const [error, setError] = useState<string | null>(null);
   const status = useQuery({
     queryKey: ['packRecharge', offer?.id],
@@ -721,13 +732,28 @@ function PackUsedUp({
     // Finishes once, when the payment is first seen.
   }, [offer?.id, paid]);
 
-  async function offerPack() {
+  async function offerPack(atDesk = false) {
     setBusy(true);
     setError(null);
     try {
       setOffer(await recharge.create({ studentId, classIds, ...(lookupToken ? { lookupToken } : {}) }));
+      setSelling(atDesk);
     } catch (err) {
       setError(errorText(err, t('frontDesk.packUsedUp.failed')));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recordSale() {
+    if (!offer || !sell) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await sell({ studentId, membershipPlanId: offer.membershipPlanId, paymentMethod: method });
+      await status.refetch();
+    } catch (err) {
+      setError(errorText(err, t('frontDesk.packUsedUp.sellFailed')));
     } finally {
       setBusy(false);
     }
@@ -745,13 +771,38 @@ function PackUsedUp({
               ? t('frontDesk.packUsedUp.expired')
               : paid
                 ? t('frontDesk.packUsedUp.paid')
-                : t(short ? 'frontDesk.packUsedUp.waitingSelf' : 'frontDesk.packUsedUp.waitingStaff', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })}
+                : selling
+                  ? t('frontDesk.packUsedUp.sellBody', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })
+                  : t(short ? 'frontDesk.packUsedUp.waitingSelf' : 'frontDesk.packUsedUp.waitingStaff', { plan: offer.planTitle, price: formatMoney(offer.price, offer.currency) })}
         </div>
         {error ? <div className="fd-msg fd-msg--bad">{error}</div> : null}
         {!offer ? (
-          <button type="button" className="fd-pill fd-pill--go" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={offerPack}>
-            {short ? t('frontDesk.packUsedUp.offerSelf') : t('frontDesk.packUsedUp.offerStaff')}
-          </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="fd-pill fd-pill--go" disabled={busy} onClick={() => offerPack()}>
+              {short ? t('frontDesk.packUsedUp.offerSelf') : t('frontDesk.packUsedUp.offerStaff')}
+            </button>
+            {sell ? (
+              <button type="button" className="fd-pill fd-pill--line" disabled={busy} onClick={() => offerPack(true)}>
+                {t('frontDesk.packUsedUp.sellAtDesk')}
+              </button>
+            ) : null}
+          </div>
+        ) : selling && sell && !paid && !status.data?.expired ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <label className="fd-class__meta" htmlFor="fd-pack-method">
+              {t('frontDesk.packUsedUp.paidBy')}
+            </label>
+            <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
+              {DESK_PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {t(PAYMENT_METHOD_LABELS[m])}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="fd-pill fd-pill--go" disabled={busy} onClick={recordSale}>
+              {t('frontDesk.packUsedUp.recordSale')}
+            </button>
+          </div>
         ) : null}
       </div>
     </div>

@@ -3441,6 +3441,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "결제 완료. 출석 체크 중…",
       expired: "이 수업의 출석 체크가 마감되었습니다. 패키지는 앱에서 계속 구매할 수 있습니다.",
       failed: "패키지를 제안하지 못했습니다. 데스크에 문의해 주세요.",
+      sellAtDesk: "프런트에서 판매",
+      sellBody: "{plan} · {price}. 결제를 받은 후 여기에 기록하세요. 기록되는 즉시 체크인됩니다.",
+      paidBy: "결제 수단",
+      recordSale: "결제 기록",
+      sellFailed: "결제를 기록하지 못했습니다. 다시 시도해 주세요.",
     },
     findMe: {
       title: "내 정보 찾기",

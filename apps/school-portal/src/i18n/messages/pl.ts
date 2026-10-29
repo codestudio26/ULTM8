@@ -3590,6 +3590,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       paid: "Opłacono. Meldowanie…",
       expired: "Meldowanie na te zajęcia jest zamknięte. Pakiet nadal można kupić w aplikacji.",
       failed: "Nie udało się zaproponować pakietu. Zapytaj w recepcji.",
+      sellAtDesk: "Sprzedaj w recepcji",
+      sellBody: "{plan} · {price}. Przyjmij płatność i zapisz ją tutaj. Po zapisaniu osoba zostanie zameldowana.",
+      paidBy: "Zapłacono przez",
+      recordSale: "Zapisz płatność",
+      sellFailed: "Nie udało się zapisać płatności. Spróbuj ponownie.",
     },
     findMe: {
       title: "Znajdź mnie",

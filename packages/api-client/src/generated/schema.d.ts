@@ -9800,6 +9800,8 @@ export interface components {
         };
         PackRechargeDto: {
             id: string;
+            /** @description The pack to buy again. The desk can also sell it there (Decision 395). */
+            membershipPlanId: string;
             planTitle: string;
             /** @description Minor units. */
             price: number;
