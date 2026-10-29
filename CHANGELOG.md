@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Export the student list** (backlog 3.9; Decisions 315, 399) — an **Export**
+  button on the Students page downloads a CSV, or opens a page to print, of
+  active students, active and former, members only or visitors only. Children
+  are included, with their Guardian. Columns: name, contact, date of birth and
+  age, status, joined, home branch, Visitor, current memberships, billing,
+  belts, last visit. The owner can always export; Branch Staff can once the owner
+  turns on the new "Export the student list" access switch. Every export is
+  logged. **Needs a database migration** (`20261231000000_student_export`).
 - **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
   discipline links a Kids style to its Adult style. From "Ready for Adult from
   age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult

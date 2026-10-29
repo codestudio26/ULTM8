@@ -626,6 +626,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you see the staff list.": "学校所有者未允许你查看员工列表。",
   "The School owner hasn't let you invite coaches.": "学校所有者未允许你邀请教练。",
   "The School owner hasn't let you change the check-in rules.": "学校所有者未允许你更改签到规则。",
+  "The School owner hasn't let you export the student list.": "学校所有者未允许你导出学员名单。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "所有者不能被暂停。暂停仅适用于教练和分校员工。",

@@ -644,6 +644,50 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/export": {
+      "get": {
+        "operationId": "SchoolsController_exportStudents",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Defaults to ACTIVE.",
+            "schema": {
+              "$ref": "#/components/schemas/StudentExportFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentExportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students/{studentId}/home-branch": {
       "put": {
         "operationId": "SchoolsController_setStudentHomeBranch",
@@ -18033,6 +18077,147 @@
           "items"
         ]
       },
+      "StudentExportFilter": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ACTIVE",
+          "MEMBERS",
+          "VISITORS"
+        ]
+      },
+      "StudentExportBeltDto": {
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "string",
+            "description": "The belt or stripe the student holds in that style."
+          }
+        },
+        "required": [
+          "style",
+          "rank"
+        ]
+      },
+      "StudentExportGuardianDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "StudentExportRowDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "description": "Empty for a child whose Guardian manages the account."
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentStatus"
+          },
+          "enrolledAt": {
+            "type": "string"
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "visitor": {
+            "type": "boolean"
+          },
+          "memberships": {
+            "description": "Memberships in effect now, by plan name.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "billingStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "NONE"
+            ],
+            "description": "ACTIVE with a membership in effect, EXPIRED when they only had earlier ones, NONE when they never had one."
+          },
+          "belts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportBeltDto"
+            }
+          },
+          "lastVisitAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Start of the last class they were checked in to."
+          },
+          "guardians": {
+            "description": "A child's Guardians.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportGuardianDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email",
+          "status",
+          "enrolledAt",
+          "visitor",
+          "memberships",
+          "billingStatus",
+          "belts",
+          "guardians"
+        ]
+      },
+      "StudentExportResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentExportRowDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "SetHomeBranchDto": {
         "type": "object",
         "properties": {
@@ -19550,6 +19735,10 @@
           "checkInRules": {
             "type": "boolean",
             "description": "Change the School's check-in rules (off by default; Decision 394)."
+          },
+          "exportStudents": {
+            "type": "boolean",
+            "description": "Export the student list as a spreadsheet (off by default; Decision 399)."
           }
         },
         "required": [
@@ -19560,7 +19749,8 @@
           "staffList",
           "inviteCoaches",
           "disciplines",
-          "checkInRules"
+          "checkInRules",
+          "exportStudents"
         ]
       },
       "StaffRoleDto": {

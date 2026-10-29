@@ -260,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_exportStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students/{studentId}/home-branch": {
         parameters: {
             query?: never;
@@ -6024,6 +6040,46 @@ export interface components {
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
         };
+        /** @enum {string} */
+        StudentExportFilter: "ALL" | "ACTIVE" | "MEMBERS" | "VISITORS";
+        StudentExportBeltDto: {
+            style: string;
+            /** @description The belt or stripe the student holds in that style. */
+            rank: string;
+        };
+        StudentExportGuardianDto: {
+            name: string;
+            email: string;
+        };
+        StudentExportRowDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            /** @description Empty for a child whose Guardian manages the account. */
+            email: string;
+            phone?: string | null;
+            /** @description YYYY-MM-DD. */
+            dateOfBirth?: string | null;
+            status: components["schemas"]["StudentStatus"];
+            enrolledAt: string;
+            homeBranchName?: string | null;
+            visitor: boolean;
+            /** @description Memberships in effect now, by plan name. */
+            memberships: string[];
+            /**
+             * @description ACTIVE with a membership in effect, EXPIRED when they only had earlier ones, NONE when they never had one.
+             * @enum {string}
+             */
+            billingStatus: "ACTIVE" | "EXPIRED" | "NONE";
+            belts: components["schemas"]["StudentExportBeltDto"][];
+            /** @description Start of the last class they were checked in to. */
+            lastVisitAt?: string | null;
+            /** @description A child's Guardians. */
+            guardians: components["schemas"]["StudentExportGuardianDto"][];
+        };
+        StudentExportResponseDto: {
+            items: components["schemas"]["StudentExportRowDto"][];
+        };
         SetHomeBranchDto: {
             /** @description A branch of this School. */
             branchId: string;
@@ -6464,6 +6520,8 @@ export interface components {
             disciplines: boolean;
             /** @description Change the School's check-in rules (off by default; Decision 394). */
             checkInRules: boolean;
+            /** @description Export the student list as a spreadsheet (off by default; Decision 399). */
+            exportStudents: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -10796,6 +10854,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentListResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_exportStudents: {
+        parameters: {
+            query?: {
+                /** @description Defaults to ACTIVE. */
+                filter?: components["schemas"]["StudentExportFilter"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentExportResponseDto"];
                 };
             };
         };

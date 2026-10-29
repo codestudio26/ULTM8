@@ -626,6 +626,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you see the staff list.": "O proprietário da escola não permitiu que você veja a lista da equipe.",
   "The School owner hasn't let you invite coaches.": "O proprietário da escola não permitiu que você convide instrutores.",
   "The School owner hasn't let you change the check-in rules.": "O proprietário da Escola não permitiu que você altere as regras de check-in.",
+  "The School owner hasn't let you export the student list.": "O dono da Escola não permitiu que você exporte a lista de alunos.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da filial. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
   "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "Proprietários não podem ser pausados. A pausa é para instrutores e equipe da filial.",

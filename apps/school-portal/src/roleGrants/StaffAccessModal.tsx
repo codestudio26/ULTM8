@@ -10,7 +10,7 @@ type AccessKey = keyof StaffAccess;
 const GROUPS: Array<{ heading: TranslationKey; keys: AccessKey[] }> = [
   { heading: 'roleGrants.access.groupSchedule', keys: ['classes', 'cancelClasses'] },
   { heading: 'roleGrants.access.groupCheckIn', keys: ['bookings', 'checkInRules'] },
-  { heading: 'roleGrants.access.groupMembers', keys: ['students'] },
+  { heading: 'roleGrants.access.groupMembers', keys: ['students', 'exportStudents'] },
   { heading: 'roleGrants.access.groupStaff', keys: ['staffList', 'inviteCoaches'] },
   { heading: 'roleGrants.access.groupDisciplines', keys: ['disciplines'] },
 ];
@@ -24,20 +24,21 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
   inviteCoaches: { label: 'roleGrants.access.inviteCoaches', hint: 'roleGrants.access.inviteCoachesHint' },
   disciplines: { label: 'roleGrants.access.disciplines', hint: 'roleGrants.access.disciplinesHint' },
   checkInRules: { label: 'roleGrants.access.checkInRules', hint: 'roleGrants.access.checkInRulesHint' },
+  exportStudents: { label: 'roleGrants.access.exportStudents', hint: 'roleGrants.access.exportStudentsHint' },
 };
 
 /** Decision 387's two presets. "Front desk": bookings and check-in, and
  * students. "Branch manager": everything at their branches. Neither manages
- * disciplines, which change the whole School (Decision 383), or the
- * School's check-in rules (Decision 394). */
+ * disciplines, which change the whole School (Decision 383), the School's
+ * check-in rules (Decision 394), or exports members' personal data (Decision 399). */
 export const PRESETS: Array<{ name: TranslationKey; access: StaffAccess }> = [
   {
     name: 'roleGrants.access.presetFrontDesk',
-    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false },
+    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false },
   },
   {
     name: 'roleGrants.access.presetBranchManager',
-    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false, checkInRules: false },
+    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false, checkInRules: false, exportStudents: false },
   },
 ];
 

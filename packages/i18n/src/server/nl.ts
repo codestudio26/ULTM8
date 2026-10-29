@@ -626,6 +626,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you see the staff list.": "De schooleigenaar heeft je niet toegestaan de personeelslijst te bekijken.",
   "The School owner hasn't let you invite coaches.": "De schooleigenaar heeft je niet toegestaan instructeurs uit te nodigen.",
   "The School owner hasn't let you change the check-in rules.": "De eigenaar van de School heeft je niet toegestaan de incheckregels te wijzigen.",
+  "The School owner hasn't let you export the student list.": "De eigenaar van de School heeft je niet toegestaan de leerlingenlijst te exporteren.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Toegangsschakelaars zijn voor vestigingspersoneel. Instructeurs hebben de rechten van hun rol en eigenaren hebben alle rechten.",
   "You are not on the staff of this School.": "Je hoort niet bij het personeel van deze school.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "Eigenaren kunnen niet worden gepauzeerd. Pauzeren is voor trainers en vestigingsmedewerkers.",

@@ -626,6 +626,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you see the staff list.": "Okul sahibi personel listesini görmenize izin vermedi.",
   "The School owner hasn't let you invite coaches.": "Okul sahibi eğitmen davet etmenize izin vermedi.",
   "The School owner hasn't let you change the check-in rules.": "Okul sahibi check-in kurallarını değiştirmene izin vermedi.",
+  "The School owner hasn't let you export the student list.": "Okul sahibi öğrenci listesini dışa aktarmana izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
   "Owners can't be paused. Pause is for coaches and Branch Staff.": "Sahipler duraklatılamaz. Duraklatma, eğitmenler ve şube personeli içindir.",

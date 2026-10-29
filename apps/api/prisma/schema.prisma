@@ -539,6 +539,7 @@ model User {
   packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
+  studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
 
   @@index([email])
   @@index([phone])
@@ -1089,7 +1090,7 @@ model School {
   /// Backlog 3.18: the School's own colours for the belt editor, shared by
   /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
   /// most 24. Deleting one never changes a belt or stripe already using it.
-  savedBeltColours               String[]                    @default([])
+  savedBeltColours               String[]                        @default([])
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or
@@ -1178,6 +1179,7 @@ model School {
 
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
+  studentExportLogs      StudentExportLog[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
 
@@ -2573,15 +2575,15 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[]  @default([])
+  classTypesOffered     String[]     @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean   @default(false)
+  skillsRequiredToGrade Boolean      @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int       @default(33)
-  boardReadyToGrade     Int       @default(66)
+  boardGettingThere     Int          @default(33)
+  boardReadyToGrade     Int          @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
@@ -4452,11 +4454,15 @@ model StaffPermission {
   /// "Can start open mat sessions" (Decision 304 item 4, built as Decision
   /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
   /// at their own Branches; off by default; the owner always can.
-  canStartOpenMat  Boolean @default(false)
+  canStartOpenMat Boolean @default(false)
 
   /// Decision 394: may change the School's check-in rules (Settings on the
   /// Check-in page). Branch Staff only; off by default; owners always can.
   canManageCheckInRules Boolean @default(false)
+
+  /// Decision 399 (backlog 3.9): may export the student list. Branch Staff
+  /// only; off by default; owners always can.
+  canExportStudents Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -4923,4 +4929,24 @@ model RankCorrectionRequest {
 
   @@index([schoolId, status])
   @@index([studentId, disciplineId])
+}
+
+/// Backlog 3.9 (Decision 399): one row per student-list export, who made it
+/// and when. Jobs connection only (RLS on, no app grant).
+model StudentExportLog {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  exportedById String
+  exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
+
+  /// ALL, ACTIVE, MEMBERS or VISITORS.
+  filter   String
+  rowCount Int
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
 }
