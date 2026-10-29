@@ -17,6 +17,7 @@ import { AuthService } from '../../auth/auth.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { CoachInviteStatus, CreateCoachInviteDto, InviteRole } from './dto/coach-invite.dto';
+import { recordStaffActivity } from '../staff-activity/staff-activity';
 
 /** Decision 183: a coach invite link works for 7 days. */
 export const COACH_INVITE_TTL_DAYS = 7;
@@ -135,9 +136,11 @@ export class CoachInvitesService {
         select: { id: true },
       });
       if (pending) throw new ConflictException('This person already has a pending invite here. Cancel it to send a new one.');
-      return tx.coachInvite.create({
+      const created = await tx.coachInvite.create({
         data: { id: randomUUID(), schoolId, branchId, email, role, tokenHash: hashToken(token), invitedById: callerId, expiresAt },
       });
+      await recordStaffActivity(tx, { schoolId, actorId: callerId, action: 'INVITE_SENT', details: { email, role, branchName: branch?.name ?? null } });
+      return created;
     });
 
     const inviter = caller ? `${caller.firstName} ${caller.surname}` : 'Your school';
@@ -214,6 +217,15 @@ export class CoachInvitesService {
         if (done.count === 0 && now.acceptedAt) {
           throw new ConflictException('This invite has just been accepted. Remove the coach role on the Staff page instead.');
         }
+        if (done.count === 1) {
+          const branch = now.branchId ? await tx.branch.findUnique({ where: { id: now.branchId }, select: { name: true } }) : null;
+          await recordStaffActivity(tx, {
+            schoolId: now.schoolId,
+            actorId: callerId,
+            action: 'INVITE_CANCELLED',
+            details: { email: now.email, role: now.role, branchName: branch?.name ?? null },
+          });
+        }
         return now;
       });
     }
@@ -272,6 +284,13 @@ export class CoachInvitesService {
 
       const existing = await tx.roleGrant.findFirst({
         where: { userId: callerId, schoolId: invite.schoolId, branchId: invite.branchId, role: invite.role, revokedAt: null },
+      });
+      await recordStaffActivity(tx, {
+        schoolId: invite.schoolId,
+        actorId: callerId,
+        targetUserId: callerId,
+        action: 'INVITE_ACCEPTED',
+        details: { role: invite.role, branchName: invite.branchName },
       });
       if (existing) return existing;
       return tx.roleGrant.create({
@@ -363,13 +382,25 @@ export class CoachInvitesService {
           : '"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches.',
       );
     }
-    await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.staffPermission.upsert({
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const before = await tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId } },
+        select: { canInviteCoaches: true, canManageDisciplines: true },
+      });
+      await tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
         create: { id: randomUUID(), schoolId, userId, canInviteCoaches: canInviteCoaches ?? false, canManageDisciplines: canManageDisciplines ?? false, grantedById: callerId },
         update: { canInviteCoaches, canManageDisciplines, grantedById: callerId },
-      }),
-    );
+      });
+      // Decision 402: the same switches as on the Access window.
+      const changes = [
+        ...(canInviteCoaches !== undefined && canInviteCoaches !== (before?.canInviteCoaches ?? false) ? [{ switch: 'inviteCoaches', on: canInviteCoaches }] : []),
+        ...(canManageDisciplines !== undefined && canManageDisciplines !== (before?.canManageDisciplines ?? false) ? [{ switch: 'disciplines', on: canManageDisciplines }] : []),
+      ];
+      if (changes.length > 0) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'ACCESS_CHANGED', details: { changes } });
+      }
+    });
     if (canInviteCoaches === false) await this.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return (await this.listStaffPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
   }

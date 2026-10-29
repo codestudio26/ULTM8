@@ -2124,6 +2124,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/activity": {
+      "get": {
+        "operationId": "RoleGrantsController_listStaffActivity",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Only entries about this person.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The nextCursor of the page before; the next older entries.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffActivityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/settings": {
       "get": {
         "operationId": "RoleGrantsController_getStaffSettings",
@@ -20436,6 +20489,91 @@
         "required": [
           "userId",
           "access"
+        ]
+      },
+      "StaffActivityEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "ROLE_GIVEN",
+              "ROLE_REMOVED",
+              "REMOVED_FROM_SCHOOL",
+              "PAUSED",
+              "UNPAUSED",
+              "ACCESS_CHANGED",
+              "DETAILS_CHANGED",
+              "MAIN_OWNER_HANDED_OVER",
+              "INVITE_SENT",
+              "INVITE_CANCELLED",
+              "INVITE_ACCEPTED",
+              "OPEN_MAT_CHANGED",
+              "SETTING_CHANGED"
+            ]
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who made the change; null once their account is deleted."
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who made the change."
+          },
+          "targetUserId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who it was about; null for a School-wide setting or an invite to an email."
+          },
+          "targetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "What changed; depends on the action."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "actorId",
+          "actorName",
+          "targetUserId",
+          "targetName",
+          "details",
+          "createdAt"
+        ]
+      },
+      "StaffActivityResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffActivityEntryDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass as cursor for the next older page; null when there are no more."
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
         ]
       },
       "StaffSettingsResponseDto": {

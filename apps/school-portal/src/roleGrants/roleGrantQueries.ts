@@ -1,4 +1,4 @@
-import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -61,6 +61,7 @@ function invalidateStaffLists(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: ['staff-permissions'] }),
     queryClient.invalidateQueries({ queryKey: ['staff'] }),
     queryClient.invalidateQueries({ queryKey: ['staff-access'] }),
+    queryClient.invalidateQueries({ queryKey: ['staff-activity'] }),
   ]);
 }
 
@@ -238,7 +239,10 @@ export function useSetStaffSettings(schoolId: string) {
   return useMutation({
     mutationFn: (mustAcceptFirst: boolean) =>
       unwrap(apiClient.PUT('/v1/schools/{schoolId}/staff/settings', { params: { path: { schoolId } }, body: { mustAcceptFirst } })),
-    onSuccess: (data) => queryClient.setQueryData(['staff-settings', schoolId], data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['staff-settings', schoolId], data);
+      void queryClient.invalidateQueries({ queryKey: ['staff-activity'] });
+    },
   });
 }
 
@@ -272,5 +276,24 @@ export function useCreateStaffManually(schoolId: string) {
     mutationFn: (body: CreateStaffManuallyInput) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/role-grants/add-manually', { params: { path: { schoolId } }, body })),
     onSuccess: () => invalidateStaffLists(queryClient),
+  });
+}
+
+export type StaffActivityEntry = components['schemas']['StaffActivityEntryDto'];
+
+/** The Staff page's activity log (Decision 402), newest first, 50 a page.
+ * Owners only. */
+export function useStaffActivity(schoolId: string | null, userId: string) {
+  return useInfiniteQuery({
+    queryKey: ['staff-activity', schoolId, userId],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/staff/activity', {
+          params: { path: { schoolId: schoolId! }, query: { userId: userId || undefined, cursor: pageParam } },
+        }),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: !!schoolId,
   });
 }

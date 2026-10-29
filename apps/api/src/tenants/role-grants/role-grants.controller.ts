@@ -25,6 +25,8 @@ import {
   StaffDetailsResponseDto,
   StaffListQueryDto,
   StaffListResponseDto,
+  StaffActivityQueryDto,
+  StaffActivityResponseDto,
   StaffSettingsDto,
   StaffSettingsResponseDto,
   UnpauseStaffResponseDto,
@@ -160,6 +162,13 @@ export class RoleGrantsController {
     @Body() dto: StaffAccessDto,
   ) {
     return this.roleGrantsService.setStaffAccess(user.sub, schoolId, userId, dto);
+  }
+
+  /** Decision 402 — the Staff page's activity log. Owners only. */
+  @ApiOkResponse({ type: StaffActivityResponseDto })
+  @Get('schools/:schoolId/staff/activity')
+  listStaffActivity(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: StaffActivityQueryDto) {
+    return this.roleGrantsService.listStaffActivity(user.sub, schoolId, query);
   }
 
   /** Decision 396 — "New staff must accept first". Owner only. */

@@ -708,6 +708,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_listStaffActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/settings": {
         parameters: {
             query?: never;
@@ -6711,6 +6727,29 @@ export interface components {
             userId: string;
             access: components["schemas"]["StaffAccessDto"];
         };
+        StaffActivityEntryDto: {
+            id: string;
+            /** @enum {string} */
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED";
+            /** @description Who made the change; null once their account is deleted. */
+            actorId: string | null;
+            /** @description First name and surname of who made the change. */
+            actorName: string | null;
+            /** @description Who it was about; null for a School-wide setting or an invite to an email. */
+            targetUserId: string | null;
+            targetName: string | null;
+            /** @description What changed; depends on the action. */
+            details: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        StaffActivityResponseDto: {
+            items: components["schemas"]["StaffActivityEntryDto"][];
+            /** @description Pass as cursor for the next older page; null when there are no more. */
+            nextCursor: string | null;
+        };
         StaffSettingsResponseDto: {
             mustAcceptFirst: boolean;
         };
@@ -11886,6 +11925,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_listStaffActivity: {
+        parameters: {
+            query?: {
+                /** @description Only entries about this person. */
+                userId?: string;
+                /** @description The nextCursor of the page before; the next older entries. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffActivityResponseDto"];
                 };
             };
         };

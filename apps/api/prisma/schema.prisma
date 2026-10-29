@@ -502,6 +502,8 @@ model User {
   coachInvitesSent                  CoachInvite[]               @relation("CoachInviteInvitedBy")
   coachInvitesAccepted              CoachInvite[]               @relation("CoachInviteAcceptedBy")
   coachInvitesCancelled             CoachInvite[]               @relation("CoachInviteCancelledBy")
+  staffActivityDone                 StaffActivity[]             @relation("StaffActivityActor")
+  staffActivityAbout                StaffActivity[]             @relation("StaffActivityTarget")
   instructorBelts                   InstructorBelt[]            @relation("InstructorBeltUser")
   trainingLogs                      TrainingLog[]               @relation("TrainingLogStudent")
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
@@ -1175,6 +1177,7 @@ model School {
   gradingPermissions    GradingPermission[]
   staffPermissions      StaffPermission[]
   coachInvites          CoachInvite[]
+  staffActivity         StaffActivity[]
   lessonCategories      LessonCategory[]
   instructorBelts       InstructorBelt[]
   promotionFeeRequests  PromotionFeeRequest[]
@@ -4997,4 +5000,33 @@ model StudentExportLog {
   createdAt DateTime @default(now())
 
   @@index([schoolId, createdAt])
+}
+
+/// Decision 402: the Staff page's activity log, who changed what. One row per
+/// change, written in the same transaction as the change. Owners and
+/// co-owners read it; nobody edits or deletes a row (it goes with its School).
+model StaffActivity {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// Who made the change; null once that account is deleted.
+  actorId String?
+  actor   User?   @relation("StaffActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  /// The staff member it was about; null for a School-wide setting, or an
+  /// invite to an email with no account yet.
+  targetUserId String?
+  targetUser   User?   @relation("StaffActivityTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  /// One of STAFF_ACTIONS (staff-activity.ts).
+  action String
+  /// What changed: role, branch name, switches before and after, and so on.
+  details Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([schoolId, targetUserId, createdAt])
 }

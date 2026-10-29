@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { STAFF_ACTIONS, StaffAction } from '../../staff-activity/staff-activity';
 import { IsBoolean, IsIn, IsOptional, IsPhoneNumber, IsString, IsUUID, MaxLength } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -316,4 +317,51 @@ export class StaffSettingsDto {
 export class StaffSettingsResponseDto {
   @ApiProperty()
   mustAcceptFirst!: boolean;
+}
+
+/** GET /schools/{schoolId}/staff/activity (Decision 402). */
+export class StaffActivityQueryDto {
+  @ApiPropertyOptional({ description: 'Only entries about this person.' })
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+
+  @ApiPropertyOptional({ description: 'The nextCursor of the page before; the next older entries.' })
+  @IsOptional()
+  @IsUUID()
+  cursor?: string;
+}
+
+export class StaffActivityEntryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: STAFF_ACTIONS })
+  action!: StaffAction;
+
+  @ApiProperty({ type: String, nullable: true, description: 'Who made the change; null once their account is deleted.' })
+  actorId!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'First name and surname of who made the change.' })
+  actorName!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'Who it was about; null for a School-wide setting or an invite to an email.' })
+  targetUserId!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  targetName!: string | null;
+
+  @ApiProperty({ type: 'object', additionalProperties: true, nullable: true, description: 'What changed; depends on the action.' })
+  details!: Record<string, unknown> | null;
+
+  @ApiProperty()
+  createdAt!: Date;
+}
+
+export class StaffActivityResponseDto {
+  @ApiProperty({ type: [StaffActivityEntryDto] })
+  items!: StaffActivityEntryDto[];
+
+  @ApiProperty({ type: String, nullable: true, description: 'Pass as cursor for the next older page; null when there are no more.' })
+  nextCursor!: string | null;
 }

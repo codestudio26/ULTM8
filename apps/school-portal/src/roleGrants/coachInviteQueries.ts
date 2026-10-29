@@ -21,7 +21,10 @@ export function useSendCoachInvite(schoolId: string) {
   return useMutation({
     mutationFn: (body: { email: string; branchId?: string; role?: 'INSTRUCTOR' | 'BRANCH_STAFF' }) =>
       unwrap(apiClient.POST('/v1/schools/{schoolId}/coach-invites', { params: { path: { schoolId } }, body })) as Promise<CreatedCoachInvite>,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coach-invites', schoolId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['coach-invites', schoolId] });
+      void queryClient.invalidateQueries({ queryKey: ['staff-activity'] });
+    },
   });
 }
 
@@ -29,7 +32,10 @@ export function useCancelCoachInvite(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (inviteId: string) => unwrap(apiClient.POST('/v1/coach-invites/{id}/cancel', { params: { path: { id: inviteId } } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coach-invites', schoolId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['coach-invites', schoolId] });
+      void queryClient.invalidateQueries({ queryKey: ['staff-activity'] });
+    },
   });
 }
 
@@ -56,6 +62,7 @@ export function useSetStaffPermission(schoolId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['staff-permissions', schoolId] });
       void queryClient.invalidateQueries({ queryKey: ['staff'] });
+      void queryClient.invalidateQueries({ queryKey: ['staff-activity'] });
     },
   });
 }

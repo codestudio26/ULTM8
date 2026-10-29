@@ -40,6 +40,7 @@ import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
 import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
+import { recordStaffActivity } from '../staff-activity/staff-activity';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -228,8 +229,8 @@ export class RoleGrantsService {
     const roleGrantId = randomUUID();
     let grant;
     try {
-      grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.roleGrant.create({
+      grant = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const created = await tx.roleGrant.create({
           data: {
             id: roleGrantId,
             role: dto.role,
@@ -238,8 +239,16 @@ export class RoleGrantsService {
             branchId: dto.branchId,
             grantedById: callerId,
           },
-        }),
-      );
+        });
+        await recordStaffActivity(tx, {
+          schoolId: dto.schoolId,
+          actorId: callerId,
+          targetUserId,
+          action: 'ROLE_GIVEN',
+          details: { role: dto.role, branchName },
+        });
+        return created;
+      });
     } catch (err) {
       // The check above can't see a twin request that is still inserting (a
       // double click on "Give role"); RoleGrant_one_live_per_scope stops the
@@ -335,7 +344,7 @@ export class RoleGrantsService {
     await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
     // Decision 296: nobody new joins a Branch that is waiting to be purged.
     const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.branch.findUnique({ where: { id: dto.branchId }, select: { archivedAt: true } }),
+      tx.branch.findUnique({ where: { id: dto.branchId }, select: { archivedAt: true, name: true } }),
     );
     if (branch?.archivedAt) {
       throw new BadRequestException('This branch has been archived. Choose another branch.');
@@ -377,9 +386,17 @@ export class RoleGrantsService {
       });
 
       await setContext(callerId);
-      return tx.roleGrant.create({
+      const created = await tx.roleGrant.create({
         data: { id: roleGrantId, role: 'BRANCH_STAFF', userId, schoolId, branchId: dto.branchId, grantedById: callerId },
       });
+      await recordStaffActivity(tx, {
+        schoolId,
+        actorId: callerId,
+        targetUserId: userId,
+        action: 'ROLE_GIVEN',
+        details: { role: 'BRANCH_STAFF', branchName: branch?.name ?? null, manual: true },
+      });
+      return created;
     });
 
     // Same non-blocking-email-failure shape as CoachInvitesService.create()/
@@ -650,6 +667,7 @@ export class RoleGrantsService {
       const removed = await this.prismaApp.withTenantContext(callerId, async (tx) => {
         const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { pausedAt: null, pausedById: null } });
         await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
+        await this.recordRoleRemoved(tx, callerId, grant);
         return row;
       });
       if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, targetUserId, grant.branchId);
@@ -677,6 +695,7 @@ export class RoleGrantsService {
       }
       const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
       await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
+      if (grant.role !== 'STUDENT') await this.recordRoleRemoved(tx, callerId, grant);
       // A home branch belongs to an enrolment (Decision 341, S13): left
       // behind, it blocked re-enrolling (one per School and student) and
       // archiving the branch (Decision 252). Re-enrolling picks one again.
@@ -706,6 +725,18 @@ export class RoleGrantsService {
     // Decision 361: their current access token stops working on its next use.
     this.rolesChanged.forget(targetUserId);
     return revoked;
+  }
+
+  /** The activity log's line for a staff role taken away (Decision 402). */
+  private async recordRoleRemoved(tx: Prisma.TransactionClient, callerId: string, grant: { userId: string; schoolId: string | null; branchId: string | null; role: string }) {
+    const branch = grant.branchId ? await tx.branch.findUnique({ where: { id: grant.branchId }, select: { name: true } }) : null;
+    await recordStaffActivity(tx, {
+      schoolId: grant.schoolId!,
+      actorId: callerId,
+      targetUserId: grant.userId,
+      action: 'ROLE_REMOVED',
+      details: { role: grant.role, branchName: branch?.name ?? null },
+    });
   }
 
   /** Given the role again later, they start with today's permissions, not
@@ -936,12 +967,19 @@ export class RoleGrantsService {
       if (!isStaff) {
         throw new BadRequestException('Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.');
       }
+      const before = staffAccessFrom(
+        await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: STAFF_ACCESS_SELECT }),
+      );
       const columns = toPermissionColumns(access);
       await tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
         create: { id: randomUUID(), schoolId, userId, ...columns, grantedById: callerId },
         update: { ...columns, grantedById: callerId },
       });
+      const changes = STAFF_ACCESS.filter((k) => before[k] !== access[k]).map((k) => ({ switch: k, on: access[k] }));
+      if (changes.length > 0) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'ACCESS_CHANGED', details: { changes } });
+      }
     });
     if (!access.inviteCoaches) await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return { userId, access };
@@ -994,12 +1032,23 @@ export class RoleGrantsService {
       if (!isStaff) {
         throw new NotFoundException('This person is not on the staff of this School.');
       }
-      return tx.staffPermission.upsert({
+      const before = await tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId } },
+        select: { displayName: true, workPhone: true },
+      });
+      const row = await tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
         create: { id: randomUUID(), schoolId, userId, ...data },
         update: data,
         select: { userId: true, displayName: true, workPhone: true },
       });
+      const changed: Record<string, string | null> = {};
+      if (data.displayName !== undefined && (before?.displayName ?? null) !== row.displayName) changed.displayName = row.displayName;
+      if (data.workPhone !== undefined && (before?.workPhone ?? null) !== row.workPhone) changed.workPhone = row.workPhone;
+      if (Object.keys(changed).length > 0) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'DETAILS_CHANGED', details: changed });
+      }
+      return row;
     });
     return saved;
   }
@@ -1040,6 +1089,7 @@ export class RoleGrantsService {
       const count = live.count + paused.count;
       if (count === 0) return { removedRoles: 0 };
       await this.clearCoachRightsIfGone(tx, userId, schoolId);
+      await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'REMOVED_FROM_SCHOOL', details: { removedRoles: count } });
       return { removedRoles: count, also: alsoInTx ? await alsoInTx(tx) : undefined };
     });
     if (result.removedRoles === 0) {
@@ -1081,6 +1131,7 @@ export class RoleGrantsService {
         if (already) throw new ConflictException('This person is already paused.');
         throw new NotFoundException('This person holds no coach or Branch Staff role at this School.');
       }
+      await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'PAUSED', details: { pausedRoles: count } });
       return count;
     });
     this.rolesChanged.forget(userId);
@@ -1118,14 +1169,50 @@ export class RoleGrantsService {
       }
       // Rights kept for the paused roles go if none of them came back.
       await this.clearCoachRightsIfGone(tx, userId, schoolId);
-      return { restoredRoles: back.length, closedBranches: [...new Set(closed.map((g) => g.branch!.name))] };
+      const outcome = { restoredRoles: back.length, closedBranches: [...new Set(closed.map((g) => g.branch!.name))] };
+      await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'UNPAUSED', details: outcome });
+      return outcome;
     });
     this.rolesChanged.forget(userId);
     return { userId, ...result };
   }
 
-  /** Decision 390 — refuses a new coach or Branch Staff role for someone who
-   * is paused here: Unpause gives their roles back. */
+  /** GET /schools/{schoolId}/staff/activity (Decision 402) — the Staff
+   * page's activity log, newest first, 50 at a time. Owners and co-owners
+   * only (RLS reads it for them alone). */
+  async listStaffActivity(callerId: string, schoolId: string, query: { userId?: string; cursor?: string }) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const PAGE = 50;
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.staffActivity.findMany({
+        where: { schoolId, ...(query.userId ? { targetUserId: query.userId } : {}) },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: PAGE + 1,
+        ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      }),
+    );
+    const page = rows.slice(0, PAGE);
+    const ids = page.flatMap((r) => [r.actorId, r.targetUserId]).filter((id): id is string => !!id);
+    const names = await resolveUserNames(this.prismaAuth, ids);
+    const name = (id: string | null) => {
+      const n = id ? names.get(id) : undefined;
+      return n ? `${n.firstName} ${n.surname}`.trim() : null;
+    };
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        action: r.action,
+        actorId: r.actorId,
+        actorName: name(r.actorId),
+        targetUserId: r.targetUserId,
+        targetName: name(r.targetUserId),
+        details: (r.details as Record<string, unknown> | null) ?? null,
+        createdAt: r.createdAt,
+      })),
+      nextCursor: rows.length > PAGE ? page[page.length - 1].id : null,
+    };
+  }
+
   /** "New staff must accept first" (Decision 396). Owner only. */
   async getStaffSettings(callerId: string, schoolId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
@@ -1140,12 +1227,19 @@ export class RoleGrantsService {
   async setStaffSettings(callerId: string, schoolId: string, mustAcceptFirst: boolean) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.update({ where: { id: schoolId }, data: { staffMustAcceptFirst: mustAcceptFirst }, select: { staffMustAcceptFirst: true } }),
-    );
+    const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const before = await tx.school.findUnique({ where: { id: schoolId }, select: { staffMustAcceptFirst: true } });
+      const after = await tx.school.update({ where: { id: schoolId }, data: { staffMustAcceptFirst: mustAcceptFirst }, select: { staffMustAcceptFirst: true } });
+      if (before?.staffMustAcceptFirst !== after.staffMustAcceptFirst) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, action: 'SETTING_CHANGED', details: { mustAcceptFirst } });
+      }
+      return after;
+    });
     return { mustAcceptFirst: school.staffMustAcceptFirst };
   }
 
+  /** Decision 390 — refuses a new coach or Branch Staff role for someone who
+   * is paused here: Unpause gives their roles back. */
   async assertNotPaused(callerId: string, schoolId: string, userId: string) {
     const paused = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, pausedAt: { not: null } }, select: { id: true } }),
@@ -1184,6 +1278,7 @@ export class RoleGrantsService {
       }
       await tx.roleGrant.updateMany({ where: { schoolId, isMainOwner: true, revokedAt: null }, data: { isMainOwner: false } });
       await tx.roleGrant.update({ where: { id: target.id }, data: { isMainOwner: true } });
+      await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId, action: 'MAIN_OWNER_HANDED_OVER' });
     });
     return { mainOwnerUserId: targetUserId };
   }

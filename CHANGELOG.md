@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff activity log** (Decision 402) — a new "Activity" section on the
+  Staff page lists every staff change (roles, Remove from School, Pause,
+  access, display name and work phone, owners, invites, the "must accept
+  first" setting and open mat permission), newest first, with who did it and
+  when, and a filter by person. Owners and co-owners only; it starts from
+  deploy day.
 - **New staff must accept first** (Decision 396) — a new switch in the Staff
   page's "Give a role" card, off by default. When it's on, giving someone the
   Instructor or Branch Staff role emails them an invite link instead, and

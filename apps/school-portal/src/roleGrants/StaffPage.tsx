@@ -20,6 +20,7 @@ import {
 import { StaffListSection } from './StaffListSection';
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { OpenMatPermissions } from '../frontdesk/OpenMatPermissions';
+import { StaffActivitySection } from './StaffActivitySection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useT } from '../i18n/I18nProvider';
@@ -293,6 +294,8 @@ export function StaffPage() {
       <CoachInvitesSection schoolId={schoolId} />
       {/* Decision 386: who may start an open mat from the Check-in page. */}
       <OpenMatPermissions schoolId={schoolId} />
+      {/* Decision 402: who changed what on this page. */}
+      <StaffActivitySection schoolId={schoolId} />
 
       {confirmingRevoke?.role.role === 'SCHOOL_OWNER_MANAGER' ? (
         <ConfirmDeleteModal
