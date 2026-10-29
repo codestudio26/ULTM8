@@ -2413,7 +2413,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "帯のサイズ",
       photo: "写真",
       photoHint: "現在の写真を使う場合は変更しないでください。",
-      freeTextHint: "自由入力（単位・サイズ表は未確定：決定 220/246）。",
+      freeTextHint: "自由入力（単位・サイズ表は未確定）。",
     },
   },
   membershipPlans: {

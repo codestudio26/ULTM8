@@ -2450,7 +2450,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Talla de cinturón",
       photo: "Foto",
       photoHint: "Déjala como está para conservar la foto actual.",
-      freeTextHint: "Texto libre: aún no hay una unidad ni una tabla de tallas acordada (Decisión 220/246).",
+      freeTextHint: "Texto libre: aún no hay una unidad ni una tabla de tallas acordada.",
     },
   },
   membershipPlans: {
