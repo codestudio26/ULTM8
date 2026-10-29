@@ -1790,6 +1790,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Für den Schüler wieder sichtbar",
       },
     },
+    correction: {
+      title: "Gürtelkorrektur angefragt",
+      asked: "{name} hat am {date} gebeten, den Gürtel von {from} auf {to} zu korrigieren.",
+      theirNote: "Notiz: „{note}“",
+      replyLabel: "Notiz an den Schüler (optional)",
+      replyHint: "Er sieht sie mit deiner Antwort in der App.",
+      failed: "Die Anfrage konnte nicht beantwortet werden – bitte versuch es noch einmal.",
+      approve: "Genehmigen: {rank}",
+      reject: "Ablehnen",
+    },
     student: {
       archivedStyleNote: "Dieser Stil ist archiviert: Der Schüler behält diesen Rang und seine Historie, aber niemand kann darin graduiert werden. Stelle ihn auf der Seite Disziplinen wieder her, um wieder zu graduieren.",
       loadFailed: "Die Graduierungen dieses Schülers konnten nicht geladen werden.",

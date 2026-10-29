@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "Verilen belirteç doğrulanamadı.",
   "Device token not found": "Cihaz belirteci bulunamadı",
   "Discipline not found": "Branş bulunamadı",
+  "Correction request not found": "Düzeltme isteği bulunamadı",
+  "stripeTierId must be a grade on this style's ladder.": "Bu stilin sıralamasından bir derece seçin.",
   "Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).": "Derece düşürme yalnızca aşağı doğru yapılır; daha düşük bir kuşak veya şerit seçin.",
   "Each item can appear only once.": "Her öğe yalnızca bir kez yer alabilir.",
   "Each lesson can appear only once.": "Her ders içeriği yalnızca bir kez yer alabilir.",

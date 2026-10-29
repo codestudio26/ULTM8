@@ -9,5 +9,8 @@ export const lib = {
     checkInNotOpen: "Check-in for this class hasn't opened yet.",
     /** `{time}` is a formatted date and time. */
     checkInNotOpenAt: "Check-in for this class hasn't opened yet. It opens {time}.",
+    correctionNotVerified: "Your belt in this style is still waiting to be checked by the School. They can correct it then.",
+    correctionPending: "You already asked for a correction in this style. Wait for the School to answer it.",
+    correctionSameRank: "That is the belt you already have. Pick the belt you should have.",
   },
 };

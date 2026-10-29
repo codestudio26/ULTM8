@@ -10,7 +10,8 @@ import type { AppStackParamList } from '../navigation/types';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/types';
-import { useAnswerFee, useGradingOverview, useMyFeeRequests, type FeeRequest, type GradingRung, type GradingStyle } from './myGradingQueries';
+import { useAnswerFee, useGradingOverview, useMyCorrections, useMyFeeRequests, type FeeRequest, type GradingRung, type GradingStyle, type RankCorrection } from './myGradingQueries';
+import { CorrectionCard } from './CorrectionCard';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyGrading'>;
 
@@ -29,13 +30,18 @@ const Muted = ({ children }: { children: React.ReactNode }) => <Text style={{ co
  * requirement, hours trained (a record only, Decision 306), the skills needed
  * for it, and a link to their history. A guardian opens the same screen for a
  * linked minor (Decision 132). The one thing to answer here is a promotion
- * fee (Decisions 287, 300): accept or decline; nothing is charged by it.
+ * fee (Decisions 287, 300): accept or decline; nothing is charged by it. A
+ * student can also ask the School to correct a wrong belt (backlog 3.13).
  */
 export function MyGradingScreen({ route, navigation }: Props) {
   const { claims } = useAuth();
   const t = useT();
   const studentId = route.params?.studentId ?? claims?.sub ?? null;
+  // Only the student asks for their own belt to be corrected (Decision 286), not a guardian.
+  const isSelf = !!studentId && studentId === claims?.sub;
   const overview = useGradingOverview(studentId);
+  const corrections = useMyCorrections(isSelf);
+  const latestCorrection = (disciplineId: string): RankCorrection | null => (corrections.data?.items ?? []).find((c) => c.disciplineId === disciplineId) ?? null;
   const fees = useMyFeeRequests(studentId);
   const items = overview.data?.items ?? [];
   // A guardian sees their child's fees: "Ben was graded to …".
@@ -61,6 +67,7 @@ export function MyGradingScreen({ route, navigation }: Props) {
         <StyleCard
           key={`${item.schoolId}-${item.disciplineId}`}
           item={item}
+          correction={isSelf && item.verificationStatus === 'VERIFIED' && !item.archived ? { latest: latestCorrection(item.disciplineId) } : null}
           onHistory={() =>
             navigation.navigate('GradingHistory', { studentId: studentId!, schoolId: item.schoolId, title: t('grading.myGrading.historyTitle', { style: item.disciplineName }) })
           }
@@ -87,7 +94,7 @@ export function BeltSwatch({ rung }: { rung: GradingRung }) {
   );
 }
 
-function StyleCard({ item, onHistory }: { item: GradingStyle; onHistory: () => void }) {
+function StyleCard({ item, correction, onHistory }: { item: GradingStyle; correction: { latest: RankCorrection | null } | null; onHistory: () => void }) {
   const t = useT();
   const current = item.ladder.find((r) => r.id === item.currentStripeId) ?? null;
   const next = item.eligibility.hasNext ? item.ladder.find((r) => r.id === item.eligibility.nextRungId) ?? null : null;
@@ -148,6 +155,8 @@ function StyleCard({ item, onHistory }: { item: GradingStyle; onHistory: () => v
       ) : null}
 
       <HoursTrained item={item} />
+
+      {correction ? <CorrectionCard item={item} latest={correction.latest} /> : null}
 
       <Button title={t('grading.myGrading.history')} variant="secondary" onPress={onHistory} />
     </View>

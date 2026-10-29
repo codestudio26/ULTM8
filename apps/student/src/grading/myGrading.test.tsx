@@ -7,7 +7,14 @@ import { MyGradingScreen } from './MyGradingScreen';
 import { GradingHistoryScreen } from './GradingHistoryScreen';
 
 jest.mock('../auth/AuthContext', () => ({ useAuth: jest.fn() }));
-jest.mock('./myGradingQueries', () => ({ useGradingOverview: jest.fn(), useMyRankHistory: jest.fn(), useMyFeeRequests: jest.fn(), useAnswerFee: jest.fn() }));
+jest.mock('./myGradingQueries', () => ({
+  useGradingOverview: jest.fn(),
+  useMyRankHistory: jest.fn(),
+  useMyFeeRequests: jest.fn(),
+  useAnswerFee: jest.fn(),
+  useMyCorrections: jest.fn(),
+  useAskCorrection: jest.fn(),
+}));
 
 // The first render loads every React Native component these screens use; on a
 // busy CI runner that alone can pass jest's default 5 s.
@@ -36,6 +43,7 @@ function nav() {
 }
 
 const answer = { mutate: jest.fn(), isPending: false, error: null };
+const askCorrection = { mutate: jest.fn(), isPending: false, error: null };
 const FEE = {
   id: 'fee1', schoolId: 'alpha', schoolName: 'Alpha Dojo', studentId: 'me', disciplineId: 'bjj', disciplineName: 'BJJ',
   toRungId: 'w1', toRungName: 'White Belt · 1 Stripe', expectedCurrentRungId: 'w0', amountMinor: 6000, currency: 'BRL',
@@ -48,6 +56,8 @@ beforeEach(() => {
   mocked(q.useGradingOverview).mockReturnValue(ok({ items: [BJJ, JUDO] }));
   mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [] }));
   mocked(q.useAnswerFee).mockReturnValue(answer);
+  mocked(q.useMyCorrections).mockReturnValue(ok({ items: [] }));
+  mocked(q.useAskCorrection).mockReturnValue(askCorrection);
 });
 
 describe('MyGradingScreen', () => {
@@ -166,5 +176,39 @@ describe('GradingHistoryScreen', () => {
     expect(getByText('Great guard')).toBeTruthy();
     expect(getByText('Moved down: White Belt')).toBeTruthy();
     expect(getByText('Reason: Missed basics')).toBeTruthy();
+  });
+});
+
+describe('asking for a belt correction (backlog 3.13)', () => {
+  it('a student picks the belt they should have and says why; only for a verified belt', async () => {
+    const { getAllByText, getByText, getByLabelText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    // BJJ is verified; Judo is still waiting to be verified, so only one way to ask.
+    expect(getAllByText('Ask for a belt correction')).toHaveLength(1);
+    await fireEvent.press(getByText('Ask for a belt correction'));
+    await fireEvent.press(getByLabelText('Blue Belt'));
+    await fireEvent.changeText(getByLabelText('Why is it wrong?'), ' Promoted at my old club. ');
+    await fireEvent.press(getByText('Send request'));
+    expect(askCorrection.mutate).toHaveBeenCalledWith({ disciplineId: 'bjj', stripeTierId: 'b0', note: 'Promoted at my old club.' }, expect.anything());
+  });
+
+  it('a waiting request shows instead of the way to ask; an answer shows with the School\'s note', async () => {
+    const asked = { id: 'c1', disciplineId: 'bjj', status: 'PENDING', requested: { rankId: 'blue', rankName: 'Blue Belt', stripeTierId: 'b0', stripeName: 'Blue Belt' }, reviewNote: null, createdAt: '2026-10-28T12:00:00Z' };
+    mocked(q.useMyCorrections).mockReturnValue(ok({ items: [asked] }));
+    const first = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(first.getByText('Asked to correct your belt to Blue Belt. The School will answer.')).toBeTruthy();
+    expect(first.queryByText('Ask for a belt correction')).toBeNull();
+    first.unmount();
+
+    mocked(q.useMyCorrections).mockReturnValue(ok({ items: [{ ...asked, status: 'REJECTED', reviewNote: 'You are still White.' }] }));
+    const second = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(second.getByText('The School kept your belt as it was (you asked for Blue Belt).')).toBeTruthy();
+    expect(second.getByText("The School's note: You are still White.")).toBeTruthy();
+    expect(second.getByText('Ask for a belt correction')).toBeTruthy();
+  });
+
+  it('a guardian viewing a child does not ask for them', async () => {
+    const { queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: { studentId: 'kid', name: 'Kai' } } as never} />);
+    expect(mocked(q.useMyCorrections)).toHaveBeenCalledWith(false);
+    expect(queryByText('Ask for a belt correction')).toBeNull();
   });
 });

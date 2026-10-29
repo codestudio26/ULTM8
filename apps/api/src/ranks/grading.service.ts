@@ -32,6 +32,7 @@ import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
 import { boardMove, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex } from './engine';
 import { classMinutes, DEFAULT_LOGGED_MINUTES, hoursTrained, recordLoggedMinutes } from './hours-trained';
+import { CORRECTION_RUNG_GONE, CORRECTION_STALE } from './rank-correction-rules';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -2184,6 +2185,74 @@ export class GradingService {
           },
         });
       }
+      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+      return { studentRank, promotionEvent };
+    }));
+  }
+
+  /** Backlog 3.13 (Decisions 286, 299): who may answer a student's belt
+   * correction request — the same people who verify declared belts (the
+   * owner, or a coach with "Verify ranks" for the style who covers the
+   * student's branch) — and the School accepts grading writes. */
+  async assertCanReviewCorrection(callerId: string, schoolId: string, disciplineId: string, studentId: string): Promise<void> {
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertCanGrade(callerId, schoolId, disciplineId, studentId, 'canVerifyRanks');
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId, discipline);
+  }
+
+  /** Backlog 3.13: apply an approved correction request. Like a correction
+   * made while verifying (Decision 147): the student moves to the requested
+   * rung, sign-offs for the old rung go, and the history gets a
+   * RANK_CORRECTION entry with who made it. Only while the student is still
+   * where they were when they asked; the caller has already passed
+   * assertCanReviewCorrection(). */
+  async applyRequestedCorrection(
+    callerId: string,
+    request: { studentId: string; disciplineId: string; fromRankId: string; fromStripeTierId: string | null; requestedRankId: string; requestedStripeTierId: string },
+    reviewNote: string | null,
+  ) {
+    const { studentId, disciplineId } = request;
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
+      if (!existing || existing.currentRankId !== request.fromRankId || existing.currentStripeId !== request.fromStripeTierId) {
+        throw new ConflictException(CORRECTION_STALE);
+      }
+      const tier = await tx.rankStripeTier.findFirst({
+        where: { id: request.requestedStripeTierId, rankId: request.requestedRankId, rank: { disciplineId, archivedAt: null } },
+        select: { id: true, rankId: true },
+      });
+      if (!tier) {
+        throw new ConflictException(CORRECTION_RUNG_GONE);
+      }
+      const updated = await tx.studentRank.updateMany({
+        where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
+        // A different rung is a new rank: "ready to grade" may notify again (Decision 178).
+        data: { currentRankId: tier.rankId, currentStripeId: tier.id, readyNotifiedAt: null },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException(CORRECTION_STALE);
+      }
+      // Sign-offs belong to the old rung (Decision 128, item 16).
+      await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: existing.id } });
+      const promotionEvent = await tx.promotionEvent.create({
+        data: {
+          id: randomUUID(),
+          studentRankId: existing.id,
+          schoolId: existing.schoolId,
+          studentId,
+          type: 'RANK_CORRECTION',
+          performedById: callerId,
+          fromRankId: existing.currentRankId,
+          toRankId: tier.rankId,
+          fromStripeTierId: existing.currentStripeId,
+          toStripeTierId: tier.id,
+          systemNote: 'Corrected at the student\'s request.',
+          note: reviewNote,
+        },
+      });
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
       return { studentRank, promotionEvent };
     }));

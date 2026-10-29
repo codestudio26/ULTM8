@@ -1790,6 +1790,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "De nouveau visible par l’élève",
       },
     },
+    correction: {
+      title: "Correction de ceinture demandée",
+      asked: "{name} a demandé le {date} de corriger sa ceinture de {from} en {to}.",
+      theirNote: "Sa note : « {note} »",
+      replyLabel: "Note pour l’élève (facultatif)",
+      replyHint: "Il la verra dans l’app avec votre réponse.",
+      failed: "Impossible de répondre à la demande. Réessayez.",
+      approve: "Approuver : {rank}",
+      reject: "Refuser",
+    },
     student: {
       archivedStyleNote: "Ce style est archivé : l'élève garde ce grade et son historique, mais personne ne peut y être gradé. Désarchivez-le depuis la page Disciplines pour grader à nouveau.",
       loadFailed: "Impossible de charger les grades de cet élève.",

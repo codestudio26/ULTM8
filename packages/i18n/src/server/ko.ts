@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "제공된 토큰을 확인할 수 없습니다.",
   "Device token not found": "기기 토큰을 찾을 수 없습니다",
   "Discipline not found": "종목을 찾을 수 없습니다",
+  "Correction request not found": "수정 요청을 찾을 수 없어요",
+  "stripeTierId must be a grade on this style's ladder.": "이 스타일의 단계에서 등급을 고르세요.",
   "Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).": "강등은 아래로만 가능합니다. 더 낮은 띠나 그랄을 선택하세요.",
   "Each item can appear only once.": "각 항목은 한 번만 포함할 수 있습니다.",
   "Each lesson can appear only once.": "각 레슨은 한 번만 포함할 수 있습니다.",

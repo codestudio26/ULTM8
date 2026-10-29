@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "Não foi possível verificar o token informado.",
   "Device token not found": "Token do dispositivo não encontrado",
   "Discipline not found": "Modalidade não encontrada",
+  "Correction request not found": "Pedido de correção não encontrado",
+  "stripeTierId must be a grade on this style's ladder.": "Escolha um grau da graduação deste estilo.",
   "Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).": "O rebaixamento só desce; escolha uma faixa ou grau inferior.",
   "Each item can appear only once.": "Cada item só pode aparecer uma vez.",
   "Each lesson can appear only once.": "Cada lição só pode aparecer uma vez.",

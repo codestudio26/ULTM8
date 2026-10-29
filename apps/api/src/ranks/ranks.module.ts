@@ -13,6 +13,8 @@ import { InstructorBeltsService } from './instructor-belts.service';
 import { GradingErasureService } from './grading-erasure.service';
 import { PromotionFeeController } from './promotion-fee.controller';
 import { PromotionFeeService } from './promotion-fee.service';
+import { RankCorrectionsController } from './rank-corrections.controller';
+import { RankCorrectionsService } from './rank-corrections.service';
 
 /**
  * Phase 10b scope only: Discipline/Rank/Skill catalog CRUD + single-Student
@@ -33,13 +35,13 @@ import { PromotionFeeService } from './promotion-fee.service';
   // GuardiansModule: GuardiansService.assertGuardianOfStudent() for Guardian
   // read access to a linked minor's grading (Decision 132).
   imports: [TenantsModule, GuardiansModule, QueueModule],
-  controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController, PromotionFeeController],
+  controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController, PromotionFeeController, RankCorrectionsController],
   // GradingErasureService: not called by anything yet (Decision 134 groundwork
   // only, no account-deletion endpoint exists) — exported so a future
   // account-deletion job can inject it once it's built.
   // PromotionFeeService: exported so staff-created charges (Decision 303)
   // can call markPaid() once they are built.
-  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService, PromotionFeeService],
+  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService, PromotionFeeService, RankCorrectionsService],
   // GradingService: belt progress on the locked front-desk tablet's welcome card (Decision 380).
   exports: [GradingErasureService, PromotionFeeService, GradingService],
 })

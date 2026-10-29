@@ -1761,6 +1761,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "수련생에게 다시 표시",
       },
     },
+    correction: {
+      title: "띠 수정 요청",
+      asked: "{name} 님이 {date}에 띠를 {from}에서 {to}(으)로 수정해 달라고 요청했어요.",
+      theirNote: "메모: “{note}”",
+      replyLabel: "학생에게 남길 메모(선택)",
+      replyHint: "답변과 함께 앱에서 볼 수 있어요.",
+      failed: "요청에 답하지 못했어요. 다시 시도하세요.",
+      approve: "승인: {rank}",
+      reject: "거절",
+    },
     student: {
       archivedStyleNote: "보관된 스타일입니다. 수련생의 랭크와 기록은 유지되지만 이 스타일에서는 아무도 승급할 수 없습니다. 다시 승급하려면 종목 페이지에서 보관을 해제하세요.",
       loadFailed: "이 수련생의 승급 정보를 불러오지 못했습니다.",

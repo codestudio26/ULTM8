@@ -56,6 +56,8 @@ export const serverMessages: Record<string, string> = {
   "Could not verify the provided token.": "ไม่สามารถตรวจสอบโทเค็นที่ให้มาได้",
   "Device token not found": "ไม่พบโทเค็นอุปกรณ์",
   "Discipline not found": "ไม่พบสไตล์",
+  "Correction request not found": "ไม่พบคำขอแก้ไข",
+  "stripeTierId must be a grade on this style's ladder.": "เลือกระดับจากลำดับสายของสไตล์นี้",
   "Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).": "การลดระดับทำได้เฉพาะลงเท่านั้น โปรดเลือกสายคาดหรือแถบที่ต่ำกว่า",
   "Each item can appear only once.": "แต่ละรายการระบุได้เพียงครั้งเดียว",
   "Each lesson can appear only once.": "แต่ละบทเรียนระบุได้เพียงครั้งเดียว",
