@@ -183,6 +183,12 @@ export const frontDesk = {
     sentTitle: 'Thanks',
     sentBody: 'Your sign-up is with the staff. You’ll get an email once they’ve approved it.',
   },
+  heardFrom: {
+    friend: 'Friend',
+    instagram: 'Instagram',
+    google: 'Google',
+    walkedPast: 'Walked past',
+  },
   findMe: {
     title: 'Find me',
     name: 'Your full name',

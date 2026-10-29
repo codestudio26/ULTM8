@@ -618,4 +618,8 @@ export const SERVER_PATTERNS: string[] = [
  "This class is at another Branch.",
  "The tablet's day is out of range. Check the tablet's date and time.",
  "Only the owner or Branch Staff can give a visit pass.",
+ "Choose one of the listed answers to \"How did you hear about us?\".",
+ "This sign-up has already been dealt with.",
+ "Only the owner or Branch Staff can see sign-ups.",
+ "Sign-up not found",
 ];

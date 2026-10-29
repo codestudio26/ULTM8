@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "土",
       SUNDAY: "日",
     },
+    signUpInvites: {
+      title: "{school}に入会しますか？",
+      body: "{school}が受付での申込を承認しました。承諾すると生徒になります。",
+      bodyVisitor: "{school}が受付での申込を承認しました。承諾すると、無料のビジターパス付きのビジターとして参加します。",
+      homeBranch: "所属支店",
+      accept: "承諾する",
+      decline: "今回はやめておく",
+      failed: "招待に回答できませんでした。もう一度お試しください。",
+    },
     join: {
       me: "自分",
       loadFailed: "このスクールを読み込めませんでした。もう一度お試しください。",

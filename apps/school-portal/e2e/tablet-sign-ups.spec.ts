@@ -95,7 +95,7 @@ test('staff reject a sign-up: it moves to Rejected, where it can still be approv
 
   await page.getByRole('tab', { name: 'Rejected' }).click();
   const rejected = page.getByTestId('sign-up').filter({ hasText: 'Tess Tablet' });
-  await expect(rejected).toContainText(/Rejected by Olive\. You can still approve it until/);
+  await expect(rejected).toContainText(/Rejected by Olive Owner\. You can still approve it until/);
   await rejected.getByRole('button', { name: 'Approve' }).click();
   await expect(page.getByRole('dialog')).toContainText('They signed up as a Visitor, so they also get a visit pass.');
   await page.getByRole('dialog').getByRole('button', { name: 'Approve' }).click();
