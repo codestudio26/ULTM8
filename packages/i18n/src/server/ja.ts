@@ -62,6 +62,8 @@ export const serverMessages: Record<string, string> = {
   "Pick an Adult style of this School that is in use.": "この道場で使用中の大人スタイルを選んでください。",
   "That style is a Kids program itself, so it can't be an Adult program.": "そのスタイルは子どもプログラムなので、大人プログラムにはできません。",
   "This style is the Adult program of a Kids style, so it can't be a Kids program too.": "このスタイルは子どもスタイルの大人プログラムなので、子どもプログラムにもできません。",
+  "Correction request not found": "修正依頼が見つかりません",
+  "stripeTierId must be a grade on this style's ladder.": "このスタイルの段位表から級を選んでください。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降級は下位方向にのみ可能です。より低い帯またはストライプを選択してください。",
   "Each item can appear only once.": "各項目は 1 回のみ指定できます。",
   "Each lesson can appear only once.": "各レッスンは 1 回のみ指定できます。",

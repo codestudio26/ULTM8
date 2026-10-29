@@ -35,6 +35,13 @@ function codedMessage(err: ApiError): string | null {
         ? translate('lib.apiError.checkInNotOpenAt', { time: formatDateTime(iso) })
         : translate('lib.apiError.checkInNotOpen');
     }
+    // Belt correction requests (backlog 3.13).
+    case 'CORRECTION_NOT_VERIFIED':
+      return translate('lib.apiError.correctionNotVerified');
+    case 'CORRECTION_PENDING':
+      return translate('lib.apiError.correctionPending');
+    case 'CORRECTION_SAME_RANK':
+      return translate('lib.apiError.correctionSameRank');
     default:
       return null;
   }

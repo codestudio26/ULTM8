@@ -1892,6 +1892,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "Ponownie widoczna dla ucznia",
       },
     },
+    correction: {
+      title: "Prośba o korektę pasa",
+      asked: "{name} poprosił {date} o korektę pasa z {from} na {to}.",
+      theirNote: "Notatka: „{note}”",
+      replyLabel: "Notatka dla ucznia (opcjonalna)",
+      replyHint: "Uczeń zobaczy ją w aplikacji razem z odpowiedzią.",
+      failed: "Nie udało się odpowiedzieć na prośbę. Spróbuj ponownie.",
+      approve: "Zatwierdź: {rank}",
+      reject: "Odrzuć",
+    },
     student: {
       archivedStyleNote: "Ten styl jest zarchiwizowany: uczeń zachowuje ten stopień i historię, ale nikt nie może w nim uzyskać stopnia. Przywróć go na stronie Dyscypliny, aby znów nadawać stopnie.",
       loadFailed: "Nie udało się wczytać stopni tego ucznia.",

@@ -72,6 +72,8 @@ export const SERVER_MESSAGES: string[] = [
  "Pick an Adult style of this School that is in use.",
  "That style is a Kids program itself, so it can't be an Adult program.",
  "This style is the Adult program of a Kids style, so it can't be a Kids program too.",
+ "Correction request not found",
+ "stripeTierId must be a grade on this style's ladder.",
  "Downgrade only moves down; pick a lower belt or stripe.",
  "Each item can appear only once.",
  "Each lesson can appear only once.",

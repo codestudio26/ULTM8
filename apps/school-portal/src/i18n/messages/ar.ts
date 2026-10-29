@@ -1950,6 +1950,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "أُظهرت للطالب مجددًا",
       },
     },
+    correction: {
+      title: "طُلب تصحيح الحزام",
+      asked: "طلب {name} في {date} تصحيح حزامه من {from} إلى {to}.",
+      theirNote: "ملاحظته: «{note}»",
+      replyLabel: "ملاحظة للطالب (اختياري)",
+      replyHint: "سيراها في التطبيق مع ردّك.",
+      failed: "تعذّر الرد على الطلب. حاول مرة أخرى.",
+      approve: "موافقة: {rank}",
+      reject: "رفض",
+    },
     student: {
       archivedStyleNote: "هذا الأسلوب مؤرشف: يحتفظ الطالب بهذه الرتبة وسجلها، لكن لا يمكن ترقية أحد فيه. ألغِ أرشفته من صفحة الرياضات للترقية مجددًا.",
       loadFailed: "تعذّر تحميل ترقيات هذا الطالب.",

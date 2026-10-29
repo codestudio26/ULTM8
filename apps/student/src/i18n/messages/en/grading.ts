@@ -42,6 +42,23 @@ export const grading = {
     summary: '{atRank} h at this rank · {total} h in all',
     note: "A record of your time on the mat. Grading doesn't use it.",
   },
+  /** Backlog 3.13: asking the School to correct a wrong belt. */
+  correction: {
+    a11yLabel: "Belt correction: {style}",
+    waiting: "Asked to correct your belt to {rank}. The School will answer.",
+    approved: "Your belt was corrected to {rank}.",
+    rejected: "The School kept your belt as it was (you asked for {rank}).",
+    askedOn: "Asked on {date}",
+    schoolNote: "The School's note: {note}",
+    intro: "Is the belt shown here wrong? Only your coaches change belts, but you can ask the School to correct it.",
+    ask: "Ask for a belt correction",
+    pickBelt: "Which belt should you have?",
+    noteLabel: "Why is it wrong?",
+    noteHint: "For example: \"I was promoted at my old club in March.\"",
+    sendError: "Couldn't send your request — please try again.",
+    send: "Send request",
+    cancel: "Cancel",
+  },
   /** A promotion fee the student (or their guardian) accepts or declines. */
   fee: {
     a11yLabel: 'Promotion fee: {rank}',

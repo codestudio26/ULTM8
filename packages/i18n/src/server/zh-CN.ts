@@ -62,6 +62,8 @@ export const serverMessages: Record<string, string> = {
   "Pick an Adult style of this School that is in use.": "请选择本道馆正在使用的成人风格。",
   "That style is a Kids program itself, so it can't be an Adult program.": "该风格本身是儿童项目，不能作为成人项目。",
   "This style is the Adult program of a Kids style, so it can't be a Kids program too.": "该风格是某个儿童风格的成人项目，不能同时作为儿童项目。",
+  "Correction request not found": "未找到更正申请",
+  "stripeTierId must be a grade on this style's ladder.": "请从此风格的段位阶梯中选择一个级别。",
   "Downgrade only moves down; pick a lower belt or stripe.": "降级只能向下；请选择更低的腰带或条纹。",
   "Each item can appear only once.": "每个项目只能出现一次。",
   "Each lesson can appear only once.": "每个课时只能出现一次。",

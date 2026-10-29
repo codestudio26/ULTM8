@@ -62,6 +62,8 @@ export const serverMessages: Record<string, string> = {
   "Pick an Adult style of this School that is in use.": "Elige un estilo de adultos de esta escuela que esté en uso.",
   "That style is a Kids program itself, so it can't be an Adult program.": "Ese estilo es un programa infantil, así que no puede ser un programa de adultos.",
   "This style is the Adult program of a Kids style, so it can't be a Kids program too.": "Este estilo es el programa de adultos de un estilo infantil, así que no puede ser también un programa infantil.",
+  "Correction request not found": "Solicitud de corrección no encontrada",
+  "stripeTierId must be a grade on this style's ladder.": "Elige un grado de la escala de este estilo.",
   "Downgrade only moves down; pick a lower belt or stripe.": "El descenso solo baja; elige un cinturón o franja inferior.",
   "Each item can appear only once.": "Cada elemento solo puede aparecer una vez.",
   "Each lesson can appear only once.": "Cada lección solo puede aparecer una vez.",

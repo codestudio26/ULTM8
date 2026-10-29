@@ -33,11 +33,14 @@ import {
   useSetBoardActive,
   useMyGrading,
   useStudentEligibility,
+  useStudentCorrections,
   useStudentFeeRequests,
+  type RankCorrection,
 } from './gradingQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 import { useAdultProgram } from './adultProgram';
+import { CorrectionRequestBox } from './CorrectionRequestBox';
 import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
@@ -91,6 +94,8 @@ export function StudentGradingPage() {
   const [showVoided, setShowVoided] = useState(false);
   const history = useRankHistory(studentId, schoolId, showVoided);
   const feeRequests = useStudentFeeRequests(studentId, schoolId);
+  // Belt correction requests this caller may answer (backlog 3.13).
+  const corrections = useStudentCorrections(schoolId, studentId);
   const feeSettings = usePromotionFeeSettings(schoolId);
   // v1.2 backend backlog — "Upcoming Booking" and "Revoke Enrollment", both
   // additions to this real page (the de facto Student Detail screen at
@@ -238,6 +243,7 @@ export function StudentGradingPage() {
             feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
             feeCurrency={feeSettings.data?.currency ?? null}
             styles={disciplines.data?.items ?? []}
+            corrections={(corrections.data?.items ?? []).filter((c) => c.disciplineId === discipline.id)}
           />
         ))
       )}
@@ -357,6 +363,7 @@ function DisciplineGradingCard({
   feeRequests,
   feeCurrency,
   styles,
+  corrections,
 }: {
   studentId: string;
   schoolId: string;
@@ -379,6 +386,8 @@ function DisciplineGradingCard({
   feeCurrency: string | null;
   /** Every style of the School, for the Kids style's linked Adult program (backlog 3.20). */
   styles: DisciplineResponse[];
+  /** Waiting belt correction requests in this style the caller may answer (backlog 3.13). */
+  corrections: RankCorrection[];
 }) {
   const can = (toggle: GradingToggle) => (archived ? toggle === 'canVoidHistory' && canInStyle(toggle) : canInStyle(toggle));
   const ranks = useRanks(discipline.id);
@@ -460,6 +469,10 @@ function DisciplineGradingCard({
             />
           </p>
         ) : null}
+
+        {!archived && can('canVerifyRanks')
+          ? corrections.map((c) => <CorrectionRequestBox key={c.id} request={c} studentId={studentId} firstName={firstName} />)
+          : null}
 
         {fee ? (
           <FeeBox

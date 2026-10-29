@@ -62,6 +62,19 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.checkInVisitorsOff');
     case 'CHECK_IN_ONE_CLASS':
       return t('server.codes.checkInOneClass');
+    // Belt correction requests (backlog 3.13).
+    case 'CORRECTION_NOT_VERIFIED':
+      return t('server.codes.correctionNotVerified');
+    case 'CORRECTION_PENDING':
+      return t('server.codes.correctionPending');
+    case 'CORRECTION_SAME_RANK':
+      return t('server.codes.correctionSameRank');
+    case 'CORRECTION_STALE':
+      return t('server.codes.correctionStale');
+    case 'CORRECTION_RUNG_GONE':
+      return t('server.codes.correctionRungGone');
+    case 'CORRECTION_ANSWERED':
+      return t('server.codes.correctionAnswered');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;

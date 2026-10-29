@@ -398,6 +398,17 @@ export const grading = {
       changeShown: 'Shown to the student again',
     },
   },
+  /** Backlog 3.13: a student asked for their belt to be corrected. */
+  correction: {
+    title: "Belt correction asked",
+    asked: "{name} asked to correct their belt from {from} to {to} on {date}.",
+    theirNote: "Their note: “{note}”",
+    replyLabel: "Note to the student (optional)",
+    replyHint: "They see it in the app with your answer.",
+    failed: "Couldn't answer the request — please try again.",
+    approve: "Approve: {rank}",
+    reject: "Reject",
+  },
   student: {
     loadFailed: "Could not load this student's grading.",
     formerInstructor: 'Former instructor',

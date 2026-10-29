@@ -62,6 +62,8 @@ export const serverMessages: Record<string, string> = {
   "Pick an Adult style of this School that is in use.": "Bu okulun kullanımdaki bir yetişkin stilini seçin.",
   "That style is a Kids program itself, so it can't be an Adult program.": "O stil zaten bir çocuk programı, bu yüzden yetişkin programı olamaz.",
   "This style is the Adult program of a Kids style, so it can't be a Kids program too.": "Bu stil bir çocuk stilinin yetişkin programı, bu yüzden aynı zamanda çocuk programı olamaz.",
+  "Correction request not found": "Düzeltme isteği bulunamadı",
+  "stripeTierId must be a grade on this style's ladder.": "Bu stilin sıralamasından bir derece seçin.",
   "Downgrade only moves down; pick a lower belt or stripe.": "Derece düşürme yalnızca aşağı doğru yapılır; daha düşük bir kuşak veya şerit seçin.",
   "Each item can appear only once.": "Her öğe yalnızca bir kez yer alabilir.",
   "Each lesson can appear only once.": "Her ders içeriği yalnızca bir kez yer alabilir.",

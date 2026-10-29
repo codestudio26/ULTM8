@@ -1805,6 +1805,16 @@ export const messages: PartialMessages<EnglishMessages> = {
         changeShown: "已重新对学员显示",
       },
     },
+    correction: {
+      title: "腰带更正申请",
+      asked: "{name} 于 {date} 申请将腰带从 {from} 更正为 {to}。",
+      theirNote: "学员备注：“{note}”",
+      replyLabel: "给学员的备注（可选）",
+      replyHint: "学员会在应用中与你的答复一起看到。",
+      failed: "无法答复该申请，请重试。",
+      approve: "批准：{rank}",
+      reject: "拒绝",
+    },
     student: {
       archivedStyleNote: "此流派已归档：学员保留该段位和记录，但无法在其中晋级。如需再次晋级，请在“项目”页面取消归档。",
       loadFailed: "无法加载该学员的晋级信息。",
