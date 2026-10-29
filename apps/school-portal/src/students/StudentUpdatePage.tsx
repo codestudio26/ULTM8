@@ -27,7 +27,7 @@ type Form = {
 };
 
 /** The fields that a blank clears (sent as `null`). */
-const CLEARABLE = ['username', 'gender', 'nationality', 'language', 'currency', 'weightCategory', 'kimonoSize', 'beltSize'] as const;
+const CLEARABLE = ['username', 'nationality', 'language', 'currency', 'weightCategory', 'kimonoSize', 'beltSize'] as const;
 
 function formFrom(p: StudentProfileResponse): Form {
   return {
@@ -120,6 +120,7 @@ export function StudentUpdatePage() {
     for (const key of CLEARABLE) {
       if (safeForm[key] !== safeInitial[key]) body[key] = safeForm[key].trim() || null;
     }
+    if (safeForm.gender !== safeInitial.gender) body.gender = safeForm.gender === 'FEMALE' || safeForm.gender === 'MALE' ? safeForm.gender : null;
     if (prepared.postalAddress !== undefined) body.postalAddress = prepared.postalAddress;
     try {
       if (Object.keys(body).length > 0) {
@@ -170,7 +171,17 @@ export function StudentUpdatePage() {
             <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
           </Field>
           <Field label={t('students.update.gender')} htmlFor="student-update-gender">
-            <TextField value={form.gender} onChange={(e) => set('gender', e.target.value)} />
+            {/* Decision 315 item 15: Female, Male or not given. */}
+            <SelectField
+              id="student-update-gender"
+              value={form.gender}
+              onChange={(e) => set('gender', e.target.value)}
+              options={[
+                { value: '', label: t('schools.form.notSet') },
+                { value: 'FEMALE', label: t('frontDesk.signUp.female') },
+                { value: 'MALE', label: t('frontDesk.signUp.male') },
+              ]}
+            />
           </Field>
           <Field label={t('students.update.nationality')} htmlFor="student-update-nationality">
             <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />

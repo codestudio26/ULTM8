@@ -257,10 +257,10 @@ test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ pa
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Edit profile' }).click();
   await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}/edit$`));
-  await page.getByLabel('Gender').fill('Non-binary');
+  await page.getByLabel('Gender').selectOption('FEMALE');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
 
   const user = await db.user.findUniqueOrThrow({ where: { id: s.student.id } });
-  expect(user.gender).toBe('Non-binary');
+  expect(user.gender).toBe('FEMALE');
 });
