@@ -400,6 +400,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Kuşağı doğrula",
       beltVerified: "Kuşak doğrulandı.",
       awardStripe: "Şerit ver: {rung}",
+      stepUp: "Adım yükselt: {rung}",
       gradeTo: "Terfi ettir: {rung}",
       tooEarly: {
         one: "Çok erken: asgari süreye {count} gün var.",
@@ -445,6 +446,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Terfi etti (toplu)",
       stripeAward: "Şerit verildi",
       bulkStripeAward: "Şerit verildi (toplu)",
+      stepUp: "Adım yükseldi",
+      bulkStepUp: "Adım yükseldi (toplu)",
       downgrade: "Derece düşürüldü",
       adjustment: "İlerleme düzenlendi",
       selfDeclared: "Kuşak beyan edildi",
@@ -613,6 +616,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Terfi etti",
       stripeAward: "Şerit verildi",
+      stepUp: "Adım yükseldi",
       downgrade: "Derece düşürüldü",
       adjustment: "İlerleme düzenlendi",
       selfDeclared: "Kuşak beyan edildi",

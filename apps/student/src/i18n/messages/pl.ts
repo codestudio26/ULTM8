@@ -411,6 +411,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Zweryfikuj pas",
       beltVerified: "Pas zweryfikowany.",
       awardStripe: "Przyznaj belkę: {rung}",
+      stepUp: "Krok wyżej: {rung}",
       gradeTo: "Awansuj na: {rung}",
       tooEarly: {
         one: "Za wcześnie: brakuje {count} dnia do minimum.",
@@ -460,6 +461,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Awans (grupowy)",
       stripeAward: "Przyznano belkę",
       bulkStripeAward: "Przyznano belkę (grupowo)",
+      stepUp: "Krok wyżej",
+      bulkStepUp: "Krok wyżej (grupowo)",
       downgrade: "Obniżono stopień",
       adjustment: "Skorygowano postęp",
       selfDeclared: "Zgłoszono pas",
@@ -630,6 +633,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Awans",
       stripeAward: "Przyznano belkę",
+      stepUp: "Krok wyżej",
       downgrade: "Obniżono stopień",
       adjustment: "Skorygowano postęp",
       selfDeclared: "Zgłoszono pas",

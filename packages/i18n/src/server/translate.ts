@@ -203,6 +203,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Waiver updated': 'waiverUpdatedTitle',
   'Waiver renewal': 'waiverRenewalTitle',
   'New stripe!': 'newStripeTitle',
+  'Step up!': 'stepUpTitle',
   'Promoted!': 'promotedTitle',
   'Rank updated': 'rankUpdatedTitle',
   'Payment dispute lost': 'disputeLostTitle',

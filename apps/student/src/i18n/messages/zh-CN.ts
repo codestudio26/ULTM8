@@ -397,6 +397,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "核实腰带",
       beltVerified: "腰带已核实。",
       awardStripe: "授予条纹：{rung}",
+      stepUp: "升至下一步骤：{rung}",
       gradeTo: "晋级到 {rung}",
       tooEarly: {
         other: "时间未到：距最少天数还差 {count} 天。",
@@ -440,6 +441,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "已晋级（批量）",
       stripeAward: "已授予条纹",
       bulkStripeAward: "已授予条纹（批量）",
+      stepUp: "已升至下一步骤",
+      bulkStepUp: "已升至下一步骤（批量）",
       downgrade: "已降级",
       adjustment: "已调整进度",
       selfDeclared: "已自报腰带",
@@ -607,6 +610,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "已晋级",
       stripeAward: "已授予条纹",
+      stepUp: "已升至下一步骤",
       downgrade: "已降级",
       adjustment: "已调整进度",
       selfDeclared: "已自报腰带",

@@ -400,6 +400,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Gürtel bestätigen",
       beltVerified: "Gürtel bestätigt.",
       awardStripe: "Streifen vergeben: {rung}",
+      stepUp: "Eine Stufe höher: {rung}",
       gradeTo: "Graduieren zu {rung}",
       tooEarly: {
         one: "Zu früh: {count} Tag fehlt bis zur Mindestzeit.",
@@ -445,6 +446,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Befördert (Sammel)",
       stripeAward: "Streifen vergeben",
       bulkStripeAward: "Streifen vergeben (Sammel)",
+      stepUp: "Eine Stufe höher",
+      bulkStepUp: "Eine Stufe höher (Sammel)",
       downgrade: "Herabgestuft",
       adjustment: "Fortschritt angepasst",
       selfDeclared: "Gürtel angegeben",
@@ -613,6 +616,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Befördert",
       stripeAward: "Streifen vergeben",
+      stepUp: "Eine Stufe höher",
       downgrade: "Herabgestuft",
       adjustment: "Fortschritt angepasst",
       selfDeclared: "Gürtel angegeben",

@@ -400,6 +400,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Verificar faixa",
       beltVerified: "Faixa verificada.",
       awardStripe: "Conceder grau: {rung}",
+      stepUp: "Subir de etapa: {rung}",
       gradeTo: "Graduar para {rung}",
       tooEarly: {
         one: "Cedo demais: falta {count} dia para o mínimo.",
@@ -445,6 +446,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Promovido (em lote)",
       stripeAward: "Grau concedido",
       bulkStripeAward: "Grau concedido (em lote)",
+      stepUp: "Subiu de etapa",
+      bulkStepUp: "Subiu de etapa (em lote)",
       downgrade: "Rebaixado",
       adjustment: "Progresso ajustado",
       selfDeclared: "Faixa declarada",
@@ -613,6 +616,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Promovido",
       stripeAward: "Grau concedido",
+      stepUp: "Subiu de etapa",
       downgrade: "Rebaixado",
       adjustment: "Progresso ajustado",
       selfDeclared: "Faixa declarada",

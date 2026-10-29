@@ -406,6 +406,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Vérifier la ceinture",
       beltVerified: "Ceinture vérifiée.",
       awardStripe: "Attribuer la barrette : {rung}",
+      stepUp: "Monter d’une étape : {rung}",
       gradeTo: "Grader au niveau {rung}",
       tooEarly: {
         one: "Trop tôt : il manque {count} jour pour atteindre le minimum.",
@@ -453,6 +454,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Promu (groupé)",
       stripeAward: "Barrette attribuée",
       bulkStripeAward: "Barrette attribuée (groupée)",
+      stepUp: "Montée d’étape",
+      bulkStepUp: "Montée d’étape (groupée)",
       downgrade: "Rétrogradé",
       adjustment: "Progression ajustée",
       selfDeclared: "Ceinture déclarée",
@@ -622,6 +625,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Promu",
       stripeAward: "Barrette attribuée",
+      stepUp: "Montée d’étape",
       downgrade: "Rétrogradé",
       adjustment: "Progression ajustée",
       selfDeclared: "Ceinture déclarée",

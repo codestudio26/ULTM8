@@ -226,6 +226,19 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
     expect(await superuser.notification.findUnique({ where: { id } })).toBeNull();
   });
 
+  it('on a Levels style the next step inside a level is "Step up!", not "New stripe!" (Decision 402)', async () => {
+    await mkStudent('lev', { branchId: downtown.id, at: 'white-1' });
+    await superuser.discipline.update({ where: { id: bjj.id }, data: { rankDisplay: 'LEVELS' } });
+    try {
+      const res = await act('lev', 'stripe-award', {});
+      expect(res.status).toBe(201);
+      const n = await waitFor(() => superuser.notification.findUnique({ where: { id: `grading-${res.body.promotionEvent.id}` } }), (v) => v !== null);
+      expect(n).toMatchObject({ userId: user.lev.id, title: 'Step up!', body: "You've earned white-2. (BJJ)" });
+    } finally {
+      await superuser.discipline.update({ where: { id: bjj.id }, data: { rankDisplay: 'BELTS' } });
+    }
+  });
+
   it('the daily sweep finds students ready by other means; not those who have left', async () => {
     await mkStudent('sam', { branchId: riverside.id, at: 'white-1', classes: 3 }); // ready already
     await mkStudent('lou', { branchId: downtown.id, at: 'white-1', classes: 3, enrolled: false }); // left the school

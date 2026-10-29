@@ -400,6 +400,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Band verifiëren",
       beltVerified: "Band geverifieerd.",
       awardStripe: "Streep toekennen: {rung}",
+      stepUp: "Stap omhoog: {rung}",
       gradeTo: "Graderen naar {rung}",
       tooEarly: {
         one: "Te vroeg: {count} dag korter dan het minimum.",
@@ -445,6 +446,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Gepromoveerd (groep)",
       stripeAward: "Streep toegekend",
       bulkStripeAward: "Streep toegekend (groep)",
+      stepUp: "Stap omhoog",
+      bulkStepUp: "Stap omhoog (groep)",
       downgrade: "Teruggezet",
       adjustment: "Voortgang aangepast",
       selfDeclared: "Band opgegeven",
@@ -613,6 +616,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Gepromoveerd",
       stripeAward: "Streep toegekend",
+      stepUp: "Stap omhoog",
       downgrade: "Teruggezet",
       adjustment: "Voortgang aangepast",
       selfDeclared: "Band opgegeven",
