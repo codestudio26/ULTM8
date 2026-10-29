@@ -45,7 +45,7 @@ test('the owner freezes a Weekly Pass from the Student page, sees it frozen, and
   const m = await weeklyPass(s.student.id);
   await page.goto(`/students/${s.student.id}`);
   const row = page.getByRole('row', { name: /Four weeks/ });
-  await row.getByRole('button', { name: 'Freeze' }).click();
+  await row.getByRole('button', { name: 'Freeze', exact: true }).click();
 
   const dialog = page.getByTestId('freeze-modal');
   await expect(page.getByRole('heading', { name: /Freeze Four weeks for/ })).toBeVisible();
@@ -59,7 +59,7 @@ test('the owner freezes a Weekly Pass from the Student page, sees it frozen, and
   await page.getByLabel('Back on').fill(day(10));
   await dialog.getByRole('button', { name: 'Freeze membership' }).click();
   await expect(row).toContainText(/Frozen until/);
-  await expect(row.getByRole('button', { name: 'Freeze' })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Freeze', exact: true })).toHaveCount(0);
   // The expiry date moved later by the 10 frozen days.
   const moved = await db.membership.findUniqueOrThrow({ where: { id: m.id } });
   expect(moved.expiryDate!.getTime()).toBe(m.expiryDate!.getTime() + 10 * DAY);
@@ -68,7 +68,7 @@ test('the owner freezes a Weekly Pass from the Student page, sees it frozen, and
   await expect(page.getByRole('heading', { name: 'End this freeze?' })).toBeVisible();
   await page.getByRole('button', { name: 'End freeze', exact: true }).last().click();
   await expect(row).toContainText('Active');
-  await expect(row.getByRole('button', { name: 'Freeze' })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Freeze', exact: true })).toBeVisible();
 });
 
 test('a member\'s request shows on the Students page; approving it marks them Frozen in the list and the filter', async ({ page }) => {
