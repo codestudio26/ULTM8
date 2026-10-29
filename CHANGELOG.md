@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
+  discipline links a Kids style to its Adult style. From "Ready for Adult from
+  age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult
+  program", and Grade lists the Adult ranks from the second Adult belt under an
+  "Adult program" heading: the student moves to the Adult style, keeps their
+  history and matching skill sign-offs, and starts the class count again. The
+  Grading Board has a Kids · Adult switch. **Needs a database migration**
+  (`20261229000000_kids_adult_programs`).
 - **Sell a used-up pack at the desk** (Decision 395) — the "Pack used up"
   card on Check-in also has "Sell at the desk": choose how it was paid (cash,
   bank transfer, Pix or card terminal), record it, and the person is checked

@@ -6777,3 +6777,27 @@ User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.
 ### Recorded by
 
 User (Code), 29 Oct 2026, on the decision card: "Build the shortcut".
+
+---
+
+## Decision 397 — Kids and Adult programs are two linked styles
+
+**Date:** 29 Oct 2026. **Builds:** v1.3 backlog §3.20 (Decisions 281, 285 and 297), whose "Suggested build" left the storage to the design pass.
+
+### Decision
+
+1. **Kids and Adult stay two styles, linked Kids → Adult.** A Kids style has an optional `adultDisciplineId` pointing to its Adult style, and its own `readyForAdultAge` (default 16). Each keeps its own ladder, skills and settings, as every style does today. *(Product owner, 29 Oct 2026: "Two linked styles".)*
+2. **One level only.** A style can't be its own Adult program, an Adult style can't be a Kids style too, and a Kids style can't be another style's Adult program. Both must be in the same School and in use.
+3. **The link is set in Edit discipline** ("Adult program (for a Kids style)"), by whoever may edit styles. The age is set in Grading → Settings by the owner and coaches with "Change grading settings" (Decision 297).
+4. **The move** (Decision 285): from the age, the Grade dialog lists the Adult ranks after the Adult ladder's first belt under an "Adult program" heading. Picking one moves the student's rank to the Adult style at that rank, keeps history and notes, restarts the class count and writes "Moved to Adult program." on the history. It needs `canPromote` on the Kids style.
+
+### Built as
+
+- **Sign-offs that carry over:** a sign-off moves to the Adult style's skill with the same name, since skills belong to one style. Decision 285 left which ones carry over open; this is the reading used, to confirm.
+- **[UNRESOLVED]** Bulk promote has no Adult group yet (Decision 281 item 2 names it). Its per-student picker lists only the student's own ladder.
+- **[UNRESOLVED]** A student on the top Kids rank isn't a board card, so they are moved from the Ranks tab.
+- **[UNRESOLVED]** No promotion fee is asked for on the move.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, choosing "Two linked styles" for the Kids/Adult storage.
