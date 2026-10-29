@@ -238,6 +238,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Não foi possível gerar seu código de check-in — tente novamente.",
       hint: "Mostre isto ao seu Instrutor para fazer check-in. Ele se atualiza sozinho — você não precisa fazer nada.",
     },
+    membershipCard: {
+      label: "Carteirinha de {school}",
+      codeLabel: "Código de check-in",
+      noMembership: "Nenhum plano ativo",
+      classesLeft: {
+        one: "Resta {count} aula",
+        other: "Restam {count} aulas",
+      },
+      until: "Até {date}",
+    },
     qrScanner: {
       notACheckInCode: "Isso não parece um código de check-in de Aula — tente novamente.",
       permissionNeeded: "É preciso acesso à câmera para escanear o código de check-in da Aula.",

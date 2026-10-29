@@ -238,6 +238,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Giriş kodunuz oluşturulamadı — lütfen tekrar deneyin.",
       hint: "Derse giriş için bunu eğitmeninize gösterin. Kendiliğinden yenilenir — bir şey yapmanız gerekmez.",
     },
+    membershipCard: {
+      label: "{school} üyelik kartı",
+      codeLabel: "Giriş kodu",
+      noMembership: "Geçerli üyelik yok",
+      classesLeft: {
+        one: "{count} ders kaldı",
+        other: "{count} ders kaldı",
+      },
+      until: "{date} tarihine kadar",
+    },
     qrScanner: {
       notACheckInCode: "Bu bir ders giriş kodu gibi görünmüyor — tekrar deneyin.",
       permissionNeeded: "Ders giriş kodunu taramak için kamera erişimi gerekir.",

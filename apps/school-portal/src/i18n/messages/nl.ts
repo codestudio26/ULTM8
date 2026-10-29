@@ -3502,6 +3502,19 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "Ja, nieuwe code",
       failed: "Kon geen nieuwe code geven. Probeer het opnieuw.",
     },
+    card: {
+      print: "Lidmaatschapskaart afdrukken",
+      pageTitle: "{name}: lidmaatschapskaart",
+      codeLabel: "Inchecktcode",
+      noMembership: "Geen lopend lidmaatschap",
+      classesLeft: {
+        one: "Nog {count} les",
+        other: "Nog {count} lessen",
+      },
+      until: "Tot {date}",
+      printButton: "Afdrukken / Opslaan als pdf",
+      failed: "De lidmaatschapskaart kon niet worden geladen. Probeer het opnieuw.",
+    },
     heardFrom: {
       friend: "Vriend of vriendin",
       instagram: "Instagram",

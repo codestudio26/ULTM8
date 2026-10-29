@@ -238,6 +238,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Nie udało się wygenerować Twojego kodu meldowania — spróbuj ponownie.",
       hint: "Pokaż to instruktorowi, aby się zameldować. Kod odświeża się automatycznie — nic nie musisz robić.",
     },
+    membershipCard: {
+      label: "Karta członkowska {school}",
+      codeLabel: "Kod wejścia",
+      noMembership: "Brak aktualnego karnetu",
+      classesLeft: {
+        one: "Zostały {count} zajęcia",
+        few: "Zostały {count} zajęcia",
+        many: "Zostało {count} zajęć",
+        other: "Zostało {count} zajęć",
+      },
+      until: "Do {date}",
+    },
     qrScanner: {
       notACheckInCode: "To nie wygląda na kod meldowania na zajęcia — spróbuj ponownie.",
       permissionNeeded: "Do zeskanowania kodu meldowania na zajęcia potrzebny jest dostęp do aparatu.",

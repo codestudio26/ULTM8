@@ -3702,6 +3702,23 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirmYes: "نعم، رمز جديد",
       failed: "تعذر إصدار رمز جديد. يُرجى المحاولة مرة أخرى.",
     },
+    card: {
+      print: "طباعة بطاقة العضوية",
+      pageTitle: "{name}: بطاقة العضوية",
+      codeLabel: "رمز تسجيل الحضور",
+      noMembership: "لا توجد عضوية حالية",
+      classesLeft: {
+        zero: "لم يتبقَّ أي حصة",
+        one: "تبقّت حصة واحدة",
+        two: "تبقّت حصتان",
+        few: "تبقّت {count} حصص",
+        many: "تبقّت {count} حصة",
+        other: "تبقّت {count} حصة",
+      },
+      until: "حتى {date}",
+      printButton: "طباعة / حفظ بصيغة PDF",
+      failed: "تعذّر تحميل بطاقة العضوية. يُرجى المحاولة مرة أخرى.",
+    },
     heardFrom: {
       friend: "صديق",
       instagram: "Instagram",

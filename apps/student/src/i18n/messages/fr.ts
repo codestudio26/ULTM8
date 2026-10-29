@@ -238,6 +238,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Impossible de générer votre code de pointage — veuillez réessayer.",
       hint: "Montrez-le à votre instructeur pour pointer. Il s’actualise automatiquement — aucune action nécessaire.",
     },
+    membershipCard: {
+      label: "Carte de membre {school}",
+      codeLabel: "Code d’entrée",
+      noMembership: "Aucune adhésion en cours",
+      classesLeft: {
+        one: "{count} cours restant",
+        other: "{count} cours restants",
+      },
+      until: "Jusqu’au {date}",
+    },
     qrScanner: {
       notACheckInCode: "Ce code ne ressemble pas à un code de pointage de cours — réessayez.",
       permissionNeeded: "L’accès à l’appareil photo est nécessaire pour scanner le code de pointage du cours.",

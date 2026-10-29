@@ -238,6 +238,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Je incheckcode kon niet worden aangemaakt — probeer het opnieuw.",
       hint: "Laat dit aan je instructeur zien om in te checken. De code ververst automatisch — je hoeft niets te doen.",
     },
+    membershipCard: {
+      label: "Lidmaatschapskaart {school}",
+      codeLabel: "Inchecktcode",
+      noMembership: "Geen lopend lidmaatschap",
+      classesLeft: {
+        one: "Nog {count} les",
+        other: "Nog {count} lessen",
+      },
+      until: "Tot {date}",
+    },
     qrScanner: {
       notACheckInCode: "Dat leek niet op een incheckcode voor een les — probeer het opnieuw.",
       permissionNeeded: "Er is cameratoegang nodig om de incheckcode van de les te scannen.",
