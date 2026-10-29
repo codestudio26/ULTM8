@@ -114,6 +114,12 @@ export function MembershipPlanRow({ plan, schoolId, forStudentId }: { plan: Memb
           .filter(Boolean)
           .join(' · ')}
       </Text>
+      {/* Decision 406: the School's card surcharge, shown before paying. */}
+      {plan.cardSurchargeAmount > 0 ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+          {t('memberships.planRow.cardSurcharge', { amount: formatMoney(plan.cardSurchargeAmount, plan.currency) })}
+        </Text>
+      ) : null}
 
       {purchase.isError ? (
         <InlineError message={getApiErrorMessage(purchase.error, t('memberships.planRow.purchaseError'))} />

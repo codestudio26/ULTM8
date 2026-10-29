@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Sovrapprezzo carta",
+      subtitle: "Aggiungi un sovrapprezzo a quanto i membri pagano con carta nell'app, per coprire le commissioni della carta. Lo vedono prima di pagare e come riga a parte sulla ricevuta. Non si aggiunge mai ai pagamenti in contanti o con bonifico, né agli abbonamenti.",
+      enabled: "Aggiungi un sovrapprezzo sulla carta",
+      percent: "Sovrapprezzo (%)",
+      percentHint: "Fino al 3%, es. 2,5.",
+      legalConfirm: "Confermo che i sovrapprezzi sono legali dove opera la mia scuola",
+      invalidPercent: "Inserisci un sovrapprezzo superiore allo 0% e fino al 3%, con al massimo due decimali.",
+      confirmRequired: "Spunta la casella per confermare che i sovrapprezzi sono legali dove opera la tua scuola.",
+      notApplying: "Non viene ancora aggiunto: la tua scuola non accetta pagamenti con carta.",
+    },
     heardFrom: {
       title: "Come ci hai conosciuto?",
       subtitle: "Le opzioni del modulo di iscrizione alla reception. Finché non le cambi, l'elenco iniziale appare nella lingua di ogni persona.",
@@ -523,6 +534,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Sovrapprezzo carta",
+    surchargeLine: "+ {amount} di sovrapprezzo carta",
     title: "Transazioni",
     subtitle: "Tutti gli addebiti completati o tentati sui piani di iscrizione della tua scuola.",
     loadFailed: "Impossibile caricare le transazioni.",

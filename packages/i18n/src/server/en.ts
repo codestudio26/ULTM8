@@ -658,4 +658,9 @@ export const SERVER_PATTERNS: string[] = [
  "Only the owner or Branch Staff can see sign-ups.",
  "Sign-up not found",
  "Pack recharge not found",
+ "This country is not on the card surcharge list.",
+ "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.",
+ "Card surcharges are not allowed in your School's country.",
+ "Set a card surcharge above 0%, up to 3%.",
+ "Confirm that card surcharges are legal where your School operates.",
 ];

@@ -275,6 +275,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "カード手数料",
+      subtitle: "アプリでのカード払いの金額に手数料を上乗せし、カード手数料をまかないます。会員は支払い前に確認でき、領収書にも別の行で表示されます。現金・銀行振込での支払いやサブスクリプションには加算されません。",
+      enabled: "カード手数料を上乗せする",
+      percent: "手数料（%）",
+      percentHint: "3%まで（例：2.5）。",
+      legalConfirm: "スクールの所在地で手数料の上乗せが合法であることを確認しました",
+      invalidPercent: "0%より大きく3%以下、小数点以下2桁までで入力してください。",
+      confirmRequired: "スクールの所在地で手数料の上乗せが合法であることを確認するには、チェックを入れてください。",
+      notApplying: "まだ加算されていません：スクールがカード払いを受け付けていないためです。",
+    },
     heardFrom: {
       title: "どこで知りましたか？",
       subtitle: "受付の申込フォームの選択肢です。変更するまでは、初期リストが各自の言語で表示されます。",
@@ -520,6 +531,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "カード手数料",
+    surchargeLine: "+ カード手数料 {amount}",
     title: "取引",
     subtitle: "スクールの会員プランに対する完了済み・試行済みのすべての請求。",
     loadFailed: "取引を読み込めませんでした。",

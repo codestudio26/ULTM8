@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "申込を見られるのはオーナーと支店スタッフだけです。",
   "Sign-up not found": "申込が見つかりません",
   "Pack recharge not found": "回数券の再購入が見つかりません",
+  "This country is not on the card surcharge list.": "この国はカード手数料の対象国リストにありません。",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "カード手数料を許可する国を変更できるのは、Billing/Payments Ops またはフル権限のプラットフォーム管理者のみです。",
+  "Card surcharges are not allowed in your School's country.": "スクールの国ではカード手数料は認められていません。",
+  "Set a card surcharge above 0%, up to 3%.": "カード手数料は0%より大きく、3%以下で設定してください。",
+  "Confirm that card surcharges are legal where your School operates.": "スクールの所在地でカード手数料が合法であることを確認してください。",
 };

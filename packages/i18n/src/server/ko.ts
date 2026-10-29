@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "가입 신청은 원장 또는 지점 직원만 볼 수 있습니다.",
   "Sign-up not found": "가입 신청을 찾을 수 없습니다",
   "Pack recharge not found": "패키지 재구매를 찾을 수 없습니다",
+  "This country is not on the card surcharge list.": "이 국가는 카드 수수료 허용 목록에 없습니다.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "카드 수수료를 허용할 국가는 Billing/Payments Ops 또는 전체 플랫폼 관리자만 변경할 수 있습니다.",
+  "Card surcharges are not allowed in your School's country.": "학교가 있는 국가에서는 카드 수수료가 허용되지 않습니다.",
+  "Set a card surcharge above 0%, up to 3%.": "카드 수수료를 0%보다 크고 최대 3%까지로 설정하세요.",
+  "Confirm that card surcharges are legal where your School operates.": "학교가 운영되는 곳에서 카드 수수료가 합법임을 확인하세요.",
 };

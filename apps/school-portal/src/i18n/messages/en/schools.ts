@@ -1,4 +1,15 @@
 export const schools = {
+  cardSurcharge: {
+    title: "Card surcharge",
+    subtitle: "Add a surcharge on top of what members pay by card in the app, to cover card fees. They see it before they pay, and as its own line on the receipt. It is never added to cash or bank transfer payments, or to subscriptions.",
+    enabled: "Add a card surcharge",
+    percent: "Surcharge (%)",
+    percentHint: "Up to 3%, e.g. 2.5.",
+    legalConfirm: "I confirm surcharges are legal where my School operates",
+    invalidPercent: "Enter a surcharge above 0% and up to 3%, with at most two decimals.",
+    confirmRequired: "Tick the box to confirm surcharges are legal where your School operates.",
+    notApplying: "It isn't added yet: your School doesn't take card payments.",
+  },
   form: {
     schoolName: 'School name',
     mobileNumber: 'Mobile number',

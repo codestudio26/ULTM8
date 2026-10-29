@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Seuls le propriétaire ou le Personnel de succursale peuvent voir les inscriptions.",
   "Sign-up not found": "Inscription introuvable",
   "Pack recharge not found": "Recharge de carnet introuvable",
+  "This country is not on the card surcharge list.": "Ce pays ne figure pas sur la liste des frais de carte.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "Seuls Billing/Payments Ops ou un administrateur complet de la plateforme peuvent modifier les pays où les frais de carte sont autorisés.",
+  "Card surcharges are not allowed in your School's country.": "Les frais de carte ne sont pas autorisés dans le pays de votre école.",
+  "Set a card surcharge above 0%, up to 3%.": "Indiquez des frais de carte supérieurs à 0 %, jusqu'à 3 %.",
+  "Confirm that card surcharges are legal where your School operates.": "Confirmez que les frais de carte sont légaux là où votre école exerce.",
 };

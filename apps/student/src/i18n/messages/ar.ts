@@ -791,6 +791,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "أُلغي، ينتهي في {date}",
     },
     planRow: {
+      cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {
         zero: "{count} حصة",
         one: "حصة واحدة",
@@ -921,6 +922,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "تعذّر تحميل سجل مدفوعاتك، يُرجى المحاولة مرة أخرى.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} رسوم بطاقة إضافية",
       loading: "جارٍ التحميل…",
       viewReceipt: "عرض الإيصال",
       noReceipt: "لا يوجد إيصال متاح لهذه الدفعة.",

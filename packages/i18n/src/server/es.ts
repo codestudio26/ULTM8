@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Solo el propietario o el Personal de sede pueden ver las inscripciones.",
   "Sign-up not found": "Inscripción no encontrada",
   "Pack recharge not found": "No se encontró la recarga del bono",
+  "This country is not on the card surcharge list.": "Este país no está en la lista de recargos por tarjeta.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "Solo Billing/Payments Ops o un administrador completo de la plataforma pueden cambiar dónde se permiten los recargos por tarjeta.",
+  "Card surcharges are not allowed in your School's country.": "Los recargos por tarjeta no están permitidos en el país de tu escuela.",
+  "Set a card surcharge above 0%, up to 3%.": "Fija un recargo por tarjeta mayor que 0 % y de hasta el 3 %.",
+  "Confirm that card surcharges are legal where your School operates.": "Confirma que los recargos por tarjeta son legales donde opera tu escuela.",
 };

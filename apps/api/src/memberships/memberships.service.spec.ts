@@ -217,9 +217,10 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
           plan: typeof hostedCheckoutPlan,
           paymentAccountId: string,
           currency: string,
+          surcharge: number,
         ) => Promise<unknown>;
       }
-    ).purchaseViaHostedCheckout('student-1', hostedCheckoutPlan, 'account-1', 'usd');
+    ).purchaseViaHostedCheckout('student-1', hostedCheckoutPlan, 'account-1', 'usd', 0);
   }
 
   it("creates a PENDING Transaction carrying the Checkout Session's own synchronously-created PaymentIntent id, and returns the hosted checkoutUrl", async () => {
@@ -231,7 +232,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
 
     const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
 
-    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/));
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
     expect(typeof result.transactionId).toBe('string');
@@ -282,6 +283,8 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       roleGrant: { findFirst: jest.fn().mockResolvedValue({ id: 'grant-1' }) },
       membership: { findMany: jest.fn().mockResolvedValue([]) },
       $executeRaw: jest.fn().mockResolvedValue(1),
+      // Decision 406: no card surcharge at this School.
+      $queryRaw: jest.fn().mockResolvedValue([{ bps: 0 }]),
     };
     const prismaApp = { withTenantContext: jest.fn((_userId: string, cb: (tx: unknown) => unknown) => cb(tx)) };
     const tenantAuth = { assertSchoolNotArchived: jest.fn().mockResolvedValue(undefined) };
@@ -321,7 +324,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
-    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/));
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
     );

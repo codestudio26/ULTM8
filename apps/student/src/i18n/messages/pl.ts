@@ -773,6 +773,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "Anulowany, kończy się {date}",
     },
     planRow: {
+      cardSurcharge: "+ {amount} dopłaty przy płatności kartą",
       classesIncluded: {
         one: "{count} zajęcia",
         few: "{count} zajęcia",
@@ -897,6 +898,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Nie udało się wczytać Twojej historii płatności — spróbuj ponownie.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} dopłaty za kartę",
       loading: "Wczytywanie…",
       viewReceipt: "Zobacz potwierdzenie",
       noReceipt: "Brak potwierdzenia dla tej płatności.",

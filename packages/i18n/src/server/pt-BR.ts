@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Só o dono ou a equipe da filial podem ver os cadastros.",
   "Sign-up not found": "Cadastro não encontrado",
   "Pack recharge not found": "Recarga do pacote não encontrada",
+  "This country is not on the card surcharge list.": "Este país não está na lista de acréscimos no cartão.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "Somente Billing/Payments Ops ou um administrador completo da plataforma pode alterar onde os acréscimos no cartão são permitidos.",
+  "Card surcharges are not allowed in your School's country.": "Acréscimos no cartão não são permitidos no país da sua escola.",
+  "Set a card surcharge above 0%, up to 3%.": "Defina um acréscimo no cartão acima de 0%, até 3%.",
+  "Confirm that card surcharges are legal where your School operates.": "Confirme que os acréscimos no cartão são legais onde sua escola atua.",
 };

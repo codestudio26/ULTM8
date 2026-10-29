@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "يمكن للمالك أو موظفي الفرع فقط رؤية التسجيلات.",
   "Sign-up not found": "لم يُعثر على التسجيل",
   "Pack recharge not found": "لم يتم العثور على تجديد الباقة",
+  "This country is not on the card surcharge list.": "هذا البلد غير مدرج في قائمة رسوم البطاقة الإضافية.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "لا يمكن تغيير الأماكن المسموح فيها برسوم البطاقة الإضافية إلا لفريق Billing/Payments Ops أو مسؤول منصة كامل الصلاحيات.",
+  "Card surcharges are not allowed in your School's country.": "رسوم البطاقة الإضافية غير مسموح بها في بلد مدرستك.",
+  "Set a card surcharge above 0%, up to 3%.": "حدد رسومًا إضافية للبطاقة أكثر من 0% وحتى 3%.",
+  "Confirm that card surcharges are legal where your School operates.": "أكّد أن رسوم البطاقة الإضافية قانونية حيث تعمل مدرستك.",
 };

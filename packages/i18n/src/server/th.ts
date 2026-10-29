@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "เฉพาะเจ้าของหรือพนักงานสาขาเท่านั้นที่ดูการสมัครได้",
   "Sign-up not found": "ไม่พบการสมัคร",
   "Pack recharge not found": "ไม่พบการซื้อแพ็กซ้ำ",
+  "This country is not on the card surcharge list.": "ประเทศนี้ไม่อยู่ในรายชื่อที่อนุญาตให้เก็บค่าธรรมเนียมบัตร",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "เฉพาะ Billing/Payments Ops หรือผู้ดูแลแพลตฟอร์มแบบเต็มเท่านั้นที่เปลี่ยนประเทศที่อนุญาตให้เก็บค่าธรรมเนียมบัตรได้",
+  "Card surcharges are not allowed in your School's country.": "ประเทศของโรงเรียนคุณไม่อนุญาตให้เก็บค่าธรรมเนียมบัตร",
+  "Set a card surcharge above 0%, up to 3%.": "ตั้งค่าธรรมเนียมบัตรมากกว่า 0% และไม่เกิน 3%",
+  "Confirm that card surcharges are legal where your School operates.": "ยืนยันว่าการเก็บค่าธรรมเนียมบัตรถูกกฎหมายในพื้นที่ที่โรงเรียนของคุณดำเนินการ",
 };

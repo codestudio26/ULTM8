@@ -762,6 +762,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "Cancelado, termina em {date}",
     },
     planRow: {
+      cardSurcharge: "+ {amount} de acréscimo ao pagar com cartão",
       classesIncluded: { one: "{count} aula", other: "{count} aulas" },
       durationDays: { one: "{count} dia", other: "{count} dias" },
       purchaseError: "Não foi possível concluir esta compra — tente novamente.",
@@ -874,6 +875,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Não foi possível carregar seu histórico de pagamentos — tente novamente.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} de acréscimo no cartão",
       loading: "Carregando…",
       viewReceipt: "Ver recibo",
       noReceipt: "Nenhum recibo disponível para este pagamento.",

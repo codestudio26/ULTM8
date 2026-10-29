@@ -740,6 +740,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "해지됨, {date}에 종료",
     },
     planRow: {
+      cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },
       durationDays: { other: "{count}일" },
       purchaseError: "구매를 완료하지 못했습니다. 다시 시도해 주세요.",
@@ -851,6 +852,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "결제 내역을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     row: {
+      surchargeLine: "{price} + 카드 수수료 {surcharge}",
       loading: "불러오는 중…",
       viewReceipt: "영수증 보기",
       noReceipt: "이 결제에 대한 영수증이 없습니다.",

@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "只有负责人或分校员工可以查看报名。",
   "Sign-up not found": "未找到报名",
   "Pack recharge not found": "未找到课时包续购",
+  "This country is not on the card surcharge list.": "该国家/地区不在刷卡附加费名单中。",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "只有 Billing/Payments Ops 或完整权限的平台管理员可以更改允许收取刷卡附加费的国家/地区。",
+  "Card surcharges are not allowed in your School's country.": "你的学校所在国家/地区不允许收取刷卡附加费。",
+  "Set a card surcharge above 0%, up to 3%.": "请设置大于 0%、不超过 3% 的刷卡附加费。",
+  "Confirm that card surcharges are legal where your School operates.": "请确认在你的学校经营所在地收取刷卡附加费是合法的。",
 };

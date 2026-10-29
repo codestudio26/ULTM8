@@ -25,6 +25,7 @@ export const memberships = {
     cancelledEnds: 'Cancelled, ends {date}',
   },
   planRow: {
+    cardSurcharge: "+ {amount} card surcharge when paying by card",
     /** Joined to the price with " · ". */
     classesIncluded: { one: '{count} class', other: '{count} classes' },
     /** How long the plan lasts; joined to the price with " · ". */

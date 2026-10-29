@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Nur der Schulinhaber oder Filialmitarbeiter können Anmeldungen sehen.",
   "Sign-up not found": "Anmeldung nicht gefunden",
   "Pack recharge not found": "Paketaufladung nicht gefunden",
+  "This country is not on the card surcharge list.": "Dieses Land steht nicht auf der Liste für Kartenzuschläge.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "Nur Billing/Payments Ops oder ein vollständiger Plattform-Admin dürfen ändern, wo Kartenzuschläge erlaubt sind.",
+  "Card surcharges are not allowed in your School's country.": "Kartenzuschläge sind im Land deiner Schule nicht erlaubt.",
+  "Set a card surcharge above 0%, up to 3%.": "Lege einen Kartenzuschlag über 0 % und bis zu 3 % fest.",
+  "Confirm that card surcharges are legal where your School operates.": "Bestätige, dass Kartenzuschläge dort, wo deine Schule tätig ist, erlaubt sind.",
 };

@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Kart ek ücreti",
+      subtitle: "Kart ücretlerini karşılamak için üyelerin uygulamada kartla ödediği tutara bir ek ücret ekleyin. Üyeler bunu ödemeden önce ve makbuzda ayrı bir satır olarak görür. Nakit, havale ödemelerine veya aboneliklere hiçbir zaman eklenmez.",
+      enabled: "Kart ek ücreti ekle",
+      percent: "Ek ücret (%)",
+      percentHint: "En fazla %3, ör. 2,5.",
+      legalConfirm: "Okulumun faaliyet gösterdiği yerde ek ücretlerin yasal olduğunu onaylıyorum",
+      invalidPercent: "%0'ın üzerinde, en fazla %3 ve en çok iki ondalık basamaklı bir ek ücret girin.",
+      confirmRequired: "Okulunuzun faaliyet gösterdiği yerde ek ücretlerin yasal olduğunu onaylamak için kutuyu işaretleyin.",
+      notApplying: "Henüz eklenmiyor: okulunuz kartla ödeme almıyor.",
+    },
     heardFrom: {
       title: "Bizi nereden duydunuz?",
       subtitle: "Resepsiyon kayıt formundaki seçenekler. Siz değiştirene kadar başlangıç listesi herkese kendi dilinde gösterilir.",
@@ -523,6 +534,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Kart ek ücreti",
+    surchargeLine: "+ {amount} kart ek ücreti",
     title: "İşlemler",
     subtitle: "Okulunuzun üyelik planlarına yönelik tamamlanan veya denenen tüm ödemeler.",
     loadFailed: "İşlemler yüklenemedi.",

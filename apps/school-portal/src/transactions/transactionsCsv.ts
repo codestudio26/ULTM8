@@ -34,6 +34,7 @@ export function transactionsCsv(rows: TransactionResponse[], labels: CsvLabels):
         labels.item(row),
         labels.kind(row),
         money(row.amount),
+        money(row.surchargeAmount),
         row.currency ?? '',
         labels.status(row),
         labels.method(row),

@@ -763,6 +763,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "Résilié, se termine le {date}",
     },
     planRow: {
+      cardSurcharge: "+ {amount} de frais si vous payez par carte",
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
       durationDays: { one: "{count} jour", many: "{count} jours", other: "{count} jours" },
       purchaseError: "Impossible de finaliser cet achat — veuillez réessayer.",
@@ -876,6 +877,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Impossible de charger votre historique de paiements — veuillez réessayer.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} de frais de carte",
       loading: "Chargement…",
       viewReceipt: "Voir le reçu",
       noReceipt: "Aucun reçu n’est disponible pour ce paiement.",

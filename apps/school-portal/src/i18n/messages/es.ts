@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Recargo por tarjeta",
+      subtitle: "Añade un recargo a lo que los miembros pagan con tarjeta en la app, para cubrir las comisiones de la tarjeta. Lo ven antes de pagar y como una línea propia en el recibo. Nunca se añade a pagos en efectivo o por transferencia, ni a las suscripciones.",
+      enabled: "Añadir un recargo por tarjeta",
+      percent: "Recargo (%)",
+      percentHint: "Hasta el 3 %, p. ej. 2,5.",
+      legalConfirm: "Confirmo que los recargos son legales donde opera mi escuela",
+      invalidPercent: "Introduce un recargo mayor que 0 % y de hasta el 3 %, con dos decimales como máximo.",
+      confirmRequired: "Marca la casilla para confirmar que los recargos son legales donde opera tu escuela.",
+      notApplying: "Aún no se añade: tu escuela no acepta pagos con tarjeta.",
+    },
     heardFrom: {
       title: "¿Cómo nos conociste?",
       subtitle: "Las opciones del formulario de inscripción en recepción. Hasta que las cambies, la lista inicial se muestra en el idioma de cada persona.",
@@ -523,6 +534,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Recargo por tarjeta",
+    surchargeLine: "+ {amount} de recargo por tarjeta",
     title: "Transacciones",
     subtitle: "Todos los cobros completados o intentados de los planes de membresía de tu escuela.",
     loadFailed: "No se pudieron cargar las transacciones.",

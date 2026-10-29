@@ -649,4 +649,9 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Alleen de eigenaar of vestigingsmedewerkers kunnen aanmeldingen zien.",
   "Sign-up not found": "Aanmelding niet gevonden",
   "Pack recharge not found": "Opwaardering van de kaart niet gevonden",
+  "This country is not on the card surcharge list.": "Dit land staat niet op de lijst voor kaarttoeslagen.",
+  "Only Billing/Payments Ops or a Full Platform Admin may change where card surcharges are allowed.": "Alleen Billing/Payments Ops of een volledige platformbeheerder mag wijzigen waar kaarttoeslagen zijn toegestaan.",
+  "Card surcharges are not allowed in your School's country.": "Kaarttoeslagen zijn niet toegestaan in het land van je school.",
+  "Set a card surcharge above 0%, up to 3%.": "Stel een kaarttoeslag in van meer dan 0%, tot 3%.",
+  "Confirm that card surcharges are legal where your School operates.": "Bevestig dat kaarttoeslagen wettelijk zijn toegestaan waar je school actief is.",
 };
