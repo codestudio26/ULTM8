@@ -15126,6 +15126,112 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/pack-recharges": {
+      "post": {
+        "operationId": "FrontDeskKioskController_createRecharge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackRechargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/pack-recharges/{id}": {
+      "get": {
+        "operationId": "FrontDeskKioskController_rechargeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/front-desk/kiosk/pack-recharges/{id}/complete": {
+      "post": {
+        "operationId": "FrontDeskKioskController_completeRecharge",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/session": {
       "get": {
         "operationId": "FrontDeskKioskController_info",
@@ -15782,6 +15888,163 @@
         "responses": {
           "204": {
             "description": ""
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges": {
+      "post": {
+        "operationId": "PackRechargesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackRechargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}": {
+      "get": {
+        "operationId": "PackRechargesController_status",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackRechargeStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete": {
+      "post": {
+        "operationId": "PackRechargesController_complete",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeskCheckInResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/pack-recharges/me": {
+      "get": {
+        "operationId": "PackRechargesController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPackRechargeListDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -30168,6 +30431,79 @@
           "id"
         ]
       },
+      "CreatePackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "lookupToken": {
+            "type": "string",
+            "description": "The QR or code lookup the person was found with. Needed on a tablet (Decision 388)."
+          },
+          "classIds": {
+            "description": "The Classes to check in to once paid. Up to 10.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentId",
+          "classIds"
+        ]
+      },
+      "PackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "planTitle",
+          "price",
+          "expiresAt"
+        ]
+      },
+      "PackRechargeStatusDto": {
+        "type": "object",
+        "properties": {
+          "paid": {
+            "type": "boolean",
+            "description": "The same pack has been bought since the recharge was asked for."
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "The Classes' check-in has closed: the offer is over."
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paid",
+          "expired",
+          "completed"
+        ]
+      },
       "KioskSessionInfoDto": {
         "type": "object",
         "properties": {
@@ -30867,6 +31203,58 @@
         "required": [
           "schoolId",
           "visitPassGiven"
+        ]
+      },
+      "MyPackRechargeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string",
+            "description": "Whose pack: the caller, or a child the caller is Guardian of."
+          },
+          "childFirstName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The child's first name when it isn't the caller's own pack."
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AcademyMembershipPlanDto"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "studentId",
+          "plan",
+          "expiresAt"
+        ]
+      },
+      "MyPackRechargeListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyPackRechargeDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "StartOpenMatDto": {

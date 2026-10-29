@@ -3434,6 +3434,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Impossible d'enregistrer. Veuillez réessayer.",
       loadFailed: "Impossible de charger votre personnel.",
     },
+    packUsedUp: {
+      title: "Carnet épuisé",
+      body: "Achetez le même carnet et vous êtes pointé dès qu'il est payé.",
+      offerStaff: "Proposer le même carnet dans son application",
+      offerSelf: "L'acheter dans mon application",
+      waitingTitle: "En attente du paiement",
+      waitingStaff: "{plan} · {price}. La personne l'achète dans l'application ULTM8 et est pointée ici dès qu'il est payé.",
+      waitingSelf: "{plan} · {price}. Ouvrez l'application ULTM8 et achetez-le. Vous êtes pointé dès qu'il est payé.",
+      paid: "Payé. Pointage en cours…",
+      expired: "Le pointage pour ce cours est fermé. Le carnet peut toujours être acheté dans l'application.",
+      failed: "Impossible de proposer le carnet. Veuillez demander à l'accueil.",
+    },
     findMe: {
       title: "Me retrouver",
       name: "Votre nom complet",

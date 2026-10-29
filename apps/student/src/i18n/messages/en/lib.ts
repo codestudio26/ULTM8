@@ -2,6 +2,7 @@
 export const lib = {
   apiError: {
     classFull: 'This class is full. You can join the waitlist instead.',
+    packUsedUp: 'Your Class Pack has no classes left. Buy another pack to book.',
     waitlistFirst: 'Others are already waiting for a place in this class. Join the waitlist to take your turn.',
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
     classBusy: 'Lots of people are booking this class right now. Please try again in a moment.',

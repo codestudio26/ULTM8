@@ -3434,6 +3434,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Não foi possível salvar. Tente de novo.",
       loadFailed: "Não foi possível carregar sua equipe.",
     },
+    packUsedUp: {
+      title: "Pacote esgotado",
+      body: "Compre o mesmo pacote e seu check-in é feito assim que ele for pago.",
+      offerStaff: "Oferecer o mesmo pacote no app da pessoa",
+      offerSelf: "Comprar no meu app",
+      waitingTitle: "Aguardando pagamento",
+      waitingStaff: "{plan} · {price}. A pessoa compra no app ULTM8, e o check-in dela é feito aqui assim que for pago.",
+      waitingSelf: "{plan} · {price}. Abra o app ULTM8 e compre lá. Seu check-in é feito assim que for pago.",
+      paid: "Pago. Fazendo check-in…",
+      expired: "O check-in desta aula foi encerrado. O pacote ainda pode ser comprado no app.",
+      failed: "Não foi possível oferecer o pacote. Pergunte na recepção.",
+    },
     findMe: {
       title: "Encontre-me",
       name: "Seu nome completo",

@@ -718,6 +718,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Il tuo pacchetto lezioni è esaurito",
+      titleChild: "Il pacchetto lezioni di {name} è esaurito",
+      body: "{school} ti ha offerto lo stesso pacchetto alla reception. Acquistalo qui e il check-in si completa appena viene pagato.",
+    },
     myMemberships: {
       planFallback: "Piano {planId}",
       visitPass: "Pass visitatore",
@@ -889,6 +894,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Questo corso è pieno. Puoi entrare in lista d’attesa.",
+      packUsedUp: "Il tuo pacchetto lezioni non ha più lezioni. Acquista un altro pacchetto per prenotare.",
       waitlistFirst: "Altre persone sono già in attesa di un posto in questo corso. Entra in lista d’attesa per aspettare il tuo turno.",
       bookingClosed: "Le prenotazioni per questo corso sono chiuse. Un membro dello staff può ancora aggiungerti.",
       classBusy: "Molte persone stanno prenotando questo corso in questo momento. Riprova tra poco.",

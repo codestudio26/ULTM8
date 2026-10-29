@@ -622,4 +622,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "การสมัครนี้ได้รับการดำเนินการแล้ว",
   "Only the owner or Branch Staff can see sign-ups.": "เฉพาะเจ้าของหรือพนักงานสาขาเท่านั้นที่ดูการสมัครได้",
   "Sign-up not found": "ไม่พบการสมัคร",
+  "Pack recharge not found": "ไม่พบการซื้อแพ็กซ้ำ",
 };

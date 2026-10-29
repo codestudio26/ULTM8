@@ -699,6 +699,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "你的课时包已用完",
+      titleChild: "{name} 的课时包已用完",
+      body: "{school} 已在前台为你提供同样的课时包。在这里购买，付款后即可完成签到。",
+    },
     myMemberships: {
       planFallback: "方案 {planId}",
       visitPass: "访客通行证",
@@ -864,6 +869,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "此课程已满员。你可以改为加入候补名单。",
+      packUsedUp: "你的课时包已没有剩余课时。请购买新的课时包后再预约。",
       waitlistFirst: "已有其他人在候补此课程的名额。加入候补名单即可排队等候。",
       bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
       classBusy: "目前很多人正在预约此课程，请稍后再试。",

@@ -622,4 +622,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Deze aanmelding is al afgehandeld.",
   "Only the owner or Branch Staff can see sign-ups.": "Alleen de eigenaar of vestigingsmedewerkers kunnen aanmeldingen zien.",
   "Sign-up not found": "Aanmelding niet gevonden",
+  "Pack recharge not found": "Opwaardering van de kaart niet gevonden",
 };

@@ -622,4 +622,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Cette inscription a déjà été traitée.",
   "Only the owner or Branch Staff can see sign-ups.": "Seuls le propriétaire ou le Personnel de succursale peuvent voir les inscriptions.",
   "Sign-up not found": "Inscription introuvable",
+  "Pack recharge not found": "Recharge de carnet introuvable",
 };

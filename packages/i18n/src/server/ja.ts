@@ -622,4 +622,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "この申込はすでに対応済みです。",
   "Only the owner or Branch Staff can see sign-ups.": "申込を見られるのはオーナーと支店スタッフだけです。",
   "Sign-up not found": "申込が見つかりません",
+  "Pack recharge not found": "回数券の再購入が見つかりません",
 };

@@ -700,6 +700,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "回数券を使い切りました",
+      titleChild: "{name}さんの回数券を使い切りました",
+      body: "{school}が受付で同じ回数券を案内しました。ここで購入すると、支払いが済みしだいチェックインが完了します。",
+    },
     myMemberships: {
       planFallback: "プラン {planId}",
       visitPass: "ビジターパス",
@@ -865,6 +870,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "このクラスは満員です。代わりにキャンセル待ちに登録できます。",
+      packUsedUp: "回数券の残りがありません。予約するには新しい回数券を購入してください。",
       waitlistFirst: "このクラスには、すでに空きを待っている人がいます。キャンセル待ちに登録して順番をお待ちください。",
       bookingClosed: "このクラスの予約受付は終了しました。スタッフに追加してもらうことはできます。",
       classBusy: "現在このクラスの予約が集中しています。少し待ってからもう一度お試しください。",

@@ -622,4 +622,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "이 가입 신청은 이미 처리되었습니다.",
   "Only the owner or Branch Staff can see sign-ups.": "가입 신청은 원장 또는 지점 직원만 볼 수 있습니다.",
   "Sign-up not found": "가입 신청을 찾을 수 없습니다",
+  "Pack recharge not found": "패키지 재구매를 찾을 수 없습니다",
 };
