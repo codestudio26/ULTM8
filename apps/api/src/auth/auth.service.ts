@@ -79,7 +79,7 @@ const TEMPORARY_PASSCODE_EXPIRED = {
   message: 'This temporary passcode has expired. Ask your School for a new one.',
 };
 
-const temporaryPasscodeExpired = (expiresAt: Date | null, now = new Date()) => expiresAt !== null && expiresAt.getTime() <= now.getTime();
+const temporaryPasscodeExpired = (expiresAt: Date | null | undefined, now = new Date()) => expiresAt != null && expiresAt.getTime() <= now.getTime();
 
 @Injectable()
 export class AuthService {
