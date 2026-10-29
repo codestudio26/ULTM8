@@ -199,6 +199,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "คุณถูกเพิ่มเข้า {school} แล้ว",
     openMatTitle: "โอเพนแมต",
     openMatBody: "โอเพนแมตที่ {place} วัน{when} นาน {minutes} นาที จองในแอปเพื่อเข้าร่วม",
+    franchiseFeeFailedTitle: "ชำระค่าแฟรนไชส์ไม่สำเร็จ",
+    franchiseFeeFailedBody: "เรียกเก็บค่าแฟรนไชส์ {amount} ของ {school} ไม่สำเร็จ Stripe จะลองอีกครั้ง เพิ่มหรืออัปเดตบัตรได้ที่หน้าโรงเรียน",
     openMatStyleBody: "โอเพนแมต ({style}) ที่ {place} วัน{when} นาน {minutes} นาที จองในแอปเพื่อเข้าร่วม",
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",

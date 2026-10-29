@@ -47,3 +47,9 @@ export class ConnectOnboardingResponseDto {
   @ApiProperty({ description: 'Stripe Account Link URL — single-use, short-lived per Stripe\'s own onboarding-link semantics.' })
   onboardingUrl!: string;
 }
+
+/** GET /franchises/:franchiseId/payment-account/connect-status (Decision 407). */
+export class ConnectStatusResponseDto {
+  @ApiProperty({ enum: ['CONNECTED', 'ACTION_NEEDED', 'NOT_CONNECTED'] })
+  status!: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED';
+}

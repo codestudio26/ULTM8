@@ -7,7 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
-import { ConnectOnboardingResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
+import { ConnectOnboardingResponseDto, ConnectStatusResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
 import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment-method-response.dto';
 
 // PaymentAccount CRUD + Stripe Connect Express onboarding + webhook receiving only
@@ -69,6 +69,15 @@ export class PaymentsController {
   @Get('franchises/:franchiseId/payment-account')
   findForFranchise(@CurrentUser() user: JwtPayload, @Param('franchiseId') franchiseId: string) {
     return this.paymentsService.findForFranchise(user.sub, franchiseId);
+  }
+
+  /** Decision 407 — Connected / Action needed / Not connected, for the Franchise page. */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: ConnectStatusResponseDto })
+  @Get('franchises/:franchiseId/payment-account/connect-status')
+  getFranchiseConnectStatus(@CurrentUser() user: JwtPayload, @Param('franchiseId') franchiseId: string) {
+    return this.paymentsService.getFranchiseConnectStatus(user.sub, franchiseId);
   }
 
   // ---- Stripe Connect Express onboarding ----

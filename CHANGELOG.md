@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Franchise fee paid by card** (backlog 3.22; Decisions 352, 407) — the
+  Franchise page has a **Connect Stripe** card showing Connected, Action needed
+  or Not connected; it starts Stripe's own onboarding (the country of the
+  business's bank account is asked the first time). On the School page's
+  Franchise affiliation card the School Owner presses **Add card** to save a
+  card on Stripe's secure page; it is kept for the School on the Franchise's
+  Stripe account and becomes the default payment method of the School's
+  franchise-fee subscription, existing or future, so the monthly fee is
+  charged to it automatically. A failed charge is retried by Stripe, shows as
+  Failed in the fee charges, and sends the School Owner a notice to update the
+  card; nothing is locked. The School Owner sees the School's fee charges
+  (period, amount, paid or failed) on the School page, and only the School's
+  Owner/Manager can now read them. **Needs migration
+  `20270104000000_franchise_fee_card`.**
 - **"Step up" on a Levels style** (Decision 402) — on a style shown as Levels,
   moving up a step inside a level now says **Step up** instead of "Stripe
   awarded": the grade button ("Step up" instead of "Award stripe"), the

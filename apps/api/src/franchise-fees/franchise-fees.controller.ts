@@ -7,6 +7,8 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { FranchiseFeesService } from './franchise-fees.service';
 import { RefundFranchiseFeeChargeDto } from './dto/refund-franchise-fee-charge.dto';
 import { FranchiseFeeChargeListResponseDto, FranchiseFeeChargeResponseDto } from './dto/franchise-fee-charge-response.dto';
+import { FranchiseFeeCardResponseDto } from './dto/franchise-fee-card-response.dto';
+import { SetupSessionResponseDto } from '../payments/dto/payment-method-response.dto';
 
 /**
  * Read-only history (both tenant sides, RLS-scoped) + the Franchise-Owner-only
@@ -14,7 +16,8 @@ import { FranchiseFeeChargeListResponseDto, FranchiseFeeChargeResponseDto } from
  * exclusively by FranchiseFeeBillingService (the franchise-fee-usage-reporting
  * job) and stripe-webhook-processing's own invoice.paid/invoice.payment_failed
  * handlers, never by a caller directly, so there is no `POST
- * /franchise-fee-charges` to build.
+ * /franchise-fee-charges` to build. Decision 407 adds the School Owner's
+ * franchise-fee card (read it, and open Stripe's hosted form to add one).
  */
 @ApiTags('franchise-fees')
 @ApiBearerAuth()
@@ -33,6 +36,20 @@ export class FranchiseFeesController {
   @Get('schools/:id/fee-charges')
   findAllForSchool(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: PaginationQueryDto) {
     return this.franchiseFeesService.findAllForSchool(user.sub, id, query.cursor, query.limit);
+  }
+
+  /** Decision 407 — the School's saved franchise-fee card. School Owner/Manager only. */
+  @ApiOkResponse({ type: FranchiseFeeCardResponseDto })
+  @Get('schools/:id/franchise-fee/card')
+  getCard(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.franchiseFeesService.getCard(user.sub, id);
+  }
+
+  /** Decision 407 — "Add card": Stripe's hosted card form. School Owner/Manager only. */
+  @ApiCreatedResponse({ type: SetupSessionResponseDto })
+  @Post('schools/:id/franchise-fee/card/setup-session')
+  createCardSetupSession(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.franchiseFeesService.createCardSetupSession(user.sub, id);
   }
 
   @ApiOkResponse({ type: FranchiseFeeChargeResponseDto })

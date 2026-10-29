@@ -199,6 +199,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "你已被加入 {school}。",
     openMatTitle: "自由练习",
     openMatBody: "{place} 将于 {when} 开始 {minutes} 分钟的自由练习。请在应用中预约参加。",
+    franchiseFeeFailedTitle: "加盟费付款失败",
+    franchiseFeeFailedBody: "未能收取 {school} 的加盟费 {amount}。Stripe 会再次尝试。请在学校页面添加或更新银行卡。",
     openMatStyleBody: "{place} 将于 {when} 开始 {minutes} 分钟的自由练习（{style}）。请在应用中预约参加。",
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",

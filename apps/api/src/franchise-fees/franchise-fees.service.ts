@@ -3,6 +3,9 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { StripeClientService } from '../payments/stripe-client.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { FranchiseFeeBillingService } from './franchise-fee-billing.service';
+import { FRANCHISE_FEE_CARD_PURPOSE } from './franchise-fee-card';
 
 /**
  * Caller-scoped FranchiseFeeCharge reads + the refund action — the
@@ -21,7 +24,97 @@ export class FranchiseFeesService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly stripeClient: StripeClientService,
+    private readonly prismaJobs: PrismaJobsService,
+    private readonly billing: FranchiseFeeBillingService,
   ) {}
+
+  /**
+   * Decision 407 — the School's Franchise and that Franchise's connected Stripe
+   * account, for the card actions below. School Owner/Manager only. The
+   * Franchise's PaymentAccount is read on the jobs connection after that check:
+   * a School Owner holds no grant on the Franchise, so RLS hides it from them
+   * (the same reason SchoolsService.leaveFranchise reads it there). Returns
+   * `connectedAccountId: null` while the Franchise hasn't connected Stripe.
+   */
+  private async feeContext(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) => tx.school.findUnique({ where: { id: schoolId } }));
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    if (!school.franchiseId) {
+      throw new BadRequestException('This School is not part of a Franchise, so it has no franchise fee to pay.');
+    }
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { franchiseId: school.franchiseId } });
+    const connectedAccountId = account?.provider === 'STRIPE' ? account.stripeConnectedAccountId : null;
+    return { school, franchiseId: school.franchiseId, connectedAccountId };
+  }
+
+  /**
+   * GET /schools/:id/franchise-fee/card — whether a card is saved for the
+   * franchise fee (brand and last 4 digits read live from Stripe, never stored,
+   * as PaymentsService.getMyPaymentMethod does), and whether one can be added
+   * yet (the Franchise must have connected Stripe).
+   */
+  async getCard(callerId: string, schoolId: string): Promise<{ canAddCard: boolean; hasCard: boolean; brand?: string; last4?: string }> {
+    const { school, connectedAccountId } = await this.feeContext(callerId, schoolId);
+    if (!connectedAccountId) {
+      return { canAddCard: false, hasCard: false };
+    }
+    if (!school.stripeFranchiseFeeCustomerId) {
+      return { canAddCard: true, hasCard: false };
+    }
+    const customer = await this.stripeClient.scopedClient(connectedAccountId).customers.retrieve(school.stripeFranchiseFeeCustomerId, {
+      expand: ['invoice_settings.default_payment_method'],
+    });
+    const pm = (customer as { invoice_settings?: { default_payment_method?: { card?: { brand: string; last4: string } } | string | null } })
+      .invoice_settings?.default_payment_method;
+    const card = pm && typeof pm !== 'string' ? pm.card : undefined;
+    return { canAddCard: true, hasCard: !!pm, brand: card?.brand, last4: card?.last4 };
+  }
+
+  /**
+   * POST /schools/:id/franchise-fee/card/setup-session — "Add card": a hosted
+   * Stripe Checkout Session in setup mode, the same collection mechanism
+   * PaymentsService.createSetupSession uses for a Student's card (Decision 238),
+   * on the Franchise's connected account and for the School's kept Customer
+   * (FranchiseFeeBillingService.ensureFeeCustomer — created here if the monthly
+   * job hasn't made one yet). Stripe's own page takes the card; nothing about it
+   * passes through ULTM8. The checkout.session.completed webhook
+   * (StripeWebhookProcessingProcessor) makes it the Customer's and the
+   * subscription's default payment method — never this request.
+   *
+   * Returns to the School page in the portal (PORTAL_BASE_URL, as invite links do).
+   */
+  async createCardSetupSession(callerId: string, schoolId: string): Promise<{ checkoutUrl: string }> {
+    const { school, franchiseId, connectedAccountId } = await this.feeContext(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (!connectedAccountId) {
+      throw new BadRequestException("This School's Franchise hasn't connected Stripe yet, so a card can't be added.");
+    }
+    const portal = process.env.PORTAL_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!portal) {
+      throw new Error('PORTAL_BASE_URL is not set');
+    }
+    const stripe = this.stripeClient.scopedClient(connectedAccountId);
+    const customerId = await this.billing.ensureFeeCustomer(stripe, school, franchiseId);
+    // Read back by the checkout.session.completed handler, which checks them
+    // against the School row before using the card.
+    const metadata = { purpose: FRANCHISE_FEE_CARD_PURPOSE, schoolId, franchiseId };
+    const session = await stripe.checkout.sessions.create({
+      mode: 'setup',
+      customer: customerId,
+      payment_method_types: ['card'],
+      success_url: `${portal}/school?franchiseCard=added`,
+      cancel_url: `${portal}/school?franchiseCard=cancelled`,
+      metadata,
+      setup_intent_data: { metadata },
+    });
+    if (!session.url) {
+      throw new Error('Stripe Checkout Session did not return a hosted URL.');
+    }
+    return { checkoutUrl: session.url };
+  }
 
   /** GET /franchises/:id/fee-charges — RLS-scoped (franchiseId side); no
    * additional assertFranchiseOwner narrowing on this read, matching
@@ -33,8 +126,11 @@ export class FranchiseFeesService {
     );
   }
 
-  /** GET /schools/:id/fee-charges — RLS-scoped (schoolId side). */
+  /** GET /schools/:id/fee-charges — the School's Owner/Manager only (Decision
+   * 407: the School pays the fee, its Owner sees what was charged). RLS alone
+   * admits every role at the School, so the narrowing is here. */
   async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.franchiseFeeCharge.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );

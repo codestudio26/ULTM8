@@ -41,6 +41,8 @@ export const SERVER_MESSAGES: string[] = [
  "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.",
  "A style is listed twice in specializationStyleIds.",
  "Academy not found",
+ "This School is not part of a Franchise, so it has no franchise fee to pay.",
+ "This School's Franchise hasn't connected Stripe yet, so a card can't be added.",
  "Add your date of birth to your profile before signing a waiver.",
  "AdminUser not found",
  "An AdminUser with this email or ssoSubject already exists.",
