@@ -8698,6 +8698,84 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/belt-colours": {
+      "get": {
+        "operationId": "RanksController_findBeltColours",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeltColoursResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "RanksController_saveBeltColours",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveBeltColoursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The whole list, as saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeltColoursResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/styles/{disciplineId}/ranks": {
       "post": {
         "operationId": "RanksController_createRank",
@@ -24571,6 +24649,42 @@
             }
           }
         }
+      },
+      "BeltColoursResponseDto": {
+        "type": "object",
+        "properties": {
+          "colours": {
+            "example": [
+              "#2A9D8F"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "colours"
+        ]
+      },
+      "SaveBeltColoursDto": {
+        "type": "object",
+        "properties": {
+          "colours": {
+            "example": [
+              "#2A9D8F",
+              "#E76F51"
+            ],
+            "description": "Colour codes like #2A9D8F, in order. Repeats are dropped. At most 24.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "colours"
+        ]
       },
       "StripeSegmentInputDto": {
         "type": "object",

@@ -137,13 +137,9 @@ describeIfDb('Saved belt colours (backlog 3.18)', () => {
   });
 
   it('removing a saved colour leaves a belt using it unchanged', async () => {
-    const style = await as('owner').post(`/v1/schools/${school.id}/disciplines`).send({ name: `${tag} BJJ` });
-    expect(style.status).toBe(201);
-    const belt = await as('owner')
-      .post(`/v1/styles/${style.body.id}/ranks`)
-      .send({ name: 'Teal', primaryColour: '#264653', stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF', stripeSegments: [] }] });
-    expect(belt.status).toBe(201);
+    const style = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: `${tag} BJJ` } });
+    const belt = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: style.id, schoolId: school.id, order: 0, name: 'Teal', primaryColour: '#264653' } });
     expect((await as('owner').put(url(school.id)).send({ colours: ['#E76F51'] })).body).toEqual({ colours: ['#E76F51'] });
-    expect((await as('owner').get(`/v1/ranks/${belt.body.id}`)).body.primaryColour).toBe('#264653');
+    expect((await as('owner').get(`/v1/ranks/${belt.id}`)).body.primaryColour).toBe('#264653');
   });
 });
