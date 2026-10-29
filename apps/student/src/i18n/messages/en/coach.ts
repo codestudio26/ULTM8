@@ -94,6 +94,7 @@ export const coach = {
     verifyBelt: 'Verify belt',
     beltVerified: 'Belt verified.',
     awardStripe: 'Award stripe: {rung}',
+    stepUp: 'Step up: {rung}',
     gradeTo: 'Grade to {rung}',
     tooEarly: {
       one: 'Too early: {count} day short of the minimum.',
@@ -141,6 +142,8 @@ export const coach = {
     bulkPromotion: 'Promoted (bulk)',
     stripeAward: 'Stripe awarded',
     bulkStripeAward: 'Stripe awarded (bulk)',
+    stepUp: 'Step up',
+    bulkStepUp: 'Step up (bulk)',
     downgrade: 'Moved down',
     adjustment: 'Progress adjusted',
     selfDeclared: 'Belt declared',

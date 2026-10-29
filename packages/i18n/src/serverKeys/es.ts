@@ -170,6 +170,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Firma de exención solicitada",
     waiverRequestBody: "Te han invitado a firmar la siguiente exención: {waiver}.",
     newStripeTitle: "¡Nueva franja!",
+    stepUpTitle: "¡Subió de paso!",
     promotedTitle: "¡Promovido!",
     rankUpdatedTitle: "Grado actualizado",
     youEarned: "Has conseguido {rank}. ({style})",

@@ -184,6 +184,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Запрошена подпись отказа от ответственности",
     waiverRequestBody: "Вас приглашают подписать следующий отказ от ответственности: {waiver}.",
     newStripeTitle: "Новая полоска!",
+    stepUpTitle: "Шаг вверх!",
     promotedTitle: "Повышение!",
     rankUpdatedTitle: "Ступень обновлена",
     youEarned: "Вы получили {rank}. ({style})",

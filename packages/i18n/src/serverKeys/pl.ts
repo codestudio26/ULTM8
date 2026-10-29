@@ -184,6 +184,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Prośba o podpisanie oświadczenia",
     waiverRequestBody: "Zaproszono Cię do podpisania tego oświadczenia: {waiver}.",
     newStripeTitle: "Nowa belka!",
+    stepUpTitle: "Krok wyżej!",
     promotedTitle: "Awans!",
     rankUpdatedTitle: "Zaktualizowano stopień",
     youEarned: "Otrzymujesz {rank}. ({style})",

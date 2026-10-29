@@ -415,6 +415,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Подтвердить пояс",
       beltVerified: "Пояс подтверждён.",
       awardStripe: "Присвоить полоску: {rung}",
+      stepUp: "Шаг вверх: {rung}",
       gradeTo: "Повысить до: {rung}",
       tooEarly: {
         one: "Слишком рано: до минимума не хватает {count} дня.",
@@ -464,6 +465,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Повышен (группой)",
       stripeAward: "Присвоена полоска",
       bulkStripeAward: "Присвоена полоска (группой)",
+      stepUp: "Шаг вверх",
+      bulkStepUp: "Шаг вверх (группой)",
       downgrade: "Понижен",
       adjustment: "Прогресс скорректирован",
       selfDeclared: "Пояс указан учеником",
@@ -634,6 +637,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Повышен",
       stripeAward: "Присвоена полоска",
+      stepUp: "Шаг вверх",
       downgrade: "Понижен",
       adjustment: "Прогресс скорректирован",
       selfDeclared: "Пояс указан учеником",

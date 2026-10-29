@@ -170,6 +170,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Firma della liberatoria richiesta",
     waiverRequestBody: "Sei stato invitato a firmare la seguente liberatoria: {waiver}.",
     newStripeTitle: "Nuova striscia!",
+    stepUpTitle: "Avanzamento di passo!",
     promotedTitle: "Promosso!",
     rankUpdatedTitle: "Grado aggiornato",
     youEarned: "Hai ottenuto {rank}. ({style})",
