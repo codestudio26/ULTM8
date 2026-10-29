@@ -139,7 +139,16 @@ export function KioskApp() {
   const branchName = session.branchName ?? t('frontDesk.kiosk.wholeSchool');
   const next = classes.find((c) => c.id === nextClassId(classes, now));
 
-  if (screen === 'signup') return <SignUpScreen onBack={() => setScreen('home')} onSent={() => setScreen('sent')} onFind={() => setScreen('find')} />;
+  if (screen === 'signup')
+    return (
+      <SignUpScreen
+        onBack={() => setScreen('home')}
+        onSent={() => setScreen('sent')}
+        onFind={() => setScreen('find')}
+        visitorsOn={info.data?.visitorsOn ?? false}
+        heardFromOptions={info.data?.heardFromOptions ?? null}
+      />
+    );
   if (screen === 'find') return <FindMeScreen onBack={() => setScreen('home')} onSignUp={() => setScreen('signup')} />;
   if (screen === 'sent') {
     return (

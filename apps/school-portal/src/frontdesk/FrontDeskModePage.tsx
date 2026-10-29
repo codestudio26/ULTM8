@@ -6,13 +6,13 @@ import { useBranches } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
 import { errorText } from './frontDeskQueries';
-import { submitSignUp, type SignUpInput } from './kioskApi';
-import { saveKioskToken, useKioskFindMe, useMyKioskCode, useStartKiosk } from './kioskSession';
+import { saveKioskToken, useKioskFindMe, useKioskSignUp, useMyKioskCode, useStartKiosk, type KioskSignUpInput as SignUpInput } from './kioskSession';
+import { useHeardFromChoices } from './heardFrom';
 import { SoonTag } from './parts';
 import './frontDesk.css';
 
 const EMPTY_SIGN_UP: SignUpInput = {
-  kind: 'VISITOR',
+  kind: 'MEMBER',
   firstName: '',
   surname: '',
   dateOfBirth: '',
@@ -137,17 +137,38 @@ export function FrontDeskModePage() {
 
 /** Sign-up in three steps (Decision 351: it waits for staff approval; a child
  * is signed up only by their Guardian). Sending waits for its backend. */
-export function SignUpScreen({ onBack, onSent, onFind }: { onBack: () => void; onSent: () => void; onFind: () => void }) {
+/**
+ * Sign-up on the tablet (Decision 392, handover F5): it waits for staff to
+ * approve it. Visitor is offered only when the School has set how long a
+ * visit pass lasts (Decision 391). Name, date of birth and email are needed;
+ * the rest may be left blank.
+ */
+export function SignUpScreen({
+  onBack,
+  onSent,
+  onFind,
+  visitorsOn = false,
+  heardFromOptions = null,
+}: {
+  onBack: () => void;
+  onSent: () => void;
+  onFind: () => void;
+  visitorsOn?: boolean;
+  heardFromOptions?: string[] | null;
+}) {
   const t = useT();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<SignUpInput>(EMPTY_SIGN_UP);
   const [error, setError] = useState<string | null>(null);
   const set = (key: keyof SignUpInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const ready = hasBackend('signUp');
-  const field = (key: keyof SignUpInput, label: string, type = 'text') => (
+  const send = useKioskSignUp();
+  const choices = useHeardFromChoices(heardFromOptions);
+  const stepDone = step === 1 ? !!(form.firstName.trim() && form.surname.trim() && form.dateOfBirth) : step === 2 ? /\S+@\S+\.\S+/.test(form.email.trim()) : true;
+  const field = (key: keyof SignUpInput, label: string, type = 'text', required = false) => (
     <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {label}
-      <input className="ultm8-input" type={type} value={form[key]} onChange={set(key)} style={{ minHeight: 52, fontSize: 16 }} />
+      {required ? `${label} *` : label}
+      <input className="ultm8-input" type={type} value={form[key]} onChange={set(key)} required={required} style={{ minHeight: 52, fontSize: 16 }} />
     </label>
   );
   const steps = [t('frontDesk.signUp.step1'), t('frontDesk.signUp.step2'), t('frontDesk.signUp.step3')];
@@ -169,16 +190,16 @@ export function SignUpScreen({ onBack, onSent, onFind }: { onBack: () => void; o
         <>
           <h1 style={{ margin: 0, fontSize: 30, fontWeight: 400 }}>{t('frontDesk.signUp.step1')}</h1>
           <div className="fd-switch" role="radiogroup" aria-label={t('frontDesk.signUp.as')} style={{ alignSelf: 'flex-start' }}>
-            {(['VISITOR', 'MEMBER'] as const).map((k) => (
+            {(visitorsOn ? (['VISITOR', 'MEMBER'] as const) : (['MEMBER'] as const)).map((k) => (
               <button key={k} type="button" role="radio" aria-checked={form.kind === k} aria-selected={form.kind === k} onClick={() => setForm((f) => ({ ...f, kind: k }))}>
                 {k === 'VISITOR' ? t('frontDesk.signUp.visitor') : t('frontDesk.signUp.member')}
               </button>
             ))}
           </div>
           <div className="fd-grid2">
-            {field('firstName', t('frontDesk.signUp.firstName'))}
-            {field('surname', t('frontDesk.signUp.surname'))}
-            {field('dateOfBirth', t('frontDesk.signUp.dateOfBirth'), 'date')}
+            {field('firstName', t('frontDesk.signUp.firstName'), 'text', true)}
+            {field('surname', t('frontDesk.signUp.surname'), 'text', true)}
+            {field('dateOfBirth', t('frontDesk.signUp.dateOfBirth'), 'date', true)}
             <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {t('frontDesk.signUp.gender')}
               <select className="ultm8-input" value={form.gender} onChange={set('gender')} style={{ minHeight: 52, fontSize: 16 }}>
@@ -200,8 +221,18 @@ export function SignUpScreen({ onBack, onSent, onFind }: { onBack: () => void; o
           <h1 style={{ margin: 0, fontSize: 30, fontWeight: 400 }}>{t('frontDesk.signUp.step2')}</h1>
           <div className="fd-grid2">
             {field('phone', t('frontDesk.signUp.phone'), 'tel')}
-            {field('email', t('frontDesk.signUp.email'), 'email')}
-            {field('heardFrom', t('frontDesk.signUp.heardFrom'))}
+            {field('email', t('frontDesk.signUp.email'), 'email', true)}
+            <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {t('frontDesk.signUp.heardFrom')}
+              <select className="ultm8-input" value={form.heardFrom} onChange={set('heardFrom')} style={{ minHeight: 52, fontSize: 16 }}>
+                <option value="" />
+                {choices.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </>
       ) : (
@@ -231,7 +262,7 @@ export function SignUpScreen({ onBack, onSent, onFind }: { onBack: () => void; o
           {t('frontDesk.signUp.back')}
         </button>
         {step < 3 ? (
-          <button type="button" className="fd-pill fd-pill--go" style={{ minWidth: 200 }} onClick={() => setStep((s) => s + 1)}>
+          <button type="button" className="fd-pill fd-pill--go" style={{ minWidth: 200 }} disabled={!stepDone} onClick={() => setStep((s) => s + 1)}>
             {t('frontDesk.signUp.next')}
           </button>
         ) : (
@@ -239,10 +270,10 @@ export function SignUpScreen({ onBack, onSent, onFind }: { onBack: () => void; o
             type="button"
             className="fd-pill fd-pill--go"
             style={{ minWidth: 200 }}
-            disabled={!ready}
+            disabled={!ready || send.isPending}
             onClick={() => {
               setError(null);
-              submitSignUp(form).then(onSent, () => setError(t('frontDesk.signUp.failed')));
+              send.mutate(form, { onSuccess: onSent, onError: (err) => setError(errorText(err, t('frontDesk.signUp.failed'))) });
             }}
           >
             {t('frontDesk.signUp.send')} {ready ? null : <SoonTag />}

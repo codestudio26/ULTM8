@@ -238,11 +238,9 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: cls.id } })).toBe(0);
   await page.getByRole('button', { name: 'Done' }).click();
 
+  // Sign-up needs a name and date of birth before moving on (tablet-sign-ups.spec.ts covers the rest).
   await page.getByRole('button', { name: /Sign up/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByText('Signing up on this device is coming. For now, ask at the desk.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Send sign-up/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
   await page.getByRole('button', { name: 'Back to check-in' }).click();
 
   await page.getByRole('button', { name: 'Exit' }).click();

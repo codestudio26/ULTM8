@@ -4964,6 +4964,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/sign-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_signUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/session": {
         parameters: {
             query?: never;
@@ -5124,6 +5140,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/sign-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignUpsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/sign-ups/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/sign-ups/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignUpsController_myInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-ups/invites/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignUpsController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5278,6 +5390,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -5355,6 +5469,8 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -5437,6 +5553,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
+            heardFromOptions?: string[] | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
              * @enum {number}
@@ -9393,6 +9511,29 @@ export interface components {
             /** @description A Student's personal check-in code (4 or 6 digits). */
             code: string;
         };
+        KioskSignUpDto: {
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            firstName: string;
+            surname: string;
+            /** @description YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app. */
+            dateOfBirth: string;
+            /**
+             * @description Decision 315 item 15: Female, Male or not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
+            email: string;
+            phone?: string | null;
+            /** @description One of the School's "How did you hear about us?" choices, as shown. */
+            heardFrom?: string | null;
+            emergencyName?: string | null;
+            emergencyPhone?: string | null;
+            emergencyRelationship?: string | null;
+        };
+        KioskSignUpCreatedDto: {
+            id: string;
+        };
         KioskSessionInfoDto: {
             sessionId: string;
             schoolId: string;
@@ -9408,6 +9549,10 @@ export interface components {
              * @enum {number}
              */
             checkInCodeDigits: 4 | 6;
+            /** @description Decision 392: the School has a visitor period, so the sign-up form offers Visitor. */
+            visitorsOn: boolean;
+            /** @description The School's "How did you hear about us?" choices. Null: show the starting list in the tablet's language. */
+            heardFromOptions?: string[] | null;
         };
         KioskClassDto: {
             id: string;
@@ -9521,6 +9666,90 @@ export interface components {
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
             code: string;
+        };
+        SignUpDto: {
+            id: string;
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            /** @enum {string} */
+            status: "PENDING" | "INVITED" | "APPROVED" | "REJECTED" | "DECLINED";
+            firstName: string;
+            surname: string;
+            /** Format: date-time */
+            dateOfBirth: string;
+            gender?: string | null;
+            email: string;
+            phone?: string | null;
+            heardFrom?: string | null;
+            emergencyName?: string | null;
+            emergencyPhone?: string | null;
+            emergencyRelationship?: string | null;
+            branchId?: string | null;
+            branchName?: string | null;
+            /** @description The email already has a ULTM8 account: approving sends it an invite to accept in the app. */
+            hasAccount: boolean;
+            /** @description The account it became, or the one invited. */
+            userId?: string | null;
+            approvedByName?: string | null;
+            /** Format: date-time */
+            approvedAt?: string | null;
+            rejectedByName?: string | null;
+            /** Format: date-time */
+            rejectedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description A rejected sign-up is deleted on this day (Decision 362).
+             */
+            deletesAt?: string | null;
+            /** Format: date-time */
+            respondedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SignUpListDto: {
+            items: components["schemas"]["SignUpDto"][];
+        };
+        ApproveSignUpDto: {
+            /** @description The home branch, when the sign-up came from a School-wide tablet at a School with branches. */
+            branchId?: string;
+        };
+        ApproveSignUpResultDto: {
+            signUp: components["schemas"]["SignUpDto"];
+            /** @description A new account was made and its temporary passcode emailed. */
+            accountCreated: boolean;
+            /** @description The email had an account: it was sent an invite to accept. */
+            invited: boolean;
+            /** @description A Visitor got a visit pass. False when the School has no visitor period set. */
+            visitPassGiven: boolean;
+            /** @description The email could not be sent. */
+            emailFailed: boolean;
+            /** @description Only when the passcode email failed: hand it over in person. */
+            temporaryPasscode?: string | null;
+        };
+        SignUpInviteDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            /** @enum {string} */
+            kind: "VISITOR" | "MEMBER";
+            branchId?: string | null;
+            /** @description The School has open branches and the invite names none: choose one when accepting. */
+            needsBranch: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SignUpInviteListDto: {
+            items: components["schemas"]["SignUpInviteDto"][];
+        };
+        AcceptSignUpInviteDto: {
+            /** @description Your home branch, when the School has branches and the invite names none. */
+            branchId?: string;
+        };
+        AcceptSignUpInviteResultDto: {
+            schoolId: string;
+            visitPassGiven: boolean;
+            /** @description A fresh access token carrying the new STUDENT grant. */
+            accessToken?: string;
         };
     };
     responses: never;
@@ -17903,6 +18132,29 @@ export interface operations {
             };
         };
     };
+    FrontDeskKioskController_signUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskSignUpDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskSignUpCreatedDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_info: {
         parameters: {
             query?: never;
@@ -18146,6 +18398,141 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StudentCheckInCodeDto"];
                 };
+            };
+        };
+    };
+    SignUpsController_list: {
+        parameters: {
+            query?: {
+                /** @description WAITING (default): waiting for staff or for the person to accept. REJECTED: the last 30 days. DONE: approved or declined. */
+                view?: "WAITING" | "REJECTED" | "DONE";
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpListDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveSignUpDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveSignUpResultDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_myInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignUpInviteListDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptSignUpInviteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptSignUpInviteResultDto"];
+                };
+            };
+        };
+    };
+    SignUpsController_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

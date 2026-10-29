@@ -17,6 +17,7 @@ import {
   useUpdateSchool,
   type SchoolResponse,
 } from './schoolQueries';
+import { HeardFromCard } from './HeardFromCard';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
@@ -59,6 +60,8 @@ export function SchoolPage() {
         <SchoolDetailsCard key={schoolId} schoolId={schoolId} school={school} />
         {closed ? null : <JoinCodeCard key={`join-${schoolId}`} schoolId={schoolId} joinCode={school.joinCode} />}
         <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 392: the tablet sign-up's "How did you hear about us?" list. */}
+        <HeardFromCard key={`heard-${schoolId}`} schoolId={schoolId} school={school} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>

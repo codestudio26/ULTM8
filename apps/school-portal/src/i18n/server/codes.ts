@@ -28,6 +28,13 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.visitorPeriodNotSet');
     case 'VISITOR_HAS_MEMBERSHIP':
       return t('server.codes.visitorHasMembership');
+    // Sign-ups from the tablet (Decision 392).
+    case 'SIGN_UP_UNDER_18':
+      return t('server.codes.signUpUnder18');
+    case 'SIGN_UP_WAITING':
+      return t('server.codes.signUpWaiting');
+    case 'SIGN_UP_ALREADY_STUDENT':
+      return t('server.codes.signUpAlreadyStudent');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;
