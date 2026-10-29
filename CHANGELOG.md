@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fix: confirming many cash payments at once** — confirming or cancelling a
+  cash or bank-transfer payment now waits up to 10 seconds for a free database
+  connection, as booking does, instead of answering "The server is busy" after
+  2 seconds when the desk settles a lot of payments together. No migration.
 - **Kids and Adult programs** (backlog 3.20; Decisions 281, 285, 397) — Edit
   discipline links a Kids style to its Adult style. From "Ready for Adult from
   age" (Grading → Settings, default 16) a Kids student shows "Ready for Adult
