@@ -26,7 +26,7 @@ export class CreateRankCorrectionDto {
 }
 
 export class ReviewRankCorrectionDto {
-  @ApiPropertyOptional({ maxLength: CORRECTION_NOTE_MAX, nullable: true, description: 'An optional note to the student.' })
+  @ApiPropertyOptional({ type: String, maxLength: CORRECTION_NOTE_MAX, nullable: true, description: 'An optional note to the student.' })
   @IsOptional()
   @Transform(blankToNull)
   @IsString()

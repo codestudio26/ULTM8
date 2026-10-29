@@ -197,7 +197,7 @@ describe('asking for a belt correction (backlog 3.13)', () => {
     const first = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
     expect(first.getByText('Asked to correct your belt to Blue Belt. The School will answer.')).toBeTruthy();
     expect(first.queryByText('Ask for a belt correction')).toBeNull();
-    first.unmount();
+    await first.unmount();
 
     mocked(q.useMyCorrections).mockReturnValue(ok({ items: [{ ...asked, status: 'REJECTED', reviewNote: 'You are still White.' }] }));
     const second = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);

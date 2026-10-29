@@ -3700,6 +3700,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/rank-corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RankCorrectionsController_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rank-corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RankCorrectionsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/rank-corrections/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RankCorrectionsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/waivers": {
         parameters: {
             query?: never;
@@ -8829,6 +8909,49 @@ export interface components {
         PromotionFeeRequestListResponseDto: {
             items: components["schemas"]["PromotionFeeRequestResponseDto"][];
             nextCursor?: string | null;
+        };
+        CreateRankCorrectionDto: {
+            /** Format: uuid */
+            disciplineId: string;
+            /**
+             * Format: uuid
+             * @description The grade they should have: a belt's plain grade or one of its stripes, on this style's ladder.
+             */
+            stripeTierId: string;
+            /** @description Why the recorded belt is wrong. Required. */
+            note: string;
+        };
+        RankCorrectionRungDto: {
+            rankId: string;
+            rankName: string;
+            stripeTierId: string | null;
+            stripeName: string | null;
+        };
+        RankCorrectionDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            from: components["schemas"]["RankCorrectionRungDto"];
+            requested: components["schemas"]["RankCorrectionRungDto"];
+            note: string;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            reviewNote: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RankCorrectionListDto: {
+            items: components["schemas"]["RankCorrectionDto"][];
+        };
+        ReviewRankCorrectionDto: {
+            /** @description An optional note to the student. */
+            note?: string | null;
         };
         CreateWaiverDto: {
             title: string;
@@ -16184,6 +16307,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionFeeRequestResponseDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRankCorrectionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionListDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_list: {
+        parameters: {
+            query?: {
+                /** @description Waiting (the default), or answered (newest 50). */
+                status?: "PENDING" | "ANSWERED";
+                /** @description Only this student's requests. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionListDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRankCorrectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
+                };
+            };
+        };
+    };
+    RankCorrectionsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRankCorrectionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankCorrectionDto"];
                 };
             };
         };
