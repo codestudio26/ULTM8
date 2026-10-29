@@ -165,7 +165,8 @@ export class TimetableService {
    */
   async create(callerId: string, schoolId: string, dto: CreateTimetableSlotDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Branch Staff with the classes switch, for their branch's slots (Decision 387).
+    await this.tenantAuth.assertMayManageClasses(callerId, schoolId, [dto.branchId ?? null]);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
@@ -268,7 +269,10 @@ export class TimetableService {
     if (!existing) {
       throw new NotFoundException('TimetableSlot not found');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [
+      existing.branchId,
+      dto.branchId !== undefined ? dto.branchId : existing.branchId,
+    ]);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     // An archived slot is changed only after unarchiving it (Decision 332, T1).
@@ -331,6 +335,11 @@ export class TimetableService {
     }
     if (!moves && dto.bookedClasses === 'CANCEL') {
       throw new BadRequestException('Cancelling is only for a change that moves classes or switches the slot off. Move them or keep them instead.');
+    }
+    // Decision 387: an edit that may cancel booked classes (cancelling them, or
+    // moving them where they can't go) also needs the cancel-classes switch.
+    if (impact.bookedClasses > 0 && (moves || dto.bookedClasses === 'CANCEL')) {
+      await this.tenantAuth.assertStaffMay(callerId, existing.schoolId, 'cancelClasses', existing.branchId);
     }
     // Decision 332, T5 (Decision 322 §6): capacity is never cut below the seats
     // already booked. Without a choice the cut is refused with the count; with one,
@@ -506,7 +515,7 @@ export class TimetableService {
     if (!existing) {
       throw new NotFoundException('TimetableSlot not found');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
     return this.upcomingImpact(callerId, slotId);
   }
 
@@ -945,7 +954,7 @@ export class TimetableService {
     if (!existing) {
       throw new NotFoundException('TimetableSlot not found');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (existing.archivedAt) {
       return this.toResponse(existing);
@@ -969,7 +978,7 @@ export class TimetableService {
     if (!existing) {
       throw new NotFoundException('TimetableSlot not found');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (!existing.archivedAt) {
       return this.toResponse(existing);

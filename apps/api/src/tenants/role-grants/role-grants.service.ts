@@ -14,7 +14,15 @@ import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
-import { TenantAuthorizationService } from '../tenant-authorization.service';
+import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
+import {
+  DEFAULT_STAFF_ACCESS,
+  STAFF_ACCESS,
+  STAFF_ACCESS_SELECT,
+  StaffAccessSet,
+  TenantAuthorizationService,
+  staffAccessFrom,
+} from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
 import { SchoolsService } from '../schools/schools.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
@@ -29,7 +37,7 @@ import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-que
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
-import { STAFF_ROLES, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
+import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 
@@ -71,6 +79,7 @@ export class RoleGrantsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly coachInvites: CoachInvitesService,
     private readonly schoolsService: SchoolsService,
@@ -657,7 +666,8 @@ export class RoleGrantsService {
     });
     if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId, schoolId } });
     if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
-      await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: { canInviteCoaches: false, canManageDisciplines: false } });
+      // Every Branch Staff switch goes back to its default (Decision 387).
+      await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: toPermissionColumns(DEFAULT_STAFF_ACCESS) });
     }
   }
 
@@ -666,8 +676,8 @@ export class RoleGrantsService {
    * an owner, coach or Branch Staff role at this School, one row per person
    * with their roles grouped. Replaces looking people up by User ID.
    *
-   * Owner only for now; the "See the staff list" switch for Branch Staff comes
-   * with the access switches. Grants are read under the owner's own tenant
+   * Owners see everyone; Branch Staff with "See the staff list" get a
+   * read-only view (Decision 387, listStaffForBranchStaff). Grants are read under the owner's own tenant
    * context (an owner already sees every grant at their School, ended ones
    * too). Names and contact details come through PrismaAuthService, like
    * findAllForUser(): once all of someone's roles here have ended, the ordinary
@@ -675,7 +685,9 @@ export class RoleGrantsService {
    * A School's staff is small, so the whole list comes back in one response.
    */
   async listStaff(callerId: string, schoolId: string, query: StaffListQueryDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    if (!(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
+      return this.listStaffForBranchStaff(callerId, schoolId, query);
+    }
 
     const { grants, branches, permissions, main } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       grants: await tx.roleGrant.findMany({
@@ -687,7 +699,7 @@ export class RoleGrantsService {
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       permissions: await tx.staffPermission.findMany({
         where: { schoolId },
-        select: { userId: true, canInviteCoaches: true, canManageDisciplines: true, displayName: true, workPhone: true },
+        select: { userId: true, displayName: true, workPhone: true, ...STAFF_ACCESS_SELECT },
       }),
     }));
 
@@ -738,6 +750,7 @@ export class RoleGrantsService {
         mainOwner: main?.userId === userId,
         displayName: permission?.displayName ?? null,
         workPhone: permission?.workPhone ?? null,
+        access: own.some((g) => g.role === 'BRANCH_STAFF' && !g.revokedAt) ? staffAccessFrom(permission) : null,
         roles: roles.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -755,6 +768,138 @@ export class RoleGrantsService {
         `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`, undefined, { sensitivity: 'base' }),
     );
     return { items };
+  }
+
+  /**
+   * Decision 387 — GET /schools/{schoolId}/staff for Branch Staff whose owner
+   * switched on "See the staff list": read only, current staff only, and only
+   * the people and roles at their own branches, plus the School's owners and
+   * School-wide roles. A Branch Staff role with no branch covers the whole
+   * School. Grants, branches and the School's display names are read through
+   * ultm8_jobs once the switch is checked: RoleGrant RLS shows Branch Staff
+   * only their own roles and their students'. No switches, no "who gave it".
+   */
+  private async listStaffForBranchStaff(callerId: string, schoolId: string, query: StaffListQueryDto) {
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'staffList');
+    const mine = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({ where: { userId: callerId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { branchId: true } }),
+    );
+    const wholeSchool = mine.some((g) => g.branchId === null);
+    const myBranches = new Set(mine.map((g) => g.branchId));
+    const visible = (g: { role: string; branchId: string | null }) =>
+      g.role === 'SCHOOL_OWNER_MANAGER' || g.branchId === null || wholeSchool || myBranches.has(g.branchId);
+
+    if (query.status === 'removed') return { items: [] };
+    const [grants, branches, details] = await Promise.all([
+      this.prismaJobs.roleGrant.findMany({
+        where: { schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null },
+        select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, isMainOwner: true },
+        orderBy: { grantedAt: 'desc' },
+      }),
+      this.prismaJobs.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      this.prismaJobs.staffPermission.findMany({ where: { schoolId }, select: { userId: true, displayName: true, workPhone: true } }),
+    ]);
+    const shown = grants.filter(visible);
+    const userIds = [...new Set(shown.map((g) => g.userId))];
+    const users = await this.prismaAuth.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, firstName: true, surname: true, email: true, phone: true, profilePhotoUrl: true },
+    });
+    const userById = new Map(users.map((u) => [u.id, u]));
+    const branchName = new Map(branches.map((b) => [b.id, b.name]));
+    const detailOf = new Map(details.map((d) => [d.userId, d]));
+    const q = query.q?.toLowerCase();
+
+    const items: StaffMemberDto[] = [];
+    for (const userId of userIds) {
+      const user = userById.get(userId);
+      if (!user) continue;
+      const own = shown.filter((g) => g.userId === userId);
+      if (query.role && !own.some((g) => g.role === query.role)) continue;
+      if (query.branchId && !own.some((g) => g.branchId === query.branchId)) continue;
+      const detail = detailOf.get(userId);
+      if (q && ![`${user.firstName} ${user.surname}`, user.email, detail?.displayName ?? ''].some((v) => v.toLowerCase().includes(q))) continue;
+      items.push({
+        userId,
+        firstName: user.firstName,
+        surname: user.surname,
+        email: user.email,
+        phone: user.phone,
+        profilePhotoUrl: user.profilePhotoUrl,
+        active: true,
+        addedAt: new Date(Math.min(...grants.filter((g) => g.userId === userId).map((g) => g.grantedAt.getTime()))).toISOString(),
+        removedAt: null,
+        canInviteCoaches: false,
+        canManageDisciplines: false,
+        mainOwner: own.some((g) => g.isMainOwner),
+        displayName: detail?.displayName ?? null,
+        workPhone: detail?.workPhone ?? null,
+        access: null,
+        roles: own.map((g) => ({
+          grantId: g.id,
+          role: g.role as StaffRole,
+          branchId: g.branchId,
+          branchName: g.branchId ? branchName.get(g.branchId) ?? null : null,
+          grantedAt: g.grantedAt.toISOString(),
+          grantedByName: null,
+          revokedAt: null,
+        })),
+      });
+    }
+    items.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`, undefined, { sensitivity: 'base' }));
+    return { items };
+  }
+
+  /**
+   * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the owner
+   * sets a Branch Staff member's six access switches, all at once (the
+   * portal's presets are just ticks). Only for someone who holds a Branch
+   * Staff role here now; Instructors' rights come from their role (Spec 55
+   * §8.2) and owners have every right. Turning "Invite coaches" off cancels
+   * the coach invites they still have open, as before (Decision 183). Their
+   * next request sees the change: every check reads the switches fresh.
+   */
+  async setStaffAccess(callerId: string, schoolId: string, userId: string, dto: StaffAccessDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, dto[k]])) as StaffAccessSet;
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const isStaff = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } });
+      if (!isStaff) {
+        throw new BadRequestException('Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.');
+      }
+      const columns = toPermissionColumns(access);
+      await tx.staffPermission.upsert({
+        where: { schoolId_userId: { schoolId, userId } },
+        create: { id: randomUUID(), schoolId, userId, ...columns, grantedById: callerId },
+        update: { ...columns, grantedById: callerId },
+      });
+    });
+    if (!access.inviteCoaches) await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
+    return { userId, access };
+  }
+
+  /** GET /schools/{schoolId}/staff/me/access (Decision 387) — what the caller
+   * may do at this School, so the portal shows only the pages they can use. */
+  async myStaffAccess(callerId: string, schoolId: string) {
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({ where: { userId: callerId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null }, select: { role: true } }),
+    );
+    if (grants.length === 0) throw new ForbiddenException('You are not on the staff of this School.');
+    const owner = grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
+    const branchStaff = grants.some((g) => g.role === 'BRANCH_STAFF');
+    if (owner) {
+      return { owner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet };
+    }
+    let access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet;
+    if (branchStaff) {
+      const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: STAFF_ACCESS_SELECT }),
+      );
+      access = staffAccessFrom(row);
+    }
+    if (grants.some((g) => g.role === 'INSTRUCTOR')) access = { ...access, bookings: true, students: true };
+    return { owner, branchStaff, access };
   }
 
   /**
@@ -900,4 +1045,17 @@ export function mainOwnerGrant(tx: Prisma.TransactionClient, schoolId: string) {
     orderBy: [{ isMainOwner: 'desc' }, { grantedAt: 'asc' }, { id: 'asc' }],
     select: { id: true, userId: true },
   });
+}
+
+/** A StaffAccessSet as StaffPermission columns (Decision 387). */
+function toPermissionColumns(access: StaffAccessSet) {
+  return {
+    canManageClasses: access.classes,
+    canManageBookings: access.bookings,
+    canManageStudents: access.students,
+    canCancelClasses: access.cancelClasses,
+    canSeeStaffList: access.staffList,
+    canInviteCoaches: access.inviteCoaches,
+    canManageDisciplines: access.disciplines,
+  };
 }

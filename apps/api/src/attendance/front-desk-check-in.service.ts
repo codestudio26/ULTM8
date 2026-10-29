@@ -70,6 +70,7 @@ export class FrontDeskCheckInService {
    * School's), with QR lookups made on that tablet. */
   async checkIn(callerId: string, schoolId: string, dto: DeskCheckInDto, kiosk?: { sessionId: string; branchId: string | null }): Promise<DeskCheckInResponseDto> {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
     const guestRefs = dto.guests ?? [];
     if (dto.classIds.length === 0 && guestRefs.length === 0) {
@@ -118,6 +119,7 @@ export class FrontDeskCheckInService {
       }
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, cls.branchId);
+        await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', cls.branchId);
         assertAtKioskBranch(kiosk, cls.branchId);
         if (cls.cancelledAt) throw new ConflictException('This class has been cancelled by the school.');
         await this.attendance.assertWithinWindow(cls);
@@ -142,6 +144,7 @@ export class FrontDeskCheckInService {
       }
       try {
         await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, booking.branchId);
+        await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', booking.branchId);
         assertAtKioskBranch(kiosk, booking.class.branchId);
         if (seat.checkedInAt) throw new ConflictException('This guest is already checked in.');
         // The member's booking is either already in, or checked in by this call.

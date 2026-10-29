@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
-import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useSchool } from '../schools/schoolQueries';
 import { TopBar } from './TopBar';
 import { SchoolFooter } from './SchoolFooter';
@@ -40,6 +40,9 @@ const RECORD_PAYMENT_NAV: NavItem = { label: 'layout.nav.recordPayment', to: '/t
  * Manually" leaves blank; not a blocking gate, so it's an ordinary nav item,
  * not a forced redirect. */
 const COMPLETE_PROFILE_NAV: NavItem = { label: 'layout.nav.completeProfile', to: '/complete-instructor-profile' };
+/** Decision 387 — Branch Staff whose owner switched these on. */
+const STUDENTS_NAV: NavItem = { label: 'layout.nav.students', to: '/students' };
+const STAFF_NAV: NavItem = { label: 'layout.nav.staff', to: '/staff' };
 
 const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.dashboard', to: '/dashboard' },
@@ -67,16 +70,38 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const t = useT();
   const coachSchoolId = useCoachSchoolId();
   const isCoachOnly = useIsCoachOnly();
-  const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
+  // Decision 387: what the owner lets this person do here. Until it loads,
+  // only the items every coach and Branch Staff member had before.
+  const access = useMyStaffAccess(isCoachOnly ? coachSchoolId : null).data?.access;
+  const mayInvite = access?.inviteCoaches ?? false;
   const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
   const mayRecordPayments = useSchool(isCoachOnly && isBranchStaff ? coachSchoolId : null).data?.branchStaffCanRecordPayments ?? false;
+  const branchStaffNav = isBranchStaff
+    ? [
+        TIMETABLE_NAV,
+        ...(access?.cancelClasses ?? true ? [CANCELLATIONS_NAV] : []),
+        ...(access?.students ? [STUDENTS_NAV] : []),
+        ...(access?.staffList ? [STAFF_NAV] : []),
+      ]
+    : [];
   return (
     <AppShell
       brand={t('layout.brand')}
       header={<TopBar />}
       navItems={(isCoachOnly
-        ? [...COACH_NAV.slice(0, 2), DISCIPLINES_NAV, CURRICULUM_NAV, CLASSES_NAV, CHECK_IN_NAV, ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), ...(isBranchStaff ? [TIMETABLE_NAV, CANCELLATIONS_NAV] : []), ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []), COACH_NAV[2]]
+        ? [
+            ...COACH_NAV.slice(0, 2),
+            DISCIPLINES_NAV,
+            CURRICULUM_NAV,
+            CLASSES_NAV,
+            ...(access?.bookings ?? true ? [CHECK_IN_NAV] : []),
+            ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []),
+            ...(mayInvite ? [INVITE_NAV] : []),
+            ...branchStaffNav,
+            ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []),
+            COACH_NAV[2],
+          ]
         : OWNER_NAV
       ).map((item) => ({ ...item, label: t(item.label) }))}
       footer={

@@ -660,6 +660,38 @@ export interface paths {
         patch: operations["RoleGrantsController_updateStaffDetails"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/me/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_myStaffAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RoleGrantsController_setStaffAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
@@ -5874,6 +5906,22 @@ export interface components {
             emailSent: boolean;
             temporaryPasscode?: string | null;
         };
+        StaffAccessDto: {
+            /** @description Manage classes and the timetable at their branches (off by default). */
+            classes: boolean;
+            /** @description Manage bookings and check-in at their branches (on by default). */
+            bookings: boolean;
+            /** @description See and edit the students of their branches (on by default). */
+            students: boolean;
+            /** @description Cancel classes at their branches and give credit back, never refunds (on by default). */
+            cancelClasses: boolean;
+            /** @description See the staff list for their branches, read only (off by default). */
+            staffList: boolean;
+            /** @description Invite coaches (off by default; Decision 183). */
+            inviteCoaches: boolean;
+            /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
+            disciplines: boolean;
+        };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
             grantId: string;
@@ -5907,6 +5955,8 @@ export interface components {
             displayName?: string | null;
             /** @description Decision 381: their work phone at this School (E.164), set by an owner. Null = not set. */
             workPhone?: string | null;
+            /** @description Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise. */
+            access?: components["schemas"]["StaffAccessDto"] | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
@@ -5922,6 +5972,18 @@ export interface components {
             userId: string;
             displayName?: string | null;
             workPhone?: string | null;
+        };
+        MyStaffAccessResponseDto: {
+            /** @description School Owner/Manager: every switch is on, by role. */
+            owner: boolean;
+            /** @description Holds an active Branch Staff role here. */
+            branchStaff: boolean;
+            /** @description What the caller may do. An Instructor's own role gives bookings and students. */
+            access: components["schemas"]["StaffAccessDto"];
+        };
+        StaffAccessResponseDto: {
+            userId: string;
+            access: components["schemas"]["StaffAccessDto"];
         };
         HandOverMainOwnerDto: {
             /** @description A co-owner of this School, who becomes its main owner. */
@@ -10531,6 +10593,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDetailsResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_myStaffAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_setStaffAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccessDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAccessResponseDto"];
                 };
             };
         };
