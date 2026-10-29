@@ -49,6 +49,14 @@ function assertConfirmable(status: string): void {
   }
 }
 
+/**
+ * Options for confirming or cancelling a cash or bank-transfer payment. The desk
+ * can settle a whole morning's payments at once; waiting for a pooled connection
+ * holds none, so these wait up to 10 s instead of Prisma's default 2 s before
+ * giving up with "the server is busy", as booking does (BOOKING_TX_OPTIONS).
+ */
+const CASH_SETTLE_TX_OPTIONS = { maxWaitMs: 10_000 };
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -1040,7 +1048,7 @@ export class PaymentsService {
       await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
 
       return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
-    });
+    }, CASH_SETTLE_TX_OPTIONS);
   }
 
   /**
@@ -1092,7 +1100,7 @@ export class PaymentsService {
         return { transaction, cancelled: false };
       }
       return { transaction: { ...transaction, status: 'FAILED' as const }, cancelled: true };
-    });
+    }, CASH_SETTLE_TX_OPTIONS);
     if (result.cancelled) {
       await this.notifyCashPayment(result.transaction, 'cancelled');
     }
