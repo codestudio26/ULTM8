@@ -96,6 +96,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: "Change the School's check-in rules (off by default; Decision 394)." })
   @IsBoolean()
   checkInRules!: boolean;
+
+  @ApiProperty({ description: 'Export the student list as a spreadsheet (off by default; Decision 399).' })
+  @IsBoolean()
+  exportStudents!: boolean;
 }
 
 export class StaffAccessResponseDto {
