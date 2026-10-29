@@ -4900,6 +4900,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/front-desk/code-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskSessionsController_codeLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/session": {
         parameters: {
             query?: never;
@@ -4980,6 +4996,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/code-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_codeLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/check-ins": {
         parameters: {
             query?: never;
@@ -5006,6 +5038,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["FrontDeskKioskController_unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/check-in-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentCheckInCodesController_get"];
+        put?: never;
+        post: operations["StudentCheckInCodesController_renew"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8664,7 +8712,7 @@ export interface components {
             studentId: string;
             /** @description The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation. */
             studentToken?: string;
-            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN. */
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN (PERSONAL_CODE for a lookup from .../code-lookups). */
             lookupToken?: string;
         };
         DeskQrLookupDto: {
@@ -8689,7 +8737,7 @@ export interface components {
         };
         DeskCheckInDto: {
             studentId: string;
-            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL. */
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR (recorded as INSTRUCTOR_SCAN), or from .../code-lookups when they typed their personal code (PERSONAL_CODE). Without it, INSTRUCTOR_MANUAL. */
             lookupToken?: string;
             /** @description Classes to check the Student into (booked first where needed). Up to 10. */
             classIds: string[];
@@ -9218,6 +9266,10 @@ export interface components {
             /** @description The caller's own code for leaving a locked tablet at this School (4 or 6 digits, the School's setting). */
             code: string;
         };
+        CheckInCodeLookupDto: {
+            /** @description A Student's personal check-in code (4 or 6 digits). */
+            code: string;
+        };
         KioskSessionInfoDto: {
             sessionId: string;
             schoolId: string;
@@ -9330,6 +9382,10 @@ export interface components {
         KioskUnlockedDto: {
             /** @description First name of the staff member whose code it was. */
             unlockedBy: string;
+        };
+        StudentCheckInCodeDto: {
+            /** @description The personal check-in code, typed at the front desk in place of the app QR. */
+            code: string;
         };
     };
     responses: never;
@@ -17618,6 +17674,31 @@ export interface operations {
             };
         };
     };
+    FrontDeskSessionsController_codeLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInCodeLookupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_info: {
         parameters: {
             query?: never;
@@ -17728,6 +17809,29 @@ export interface operations {
             };
         };
     };
+    FrontDeskKioskController_codeLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInCodeLookupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_checkIn: {
         parameters: {
             query?: never;
@@ -17770,6 +17874,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KioskUnlockedDto"];
+                };
+            };
+        };
+    };
+    StudentCheckInCodesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    StudentCheckInCodesController_renew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCheckInCodeDto"];
                 };
             };
         };

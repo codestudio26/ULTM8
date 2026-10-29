@@ -86,14 +86,19 @@ export class FrontDeskCheckInService {
 
     let method: CheckInMethod = 'INSTRUCTOR_MANUAL';
     if (dto.lookupToken) {
-      // The app QR was checked when it was scanned (deskQrLookup).
+      // The app QR or personal code was checked when it was looked up.
       const lookup = this.qrTokens.verifyDeskLookup(dto.lookupToken);
       const lookupOwner = kiosk ? frontDeskLookupOwner(kiosk.sessionId) : callerId;
       if (lookup.deskStudentId !== studentId || lookup.schoolId !== schoolId || lookup.staffId !== lookupOwner) {
         throw new BadRequestException('This scan belongs to a different Student.');
       }
-      await this.attendance.assertCameraConsentNotWithdrawn(studentId);
-      method = 'INSTRUCTOR_SCAN';
+      if (lookup.via === 'CODE') {
+        // A typed code uses no camera (Decision 384).
+        method = 'PERSONAL_CODE';
+      } else {
+        await this.attendance.assertCameraConsentNotWithdrawn(studentId);
+        method = 'INSTRUCTOR_SCAN';
+      }
     }
 
     const classResults: DeskCheckInClassResultDto[] = dto.classIds.map((classId) => ({ classId, ok: true }));

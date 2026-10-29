@@ -2884,6 +2884,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       methodSelfService: "Samodzielne meldowanie",
       methodInstructorScan: "Zeskanowane przez Ciebie",
       methodInstructorManual: "Potwierdzone przez Ciebie",
+      methodPersonalCode: "Kod osobisty w recepcji",
       present: "Obecny ✓",
       scan: "Skanuj",
       confirmPresent: "Potwierdź obecność",
@@ -3220,7 +3221,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     code: {
       staffTitle: "Wpisz kod ucznia",
       kioskTitle: "Wpisz swój kod meldunkowy",
-      hint: "4 cyfry, na karcie członkowskiej i w aplikacji ULTM8",
+      hint: "Twój {digits}-cyfrowy kod zameldowania. Zapytaj w recepcji, jeśli go nie znasz.",
+      staffHint: "{digits}-cyfrowy kod ucznia, widoczny na jego stronie ucznia.",
+      checking: "Sprawdzanie kodu…",
       soonHint: "Osobiste kody meldunkowe są w drodze. Na razie użyj opcji Skanuj lub Imię.",
       delete: "Usuń",
       submit: "Zamelduj",
@@ -3378,6 +3381,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Nie udało się wysłać zapisu. Zapytaj w recepcji.",
       sentTitle: "Dziękujemy",
       sentBody: "Twój zapis trafił do personelu. Dostaniesz e-mail, gdy go zatwierdzą.",
+    },
+    studentCode: {
+      title: "Kod zameldowania",
+      hint: "Wpisywany w recepcji, gdy nie można pokazać kodu QR z aplikacji. Uczeń nie może go zmienić.",
+      renew: "Nadaj nowy kod",
+      confirm: "Stary kod przestanie działać. Nadać nowy?",
+      confirmYes: "Tak, nowy kod",
+      failed: "Nie udało się nadać nowego kodu. Spróbuj ponownie.",
     },
     findMe: {
       title: "Znajdź mnie",
