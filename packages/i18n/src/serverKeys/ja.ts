@@ -38,6 +38,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "この方には再購入できる使い切った回数券がありません。",
     packNotForSale: "この回数券は販売を終了しました。ほかのプランについては受付でお尋ねください。",
     rechargeNotPaid: "回数券の支払いがまだ済んでいません。",
+    trialEnded: "この道場の ULTM8 無料試用は終了しました。購読するまでポータルは閲覧専用です。新しいクラス、予約、支払いはできません。",
     correctionNotVerified: "このスタイルの帯はまだ道場の確認待ちです。確認の際に修正できます。",
     correctionPending: "このスタイルではすでに修正を依頼しています。道場の回答をお待ちください。",
     correctionSameRank: "それは今の帯です。本来の帯を選んでください。",

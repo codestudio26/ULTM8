@@ -13,6 +13,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     none: "—",
   },
   layout: {
+    trial: {
+      daysLeft: {"one": "Gratis proefperiode van ULTM8: nog {count} dag.", "other": "Gratis proefperiode van ULTM8: nog {count} dagen."},
+      ended: "Je gratis proefperiode van ULTM8 is voorbij. Het portaal is alleen-lezen tot je een abonnement neemt: geen nieuwe lessen, boekingen of betalingen. Er is niets verwijderd.",
+    },
     brand: "ULTM8 Schoolportaal",
     logOut: "Uitloggen",
     search: {

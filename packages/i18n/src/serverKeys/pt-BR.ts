@@ -38,6 +38,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "Esta pessoa não tem um pacote de aulas esgotado para comprar de novo.",
     packNotForSale: "Este pacote não é mais vendido. Pergunte na recepção sobre outro plano.",
     rechargeNotPaid: "O pacote ainda não foi pago.",
+    trialEnded: "O teste grátis do ULTM8 desta escola terminou. O portal fica somente leitura até a assinatura: sem novas aulas, reservas ou pagamentos.",
     correctionNotVerified: "Sua faixa neste estilo ainda está aguardando a verificação da escola. Ela poderá corrigi-la então.",
     correctionPending: "Você já pediu uma correção neste estilo. Aguarde a resposta da escola.",
     correctionSameRank: "Essa já é a sua faixa. Escolha a faixa que você deveria ter.",

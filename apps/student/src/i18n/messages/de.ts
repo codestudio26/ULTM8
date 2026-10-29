@@ -883,6 +883,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Für diesen Einzelkurs brauchst du ein eigenes Ticket. Ein Abo, ein Wochenpass oder eine allgemeine Kurskarte deckt ihn nicht ab.",
       checkInNotOpen: "Der Check-in für diesen Kurs ist noch nicht geöffnet.",
       checkInNotOpenAt: "Der Check-in für diesen Kurs ist noch nicht geöffnet. Öffnung: {time}.",
+      trialEnded: "Diese Schule kann gerade keine neuen Buchungen oder Zahlungen in der App annehmen. Frag am Empfang.",
       correctionNotVerified: "Dein Gürtel in diesem Stil wartet noch auf die Prüfung durch die Schule. Sie kann ihn dann korrigieren.",
       correctionPending: "Du hast in diesem Stil schon eine Korrektur angefragt. Warte auf die Antwort der Schule.",
       correctionSameRank: "Diesen Gürtel hast du schon. Wähle den Gürtel, den du haben solltest.",

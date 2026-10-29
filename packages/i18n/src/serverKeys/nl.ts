@@ -38,6 +38,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "Deze persoon heeft geen opgebruikte lessenkaart om opnieuw te kopen.",
     packNotForSale: "Deze kaart wordt niet meer verkocht. Vraag bij de balie naar een ander abonnement.",
     rechargeNotPaid: "De kaart is nog niet betaald.",
+    trialEnded: "De gratis ULTM8-proefperiode van deze school is voorbij. Het portaal is alleen-lezen tot er een abonnement is: geen nieuwe lessen, boekingen of betalingen.",
     correctionNotVerified: "Je band in deze stijl wacht nog op controle door de school. Die kan hem dan corrigeren.",
     correctionPending: "Je hebt in deze stijl al een correctie gevraagd. Wacht op het antwoord van de school.",
     correctionSameRank: "Dat is de band die je al hebt. Kies de band die je zou moeten hebben.",

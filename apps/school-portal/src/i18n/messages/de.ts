@@ -13,6 +13,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     none: "—",
   },
   layout: {
+    trial: {
+      daysLeft: {"one": "Kostenlose ULTM8-Testphase: noch {count} Tag.", "other": "Kostenlose ULTM8-Testphase: noch {count} Tage."},
+      ended: "Deine kostenlose ULTM8-Testphase ist abgelaufen. Das Portal ist schreibgeschützt, bis du ein Abo abschließt: keine neuen Kurse, Buchungen oder Zahlungen. Es wurde nichts gelöscht.",
+    },
     brand: "ULTM8 Schulportal",
     logOut: "Abmelden",
     search: {

@@ -714,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Esta aula avulsa precisa de um ingresso próprio. Uma assinatura, passe semanal ou pacote de aulas geral não a cobre.",
       checkInNotOpen: "O check-in desta aula ainda não abriu.",
       checkInNotOpenAt: "O check-in desta aula ainda não abriu. Ele abre em {time}.",
+      trialEnded: "Esta escola não pode aceitar novas reservas ou pagamentos no app agora. Pergunte na recepção.",
       correctionNotVerified: "Sua faixa neste estilo ainda está aguardando a verificação da escola. Ela poderá corrigi-la então.",
       correctionPending: "Você já pediu uma correção neste estilo. Aguarde a resposta da escola.",
       correctionSameRank: "Essa já é a sua faixa. Escolha a faixa que você deveria ter.",

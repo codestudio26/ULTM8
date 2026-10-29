@@ -920,6 +920,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "Te jednorazowe zajęcia wymagają osobnego biletu. Subskrypcja, karnet tygodniowy ani ogólny pakiet zajęć ich nie obejmują.",
       checkInNotOpen: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło.",
       checkInNotOpenAt: "Meldowanie na te zajęcia jeszcze się nie rozpoczęło. Rozpocznie się {time}.",
+      trialEnded: "Ta szkoła nie może teraz przyjmować nowych rezerwacji ani płatności w aplikacji. Zapytaj w recepcji.",
       correctionNotVerified: "Twój pas w tym stylu wciąż czeka na sprawdzenie przez szkołę. Wtedy mogą go poprawić.",
       correctionPending: "Już poprosiłeś o korektę w tym stylu. Poczekaj na odpowiedź szkoły.",
       correctionSameRank: "To jest pas, który już masz. Wybierz pas, który powinieneś mieć.",

@@ -38,6 +38,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "Esta persona no tiene ningún bono de clases agotado que volver a comprar.",
     packNotForSale: "Este bono ya no está a la venta. Pregunta en recepción por otro plan.",
     rechargeNotPaid: "El bono todavía no se ha pagado.",
+    trialEnded: "La prueba gratuita de ULTM8 de esta escuela ha terminado. El portal es de solo lectura hasta que se suscriba: no hay nuevas clases, reservas ni pagos.",
     correctionNotVerified: "Tu cinturón en este estilo aún está pendiente de revisión por la escuela. Podrán corregirlo entonces.",
     correctionPending: "Ya pediste una corrección en este estilo. Espera a que la escuela responda.",
     correctionSameRank: "Ese es el cinturón que ya tienes. Elige el cinturón que deberías tener.",

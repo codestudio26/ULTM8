@@ -40,6 +40,10 @@ const PLATFORM_ADMIN_SCHOOL_SELECT = {
   archivedAt: true,
   purgeAt: true,
   purgedAt: true,
+  // Backlog 3.14 — the free trial, granted by 20261228000000_platform_trial.
+  platformTrialStartedAt: true,
+  platformTrialEndsAt: true,
+  platformSubscriptionStatus: true,
   // Deliberately excluded: stripeFranchiseFeeSubscriptionId — see this constant's
   // own header comment.
 } as const;
