@@ -3381,6 +3381,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "저장하지 못했습니다. 다시 시도해 주세요.",
       loadFailed: "직원 목록을 불러오지 못했습니다.",
     },
+    packUsedUp: {
+      title: "패키지 소진",
+      body: "같은 패키지를 구매하면 결제되는 즉시 출석 체크됩니다.",
+      offerStaff: "앱에서 같은 패키지 제안하기",
+      offerSelf: "내 앱에서 구매하기",
+      waitingTitle: "결제 대기 중",
+      waitingStaff: "{plan} · {price}. ULTM8 앱에서 구매하면 결제되는 즉시 여기서 출석 체크됩니다.",
+      waitingSelf: "{plan} · {price}. ULTM8 앱을 열고 구매하세요. 결제되는 즉시 출석 체크됩니다.",
+      paid: "결제 완료. 출석 체크 중…",
+      expired: "이 수업의 출석 체크가 마감되었습니다. 패키지는 앱에서 계속 구매할 수 있습니다.",
+      failed: "패키지를 제안하지 못했습니다. 데스크에 문의해 주세요.",
+    },
     findMe: {
       title: "내 정보 찾기",
       name: "전체 이름",

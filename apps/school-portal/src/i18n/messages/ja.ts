@@ -3381,6 +3381,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "保存できませんでした。もう一度お試しください。",
       loadFailed: "スタッフを読み込めませんでした。",
     },
+    packUsedUp: {
+      title: "回数券を使い切りました",
+      body: "同じ回数券を購入すると、支払いが済みしだいチェックインされます。",
+      offerStaff: "同じ回数券をアプリで案内する",
+      offerSelf: "自分のアプリで購入する",
+      waitingTitle: "支払い待ち",
+      waitingStaff: "{plan} · {price}。ULTM8 アプリで購入すると、支払いが済みしだいここでチェックインされます。",
+      waitingSelf: "{plan} · {price}。ULTM8 アプリを開いて購入してください。支払いが済みしだいチェックインされます。",
+      paid: "支払い完了。チェックイン中…",
+      expired: "このクラスのチェックインは締め切られました。回数券はアプリで引き続き購入できます。",
+      failed: "回数券を案内できませんでした。受付でお尋ねください。",
+    },
     findMe: {
       title: "自分を探す",
       name: "フルネーム",

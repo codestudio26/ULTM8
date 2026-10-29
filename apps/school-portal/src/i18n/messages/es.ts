@@ -3424,6 +3424,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "No se pudo guardar. Inténtalo de nuevo.",
       loadFailed: "No se pudo cargar tu personal.",
     },
+    packUsedUp: {
+      title: "Bono agotado",
+      body: "Compra el mismo bono y tendrás el check-in hecho en cuanto se pague.",
+      offerStaff: "Ofrecer el mismo bono en su app",
+      offerSelf: "Comprarlo en mi app",
+      waitingTitle: "Esperando el pago",
+      waitingStaff: "{plan} · {price}. Lo compra en la app de ULTM8 y su check-in se hace aquí en cuanto se pague.",
+      waitingSelf: "{plan} · {price}. Abre la app de ULTM8 y cómpralo allí. Tu check-in se hace en cuanto se pague.",
+      paid: "Pagado. Haciendo check-in…",
+      expired: "El check-in de esta clase ya se cerró. El bono se puede seguir comprando en la app.",
+      failed: "No se pudo ofrecer el bono. Pregunta en recepción.",
+    },
     findMe: {
       title: "Búscame",
       name: "Tu nombre completo",

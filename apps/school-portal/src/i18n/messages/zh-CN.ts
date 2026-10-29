@@ -3381,6 +3381,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "无法保存，请重试。",
       loadFailed: "无法加载员工。",
     },
+    packUsedUp: {
+      title: "课时包已用完",
+      body: "购买同样的课时包，付款后即可签到。",
+      offerStaff: "在其 App 中提供同样的课时包",
+      offerSelf: "在我的 App 中购买",
+      waitingTitle: "等待付款",
+      waitingStaff: "{plan} · {price}。在 ULTM8 App 中购买，付款后即可在这里签到。",
+      waitingSelf: "{plan} · {price}。打开 ULTM8 App 并在其中购买，付款后即可签到。",
+      paid: "已付款，正在签到…",
+      expired: "此课程的签到已关闭。课时包仍可在 App 中购买。",
+      failed: "无法提供课时包。请到前台咨询。",
+    },
     findMe: {
       title: "找到我",
       name: "你的全名",

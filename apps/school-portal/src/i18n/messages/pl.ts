@@ -3530,6 +3530,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Nie udało się zapisać. Spróbuj ponownie.",
       loadFailed: "Nie udało się wczytać personelu.",
     },
+    packUsedUp: {
+      title: "Pakiet wykorzystany",
+      body: "Kup ten sam pakiet, a zostaniesz zameldowany, gdy tylko zostanie opłacony.",
+      offerStaff: "Zaproponuj ten sam pakiet w jej aplikacji",
+      offerSelf: "Kup w mojej aplikacji",
+      waitingTitle: "Czekamy na płatność",
+      waitingStaff: "{plan} · {price}. Kupuje go w aplikacji ULTM8 i zostaje tu zameldowana, gdy tylko pakiet zostanie opłacony.",
+      waitingSelf: "{plan} · {price}. Otwórz aplikację ULTM8 i kup go tam. Zostaniesz zameldowany, gdy tylko zostanie opłacony.",
+      paid: "Opłacono. Meldowanie…",
+      expired: "Meldowanie na te zajęcia jest zamknięte. Pakiet nadal można kupić w aplikacji.",
+      failed: "Nie udało się zaproponować pakietu. Zapytaj w recepcji.",
+    },
     findMe: {
       title: "Znajdź mnie",
       name: "Twoje imię i nazwisko",

@@ -50,16 +50,22 @@ export function usePurchaseMembership() {
       payWithSavedCard,
       useHostedCheckout,
       stepUpToken,
+      studentId,
     }: {
       planId: string;
       payWithSavedCard?: boolean;
       useHostedCheckout?: boolean;
       stepUpToken?: string;
+      /** A Guardian buying for their child. */
+      studentId?: string;
     }) =>
       unwrap(
         apiClient.POST('/v1/membership-plans/{id}/purchase', {
           params: { path: { id: planId } },
-          body: payWithSavedCard ? { payWithSavedCard: true } : useHostedCheckout ? { useHostedCheckout: true } : {},
+          body: {
+            ...(payWithSavedCard ? { payWithSavedCard: true } : useHostedCheckout ? { useHostedCheckout: true } : {}),
+            ...(studentId ? { studentId } : {}),
+          },
           headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
         }),
       ),
