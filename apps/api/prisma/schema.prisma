@@ -4366,10 +4366,12 @@ model GradingPermission {
   @@index([disciplineId])
 }
 
-/// Staff permissions beyond grading (Decision 183), one row per Branch Staff
-/// member per School. "Can invite coaches" lets them send coach invites for
-/// their own branches. The owner sets it; Instructors can't hold it (Spec 55
-/// §8.2: no instructor management). RLS: the owner, or the user themselves.
+/// Staff permissions beyond grading (Decision 183), one row per staff member
+/// per School. "Can invite coaches" lets Branch Staff send coach invites for
+/// their own branches; Instructors can't hold it (Spec 55 §8.2: no instructor
+/// management). "Can start open mat sessions" (Decision 386) is for Branch
+/// Staff and coaches alike. The owner sets both. RLS: the owner, or the user
+/// themselves.
 model StaffPermission {
   id String @id @default(uuid())
 
@@ -4397,6 +4399,11 @@ model StaffPermission {
   /// untouched. Null = not set (the account's own is shown).
   displayName String?
   workPhone   String?
+
+  /// "Can start open mat sessions" (Decision 304 item 4, built as Decision
+  /// 386): an unplanned open mat from the front desk. Branch Staff or coaches,
+  /// at their own Branches; off by default; the owner always can.
+  canStartOpenMat  Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

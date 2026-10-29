@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Check-in and front-desk mode (DESIGN.md → "Check-in and front-desk mode";
@@ -41,6 +41,7 @@ test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.frontDeskSession.deleteMany({ where });
   await db.staffKioskCode.deleteMany({ where });
+  await db.staffPermission.deleteMany({ where });
   await db.studentCheckInCode.deleteMany({ where });
   await db.waiverSignature.deleteMany({ where });
   await db.waiver.deleteMany({ where });
@@ -276,6 +277,35 @@ test('find me on the tablet says only whether you\'re already a member (Decision
   await expect(page.getByText('You’re already a member here')).toBeVisible();
   // Nothing stored about them is shown.
   await expect(page.getByText(/@/)).toHaveCount(0);
+});
+
+test('the owner starts an open mat from the Check-in page; it is a one-off class today (Decision 386)', async ({ page }) => {
+  await subscribe(s.student.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('button', { name: '+ Open mat session' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Start an open mat' });
+  await expect(dialog.getByLabel('Style')).toHaveValue(s.disciplineId);
+  await dialog.getByLabel('Length').selectOption('90');
+  await dialog.getByRole('button', { name: 'Start open mat' }).click();
+  await expect(page.getByText('Open mat started. Students told in the app: 1.')).toBeVisible();
+  await expect(page.getByTestId('fd-class').filter({ hasText: 'Open mat' })).toHaveCount(1);
+  const cls = await db.class.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Open mat' } });
+  expect(cls.styles).toEqual([{ disciplineId: s.disciplineId, classType: 'Open mat' }]);
+  expect(cls.endDate.getTime() - cls.startDate.getTime()).toBe(90 * MIN);
+});
+
+test('the owner lets a coach start open mats from the Staff page; the coach then sees the button (Decision 386)', async ({ page }) => {
+  const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, s.ownerToken);
+  await page.goto('/staff');
+  await expect(page.getByRole('heading', { name: 'Open mat sessions' })).toBeVisible();
+  await page.getByLabel('Cora Coach can start open mat sessions').check();
+  await expect.poll(async () => (await db.staffPermission.findFirst({ where: { schoolId: s.schoolId, userId: coach.id } }))?.canStartOpenMat).toBe(true);
+
+  await signIn(page, coach.token);
+  await page.goto('/check-in');
+  await expect(page.getByRole('button', { name: '+ Open mat session' })).toBeVisible();
 });
 
 test('staff see a tablet on the Check-in page and can end it there (Decision 380)', async ({ page, browser }) => {

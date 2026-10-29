@@ -23,6 +23,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   accept in the student app. A rejected sign-up gets a polite email, can still
   be approved for 30 days, then is deleted. Each School edits its own "How did
   you hear about us?" list in School settings.
+- **Front desk: start an open mat** (Decision 386) — "+ Open mat session"
+  on the Check-in page makes a one-off open mat class today (style, start,
+  length), and students who train that style at that branch are told in the
+  app. The owner, and staff given "Can start open mat sessions" on the
+  Staff page. Needs migration `20261221000000_open_mat_permission`.
 - **Visitors and visit passes** (Decision 391) — each School sets how long a
   free visit pass lasts (School settings; no default). The owner, or Branch
   Staff with the Students switch, gives a pass from the student's page; while it
