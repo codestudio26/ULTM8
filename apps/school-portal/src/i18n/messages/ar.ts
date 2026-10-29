@@ -2523,7 +2523,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "مقاس الحزام",
       photo: "الصورة",
       photoHint: "اتركها كما هي للاحتفاظ بالصورة الحالية.",
-      freeTextHint: "نص حر: لم يُتفق بعد على وحدة أو جدول مقاسات (القرار 220/246).",
+      freeTextHint: "نص حر: لم يُتفق بعد على وحدة أو جدول مقاسات.",
     },
   },
   membershipPlans: {

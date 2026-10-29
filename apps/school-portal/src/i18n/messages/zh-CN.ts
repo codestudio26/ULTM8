@@ -2338,7 +2338,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "腰带尺码",
       photo: "照片",
       photoHint: "保持不变即可保留当前照片。",
-      freeTextHint: "自由填写：尚未确定单位或尺码表（决定 220/246）。",
+      freeTextHint: "自由填写：尚未确定单位或尺码表。",
     },
   },
   membershipPlans: {

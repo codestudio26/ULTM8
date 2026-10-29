@@ -81,7 +81,8 @@ export class FranchisesController {
   async findSchools(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     if (user.impersonation) {
       throw new ForbiddenException(
-        'The Franchise School roster is not available during an impersonation session (Decision 39).',
+        // Decision 39
+        'The Franchise School roster is not available during an impersonation session.',
       );
     }
     const items = await this.franchisesService.findSchoolsForFranchise(user.sub, id);
@@ -118,7 +119,8 @@ export class FranchisesController {
   @Post(':id/schools/:schoolId/remove')
   removeSchool(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
     if (user.impersonation) {
-      throw new ForbiddenException('Removing a School is not available during an impersonation session (Decision 39).');
+      // Decision 39
+      throw new ForbiddenException('Removing a School is not available during an impersonation session.');
     }
     return this.franchisesService.removeSchool(user.sub, id, schoolId);
   }
@@ -136,7 +138,8 @@ export class FranchisesController {
     @Headers('x-step-up-token') stepUpToken?: string,
   ) {
     if (user.impersonation) {
-      throw new ForbiddenException('Closing a Franchise is not available during an impersonation session (Decision 39).');
+      // Decision 39
+      throw new ForbiddenException('Closing a Franchise is not available during an impersonation session.');
     }
     return this.franchisesService.closeOwnFranchise(user.sub, id, dto, stepUpToken);
   }

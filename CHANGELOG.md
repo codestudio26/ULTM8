@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **No more decision numbers in messages** (backlog 3.17) — error messages and
+  grading history notes no longer end with internal references such as
+  "(Decision 147)", in every language. Saved history notes are cleaned too.
+  **Needs a database migration** (`20261225000000_clean_system_notes`).
 - **Front desk: start an open mat** (Decision 386) — "+ Open mat session"
   on the Check-in page makes a one-off open mat class today (style, start,
   length), and students who train that style at that branch are told in the

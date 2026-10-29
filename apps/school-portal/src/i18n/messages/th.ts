@@ -2338,7 +2338,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "ขนาดสายคาด",
       photo: "รูปภาพ",
       photoHint: "ไม่ต้องเปลี่ยนหากต้องการใช้รูปเดิม",
-      freeTextHint: "ข้อความอิสระ: ยังไม่ได้กำหนดหน่วยหรือตารางขนาด (มติ 220/246)",
+      freeTextHint: "ข้อความอิสระ: ยังไม่ได้กำหนดหน่วยหรือตารางขนาด",
     },
   },
   membershipPlans: {

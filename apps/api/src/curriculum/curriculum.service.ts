@@ -466,7 +466,8 @@ export class CurriculumService {
     }
     const access = await this.accessFor(callerId, lesson.schoolId);
     if (this.isLocked(lesson, access)) {
-      throw new ForbiddenException('You may not watch this Lesson (Decisions 154, 190, 195).');
+      // Decisions 154, 190, 195
+      throw new ForbiddenException('You may not watch this Lesson.');
     }
     return { schoolId: lesson.schoolId };
   }

@@ -68,7 +68,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: Request, payload: JwtPayload): Promise<JwtPayload> {
     if (payload.impersonation && !READ_ONLY_HTTP_METHODS.has(req.method)) {
       throw new ForbiddenException(
-        'This is a read-only impersonation session — write actions are not permitted (Decision 102).',
+        // Decision 102
+        'This is a read-only impersonation session — write actions are not permitted.',
       );
     }
     if (payload.impersonation) {
@@ -87,7 +88,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       const bodyOverrideReason = (req.body as Record<string, unknown> | undefined)?.overrideReason;
       if (!isAllowedRoute || bodyStudentId !== payload.kidMode.studentId || bodyOverrideReason !== undefined) {
         throw new ForbiddenException(
-          'This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for (Decision 123).',
+          // Decision 123
+          'This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.',
         );
       }
     }

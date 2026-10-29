@@ -1574,7 +1574,8 @@ export class MembershipsService {
     if (branchStaffAllowed && grants.some((g) => g.role === 'BRANCH_STAFF')) return 'BRANCH_STAFF';
     throw new ForbiddenException(
       branchStaffAllowed || !grants.length
-        ? "Only that School's Owner/Manager may perform this action (Spec §8.2)."
+        // Spec §8.2
+        ? "Only that School's Owner/Manager may perform this action."
         : 'The School owner has not let Branch Staff record payments.',
     );
   }
