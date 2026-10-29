@@ -6587,6 +6587,43 @@ User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules
 
 User (Code), 28 Oct 2026, reviewing #360: "yes fix 1 and 3, and A for 2", to the recommendations (end the session after about 10 wrong codes; end a closed Branch's tablet; option A: on the tablet, name search only checks in to classes already booked, and booking there needs the app QR or a personal code).
 
+---
+
+## Decision 390 — Staff page: Pause and Unpause
+
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360 (item 6), order of work (e) · **Migration:** `20261221000000_staff_pause`
+
+(Decisions 386 and 388 are taken by the Check-in thread's open work.)
+
+The Staff build plan described Pause as: *"temporarily switches off all their staff access (holiday, investigation) without losing setup. Unpausing restores the same roles and permissions."* The product owner chose to build it right after Remove from School (Decision 360, item 6).
+
+### Decision
+
+1. **What Pause does.** `POST /schools/:schoolId/staff/:userId/pause` (owner only) ends each of the person's coach and Branch Staff roles at the School, at every branch, in one step. Each role is ended the ordinary way (`RoleGrant.revokedAt`) and marked paused (`pausedAt`, `pausedById`), so every access check, RLS helper and job already treats it as gone. Their access stops on their next request, even if they are signed in (Decision 361).
+2. **What Pause keeps.** Their access switches (Decision 387), grading permissions, "Can invite coaches", display name and work phone (Decision 381), coach profile, and the classes and weekly slots they teach all stay as they are. A paused coach is still the coach on their classes.
+3. **Unpause.** `POST /schools/:schoolId/staff/:userId/unpause` (owner only) gives back the same roles: the same rows, at the same branches, with their original "added" dates. A role at a branch that was closed while they were paused stays ended, because nobody joins a closed branch (Decision 296). The answer names those branches.
+4. **Who can be paused.** Coaches and Branch Staff only. Owners are not paused: an owner has every right, and removing one is its own rule (Decision 370). A closed School can't pause or unpause anyone.
+5. **While paused.**
+   - The person stays on the Staff list with the active staff, shown as "Paused" with the date. The list has a new "Paused" status filter, and paused people never appear under "Removed".
+   - The owner can still change their access switches and details.
+   - They can't be given a new coach or Branch Staff role (409 `STAFF_PAUSED`), and they can't accept a coach invite at that School. Unpause gives their roles back.
+   - **Remove from School** still works and ends the pause for good. It asks about their classes, as it does for anyone who teaches. Removing one paused role on its own (the existing role revoke) also ends that role for good.
+   - Branch Staff who can see the staff list (Decision 387) see current staff only, so not paused people.
+6. The new API messages are translated into all 14 languages, and the Staff page text into all 15.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Whether a pause should end by itself on a chosen date. Nothing in the plan says so, so Pause lasts until an owner unpauses.
+- **[UNRESOLVED]** Whether the paused person, or the School's other staff, should be told (email or notification). Nothing is sent.
+- **[UNRESOLVED]** Whether pausing a coach should also ask what happens to their upcoming classes, as Remove from School does. Classes are left as they are, to match "without losing setup".
+- **[UNRESOLVED]** Whether owners and co-owners can be paused. This build says no.
+
+### Recorded by
+
+User (Code), 27 Oct 2026, "all recommended" on the Staff build plan (Decision 360 item 6: "Remove now and Pause next"). Built 29 Oct 2026 in the Staff thread.
+
+---
+
 ## Decision 391 — Visitors and visit passes
 
 **Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** Decision 315 item 1 (Visitors are their own status) · **Needed by:** front-desk sign-up F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), whose form asks Visitor or Member

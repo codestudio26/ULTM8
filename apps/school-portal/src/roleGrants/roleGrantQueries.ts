@@ -12,7 +12,7 @@ export type StaffMember = components['schemas']['StaffMemberDto'];
 export type StaffRoleEntry = components['schemas']['StaffRoleDto'];
 export type RemoveFromSchoolInput = components['schemas']['RemoveFromSchoolDto'];
 export type StaffAccess = components['schemas']['StaffAccessDto'];
-export type StaffListFilters = { status: 'active' | 'removed' | 'all'; role?: StaffRoleEntry['role']; branchId?: string; q?: string };
+export type StaffListFilters = { status: 'active' | 'paused' | 'removed' | 'all'; role?: StaffRoleEntry['role']; branchId?: string; q?: string };
 
 /** One user's grants (GET /users/{userId}/role-grants) — what Instructor and
  * Student Detail use to find the grant to revoke. The Staff page lists
@@ -131,6 +131,30 @@ export function useRemoveFromSchool(schoolId: string) {
       return invalidateStaffLists(queryClient);
     },
   });
+}
+
+/** Decision 390 — the owner pauses a coach or Branch Staff member (all their
+ * staff access here stops, their setup is kept) or gives their roles back. */
+export function usePauseStaff(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/staff/{userId}/pause', { params: { path: { schoolId, userId } } })),
+    onSuccess: (_data, userId) => afterPauseChange(queryClient, schoolId, userId),
+  });
+}
+
+export function useUnpauseStaff(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/staff/{userId}/unpause', { params: { path: { schoolId, userId } } })),
+    onSuccess: (_data, userId) => afterPauseChange(queryClient, schoolId, userId),
+  });
+}
+
+function afterPauseChange(queryClient: QueryClient, schoolId: string, userId: string) {
+  queryClient.invalidateQueries({ queryKey: ['roleGrants', userId] });
+  queryClient.invalidateQueries({ queryKey: ['instructors', schoolId] });
+  return invalidateStaffLists(queryClient);
 }
 
 /** Decision 370 — the main owner hands the main owner role to a co-owner:

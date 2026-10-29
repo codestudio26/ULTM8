@@ -72,6 +72,11 @@ const ROLE_LABELS: Record<string, string> = {
  */
 const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
 
+/** Decision 390 — a coach or Branch Staff role that is live, or paused (ended
+ * for now, given back by Unpause). A paused person is still on the staff: the
+ * School keeps what it set for them, and Remove from School still applies. */
+export const LIVE_OR_PAUSED = { OR: [{ revokedAt: null }, { pausedAt: { not: null } }] } satisfies Prisma.RoleGrantWhereInput;
+
 @Injectable()
 export class RoleGrantsService {
   private readonly logger = new Logger(RoleGrantsService.name);
@@ -209,6 +214,9 @@ export class RoleGrantsService {
     if (duplicate) {
       throw new ConflictException(duplicateMessage);
     }
+    // Decision 390: a paused person gets their roles back with Unpause. A new
+    // coach or Branch Staff role meanwhile would quietly end the pause.
+    if (dto.role !== 'SCHOOL_OWNER_MANAGER') await this.assertNotPaused(callerId, dto.schoolId, targetUserId);
 
     const roleGrantId = randomUUID();
     let grant;
@@ -628,6 +636,18 @@ export class RoleGrantsService {
     }
     await this.tenantAuth.assertSchoolOwner(callerId, grant.schoolId);
 
+    if (grant.revokedAt && grant.pausedAt) {
+      // Decision 390: removing a paused role ends it for good, so Unpause no
+      // longer gives it back.
+      const schoolId = grant.schoolId;
+      const removed = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { pausedAt: null, pausedById: null } });
+        await this.clearCoachRightsIfGone(tx, targetUserId, schoolId);
+        return row;
+      });
+      if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, targetUserId, grant.branchId);
+      return removed;
+    }
     if (grant.revokedAt) {
       return grant; // already revoked — idempotent, not an error
     }
@@ -683,10 +703,11 @@ export class RoleGrantsService {
 
   /** Given the role again later, they start with today's permissions, not
    * their old ones (Decision 193). Cleared only once they hold no coach role
-   * at this School, so losing one branch keeps the others' rights. */
+   * at this School, so losing one branch keeps the others' rights. A paused
+   * role still counts (Decision 390): Unpause gives back the same rights. */
   private async clearCoachRightsIfGone(tx: Prisma.TransactionClient, userId: string, schoolId: string) {
     const remaining = await tx.roleGrant.findMany({
-      where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+      where: { userId, schoolId, ...LIVE_OR_PAUSED, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
       select: { role: true },
     });
     if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId, schoolId } });
@@ -717,7 +738,7 @@ export class RoleGrantsService {
     const { grants, branches, permissions, main } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       grants: await tx.roleGrant.findMany({
         where: { schoolId, role: { in: [...STAFF_ROLES] } },
-        select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, grantedById: true, revokedAt: true },
+        select: { id: true, userId: true, role: true, branchId: true, grantedAt: true, grantedById: true, revokedAt: true, pausedAt: true },
         orderBy: { grantedAt: 'desc' },
       }),
       main: await mainOwnerGrant(tx, schoolId),
@@ -746,10 +767,16 @@ export class RoleGrantsService {
       if (!user) continue; // account deleted since
       const own = grants.filter((g) => g.userId === userId);
       const active = own.some((g) => !g.revokedAt);
-      if ((status === 'active' && !active) || (status === 'removed' && active)) continue;
+      // Decision 390: paused staff are still staff, listed with the active
+      // ones (and on their own under "paused"), never under "removed".
+      const paused = !active && own.some((g) => g.pausedAt);
+      if (status === 'active' && !active && !paused) continue;
+      if (status === 'paused' && !paused) continue;
+      if (status === 'removed' && (active || paused)) continue;
       // The role and branch filters look at the roles this view is about:
-      // current ones for active staff, ended ones for removed staff.
-      const relevant = own.filter((g) => (status === 'all' ? true : active ? !g.revokedAt : true));
+      // current ones for active staff, paused ones for paused staff, ended
+      // ones for removed staff.
+      const relevant = own.filter((g) => (status === 'all' ? true : active ? !g.revokedAt : paused ? !!g.pausedAt : true));
       if (query.role && !relevant.some((g) => g.role === query.role)) continue;
       if (query.branchId && !relevant.some((g) => g.branchId === query.branchId)) continue;
       const permission = permissionOf.get(userId);
@@ -769,13 +796,15 @@ export class RoleGrantsService {
         profilePhotoUrl: user.profilePhotoUrl,
         active,
         addedAt: new Date(Math.min(...own.map((g) => g.grantedAt.getTime()))).toISOString(),
-        removedAt: active ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
+        removedAt: active || paused ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
+        paused,
+        pausedAt: paused ? new Date(Math.max(...own.filter((g) => g.pausedAt).map((g) => g.pausedAt!.getTime()))).toISOString() : null,
         canInviteCoaches: permission?.canInviteCoaches ?? false,
         canManageDisciplines: permission?.canManageDisciplines ?? false,
         mainOwner: main?.userId === userId,
         displayName: permission?.displayName ?? null,
         workPhone: permission?.workPhone ?? null,
-        access: own.some((g) => g.role === 'BRANCH_STAFF' && !g.revokedAt) ? staffAccessFrom(permission) : null,
+        access: own.some((g) => g.role === 'BRANCH_STAFF' && (!g.revokedAt || g.pausedAt)) ? staffAccessFrom(permission) : null,
         roles: roles.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -784,12 +813,14 @@ export class RoleGrantsService {
           grantedAt: g.grantedAt.toISOString(),
           grantedByName: granter(g.grantedById),
           revokedAt: g.revokedAt?.toISOString() ?? null,
+          pausedAt: g.pausedAt?.toISOString() ?? null,
         })),
       });
     }
     items.sort(
       (a, b) =>
         Number(b.active) - Number(a.active) ||
+        Number(b.paused) - Number(a.paused) ||
         `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`, undefined, { sensitivity: 'base' }),
     );
     return { items };
@@ -814,7 +845,8 @@ export class RoleGrantsService {
     const visible = (g: { role: string; branchId: string | null }) =>
       g.role === 'SCHOOL_OWNER_MANAGER' || g.branchId === null || wholeSchool || myBranches.has(g.branchId);
 
-    if (query.status === 'removed') return { items: [] };
+    // Read only, current staff only: nobody paused or removed (Decision 390).
+    if (query.status === 'removed' || query.status === 'paused') return { items: [] };
     const [grants, branches, details] = await Promise.all([
       this.prismaJobs.roleGrant.findMany({
         where: { schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null },
@@ -854,6 +886,8 @@ export class RoleGrantsService {
         active: true,
         addedAt: new Date(Math.min(...grants.filter((g) => g.userId === userId).map((g) => g.grantedAt.getTime()))).toISOString(),
         removedAt: null,
+        paused: false,
+        pausedAt: null,
         canInviteCoaches: false,
         canManageDisciplines: false,
         mainOwner: own.some((g) => g.isMainOwner),
@@ -868,6 +902,7 @@ export class RoleGrantsService {
           grantedAt: g.grantedAt.toISOString(),
           grantedByName: null,
           revokedAt: null,
+          pausedAt: null,
         })),
       });
     }
@@ -879,7 +914,8 @@ export class RoleGrantsService {
    * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the owner
    * sets a Branch Staff member's six access switches, all at once (the
    * portal's presets are just ticks). Only for someone who holds a Branch
-   * Staff role here now; Instructors' rights come from their role (Spec 55
+   * Staff role here now, or one that is paused (Decision 390: the switches
+   * apply again when they are unpaused); Instructors' rights come from their role (Spec 55
    * §8.2) and owners have every right. Turning "Invite coaches" off cancels
    * the coach invites they still have open, as before (Decision 183). Their
    * next request sees the change: every check reads the switches fresh.
@@ -889,7 +925,7 @@ export class RoleGrantsService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, dto[k]])) as StaffAccessSet;
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const isStaff = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } });
+      const isStaff = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', ...LIVE_OR_PAUSED }, select: { id: true } });
       if (!isStaff) {
         throw new BadRequestException('Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.');
       }
@@ -933,7 +969,7 @@ export class RoleGrantsService {
    * staff. Kept on the School's StaffPermission row, never on the person's
    * account: their real name, login email and personal phone stay theirs. A
    * field left out is unchanged; null clears it. Only for people who hold a
-   * staff, coach or owner role here now.
+   * staff, coach or owner role here now, or are paused (Decision 390).
    */
   async updateStaffDetails(callerId: string, schoolId: string, userId: string, dto: UpdateStaffDetailsDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
@@ -945,7 +981,7 @@ export class RoleGrantsService {
 
     const saved = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const isStaff = await tx.roleGrant.findFirst({
-        where: { userId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null },
+        where: { userId, schoolId, role: { in: [...STAFF_ROLES] }, ...LIVE_OR_PAUSED },
         select: { id: true },
       });
       if (!isStaff) {
@@ -973,6 +1009,9 @@ export class RoleGrantsService {
    * `alsoInTx` runs inside the same transaction once the roles are ended (not
    * at all when there were none): StaffRemovalService uses it to hand over or
    * clear the person's classes in the same step (Decision 361 follow-up).
+   *
+   * Someone paused (Decision 390) can be removed too: their paused roles stop
+   * being paused, so Unpause no longer gives them back.
    */
   async removeFromSchool<T = undefined>(
     callerId: string,
@@ -983,10 +1022,15 @@ export class RoleGrantsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const { count } = await tx.roleGrant.updateMany({
+      const live = await tx.roleGrant.updateMany({
         where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
         data: { revokedAt: new Date() },
       });
+      const paused = await tx.roleGrant.updateMany({
+        where: { userId, schoolId, pausedAt: { not: null }, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+        data: { pausedAt: null, pausedById: null },
+      });
+      const count = live.count + paused.count;
       if (count === 0) return { removedRoles: 0 };
       await this.clearCoachRightsIfGone(tx, userId, schoolId);
       return { removedRoles: count, also: alsoInTx ? await alsoInTx(tx) : undefined };
@@ -997,6 +1041,91 @@ export class RoleGrantsService {
     await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
     this.rolesChanged.forget(userId);
     return result;
+  }
+
+  /**
+   * POST /schools/{schoolId}/staff/{userId}/pause (Decision 390) — "Pause":
+   * switches off all of someone's staff access here for a while (a holiday,
+   * an investigation) without losing what the School set up for them.
+   *
+   * Each of their coach and Branch Staff roles here is ended the ordinary way
+   * (revokedAt), so every access check, RLS helper and job already treats it
+   * as gone, and is marked paused. Nothing else changes: their access
+   * switches, grading permissions, display name, coach profile and the
+   * classes they teach all stay as they are. Their access ends on their next
+   * request (Decision 361). Owners are not paused: an owner has every right,
+   * and removing one is its own rule (Decision 370).
+   */
+  async pauseStaff(callerId: string, schoolId: string, userId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const pausedAt = new Date();
+    const pausedRoles = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const owner = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { id: true } });
+      if (owner) {
+        throw new BadRequestException("Owners can't be paused. Pause is for coaches and Branch Staff.");
+      }
+      const { count } = await tx.roleGrant.updateMany({
+        where: { userId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+        data: { revokedAt: pausedAt, pausedAt, pausedById: callerId },
+      });
+      if (count === 0) {
+        const already = await tx.roleGrant.findFirst({ where: { userId, schoolId, pausedAt: { not: null } }, select: { id: true } });
+        if (already) throw new ConflictException('This person is already paused.');
+        throw new NotFoundException('This person holds no coach or Branch Staff role at this School.');
+      }
+      return count;
+    });
+    this.rolesChanged.forget(userId);
+    return { userId, pausedRoles, pausedAt: pausedAt.toISOString() };
+  }
+
+  /**
+   * POST /schools/{schoolId}/staff/{userId}/unpause (Decision 390) — gives
+   * back the roles Pause ended: the same rows, at the same branches, with
+   * everything the School set for them. A role at a branch that was closed
+   * meanwhile stays ended (nobody joins a closed branch, Decision 296); its
+   * branch is named in the answer so the owner can give a role elsewhere.
+   */
+  async unpauseStaff(callerId: string, schoolId: string, userId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const paused = await tx.roleGrant.findMany({
+        where: { userId, schoolId, pausedAt: { not: null } },
+        select: { id: true, role: true, branchId: true, branch: { select: { name: true, archivedAt: true } } },
+      });
+      if (paused.length === 0) throw new NotFoundException('This person is not paused.');
+      // A role they were given again meanwhile, at the same branch, already
+      // covers that one (RoleGrant_one_live_per_scope allows only one).
+      const live = await tx.roleGrant.findMany({ where: { userId, schoolId, revokedAt: null }, select: { role: true, branchId: true } });
+      const held = (g: { role: string; branchId: string | null }) => live.some((l) => l.role === g.role && l.branchId === g.branchId);
+      const closed = paused.filter((g) => g.branch?.archivedAt);
+      const back = paused.filter((g) => !g.branch?.archivedAt && !held(g));
+      const done = paused.filter((g) => !back.includes(g));
+      if (done.length > 0) {
+        await tx.roleGrant.updateMany({ where: { id: { in: done.map((g) => g.id) } }, data: { pausedAt: null, pausedById: null } });
+      }
+      if (back.length > 0) {
+        await tx.roleGrant.updateMany({ where: { id: { in: back.map((g) => g.id) } }, data: { revokedAt: null, pausedAt: null, pausedById: null } });
+      }
+      // Rights kept for the paused roles go if none of them came back.
+      await this.clearCoachRightsIfGone(tx, userId, schoolId);
+      return { restoredRoles: back.length, closedBranches: [...new Set(closed.map((g) => g.branch!.name))] };
+    });
+    this.rolesChanged.forget(userId);
+    return { userId, ...result };
+  }
+
+  /** Decision 390 — refuses a new coach or Branch Staff role for someone who
+   * is paused here: Unpause gives their roles back. */
+  async assertNotPaused(callerId: string, schoolId: string, userId: string) {
+    const paused = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId, schoolId, pausedAt: { not: null } }, select: { id: true } }),
+    );
+    if (paused) {
+      throw new ConflictException({ code: 'STAFF_PAUSED', message: 'This person is paused at this School. Unpause them to give their roles back.' });
+    }
   }
 
   /**

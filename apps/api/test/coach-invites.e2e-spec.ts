@@ -317,4 +317,20 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect(res.status).toBe(503);
     expect(await superuser.coachInvite.count({ where: { email: 'nourl@example.test' } })).toBe(0);
   });
+
+  it('someone paused at the School can\'t accept an invite there; Unpause gives their roles back (Decision 390)', async () => {
+    const coachGrant = await superuser.roleGrant.findFirstOrThrow({ where: { userId: user.coach.id, schoolId: school.id, role: 'INSTRUCTOR', revokedAt: null } });
+    const now = new Date();
+    await superuser.roleGrant.update({ where: { id: coachGrant.id }, data: { revokedAt: now, pausedAt: now, pausedById: user.owner.id } });
+    try {
+      expect((await invite('owner', { email: user.coach.email, branchId: south.id })).status).toBe(201);
+      const res = await as('coach').post(`/v1/coach-invite-links/${lastLinkToken()}/accept`);
+      expect(res.status).toBe(409);
+      expect(res.body.error.message).toBe('Your roles at this School are paused. Ask the School to unpause you.');
+      expect(await superuser.roleGrant.count({ where: { userId: user.coach.id, schoolId: school.id, revokedAt: null } })).toBe(0);
+      expect((await superuser.coachInvite.findFirstOrThrow({ where: { email: user.coach.email, branchId: south.id } })).acceptedAt).toBeNull();
+    } finally {
+      await superuser.roleGrant.update({ where: { id: coachGrant.id }, data: { revokedAt: null, pausedAt: null, pausedById: null } });
+    }
+  });
 });

@@ -62,6 +62,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   lasts the Visitor books and checks in free, and a second pass starts when the
   first ends. Visitors carry a "Visitor" badge on the Students list. A
   membership makes them a member.
+- **Staff page: Pause and Unpause** (Decision 390). An owner can pause a
+  coach or a Branch Staff member. All their roles at the School stop straight
+  away, even if they are signed in. Everything set for them is kept: access
+  switches, grading permissions, display name, and the classes they teach.
+  Unpause gives the same roles back, except at a branch that was closed in
+  the meantime. Paused people stay on the Staff list with a "Paused" badge and
+  have their own status filter. Owners can't be paused. Remove from School
+  still works on someone who is paused.
 - **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
   found by name on the tablet is checked in only to classes they've already
   booked; booking a place there needs the app QR or their own personal
