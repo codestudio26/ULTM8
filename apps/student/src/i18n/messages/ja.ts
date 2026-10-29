@@ -401,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "帯を確認",
       beltVerified: "帯を確認しました。",
       awardStripe: "ストライプを授与：{rung}",
+      stepUp: "ステップアップ：{rung}",
       gradeTo: "{rung}に昇級",
       tooEarly: {
         other: "期間不足：最低期間まであと{count}日です。",
@@ -444,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "昇級（一括）",
       stripeAward: "ストライプ授与",
       bulkStripeAward: "ストライプ授与（一括）",
+      stepUp: "ステップアップ",
+      bulkStepUp: "ステップアップ（一括）",
       downgrade: "降級",
       adjustment: "進捗を調整",
       selfDeclared: "帯を自己申告",
@@ -611,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "昇級",
       stripeAward: "ストライプ授与",
+      stepUp: "ステップアップ",
       downgrade: "降級",
       adjustment: "進捗を調整",
       selfDeclared: "帯を自己申告",

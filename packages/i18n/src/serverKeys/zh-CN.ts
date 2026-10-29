@@ -142,6 +142,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "请求签署免责声明",
     waiverRequestBody: "你被邀请签署以下免责声明：{waiver}。",
     newStripeTitle: "新条纹！",
+    stepUpTitle: "升至下一步骤！",
     promotedTitle: "晋级！",
     rankUpdatedTitle: "级别已更新",
     youEarned: "你获得了 {rank}。（{style}）",

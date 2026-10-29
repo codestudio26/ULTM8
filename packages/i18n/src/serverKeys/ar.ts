@@ -212,6 +212,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "طلب توقيع إقرار إخلاء مسؤولية",
     waiverRequestBody: "تمت دعوتك لتوقيع إقرار إخلاء المسؤولية التالي: {waiver}.",
     newStripeTitle: "شريط جديد!",
+    stepUpTitle: "ترقية خطوة!",
     promotedTitle: "تمت الترقية!",
     rankUpdatedTitle: "تم تحديث الدرجة",
     youEarned: "لقد حصلت على {rank}. ({style})",

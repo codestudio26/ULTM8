@@ -401,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "띠 확인",
       beltVerified: "띠를 확인했습니다.",
       awardStripe: "그랄 수여: {rung}",
+      stepUp: "단계 올리기: {rung}",
       gradeTo: "{rung}(으)로 승급",
       tooEarly: {
         other: "기간 부족: 최소 기간까지 {count}일 남았습니다.",
@@ -444,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "승급(일괄)",
       stripeAward: "그랄 수여",
       bulkStripeAward: "그랄 수여(일괄)",
+      stepUp: "단계 상승",
+      bulkStepUp: "단계 상승(일괄)",
       downgrade: "강등",
       adjustment: "진도 조정",
       selfDeclared: "띠 직접 입력",
@@ -611,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "승급",
       stripeAward: "그랄 수여",
+      stepUp: "단계 상승",
       downgrade: "강등",
       adjustment: "진도 조정",
       selfDeclared: "띠 직접 입력",

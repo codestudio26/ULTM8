@@ -62,7 +62,8 @@ function Warning({ children }: { children: React.ReactNode }) {
  * starting classes toward the new next rung; and with the skills check —
  * blocked when the style requires every skill signed off, otherwise allowed
  * with an acknowledgement that is recorded. The next stripe of the same belt
- * is recorded as a stripe award; anything else as a promotion.
+ * is recorded as a stripe award; anything else as a promotion. On a Levels
+ * style the stripe award's button says "Step up" (Decision 402).
  */
 export function GradeModal({
   studentId,
@@ -225,7 +226,7 @@ export function GradeModal({
         <Actions
           submitting={promote.isPending || stripeAward.isPending || moveToAdult.isPending}
           disabled={!target || blockedBySkills || (needsAck && !acknowledged)}
-          label={isNextStripe ? t('grading.modals.grade.awardStripe') : t('grading.modals.grade.submit')}
+          label={isNextStripe ? (target?.rank.rankDisplay === 'LEVELS' ? t('grading.modals.grade.stepUp') : t('grading.modals.grade.awardStripe')) : t('grading.modals.grade.submit')}
           onClose={onClose}
         />
       </form>

@@ -423,6 +423,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "التحقق من الحزام",
       beltVerified: "تم التحقق من الحزام.",
       awardStripe: "منح شريط: {rung}",
+      stepUp: "الترقية خطوة: {rung}",
       gradeTo: "الترقية إلى {rung}",
       tooEarly: {
         zero: "مبكر جدًا: ينقصه {count} يوم عن الحد الأدنى.",
@@ -476,6 +477,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "تمت الترقية (جماعية)",
       stripeAward: "مُنح شريط",
       bulkStripeAward: "مُنح شريط (جماعي)",
+      stepUp: "تمت الترقية خطوة",
+      bulkStepUp: "تمت الترقية خطوة (جماعي)",
       downgrade: "خُفّضت الدرجة",
       adjustment: "عُدّل التقدّم",
       selfDeclared: "أُعلن الحزام",
@@ -648,6 +651,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "تمت الترقية",
       stripeAward: "مُنح شريط",
+      stepUp: "تمت الترقية خطوة",
       downgrade: "خُفّضت الدرجة",
       adjustment: "عُدّل التقدّم",
       selfDeclared: "أُعلن الحزام",

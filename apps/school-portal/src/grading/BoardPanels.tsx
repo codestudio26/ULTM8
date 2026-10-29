@@ -9,7 +9,7 @@ import { useSkills } from '../skills/skillQueries';
 import { formatMoney } from '../lib/money';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
-import { HISTORY_TYPE_LABEL } from './historyLabels';
+import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -223,7 +223,7 @@ export function StudentPanel({
               {entries.map((h) => {
                 const from = rung(h.fromStripeTierId);
                 const to = rung(h.toStripeTierId);
-                const labelKey = HISTORY_TYPE_LABEL[h.type];
+                const labelKey = historyTypeLabel(h.type, eventRankDisplay(ladder, h));
                 return (
                   <li key={h.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>

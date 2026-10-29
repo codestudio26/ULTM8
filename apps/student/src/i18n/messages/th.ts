@@ -401,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "ยืนยันสายคาด",
       beltVerified: "ยืนยันสายคาดแล้ว",
       awardStripe: "มอบแถบ: {rung}",
+      stepUp: "เลื่อนขั้น: {rung}",
       gradeTo: "เลื่อนระดับเป็น {rung}",
       tooEarly: {
         other: "ยังเร็วเกินไป: ยังขาดอีก {count} วันจากจำนวนวันขั้นต่ำ",
@@ -444,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "เลื่อนระดับ (หลายคน)",
       stripeAward: "มอบแถบ",
       bulkStripeAward: "มอบแถบ (หลายคน)",
+      stepUp: "เลื่อนขั้น",
+      bulkStepUp: "เลื่อนขั้น (หลายคน)",
       downgrade: "ลดระดับ",
       adjustment: "ปรับความคืบหน้า",
       selfDeclared: "แจ้งสายคาดเอง",
@@ -611,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "เลื่อนระดับ",
       stripeAward: "มอบแถบ",
+      stepUp: "เลื่อนขั้น",
       downgrade: "ลดระดับ",
       adjustment: "ปรับความคืบหน้า",
       selfDeclared: "แจ้งสายคาดเอง",

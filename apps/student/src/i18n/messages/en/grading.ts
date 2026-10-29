@@ -98,6 +98,7 @@ export const grading = {
   events: {
     promotion: 'Promoted',
     stripeAward: 'Stripe awarded',
+    stepUp: 'Step up',
     downgrade: 'Moved down',
     adjustment: 'Progress adjusted',
     selfDeclared: 'Belt declared',

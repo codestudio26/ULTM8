@@ -410,6 +410,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Verifica cintura",
       beltVerified: "Cintura verificata.",
       awardStripe: "Assegna striscia: {rung}",
+      stepUp: "Avanza di un passo: {rung}",
       gradeTo: "Gradua a {rung}",
       tooEarly: {
         one: "Troppo presto: manca {count} giorno al minimo.",
@@ -457,6 +458,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Promosso (di gruppo)",
       stripeAward: "Striscia assegnata",
       bulkStripeAward: "Striscia assegnata (di gruppo)",
+      stepUp: "Avanzamento di passo",
+      bulkStepUp: "Avanzamento di passo (di gruppo)",
       downgrade: "Retrocesso",
       adjustment: "Progresso regolato",
       selfDeclared: "Cintura dichiarata",
@@ -626,6 +629,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Promosso",
       stripeAward: "Striscia assegnata",
+      stepUp: "Avanzamento di passo",
       downgrade: "Retrocesso",
       adjustment: "Progresso regolato",
       selfDeclared: "Cintura dichiarata",
