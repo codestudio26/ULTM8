@@ -1201,7 +1201,12 @@ export class SchoolsService {
 export function withoutBillingIds<T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown }>(
   school: T,
 ): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
-  const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: _status, ...rest } = school;
+  const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: status, ...rest } = school;
+  // Backlog 3.14: the status itself stays hidden, so a School that subscribes
+  // shows no trial dates (its trial no longer matters).
+  if ((status === 'ACTIVE' || status === 'PAST_DUE') && 'platformTrialEndsAt' in rest) {
+    return { ...rest, platformTrialStartedAt: null, platformTrialEndsAt: null };
+  }
   return rest;
 }
 

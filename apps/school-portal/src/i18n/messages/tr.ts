@@ -14,7 +14,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   layout: {
     trial: {
-      daysLeft: {"other": "Ücretsiz ULTM8 deneme süresi: {count} gün kaldı."},
+      daysLeft: {"one": "Ücretsiz ULTM8 deneme süresi: {count} gün kaldı.", "other": "Ücretsiz ULTM8 deneme süresi: {count} gün kaldı."},
       ended: "Ücretsiz ULTM8 deneme süren sona erdi. Abone olana kadar portal salt okunur: yeni ders, rezervasyon veya ödeme yok. Hiçbir şey silinmedi.",
     },
     brand: "ULTM8 Okul Portalı",

@@ -173,15 +173,17 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   purgedAt!: string | null;
 
   /** Backlog 3.14: a free trial of ULTM8. After `platformTrialEndsAt`, without
-   * an active platform subscription, the portal is read-only. */
+   * an active platform subscription, the portal is read-only. A School's own
+   * read sends both as null once it subscribes. */
   @ApiPropertyOptional({ type: String, nullable: true })
   platformTrialStartedAt!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   platformTrialEndsAt!: string | null;
 
+  /** Platform Admin's School read only; a School's own read leaves it out. */
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
-  platformSubscriptionStatus!: string | null;
+  platformSubscriptionStatus?: string | null;
 
   /**
    * Present only on the response from POST /schools (self-service creation) — a

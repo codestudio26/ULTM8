@@ -8,14 +8,14 @@ const DAY_MS = 86_400_000;
 /**
  * Backlog 3.14 (Decision 318 item 5): the owner of a School on a free trial
  * of ULTM8 sees how many days are left; once it has ended without a platform
- * subscription, that the portal is read-only until they subscribe. ULTM8 HQ
+ * subscription, that the portal is read-only until they subscribe (once it
+ * subscribes, the School read sends no trial dates). ULTM8 HQ
  * starts and extends trials in Platform Admin; nothing here changes them.
  */
 export function TrialBanner() {
   const t = useT();
   const school = useSchool(useOwnedSchoolId()).data;
   if (!school?.platformTrialEndsAt) return null;
-  if (school.platformSubscriptionStatus === 'ACTIVE' || school.platformSubscriptionStatus === 'PAST_DUE') return null;
   const left = Math.ceil((new Date(school.platformTrialEndsAt).getTime() - Date.now()) / DAY_MS);
   return (
     <div

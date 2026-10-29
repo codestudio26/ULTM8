@@ -1,5 +1,5 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { AdminSubRole } from '@prisma/client';
+import { AdminSubRole, Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-admin.service';
 import { AuditAction, AuditLogService } from './audit-log.service';
@@ -34,7 +34,9 @@ export class PlatformAdminSchoolTrialService {
     }
     const now = new Date();
     const ends = new Date(now.getTime() + days * DAY_MS);
-    await this.prismaPlatformAdmin.school.update({ where: { id: schoolId }, data: { platformTrialStartedAt: now, platformTrialEndsAt: ends } });
+    // updateMany, not update: Platform Admin may read only some School columns,
+    // and update() reads the whole row back (as TenantLifecycleService notes).
+    await this.prismaPlatformAdmin.school.updateMany({ where: { id: schoolId }, data: { platformTrialStartedAt: now, platformTrialEndsAt: ends } });
     await this.record(adminUserId, school, AuditAction.START_SCHOOL_TRIAL, { days, endsAt: ends.toISOString() });
     return { platformTrialStartedAt: now, platformTrialEndsAt: ends };
   }
@@ -48,7 +50,7 @@ export class PlatformAdminSchoolTrialService {
     }
     const from = Math.max(school.platformTrialEndsAt.getTime(), Date.now());
     const ends = new Date(from + days * DAY_MS);
-    await this.prismaPlatformAdmin.school.update({ where: { id: schoolId }, data: { platformTrialEndsAt: ends } });
+    await this.prismaPlatformAdmin.school.updateMany({ where: { id: schoolId }, data: { platformTrialEndsAt: ends } });
     await this.record(adminUserId, school, AuditAction.EXTEND_SCHOOL_TRIAL, { days, from: school.platformTrialEndsAt.toISOString(), endsAt: ends.toISOString() });
     return { platformTrialStartedAt: school.platformTrialStartedAt, platformTrialEndsAt: ends };
   }
@@ -70,7 +72,7 @@ export class PlatformAdminSchoolTrialService {
     return school;
   }
 
-  private record(adminUserId: string, school: { id: string; franchiseId: string | null }, action: AuditAction, details: Record<string, unknown>) {
+  private record(adminUserId: string, school: { id: string; franchiseId: string | null }, action: AuditAction, details: Prisma.InputJsonObject) {
     return this.auditLog.record({ adminUserId, action, targetType: 'School', targetId: school.id, schoolId: school.id, franchiseId: school.franchiseId, details });
   }
 }

@@ -133,6 +133,10 @@ describeIfDb('Free trial of ULTM8 (backlog 3.14)', () => {
   it('a School that subscribes is never held by an ended trial, and needs no new one', async () => {
     await superuser.school.update({ where: { id: school.id }, data: { platformTrialEndsAt: new Date(Date.now() - DAY), platformSubscriptionStatus: 'ACTIVE' } });
     await expect(gate()).resolves.toBeUndefined();
+    // The School's own read hides its subscription status, so it shows no trial.
+    const own = await request(app.getHttpServer()).get(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${token.owner}`);
+    expect(own.body).toMatchObject({ platformTrialStartedAt: null, platformTrialEndsAt: null });
+    expect(own.body.platformSubscriptionStatus).toBeUndefined();
     expect((await post('full', '/trial', { days: 14 })).status).toBe(409);
   });
 });

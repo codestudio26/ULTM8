@@ -4473,6 +4473,96 @@
         ]
       }
     },
+    "/v1/platform-admin/schools/{id}/trial": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_startTrial",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTrialDaysDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTrialResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/trial/extend": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_extendTrial",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTrialDaysDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTrialResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/platform-admin/franchises/{id}": {
       "get": {
         "operationId": "PlatformAdminFranchisesController_findOne",
@@ -17043,6 +17133,23 @@
             "type": "string",
             "nullable": true
           },
+          "platformTrialStartedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "platformTrialEndsAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "platformSubscriptionStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ]
+          },
           "accessToken": {
             "type": "string"
           }
@@ -21092,6 +21199,37 @@
         "required": [
           "mainOwnerUserId",
           "formerMainOwnerRemoved"
+        ]
+      },
+      "SchoolTrialDaysDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended)."
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "SchoolTrialResponseDto": {
+        "type": "object",
+        "properties": {
+          "platformTrialStartedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "platformTrialEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "platformTrialStartedAt",
+          "platformTrialEndsAt"
         ]
       },
       "CreateAdminUserDto": {
