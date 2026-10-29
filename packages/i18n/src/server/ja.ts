@@ -615,4 +615,5 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "スクールオーナーはコーチの招待を許可していません。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
   "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
+  "Only the owner or Branch Staff can give a visit pass.": "ビジターパスを付与できるのはオーナーか支店スタッフだけです。",
 };

@@ -20,6 +20,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   length), and students who train that style at that branch are told in the
   app. The owner, and staff given "Can start open mat sessions" on the
   Staff page. Needs migration `20261221000000_open_mat_permission`.
+- **Visitors and visit passes** (Decision 391) — each School sets how long a
+  free visit pass lasts (School settings; no default). The owner, or Branch
+  Staff with the Students switch, gives a pass from the student's page; while it
+  lasts the Visitor books and checks in free, and a second pass starts when the
+  first ends. Visitors carry a "Visitor" badge on the Students list. A
+  membership makes them a member.
 - **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
   found by name on the tablet is checked in only to classes they've already
   booked; booking a place there needs the app QR or their own personal

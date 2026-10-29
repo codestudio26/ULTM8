@@ -615,4 +615,5 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "学校所有者未允许你邀请教练。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
+  "Only the owner or Branch Staff can give a visit pass.": "只有所有者或分校员工可以发放访客通行证。",
 };

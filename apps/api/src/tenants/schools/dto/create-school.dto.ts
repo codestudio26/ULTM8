@@ -290,6 +290,13 @@ export class CreateSchoolDto {
   @Max(1440)
   checkInOpensMinutesBeforeStart?: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. No default; null turns visit passes off.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  visitorPeriodDays?: number | null;
+
   @ApiPropertyOptional({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members\' personal codes (Decision 315). Default 4. Codes already issued keep their length.' })
   @IsOptional()
   @IsIn([4, 6])

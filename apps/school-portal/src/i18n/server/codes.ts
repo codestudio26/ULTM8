@@ -23,6 +23,11 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // The locked tablet, someone found by name (Decision 388).
     case 'KIOSK_BOOK_FIRST':
       return t('server.codes.kioskBookFirst');
+    // Visit passes (Decision 391).
+    case 'VISITOR_PERIOD_NOT_SET':
+      return t('server.codes.visitorPeriodNotSet');
+    case 'VISITOR_HAS_MEMBERSHIP':
+      return t('server.codes.visitorHasMembership');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = message.match(/opens at (\S+?)\.?$/)?.[1];
       const opensAt = iso ? new Date(iso) : null;

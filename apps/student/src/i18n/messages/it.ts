@@ -695,6 +695,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   memberships: {
     myMemberships: {
       planFallback: "Piano {planId}",
+      visitPass: "Pass visitatore",
       statusLine: "Stato: {status} · {frequency}",
       recurring: "Ricorrente",
       oneTime: "Una tantum",

@@ -23,6 +23,8 @@ export const server: PartialMessages<ServerKeys> = {
     bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
     classBusy: "Er boeken op dit moment veel mensen deze les. Probeer het over een ogenblik opnieuw.",
     kioskBookFirst: "Niet geboekt voor deze les. Boek hem in de app of scan de QR-code van de app om hier in te checken.",
+    visitorPeriodNotSet: "Stel eerst bij de schoolinstellingen in hoe lang een bezoekerspas geldt.",
+    visitorHasMembership: "Deze leerling heeft een lidmaatschap, dus is lid en geen bezoeker.",
     checkInNotOpen: "Inchecken voor deze les is nog niet geopend.",
     checkInOpensAt: "Inchecken voor deze les is nog niet geopend. Opent: {time}.",
     capacityBelowBooked: "Al geboekte leerlingen: {count}. Stel de capaciteit in op {count} of meer, of annuleer eerst enkele boekingen.",

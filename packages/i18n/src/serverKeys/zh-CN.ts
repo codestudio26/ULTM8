@@ -23,6 +23,8 @@ export const server: PartialMessages<ServerKeys> = {
     bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
     classBusy: "目前预约此课程的人很多，请稍后再试。",
     kioskBookFirst: "未预约此课程。如需在此签到，请在应用中预约，或扫描应用中的二维码。",
+    visitorPeriodNotSet: "请先在学校设置中设定访客通行证的时长。",
+    visitorHasMembership: "该学员已有会员计划，因此是会员，不是访客。",
     checkInNotOpen: "此课程的签到尚未开放。",
     checkInOpensAt: "此课程的签到尚未开放。开放时间：{time}。",
     capacityBelowBooked: "已预约学员：{count} 名。请将名额设为 {count} 或以上，或先取消部分预约。",

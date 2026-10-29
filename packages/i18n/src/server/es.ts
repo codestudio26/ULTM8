@@ -615,4 +615,5 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you invite coaches.": "El propietario de la escuela no te ha permitido invitar a instructores.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Los permisos de acceso son para el personal de sede. Los instructores tienen los derechos de su rol y los propietarios tienen todos los derechos.",
   "You are not on the staff of this School.": "No formas parte del personal de esta escuela.",
+  "Only the owner or Branch Staff can give a visit pass.": "Solo el propietario o el personal de sede pueden dar un pase de visita.",
 };

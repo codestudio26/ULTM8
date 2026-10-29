@@ -38,7 +38,7 @@ export class DashboardService {
         tx.discipline.findFirst({ where: { schoolId, archivedAt: null, ranks: { some: { archivedAt: null } } }, select: { id: true } }),
         tx.class.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
         tx.timetableSlot.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
-        tx.membershipPlan.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
+        tx.membershipPlan.findFirst({ where: { schoolId, archivedAt: null, type: { not: 'VISIT_PASS' } }, select: { id: true } }),
         tx.waiver.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
         tx.paymentAccount.findFirst({ where: { schoolId, status: 'ACTIVE', stripeConnectedAccountId: { not: null } }, select: { id: true } }),
         tx.roleGrant.findFirst({ where: { schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null }, select: { id: true } }),

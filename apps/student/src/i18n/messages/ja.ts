@@ -677,6 +677,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   memberships: {
     myMemberships: {
       planFallback: "プラン {planId}",
+      visitPass: "ビジターパス",
       statusLine: "ステータス：{status} · {frequency}",
       recurring: "定期",
       oneTime: "1回のみ",

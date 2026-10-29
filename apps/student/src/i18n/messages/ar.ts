@@ -716,6 +716,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   memberships: {
     myMemberships: {
       planFallback: "الخطة {planId}",
+      visitPass: "تصريح زائر",
       statusLine: "الحالة: {status} · {frequency}",
       recurring: "متكررة",
       oneTime: "لمرة واحدة",
