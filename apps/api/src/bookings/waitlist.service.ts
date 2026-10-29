@@ -79,6 +79,7 @@ export class WaitlistService {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
     } else if (isOnBehalfOf) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
+      await this.tenantAuth.assertStaffMay(callerId, resolvedClass.schoolId, 'bookings', resolvedClass.branchId);
     }
     assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
     // Decision 110: a closed School takes no new waitlist places (Classes review C16).
@@ -188,6 +189,7 @@ export class WaitlistService {
       await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
     } else if (resolvedEntry.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
+      await this.tenantAuth.assertStaffMay(callerId, resolvedEntry.schoolId, 'bookings', resolvedEntry.branchId);
     }
 
     await this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
@@ -234,6 +236,7 @@ export class WaitlistService {
       await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
     } else if (resolvedEntry.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
+      await this.tenantAuth.assertStaffMay(callerId, resolvedEntry.schoolId, 'bookings', resolvedEntry.branchId);
     }
     if (resolvedEntry.status !== 'NOTIFIED') {
       throw new BadRequestException('This Waitlist entry is not currently Notified — nothing to claim.');

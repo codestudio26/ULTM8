@@ -14,6 +14,7 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/front-desk-check-in.service';
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
 import { FrontDeskSessionContext } from './front-desk-sessions.service';
+import { StudentCheckInCodesService } from './student-check-in-codes.service';
 import { KioskBookingDto, KioskClassDto, KioskStudentCardDto, KioskStudentDto, KioskTodayDto, KioskTodayQueryDto } from './dto/front-desk.dto';
 
 const NAME_RESULTS = 8;
@@ -54,6 +55,7 @@ export class FrontDeskKioskService {
     private readonly grading: GradingService,
     private readonly attendance: AttendanceService,
     private readonly deskCheckIn: FrontDeskCheckInService,
+    private readonly checkInCodes: StudentCheckInCodesService,
   ) {}
 
   async info(session: FrontDeskSessionContext) {
@@ -194,6 +196,34 @@ export class FrontDeskKioskService {
     return { lookupToken: r.lookupToken, expiresAt: r.expiresAt, student: await this.student(session, r.studentId) };
   }
 
+  /** A typed personal check-in code (Decision 384); like a scanned QR, the
+   * lookup only works on this tablet. */
+  async codeLookup(session: FrontDeskSessionContext, code: string) {
+    const r = await this.checkInCodes.lookup(session.schoolId, code, frontDeskLookupOwner(session.id), `tablet ${session.id}`);
+    return { lookupToken: r.lookupToken, expiresAt: r.expiresAt, student: await this.student(session, r.studentId) };
+  }
+
+  /** Find me (Decisions 351, 362; handover F6): someone about to sign up
+   * checks whether they're already a member here. Both the full name and the
+   * date of birth must match a current Student of the School, so typing names
+   * alone tells nobody who trains here; the answer is only yes or no. */
+  async findMe(session: FrontDeskSessionContext, fullName: string, dateOfBirth: string) {
+    const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== dateOfBirth) {
+      throw new BadRequestException('Enter a real date of birth.');
+    }
+    const typed = normalizeName(fullName);
+    // Read via ultm8_jobs: the tablet has no user of its own.
+    const sameBirthday = await this.prismaJobs.user.findMany({
+      where: { dateOfBirth: dob, roleGrants: { some: { schoolId: session.schoolId, role: 'STUDENT', revokedAt: null } } },
+      select: { firstName: true, surname: true },
+      take: 50,
+    });
+    // Either order, for names written surname first.
+    const alreadyMember = sameBirthday.some((u) => typed === normalizeName(`${u.firstName} ${u.surname}`) || typed === normalizeName(`${u.surname} ${u.firstName}`));
+    return { alreadyMember };
+  }
+
   /** The one-step check-in (Decision 378), only at this tablet's Branch. */
   checkIn(session: FrontDeskSessionContext, dto: DeskCheckInDto) {
     return this.deskCheckIn.checkIn(session.startedById, session.schoolId, dto, { sessionId: session.id, branchId: session.branchId });
@@ -237,4 +267,14 @@ export class FrontDeskKioskService {
     const consented = new Set(consents.map((c) => c.studentId));
     return new Map(withPhoto.map((s) => [s.id, !children.has(s.id) || consented.has(s.id) ? (s.profilePhotoUrl ?? null) : null]));
   }
+}
+
+/** A name compared without case, accents, punctuation or extra spaces. */
+function normalizeName(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
 }

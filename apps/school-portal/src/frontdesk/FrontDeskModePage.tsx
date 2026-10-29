@@ -6,8 +6,8 @@ import { useBranches } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
 import { errorText } from './frontDeskQueries';
-import { findMe, submitSignUp, type SignUpInput } from './kioskApi';
-import { saveKioskToken, useMyKioskCode, useStartKiosk } from './kioskSession';
+import { submitSignUp, type SignUpInput } from './kioskApi';
+import { saveKioskToken, useKioskFindMe, useMyKioskCode, useStartKiosk } from './kioskSession';
 import { SoonTag } from './parts';
 import './frontDesk.css';
 
@@ -260,7 +260,9 @@ export function FindMeScreen({ onBack, onSignUp }: { onBack: () => void; onSignU
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
   const [result, setResult] = useState<'member' | 'none' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const ready = hasBackend('findMe');
+  const find = useKioskFindMe();
   return (
     <div className="fd-kiosk" style={{ alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: 560, maxWidth: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -284,6 +286,10 @@ export function FindMeScreen({ onBack, onSignUp }: { onBack: () => void; onSignU
           </div>
         ) : result === 'none' ? (
           <p className="fd-class__meta">{t('frontDesk.findMe.none')}</p>
+        ) : error ? (
+          <div className="fd-msg fd-msg--bad" aria-live="polite">
+            {error}
+          </div>
         ) : null}
         <p className="fd-class__meta">{t('frontDesk.findMe.privacy')}</p>
         <div className="fd-pair">
@@ -298,8 +304,14 @@ export function FindMeScreen({ onBack, onSignUp }: { onBack: () => void; onSignU
             <button
               type="button"
               className="fd-pill fd-pill--go"
-              disabled={!ready || !name.trim() || !dob}
-              onClick={() => findMe(name.trim(), dob).then((r) => setResult(r.alreadyMember ? 'member' : 'none'), () => setResult('none'))}
+              disabled={!ready || !name.trim() || !dob || find.isPending}
+              onClick={() => {
+                setError(null);
+                find.mutate(
+                  { fullName: name.trim(), dateOfBirth: dob },
+                  { onSuccess: (r) => setResult(r.alreadyMember ? 'member' : 'none'), onError: (err) => setError(errorText(err, t('frontDesk.findMe.failed'))) },
+                );
+              }}
             >
               {t('frontDesk.findMe.search')} {ready ? null : <SoonTag />}
             </button>

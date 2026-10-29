@@ -11,6 +11,7 @@ export type CreateStaffManuallyResponse = components['schemas']['CreateStaffManu
 export type StaffMember = components['schemas']['StaffMemberDto'];
 export type StaffRoleEntry = components['schemas']['StaffRoleDto'];
 export type RemoveFromSchoolInput = components['schemas']['RemoveFromSchoolDto'];
+export type StaffAccess = components['schemas']['StaffAccessDto'];
 export type StaffListFilters = { status: 'active' | 'removed' | 'all'; role?: StaffRoleEntry['role']; branchId?: string; q?: string };
 
 /** One user's grants (GET /users/{userId}/role-grants) — what Instructor and
@@ -59,7 +60,29 @@ function invalidateStaffLists(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['staff-permissions'] }),
     queryClient.invalidateQueries({ queryKey: ['staff'] }),
+    queryClient.invalidateQueries({ queryKey: ['staff-access'] }),
   ]);
+}
+
+/** Decision 387 — what the signed-in person may do at this School: the
+ * owner everything, Branch Staff what their owner switched on, an
+ * Instructor bookings and students by role. */
+export function useMyStaffAccess(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['staff-access', 'me', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/staff/me/access', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 387 — the owner sets a Branch Staff member's six switches. */
+export function useSetStaffAccess(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, access }: { userId: string; access: StaffAccess }) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/staff/{userId}/access', { params: { path: { schoolId, userId } }, body: access })),
+    onSuccess: () => invalidateStaffLists(queryClient),
+  });
 }
 
 /** GET /schools/{schoolId}/staff (Decision 361): everyone with an owner,

@@ -2,7 +2,8 @@
  * Decision 380 (handover F1, F2): a locked front-desk tablet. Staff start a
  * session for one Branch; the tablet's token reaches only the
  * /front-desk/kiosk endpoints, which return the short form ("Ana D.") for
- * that Branch; a staff member's own code ends it.
+ * that Branch; a staff member's own code ends it. Decision 384 (F3): personal
+ * check-in codes. Decision 385 (F6): Find me.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -123,6 +124,7 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
   afterAll(async () => {
     await superuser.frontDeskSession.deleteMany({ where: { schoolId: school.id } });
     await superuser.staffKioskCode.deleteMany({ where: { schoolId: school.id } });
+    await superuser.studentCheckInCode.deleteMany({ where: { schoolId: school.id } });
     await superuser.trainingLog.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
@@ -320,6 +322,98 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
     } finally {
       await superuser.school.update({ where: { id: school.id }, data: { checkInCodeDigits: 4 } });
     }
+  });
+
+  // Decision 384 (handover F3): personal check-in codes.
+  const checkInCode = (who: string, studentId: string) => http().get(`/v1/schools/${school.id}/students/${studentId}/check-in-code`).set('Authorization', `Bearer ${tokens[who] ?? jwt.sign({ sub: users[who].id, email: users[who].email, grants: [] })}`);
+
+  it('a personal code is seen by the Student, their Guardian and staff who cover them, and nobody else', async () => {
+    const own = await checkInCode('ana', users.ana.id);
+    expect(own.status).toBe(200);
+    expect(own.body.code).toMatch(/^\d{4}$/);
+    expect((await checkInCode('ana', users.ana.id)).body.code).toBe(own.body.code);
+    expect((await checkInCode('staffA', users.ana.id)).body.code).toBe(own.body.code);
+    expect((await checkInCode('owner', users.ana.id)).body.code).toBe(own.body.code);
+    expect((await checkInCode('staffB', users.ana.id)).status).toBe(403);
+    expect((await checkInCode('bo', users.ana.id)).status).toBe(403);
+
+    const kid = await checkInCode('mum', users.kid.id);
+    expect(kid.status).toBe(200);
+    expect(kid.body.code).toMatch(/^\d{4}$/);
+    expect((await checkInCode('mum', users.ana.id)).status).toBe(403);
+  });
+
+  it('staff issue a new code and the old one stops working; the Student cannot', async () => {
+    const old = (await checkInCode('bo', users.bo.id)).body.code as string;
+    expect((await http().post(`/v1/schools/${school.id}/students/${users.bo.id}/check-in-code`).set('Authorization', `Bearer ${tokens.bo}`)).status).toBe(403);
+    expect((await http().post(`/v1/schools/${school.id}/students/${users.bo.id}/check-in-code`).set('Authorization', `Bearer ${tokens.staffA}`)).status).toBe(403);
+    const renewed = await http().post(`/v1/schools/${school.id}/students/${users.bo.id}/check-in-code`).set('Authorization', `Bearer ${tokens.staffB}`);
+    expect(renewed.status).toBe(200);
+    expect(renewed.body.code).not.toBe(old);
+    expect((await checkInCode('bo', users.bo.id)).body.code).toBe(renewed.body.code);
+    const stale = await http().post(`/v1/schools/${school.id}/front-desk/code-lookups`).set('Authorization', `Bearer ${tokens.staffB}`).send({ code: old });
+    expect(stale.status).toBe(404);
+    expect(stale.body.error.code).toBe('CHECK_IN_CODE_NOT_FOUND');
+  });
+
+  it('a code typed on the tablet opens the card and checks in as PERSONAL_CODE; a staff lookup gives the full name', async () => {
+    const cls = await classNow(branchB.id, 'Code class');
+    await member(users.bo.id);
+    const code = (await checkInCode('bo', users.bo.id)).body.code as string;
+
+    const staff = await http().post(`/v1/schools/${school.id}/front-desk/code-lookups`).set('Authorization', `Bearer ${tokens.staffB}`).send({ code });
+    expect(staff.status).toBe(200);
+    expect(staff.body).toMatchObject({ studentId: users.bo.id, firstName: 'Bo', surname: 'Desk' });
+
+    const s = await start('staffB', branchB.id);
+    const lookup = await http().post('/v1/front-desk/kiosk/code-lookups').set('Authorization', `Bearer ${s.sessionToken}`).send({ code });
+    expect(lookup.status).toBe(200);
+    expect(lookup.body.student).toEqual({ id: users.bo.id, firstName: 'Bo', surnameInitial: 'D', profilePhotoUrl: null });
+    const ok = await http()
+      .post('/v1/front-desk/kiosk/check-ins')
+      .set('Authorization', `Bearer ${s.sessionToken}`)
+      .send({ studentId: users.bo.id, classIds: [cls.id], lookupToken: lookup.body.lookupToken });
+    expect(ok.body.done).toBe(true);
+    const booking = await superuser.booking.findFirstOrThrow({ where: { studentId: users.bo.id, classId: cls.id } });
+    expect(booking.checkInMethod).toBe('PERSONAL_CODE');
+  });
+
+  it('code lookups on a tablet are limited per session', async () => {
+    const s = await start('owner');
+    const taken = new Set(await superuser.studentCheckInCode.findMany({ where: { schoolId: school.id } }).then((r) => r.map((c) => c.code)));
+    let guess = 0;
+    const next = () => {
+      while (taken.has(String(guess).padStart(4, '0'))) guess++;
+      return String(guess++).padStart(4, '0');
+    };
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) {
+      statuses.push((await http().post('/v1/front-desk/kiosk/code-lookups').set('Authorization', `Bearer ${s.sessionToken}`).send({ code: next() })).status);
+    }
+    expect(statuses.slice(0, 10).every((x) => x === 404)).toBe(true);
+    expect(statuses[10]).toBe(429);
+  });
+
+  // Decision 362 (handover F6): Find me.
+  it('find me says only whether a full name and date of birth match a Student here, and is limited per session', async () => {
+    const s = await start('owner');
+    const findMe = (fullName: string, dateOfBirth: string) =>
+      http().post('/v1/front-desk/kiosk/find-me').set('Authorization', `Bearer ${s.sessionToken}`).send({ fullName, dateOfBirth });
+    const yes = await findMe('Ana Desk', '2000-01-01');
+    expect(yes.status).toBe(200);
+    expect(yes.body).toEqual({ alreadyMember: true });
+    expect((await findMe('  ÁNA   desk ', '2000-01-01')).body.alreadyMember).toBe(true);
+    expect((await findMe('Desk Ana', '2000-01-01')).body.alreadyMember).toBe(true);
+    expect((await findMe('Ana Desk', '2000-01-02')).body.alreadyMember).toBe(false);
+    expect((await findMe('Ana', '2000-01-01')).body.alreadyMember).toBe(false);
+    // Mum has an account but isn't a Student here.
+    expect((await findMe('Mum Desk', '2000-01-01')).body.alreadyMember).toBe(false);
+    expect((await findMe('Ana Desk', '2000-02-30')).status).toBe(400);
+    expect((await http().post('/v1/front-desk/kiosk/find-me').set('Authorization', `Bearer ${tokens.owner}`).send({ fullName: 'Ana Desk', dateOfBirth: '2000-01-01' })).status).toBe(401);
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i++) statuses.push((await findMe('Nobody Here', '1999-09-09')).status);
+    expect(statuses.slice(0, 3)).toEqual([200, 200, 200]);
+    expect(statuses[3]).toBe(429);
   });
 
   it('unlock attempts are limited per session', async () => {

@@ -660,6 +660,38 @@ export interface paths {
         patch: operations["RoleGrantsController_updateStaffDetails"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/me/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_myStaffAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RoleGrantsController_setStaffAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/main-owner": {
         parameters: {
             query?: never;
@@ -4900,6 +4932,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/front-desk/code-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskSessionsController_codeLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/session": {
         parameters: {
             query?: never;
@@ -4980,6 +5028,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/code-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_codeLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/find-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_findMe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/check-ins": {
         parameters: {
             query?: never;
@@ -5006,6 +5086,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["FrontDeskKioskController_unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/check-in-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentCheckInCodesController_get"];
+        put?: never;
+        post: operations["StudentCheckInCodesController_renew"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5810,6 +5906,22 @@ export interface components {
             emailSent: boolean;
             temporaryPasscode?: string | null;
         };
+        StaffAccessDto: {
+            /** @description Manage classes and the timetable at their branches (off by default). */
+            classes: boolean;
+            /** @description Manage bookings and check-in at their branches (on by default). */
+            bookings: boolean;
+            /** @description See and edit the students of their branches (on by default). */
+            students: boolean;
+            /** @description Cancel classes at their branches and give credit back, never refunds (on by default). */
+            cancelClasses: boolean;
+            /** @description See the staff list for their branches, read only (off by default). */
+            staffList: boolean;
+            /** @description Invite coaches (off by default; Decision 183). */
+            inviteCoaches: boolean;
+            /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
+            disciplines: boolean;
+        };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
             grantId: string;
@@ -5843,6 +5955,8 @@ export interface components {
             displayName?: string | null;
             /** @description Decision 381: their work phone at this School (E.164), set by an owner. Null = not set. */
             workPhone?: string | null;
+            /** @description Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise. */
+            access?: components["schemas"]["StaffAccessDto"] | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
@@ -5858,6 +5972,18 @@ export interface components {
             userId: string;
             displayName?: string | null;
             workPhone?: string | null;
+        };
+        MyStaffAccessResponseDto: {
+            /** @description School Owner/Manager: every switch is on, by role. */
+            owner: boolean;
+            /** @description Holds an active Branch Staff role here. */
+            branchStaff: boolean;
+            /** @description What the caller may do. An Instructor's own role gives bookings and students. */
+            access: components["schemas"]["StaffAccessDto"];
+        };
+        StaffAccessResponseDto: {
+            userId: string;
+            access: components["schemas"]["StaffAccessDto"];
         };
         HandOverMainOwnerDto: {
             /** @description A co-owner of this School, who becomes its main owner. */
@@ -8664,7 +8790,7 @@ export interface components {
             studentId: string;
             /** @description The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation. */
             studentToken?: string;
-            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN. */
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups, in place of studentToken: the QR was already checked when it was scanned. Recorded as INSTRUCTOR_SCAN (PERSONAL_CODE for a lookup from .../code-lookups). */
             lookupToken?: string;
         };
         DeskQrLookupDto: {
@@ -8689,7 +8815,7 @@ export interface components {
         };
         DeskCheckInDto: {
             studentId: string;
-            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL. */
+            /** @description From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR (recorded as INSTRUCTOR_SCAN), or from .../code-lookups when they typed their personal code (PERSONAL_CODE). Without it, INSTRUCTOR_MANUAL. */
             lookupToken?: string;
             /** @description Classes to check the Student into (booked first where needed). Up to 10. */
             classIds: string[];
@@ -9218,6 +9344,10 @@ export interface components {
             /** @description The caller's own code for leaving a locked tablet at this School (4 or 6 digits, the School's setting). */
             code: string;
         };
+        CheckInCodeLookupDto: {
+            /** @description A Student's personal check-in code (4 or 6 digits). */
+            code: string;
+        };
         KioskSessionInfoDto: {
             sessionId: string;
             schoolId: string;
@@ -9323,6 +9453,18 @@ export interface components {
             expiresAt: string;
             student: components["schemas"]["KioskStudentDto"];
         };
+        KioskFindMeDto: {
+            /** @description First name and surname, as typed. */
+            fullName: string;
+            /**
+             * @description YYYY-MM-DD.
+             * @example 1990-04-21
+             */
+            dateOfBirth: string;
+        };
+        KioskFindMeResultDto: {
+            alreadyMember: boolean;
+        };
         KioskUnlockDto: {
             /** @description A staff member's own code (4 or 6 digits). */
             staffCode: string;
@@ -9330,6 +9472,10 @@ export interface components {
         KioskUnlockedDto: {
             /** @description First name of the staff member whose code it was. */
             unlockedBy: string;
+        };
+        StudentCheckInCodeDto: {
+            /** @description The personal check-in code, typed at the front desk in place of the app QR. */
+            code: string;
         };
     };
     responses: never;
@@ -10447,6 +10593,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDetailsResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_myStaffAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_setStaffAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccessDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAccessResponseDto"];
                 };
             };
         };
@@ -17618,6 +17811,31 @@ export interface operations {
             };
         };
     };
+    FrontDeskSessionsController_codeLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInCodeLookupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_info: {
         parameters: {
             query?: never;
@@ -17728,6 +17946,52 @@ export interface operations {
             };
         };
     };
+    FrontDeskKioskController_codeLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInCodeLookupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskQrLookupResponseDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_findMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskFindMeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskFindMeResultDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_checkIn: {
         parameters: {
             query?: never;
@@ -17770,6 +18034,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KioskUnlockedDto"];
+                };
+            };
+        };
+    };
+    StudentCheckInCodesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCheckInCodeDto"];
+                };
+            };
+        };
+    };
+    StudentCheckInCodesController_renew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCheckInCodeDto"];
                 };
             };
         };

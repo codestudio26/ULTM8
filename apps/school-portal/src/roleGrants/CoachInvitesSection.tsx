@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import {
   useCancelCoachInvite,
   useCoachInvites,
   useSendCoachInvite,
-  useSetStaffPermission,
-  useStaffPermissions,
   type CoachInvite,
-  type StaffPermission,
-  type StaffSwitch,
 } from './coachInviteQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -28,17 +24,17 @@ const STATUS: Record<CoachInvite['status'], { label: TranslationKey; variant: 'd
 /**
  * Coach invites (Decision 183): email one person a link that makes them a
  * coach at this School (and branch) when they accept it, signed in with that
- * email. The link works once, for 7 days, and can be cancelled. Below, the
- * owner chooses which Branch Staff may also invite coaches, for their own
- * branches.
+ * email. The link works once, for 7 days, and can be cancelled. Which Branch
+ * Staff may also invite coaches, for their own branches, is one of their
+ * access switches on the staff list (Decision 387).
  */
 export function CoachInvitesSection({
   schoolId,
   allowedBranchIds,
 }: {
   schoolId: string;
-  /** Branch Staff (Decision 183): only their own branches, and no "Who can
-   * invite coaches" card, which is the owner's. Omitted for the owner. */
+  /** Branch Staff (Decision 183): only their own branches. Omitted for the
+   * owner. */
   allowedBranchIds?: string[];
 }) {
   const t = useT();
@@ -155,81 +151,6 @@ export function CoachInvitesSection({
           />
         )}
       </Card>
-
-      {allowedBranchIds ? null : <InviterPermissions schoolId={schoolId} branchName={branchName} />}
     </>
-  );
-}
-
-/** The owner's switches per Branch Staff member: "Can invite coaches" to
- * their own branches, and "Can manage disciplines" (Decision 383), both off
- * until ticked. Coaches can't be given them (Spec 55 §8.2). */
-function InviterPermissions({ schoolId, branchName }: { schoolId: string; branchName: (id: string | null) => string }) {
-  const t = useT();
-  const staff = useStaffPermissions(schoolId);
-  const setAllowed = useSetStaffPermission(schoolId);
-  const [error, setError] = useState<string | null>(null);
-  // Shows the new state at once; it goes back if saving fails. Keyed by
-  // person and switch.
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-
-  async function toggle(person: StaffPermission, field: StaffSwitch, on: boolean) {
-    const key = `${person.userId}:${field}`;
-    setError(null);
-    setSaving((m) => ({ ...m, [key]: on }));
-    try {
-      await setAllowed.mutateAsync({ userId: person.userId, field, on });
-    } catch (err) {
-      setError(errorText(err, t('roleGrants.permissions.saveFailed')));
-    } finally {
-      setSaving(({ [key]: _done, ...rest }) => rest);
-    }
-  }
-  const tick = (p: StaffPermission, field: StaffSwitch, label: string) => (
-    <Checkbox
-      label={label}
-      checked={saving[`${p.userId}:${field}`] ?? p[field]}
-      disabled={`${p.userId}:${field}` in saving}
-      onChange={(e) => toggle(p, field, e.target.checked)}
-    />
-  );
-
-  return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('roleGrants.permissions.heading')}
-      </h2>
-      <p style={{ marginTop: 0 }}>{t('roleGrants.permissions.intro')}</p>
-      {error ? <ErrorBanner message={error} /> : null}
-      {staff.isLoading ? (
-        <Spinner />
-      ) : staff.error ? (
-        <ErrorBanner message={errorText(staff.error, t('roleGrants.permissions.loadFailed'))} />
-      ) : (staff.data?.items ?? []).length === 0 ? (
-        <EmptyState title={t('roleGrants.permissions.emptyTitle')} description={t('roleGrants.permissions.emptyDescription')} />
-      ) : (
-        <Table<StaffPermission & { id: string }>
-          rows={staff.data!.items.map((p) => ({ ...p, id: p.userId }))}
-          columns={[
-            { key: 'name', header: t('roleGrants.permissions.columnName'), render: (p) => `${p.firstName} ${p.surname}` },
-            {
-              key: 'branches',
-              header: t('roleGrants.permissions.columnBranches'),
-              render: (p) => (p.branchIds.length ? p.branchIds.map(branchName).join(', ') : t('roleGrants.coachInvites.wholeSchool')),
-            },
-            {
-              key: 'allowed',
-              header: t('roleGrants.permissions.columnAllowed'),
-              render: (p) => tick(p, 'canInviteCoaches', t('roleGrants.permissions.checkboxLabel', { name: `${p.firstName} ${p.surname}` })),
-            },
-            {
-              key: 'disciplines',
-              header: t('roleGrants.permissions.columnDisciplines'),
-              render: (p) => tick(p, 'canManageDisciplines', t('roleGrants.permissions.disciplinesCheckboxLabel', { name: `${p.firstName} ${p.surname}` })),
-            },
-          ]}
-        />
-      )}
-    </Card>
   );
 }

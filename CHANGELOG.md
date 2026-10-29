@@ -17,11 +17,25 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 
 - **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
   found by name on the tablet is checked in only to classes they've already
-  booked; booking a place there needs the app QR (or, once it exists, their own
-  check-in code), so nobody can spend another member's credit by typing their
+  booked; booking a place there needs the app QR or their own personal
+  check-in code, so nobody can spend another member's credit by typing their
   name. Ten wrong staff codes end the tablet's session, and closing a Branch
   ends its tablet. The staff Check-in page is unchanged. **Needs a database
   migration** (`20261220000000_front_desk_wrong_codes`).
+- **Front desk: Find me on the tablet** (Decision 385) — someone about to
+  sign up types their full name and date of birth; the tablet says only
+  whether they're already a member (both must match), and shows nothing
+  stored about them.
+- **Memberships: the plan's cancellation charge is now taken** (Decision 389,
+  no migration) — when a student cancels a class too late and the class has no
+  cancellation charge of its own, the charge set on their membership plan is
+  taken from their saved card, the same way a class's charge already is. One
+  fee per cancellation, never both.
+- **Front desk: personal check-in codes** (Decision 384) — each student has
+  a 4- or 6-digit code, shown on their page with "Give a new code". Typing it
+  on the Check-in page's or the tablet's Code tab opens their welcome card,
+  and the check-in shows as "Code". Needs migration
+  `20261217000000_student_check_in_codes`.
 - **Front desk: a locked tablet, left with your own staff code** (Decision
   380) — starting front-desk mode signs you out of the device, so it holds no
   staff login; it shows only its Branch's classes and short names, and only
@@ -110,6 +124,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   welcome card lists each guest under the member's class with their waiver
   status; staff tick the guests who came, and each guest's check-in is
   recorded. Needs migration `20261215000000_guest_check_in`.
+- **Staff page: access switches** (Decision 387) — an owner chooses what each
+  Branch Staff member may do ("Access" in the person's menu): manage classes
+  and the timetable, bookings and check-in, students, cancelling classes with
+  credit, seeing the staff list, and inviting coaches, with "Front desk" and
+  "Branch manager" presets. Defaults keep what Branch Staff could already do.
+  Branch Staff's menus, Classes, Timetable, Students and a read-only Staff list
+  follow their switches. The "What Branch Staff can do" card moves into
+  Access too, including "Manage disciplines" (Decision 383), which no preset
+  ticks. Instructors and owners are unchanged. Needs the migration
+  `20261219000000_staff_access`.
 - **Staff page: display name and work phone** (Decision 381) — an owner can
   set the name and work phone the School uses for a staff member ("Edit
   details" in the person's menu). The Staff list shows them first, with the

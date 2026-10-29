@@ -23,6 +23,7 @@ export const attendance = {
     methodSelfService: 'Self check-in',
     methodInstructorScan: 'Scanned by you',
     methodInstructorManual: 'Confirmed by you',
+    methodPersonalCode: 'Personal code at the desk',
     present: 'Present ✓',
     scan: 'Scan',
     confirmPresent: 'Confirm present',

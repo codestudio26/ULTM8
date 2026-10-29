@@ -192,9 +192,10 @@ export function MethodSwitch({ value, onChange }: { value: CheckInMethod; onChan
   );
 }
 
-/** The code keypad: a member's personal check-in code, which is shown
- * switched off with the reason until personal codes exist, or a staff
- * member's own code for leaving the locked tablet (`staffCode`). */
+/** The code keypad: a member's personal check-in code, or a staff member's
+ * own code for leaving the locked tablet (`staffCode`). `length` is the
+ * School's code length; a 4-digit code still goes through when the School has
+ * moved to 6, since codes given out before keep working (Decision 384). */
 export function CodePad({
   title,
   onCode,
@@ -221,7 +222,7 @@ export function CodePad({
       aria: staffCode ? t('frontDesk.exit.submit') : t('frontDesk.code.submit'),
       go: true,
       on: () => {
-        if (code.length === length) {
+        if (code.length === length || code.length === 4) {
           onCode(code);
           setCode('');
         }
@@ -234,7 +235,7 @@ export function CodePad({
         <h2 className="fd-title">
           {title} {ready ? null : <SoonTag />}
         </h2>
-        <p className="fd-hint">{hint ?? (ready ? t('frontDesk.code.hint') : t('frontDesk.code.soonHint'))}</p>
+        <p className="fd-hint">{hint ?? (ready ? t('frontDesk.code.hint', { digits: length }) : t('frontDesk.code.soonHint'))}</p>
       </div>
       <div className="fd-dots" aria-label={t('frontDesk.code.entered', { count: code.length, total: length })}>
         {Array.from({ length }, (_, i) => (
@@ -704,6 +705,7 @@ const METHOD_LABEL: Record<string, TranslationKey> = {
   SELF_SERVICE: 'frontDesk.recent.methodApp',
   INSTRUCTOR_SCAN: 'frontDesk.recent.methodScan',
   INSTRUCTOR_MANUAL: 'frontDesk.recent.methodName',
+  PERSONAL_CODE: 'frontDesk.recent.methodCode',
 };
 
 export function RecentList({ rows }: { rows: RecentCheckIn[] }) {

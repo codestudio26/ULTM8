@@ -1,11 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { randomInt } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { frontDeskSessionJwt, verifyFrontDeskSessionToken } from './front-desk-session-token';
+import { checkInCodeDigits, withUniqueCode } from './check-in-code';
 
 /** How long a locked tablet stays in front-desk mode before staff start it
  * again (Decision 380: a working day and the night after it). */
@@ -214,26 +214,12 @@ export class FrontDeskSessionsService {
     return grant !== null;
   }
 
-  /** A fresh random code of the School's length, unique there. Retries on the
-   * rare clash with another staff member's code. */
+  /** A fresh code of the School's length, unique there. */
   private async issueCode(userId: string, schoolId: string): Promise<string> {
-    const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { checkInCodeDigits: true } });
-    const digits = school?.checkInCodeDigits === 6 ? 6 : 4;
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const code = String(randomInt(0, 10 ** digits)).padStart(digits, '0');
-      try {
-        await this.prismaApp.withTenantContext(userId, (tx) =>
-          tx.staffKioskCode.upsert({
-            where: { schoolId_userId: { schoolId, userId } },
-            create: { schoolId, userId, code },
-            update: { code },
-          }),
-        );
-        return code;
-      } catch (err) {
-        if ((err as { code?: string })?.code !== 'P2002') throw err;
-      }
-    }
-    throw new Error('Could not issue a unique staff code');
+    return withUniqueCode(await checkInCodeDigits(this.prismaJobs, schoolId), (code) =>
+      this.prismaApp.withTenantContext(userId, (tx) =>
+        tx.staffKioskCode.upsert({ where: { schoolId_userId: { schoolId, userId } }, create: { schoolId, userId, code }, update: { code } }),
+      ),
+    );
   }
 }

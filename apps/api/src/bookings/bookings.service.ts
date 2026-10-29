@@ -15,6 +15,7 @@ import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { CancellationService, SeatRef, StripeRefundPlan } from './cancellation.service';
+import { lateCancellationFee } from './late-cancellation-fee';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
@@ -146,6 +147,7 @@ export class BookingsService {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
+      await this.tenantAuth.assertStaffMay(callerId, resolvedClass.schoolId, 'bookings', resolvedClass.branchId);
     }
     assertClassBookable(resolvedClass, { byStaff: isStaffAction });
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
@@ -343,6 +345,10 @@ export class BookingsService {
       await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
     } else if (resolvedBooking.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
+      // A School cancellation was already allowed by its caller (Decision 387).
+      if (!opts?.schoolCancelled) {
+        await this.tenantAuth.assertStaffMay(callerId, resolvedBooking.schoolId, 'bookings', resolvedBooking.branchId);
+      }
     }
 
     // Decision 291 — only a School Owner/Manager can send money back. A Student
@@ -395,18 +401,23 @@ export class BookingsService {
       // I/O inside a transaction, same discipline every other Stripe-calling
       // write in this codebase follows) — see the try/catch below. The fee
       // stays tied to the refund cut-off itself (Decision 322), and Decision 291
-      // lets the owner switch it off.
-      if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
-        cancellationChargeAmount = cls.cancellationCharge;
+      // lets the owner switch it off. Decision 389: the Class's own charge
+      // first; a Class with none falls back to the charge on the plan the
+      // Booking used. One fee per Booking, never both.
+      if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {
         // No currency field on Class itself — reuses the Booking's own
         // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
         // fallback MembershipsService.purchase() already applies when charging
         // this exact Membership's own Stripe payments.
         const sourceMembership = await tx.membership.findUnique({
           where: { id: resolvedBooking.sourceMembershipId },
-          select: { membershipPlan: { select: { currency: true } } },
+          select: { membershipPlan: { select: { currency: true, cancellationCharge: true } } },
         });
-        cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+        const fee = lateCancellationFee(cls.cancellationCharge, sourceMembership?.membershipPlan.cancellationCharge ?? null);
+        if (fee !== null) {
+          cancellationChargeAmount = fee;
+          cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+        }
       }
 
       // Optimistic-concurrency guard, same shape as every other status-transition in
@@ -545,6 +556,7 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, existing.schoolId, 'bookings', existing.branchId);
     if (!existing.overriddenById) {
       throw new BadRequestException('This Booking was not created via a rank-gate override — there is no override justification to amend.');
     }

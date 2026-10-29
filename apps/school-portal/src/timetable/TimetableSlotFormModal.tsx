@@ -61,6 +61,7 @@ export function TimetableSlotFormModal({
   submitting,
   onSubmit,
   onClose,
+  wholeSchool = true,
 }: {
   title: string;
   initial?: Partial<TimetableSlotResponse>;
@@ -71,10 +72,13 @@ export function TimetableSlotFormModal({
   submitting: boolean;
   onSubmit: (values: TimetableSlotFormValues) => Promise<void>;
   onClose: () => void;
+  /** False for Branch Staff (Decision 387): a School-wide slot is the
+   * owner's, so they pick one of their own branches. */
+  wholeSchool?: boolean;
 }) {
   const { t, locale } = useI18n();
   const [form, setForm] = useState({
-    branchId: initial?.branchId ?? '',
+    branchId: initial?.branchId ?? (wholeSchool ? '' : branches[0]?.id ?? ''),
     instructorId: initial?.instructorId ?? '',
     weekday: (initial?.weekday as (typeof WEEKDAYS)[number]) ?? 'MONDAY',
     startTime: initial?.startTime ?? '18:00',
@@ -239,7 +243,10 @@ export function TimetableSlotFormModal({
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('timetable.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
+            options={[
+              ...(wholeSchool ? [{ value: '', label: t('timetable.form.wholeSchool') }] : []),
+              ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId),
+            ]}
           />
         </Field>
         <Field label={t('timetable.form.instructorLabel')} htmlFor="slot-instructor">

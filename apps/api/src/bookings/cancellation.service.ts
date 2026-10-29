@@ -7,6 +7,7 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { PaymentsService } from '../payments/payments.service';
+import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ResolveCancellationAction } from './dto/resolve-cancellation.dto';
@@ -99,6 +100,7 @@ export class CancellationService {
     private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly paymentsService: PaymentsService,
+    private readonly tenantAuth: TenantAuthorizationService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
@@ -167,8 +169,9 @@ export class CancellationService {
 
   /**
    * Owner/Manager, or Branch Staff covering `branchId` — the two roles that may
-   * cancel a whole class or work the "to resolve" list (Instructors can't).
-   * Returns whether the caller is the Owner/Manager.
+   * cancel a whole class or work the "to resolve" list (Instructors can't);
+   * Branch Staff only with the owner's switch on (Decision 387). Returns
+   * whether the caller is the Owner/Manager.
    */
   async assertCancellationStaff(userId: string, schoolId: string, branchId: string | null): Promise<{ isOwner: boolean }> {
     const grants = await this.prismaApp.withTenantContext(userId, (tx) =>
@@ -186,7 +189,10 @@ export class CancellationService {
     if (grants.length === 0) {
       throw new ForbiddenException('Only the School Owner/Manager or that branch\'s Branch Staff may do this.');
     }
-    return { isOwner: grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER') };
+    const isOwner = grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
+    // Decision 387: Branch Staff need the owner's "cancel classes" switch.
+    if (!isOwner) await this.tenantAuth.assertStaffMay(userId, schoolId, 'cancelClasses', branchId);
+    return { isOwner };
   }
 
   /**

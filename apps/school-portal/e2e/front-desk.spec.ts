@@ -7,21 +7,20 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * Decisions 315, 317, 320, 351, 380). Staff check a student in by name from
  * Students → Check-in; front-desk mode is a locked tablet that shows a
  * Branch's classes, short names and recent check-ins, and is left with a
- * staff member's own code; the parts still waiting for their backend
- * (personal code, sign-up, find me) are shown switched off.
+ * staff member's own code; a student's personal code opens their card
+ * (Decision 384); Find me answers only yes or no (Decision 385); sign-up,
+ * still waiting for its backend, is shown switched off.
  */
 let s: GradingSchool;
 const MIN = 60_000;
 const at = (ms: number) => new Date(Date.now() + ms);
 
-/** A fixed-offset time zone where the local time is about 10:00 now. */
-function morningTimezone(): string {
-  let offset = 10 - new Date().getUTCHours();
-  if (offset < -12) offset += 24;
-  if (offset > 14) offset -= 24;
-  // Etc/GMT names have the sign the other way round: Etc/GMT-3 is UTC+3.
-  return offset === 0 ? 'Etc/UTC' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}`;
-}
+// The Check-in page asks for "today" by the browser's own day, and these
+// tests seed classes from 10 minutes ago to 4 hours ahead. Run the browser in
+// a fixed-offset zone where it is about 9 in the morning, so "today" never
+// ends mid-test, whatever time CI runs. (Etc/GMT-N is UTC+N.)
+const offset = ((9 - new Date().getUTCHours() + 36) % 24) - 12;
+test.use({ timezoneId: offset === 0 ? 'Etc/GMT' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}` });
 
 async function subscribe(studentId: string) {
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: `Unlimited ${randomUUID().slice(0, 4)}`, price: 5000 } });
@@ -42,6 +41,7 @@ test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.frontDeskSession.deleteMany({ where });
   await db.staffKioskCode.deleteMany({ where });
+  await db.studentCheckInCode.deleteMany({ where });
   await db.waiverSignature.deleteMany({ where });
   await db.waiver.deleteMany({ where });
   await db.trainingLog.deleteMany({ where });
@@ -134,12 +134,57 @@ test('one class that can\'t be done stops the whole check-in, and says which (De
   expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: full.id } })).toBe(0);
 });
 
-test('the personal code waits for its backend', async ({ page }) => {
+test('a student\'s personal code is on their page, and typing it at the desk checks them in as a code (Decision 384)', async ({ page }) => {
+  const cls = await classNow();
+  await subscribe(s.student.id);
   await signIn(page, s.ownerToken);
+  await page.goto(`/students/${s.student.id}`);
+  const code = ((await page.getByTestId('student-check-in-code').textContent()) ?? '').trim();
+  expect(code).toMatch(/^\d{4}$/);
+
   await page.goto('/check-in');
   await page.getByRole('tab', { name: 'Code' }).click();
-  await expect(page.getByText('Personal check-in codes are coming. Use Scan or Name for now.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Check in' })).toBeDisabled();
+  const typeCode = async (c: string) => {
+    for (const d of c) await page.getByRole('button', { name: d, exact: true }).click();
+    await page.getByRole('button', { name: 'Check in', exact: true }).click();
+  };
+  await typeCode(code === '0000' ? '1111' : '0000');
+  await expect(page.getByText('We couldn’t find that code. Try again, or find your name.')).toBeVisible();
+  await typeCode(code);
+  const card = page.getByTestId('fd-welcome');
+  await expect(card).toContainText('Sam');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('Checked in ✓')).toBeVisible();
+  const booking = await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } });
+  expect(booking.checkInMethod).toBe('PERSONAL_CODE');
+
+  // A new code replaces the old one.
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Give a new code' }).click();
+  await page.getByRole('button', { name: 'Yes, new code' }).click();
+  await expect(page.getByTestId('student-check-in-code')).not.toHaveText(code);
+});
+
+test('on the tablet, a 4-digit code still works after the School moves to 6 digits (Decision 384)', async ({ page }) => {
+  const cls = await classNow();
+  await subscribe(s.newStudent.id);
+  await db.studentCheckInCode.create({ data: { schoolId: s.schoolId, studentId: s.newStudent.id, code: '4821' } });
+  await db.school.update({ where: { id: s.schoolId }, data: { checkInCodeDigits: 6 } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+
+  await page.getByRole('tab', { name: 'Code' }).click();
+  await expect(page.getByText('Your 6-digit check-in code. Ask at the desk if you don’t know it.')).toBeVisible();
+  for (const d of '4821') await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('button', { name: 'Check in', exact: true }).click();
+  const card = page.getByTestId('fd-welcome');
+  await expect(card).toContainText('Welcome back, Nia');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('You’re in, Nia')).toBeVisible();
+  const booking = await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.newStudent.id } });
+  expect(booking.checkInMethod).toBe('PERSONAL_CODE');
 });
 
 test('front-desk mode: a locked tablet with the branch\'s classes, short names, check-in, and exit with a staff code (Decision 380)', async ({ page }) => {
@@ -215,6 +260,26 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await expect(page).toHaveURL(/\/login/);
 });
 
+test('find me on the tablet says only whether you\'re already a member (Decision 385)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+  await page.getByRole('button', { name: /Sign up/ }).click();
+  await page.getByRole('button', { name: 'Already a member? Find me' }).click();
+
+  await page.getByLabel('Your full name').fill('Sam Lee');
+  await page.getByLabel('Date of birth').fill('2000-01-02');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('We couldn’t find you. You can sign up instead.')).toBeVisible();
+
+  await page.getByLabel('Date of birth').fill('2000-01-01');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('You’re already a member here')).toBeVisible();
+  // Nothing stored about them is shown.
+  await expect(page.getByText(/@/)).toHaveCount(0);
+});
+
 test('staff see a tablet on the Check-in page and can end it there (Decision 380)', async ({ page, browser }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/front-desk');
@@ -234,44 +299,36 @@ test('staff see a tablet on the Check-in page and can end it there (Decision 380
   await staff.context().close();
 });
 
-// These two put a class 3 hours from now and expect it on today's list, so
-// late in the UTC evening it fell on tomorrow and the tests failed. The
-// browser runs in a time zone where it's about 10:00 now, so "3 hours from
-// now" is always still today.
-test.describe('later classes today', () => {
-  test.use({ timezoneId: morningTimezone() });
+test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {
+  await classNow();
+  const later = await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+  await subscribe(s.newStudent.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia Park/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  const evening = card.getByRole('button', { name: /Evening class/ });
+  await expect(evening).toBeDisabled();
+  await expect(evening).toContainText('Check-in opens at');
+  await expect(card.getByRole('button', { name: /Fundamentals/ })).toHaveAttribute('aria-pressed', 'true');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(page.getByText('Checked in ✓')).toBeVisible();
+  expect(await db.booking.count({ where: { classId: later.id } })).toBe(0);
+});
 
-  test('a class whose check-in hasn\'t opened can\'t be ticked, so nothing is booked for it (CI2)', async ({ page }) => {
-    await classNow();
-    const later = await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
-    await subscribe(s.newStudent.id);
-    await signIn(page, s.ownerToken);
-    await page.goto('/check-in');
-    await page.getByRole('tab', { name: 'Name' }).click();
-    await page.getByLabel('First or last name').fill('Nia');
-    await page.getByRole('button', { name: /Nia Park/ }).click();
-    const card = page.getByTestId('fd-welcome');
-    const evening = card.getByRole('button', { name: /Evening class/ });
-    await expect(evening).toBeDisabled();
-    await expect(evening).toContainText('Check-in opens at');
-    await expect(card.getByRole('button', { name: /Fundamentals/ })).toHaveAttribute('aria-pressed', 'true');
-    await card.getByRole('button', { name: 'Check in to 1 class' }).click();
-    await expect(page.getByText('Checked in ✓')).toBeVisible();
-    expect(await db.booking.count({ where: { classId: later.id } })).toBe(0);
-  });
-
-  test('only a later class today: nothing is ticked and Confirm stays off', async ({ page }) => {
-    await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
-    await subscribe(s.newStudent.id);
-    await signIn(page, s.ownerToken);
-    await page.goto('/check-in');
-    await page.getByRole('tab', { name: 'Name' }).click();
-    await page.getByLabel('First or last name').fill('Nia');
-    await page.getByRole('button', { name: /Nia Park/ }).click();
-    const card = page.getByTestId('fd-welcome');
-    await expect(card.getByRole('button', { name: /Evening class/ })).toHaveAttribute('aria-pressed', 'false');
-    await expect(card.getByRole('button', { name: 'Tick a class' })).toBeDisabled();
-  });
+test('only a later class today: nothing is ticked and Confirm stays off', async ({ page }) => {
+  await classNow({ title: 'Evening class', startDate: at(180 * MIN), endDate: at(240 * MIN) });
+  await subscribe(s.newStudent.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Nia');
+  await page.getByRole('button', { name: /Nia Park/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await expect(card.getByRole('button', { name: /Evening class/ })).toHaveAttribute('aria-pressed', 'false');
+  await expect(card.getByRole('button', { name: 'Tick a class' })).toBeDisabled();
 });
 
 test('the welcome card shows which waivers are still to sign (Q4)', async ({ page }) => {

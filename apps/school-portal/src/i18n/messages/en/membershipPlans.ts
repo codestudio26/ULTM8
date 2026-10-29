@@ -111,7 +111,7 @@ export const membershipPlans = {
     refundLabel: 'Refund/credit cutoff',
     leaveBlankToClear: 'Leave blank to clear.',
     cancellationLabel: 'Cancellation charge',
-    cancellationHint: 'For example 5.00. Stored for a future charging flow — not yet automatically collected. Leave blank to clear.',
+    cancellationHint: "For example 5.00. Charged to the student's saved card when they cancel a class booked with this plan after its cutoff, if the class has no charge of its own. Leave blank for no charge.",
     waiverRequired: 'Requires signed waiver/terms to purchase',
     stylesLegend: 'Styles this plan covers',
     includesLessons: 'Includes lessons',
