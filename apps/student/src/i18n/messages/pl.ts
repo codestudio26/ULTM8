@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "Nie, dziękuję",
       failed: "Nie udało się odpowiedzieć na zaproszenie. Spróbuj ponownie.",
     },
+    childInvites: {
+      title: "Dodać {child} do {school}?",
+      body: "{school} chce dodać {child} jako ucznia, z Tobą jako opiekunem. Zaakceptuj, aby dodać {child} do swojego konta i zapisać.",
+    },
     join: {
       me: "Ja",
       loadFailed: "Nie udało się wczytać tej Szkoły — spróbuj ponownie.",

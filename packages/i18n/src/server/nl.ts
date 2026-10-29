@@ -649,4 +649,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Alleen de eigenaar of vestigingsmedewerkers kunnen aanmeldingen zien.",
   "Sign-up not found": "Aanmelding niet gevonden",
   "Pack recharge not found": "Opwaardering van de kaart niet gevonden",
+  "Student not found": "Leerling niet gevonden",
+  "This invite has already been answered or withdrawn.": "Deze uitnodiging is al beantwoord of ingetrokken.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Dit is voor kinderen (onder de 18). Voeg een volwassene toe met zijn of haar eigen e-mailadres.",
+  "A Guardian must be 18 or over.": "Een voogd moet 18 jaar of ouder zijn.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "Deze voogd heeft al een uitnodiging voor dit kind. Wacht tot hij of zij die in de app beantwoordt.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Alleen voor een account dat je school heeft aangemaakt en waarop nog niemand heeft ingelogd, kan een nieuwe tijdelijke toegangscode worden gemaakt.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Deze tijdelijke toegangscode is verlopen. Vraag je school om een nieuwe.",
 };

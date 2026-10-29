@@ -649,4 +649,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Заявки могут видеть только владелец или сотрудники филиала.",
   "Sign-up not found": "Заявка не найдена",
   "Pack recharge not found": "Продление пакета не найдено",
+  "Student not found": "Ученик не найден",
+  "This invite has already been answered or withdrawn.": "На это приглашение уже ответили, или его отозвали.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Это для детей (младше 18 лет). Взрослого добавьте с его собственной электронной почтой.",
+  "A Guardian must be 18 or over.": "Опекуну должно быть 18 лет или больше.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "У этого опекуна уже есть приглашение для этого ребёнка. Дождитесь, пока он ответит в приложении.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Новый временный код можно создать только для учётной записи, которую создала ваша школа и в которую ещё никто не входил.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Срок действия этого временного кода истёк. Попросите новый в своей школе.",
 };

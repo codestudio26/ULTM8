@@ -73,6 +73,14 @@ const REFRESH_TOKEN_TTL_DAYS = Number.isFinite(parsedRefreshTokenTtlDays) && par
  */
 const DECOY_PASSCODE_HASH = '$2a$12$KC.JM0GG3LUNutCFB3SKbu1poEdSC6djHNvDgq3kxcU7vw5f8Z3fq';
 
+/** Decision 403: a used-up or expired temporary passcode. */
+const TEMPORARY_PASSCODE_EXPIRED = {
+  code: 'TEMPORARY_PASSCODE_EXPIRED',
+  message: 'This temporary passcode has expired. Ask your School for a new one.',
+};
+
+const temporaryPasscodeExpired = (expiresAt: Date | null, now = new Date()) => expiresAt !== null && expiresAt.getTime() <= now.getTime();
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -242,7 +250,7 @@ export class AuthService {
   async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string } | { mustChangePasscode: true; passcodeChangeToken: string }> {
     const user = await this.prismaAuth.user.findUnique({
       where: { email: dto.email },
-      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true },
+      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true },
     });
 
     if (this.loginAttempts.isLocked(dto.email)) {
@@ -279,6 +287,12 @@ export class AuthService {
     // User's behalf; short-circuit to a narrow, single-purpose token instead
     // of an ordinary session until they've actually chosen their own.
     if (user.mustChangePasscode) {
+      // Decision 403: a student's temporary passcode stops working 7 days
+      // after it was made. Checked after the passcode matched, so it says
+      // nothing about accounts the caller can't sign in to.
+      if (temporaryPasscodeExpired(user.temporaryPasscodeExpiresAt)) {
+        throw new UnauthorizedException(TEMPORARY_PASSCODE_EXPIRED);
+      }
       return { mustChangePasscode: true, passcodeChangeToken: this.issuePasscodeChangeToken(user.id, user.email) };
     }
 
@@ -311,14 +325,17 @@ export class AuthService {
    * accessToken/refreshToken pair directly — no second login call needed.
    */
   async changePasscodeFirstLogin(callerId: string, dto: ChangePasscodeFirstLoginDto): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.prismaAuth.user.findUnique({ where: { id: callerId }, select: { mustChangePasscode: true } });
+    const user = await this.prismaAuth.user.findUnique({ where: { id: callerId }, select: { mustChangePasscode: true, temporaryPasscodeExpiresAt: true } });
     if (!user?.mustChangePasscode) {
       throw new BadRequestException('No forced passcode change is pending for this account.');
+    }
+    if (temporaryPasscodeExpired(user.temporaryPasscodeExpiresAt)) {
+      throw new UnauthorizedException(TEMPORARY_PASSCODE_EXPIRED);
     }
 
     const passcodeHash = await bcrypt.hash(dto.newPasscode, BCRYPT_ROUNDS);
     await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.user.update({ where: { id: callerId }, data: { passcodeHash, mustChangePasscode: false } }),
+      tx.user.update({ where: { id: callerId }, data: { passcodeHash, mustChangePasscode: false, temporaryPasscodeExpiresAt: null, temporaryPasscodeSchoolId: null } }),
     );
     await this.revokeAllRefreshTokensForUser(callerId);
 
