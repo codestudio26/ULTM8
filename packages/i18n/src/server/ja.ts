@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "この帯のストライプではないストライプ ID が含まれています。ストライプの並べ替えは同じ帯の中でのみ可能です。",
   "A style is listed twice in specializationStyleIds.": "specializationStyleIds に同じ種目が 2 回含まれています。",
   "Academy not found": "アカデミーが見つかりません",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "このスクールはフランチャイズに属していないため、支払うフランチャイズ料金はありません。",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "このスクールのフランチャイズはまだ Stripe を接続していないため、カードを追加できません。",
   "AdminUser not found": "管理者ユーザーが見つかりません",
   "An AdminUser with this email or ssoSubject already exists.": "このメールアドレスまたは ssoSubject の管理者ユーザーはすでに存在します。",
   "An account with this email already exists — use \"Invite staff\" instead.": "このメールアドレスのアカウントはすでに存在します。代わりに「スタッフを招待」を使用してください。",

@@ -5363,6 +5363,41 @@
         ]
       }
     },
+    "/v1/franchises/{franchiseId}/payment-account/connect-status": {
+      "get": {
+        "operationId": "PaymentsController_getFranchiseConnectStatus",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/payment-accounts/{id}/connect/onboard": {
       "post": {
         "operationId": "PaymentsController_initiateConnectOnboarding",
@@ -13786,6 +13821,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FranchiseFeeChargeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-fee/card": {
+      "get": {
+        "operationId": "FranchiseFeesController_getCard",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeCardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/franchise-fee/card/setup-session": {
+      "post": {
+        "operationId": "FranchiseFeesController_createCardSetupSession",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupSessionResponseDto"
                 }
               }
             }
@@ -23268,6 +23373,22 @@
           "updatedAt"
         ]
       },
+      "ConnectStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "CONNECTED",
+              "ACTION_NEEDED",
+              "NOT_CONNECTED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "ConnectOnboardingResponseDto": {
         "type": "object",
         "properties": {
@@ -31565,6 +31686,28 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "FranchiseFeeCardResponseDto": {
+        "type": "object",
+        "properties": {
+          "canAddCard": {
+            "type": "boolean",
+            "description": "False while the School's Franchise hasn't connected Stripe: no card can be added yet."
+          },
+          "hasCard": {
+            "type": "boolean"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "canAddCard",
+          "hasCard"
         ]
       },
       "RefundFranchiseFeeChargeDto": {

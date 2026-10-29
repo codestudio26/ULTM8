@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "Identyfikator belki nie należy do belek tego pasa. Kolejność belek można zmieniać tylko w obrębie ich własnego pasa.",
   "A style is listed twice in specializationStyleIds.": "Styl występuje dwukrotnie w specializationStyleIds.",
   "Academy not found": "Nie znaleziono akademii",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "Ta szkoła nie należy do żadnej franczyzy, więc nie ma opłaty franczyzowej do zapłacenia.",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "Franczyza tej szkoły nie połączyła jeszcze Stripe, więc nie można dodać karty.",
   "AdminUser not found": "Nie znaleziono administratora",
   "An AdminUser with this email or ssoSubject already exists.": "Administrator z tym adresem e-mail lub ssoSubject już istnieje.",
   "An account with this email already exists — use \"Invite staff\" instead.": "Konto z tym adresem e-mail już istnieje — użyj zamiast tego opcji „Zaproś personel”.",

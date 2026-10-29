@@ -227,6 +227,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Added to a School': 'studentAddedTitle',
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
   'Open mat': 'openMatTitle',
+  // Decision 407 — apps/api/src/jobs/stripe-webhook-processing.processor.ts.
+  'Franchise fee payment failed': 'franchiseFeeFailedTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -380,6 +382,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
     (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  // Decision 407 — StripeWebhookProcessingProcessor.franchiseFeeFailedNotices.
+  [
+    /^The franchise fee of ([\d.]+) ([A-Z]{3}) for (.+) couldn't be charged\. Stripe will try again\. Add or update the card on the School page\.$/s,
+    (m, { t, locale }) => n(t, 'franchiseFeeFailedBody', { amount: formatAmount(m[1], m[2], locale), school: m[3] }),
   ],
 ];
 

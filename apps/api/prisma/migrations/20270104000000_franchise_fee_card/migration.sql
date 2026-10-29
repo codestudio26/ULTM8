@@ -1,0 +1,16 @@
+-- Decision 407 (backlog 3.22): a School pays its franchise fee by card.
+--
+-- School.stripeFranchiseFeeCustomerId: the School's kept Stripe Customer on
+-- its Franchise's connected account, holding the card the School Owner saves
+-- (hosted Checkout, setup mode). It replaces the throwaway Customer the
+-- franchise-fee subscription used to be created with, which had no card, so
+-- every charge failed. Cleared when the School leaves or is removed from the
+-- Franchise: the Customer lives on that Franchise's account. No index: nothing
+-- looks a School up by it (webhooks find the School by id and check this
+-- column against the Stripe object).
+--
+-- No new grants: ultm8_app and ultm8_jobs already hold table-wide SELECT and
+-- UPDATE on "School" (20260902000000_init, 20260915000000_booking_waitlist_
+-- module, 20260922000000_franchise_fee_charge_module). The column-limited
+-- roles (ultm8_discovery, ultm8_platform_admin) never need it.
+ALTER TABLE "School" ADD COLUMN "stripeFranchiseFeeCustomerId" TEXT;

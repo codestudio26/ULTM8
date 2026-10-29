@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "มีรหัสแถบที่ไม่ใช่แถบของสายคาดนี้ แถบสามารถเรียงลำดับใหม่ได้เฉพาะภายในสายคาดของตัวเองเท่านั้น",
   "A style is listed twice in specializationStyleIds.": "มีสไตล์ที่ระบุซ้ำสองครั้งใน specializationStyleIds",
   "Academy not found": "ไม่พบสถาบัน",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "โรงเรียนนี้ไม่ได้อยู่ในแฟรนไชส์ จึงไม่มีค่าแฟรนไชส์ที่ต้องชำระ",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "แฟรนไชส์ของโรงเรียนนี้ยังไม่ได้เชื่อมต่อ Stripe จึงยังเพิ่มบัตรไม่ได้",
   "AdminUser not found": "ไม่พบผู้ดูแลระบบ",
   "An AdminUser with this email or ssoSubject already exists.": "มีผู้ดูแลระบบที่ใช้อีเมลหรือ ssoSubject นี้อยู่แล้ว",
   "An account with this email already exists — use \"Invite staff\" instead.": "มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว — โปรดใช้ \"เชิญพนักงาน\" แทน",

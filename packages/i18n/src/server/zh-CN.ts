@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "有条纹 ID 不属于此腰带。条纹只能在其所属腰带内调整顺序。",
   "A style is listed twice in specializationStyleIds.": "specializationStyleIds 中有项目重复出现。",
   "Academy not found": "未找到道馆",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "这所学校不属于任何加盟体系，因此无需支付加盟费。",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "这所学校的加盟体系尚未连接 Stripe，因此无法添加银行卡。",
   "AdminUser not found": "未找到管理员用户",
   "An AdminUser with this email or ssoSubject already exists.": "已存在使用此邮箱或 ssoSubject 的管理员用户。",
   "An account with this email already exists — use \"Invite staff\" instead.": "已存在使用此邮箱的账户——请改用“邀请员工”。",

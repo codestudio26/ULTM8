@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "أحد معرّفات الأشرطة لا ينتمي إلى هذا الحزام. لا يمكن إعادة ترتيب الأشرطة إلا داخل حزامها.",
   "A style is listed twice in specializationStyleIds.": "أحد الأساليب مذكور مرتين في specializationStyleIds.",
   "Academy not found": "الأكاديمية غير موجودة",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "هذه المدرسة ليست جزءًا من امتياز، لذا لا توجد رسوم امتياز لدفعها.",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "لم يربط امتياز هذه المدرسة Stripe بعد، لذا لا يمكن إضافة بطاقة.",
   "AdminUser not found": "المسؤول غير موجود",
   "An AdminUser with this email or ssoSubject already exists.": "يوجد بالفعل مسؤول بهذا البريد الإلكتروني أو ssoSubject.",
   "An account with this email already exists — use \"Invite staff\" instead.": "يوجد حساب بهذا البريد الإلكتروني بالفعل — استخدم «دعوة موظف» بدلًا من ذلك.",

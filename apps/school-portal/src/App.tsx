@@ -55,6 +55,7 @@ import { WaiversPage } from './waivers/WaiversPage';
 import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
+import { StripeConnectReturnPage } from './franchises/StripeConnectReturnPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
@@ -537,6 +538,9 @@ export function App() {
           </RequireAuth>
         }
       />
+      {/* Decision 407 — back from Stripe's Connect onboarding. */}
+      <Route path="/payments/connect/return" element={<RequireAuth><StripeConnectReturnPage /></RequireAuth>} />
+      <Route path="/payments/connect/refresh" element={<RequireAuth><StripeConnectReturnPage /></RequireAuth>} />
       <Route
         path="/notifications"
         element={

@@ -11,6 +11,7 @@ import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
+import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -227,6 +228,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: paymentMethodId } });
           checkoutSessionData = { studentId: session.metadata.studentId, schoolId: session.metadata.schoolId, stripeCustomerId: customerId };
         }
+      } else if (session.mode === 'setup' && session.metadata?.purpose === FRANCHISE_FEE_CARD_PURPOSE) {
+        await this.applyFranchiseFeeCard(stripe, stripeAccountId, session, stripeEventId);
       }
     }
 
@@ -402,10 +405,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         }
         if (eventType === 'invoice.paid') {
           await this.handleInvoicePaid(tx, invoice);
-        } else {
-          await this.handleInvoicePaymentFailed(tx, invoice);
+          return noSideEffects;
         }
-        return noSideEffects;
+        // Decision 407 — the School Owners' notice, sent after the commit.
+        return { ...noSideEffects, notifications: await this.handleInvoicePaymentFailed(tx, invoice) };
       // Decision 111 — real handler, no longer a safe-default no-op. See
       // handleChargeDispute's own comment for the full account.
       case 'charge.dispute.created':
@@ -803,27 +806,32 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       if (openingFor) return;
     }
 
-    // Decision 337 (F17) — match the Pending charge for the period this invoice
-    // billed, not simply the newest one. Stripe bills a month's usage just after
-    // that month ends, by which time the monthly job may already have recorded
-    // next month's Pending charge; matching the newest one marked next month paid
-    // and left this month Pending forever. A Pending charge is recorded at the
-    // moment its usage is reported, so it belongs to the invoice whose period
-    // contains that moment. Falls back to the oldest Pending charge recorded
-    // before this invoice's period ended, never a later one.
-    const pending =
-      (await tx.franchiseFeeCharge.findFirst({
-        where: {
-          stripeSubscriptionId: subscriptionId,
-          status: 'PENDING',
-          createdAt: { gte: new Date(invoice.period_start * 1000), lte: new Date(invoice.period_end * 1000) },
-        },
-        orderBy: { createdAt: 'asc' },
-      })) ??
-      (await tx.franchiseFeeCharge.findFirst({
-        where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
-        orderBy: { createdAt: 'asc' },
-      }));
+    // Decision 407 — a franchise-fee invoice that failed first already has its
+    // row (Failed, keyed on this invoice — handleInvoicePaymentFailed). Stripe's
+    // retry, or the School Owner's new card, paid it: the same row turns
+    // Successful, never a second row. A Flat row takes the amount actually
+    // paid; a Per-headcount row keeps the amount the monthly job recorded (see
+    // the Pending branch below for why).
+    const failedFirst = await tx.franchiseFeeCharge.findUnique({ where: { stripeInvoiceId: invoice.id } });
+    if (failedFirst) {
+      if (failedFirst.status === 'FAILED' || failedFirst.status === 'PENDING') {
+        await tx.franchiseFeeCharge.update({
+          where: { id: failedFirst.id },
+          data: {
+            status: 'SUCCESSFUL',
+            stripePaymentIntentId: paymentIntentId ?? failedFirst.stripePaymentIntentId,
+            ...(failedFirst.feeBasisSnapshot === 'FLAT' ? { amount: invoice.amount_paid } : {}),
+          },
+        });
+      }
+      await tx.school.updateMany({
+        where: { stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: { not: 'ACTIVE' } },
+        data: { franchiseFeeSubscriptionStatus: 'ACTIVE' },
+      });
+      return;
+    }
+
+    const pending = await this.findPendingFeeCharge(tx, invoice, subscriptionId);
     if (pending) {
       // FOUND ON REVIEW: `amount` is deliberately NOT overwritten with
       // `invoice.amount_paid` here, unlike the fallback branch below — the
@@ -931,13 +939,17 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
   }
 
-  /** Flips an existing PENDING FranchiseFeeCharge (Per-Headcount case only —
-   * see handleInvoicePaid's own comment) to Failed. Flat case: no pre-existing
-   * Pending row to flip — Stripe's own Smart Retry schedule keeps attempting
-   * automatically (Spec 55 §10.2's confirmed "lean on Stripe's own retry, not a
-   * custom BullMQ one" reasoning, same as Membership's own renewal retries) —
-   * nothing to record until either a later invoice.paid succeeds or the
-   * Subscription is eventually cancelled (handleSubscriptionDeleted, above).
+  /** Flips an existing PENDING FranchiseFeeCharge (Per-Headcount case — see
+   * handleInvoicePaid's own comment) to Failed. Flat case: Decision 407 records
+   * a Failed row for the invoice, so both sides see the failed charge. Either
+   * way Stripe's own Smart Retry schedule keeps attempting automatically (Spec
+   * 55 §10.2's confirmed "lean on Stripe's own retry, not a custom BullMQ one"
+   * reasoning, same as Membership's own renewal retries), and a later
+   * invoice.paid turns the same row Successful. Returns the School Owners'
+   * "update the card" notices (Decision 407), sent after the commit.
+   *
+   * Decision 407 narrows the gap below for one case: a failure for an invoice
+   * whose row is already Successful changes nothing.
    *
    * FLAGGED ON REVIEW, not fixed: the trailing `franchiseFeeSubscriptionStatus`
    * write below is unconditional, unlike `handleInvoicePaid`'s own guarded
@@ -960,28 +972,127 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * caveat this comment already describes, for the identical reason — not a new,
    * separate gap.
    */
-  private async handleInvoicePaymentFailed(tx: Prisma.TransactionClient, invoice: Stripe.Invoice): Promise<void> {
+  private async handleInvoicePaymentFailed(tx: Prisma.TransactionClient, invoice: Stripe.Invoice): Promise<NotificationFanoutJobData[]> {
     const subRef = invoice.parent?.subscription_details?.subscription;
     const subscriptionId = typeof subRef === 'string' ? subRef : subRef?.id;
     if (!subscriptionId) {
-      return;
+      return [];
     }
 
     // Decision 346 (G4) — a failed renewal shows as a Failed row; Stripe keeps
     // retrying, and a later invoice.paid turns the same row Successful.
     if (await this.recordMembershipRenewal(tx, invoice, subscriptionId, this.extractPaymentIntentId(invoice), 'FAILED')) {
-      return;
+      return [];
     }
 
-    // Decision 337 (F17) — match the Pending charge for the period this invoice
-    // billed, not simply the newest one. Stripe bills a month's usage just after
-    // that month ends, by which time the monthly job may already have recorded
-    // next month's Pending charge; matching the newest one marked next month paid
-    // and left this month Pending forever. A Pending charge is recorded at the
-    // moment its usage is reported, so it belongs to the invoice whose period
-    // contains that moment. Falls back to the oldest Pending charge recorded
-    // before this invoice's period ended, never a later one.
-    const pending =
+    // Decision 407 — this invoice's row, if one is already keyed on it (an
+    // earlier failed attempt). Any other status (Successful, or since refunded
+    // or disputed) means this failure arrived after a retry already paid it:
+    // nothing changes and no one is told.
+    const existing = await tx.franchiseFeeCharge.findUnique({ where: { stripeInvoiceId: invoice.id } });
+    if (existing && existing.status !== 'FAILED' && existing.status !== 'PENDING') {
+      return [];
+    }
+    if (existing?.status === 'PENDING') {
+      await tx.franchiseFeeCharge.update({ where: { id: existing.id }, data: { status: 'FAILED' } });
+    }
+    // Decision 407 — the Pending row is now keyed on this invoice, so a later
+    // invoice.paid (Stripe's retry, or the School's new card) finds it again.
+    const pending = existing ? null : await this.findPendingFeeCharge(tx, invoice, subscriptionId);
+    if (pending) {
+      await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED', stripeInvoiceId: invoice.id } });
+    }
+
+    const feeSchool = await tx.school.findUnique({
+      where: { stripeFranchiseFeeSubscriptionId: subscriptionId },
+      select: { id: true, name: true, franchiseId: true },
+    });
+    if (!feeSchool) {
+      // Phase 54 — not a franchise fee: the platform branch below.
+      return this.markPlatformSubscriptionPastDue(tx, subscriptionId);
+    }
+
+    // Decision 407 — a Flat fee has no Pending row in advance, so a failed
+    // charge used to leave no trace for either side to see. It is recorded as a
+    // Failed row for this invoice (the amount Stripe tried to take), which
+    // invoice.paid turns Successful once a retry pays it. Skipped if the
+    // period already has a row from another invoice (the one-per-period index).
+    if (!existing && !pending && feeSchool.franchiseId) {
+      const periodStart = new Date(invoice.period_start * 1000);
+      const samePeriod = await tx.franchiseFeeCharge.findFirst({ where: { stripeSubscriptionId: subscriptionId, billingPeriodStart: periodStart }, select: { id: true } });
+      const franchise = await tx.franchise.findUnique({ where: { id: feeSchool.franchiseId }, include: { paymentAccount: true } });
+      if (!samePeriod && franchise?.paymentAccount) {
+        await tx.franchiseFeeCharge.create({
+          data: {
+            id: randomUUID(),
+            franchiseId: franchise.id,
+            schoolId: feeSchool.id,
+            franchisePaymentAccountId: franchise.paymentAccount.id,
+            billingPeriodStart: periodStart,
+            billingPeriodEnd: new Date(invoice.period_end * 1000),
+            feeBasisSnapshot: franchise.feeModel,
+            amount: invoice.amount_due,
+            currency: invoice.currency?.toUpperCase() ?? 'USD',
+            status: 'FAILED',
+            stripeInvoiceId: invoice.id,
+            stripeSubscriptionId: subscriptionId,
+          },
+        });
+      }
+    }
+
+    // A label only (Decision 407: nothing is locked or suspended for an unpaid
+    // fee). Stripe keeps retrying on its own schedule.
+    await tx.school.updateMany({
+      where: { id: feeSchool.id },
+      data: { franchiseFeeSubscriptionStatus: 'PAST_DUE' },
+    });
+    return this.franchiseFeeFailedNotices(tx, invoice, feeSchool);
+  }
+
+  /**
+   * Decision 407 — tells the School's Owners/Managers a franchise-fee charge
+   * failed, so they add or update the card. One notice per failed attempt
+   * (Stripe's own retries are days apart), keyed on the invoice and the attempt
+   * so a redelivered event never doubles it. Opens the School page, where the
+   * card is.
+   */
+  private async franchiseFeeFailedNotices(
+    tx: Prisma.TransactionClient,
+    invoice: Stripe.Invoice,
+    school: { id: string; name: string },
+  ): Promise<NotificationFanoutJobData[]> {
+    const owners = await tx.roleGrant.findMany({
+      where: { schoolId: school.id, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const amount = `${(invoice.amount_due / 100).toFixed(2)} ${(invoice.currency ?? 'usd').toUpperCase()}`;
+    return owners.map(({ userId }) => ({
+      notificationId: `franchise-fee-failed-${invoice.id}-${invoice.attempt_count ?? 0}-${userId}`,
+      userId,
+      title: 'Franchise fee payment failed',
+      body: `The franchise fee of ${amount} for ${school.name} couldn't be charged. Stripe will try again. Add or update the card on the School page.`,
+      type: 'FRANCHISE_FEE_PAYMENT_FAILED',
+      schoolId: school.id,
+      targetType: 'SCHOOL' as const,
+      targetId: school.id,
+    }));
+  }
+
+  /**
+   * Decision 337 (F17) — match the Pending charge for the period this invoice
+   * billed, not simply the newest one. Stripe bills a month's usage just after
+   * that month ends, by which time the monthly job may already have recorded
+   * next month's Pending charge; matching the newest one marked next month paid
+   * and left this month Pending forever. A Pending charge is recorded at the
+   * moment its usage is reported, so it belongs to the invoice whose period
+   * contains that moment. Falls back to the oldest Pending charge recorded
+   * before this invoice's period ended, never a later one. Shared by
+   * invoice.paid and invoice.payment_failed.
+   */
+  private async findPendingFeeCharge(tx: Prisma.TransactionClient, invoice: Stripe.Invoice, subscriptionId: string): Promise<FranchiseFeeCharge | null> {
+    return (
       (await tx.franchiseFeeCharge.findFirst({
         where: {
           stripeSubscriptionId: subscriptionId,
@@ -993,19 +1104,11 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       (await tx.franchiseFeeCharge.findFirst({
         where: { stripeSubscriptionId: subscriptionId, status: 'PENDING', createdAt: { lte: new Date(invoice.period_end * 1000) } },
         orderBy: { createdAt: 'asc' },
-      }));
-    if (pending) {
-      await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED' } });
-    }
+      }))
+    );
+  }
 
-    const franchiseFeeResult = await tx.school.updateMany({
-      where: { stripeFranchiseFeeSubscriptionId: subscriptionId },
-      data: { franchiseFeeSubscriptionStatus: 'PAST_DUE' },
-    });
-    if (franchiseFeeResult.count > 0) {
-      return;
-    }
-
+  private async markPlatformSubscriptionPastDue(tx: Prisma.TransactionClient, subscriptionId: string): Promise<NotificationFanoutJobData[]> {
     // Phase 54 — same either/or correlator reasoning as handleInvoicePaid above.
     // No PlatformCharge row to flip — this phase's platform SubscriptionPlan
     // billing has no PENDING-row-in-advance case (see handleInvoicePaid's own
@@ -1021,6 +1124,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: { platformSubscriptionStatus: 'PAST_DUE' },
       });
     }
+    return [];
   }
 
   /**
@@ -1415,6 +1519,58 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       create: { id: randomUUID(), studentId: data.studentId, schoolId: data.schoolId, stripeCustomerId: data.stripeCustomerId },
       update: { stripeCustomerId: data.stripeCustomerId },
     });
+  }
+
+  /**
+   * Decision 407 — a School Owner saved the franchise-fee card (hosted Checkout,
+   * setup mode, FranchiseFeesService.createCardSetupSession). The new card
+   * becomes the default payment method of the School's kept Customer, which
+   * every later franchise-fee subscription is created on, and of the School's
+   * current subscription, so Stripe charges it from the next attempt on —
+   * including its own retries of an invoice that already failed.
+   *
+   * Runs in process()'s pre-fetch, outside the DB transaction (only Stripe
+   * calls, nothing to write: the Customer id was stored when the session was
+   * made). Setting the same default again on a redelivery changes nothing.
+   *
+   * The session's metadata is ours, but it is still checked against the School
+   * row before anything is changed: the Customer must be that School's kept
+   * Customer, on the account of the Franchise it is in now. A session that no
+   * longer matches (the School left the Franchise meanwhile) is logged and
+   * left, not retried.
+   */
+  private async applyFranchiseFeeCard(stripe: Stripe, stripeAccountId: string, session: Stripe.Checkout.Session, stripeEventId: string): Promise<void> {
+    const schoolId = session.metadata?.schoolId;
+    const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+    const setupIntentId = typeof session.setup_intent === 'string' ? session.setup_intent : session.setup_intent?.id;
+    const school = schoolId
+      ? await this.prismaJobs.school.findUnique({
+          where: { id: schoolId },
+          select: { id: true, stripeFranchiseFeeCustomerId: true, stripeFranchiseFeeSubscriptionId: true, franchise: { select: { paymentAccount: { select: { stripeConnectedAccountId: true } } } } },
+        })
+      : null;
+    if (
+      !school ||
+      !customerId ||
+      !setupIntentId ||
+      school.stripeFranchiseFeeCustomerId !== customerId ||
+      school.franchise?.paymentAccount?.stripeConnectedAccountId !== stripeAccountId
+    ) {
+      this.logger.warn(`Stripe event ${stripeEventId}: franchise-fee card session ${session.id} no longer matches School ${schoolId ?? '-'} — card not applied.`);
+      return;
+    }
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    const paymentMethodId = typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method?.id;
+    if (!paymentMethodId) {
+      this.logger.warn(`Stripe event ${stripeEventId}: franchise-fee card session ${session.id} has no saved card — nothing to apply.`);
+      return;
+    }
+    await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: paymentMethodId } });
+    if (school.stripeFranchiseFeeSubscriptionId) {
+      // Always on this Customer: ensureFeeCustomer adopts an older
+      // subscription's Customer rather than making a second one.
+      await stripe.subscriptions.update(school.stripeFranchiseFeeSubscriptionId, { default_payment_method: paymentMethodId });
+    }
   }
 
   @OnWorkerEvent('failed')
