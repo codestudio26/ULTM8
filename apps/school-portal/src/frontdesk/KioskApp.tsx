@@ -6,8 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
-import { errorText, type QrLookup } from './frontDeskQueries';
-import { findByPersonalCode } from './kioskApi';
+import { codeErrorText, errorText, type QrLookup } from './frontDeskQueries';
 import {
   clearKioskToken,
   isSessionEnded,
@@ -15,6 +14,7 @@ import {
   useKioskCard,
   useKioskCheckIn,
   useKioskInfo,
+  useKioskCodeLookup,
   useKioskQrLookup,
   useKioskStudentSearch,
   useKioskToday,
@@ -63,6 +63,7 @@ export function KioskApp() {
   const info = useKioskInfo(hasToken);
   const today = useKioskToday(hasToken && info.isSuccess, now);
   const qrLookup = useKioskQrLookup();
+  const codeLookup = useKioskCodeLookup();
   const [screen, setScreen] = useState<Screen>('home');
   const [method, setMethod] = useState<CheckInMethod>('scan');
   const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
@@ -223,12 +224,15 @@ export function KioskApp() {
             ) : method === 'code' ? (
               <CodePad
                 title={t('frontDesk.code.kioskTitle')}
+                hint={t('frontDesk.code.hint', { digits: session.checkInCodeDigits })}
+                length={session.checkInCodeDigits}
                 onCode={(code) => {
-                  findByPersonalCode(code)
-                    .then((s) =>
-                      setWho({ student: { id: s.studentId, firstName: s.firstName, surname: s.surname, profilePhotoUrl: s.profilePhotoUrl }, qr: null }),
-                    )
-                    .catch(() => setMsg(t('frontDesk.code.notFound')));
+                  setMsg(null);
+                  codeLookup.mutate(code, {
+                    // Like a scanned QR, the lookup lets the check-in record how they came in.
+                    onSuccess: (r) => setWho({ student: fromKiosk(r.student), qr: { lookupToken: r.lookupToken, expiresAt: Date.parse(r.expiresAt) } }),
+                    onError: (err) => setMsg(codeErrorText(err, t('frontDesk.code.notFound'))),
+                  });
                 }}
               />
             ) : (

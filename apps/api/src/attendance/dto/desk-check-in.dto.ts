@@ -24,7 +24,7 @@ export class DeskCheckInDto {
   @IsUUID()
   studentId!: string;
 
-  @ApiPropertyOptional({ description: 'From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR. Recorded as INSTRUCTOR_SCAN; without it, INSTRUCTOR_MANUAL.' })
+  @ApiPropertyOptional({ description: 'From POST /schools/{schoolId}/front-desk/qr-lookups when the Student showed their app QR (recorded as INSTRUCTOR_SCAN), or from .../code-lookups when they typed their personal code (PERSONAL_CODE). Without it, INSTRUCTOR_MANUAL.' })
   @IsOptional()
   @IsString()
   @MinLength(1)

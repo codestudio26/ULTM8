@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
+import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -196,6 +197,9 @@ export function StudentGradingPage() {
           )}
         </Card>
       </div>
+
+      {/* Decision 384: the personal check-in code typed at the front desk. */}
+      {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 348: memberships, selling at the desk, Friend Pass and
           cancelling a Subscription. Owner only, like the API. */}

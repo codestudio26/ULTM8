@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "Baliesessie niet gevonden, of al beëindigd.",
   "This front-desk session has ended. Ask a member of staff to start it again.": "Deze baliesessie is beëindigd. Vraag iemand van het personeel om hem opnieuw te starten.",
   "That staff code isn't right.": "Die personeelscode klopt niet.",
+  "That check-in code isn't right.": "Die incheckcode klopt niet.",
   "This class is at another Branch.": "Deze les is bij een andere Vestiging.",
   "The tablet's day is out of range. Check the tablet's date and time.": "De dag van de tablet valt buiten het bereik. Controleer de datum en tijd van de tablet.",
   "This booking was cancelled, so its guests can no longer be checked in.": "Deze boeking is geannuleerd, dus de gasten kunnen niet meer worden ingecheckt.",

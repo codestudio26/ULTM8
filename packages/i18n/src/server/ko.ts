@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "프런트 데스크 세션을 찾을 수 없거나 이미 종료되었습니다.",
   "This front-desk session has ended. Ask a member of staff to start it again.": "이 프런트 데스크 세션이 종료되었습니다. 직원에게 다시 시작해 달라고 하세요.",
   "That staff code isn't right.": "그 직원 코드가 맞지 않습니다.",
+  "That check-in code isn't right.": "그 출석 체크 코드가 맞지 않습니다.",
   "This class is at another Branch.": "이 수업은 다른 지점에 있습니다.",
   "The tablet's day is out of range. Check the tablet's date and time.": "태블릿의 날짜가 범위를 벗어났습니다. 태블릿의 날짜와 시간을 확인하세요.",
   "This booking was cancelled, so its guests can no longer be checked in.": "이 예약은 취소되어 게스트를 더 이상 체크인할 수 없습니다.",

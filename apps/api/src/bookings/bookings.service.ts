@@ -15,6 +15,7 @@ import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { CancellationService, SeatRef, StripeRefundPlan } from './cancellation.service';
+import { lateCancellationFee } from './late-cancellation-fee';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
@@ -400,18 +401,23 @@ export class BookingsService {
       // I/O inside a transaction, same discipline every other Stripe-calling
       // write in this codebase follows) — see the try/catch below. The fee
       // stays tied to the refund cut-off itself (Decision 322), and Decision 291
-      // lets the owner switch it off.
-      if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
-        cancellationChargeAmount = cls.cancellationCharge;
+      // lets the owner switch it off. Decision 389: the Class's own charge
+      // first; a Class with none falls back to the charge on the plan the
+      // Booking used. One fee per Booking, never both.
+      if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {
         // No currency field on Class itself — reuses the Booking's own
         // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
         // fallback MembershipsService.purchase() already applies when charging
         // this exact Membership's own Stripe payments.
         const sourceMembership = await tx.membership.findUnique({
           where: { id: resolvedBooking.sourceMembershipId },
-          select: { membershipPlan: { select: { currency: true } } },
+          select: { membershipPlan: { select: { currency: true, cancellationCharge: true } } },
         });
-        cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+        const fee = lateCancellationFee(cls.cancellationCharge, sourceMembership?.membershipPlan.cancellationCharge ?? null);
+        if (fee !== null) {
+          cancellationChargeAmount = fee;
+          cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+        }
       }
 
       // Optimistic-concurrency guard, same shape as every other status-transition in

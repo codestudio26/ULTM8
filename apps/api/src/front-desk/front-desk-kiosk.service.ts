@@ -14,6 +14,7 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/front-desk-check-in.service';
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
 import { FrontDeskSessionContext } from './front-desk-sessions.service';
+import { StudentCheckInCodesService } from './student-check-in-codes.service';
 import { KioskBookingDto, KioskClassDto, KioskStudentCardDto, KioskStudentDto, KioskTodayDto, KioskTodayQueryDto } from './dto/front-desk.dto';
 
 const NAME_RESULTS = 8;
@@ -54,6 +55,7 @@ export class FrontDeskKioskService {
     private readonly grading: GradingService,
     private readonly attendance: AttendanceService,
     private readonly deskCheckIn: FrontDeskCheckInService,
+    private readonly checkInCodes: StudentCheckInCodesService,
   ) {}
 
   async info(session: FrontDeskSessionContext) {
@@ -191,6 +193,13 @@ export class FrontDeskKioskService {
    * works on this tablet. */
   async qrLookup(session: FrontDeskSessionContext, studentToken: string) {
     const r = await this.attendance.deskQrLookup(session.startedById, session.schoolId, studentToken, frontDeskLookupOwner(session.id));
+    return { lookupToken: r.lookupToken, expiresAt: r.expiresAt, student: await this.student(session, r.studentId) };
+  }
+
+  /** A typed personal check-in code (Decision 384); like a scanned QR, the
+   * lookup only works on this tablet. */
+  async codeLookup(session: FrontDeskSessionContext, code: string) {
+    const r = await this.checkInCodes.lookup(session.schoolId, code, frontDeskLookupOwner(session.id), `tablet ${session.id}`);
     return { lookupToken: r.lookupToken, expiresAt: r.expiresAt, student: await this.student(session, r.studentId) };
   }
 

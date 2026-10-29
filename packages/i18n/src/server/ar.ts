@@ -588,6 +588,7 @@ export const serverMessages: Record<string, string> = {
   "Front-desk session not found, or already ended.": "لم يتم العثور على جلسة الاستقبال، أو انتهت بالفعل.",
   "This front-desk session has ended. Ask a member of staff to start it again.": "انتهت جلسة الاستقبال هذه. اطلب من أحد الموظفين بدءها من جديد.",
   "That staff code isn't right.": "رمز الموظف هذا غير صحيح.",
+  "That check-in code isn't right.": "رمز تسجيل الحضور هذا غير صحيح.",
   "This class is at another Branch.": "هذا الصف في فرع آخر.",
   "The tablet's day is out of range. Check the tablet's date and time.": "يوم الجهاز اللوحي خارج النطاق. تحقق من تاريخ ووقت الجهاز اللوحي.",
   "This booking was cancelled, so its guests can no longer be checked in.": "أُلغي هذا الحجز، لذا لم يعد بالإمكان تسجيل حضور ضيوفه.",
