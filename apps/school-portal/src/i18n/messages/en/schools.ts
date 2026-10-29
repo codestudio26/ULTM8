@@ -59,6 +59,18 @@ export const schools = {
     subtitle: "You'll become its Owner/Manager automatically.",
     submit: 'Create School',
   },
+  freezing: {
+    title: "Freezing memberships",
+    subtitle: "How long members can freeze a membership, and what it costs. Class packs can't be frozen.",
+    maxDaysLabel: "Most frozen days in any 12 months",
+    maxDaysHint: "From 1 to 365. A freeze is always at least 7 days.",
+    maxDaysInvalid: "Enter a whole number from 1 to 365.",
+    feeLabel: "Freeze fee",
+    feeHint: "Charged once when a freeze is approved: on the member's saved card, or collected at the desk. Leave empty for no fee.",
+    feeInvalid: "Enter an amount, like 10 or 12.50.",
+    checkInNote: "Whether frozen members may check in is one of the check-in rules.",
+    checkInLink: "Open check-in rules",
+  },
   heardFrom: {
     title: 'How did you hear about us?',
     subtitle: "The choices on the front-desk sign-up form. Until you change them, the starting list shows in each person's language.",

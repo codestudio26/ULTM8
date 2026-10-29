@@ -150,6 +150,8 @@ function useItemLabel() {
       return row.bookingClassTitle ? t('transactions.itemLateFee', { class: row.bookingClassTitle }) : t('transactions.kindLateFee');
     }
     const plan = row.membershipPlanTitle ?? '';
+    // Decision 404: a freeze fee names the frozen membership's plan.
+    if (row.kind === 'FREEZE_FEE') return plan ? t('transactions.itemFreezeFee', { plan }) : t('transactions.kindFreezeFee');
     return row.kind === 'RENEWAL' ? t('transactions.itemRenewal', { plan }) : plan;
   };
 }
@@ -158,6 +160,7 @@ const KIND_LABELS = {
   MEMBERSHIP: 'transactions.kindMembership',
   RENEWAL: 'transactions.kindRenewal',
   LATE_CANCEL_FEE: 'transactions.kindLateFee',
+  FREEZE_FEE: 'transactions.kindFreezeFee',
 } as const;
 
 /** "Record a payment" (Decision 346, G7): cash or a bank transfer the School

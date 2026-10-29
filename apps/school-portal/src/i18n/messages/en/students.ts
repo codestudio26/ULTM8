@@ -134,6 +134,18 @@ export const students = {
     rejectFailed: "Couldn't reject the sign-up.",
     rejectConfirm: 'Reject',
   },
+  frozen: {
+    badge: "Frozen",
+    filter: "Frozen only",
+    until: "Frozen until {date}",
+  },
+  freezeRequests: {
+    title: "Freeze requests",
+    row: "wants to freeze {plan} from {start} to {end}.",
+    approve: "Approve",
+    decline: "Decline",
+    failed: "This freeze request could not be updated.",
+  },
   visitor: {
     badge: 'Visitor',
     title: 'Visitor',

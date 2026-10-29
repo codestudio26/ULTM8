@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
@@ -13,6 +13,8 @@ import { useBranches } from '../branches/branchQueries';
 import { matchesSearch } from './studentSearch';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { FreezeRequestsCard } from './FreezeRequestsCard';
+import { formatCalendarDay } from '../membershipPlans/freezeQueries';
 
 /** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
  * roster is fetched whole, as it was before. */
@@ -58,22 +60,25 @@ export function StudentsPage() {
   const { data: branchData } = useBranches(schoolId);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
+  // Decision 404: only students with a membership frozen today.
+  const [frozenOnly, setFrozenOnly] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [exporting, setExporting] = useState(false);
   const school = useSchool(schoolId);
   // Decision 399: the owner, or Branch Staff the owner let export.
   const mayExport = !!ownedSchoolId || !!myAccess.data?.access.exportStudents;
   // A new filter starts again on page 1.
-  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter]);
+  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly]);
 
   const filtered = useMemo(
     () =>
       (data?.items ?? []).filter(
         (s) =>
           matchesSearch(s, search) &&
+          (!frozenOnly || s.frozen) &&
           (!branchFilter || (branchFilter === NO_BRANCH ? !s.homeBranchId : s.homeBranchId === branchFilter)),
       ),
-    [data, search, branchFilter],
+    [data, search, branchFilter, frozenOnly],
   );
 
   // Only the owner, and Branch Staff with the "students" switch, have this
@@ -87,7 +92,14 @@ export function StudentsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / STUDENTS_PAGE_SIZE));
   const page = Math.min(pageIndex, pageCount - 1);
   const students = filtered.slice(page * STUDENTS_PAGE_SIZE, (page + 1) * STUDENTS_PAGE_SIZE);
-  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '';
+  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly;
+  // Decision 404: the blue Frozen badge, with the day they are back.
+  const frozenBadge = (s: StudentSummary) =>
+    s.frozen ? (
+      <span title={s.frozenUntil ? t('students.frozen.until', { date: formatCalendarDay(s.frozenUntil) }) : undefined}>
+        <Badge variant="info">{t('students.frozen.badge')}</Badge>
+      </span>
+    ) : null;
   // A Guardian-managed child has no email of their own (Decision 341).
   const emailOf = (s: StudentSummary) => (s.guardianManaged ? t('students.managedByGuardian') : s.email);
 
@@ -120,6 +132,7 @@ export function StudentsPage() {
         <StudentExportModal schoolId={schoolId} schoolName={school.data?.name ?? ''} withBranch={hasBranches} onClose={() => setExporting(false)} />
       ) : null}
       <StudentsTabs />
+      {ownedSchoolId ? <FreezeRequestsCard schoolId={ownedSchoolId} /> : null}
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -158,6 +171,9 @@ export function StudentsPage() {
               />
             </Field>
           </div>
+          <div style={{ paddingBottom: 8 }}>
+            <Checkbox label={t('students.frozen.filter')} checked={frozenOnly} onChange={(e) => setFrozenOnly(e.target.checked)} />
+          </div>
           </div>
           <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('students.viewAria')} />
         </div>
@@ -184,6 +200,7 @@ export function StudentsPage() {
                     </div>
                     <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
                     {s.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
+                    {frozenBadge(s)}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{emailOf(s)}</p>
                   {hasBranches ? <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.homeBranchName ?? t('students.branchNone')}</p> : null}
@@ -211,6 +228,7 @@ export function StudentsPage() {
                       <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
                       {/* Decision 391 */}
                       {s.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
+                      {frozenBadge(s)}
                     </span>
                   ),
                 },
