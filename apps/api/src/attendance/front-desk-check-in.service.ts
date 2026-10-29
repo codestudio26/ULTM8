@@ -8,6 +8,7 @@ import { BookingsService } from '../bookings/bookings.service';
 import { assertClassBookable, assertNotAlreadyAttended, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { AttendanceService } from './attendance.service';
+import { CHECK_IN_RULE_MESSAGES, loadCheckInRules } from './check-in-rules';
 import { QrTokenService } from './qr-token.service';
 import { DeskCheckInClassResultDto, DeskCheckInDto, DeskCheckInGuestResultDto, DeskCheckInResponseDto } from './dto/desk-check-in.dto';
 
@@ -116,6 +117,13 @@ export class FrontDeskCheckInService {
     const failClass = (classId: string, reason: Reason) => Object.assign(classResults.find((r) => r.classId === classId)!, { ok: false, ...reason });
     const failGuest = (attendeeId: string, reason: Reason) => Object.assign(guestResults.find((r) => r.attendeeId === attendeeId)!, { ok: false, ...reason });
     const outcome = (done: boolean): DeskCheckInResponseDto => ({ done, classes: classResults, guests: guestResults });
+
+    // The School may check people in to one class at a time (Decision 394).
+    const rules = await loadCheckInRules(this.prismaJobs, schoolId);
+    if (!rules.severalClasses && dto.classIds.length > 1) {
+      for (const r of classResults) failClass(r.classId, { code: 'CHECK_IN_ONE_CLASS', message: CHECK_IN_RULE_MESSAGES.severalClasses });
+      return outcome(false);
+    }
 
     // 1. Everything that can be checked before the transaction, so the reply
     // can name every item that can't be done, not just the first.

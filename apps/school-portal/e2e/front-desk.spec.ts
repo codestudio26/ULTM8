@@ -421,3 +421,54 @@ test('each guest is ticked on their own; the member\'s check-in doesn\'t check t
   expect((await db.bookingAttendee.findUniqueOrThrow({ where: { id: guests[1].id } })).checkedInAt).not.toBeNull();
 });
 
+
+test('the owner sets the check-in rules from Check-in; one class at a time unticks the others (Decision 394)', async ({ page }) => {
+  await classNow();
+  await classNow({ title: 'Sparring' });
+  await subscribe(s.student.id);
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('link', { name: 'Check-in rules' }).click();
+  await expect(page).toHaveURL(/\/check-in\/rules$/);
+
+  const several = page.getByRole('switch', { name: 'Check in to several classes at once' });
+  await expect(several).toHaveAttribute('aria-checked', 'true');
+  await several.click();
+  await page.getByLabel('Check-in closes').selectOption('after');
+  await page.getByLabel('Minutes after the start (0 = at the start)').fill('20');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Check-in rules saved.')).toBeVisible();
+  const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
+  expect(school.checkInSeveralClasses).toBe(false);
+  expect(school.checkInClosesMinutesAfterStart).toBe(20);
+
+  await page.getByRole('link', { name: 'Back to check-in' }).click();
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  const fundamentals = card.getByRole('button', { name: /Fundamentals/ });
+  const sparring = card.getByRole('button', { name: /Sparring/ });
+  // The next class starts ticked, as before.
+  await expect(fundamentals).toHaveAttribute('aria-pressed', 'true');
+  await sparring.click();
+  await expect(sparring).toHaveAttribute('aria-pressed', 'true');
+  await expect(fundamentals).toHaveAttribute('aria-pressed', 'false');
+  await expect(card.getByRole('button', { name: 'Check in to 1 class' })).toBeVisible();
+});
+
+test('a check-in rule the person breaks is shown as its reason (Decision 394)', async ({ page }) => {
+  const cls = await classNow();
+  const m = await subscribe(s.student.id);
+  await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id } });
+  await db.school.update({ where: { id: s.schoolId }, data: { checkInRequireWaiver: true } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(card.getByRole('alert')).toContainText('This School needs a signed waiver before checking in.');
+  expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('UPCOMING');
+});

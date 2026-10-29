@@ -514,6 +514,7 @@ export const SERVER_MESSAGES: string[] = [
   "The School owner hasn't let you cancel classes or give credit back.",
   "The School owner hasn't let you see the staff list.",
   "The School owner hasn't let you invite coaches.",
+  "The School owner hasn't let you change the check-in rules.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",
   "You are not on the staff of this School.",
 ];

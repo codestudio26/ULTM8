@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Check-in rules** (Decision 394) — Check-in → Check-in rules sets, for
+  every way in (app, coach's scan, front desk, tablet), when check-in opens
+  and closes, whether a signed waiver is needed, whether members may check
+  in at other branches, whether visitors check in on a visit pass, and
+  whether the desk checks in to several classes at once. Every default is
+  how check-in worked before. The owner, and Branch Staff given the new
+  "Change check-in rules" access switch. Needs migration
+  `20261225000000_check_in_rules`.
 - **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
   tablet (adults; Visitor only when the School has set a visit pass length) and
   wait for staff. The owner, or Branch Staff with the Students switch, approves

@@ -56,9 +56,12 @@ export function timeOf(iso: string): string {
 }
 
 /** A Class is still open for check-in until it ends (the API keeps the exact
- * window: Class.qrAttendanceEndAt, else its end). */
-export function isOver(c: DeskClass, now = Date.now()): boolean {
-  return new Date(c.qrAttendanceEndAt ?? c.endDate).getTime() < now;
+ * window: Class.qrAttendanceEndAt, else its end), or until the School's
+ * "latest check-in" after the start, when that comes first (Decision 394). */
+export function isOver(c: DeskClass, now = Date.now(), closesMinutesAfterStart: number | null = null): boolean {
+  let closes = new Date(c.qrAttendanceEndAt ?? c.endDate).getTime();
+  if (closesMinutesAfterStart !== null) closes = Math.min(closes, new Date(c.startDate).getTime() + closesMinutesAfterStart * 60_000);
+  return closes < now;
 }
 
 /** When check-in opens: the School's set number of minutes before the start
@@ -453,6 +456,8 @@ export function WelcomeCard(props: {
         props.onDone(ids);
       }}
       opensMinutesBefore={school.data.checkInOpensMinutesBeforeStart}
+      closesMinutesAfterStart={school.data.checkInClosesMinutesAfterStart ?? null}
+      severalClasses={school.data.checkInSeveralClasses ?? true}
     />
   );
 }
@@ -465,7 +470,8 @@ export function WelcomeCard(props: {
  * someone found by name: Decision 388) a Class they haven't booked can't be
  * ticked either; booking there needs the app QR. Anything the API refuses (no live
  * membership, rank gate, full) comes back as its reason and is shown in place
- * of the Confirm button's result.
+ * of the Confirm button's result. When the School checks people in to one
+ * class at a time (Decision 394), ticking a Class unticks the others.
  */
 export function WelcomeCardBody({
   student,
@@ -479,6 +485,8 @@ export function WelcomeCardBody({
   onBack,
   onDone,
   opensMinutesBefore,
+  closesMinutesAfterStart = null,
+  severalClasses = true,
   mayBook = true,
 }: {
   student: FrontDeskStudent;
@@ -492,18 +500,20 @@ export function WelcomeCardBody({
   onBack: () => void;
   onDone: (classIds: string[]) => void;
   opensMinutesBefore: number;
+  closesMinutesAfterStart?: number | null;
+  severalClasses?: boolean;
   mayBook?: boolean;
 }) {
   const t = useT();
   const now = Date.now();
-  const open = classes.filter((c) => !isOver(c, now));
+  const open = classes.filter((c) => !isOver(c, now, closesMinutesAfterStart));
   const mineIn = (c: DeskClass, status: DeskBooking['status']) => mine.get(c.id)?.status === status;
   const needsBooking = (c: DeskClass) => !mayBook && !mineIn(c, 'UPCOMING') && !mineIn(c, 'COMPLETED');
   const canTick = (c: DeskClass) => checkInOpensAt(c, opensMinutesBefore) <= Date.now() && !needsBooking(c);
   const [picks, setPicks] = useState<string[]>(() => {
     const ready = open.filter(canTick);
     const booked = ready.filter((c) => mineIn(c, 'UPCOMING')).map((c) => c.id);
-    if (booked.length) return booked;
+    if (booked.length) return severalClasses ? booked : booked.slice(0, 1);
     const next = ready.find((c) => !mineIn(c, 'COMPLETED'));
     return next ? [next.id] : [];
   });
@@ -511,7 +521,7 @@ export function WelcomeCardBody({
 
   const progress = info.progress;
   const tag = info.membershipStatus ? STATUS_TAG[info.membershipStatus] : null;
-  const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const toggle = (id: string) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : severalClasses ? [...p, id] : [id]));
   // Guests are ticked one by one, only those who came (Decision 377).
   const [guestPicks, setGuestPicks] = useState<Array<{ bookingId: string; attendeeId: string }>>([]);
   const toggleGuest = (bookingId: string, attendeeId: string) =>

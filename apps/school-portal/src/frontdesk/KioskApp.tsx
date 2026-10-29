@@ -272,6 +272,8 @@ export function KioskApp() {
               qr={who.qr}
               classes={classes}
               opensMinutesBefore={session.checkInOpensMinutesBeforeStart}
+              closesMinutesAfterStart={session.checkInClosesMinutesAfterStart ?? null}
+              severalClasses={session.checkInSeveralClasses}
               onBack={() => setWho(null)}
               onDone={(ids) => {
                 setDone({
@@ -355,6 +357,8 @@ function KioskWelcome({
   qr,
   classes,
   opensMinutesBefore,
+  closesMinutesAfterStart,
+  severalClasses,
   onBack,
   onDone,
 }: {
@@ -362,6 +366,8 @@ function KioskWelcome({
   qr: QrLookup | null;
   classes: KioskClass[];
   opensMinutesBefore: number;
+  closesMinutesAfterStart: number | null;
+  severalClasses: boolean;
   onBack: () => void;
   onDone: (classIds: string[]) => void;
 }) {
@@ -404,6 +410,8 @@ function KioskWelcome({
       onBack={onBack}
       onDone={onDone}
       opensMinutesBefore={opensMinutesBefore}
+      closesMinutesAfterStart={closesMinutesAfterStart}
+      severalClasses={severalClasses}
     />
   );
 }

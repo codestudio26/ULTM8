@@ -6648,3 +6648,47 @@ User (Code), 29 Oct 2026, starting front-desk sign-up (F5): chose to build the V
 ### Recorded by
 
 User (Code), 29 Oct 2026: "yes start with sign-up from the tablet", then the answers quoted above.
+
+---
+
+## Decision 394 — Check-in rules per School
+
+**Date:** 29 Oct 2026. **Builds:** Decision 317 item 1 and the front-desk handover's F9 (backlog §3.5).
+
+### Context
+
+Check-in had fixed rules: it opened the School's set minutes before a class (Decision 380's School page setting), closed at the class's own check-in end or its end, and the desk could check someone in to several classes at once (Decision 378). A School could not change who may check in.
+
+### Decision
+
+1. **One set of rules for every way in**: the app QR and code, the coach's scan, the front desk and the locked tablet. They are checked where every check-in ends (`AttendanceService.assertWithinWindow` and `completeInTx`), so no way in can skip them.
+2. **Every default is today's behaviour**, so nothing changes for a School until its owner changes a rule.
+3. **The rules** (Settings → Check-in → Check-in rules):
+   - Check-in opens N minutes before the start (0 to 1440; the existing setting, default 30).
+   - Check-in closes when the class ends (default), or N minutes after the start (0 to 1440). A class's own check-in end time still applies when it comes first.
+   - Need a signed waiver to check in (default off): any counting signature at the School (Decision 354's archived-signature setting applies), for every class.
+   - Members may check in at other Branches (default on). When off, a member with a home Branch checks in only at classes of that Branch or School-wide classes; a member with no home Branch is not refused.
+   - Check visitors in on a visit pass (default on). When off, a booking paid by a visit pass (Decision 391) is not checked in.
+   - Check in to several classes at once (default on). When off, the desk and the tablet tick one class at a time, and the API refuses more than one.
+   - Check-in code length (4 or 6; the existing setting).
+4. **Who changes them:** the owner, and Branch Staff with a new access switch, "Change check-in rules" (Decision 387's Access window, off by default and in neither preset). Coaches don't.
+5. **No frozen-member rule for now.** *(Product owner, 29 Oct 2026: "all recommended".)*
+
+### How it is built
+
+- Migration `20261225000000_check_in_rules`: `School.checkInClosesMinutesAfterStart` (null), `checkInRequireWaiver` (false), `checkInOtherBranches`, `checkInVisitors`, `checkInSeveralClasses` (true); `StaffPermission.canManageCheckInRules` (false).
+- `GET`/`PUT /schools/{schoolId}/check-in-rules`; refused with `STAFF_ACCESS_OFF` without the switch.
+- Refusal codes: `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` (403) and `CHECK_IN_ONE_CLASS` (a per-class reason from the desk's one-step check-in).
+- The tablet's session returns `checkInClosesMinutesAfterStart` and `checkInSeveralClasses`; the School returns all of them.
+- The School page keeps its two existing check-in fields; both pages write the same settings.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** A rule that needs a live membership to check in, separate from booking. Booking already needs one, and the desk books where needed, so today it is always needed.
+- **[UNRESOLVED]** A rule that refuses check-in to members with an overdue payment. `paymentRestrictedAt` only blocks purchases today.
+- **[UNRESOLVED]** Checking in without a booking (walk-ins without a place). Every way in still needs a booking, as before.
+- **[UNRESOLVED]** A frozen-membership rule. Left out for now (point 5).
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "all recommended" on the F5/F8/F9 suggestions.

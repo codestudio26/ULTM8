@@ -62,7 +62,15 @@ export class FrontDeskKioskService {
   async info(session: FrontDeskSessionContext) {
     const school = await this.prismaJobs.school.findUniqueOrThrow({
       where: { id: session.schoolId },
-      select: { name: true, checkInOpensMinutesBeforeStart: true, checkInCodeDigits: true, visitorPeriodDays: true, heardFromOptions: true },
+      select: {
+        name: true,
+        checkInOpensMinutesBeforeStart: true,
+        checkInClosesMinutesAfterStart: true,
+        checkInSeveralClasses: true,
+        checkInCodeDigits: true,
+        visitorPeriodDays: true,
+        heardFromOptions: true,
+      },
     });
     const branch = session.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: session.branchId }, select: { name: true } }) : null;
     return {
@@ -73,6 +81,9 @@ export class FrontDeskKioskService {
       branchName: branch?.name ?? null,
       expiresAt: session.expiresAt.toISOString(),
       checkInOpensMinutesBeforeStart: school.checkInOpensMinutesBeforeStart,
+      // Decision 394: when check-in closes, and whether several classes may be ticked.
+      checkInClosesMinutesAfterStart: school.checkInClosesMinutesAfterStart,
+      checkInSeveralClasses: school.checkInSeveralClasses,
       checkInCodeDigits: school.checkInCodeDigits,
       // Decision 392: the sign-up form offers Visitor only with a visitor period.
       visitorsOn: !!school.visitorPeriodDays,

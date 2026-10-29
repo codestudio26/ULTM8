@@ -613,6 +613,7 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you cancel classes or give credit back.": "학교 소유자가 수업을 취소하거나 크레딧을 돌려주도록 허용하지 않았습니다.",
   "The School owner hasn't let you see the staff list.": "학교 소유자가 직원 목록을 보도록 허용하지 않았습니다.",
   "The School owner hasn't let you invite coaches.": "학교 소유자가 코치를 초대하도록 허용하지 않았습니다.",
+  "The School owner hasn't let you change the check-in rules.": "학교 소유자가 체크인 규칙 변경을 허용하지 않았습니다.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
   "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
   "Only the owner or Branch Staff can give a visit pass.": "방문 패스는 소유자나 지점 직원만 줄 수 있습니다.",
