@@ -600,4 +600,12 @@ export const serverMessages: Record<string, string> = {
   "You are already the main owner.": "أنت المالك الرئيسي بالفعل.",
   "This person is not a co-owner of this School.": "هذا الشخص ليس مالكًا مشاركًا في هذه المدرسة.",
   "entityId must equal schoolId for entityType SCHOOL.": "يجب أن يساوي entityId قيمة schoolId عندما يكون entityType هو SCHOOL.",
+  "The School owner hasn't let you manage classes and the timetable here.": "لم يسمح لك مالك المدرسة بإدارة الحصص والجدول هنا.",
+  "The School owner hasn't let you manage bookings and check-in here.": "لم يسمح لك مالك المدرسة بإدارة الحجوزات وتسجيل الحضور هنا.",
+  "The School owner hasn't let you see or edit students.": "لم يسمح لك مالك المدرسة بعرض الطلاب أو تعديلهم.",
+  "The School owner hasn't let you cancel classes or give credit back.": "لم يسمح لك مالك المدرسة بإلغاء الحصص أو إعادة الرصيد.",
+  "The School owner hasn't let you see the staff list.": "لم يسمح لك مالك المدرسة بعرض قائمة الموظفين.",
+  "The School owner hasn't let you invite coaches.": "لم يسمح لك مالك المدرسة بدعوة المدربين.",
+  "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "مفاتيح الوصول مخصصة لموظفي الفرع. للمدربين صلاحيات دورهم، وللمالكين كل الصلاحيات.",
+  "You are not on the staff of this School.": "أنت لست من موظفي هذه المدرسة.",
 };

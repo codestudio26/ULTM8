@@ -150,13 +150,18 @@ test('the owner lets a Branch Staff member manage disciplines (Decision 383)', a
   const north = await addBranch(s, 'North');
   const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await page.goto('/staff');
-  const tick = page.getByLabel('Bea Desk can manage disciplines');
+  // On the person's Access window (Decision 387).
+  await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Access for Bea Desk' });
+  const tick = dialog.getByLabel('Manage disciplines');
   await expect(tick).not.toBeChecked();
   await tick.check();
-  await expect(tick).toBeEnabled(); // saved
-  await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canManageDisciplines).toBe(true);
   // The other switch stays off.
-  await expect(page.getByLabel('Bea Desk can invite coaches')).not.toBeChecked();
+  await expect(dialog.getByLabel('Invite coaches')).not.toBeChecked();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible();
+  await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canManageDisciplines).toBe(true);
 
   // Signed in as them (the later sign-in wins), the page is theirs to edit.
   await signIn(page, staff.token);

@@ -110,14 +110,18 @@ export class UploadsService {
       case PublicPhotoEntityType.CLASS: {
         const schoolId = this.requireSchoolId(dto, 'CLASS');
         await this.schoolsService.findOne(callerId, schoolId);
-        await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+        // The owner, or Branch Staff who may manage this class (Decision 387);
+        // for a class not created yet, Branch Staff who may manage classes.
         if (dto.entityId) {
           const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
-            tx.class.findFirst({ where: { id: dto.entityId, schoolId }, select: { id: true } }),
+            tx.class.findFirst({ where: { id: dto.entityId, schoolId }, select: { id: true, branchId: true } }),
           );
           if (!found) {
             throw new NotFoundException('Class not found at this School.');
           }
+          await this.tenantAuth.assertMayManageClasses(callerId, schoolId, [found.branchId]);
+        } else if (!(await this.tenantAuth.mayManageClassesSomewhere(callerId, schoolId))) {
+          await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
         }
         return { scope: schoolId, entityId: dto.entityId ?? randomUUID() };
       }

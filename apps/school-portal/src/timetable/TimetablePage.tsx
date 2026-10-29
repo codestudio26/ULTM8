@@ -24,6 +24,7 @@ import { useInstructors, type InstructorResponse } from '../instructors/instruct
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useStudents } from '../students/studentQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useI18n, useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import {
@@ -125,7 +126,11 @@ export function TimetablePage() {
   const coachSchoolId = useCoachSchoolId();
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
   const schoolId = ownedSchoolId ?? (isBranchStaff ? coachSchoolId : null);
-  const canEdit = !!ownedSchoolId;
+  // Decision 387 — Branch Staff with the "classes" switch edit their
+  // branches' slots too; Closures and School-wide slots stay the owner's.
+  const myAccess = useMyStaffAccess(isBranchStaff && !ownedSchoolId ? coachSchoolId : null);
+  const isOwner = !!ownedSchoolId;
+  const canEdit = isOwner || !!myAccess.data?.access.classes;
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useTimetableSlots(schoolId);
   const { data: branchData } = useBranches(schoolId);
@@ -204,7 +209,9 @@ export function TimetablePage() {
       closures: branchFilter ? day.closures.filter((c) => !c.branchId || c.branchId === branchFilter) : day.closures,
     }));
   }, [slots, calendar.data, rangeStart, rangeEnd, canEdit, branchFilter, styleFilter, classTypeFilter]);
-  const slotActions: SlotActions | null = canEdit ? { onEdit: setEditing, onArchive: setArchiving, unarchiveSlot, setActionError } : null;
+  const slotActions: SlotActions | null = canEdit
+    ? { onEdit: setEditing, onArchive: setArchiving, unarchiveSlot, setActionError, mayChange: (s) => isOwner || !!s.branchId }
+    : null;
 
   // Instructors have no Timetable screen (Decision 353 gave it to Branch Staff
   // only): send them home instead of a blank page, as the Staff page does.
@@ -241,9 +248,11 @@ export function TimetablePage() {
         actions={
           canEdit ? (
             <div style={{ display: 'flex', gap: 8 }}>
-              <Button variant="secondary" onClick={() => setClosuresOpen(true)}>
-                {t('timetable.closures.button')}
-              </Button>
+              {isOwner ? (
+                <Button variant="secondary" onClick={() => setClosuresOpen(true)}>
+                  {t('timetable.closures.button')}
+                </Button>
+              ) : null}
               <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>
             </div>
           ) : undefined
@@ -357,11 +366,12 @@ export function TimetablePage() {
         />
       ) : null}
 
-      {closuresOpen && canEdit ? <ClosuresDialog schoolId={schoolId} branches={branches} onClose={() => setClosuresOpen(false)} /> : null}
+      {closuresOpen && isOwner ? <ClosuresDialog schoolId={schoolId} branches={branches} onClose={() => setClosuresOpen(false)} /> : null}
 
       {creating && canEdit ? (
         <TimetableSlotFormModal
           title={t('timetable.addSlotTitle')}
+          wholeSchool={isOwner}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -378,7 +388,7 @@ export function TimetablePage() {
       ) : null}
 
       {editing && canEdit ? (
-        <EditSlotModal schoolId={schoolId} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
+        <EditSlotModal schoolId={schoolId} wholeSchool={isOwner} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
       ) : null}
 
       {booking ? (
@@ -422,6 +432,8 @@ type SlotActions = {
   onArchive: (slot: TimetableSlotResponse) => void;
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
+  /** Decision 387 — false for a School-wide slot when the viewer isn't the owner. */
+  mayChange: (slot: TimetableSlotResponse) => boolean;
 };
 
 /** One calendar entry's agenda card — shared by the Rows day-sections and the
@@ -483,7 +495,7 @@ function OccurrenceCard({
           actions={[
             ...(bookable ? [{ label: t('timetable.occurrence.book'), onClick: () => onBook({ classId: cls!.id, title, date }) }] : []),
             ...(cls ? [{ label: t('timetable.occurrence.openClass'), onClick: () => navigate(`/classes/${cls.id}`) }] : []),
-            ...(slot && slotActions
+            ...(slot && slotActions && slotActions.mayChange(slot)
               ? [
                   { label: t('timetable.occurrence.editSlot'), onClick: () => slotActions.onEdit(slot) },
                   // Decision 226 — School Owner/Manager only, idempotent, blocked
@@ -674,6 +686,7 @@ function MonthGrid({ days, weekStartsOn, onBook }: { days: DayOccurrences[]; wee
 
 function EditSlotModal({
   schoolId,
+  wholeSchool,
   branches,
   instructors,
   disciplines,
@@ -681,6 +694,7 @@ function EditSlotModal({
   onClose,
 }: {
   schoolId: string;
+  wholeSchool: boolean;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
   disciplines: DisciplineResponse[];
@@ -709,6 +723,7 @@ function EditSlotModal({
     <>
       <TimetableSlotFormModal
         title={t('timetable.editSlotTitle')}
+        wholeSchool={wholeSchool}
         initial={slot}
         branches={branches}
         instructors={instructors}

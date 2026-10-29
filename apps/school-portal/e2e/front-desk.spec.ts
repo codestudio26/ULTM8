@@ -8,8 +8,8 @@ import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * Students → Check-in; front-desk mode is a locked tablet that shows a
  * Branch's classes, short names and recent check-ins, and is left with a
  * staff member's own code; a student's personal code opens their card
- * (Decision 384); the parts still waiting for their backend (sign-up, find
- * me) are shown switched off.
+ * (Decision 384); Find me answers only yes or no (Decision 385); sign-up,
+ * still waiting for its backend, is shown switched off.
  */
 let s: GradingSchool;
 const MIN = 60_000;
@@ -196,7 +196,9 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   const whole = await classNow({ title: 'Whole School class', startDate: at(-5 * MIN) });
   const m = await subscribe(s.student.id);
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id, status: 'COMPLETED', checkInMethod: 'SELF_SERVICE' } });
-  await subscribe(s.newStudent.id);
+  // Nia booked the Whole School class in the app; Riverside she didn't.
+  const niaPlan = await subscribe(s.newStudent.id);
+  await db.booking.create({ data: { id: randomUUID(), studentId: s.newStudent.id, classId: whole.id, schoolId: s.schoolId, sourceMembershipId: niaPlan.id } });
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('link', { name: 'Front-desk mode' }).click();
@@ -224,12 +226,16 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await page.getByRole('button', { name: /Nia P\./ }).click();
   const card = page.getByTestId('fd-welcome');
   await expect(card).toContainText('Welcome back, Nia');
-  await card.getByRole('button', { name: /Whole School class/ }).click();
-  await card.getByRole('button', { name: /Riverside Fundamentals/ }).click();
+  // Found by name, the tablet doesn't book a place (Decision 388).
+  const riverside = card.getByRole('button', { name: /Riverside Fundamentals/ });
+  await expect(riverside).toContainText('Not booked: book in the app, or scan the app QR');
+  await expect(riverside).toBeDisabled();
+  await expect(card.getByRole('button', { name: /Whole School class/ })).toHaveAttribute('aria-pressed', 'true');
   await card.getByRole('button', { name: 'Check in to 1 class' }).click();
   await expect(page.getByText('You’re in, Nia')).toBeVisible();
   const booking = await db.booking.findFirstOrThrow({ where: { studentId: s.newStudent.id, classId: whole.id } });
   expect(booking.status).toBe('COMPLETED');
+  expect(await db.booking.count({ where: { studentId: s.newStudent.id, classId: cls.id } })).toBe(0);
   await page.getByRole('button', { name: 'Done' }).click();
 
   await page.getByRole('button', { name: /Sign up/ }).click();
@@ -252,6 +258,26 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await expect(page.getByRole('heading', { name: /Unlocked by Olive/ })).toBeVisible();
   await page.getByRole('button', { name: 'Staff sign-in' }).click();
   await expect(page).toHaveURL(/\/login/);
+});
+
+test('find me on the tablet says only whether you\'re already a member (Decision 385)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+  await page.getByRole('button', { name: /Sign up/ }).click();
+  await page.getByRole('button', { name: 'Already a member? Find me' }).click();
+
+  await page.getByLabel('Your full name').fill('Sam Lee');
+  await page.getByLabel('Date of birth').fill('2000-01-02');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('We couldn’t find you. You can sign up instead.')).toBeVisible();
+
+  await page.getByLabel('Date of birth').fill('2000-01-01');
+  await page.getByRole('button', { name: 'Find me', exact: true }).click();
+  await expect(page.getByText('You’re already a member here')).toBeVisible();
+  // Nothing stored about them is shown.
+  await expect(page.getByText(/@/)).toHaveCount(0);
 });
 
 test('staff see a tablet on the Check-in page and can end it there (Decision 380)', async ({ page, browser }) => {

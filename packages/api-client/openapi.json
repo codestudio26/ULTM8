@@ -1991,6 +1991,94 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/me/access": {
+      "get": {
+        "operationId": "RoleGrantsController_myStaffAccess",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyStaffAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/access": {
+      "put": {
+        "operationId": "RoleGrantsController_setStaffAccess",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/main-owner": {
       "post": {
         "operationId": "RoleGrantsController_handOverMainOwner",
@@ -15191,6 +15279,42 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/find-me": {
+      "post": {
+        "operationId": "FrontDeskKioskController_findMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskFindMeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskFindMeResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/front-desk/kiosk/check-ins": {
       "post": {
         "operationId": "FrontDeskKioskController_checkIn",
@@ -17906,6 +18030,48 @@
           "emailSent"
         ]
       },
+      "StaffAccessDto": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "boolean",
+            "description": "Manage classes and the timetable at their branches (off by default)."
+          },
+          "bookings": {
+            "type": "boolean",
+            "description": "Manage bookings and check-in at their branches (on by default)."
+          },
+          "students": {
+            "type": "boolean",
+            "description": "See and edit the students of their branches (on by default)."
+          },
+          "cancelClasses": {
+            "type": "boolean",
+            "description": "Cancel classes at their branches and give credit back, never refunds (on by default)."
+          },
+          "staffList": {
+            "type": "boolean",
+            "description": "See the staff list for their branches, read only (off by default)."
+          },
+          "inviteCoaches": {
+            "type": "boolean",
+            "description": "Invite coaches (off by default; Decision 183)."
+          },
+          "disciplines": {
+            "type": "boolean",
+            "description": "Manage disciplines, belts and skills for the whole School (off by default; Decision 383)."
+          }
+        },
+        "required": [
+          "classes",
+          "bookings",
+          "students",
+          "cancelClasses",
+          "staffList",
+          "inviteCoaches",
+          "disciplines"
+        ]
+      },
       "StaffRoleDto": {
         "type": "object",
         "properties": {
@@ -18004,6 +18170,15 @@
             "nullable": true,
             "description": "Decision 381: their work phone at this School (E.164), set by an owner. Null = not set."
           },
+          "access": {
+            "nullable": true,
+            "description": "Decision 387: their access switches, for active Branch Staff in the owner's view; null otherwise.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StaffAccessDto"
+              }
+            ]
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -18071,6 +18246,47 @@
         },
         "required": [
           "userId"
+        ]
+      },
+      "MyStaffAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "boolean",
+            "description": "School Owner/Manager: every switch is on, by role."
+          },
+          "branchStaff": {
+            "type": "boolean",
+            "description": "Holds an active Branch Staff role here."
+          },
+          "access": {
+            "description": "What the caller may do. An Instructor's own role gives bookings and students.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StaffAccessDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "owner",
+          "branchStaff",
+          "access"
+        ]
+      },
+      "StaffAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "access": {
+            "$ref": "#/components/schemas/StaffAccessDto"
+          }
+        },
+        "required": [
+          "userId",
+          "access"
         ]
       },
       "HandOverMainOwnerDto": {
@@ -29622,6 +29838,35 @@
           "lookupToken",
           "expiresAt",
           "student"
+        ]
+      },
+      "KioskFindMeDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "First name and surname, as typed."
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD.",
+            "example": "1990-04-21"
+          }
+        },
+        "required": [
+          "fullName",
+          "dateOfBirth"
+        ]
+      },
+      "KioskFindMeResultDto": {
+        "type": "object",
+        "properties": {
+          "alreadyMember": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "alreadyMember"
         ]
       },
       "KioskUnlockDto": {

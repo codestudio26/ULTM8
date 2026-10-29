@@ -17,8 +17,8 @@ export const FRONT_DESK_BACKEND = {
   waiverStatus: true,
   /** Sign-ups from the tablet waiting for staff approval (Decisions 318, 351). */
   signUp: false,
-  /** "Find me" on the tablet (Decision 351). */
-  findMe: false,
+  /** "Find me" on the tablet (Decisions 351, 362). Built 28 Oct 2026 (Decision 385). */
+  findMe: true,
   /** Start an unplanned open mat (Decision 304). */
   openMat: false,
 } as const;

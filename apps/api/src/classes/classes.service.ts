@@ -33,13 +33,15 @@ export class ClassesService {
   ) {}
 
   /**
-   * School Owner/Manager only (Spec §8.2) — Class CRUD isn't among Instructor's
+   * School Owner/Manager (Spec §8.2) — Class CRUD isn't among Instructor's
    * confirmed permissions (attendance scan, grading, booking override only — never
-   * School settings), so it gets no write path here, same as Branch Staff.
+   * School settings), so it gets no write path here. Branch Staff may, for
+   * their own branch's classes only, when the owner switches it on for them
+   * (Decision 387); a School-wide class stays the owner's.
    */
   async create(callerId: string, schoolId: string, dto: CreateClassDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, schoolId, [dto.branchId ?? null]);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new Classes"
@@ -196,10 +198,15 @@ export class ClassesService {
     return found;
   }
 
-  /** School Owner/Manager only — resolved via the Class's own schoolId, not a route param. */
+  /** School Owner/Manager, or Branch Staff with the classes switch for both
+   * the class's branch and the one it moves to (Decision 387) — resolved via
+   * the Class's own schoolId, not a route param. */
   async update(callerId: string, classId: string, dto: UpdateClassDto) {
     const existing = await this.findOne(callerId, classId);
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [
+      existing.branchId,
+      dto.branchId !== undefined ? dto.branchId : existing.branchId,
+    ]);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     // Classes review C11: an archived Class is read-only until unarchived.
@@ -385,7 +392,7 @@ export class ClassesService {
 
   async archive(callerId: string, classId: string) {
     const existing = await this.findOne(callerId, classId);
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (existing.archivedAt) {
       return existing;
@@ -402,7 +409,7 @@ export class ClassesService {
 
   async unarchive(callerId: string, classId: string) {
     const existing = await this.findOne(callerId, classId);
-    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (!existing.archivedAt) {
       return existing;

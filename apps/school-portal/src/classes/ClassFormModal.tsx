@@ -71,6 +71,7 @@ export function ClassFormModal({
   submitting,
   onSubmit,
   onClose,
+  wholeSchool = true,
 }: {
   title: string;
   /** Required so the Banner field's upload URL request can be authorized
@@ -91,13 +92,16 @@ export function ClassFormModal({
   submitting: boolean;
   onSubmit: (values: ClassFormValues) => Promise<void>;
   onClose: () => void;
+  /** False for Branch Staff (Decision 387): a School-wide class is the
+   * owner's, so they pick one of their own branches. */
+  wholeSchool?: boolean;
 }) {
   const t = useT();
   const zoneFor = (branchId: string | null | undefined) =>
     classZone(branches.find((b) => b.id === branchId)?.timezone, schoolTimezone);
   const initialZone = zoneFor(initial?.branchId);
   const [form, setForm] = useState({
-    branchId: initial?.branchId ?? '',
+    branchId: initial?.branchId ?? (wholeSchool ? '' : branches[0]?.id ?? ''),
     instructorId: initial?.instructorId ?? '',
     title: initial?.title ?? '',
     activities: (initial?.activities ?? []).join(', '),
@@ -210,7 +214,10 @@ export function ClassFormModal({
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: t('classes.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
+            options={[
+              ...(wholeSchool ? [{ value: '', label: t('classes.form.wholeSchool') }] : []),
+              ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId),
+            ]}
           />
         </Field>
         <Field label={t('classes.form.instructorLabel')} htmlFor="class-instructor">

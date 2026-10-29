@@ -70,6 +70,7 @@ export const frontDesk = {
     alreadyIn: 'Checked in',
     booked: 'Booked',
     willBook: 'Books a place',
+    bookInApp: 'Not booked: book in the app, or scan the app QR',
     opensAt: 'Check-in opens at {time}',
     notCheckedIn: 'Not checked in',
     failed: 'Could not check in. Please try again.',
@@ -192,6 +193,7 @@ export const frontDesk = {
     privacy: 'For your privacy, this device never shows details we already have about you.',
     goCheckIn: 'Go to check-in',
     signUp: 'Sign up',
+    failed: 'We couldn’t check just now. Please try again, or ask at the desk.',
   },
   studentCode: {
     title: 'Check-in code',
