@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "Cette personne n'a aucun carnet de cours épuisé à racheter.",
     packNotForSale: "Ce carnet n'est plus vendu. Demandez une autre formule à l'accueil.",
     rechargeNotPaid: "Le carnet n'a pas encore été payé.",
+    trialEnded: "L’essai gratuit d’ULTM8 de cette école est terminé. Le portail est en lecture seule jusqu’à son abonnement : aucun nouveau cours, réservation ou paiement.",
     correctionNotVerified: "Votre ceinture dans ce style attend encore d’être vérifiée par l’école. Elle pourra alors la corriger.",
     correctionPending: "Vous avez déjà demandé une correction dans ce style. Attendez la réponse de l’école.",
     correctionSameRank: "C’est déjà votre ceinture. Choisissez celle que vous devriez avoir.",

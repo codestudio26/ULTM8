@@ -1,6 +1,11 @@
 export const layout = {
   brand: 'ULTM8 School Portal',
   logOut: 'Log out',
+  /** Backlog 3.14: the owner's free trial of ULTM8. */
+  trial: {
+    daysLeft: { "one": "Free trial of ULTM8: {count} day left.", "other": "Free trial of ULTM8: {count} days left." },
+    ended: "Your free trial of ULTM8 has ended. The portal is read-only until you subscribe: no new classes, bookings or payments. Nothing has been deleted.",
+  },
   search: {
     label: 'Search',
     placeholder: 'Search by name…',

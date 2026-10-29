@@ -53,6 +53,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.checkInVisitorsOff');
     case 'CHECK_IN_ONE_CLASS':
       return t('server.codes.checkInOneClass');
+    // A free trial of ULTM8 that ended (backlog 3.14).
+    case 'TRIAL_ENDED':
+      return t('server.codes.trialEnded');
     // Belt correction requests (backlog 3.13).
     case 'CORRECTION_NOT_VERIFIED':
       return t('server.codes.correctionNotVerified');

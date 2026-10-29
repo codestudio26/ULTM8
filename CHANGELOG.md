@@ -35,6 +35,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   removes it without changing belts that use it. The owner, or Branch Staff
   who manage disciplines, can change the list. **Needs a database migration**
   (`20261226000000_saved_belt_colours`).
+- **Free trial of ULTM8 for Schools** (backlog 3.14; Decision 318 item 5) — a
+  Full Platform Admin starts or extends a School's free trial in Platform Admin
+  (Schools → look up), with no card. The owner sees how many days are left at
+  the top of the portal. When it ends without a platform subscription, the
+  School is read-only (no new classes, bookings or payments) until it
+  subscribes; nothing is deleted. **Needs a database migration**
+  (`20261228000000_platform_trial`).
 - **Students can ask for a belt correction** (backlog 3.13; Decisions 286,
   299) — in the student app, a student whose recorded belt is wrong picks the
   belt they should have, anywhere on the style's ladder, and says why. The

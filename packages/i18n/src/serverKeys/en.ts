@@ -40,6 +40,7 @@ export const server = {
     noPackToRecharge: 'This person has no used-up Class Pack to buy again.',
     packNotForSale: 'This pack is no longer sold. Ask at the desk about another plan.',
     rechargeNotPaid: "The pack hasn't been paid for yet.",
+    trialEnded: "This School's free trial of ULTM8 has ended. The portal is read-only until it subscribes: no new Classes, Bookings or payments.",
     correctionNotVerified: "Your belt in this style is still waiting to be checked by the School. They can correct it then.",
     correctionPending: "You already asked for a correction in this style. Wait for the School to answer it.",
     correctionSameRank: "That is the belt you already have. Pick the belt you should have.",

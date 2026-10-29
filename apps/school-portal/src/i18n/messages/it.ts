@@ -13,6 +13,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     none: "—",
   },
   layout: {
+    trial: {
+      daysLeft: {"one": "Prova gratuita di ULTM8: manca {count} giorno.", "other": "Prova gratuita di ULTM8: mancano {count} giorni."},
+      ended: "La tua prova gratuita di ULTM8 è terminata. Il portale è in sola lettura finché non ti abboni: nessun nuovo corso, prenotazione o pagamento. Non è stato eliminato nulla.",
+    },
     brand: "Portale Scuola ULTM8",
     logOut: "Esci",
     search: {

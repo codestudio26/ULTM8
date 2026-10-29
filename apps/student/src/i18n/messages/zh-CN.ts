@@ -876,6 +876,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       ticketRequired: "这节单次课程需要专属门票。订阅、周卡或通用课时包都不包含它。",
       checkInNotOpen: "此课程的签到尚未开放。",
       checkInNotOpenAt: "此课程的签到尚未开放，将于 {time} 开放。",
+      trialEnded: "该道馆目前无法在应用中接受新的预约或付款，请到前台咨询。",
       correctionNotVerified: "你在此风格的腰带仍在等待道馆核实，届时可以更正。",
       correctionPending: "你已在此风格申请过更正，请等待道馆答复。",
       correctionSameRank: "这就是你现在的腰带。请选择你应有的腰带。",

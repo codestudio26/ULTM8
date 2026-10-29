@@ -13,6 +13,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     none: "—",
   },
   layout: {
+    trial: {
+      daysLeft: {"other": "ULTM8 の無料試用: 残り {count} 日。"},
+      ended: "ULTM8 の無料試用が終了しました。購読するまでポータルは閲覧専用です。新しいクラス、予約、支払いはできません。データは削除されていません。",
+    },
     brand: "ULTM8 スクールポータル",
     logOut: "ログアウト",
     search: {

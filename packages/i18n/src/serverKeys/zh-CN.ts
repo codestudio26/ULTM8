@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     noPackToRecharge: "此人没有可再次购买的已用完课时包。",
     packNotForSale: "此课时包已停售。请到前台咨询其他方案。",
     rechargeNotPaid: "课时包尚未付款。",
+    trialEnded: "该道馆的 ULTM8 免费试用已结束。订阅前门户为只读：不能新增课程、预约或付款。",
     correctionNotVerified: "你在此风格的腰带仍在等待道馆核实，届时可以更正。",
     correctionPending: "你已在此风格申请过更正，请等待道馆答复。",
     correctionSameRank: "这就是你现在的腰带。请选择你应有的腰带。",

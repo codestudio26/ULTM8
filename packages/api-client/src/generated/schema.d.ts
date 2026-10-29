@@ -1572,6 +1572,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform-admin/schools/{id}/trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_startTrial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/trial/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_extendTrial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform-admin/franchises/{id}": {
         parameters: {
             query?: never;
@@ -5827,6 +5859,10 @@ export interface components {
             archivedAt?: string | null;
             purgeAt?: string | null;
             purgedAt?: string | null;
+            platformTrialStartedAt?: string | null;
+            platformTrialEndsAt?: string | null;
+            /** @enum {string|null} */
+            platformSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             accessToken?: string;
         };
         SchoolListResponseDto: {
@@ -7062,6 +7098,16 @@ export interface components {
         ChangeSchoolMainOwnerResponseDto: {
             mainOwnerUserId: string;
             formerMainOwnerRemoved: boolean;
+        };
+        SchoolTrialDaysDto: {
+            /** @description Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended). */
+            days: number;
+        };
+        SchoolTrialResponseDto: {
+            /** Format: date-time */
+            platformTrialStartedAt: string;
+            /** Format: date-time */
+            platformTrialEndsAt: string;
         };
         CreateAdminUserDto: {
             email: string;
@@ -12842,6 +12888,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_startTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTrialDaysDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTrialResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_extendTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTrialDaysDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTrialResponseDto"];
                 };
             };
         };
