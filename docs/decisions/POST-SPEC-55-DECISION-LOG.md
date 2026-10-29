@@ -6458,3 +6458,25 @@ Part of "build them" (28 Oct 2026). Find me (on the tablet's Sign-up screen) was
 ### Recorded by
 
 User (Code), 28 Oct 2026: "build them", for the six front-desk items whose rules are decided.
+
+---
+
+## Decision 389 — The plan's cancellation charge is collected when the class has none
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision (class fee first, as recommended) · **Builds on:** Decisions 234, 291, 322, 346, 348; Spec 55 §6.1 · **Migration:** none
+**Resolves:** Decision 348's open item 7, "the cancellation charge waits for refunds (#273)". Spec 55 says a `MembershipPlan` carries a cancellation charge beside the refund-fee date (§6.1), and Decision 234 decided late-cancellation fees are charged to the Student's saved card, naming the plan's field too. Until now only `Class.cancellationCharge` was charged; the plan's was saved and never used.
+
+### Decision
+
+1. **One fee per late cancellation, never two.** When a Student (or their Guardian) cancels a Booking after the cutoff and the School's "charge a late-cancellation fee" switch is on (Decision 291), the fee is the Class's own cancellation charge. When the Class has none (empty), it is the cancellation charge on the plan of the Membership the Booking used. A Class whose charge is set to 0 charges nothing and does not fall back to the plan.
+2. **Everything else is unchanged from Decision 234**: the same cutoff (the Class's, else the School's or Branch's default), the same off-session charge to the saved card after the cancellation commits, the same outcome on the Booking (`CHARGED` / `FAILED` / `NO_SAVED_PAYMENT_METHOD`), and the same `LATE_CANCEL_FEE` row on the Transactions ledger (Decision 346). A School-cancelled class never charges. The plan's currency is used, as before.
+3. The plan form's hint now says when the charge is taken, in all 15 languages.
+
+### What this does NOT resolve
+
+- The plan's own "Refund/credit cutoff" date (`MembershipPlan.refundFeeDate`) is still stored but not used: cutoffs come from the Class and the School/Branch settings.
+- A Student leaving the School (Decision 342) still cancels their bookings without any fee, as before.
+
+### Recorded by
+
+User (Code), 28 Oct 2026: *"start all three"*, which includes the Memberships cancellation charge; merged on the user's *"merge it"*, Memberships thread.

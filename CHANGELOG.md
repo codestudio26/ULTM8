@@ -19,6 +19,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sign up types their full name and date of birth; the tablet says only
   whether they're already a member (both must match), and shows nothing
   stored about them.
+- **Memberships: the plan's cancellation charge is now taken** (Decision 389,
+  no migration) — when a student cancels a class too late and the class has no
+  cancellation charge of its own, the charge set on their membership plan is
+  taken from their saved card, the same way a class's charge already is. One
+  fee per cancellation, never both.
 - **Front desk: personal check-in codes** (Decision 384) — each student has
   a 4- or 6-digit code, shown on their page with "Give a new code". Typing it
   on the Check-in page's or the tablet's Code tab opens their welcome card,

@@ -2426,7 +2426,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Uiterste datum voor terugbetaling/tegoed",
       leaveBlankToClear: "Laat leeg om te wissen.",
       cancellationLabel: "Annuleringskosten",
-      cancellationHint: "Bijvoorbeeld 5.00. Opgeslagen voor een toekomstig incassoproces — wordt nog niet automatisch geïnd. Laat leeg om te wissen.",
+      cancellationHint: "Bijvoorbeeld 5.00. Wordt van de opgeslagen kaart van de leerling afgeschreven als die een met dit abonnement geboekte les na de deadline annuleert en de les zelf geen kosten heeft. Laat leeg voor geen kosten.",
       waiverRequired: "Ondertekende vrijwaring/voorwaarden vereist voor aankoop",
       stylesLegend: "Disciplines in dit abonnement",
       includesLessons: "Inclusief lesmateriaal",
