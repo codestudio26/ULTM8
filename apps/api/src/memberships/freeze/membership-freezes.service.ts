@@ -414,7 +414,12 @@ export class MembershipFreezesService {
     } catch (err) {
       this.logger.error(`Freeze ${freeze.id}: moving the Subscription's next charge failed; the membership sweep tries again.`, err as Error);
     }
-    await this.chargeFee(freeze.id);
+    try {
+      await this.chargeFee(freeze.id);
+    } catch (err) {
+      // The freeze stands; the owner sees no fee on the Transactions page and can record one at the desk.
+      this.logger.error(`Freeze ${freeze.id}: recording the freeze fee failed.`, err as Error);
+    }
     await this.notifyDecision(await this.reload(freeze.id), 'approved');
   }
 
