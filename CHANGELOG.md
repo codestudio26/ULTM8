@@ -22,7 +22,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   whether the desk checks in to several classes at once. Every default is
   how check-in worked before. The owner, and Branch Staff given the new
   "Change check-in rules" access switch. Needs migration
-  `20261225000000_check_in_rules`.
+  `20261225000100_check_in_rules`.
 - **Sign-up on the front-desk tablet** (Decision 392) — people sign up on the
   tablet (adults; Visitor only when the School has set a visit pass length) and
   wait for staff. The owner, or Branch Staff with the Students switch, approves

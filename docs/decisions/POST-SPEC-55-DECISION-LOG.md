@@ -6676,7 +6676,7 @@ Check-in had fixed rules: it opened the School's set minutes before a class (Dec
 
 ### How it is built
 
-- Migration `20261225000000_check_in_rules`: `School.checkInClosesMinutesAfterStart` (null), `checkInRequireWaiver` (false), `checkInOtherBranches`, `checkInVisitors`, `checkInSeveralClasses` (true); `StaffPermission.canManageCheckInRules` (false).
+- Migration `20261225000100_check_in_rules`: `School.checkInClosesMinutesAfterStart` (null), `checkInRequireWaiver` (false), `checkInOtherBranches`, `checkInVisitors`, `checkInSeveralClasses` (true); `StaffPermission.canManageCheckInRules` (false).
 - `GET`/`PUT /schools/{schoolId}/check-in-rules`; refused with `STAFF_ACCESS_OFF` without the switch.
 - Refusal codes: `CHECK_IN_WAIVER_REQUIRED`, `CHECK_IN_HOME_BRANCH_ONLY`, `CHECK_IN_VISITORS_OFF` (403) and `CHECK_IN_ONE_CLASS` (a per-class reason from the desk's one-step check-in).
 - The tablet's session returns `checkInClosesMinutesAfterStart` and `checkInSeveralClasses`; the School returns all of them.
