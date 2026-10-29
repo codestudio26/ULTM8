@@ -709,6 +709,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Twój pakiet zajęć się wyczerpał",
+      titleChild: "Pakiet zajęć {name} się wyczerpał",
+      body: "{school} zaproponowała ten sam pakiet w recepcji. Kup go tutaj, a meldowanie zakończy się, gdy tylko zostanie opłacony.",
+    },
     myMemberships: {
       planFallback: "Plan {planId}",
       visitPass: "Karnet gościa",
@@ -892,6 +897,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Te zajęcia są pełne. Zamiast tego możesz dołączyć do listy oczekujących.",
+      packUsedUp: "W Twoim pakiecie zajęć nie ma już zajęć. Kup kolejny pakiet, aby zarezerwować.",
       waitlistFirst: "Inni już czekają na miejsce na tych zajęciach. Dołącz do listy oczekujących, aby poczekać na swoją kolej.",
       bookingClosed: "Rezerwacja na te zajęcia została zamknięta. Członek personelu nadal może Cię dopisać.",
       classBusy: "Wiele osób rezerwuje teraz te zajęcia. Spróbuj ponownie za chwilę.",

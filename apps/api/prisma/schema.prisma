@@ -536,6 +536,7 @@ model User {
   signUps                           SignUp[]                    @relation("SignUpUser")
   signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
   signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
+  packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
 
   @@index([email])
   @@index([phone])
@@ -1149,6 +1150,7 @@ model School {
 
   notificationBroadcasts NotificationBroadcast[]
   signUps                SignUp[]
+  packRecharges          PackRecharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1997,9 +1999,10 @@ model MembershipPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  Membership[]
-  transactions Transaction[]
-  priceChanges MembershipPlanPriceChange[]
+  memberships   Membership[]
+  transactions  Transaction[]
+  priceChanges  MembershipPlanPriceChange[]
+  packRecharges PackRecharge[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -4797,4 +4800,40 @@ model SignUp {
 
   @@index([schoolId, status])
   @@index([userId])
+}
+
+/// Decision 393 (Decision 316 item 7, handover F8): a Class Pack ran out at
+/// check-in, so the member was offered the same pack in the app. Once a new
+/// Membership on that plan exists (paid in the app), the desk finishes the
+/// check-in for these Classes. Read and written on the jobs connection only,
+/// after the API's own checks.
+model PackRecharge {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("PackRechargeStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Cascade)
+
+  /// The Classes to check in to once paid.
+  classIds String[]
+
+  /// The staff member who asked (the tablet's starter for a tablet).
+  requestedById      String
+  /// The tablet session, for a tablet request.
+  frontDeskSessionId String?
+  /// How the person was identified when asked: the check-in records the same.
+  checkInMethod      CheckInMethod
+
+  /// After this the offer is no longer shown (the last Class's check-in closes).
+  expiresAt   DateTime
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([studentId, completedAt])
+  @@index([schoolId])
 }

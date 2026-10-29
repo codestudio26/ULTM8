@@ -210,6 +210,18 @@ export const frontDesk = {
     saveFailed: 'Could not save. Please try again.',
     loadFailed: 'Could not load your staff.',
   },
+  packUsedUp: {
+    title: 'Pack used up',
+    body: "Buy the same pack and you're checked in as soon as it's paid.",
+    offerStaff: 'Offer the same pack in their app',
+    offerSelf: 'Buy it in my app',
+    waitingTitle: 'Waiting for payment',
+    waitingStaff: "{plan} · {price}. They buy it in the ULTM8 app, and they're checked in here as soon as it's paid.",
+    waitingSelf: "{plan} · {price}. Open the ULTM8 app and buy it there. You're checked in as soon as it's paid.",
+    paid: 'Paid. Checking in…',
+    expired: 'Check-in for this class has closed. The pack can still be bought in the app.',
+    failed: "Couldn't offer the pack. Please ask at the desk.",
+  },
   findMe: {
     title: 'Find me',
     name: 'Your full name',

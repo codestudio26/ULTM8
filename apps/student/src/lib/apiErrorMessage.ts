@@ -26,6 +26,9 @@ function codedMessage(err: ApiError): string | null {
       return translate('lib.apiError.classBusy');
     case 'TICKET_REQUIRED':
       return translate('lib.apiError.ticketRequired');
+    // Decision 393: a Class Pack with no classes left.
+    case 'PACK_USED_UP':
+      return translate('lib.apiError.packUsedUp');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = err.message.match(/opens at (\S+?)\.?$/)?.[1];
       return iso && !Number.isNaN(new Date(iso).getTime())

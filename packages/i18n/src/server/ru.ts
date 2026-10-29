@@ -624,4 +624,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Эта заявка уже обработана.",
   "Only the owner or Branch Staff can see sign-ups.": "Заявки могут видеть только владелец или сотрудники филиала.",
   "Sign-up not found": "Заявка не найдена",
+  "Pack recharge not found": "Продление пакета не найдено",
 };

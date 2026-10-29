@@ -58,7 +58,8 @@ type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
  * review: the original version's local RowState could set state after the component
  * unmounted (e.g. Student navigates away mid-purchase), and duplicated
  * purchase.error into a second `actionError` state that could drift from it. */
-export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; schoolId: string }) {
+/** `forStudentId`: a Guardian buys this plan for their child (no saved card then). */
+export function MembershipPlanRow({ plan, schoolId, forStudentId }: { plan: MembershipPlan; schoolId: string; forStudentId?: string }) {
   const t = useT();
   const purchase = usePurchaseMembership();
   const invalidateMyMemberships = useInvalidateMyMemberships();
@@ -66,7 +67,7 @@ export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; sc
   const [steppingUp, setSteppingUp] = useState(false);
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
-  const canPayWithSavedCard = !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
+  const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
 
   async function openCheckoutAndRefetch(checkoutUrl: string) {
     try {
@@ -84,7 +85,7 @@ export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; sc
 
   function handlePurchase() {
     if (purchase.isPending) return;
-    purchase.mutate({ planId: plan.id, useHostedCheckout: true }, { onSuccess: handlePurchaseSuccess });
+    purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {

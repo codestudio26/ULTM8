@@ -691,6 +691,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   lib: {
     apiError: {
       classFull: "Esta clase está completa. Puedes entrar en la lista de espera.",
+      packUsedUp: "A tu bono de clases no le quedan clases. Compra otro bono para reservar.",
       waitlistFirst: "Otras personas ya están esperando una plaza en esta clase. Entra en la lista de espera para esperar tu turno.",
       bookingClosed: "Las reservas para esta clase se han cerrado. Alguien del personal todavía puede añadirte.",
       classBusy: "Mucha gente está reservando esta clase ahora mismo. Inténtalo de nuevo en un momento.",
@@ -701,6 +702,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    recharge: {
+      title: "Tu bono de clases se ha agotado",
+      titleChild: "El bono de clases de {name} se ha agotado",
+      body: "{school} ofreció el mismo bono en recepción. Cómpralo aquí y el check-in se completa en cuanto se pague.",
+    },
     myMemberships: {
       planFallback: "Plan {planId}",
       visitPass: "Pase de visita",
