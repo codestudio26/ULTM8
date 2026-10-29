@@ -56,6 +56,14 @@ export class StudentSummaryResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   homeBranchName!: string | null;
+
+  /** Decision 391: has had a visit pass and no membership since. */
+  @ApiProperty()
+  visitor!: boolean;
+
+  /** When the Visitor's last visit pass ends (past once it has ended). Null for a member. */
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  visitPassEndsAt!: Date | null;
 }
 
 export class StudentListResponseDto {

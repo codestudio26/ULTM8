@@ -293,6 +293,9 @@ enum MembershipPlanType {
   WEEKLY_PASS
   FRIEND_PASS
   TRIAL_MEMBERSHIP
+  /// Decision 391: a Visitor's free visit pass. One hidden plan per School,
+  /// made by ULTM8 the first time a pass is given; never listed, sold or edited.
+  VISIT_PASS
 }
 
 /// Decision 259 — see MembershipPlan.newMemberBillingStrategy's own comment.
@@ -1046,6 +1049,10 @@ model School {
   /// Length of ULTM8-generated check-in codes here: staff kiosk codes (Decision
   /// 320) and members' personal codes (Decision 315). 4 (default) or 6.
   checkInCodeDigits              Int                             @default(4)
+  /// Decision 391 (Decision 315 item 1): days a Visitor's visit pass lasts. No
+  /// default: until the School sets it, no pass can be given and the tablet
+  /// offers no Visitor sign-up.
+  visitorPeriodDays              Int?
   /// Refund when a Booking is cancelled after its Class started (product owner, 26 Oct 2026).
   lateCancelRefundPolicy         LateCancelRefundPolicy          @default(NO_REFUND_ONCE_STARTED)
   /// Decision 347: the owner lets Branch Staff use "Record a payment" (cash or

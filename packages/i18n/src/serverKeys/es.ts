@@ -23,6 +23,8 @@ export const server: PartialMessages<ServerKeys> = {
     bookingClosed: "Las reservas para esta clase están cerradas. Un miembro del personal todavía puede apuntarte.",
     classBusy: "Mucha gente está reservando esta clase ahora mismo. Inténtalo de nuevo en un momento.",
     kioskBookFirst: "No hay reserva para esta clase. Resérvala en la app o escanea el QR de la app para hacer el check-in aquí.",
+    visitorPeriodNotSet: "Primero fija en los ajustes de la escuela cuánto dura un pase de visita.",
+    visitorHasMembership: "Este alumno tiene una membresía, así que es miembro, no visitante.",
     checkInNotOpen: "El check-in de esta clase aún no está abierto.",
     checkInOpensAt: "El check-in de esta clase aún no está abierto. Se abre: {time}.",
     capacityBelowBooked: "Alumnos con reserva: {count}. Establece la capacidad en {count} o más, o cancela antes algunas reservas.",

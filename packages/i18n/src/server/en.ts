@@ -617,4 +617,5 @@ export const SERVER_PATTERNS: string[] = [
  "That check-in code isn't right.",
  "This class is at another Branch.",
  "The tablet's day is out of range. Check the tablet's date and time.",
+ "Only the owner or Branch Staff can give a visit pass.",
 ];

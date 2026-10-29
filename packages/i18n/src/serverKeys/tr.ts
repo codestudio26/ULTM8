@@ -23,6 +23,8 @@ export const server: PartialMessages<ServerKeys> = {
     bookingClosed: "Bu ders için rezervasyonlar kapandı. Bir personel üyesi sizi yine de ekleyebilir.",
     classBusy: "Şu anda bu dersi çok sayıda kişi rezerve ediyor. Lütfen biraz sonra tekrar deneyin.",
     kioskBookFirst: "Bu derse rezervasyon yok. Burada giriş yapmak için uygulamadan rezerve edin ya da uygulamadaki QR kodu okutun.",
+    visitorPeriodNotSet: "Önce okul ayarlarında ziyaretçi kartının süresini belirleyin.",
+    visitorHasMembership: "Bu öğrencinin üyeliği var; yani ziyaretçi değil, üye.",
     checkInNotOpen: "Bu dersin girişi henüz açılmadı.",
     checkInOpensAt: "Bu dersin girişi henüz açılmadı. Açılış: {time}.",
     capacityBelowBooked: "Zaten rezervasyon yapmış öğrenci: {count}. Kapasiteyi {count} veya daha fazla olarak ayarlayın ya da önce bazı rezervasyonları iptal edin.",

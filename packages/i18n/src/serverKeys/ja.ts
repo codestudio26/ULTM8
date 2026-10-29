@@ -23,6 +23,8 @@ export const server: PartialMessages<ServerKeys> = {
     bookingClosed: "このクラスの予約受付は終了しました。スタッフであれば引き続き追加できます。",
     classBusy: "現在このクラスには予約が集中しています。しばらくしてからもう一度お試しください。",
     kioskBookFirst: "このクラスは予約されていません。ここでチェックインするには、アプリで予約するか、アプリのQRコードをスキャンしてください。",
+    visitorPeriodNotSet: "まずスクール設定でビジターパスの期間を設定してください。",
+    visitorHasMembership: "この生徒は会員プランを持っているため、ビジターではなく会員です。",
     checkInNotOpen: "このクラスのチェックインはまだ始まっていません。",
     checkInOpensAt: "このクラスのチェックインはまだ始まっていません。開始時刻：{time}",
     capacityBelowBooked: "すでに予約済みの生徒：{count}人。定員を {count} 以上に設定するか、先に一部の予約をキャンセルしてください。",

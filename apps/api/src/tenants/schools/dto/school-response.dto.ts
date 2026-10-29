@@ -128,6 +128,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Minutes before a Class starts that check-in opens.' })
   checkInOpensMinutesBeforeStart!: number;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
+  visitorPeriodDays!: number | null;
+
   @ApiProperty({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here (staff kiosk codes, members\' personal codes).' })
   checkInCodeDigits!: number;
 

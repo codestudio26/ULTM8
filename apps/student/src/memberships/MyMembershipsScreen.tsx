@@ -15,7 +15,7 @@ const MEMBERSHIP_STATUS: Record<string, TranslationKey> = {
   EXPIRED: 'memberships.statusLabel.expired',
 };
 
-type Membership = components['schemas']['MembershipResponseDto'];
+type Membership = components['schemas']['MyMembershipResponseDto'];
 
 /** MembershipStatus is ACTIVE/EXPIRED (apps/api/prisma/schema.prisma). The one
  * action is cancelling a live Subscription (Decision 348): it runs to the end of
@@ -43,8 +43,10 @@ export function MembershipRow({ membership }: { membership: Membership }) {
     }
   }
 
-  const planName =
-    getRememberedPlanName(membership.membershipPlanId) ?? t('memberships.myMemberships.planFallback', { planId: membership.membershipPlanId });
+  // Decision 391: a visit pass's plan is hidden from the School's plan list.
+  const planName = membership.visitPass
+    ? t('memberships.myMemberships.visitPass')
+    : getRememberedPlanName(membership.membershipPlanId) ?? t('memberships.myMemberships.planFallback', { planId: membership.membershipPlanId });
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{planName}</Text>
