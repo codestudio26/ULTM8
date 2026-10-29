@@ -144,14 +144,20 @@ describeIfDb('BookingsController/WaitlistController — per-user throttle (Decis
   it('POST /classes/:id/book — staff booking for a Student go past 20 a minute, up to 200', async () => {
     const staff = await mkUser('desk', 'BRANCH_STAFF');
     const student = await mkUser('booked-for', 'STUDENT');
-    const statuses: number[] = [];
-    for (let i = 0; i < 201; i++) {
-      const res = await request(app.getHttpServer())
+    const book = (i: number) =>
+      request(app.getHttpServer())
         .post(`/v1/classes/${classes[i % classes.length].id}/book`)
         .set('Authorization', `Bearer ${staff.token}`)
-        .send({ studentId: student.id });
-      statuses.push(res.status);
+        .send({ studentId: student.id })
+        .then((res) => res.status);
+    // The first 200 go in batches of 20 at once, then the 201st alone: one
+    // by one, 200 requests outran the test's time limit on a slow CI runner,
+    // and they must all land inside the throttle's one-minute window anyway.
+    const statuses: number[] = [];
+    for (let start = 0; start < 200; start += 20) {
+      statuses.push(...(await Promise.all(Array.from({ length: 20 }, (_, j) => book(start + j)))));
     }
+    statuses.push(await book(200));
     // Past the throttle into BookingsService (the Student has no Membership).
     expect(statuses[20]).toBe(400);
     expect(statuses.slice(0, 200)).not.toContain(429);
