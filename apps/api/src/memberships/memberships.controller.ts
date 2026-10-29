@@ -13,7 +13,6 @@ import { DeskPaymentOptionsDto, RecordDeskPaymentDto, RecordDeskPaymentResponseD
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
   DeskMembershipResponseDto,
-  MembershipListResponseDto,
   MyMembershipListResponseDto,
   MembershipResponseDto,
   MembershipStatusResponseDto,
