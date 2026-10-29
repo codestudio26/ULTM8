@@ -5012,7 +5012,7 @@ model StudentExportLog {
   @@index([schoolId, createdAt])
 }
 
-/// Decision 402: the Staff page's activity log, who changed what. One row per
+/// Decision 408: the Staff page's activity log, who changed what. One row per
 /// change, written in the same transaction as the change. Owners and
 /// co-owners read it; nobody edits or deletes a row (it goes with its School).
 model StaffActivity {

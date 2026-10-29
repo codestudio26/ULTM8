@@ -61,7 +61,7 @@ function describe(t: T, e: StaffActivityEntry): string {
 }
 
 /**
- * The Staff page's activity log (Decision 402): who changed what on this
+ * The Staff page's activity log (Decision 408): who changed what on this
  * page, newest first, with a filter by person. Owners and co-owners only;
  * it starts from the day it went live.
  */

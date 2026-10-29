@@ -1,4 +1,4 @@
--- Decision 402: the Staff page's activity log ("who changed what").
+-- Decision 408: the Staff page's activity log ("who changed what").
 --
 -- One row per change, written by the API in the same transaction as the
 -- change, as the person making it. Rows are never updated or deleted by the

@@ -15,12 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Staff activity log** (Decision 402) — a new "Activity" section on the
+- **Staff activity log** (Decision 408) — a new "Activity" section on the
   Staff page lists every staff change (roles, Remove from School, Pause,
   access, display name and work phone, owners, invites, the "must accept
   first" setting and open mat permission), newest first, with who did it and
   when, and a filter by person. Owners and co-owners only; it starts from
   deploy day.
+- **"Step up" on a Levels style** (Decision 402) — on a style shown as Levels,
+  moving up a step inside a level now says **Step up** instead of "Stripe
+  awarded": the grade button ("Step up" instead of "Award stripe"), the
+  student's history and the Grading Board panel ("Step up", "Step up (bulk)"),
+  the coach and student screens in the student app, and the student's or
+  Guardian's notification ("Step up!" instead of "New stripe!"). Moving to a
+  new level still says "Promoted"; Belts styles are unchanged. In all 15
+  languages.
 - **Temporary passcode for a new student, and adding a child** (backlog 3.3;
   Decision 403) — Add manually now always shows the owner the temporary
   passcode once, and it stops working after 7 days unless used; while it's

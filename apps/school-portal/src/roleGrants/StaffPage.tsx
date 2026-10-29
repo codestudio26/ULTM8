@@ -294,7 +294,7 @@ export function StaffPage() {
       <CoachInvitesSection schoolId={schoolId} />
       {/* Decision 386: who may start an open mat from the Check-in page. */}
       <OpenMatPermissions schoolId={schoolId} />
-      {/* Decision 402: who changed what on this page. */}
+      {/* Decision 408: who changed what on this page. */}
       <StaffActivitySection schoolId={schoolId} />
 
       {confirmingRevoke?.role.role === 'SCHOOL_OWNER_MANAGER' ? (

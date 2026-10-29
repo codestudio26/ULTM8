@@ -392,7 +392,7 @@ export class CoachInvitesService {
         create: { id: randomUUID(), schoolId, userId, canInviteCoaches: canInviteCoaches ?? false, canManageDisciplines: canManageDisciplines ?? false, grantedById: callerId },
         update: { canInviteCoaches, canManageDisciplines, grantedById: callerId },
       });
-      // Decision 402: the same switches as on the Access window.
+      // Decision 408: the same switches as on the Access window.
       const changes = [
         ...(canInviteCoaches !== undefined && canInviteCoaches !== (before?.canInviteCoaches ?? false) ? [{ switch: 'inviteCoaches', on: canInviteCoaches }] : []),
         ...(canManageDisciplines !== undefined && canManageDisciplines !== (before?.canManageDisciplines ?? false) ? [{ switch: 'disciplines', on: canManageDisciplines }] : []),

@@ -319,7 +319,7 @@ export class StaffSettingsResponseDto {
   mustAcceptFirst!: boolean;
 }
 
-/** GET /schools/{schoolId}/staff/activity (Decision 402). */
+/** GET /schools/{schoolId}/staff/activity (Decision 408). */
 export class StaffActivityQueryDto {
   @ApiPropertyOptional({ description: 'Only entries about this person.' })
   @IsOptional()

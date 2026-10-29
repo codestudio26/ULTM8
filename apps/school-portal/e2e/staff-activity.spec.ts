@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Decision 402: the Staff page's Activity section lists who changed what,
+ * Decision 408: the Staff page's Activity section lists who changed what,
  * newest first, with a filter by person. Owners and co-owners only.
  */
 let s: GradingSchool;

@@ -281,7 +281,7 @@ export function useCreateStaffManually(schoolId: string) {
 
 export type StaffActivityEntry = components['schemas']['StaffActivityEntryDto'];
 
-/** The Staff page's activity log (Decision 402), newest first, 50 a page.
+/** The Staff page's activity log (Decision 408), newest first, 50 a page.
  * Owners only. */
 export function useStaffActivity(schoolId: string | null, userId: string) {
   return useInfiniteQuery({

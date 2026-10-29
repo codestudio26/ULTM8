@@ -749,7 +749,7 @@ export class RoleGrantsService {
     return revoked;
   }
 
-  /** The activity log's line for a staff role taken away (Decision 402). */
+  /** The activity log's line for a staff role taken away (Decision 408). */
   private async recordRoleRemoved(tx: Prisma.TransactionClient, callerId: string, grant: { userId: string; schoolId: string | null; branchId: string | null; role: string }) {
     const branch = grant.branchId ? await tx.branch.findUnique({ where: { id: grant.branchId }, select: { name: true } }) : null;
     await recordStaffActivity(tx, {
@@ -1199,7 +1199,7 @@ export class RoleGrantsService {
     return { userId, ...result };
   }
 
-  /** GET /schools/{schoolId}/staff/activity (Decision 402) — the Staff
+  /** GET /schools/{schoolId}/staff/activity (Decision 408) — the Staff
    * page's activity log, newest first, 50 at a time. Owners and co-owners
    * only (RLS reads it for them alone). */
   async listStaffActivity(callerId: string, schoolId: string, query: { userId?: string; cursor?: string }) {

@@ -177,7 +177,7 @@ export class OpenMatsService {
         create: { id: randomUUID(), schoolId, userId, canStartOpenMat, grantedById: callerId },
         update: { canStartOpenMat, grantedById: callerId },
       });
-      // Decision 402: a switch on the Staff page, so it goes in its log.
+      // Decision 408: a switch on the Staff page, so it goes in its log.
       if ((before?.canStartOpenMat ?? false) !== canStartOpenMat) {
         await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'OPEN_MAT_CHANGED', details: { on: canStartOpenMat } });
       }

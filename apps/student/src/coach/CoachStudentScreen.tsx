@@ -46,6 +46,11 @@ const EVENT_LABEL: Record<string, TranslationKey> = {
   SELF_DECLARED: 'coach.events.selfDeclared',
   RANK_CORRECTION: 'coach.events.rankCorrection',
 };
+/** On a Levels style a stripe award is a step up inside a level (Decision 402). */
+const LEVELS_EVENT_LABEL: Record<string, TranslationKey> = {
+  STRIPE_AWARD: 'coach.events.stepUp',
+  BULK_STRIPE_AWARD: 'coach.events.bulkStepUp',
+};
 
 /**
  * One student's grading in one style, for a coach on a phone (Decision 184):
@@ -216,7 +221,15 @@ function Actions({
 
       {next && can('canPromote') ? (
         <>
-          <Button title={isStripe ? t('coach.student.awardStripe', { rung: next.name }) : t('coach.student.gradeTo', { rung: next.name })} variant={open === 'grade' ? 'secondary' : 'primary'} onPress={() => toggle('grade')} />
+          <Button
+            title={
+              isStripe
+                ? t(next.rank.rankDisplay === 'LEVELS' ? 'coach.student.stepUp' : 'coach.student.awardStripe', { rung: next.name })
+                : t('coach.student.gradeTo', { rung: next.name })
+            }
+            variant={open === 'grade' ? 'secondary' : 'primary'}
+            onPress={() => toggle('grade')}
+          />
           {open === 'grade' ? (
             <View style={{ marginBottom: spacing[3] }}>
               {e.daysOk === false ? <Muted>{t('coach.student.tooEarly', { count: (e.requiredDays ?? 0) - (e.elapsedDays ?? 0) })}</Muted> : null}
@@ -314,7 +327,14 @@ function History({ studentId, schoolId, ladder }: { studentId: string; schoolId:
   const t = useT();
   const history = useRankHistory(studentId, schoolId);
   const name = (id: string | null | undefined) => ladder.find((r) => r.id === id)?.name ?? '';
-  const eventLabel = (type: string) => (EVENT_LABEL[type] ? t(EVENT_LABEL[type]!) : type);
+  // "Step up" instead of "Stripe awarded" on a Levels style (Decision 402); the
+  // setting is one per style, so a rung no longer in the ladder takes the ladder's.
+  const levels = (ev: PromotionEvent) =>
+    (ladder.find((r) => r.id === ev.toStripeTierId) ?? ladder.find((r) => r.rankId === ev.toRankId) ?? ladder[0])?.rank.rankDisplay === 'LEVELS';
+  const eventLabel = (ev: PromotionEvent) => {
+    const key = (levels(ev) ? LEVELS_EVENT_LABEL[ev.type] : undefined) ?? EVENT_LABEL[ev.type];
+    return key ? t(key) : ev.type;
+  };
   return (
     <Section title={t('coach.student.historyTitle')}>
       {history.isLoading ? (
@@ -328,8 +348,8 @@ function History({ studentId, schoolId, ladder }: { studentId: string; schoolId:
           <View key={ev.id} style={{ marginBottom: spacing[2] }}>
             <Text style={{ fontWeight: '600' }}>
               {ev.toStripeTierId
-                ? t('coach.student.eventWithRung', { event: eventLabel(ev.type), rung: name(ev.toStripeTierId) })
-                : eventLabel(ev.type)}
+                ? t('coach.student.eventWithRung', { event: eventLabel(ev), rung: name(ev.toStripeTierId) })
+                : eventLabel(ev)}
             </Text>
             <Muted>{formatDate(ev.effectiveDate)}</Muted>
             {ev.reason ? <Muted>{t('coach.student.reasonLine', { reason: ev.reason })}</Muted> : null}

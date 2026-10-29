@@ -1,5 +1,5 @@
 /**
- * Decision 402: the Staff page's activity log. Each staff change writes one
+ * Decision 408: the Staff page's activity log. Each staff change writes one
  * line (who, about whom, what changed, when) in the same step as the change.
  * Owners and co-owners read it, newest first, 50 at a time; nobody else can.
  *
@@ -33,7 +33,7 @@ if (!hasDb) {
 
 const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
 
-describeIfDb('Staff activity log (Decision 402)', () => {
+describeIfDb('Staff activity log (Decision 408)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

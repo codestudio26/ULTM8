@@ -156,6 +156,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Handtekening voor vrijwaring gevraagd",
     waiverRequestBody: "Je bent uitgenodigd om de volgende vrijwaring te ondertekenen: {waiver}.",
     newStripeTitle: "Nieuwe streep!",
+    stepUpTitle: "Stap omhoog!",
     promotedTitle: "Gepromoveerd!",
     rankUpdatedTitle: "Graad bijgewerkt",
     youEarned: "Je hebt {rank} behaald. ({style})",

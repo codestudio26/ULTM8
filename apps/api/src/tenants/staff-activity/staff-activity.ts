@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 /**
- * The Staff page's activity log (Decision 402): what each row can say. The
+ * The Staff page's activity log (Decision 408): what each row can say. The
  * portal turns each into a sentence; `details` carries what it needs.
  */
 export const STAFF_ACTIONS = [
