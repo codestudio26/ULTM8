@@ -47,6 +47,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   on the Check-in page's or the tablet's Code tab opens their welcome card,
   and the check-in shows as "Code". Needs migration
   `20261217000000_student_check_in_codes`.
+- **Transactions: refunds made in Stripe show up** (Decision 382) — a card
+  payment refunded in the Stripe dashboard now shows as Refunded on the
+  Transactions page (or with the refunded amount, for a part refund), in the
+  portal and the student app. A full refund also ends the membership it paid
+  for (future bookings cancelled, Subscription stopped); a part refund keeps
+  it. A refund that later fails turns the payment back to Successful. No
+  database change. Needs the `charge.refunded` and
+  `charge.refund.updated` events switched on for the Stripe webhook.
 - **Front desk: a locked tablet, left with your own staff code** (Decision
   380) — starting front-desk mode signs you out of the device, so it holds no
   staff login; it shows only its Branch's classes and short names, and only

@@ -6333,6 +6333,37 @@ User (Code), 28 Oct 2026, Waivers thread.
 
 ---
 
+## Decision 382 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 111, 291, 339, 346 · **Resolves:** Transactions review gap G6. No database change.
+
+The Transactions review (26 Oct 2026, Decision 339) found that a School owner who refunds a card payment in the Stripe dashboard never sees it in ULTM8: the row stays Successful. The recommendation was to pick these refunds up automatically and mark the payment Refunded. The product owner approved it on 28 Oct 2026 (*"start all three"*).
+
+### Decision
+
+1. **The Stripe webhook handles `charge.refunded` and `charge.refund.updated`.** The job reads the Charge as Stripe holds it now and finds the Transaction by the Charge's PaymentIntent, the same correlation disputes use (Decision 111). That covers membership payments, Subscription renewals and late-cancel fees (Decision 346).
+2. **The Charge's refunded total is the truth.** `Transaction.refundedAmount` is set to it. When it covers the whole payment, a Successful row becomes **Refunded**. A part refund shows its amount in the Refunded column and keeps the row Successful, the same rule as the refunds ULTM8 sends itself (Decision 291). A refund that later fails lowers the total, and a Refunded row goes back to Successful.
+3. **Refunds ULTM8 sent itself change nothing.** Their webhook finds the total already recorded. The handler takes the same row lock as CancellationService, so the two never overwrite each other. Redelivered or out-of-order events are harmless, because each one reads the Charge's current total.
+4. **A Disputed row keeps its status.** The dispute handler owns it; only the refunded total moves.
+5. **Anything else is logged and left alone:** a charge with no Transaction (for example a franchise fee), or a refund on ULTM8's own platform account.
+6. **A full refund ends the membership it paid for** (the purchase or a Subscription renewal), the same way a lost dispute does (Decisions 55, 122): the Membership becomes Expired, its future bookings are cancelled (seats go to the waitlist), and a Subscription is cancelled in Stripe so it stops billing. Late-cancel fees pay for no membership, so nothing else changes for them. This happens only when ULTM8 turns the row Refunded; a payment ULTM8 had already marked Refunded itself is not ended a second time.
+7. **A part refund does not end the membership.** It only records the refunded amount; the member keeps the membership and its remaining classes. The owner can still cancel the membership in ULTM8 if that's what the refund was for.
+8. **A refund that later fails does not bring an ended membership back.** The row goes back to Successful, but the owner sells or restarts the membership by hand if needed.
+
+### Setup
+
+The Stripe webhook endpoint (`POST /v1/payments/webhooks/stripe`) must also send **`charge.refunded`** and **`charge.refund.updated`**. Add them in the Stripe dashboard (Developers → Webhooks, the Connect endpoint). Until they're switched on, nothing reaches the API.
+
+### What this does NOT resolve
+
+- **No notice is sent** to the student or the owner about a Stripe-dashboard refund.
+- The revenue tiles still count a part-refunded payment at its full amount, as they already do for ULTM8's own part refunds.
+- Franchise-fee charges and platform charges refunded in Stripe are unchanged.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, *"start all three"*, on the recommendations the coordinator listed (Transactions G6 was one of them). Items 6–8: user (Code), 28 Oct 2026, *"It should end the membership"*; the part-refund and failed-refund rules (7, 8) are Claude's recommendation, recorded as such. The user also said the Stripe webhook events will be switched on in v1.3 or later, so none of this works live before then.
+
 ## Decision 380 — Front desk: the locked tablet, left with a staff member's own code
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F1, F2 · **Rules from:** Decisions 317, 320, 351 · **Follows:** Decision 378
