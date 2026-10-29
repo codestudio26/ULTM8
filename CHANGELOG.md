@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Saved belt colours** (backlog 3.18) — every colour row in the belt editor
+  (base, secondary, tag and stripe colours) now shows preset circles, the
+  School's saved colours and a "+" that opens a colour wheel with Brightness
+  and a colour code box. "Save colour" applies a colour and keeps it for every
+  row and every style at the School; Edit replaces a saved colour, Delete
+  removes it without changing belts that use it. The owner, or Branch Staff
+  who manage disciplines, can change the list. **Needs a database migration**
+  (`20261226000000_saved_belt_colours`).
 - **Students can ask for a belt correction** (backlog 3.13; Decisions 286,
   299) — in the student app, a student whose recorded belt is wrong picks the
   belt they should have, anywhere on the style's ladder, and says why. The
