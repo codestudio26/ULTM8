@@ -137,6 +137,52 @@ export function useFranchisePaymentAccount(franchiseId: string | null) {
   });
 }
 
+export type ConnectStatus = components['schemas']['ConnectStatusResponseDto']['status'];
+
+/** Decision 407 — Connected / Action needed / Not connected, read live from
+ * Stripe. Franchise Owner only. */
+export function useFranchiseConnectStatus(franchiseId: string | null) {
+  return useQuery({
+    queryKey: ['franchise-connect-status', franchiseId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/franchises/{franchiseId}/payment-account/connect-status', { params: { path: { franchiseId: franchiseId! } } })),
+    enabled: !!franchiseId,
+  });
+}
+
+/** Where the portal goes back to once Stripe's onboarding returns
+ * (StripeConnectReturnPage). The return address Stripe is given is the same
+ * for every account, so the page to come back to is remembered here. */
+export const STRIPE_CONNECT_RETURN_KEY = 'ultm8.stripeConnectReturnTo';
+
+/** Decision 407 — "Connect Stripe": creates the Franchise's Stripe payment
+ * account the first time (with the country the Owner chose), then asks for a
+ * Stripe onboarding link, using the existing endpoints. Resolves to the URL
+ * to send the browser to. */
+export function useConnectFranchiseStripe(franchiseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ paymentAccountId, accountTitle, country }: { paymentAccountId: string | null; accountTitle: string; country: string }) => {
+      const id =
+        paymentAccountId ??
+        (
+          await unwrap(
+            apiClient.POST('/v1/franchises/{franchiseId}/payment-accounts', {
+              params: { path: { franchiseId } },
+              body: { provider: 'STRIPE', accountTitle, country },
+            }),
+          )
+        ).id;
+      const { onboardingUrl } = await unwrap(apiClient.POST('/v1/payment-accounts/{id}/connect/onboard', { params: { path: { id } } }));
+      return onboardingUrl;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['franchise-payment-account', franchiseId] });
+      queryClient.invalidateQueries({ queryKey: ['franchise-connect-status', franchiseId] });
+    },
+  });
+}
+
 /** Decision 352 — Schools asking to join this Franchise (pending only, oldest
  * first). Franchise Owner only. */
 export function useFranchiseJoinRequests(franchiseId: string | null) {

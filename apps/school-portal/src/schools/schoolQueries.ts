@@ -87,6 +87,39 @@ export function useLeaveFranchise(schoolId: string) {
   });
 }
 
+/** Decision 407 — the card the School's franchise fee is charged to (brand and
+ * last 4 digits read live from Stripe), and whether one can be added yet (the
+ * Franchise must have connected Stripe). School Owner/Manager only. */
+export function useSchoolFranchiseFeeCard(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId, 'franchise-fee-card'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/franchise-fee/card', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** Decision 407 — "Add card": resolves to Stripe's hosted card form, which
+ * returns to the School page when done. */
+export function useStartFranchiseFeeCardSetup(schoolId: string) {
+  return useMutation({
+    mutationFn: async () =>
+      (await unwrap(apiClient.POST('/v1/schools/{id}/franchise-fee/card/setup-session', { params: { path: { id: schoolId } } }))).checkoutUrl,
+  });
+}
+
+export type FranchiseFeeCharge = components['schemas']['FranchiseFeeChargeResponseDto'];
+
+/** Decision 407 — the School's franchise-fee charges (period, amount, paid or
+ * failed). School Owner/Manager only. No paging in this UI yet, as on the
+ * Franchise page; the School page sorts them newest first. */
+export function useSchoolFeeCharges(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId, 'fee-charges'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/fee-charges', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
 /** Decision 352 — this School's latest request to join a Franchise (pending,
  * accepted, declined or cancelled), or null if it never asked. */
 export function useSchoolFranchiseJoinRequest(schoolId: string | null) {

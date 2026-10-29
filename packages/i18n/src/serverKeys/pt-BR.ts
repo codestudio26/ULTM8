@@ -226,6 +226,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "Você foi adicionado a {school}.",
     openMatTitle: "Treino livre",
     openMatBody: "Treino livre em {place} em {when}, por {minutes} minutos. Reserve no app para participar.",
+    franchiseFeeFailedTitle: "Falha no pagamento da taxa de franquia",
+    franchiseFeeFailedBody: "Não foi possível cobrar a taxa de franquia de {amount} de {school}. O Stripe tentará novamente. Adicione ou atualize o cartão na página da escola.",
     openMatStyleBody: "Treino livre ({style}) em {place} em {when}, por {minutes} minutos. Reserve no app para participar.",
     toDecideBody: "A promoção de {name} para {rank} ({style}) aguarda sua decisão. Promova ou decida não promover.",
     promotionFeeBody: "Sua promoção para {rank} ({style}) tem uma taxa de {amount}. Abra o app para aceitar ou recusar.",

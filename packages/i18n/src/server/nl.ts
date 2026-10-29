@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "Een streep-ID hoort niet bij de strepen van deze band. Strepen kunnen alleen binnen hun eigen band van volgorde veranderen.",
   "A style is listed twice in specializationStyleIds.": "Een stijl staat twee keer in specializationStyleIds.",
   "Academy not found": "Academie niet gevonden",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "Deze school hoort niet bij een franchise en betaalt dus geen franchisekosten.",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "De franchise van deze school heeft Stripe nog niet gekoppeld, dus er kan nog geen kaart worden toegevoegd.",
   "AdminUser not found": "Beheerder niet gevonden",
   "An AdminUser with this email or ssoSubject already exists.": "Er bestaat al een beheerder met dit e-mailadres of deze ssoSubject.",
   "An account with this email already exists — use \"Invite staff\" instead.": "Er bestaat al een account met dit e-mailadres. Gebruik in plaats daarvan ‘Medewerker uitnodigen’.",

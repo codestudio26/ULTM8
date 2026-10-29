@@ -34,6 +34,8 @@ export const serverMessages: Record<string, string> = {
   "A stripe id is not one of this belt's stripes. Stripes can only be reordered within their own belt.": "Bir şerit kimliği bu kuşağın şeritlerinden biri değil. Şeritler yalnızca kendi kuşakları içinde yeniden sıralanabilir.",
   "A style is listed twice in specializationStyleIds.": "specializationStyleIds içinde bir stil iki kez yer alıyor.",
   "Academy not found": "Akademi bulunamadı",
+  "This School is not part of a Franchise, so it has no franchise fee to pay.": "Bu okul bir franchise'a bağlı değil, bu yüzden ödenecek franchise ücreti yok.",
+  "This School's Franchise hasn't connected Stripe yet, so a card can't be added.": "Bu okulun franchise'ı henüz Stripe'ı bağlamadı, bu yüzden kart eklenemiyor.",
   "AdminUser not found": "Yönetici bulunamadı",
   "An AdminUser with this email or ssoSubject already exists.": "Bu e-posta adresine veya ssoSubject değerine sahip bir yönetici zaten var.",
   "An account with this email already exists — use \"Invite staff\" instead.": "Bu e-posta adresiyle bir hesap zaten var — bunun yerine \"Personel davet et\" seçeneğini kullanın.",

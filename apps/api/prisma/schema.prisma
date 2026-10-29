@@ -1121,6 +1121,15 @@ model School {
   /// hasn't started yet.
   stripeFranchiseFeeSubscriptionId String? @unique
 
+  /// Decision 407 (backlog 3.22) — this School's kept Stripe Customer on its
+  /// Franchise's connected account, holding the card the School Owner saved for
+  /// the franchise fee. It is the franchise-fee subscription's Customer, so the
+  /// card is that subscription's default payment method. Set the first time a
+  /// card is added or a subscription is created
+  /// (FranchiseFeeBillingService.ensureFeeCustomer), cleared when the School
+  /// leaves or is removed from the Franchise.
+  stripeFranchiseFeeCustomerId String?
+
   /// Phase 54 — this School's own platform SubscriptionPlan billing relationship.
   /// Same shape/reasoning as Franchise's own identical trio above — see that
   /// model's own comment for the full account, including why `subscriptionPlanId`

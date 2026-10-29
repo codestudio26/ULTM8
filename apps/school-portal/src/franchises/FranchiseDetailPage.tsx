@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, COUNTRY_NAMES, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { ApiError } from '@ultm8/api-client';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import {
+  STRIPE_CONNECT_RETURN_KEY,
   useCloseFranchise,
+  useConnectFranchiseStripe,
   useDecideJoinRequest,
+  useFranchiseConnectStatus,
   useFranchise,
   useFranchiseFeeCharges,
   useFranchiseJoinRequests,
@@ -14,6 +18,7 @@ import {
   useFranchiseSchools,
   useRefundFeeCharge,
   useRemoveFranchiseSchool,
+  type ConnectStatus,
   type FranchiseFeeChargeResponse,
   type FranchiseMemberSchool,
 } from './franchiseQueries';
@@ -114,7 +119,7 @@ export function FranchiseDetailPage() {
   const charges = chargeData?.items ?? [];
   // Decision 337 (F7) — say why member Schools stay "Not billing yet" instead of
   // leaving it a mystery: no fee set for the chosen fee model, and/or no Stripe
-  // account to bill through (connecting one isn't in the portal yet).
+  // account to bill through (Decision 407: connected below, StripeConnectCard).
   const feeMissing = franchise
     ? franchise.feeModel === 'PER_HEADCOUNT'
       ? franchise.perHeadcountRate == null
@@ -168,6 +173,15 @@ export function FranchiseDetailPage() {
           </div>
         </Card>
       </div>
+
+      {isOpen && franchise ? (
+        <StripeConnectCard
+          franchiseId={franchiseId}
+          franchiseName={franchise.name}
+          defaultCountry={franchise.addressCountry ?? null}
+          paymentAccount={paymentAccount ?? null}
+        />
+      ) : null}
 
       {isOpen ? <JoinRequestsCard franchiseId={franchiseId} /> : null}
 
@@ -500,5 +514,130 @@ function CloseFranchiseModal({ franchiseId, franchiseName, onClose }: { franchis
         </div>
       </form>
     </Modal>
+  );
+}
+
+function connectStatusBadge(status: ConnectStatus, t: TranslateFn) {
+  if (status === 'CONNECTED') return <Badge variant="success">{t('franchises.stripe.connected')}</Badge>;
+  if (status === 'ACTION_NEEDED') return <Badge variant="warning">{t('franchises.stripe.actionNeeded')}</Badge>;
+  return <Badge>{t('franchises.stripe.notConnected')}</Badge>;
+}
+
+/** Country names in the portal's language, falling back to English. */
+function localCountryNames(): Array<{ value: string; label: string }> {
+  let names: Intl.DisplayNames | null = null;
+  try {
+    names = new Intl.DisplayNames([formatLocale() ?? 'en'], { type: 'region' });
+  } catch {
+    names = null;
+  }
+  return COUNTRY_NAMES.map(([code, name]) => ({ value: code, label: names?.of(code) ?? name })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/**
+ * Decision 407 — the Franchise Owner connects the Franchise's Stripe account,
+ * which member Schools' franchise fees are paid into, through Stripe's own
+ * onboarding (the existing payment-account endpoints). Shows Connected, Action
+ * needed (onboarding started but not finished, or Stripe wants more details)
+ * or Not connected. The first time, the Owner picks the country of the
+ * business's bank account: Stripe needs it and it can't be changed later.
+ */
+function StripeConnectCard({
+  franchiseId,
+  franchiseName,
+  defaultCountry,
+  paymentAccount,
+}: {
+  franchiseId: string;
+  franchiseName: string;
+  defaultCountry: string | null;
+  paymentAccount: { id: string; provider: string } | null;
+}) {
+  const t = useT();
+  const { data, isLoading, error: statusError } = useFranchiseConnectStatus(franchiseId);
+  const connect = useConnectFranchiseStripe(franchiseId);
+  const [askingCountry, setAskingCountry] = useState(false);
+  const [country, setCountry] = useState(defaultCountry ?? guessDefaultCountry() ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const countries = React.useMemo(localCountryNames, []);
+  // A cash or bank-transfer account can't go through Stripe.
+  const stripeAccountId = paymentAccount?.provider === 'STRIPE' ? paymentAccount.id : null;
+  const canConnect = !paymentAccount || !!stripeAccountId;
+
+  async function start(chosenCountry: string) {
+    setError(null);
+    try {
+      const url = await connect.mutateAsync({ paymentAccountId: stripeAccountId, accountTitle: franchiseName, country: chosenCountry });
+      try {
+        sessionStorage.setItem(STRIPE_CONNECT_RETURN_KEY, `/franchises/${franchiseId}`);
+      } catch {
+        // No storage: Stripe's return lands on the Franchises page instead.
+      }
+      window.location.assign(url);
+    } catch (err) {
+      setAskingCountry(false);
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  const status = data?.status;
+  return (
+    <div style={{ marginBottom: 24 }} data-testid="stripe-connect">
+      <Card>
+        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+          {t('franchises.stripe.title')}
+        </h2>
+        {error ? <ErrorBanner message={error} /> : null}
+        {isLoading ? (
+          <Spinner />
+        ) : statusError ? (
+          <ErrorBanner message={statusError instanceof ApiError ? statusError.message : t('franchises.stripe.statusLoadFailed')} />
+        ) : status ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+            <span data-testid="stripe-connect-status">{connectStatusBadge(status, t)}</span>
+            <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, margin: 0 }}>
+              {status === 'CONNECTED'
+                ? t('franchises.stripe.connectedHint')
+                : status === 'ACTION_NEEDED'
+                  ? t('franchises.stripe.actionNeededHint')
+                  : t('franchises.stripe.notConnectedHint')}
+            </p>
+            {status !== 'CONNECTED' && canConnect ? (
+              <Button onClick={() => (stripeAccountId ? start('') : setAskingCountry(true))} loading={connect.isPending}>
+                {status === 'ACTION_NEEDED' ? t('franchises.stripe.continue') : t('franchises.stripe.connect')}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </Card>
+      {askingCountry ? (
+        <Modal title={t('franchises.stripe.countryTitle')} onClose={() => setAskingCountry(false)}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void start(country);
+            }}
+          >
+            <Field label={t('franchises.stripe.countryLabel')} htmlFor="stripe-connect-country" hint={t('franchises.stripe.countryHint')}>
+              <SelectField
+                id="stripe-connect-country"
+                required
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                options={[{ value: '', label: t('franchises.stripe.chooseCountry') }, ...countries]}
+              />
+            </Field>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <Button type="submit" loading={connect.isPending} disabled={!country}>
+                {t('franchises.stripe.goToStripe')}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setAskingCountry(false)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+    </div>
   );
 }

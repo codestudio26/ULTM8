@@ -212,6 +212,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "{school} okuluna eklendiniz.",
     openMatTitle: "Serbest antrenman",
     openMatBody: "{place} şubesinde {when} tarihinde {minutes} dakikalık serbest antrenman. Katılmak için uygulamadan rezervasyon yapın.",
+    franchiseFeeFailedTitle: "Franchise ücreti ödemesi başarısız oldu",
+    franchiseFeeFailedBody: "{school} için {amount} tutarındaki franchise ücreti tahsil edilemedi. Stripe yeniden deneyecek. Okul sayfasında kartı ekleyin veya güncelleyin.",
     openMatStyleBody: "{place} şubesinde {when} tarihinde {minutes} dakikalık serbest antrenman ({style}). Katılmak için uygulamadan rezervasyon yapın.",
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",

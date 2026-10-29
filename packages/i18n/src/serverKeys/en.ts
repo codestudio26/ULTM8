@@ -196,6 +196,8 @@ export const server = {
     studentAddedBody: "You've been added to {school}.",
     openMatTitle: 'Open mat',
     openMatBody: 'Open mat at {place} on {when}, for {minutes} minutes. Book in the app to join.',
+    franchiseFeeFailedTitle: "Franchise fee payment failed",
+    franchiseFeeFailedBody: "The franchise fee of {amount} for {school} couldn't be charged. Stripe will try again. Add or update the card on the School page.",
     openMatStyleBody: 'Open mat ({style}) at {place} on {when}, for {minutes} minutes. Book in the app to join.',
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',

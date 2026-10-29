@@ -240,6 +240,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "Вас добавили в {school}.",
     openMatTitle: "Открытый ковёр",
     openMatBody: "Открытый ковёр в {place}: {when}, {minutes} мин. Запишитесь в приложении, чтобы прийти.",
+    franchiseFeeFailedTitle: "Не удалось оплатить франшизный взнос",
+    franchiseFeeFailedBody: "Не удалось списать франшизный взнос {amount} за {school}. Stripe попробует ещё раз. Добавьте или обновите карту на странице школы.",
     openMatStyleBody: "Открытый ковёр ({style}) в {place}: {when}, {minutes} мин. Запишитесь в приложении, чтобы прийти.",
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
