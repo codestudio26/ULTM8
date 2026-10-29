@@ -2426,7 +2426,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Prazo para reembolso/crédito",
       leaveBlankToClear: "Deixe em branco para limpar.",
       cancellationLabel: "Taxa de cancelamento",
-      cancellationHint: "Por exemplo 5.00. Guardado para um futuro fluxo de cobrança — ainda não é cobrado automaticamente. Deixe em branco para limpar.",
+      cancellationHint: "Por exemplo 5.00. Cobrado no cartão salvo do aluno quando ele cancela, depois do prazo, uma aula reservada com este plano, se a aula não tiver taxa própria. Deixe em branco para não cobrar.",
       waiverRequired: "Exige termo de responsabilidade/condições assinados para comprar",
       stylesLegend: "Modalidades que este plano cobre",
       includesLessons: "Inclui lições",

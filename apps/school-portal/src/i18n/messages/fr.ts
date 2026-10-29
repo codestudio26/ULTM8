@@ -2426,7 +2426,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Date limite de remboursement/avoir",
       leaveBlankToClear: "Laissez vide pour effacer.",
       cancellationLabel: "Frais d’annulation",
-      cancellationHint: "Par exemple 5.00. Enregistré pour un futur processus de facturation — pas encore prélevé automatiquement. Laissez vide pour effacer.",
+      cancellationHint: "Par exemple 5.00. Prélevé sur la carte enregistrée de l'élève lorsqu'il annule après la date limite un cours réservé avec cette formule, si le cours n'a pas de frais propres. Laissez vide pour aucun frais.",
       waiverRequired: "Décharge/conditions signées requises pour acheter",
       stylesLegend: "Disciplines couvertes par cette formule",
       includesLessons: "Inclut les leçons",

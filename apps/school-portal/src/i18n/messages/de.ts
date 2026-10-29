@@ -2426,7 +2426,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       refundLabel: "Frist für Erstattung/Gutschrift",
       leaveBlankToClear: "Zum Entfernen leer lassen.",
       cancellationLabel: "Stornogebühr",
-      cancellationHint: "Zum Beispiel 5.00. Gespeichert für einen künftigen Abrechnungsablauf — wird noch nicht automatisch eingezogen. Zum Entfernen leer lassen.",
+      cancellationHint: "Zum Beispiel 5.00. Wird von der gespeicherten Karte des Schülers abgebucht, wenn er einen mit diesem Tarif gebuchten Kurs nach der Frist storniert und der Kurs keine eigene Gebühr hat. Leer lassen für keine Gebühr.",
       waiverRequired: "Unterschriebener Haftungsausschluss/AGB zum Kauf erforderlich",
       stylesLegend: "Disziplinen in diesem Tarif",
       includesLessons: "Lektionen enthalten",
