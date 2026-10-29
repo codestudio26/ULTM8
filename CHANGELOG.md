@@ -23,6 +23,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   accept in the student app. A rejected sign-up gets a polite email, can still
   be approved for 30 days, then is deleted. Each School edits its own "How did
   you hear about us?" list in School settings.
+- **No more decision numbers in messages** (backlog 3.17) — error messages and
+  grading history notes no longer end with internal references such as
+  "(Decision 147)", in every language. Saved history notes are cleaned too.
+  **Needs a database migration** (`20261225000000_clean_system_notes`).
 - **Front desk: pack used up** (Decision 393) — when a Class Pack has no
   classes left at check-in, the desk (or the tablet, after a scan) offers the
   same pack. The member, or their Guardian, buys it on the student app's Home,

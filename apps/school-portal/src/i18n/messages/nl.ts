@@ -2440,7 +2440,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Bandmaat",
       photo: "Foto",
       photoHint: "Laat ongewijzigd om de huidige foto te behouden.",
-      freeTextHint: "Vrije tekst: er is nog geen eenheid of maattabel afgesproken (Besluit 220/246).",
+      freeTextHint: "Vrije tekst: er is nog geen eenheid of maattabel afgesproken.",
     },
   },
   membershipPlans: {

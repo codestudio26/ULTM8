@@ -84,7 +84,8 @@ export class PlatformAdminImpersonationService {
       caller.revokedAt ||
       (caller.subRole !== AdminSubRole.SUPPORT && caller.subRole !== AdminSubRole.FULL_ADMIN)
     ) {
-      throw new ForbiddenException('Only Support or a Full Platform Admin may start an impersonation session (Decision 102).');
+      // Decision 102
+      throw new ForbiddenException('Only Support or a Full Platform Admin may start an impersonation session.');
     }
   }
 }
