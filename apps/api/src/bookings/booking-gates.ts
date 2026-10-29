@@ -75,6 +75,7 @@ export async function selectAndConsumeMembership(
       ],
     },
     orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
+    include: { membershipPlan: { select: { type: true } } },
   });
   if (ticketOnly && candidates.length === 0) {
     throw new BadRequestException({
@@ -90,6 +91,11 @@ export async function selectAndConsumeMembership(
 
   const packs = candidates.filter((m) => m.classesRemaining !== null && m.classesRemaining > 0);
   if (packs.length === 0) {
+    // Decision 393 (Decision 316 item 7): a Class Pack that ran out is told
+    // apart, so the desk can offer the same pack.
+    if (candidates.some((m) => m.membershipPlan.type === 'CLASS_PACK' && m.classesRemaining !== null && m.classesRemaining <= 0)) {
+      throw new BadRequestException(PACK_USED_UP);
+    }
     throw new BadRequestException('This Student has no Active Membership eligible to fund this Booking.');
   }
   for (const pack of packs) {
@@ -103,6 +109,10 @@ export async function selectAndConsumeMembership(
   }
   throw new ConflictException('This Membership\'s remaining credit changed concurrently — please retry.');
 }
+
+/** Decision 393: no other membership pays for the seat and a Class Pack has
+ * no classes left. */
+export const PACK_USED_UP = { code: 'PACK_USED_UP', message: 'This Class Pack has no classes left. Buy the same pack to check in.' };
 
 /** The Class fields that tell a one-off Class from a Timetable one. */
 export type OneOffMarkers = { id: string; timetableSlotId: string | null; occurrenceDate: Date | null; membershipInclusion: boolean };

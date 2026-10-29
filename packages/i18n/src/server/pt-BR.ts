@@ -621,4 +621,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Este cadastro já foi tratado.",
   "Only the owner or Branch Staff can see sign-ups.": "Só o dono ou a equipe da filial podem ver os cadastros.",
   "Sign-up not found": "Cadastro não encontrado",
+  "Pack recharge not found": "Recarga do pacote não encontrada",
 };

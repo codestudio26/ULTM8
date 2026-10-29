@@ -4996,6 +4996,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/pack-recharges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_createRecharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/pack-recharges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FrontDeskKioskController_rechargeStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/front-desk/kiosk/pack-recharges/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_completeRecharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/front-desk/kiosk/session": {
         parameters: {
             query?: never;
@@ -5246,6 +5294,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SignUpsController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PackRechargesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PackRechargesController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PackRechargesController_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pack-recharges/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PackRechargesController_mine"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9645,6 +9757,29 @@ export interface components {
         KioskSignUpCreatedDto: {
             id: string;
         };
+        CreatePackRechargeDto: {
+            studentId: string;
+            /** @description The QR or code lookup the person was found with. Needed on a tablet (Decision 388). */
+            lookupToken?: string;
+            /** @description The Classes to check in to once paid. Up to 10. */
+            classIds: string[];
+        };
+        PackRechargeDto: {
+            id: string;
+            planTitle: string;
+            /** @description Minor units. */
+            price: number;
+            currency?: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        PackRechargeStatusDto: {
+            /** @description The same pack has been bought since the recharge was asked for. */
+            paid: boolean;
+            /** @description The Classes' check-in has closed: the offer is over. */
+            expired: boolean;
+            completed: boolean;
+        };
         KioskSessionInfoDto: {
             sessionId: string;
             schoolId: string;
@@ -9865,6 +10000,21 @@ export interface components {
             visitPassGiven: boolean;
             /** @description A fresh access token carrying the new STUDENT grant. */
             accessToken?: string;
+        };
+        MyPackRechargeDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            /** @description Whose pack: the caller, or a child the caller is Guardian of. */
+            studentId: string;
+            /** @description The child's first name when it isn't the caller's own pack. */
+            childFirstName?: string | null;
+            plan: components["schemas"]["AcademyMembershipPlanDto"];
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        MyPackRechargeListDto: {
+            items: components["schemas"]["MyPackRechargeDto"][];
         };
         StartOpenMatDto: {
             /** @description One of the School's open Branches; null when it has none. */
@@ -18358,6 +18508,71 @@ export interface operations {
             };
         };
     };
+    FrontDeskKioskController_createRecharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePackRechargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_rechargeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeStatusDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_completeRecharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
     FrontDeskKioskController_info: {
         parameters: {
             query?: never;
@@ -18736,6 +18951,94 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    PackRechargesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePackRechargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackRechargeStatusDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeskCheckInResponseDto"];
+                };
+            };
+        };
+    };
+    PackRechargesController_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPackRechargeListDto"];
+                };
             };
         };
     };

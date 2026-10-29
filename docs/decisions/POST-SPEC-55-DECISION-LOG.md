@@ -6648,6 +6648,32 @@ User (Code), 29 Oct 2026, starting front-desk sign-up (F5): chose to build the V
 ### Recorded by
 
 User (Code), 29 Oct 2026: "yes start with sign-up from the tablet", then the answers quoted above.
+## Decision 393 — Pack used up at check-in: buy the same pack in the app
+
+**Date:** 29 Oct 2026 · **Status:** Built from Decision 316 item 7 · **Builds:** handover F8 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`) and DESIGN.md's "Pack used up" card
+
+### Decision (Decision 316 item 7, as built)
+
+1. **When a Class Pack has no classes left at check-in, and nothing else pays for the seat,** the check-in says so with its own reason (`PACK_USED_UP`), instead of "no active membership". The welcome card shows the peach "Pack used up" note: "Buy the same pack and you're checked in as soon as it's paid."
+2. **The desk offers the same pack.** Staff (or the person on the tablet) tap the button. The person, or their Guardian for a child, then sees that pack on the student app's Home and buys it there with the existing purchase flow.
+3. **The check-in completes once it's paid.** The card checks every few seconds. When a new pack on the same plan exists, it checks the person in to the same Classes, recording the same method (scan, code or name) as when they were found. On the tablet the offer needs a scan or personal code, as booking does (Decision 388); the finished check-in may book, since they paid in their own app.
+4. **The offer lasts while the Classes can still be checked in to.** After that it disappears from the app. A pack bought later is still theirs; it just doesn't check them in.
+
+### How it is built
+
+- `PackRecharge` (the offer: person, plan, Classes, how they were found, until when). Jobs connection only, RLS on with no `ultm8_app` grant.
+- Desk: `POST /schools/{schoolId}/front-desk/pack-recharges`, `GET …/{id}`, `POST …/{id}/complete`. Tablet: the same under `/front-desk/kiosk/pack-recharges`, limited to its own offers. App: `GET /pack-recharges/me` (own and children's open offers).
+- "The same pack" is the most recent used-up Class Pack's plan. A plan the School has archived isn't offered (`PACK_NOT_FOR_SALE`). Asking again for the same person and pack updates the open offer.
+- The student app's purchase row can now buy for a child (the API already allowed it); a saved card isn't offered then, as the API requires.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Paying at the desk instead (cash or card terminal) during the same check-in. Staff can still sell the pack from the student's page and check in again.
+- **[UNRESOLVED]** Whether the member should also get a push notification. Only the Home card shows it.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "start on F8 after 372 merges and build any other task you have all the answers for". Rules from Decision 316 item 7; nothing new was decided here.
 
 ---
 

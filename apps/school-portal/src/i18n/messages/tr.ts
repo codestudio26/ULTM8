@@ -3456,6 +3456,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       saveFailed: "Kaydedilemedi. Lütfen tekrar deneyin.",
       loadFailed: "Personel yüklenemedi.",
     },
+    packUsedUp: {
+      title: "Paket bitti",
+      body: "Aynı paketi satın alın, ödeme yapılır yapılmaz girişiniz yapılır.",
+      offerStaff: "Aynı paketi uygulamasında teklif et",
+      offerSelf: "Uygulamamda satın al",
+      waitingTitle: "Ödeme bekleniyor",
+      waitingStaff: "{plan} · {price}. ULTM8 uygulamasından satın alır, ödeme yapılır yapılmaz burada girişi yapılır.",
+      waitingSelf: "{plan} · {price}. ULTM8 uygulamasını açıp oradan satın alın. Ödeme yapılır yapılmaz girişiniz yapılır.",
+      paid: "Ödendi. Giriş yapılıyor…",
+      expired: "Bu ders için giriş kapandı. Paket uygulamadan hâlâ satın alınabilir.",
+      failed: "Paket teklif edilemedi. Lütfen resepsiyona sorun.",
+    },
     findMe: {
       title: "Beni bul",
       name: "Tam adınız",

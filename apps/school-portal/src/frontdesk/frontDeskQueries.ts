@@ -163,7 +163,7 @@ export class QrExpiredError extends Error {
 /** Why the one-step check-in did nothing: each item that stopped it, with its
  * reason already in the screen's language. */
 export class DeskCheckInError extends Error {
-  constructor(readonly items: Array<{ classId?: string; attendeeId?: string; message: string }>) {
+  constructor(readonly items: Array<{ classId?: string; attendeeId?: string; code?: string; message: string }>) {
     super('desk-check-in-not-done');
   }
 }
@@ -201,7 +201,7 @@ export function useDeskCheckIn(post: (body: DeskCheckInBody) => Promise<DeskChec
           ...result.guests.filter((g) => !g.ok).map((g) => ({ attendeeId: g.attendeeId, code: g.code, message: g.message })),
         ];
         throw new DeskCheckInError(
-          await Promise.all(failed.map(async ({ code, message, ...item }) => ({ ...item, message: await translateApiErrorMessage(409, code ?? 'CONFLICT', message ?? '') }))),
+          await Promise.all(failed.map(async ({ code, message, ...item }) => ({ ...item, code, message: await translateApiErrorMessage(409, code ?? 'CONFLICT', message ?? '') }))),
         );
       }
       return classIds;
@@ -220,6 +220,26 @@ export function useFrontDeskCheckIn(schoolId: string | null) {
       (guests ?? []).forEach((g) => queryClient.invalidateQueries({ queryKey: ['bookingGuests', g.bookingId] }));
     },
   );
+}
+
+/**
+ * Decision 393 (handover F8): "Pack used up: buy the same pack". The same
+ * three calls for the staff desk and the tablet: offer the pack in the
+ * person's app, see whether it's paid, then finish the check-in.
+ */
+export interface PackRechargeApi {
+  create: (body: { studentId: string; classIds: string[]; lookupToken?: string }) => Promise<{ id: string; planTitle: string; price: number; currency?: string | null }>;
+  status: (id: string) => Promise<{ paid: boolean; expired: boolean; completed: boolean }>;
+  complete: (id: string) => Promise<DeskCheckInResult>;
+}
+
+export function useStaffPackRecharges(schoolId: string | null): PackRechargeApi {
+  const path = { schoolId: schoolId! };
+  return {
+    create: (body) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/pack-recharges', { params: { path }, body })),
+    status: (id) => unwrap(apiClient.GET('/v1/schools/{schoolId}/front-desk/pack-recharges/{id}', { params: { path: { ...path, id } } })),
+    complete: (id) => unwrap(apiClient.POST('/v1/schools/{schoolId}/front-desk/pack-recharges/{id}/complete', { params: { path: { ...path, id } } })),
+  };
 }
 
 export function errorText(err: unknown, fallback: string): string {

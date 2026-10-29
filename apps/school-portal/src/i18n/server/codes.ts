@@ -23,6 +23,15 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // The locked tablet, someone found by name (Decision 388).
     case 'KIOSK_BOOK_FIRST':
       return t('server.codes.kioskBookFirst');
+    // Pack used up at check-in (Decision 393).
+    case 'PACK_USED_UP':
+      return t('server.codes.packUsedUp');
+    case 'NO_PACK_TO_RECHARGE':
+      return t('server.codes.noPackToRecharge');
+    case 'PACK_NOT_FOR_SALE':
+      return t('server.codes.packNotForSale');
+    case 'RECHARGE_NOT_PAID':
+      return t('server.codes.rechargeNotPaid');
     // Visit passes (Decision 391).
     case 'VISITOR_PERIOD_NOT_SET':
       return t('server.codes.visitorPeriodNotSet');

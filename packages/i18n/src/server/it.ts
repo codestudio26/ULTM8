@@ -621,4 +621,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "Questa iscrizione è già stata gestita.",
   "Only the owner or Branch Staff can see sign-ups.": "Solo il titolare o lo Staff della sede possono vedere le iscrizioni.",
   "Sign-up not found": "Iscrizione non trovata",
+  "Pack recharge not found": "Ricarica del pacchetto non trovata",
 };

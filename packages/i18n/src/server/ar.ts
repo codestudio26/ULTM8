@@ -621,4 +621,5 @@ export const serverMessages: Record<string, string> = {
   "This sign-up has already been dealt with.": "تمت معالجة هذا التسجيل بالفعل.",
   "Only the owner or Branch Staff can see sign-ups.": "يمكن للمالك أو موظفي الفرع فقط رؤية التسجيلات.",
   "Sign-up not found": "لم يُعثر على التسجيل",
+  "Pack recharge not found": "لم يتم العثور على تجديد الباقة",
 };
