@@ -300,6 +300,19 @@ export class CreateSchoolDto {
   @Max(3650)
   visitorPeriodDays?: number | null;
 
+  @ApiPropertyOptional({ description: 'Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90).' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  freezeMaxDaysPer12Months?: number;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default)." })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  freezeFeeAmount?: number | null;
+
   @ApiPropertyOptional({
     type: [String],
     nullable: true,

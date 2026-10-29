@@ -23,6 +23,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { MembershipExpirySweepProcessor } from '../src/jobs/membership-expiry-sweep.processor';
+import { StripeClientService } from '../src/payments/stripe-client.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../src/jobs/queue.constants';
 
@@ -57,6 +58,8 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
       providers: [
         MembershipExpirySweepProcessor,
         PrismaJobsService,
+        // Decision 404: the sweep also moves frozen Subscriptions' next charge (none here).
+        StripeClientService,
         { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: fakeWaitlistCascadeQueue },
       ],
     }).compile();

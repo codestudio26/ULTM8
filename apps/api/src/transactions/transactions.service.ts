@@ -46,17 +46,17 @@ export class TransactionsService {
    * (see TransactionResponseDto's own header comment for why a plain Prisma
    * `include` is safe here, unlike the User-relation join these two methods
    * each handle separately via resolveUserNames/not-at-all). */
-  private withMembershipPlanTitle<T extends { membershipPlan: { title: string } | null; booking?: { class: { title: string } } | null }>(
-    t: T,
-  ): Omit<T, 'membershipPlan' | 'booking'> & { membershipPlanTitle: string | null; bookingClassTitle: string | null } {
-    const { membershipPlan, booking, ...rest } = t;
+  private withMembershipPlanTitle<
+    T extends { membershipPlan: { title: string } | null; booking?: { class: { title: string } } | null; membership?: { membershipPlan: { title: string } } | null },
+  >(t: T): Omit<T, 'membershipPlan' | 'booking' | 'membership'> & { membershipPlanTitle: string | null; bookingClassTitle: string | null } {
+    const { membershipPlan, booking, membership, ...rest } = t;
     // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
     return {
       ...rest,
       ...(currency ? { currency: currency.toUpperCase() } : {}),
-      membershipPlanTitle: membershipPlan?.title ?? null,
+      membershipPlanTitle: membershipPlan?.title ?? membership?.membershipPlan.title ?? null,
       // A late-cancellation fee (Decision 346) names the class it was for.
       bookingClassTitle: booking?.class.title ?? null,
     };
@@ -103,7 +103,12 @@ export class TransactionsService {
       where: decoded
         ? { AND: [where, { OR: [{ billingDate: { lt: decoded.sortValue } }, { billingDate: decoded.sortValue, id: { lt: decoded.id } }] }] }
         : where,
-      include: { membershipPlan: { select: { title: true } }, booking: { select: { class: { select: { title: true } } } } },
+      include: {
+        membershipPlan: { select: { title: true } },
+        booking: { select: { class: { select: { title: true } } } },
+        // Decision 404: a freeze fee names the frozen membership's plan.
+        membership: { select: { membershipPlan: { select: { title: true } } } },
+      },
       orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
       take: take + 1,
     });

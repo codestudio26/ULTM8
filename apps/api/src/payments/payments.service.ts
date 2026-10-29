@@ -857,6 +857,8 @@ export class PaymentsService {
     amount: number,
     currency: string,
     description: string,
+    // Decision 404: the freeze fee passes one (one charge per freeze, whoever retries).
+    idempotencyKey?: string,
   ): Promise<{ succeeded: boolean; paymentIntentId: string }> {
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } } }),
@@ -872,15 +874,18 @@ export class PaymentsService {
       throw new NoSavedPaymentMethodError(`Student ${studentId}'s Stripe Customer at School ${schoolId} has no default payment method set.`);
     }
     try {
-      const intent = await stripe.paymentIntents.create({
-        amount,
-        currency: currency.toLowerCase(),
-        description,
-        customer: saved.stripeCustomerId,
-        payment_method: pmId,
-        off_session: true,
-        confirm: true,
-      });
+      const intent = await stripe.paymentIntents.create(
+        {
+          amount,
+          currency: currency.toLowerCase(),
+          description,
+          customer: saved.stripeCustomerId,
+          payment_method: pmId,
+          off_session: true,
+          confirm: true,
+        },
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
       return { succeeded: intent.status === 'succeeded', paymentIntentId: intent.id };
     } catch (err) {
       if (err instanceof Stripe.errors.StripeCardError) {
@@ -1016,6 +1021,11 @@ export class PaymentsService {
         return { transaction: now, membershipCreated: false };
       }
 
+      // Decision 404: a freeze fee collected at the desk is only marked paid;
+      // its membership already exists.
+      if (transaction.kind === 'FREEZE_FEE') {
+        return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membershipCreated: false };
+      }
       if (!transaction.membershipPlanId) {
         throw new BadRequestException('This payment is not for a membership plan.');
       }
