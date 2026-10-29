@@ -1312,12 +1312,20 @@ export class MembershipsService {
       if (!staff) throw new ForbiddenException('Only the owner or Branch Staff can give a visit pass.');
     }
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
     const school = await this.schoolsService.findOne(callerId, schoolId);
-    const days = school.visitorPeriodDays;
-    if (!days) {
+    if (!school.visitorPeriodDays) {
       throw new BadRequestException({ code: 'VISITOR_PERIOD_NOT_SET', message: 'Set how long a visit pass lasts in School settings first.' });
     }
+    return this.grantVisitPass(callerId, schoolId, studentId, school.visitorPeriodDays);
+  }
+
+  /**
+   * The pass itself, once the giver is allowed (giveVisitPass) or a sign-up
+   * was approved (Decision 392, SignUpsService). `days` is the School's
+   * visitor period at that moment.
+   */
+  async grantVisitPass(givenById: string, schoolId: string, studentId: string, days: number) {
+    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
     const now = new Date();
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       await lockSchoolOpen(tx, schoolId);
@@ -1348,7 +1356,7 @@ export class MembershipsService {
           frequency: 'ONE_TIME',
           startDate: runningUntil,
           expiryDate: new Date(runningUntil.getTime() + days * DAY_MS),
-          giftedById: callerId,
+          giftedById: givenById,
         },
       });
       return { membership, transactionId: null };

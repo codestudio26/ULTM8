@@ -6333,6 +6333,37 @@ User (Code), 28 Oct 2026, Waivers thread.
 
 ---
 
+## Decision 382 — Transactions: a refund made in the Stripe dashboard marks the payment Refunded
+
+**Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 111, 291, 339, 346 · **Resolves:** Transactions review gap G6. No database change.
+
+The Transactions review (26 Oct 2026, Decision 339) found that a School owner who refunds a card payment in the Stripe dashboard never sees it in ULTM8: the row stays Successful. The recommendation was to pick these refunds up automatically and mark the payment Refunded. The product owner approved it on 28 Oct 2026 (*"start all three"*).
+
+### Decision
+
+1. **The Stripe webhook handles `charge.refunded` and `charge.refund.updated`.** The job reads the Charge as Stripe holds it now and finds the Transaction by the Charge's PaymentIntent, the same correlation disputes use (Decision 111). That covers membership payments, Subscription renewals and late-cancel fees (Decision 346).
+2. **The Charge's refunded total is the truth.** `Transaction.refundedAmount` is set to it. When it covers the whole payment, a Successful row becomes **Refunded**. A part refund shows its amount in the Refunded column and keeps the row Successful, the same rule as the refunds ULTM8 sends itself (Decision 291). A refund that later fails lowers the total, and a Refunded row goes back to Successful.
+3. **Refunds ULTM8 sent itself change nothing.** Their webhook finds the total already recorded. The handler takes the same row lock as CancellationService, so the two never overwrite each other. Redelivered or out-of-order events are harmless, because each one reads the Charge's current total.
+4. **A Disputed row keeps its status.** The dispute handler owns it; only the refunded total moves.
+5. **Anything else is logged and left alone:** a charge with no Transaction (for example a franchise fee), or a refund on ULTM8's own platform account.
+6. **A full refund ends the membership it paid for** (the purchase or a Subscription renewal), the same way a lost dispute does (Decisions 55, 122): the Membership becomes Expired, its future bookings are cancelled (seats go to the waitlist), and a Subscription is cancelled in Stripe so it stops billing. Late-cancel fees pay for no membership, so nothing else changes for them. This happens only when ULTM8 turns the row Refunded; a payment ULTM8 had already marked Refunded itself is not ended a second time.
+7. **A part refund does not end the membership.** It only records the refunded amount; the member keeps the membership and its remaining classes. The owner can still cancel the membership in ULTM8 if that's what the refund was for.
+8. **A refund that later fails does not bring an ended membership back.** The row goes back to Successful, but the owner sells or restarts the membership by hand if needed.
+
+### Setup
+
+The Stripe webhook endpoint (`POST /v1/payments/webhooks/stripe`) must also send **`charge.refunded`** and **`charge.refund.updated`**. Add them in the Stripe dashboard (Developers → Webhooks, the Connect endpoint). Until they're switched on, nothing reaches the API.
+
+### What this does NOT resolve
+
+- **No notice is sent** to the student or the owner about a Stripe-dashboard refund.
+- The revenue tiles still count a part-refunded payment at its full amount, as they already do for ULTM8's own part refunds.
+- Franchise-fee charges and platform charges refunded in Stripe are unchanged.
+
+### Recorded by
+
+User (Code), 28 Oct 2026, *"start all three"*, on the recommendations the coordinator listed (Transactions G6 was one of them). Items 6–8: user (Code), 28 Oct 2026, *"It should end the membership"*; the part-refund and failed-refund rules (7, 8) are Claude's recommendation, recorded as such. The user also said the Stripe webhook events will be switched on in v1.3 or later, so none of this works live before then.
+
 ## Decision 380 — Front desk: the locked tablet, left with a staff member's own code
 
 **Date:** 28 Oct 2026 · **Status:** Product-owner decision · **Builds:** front-desk backend handover F1, F2 · **Rules from:** Decisions 317, 320, 351 · **Follows:** Decision 378
@@ -6582,3 +6613,38 @@ User (Code), 28 Oct 2026, reviewing #360: "yes fix 1 and 3, and A for 2", to the
 ### Recorded by
 
 User (Code), 29 Oct 2026, starting front-desk sign-up (F5): chose to build the Visitor status too; "Yes, free during the pass"; "Stays Visitor, can't book"; "There is not default period, it should be set up by the school"; approvers "Owner + Students switch".
+
+## Decision 392 — Sign-ups from the front-desk tablet, staff approval, and invites for existing accounts
+
+**Date:** 29 Oct 2026 · **Status:** Product-owner decision · **Builds:** handover F5 (`docs/handover/FRONT-DESK-BACKEND-HANDOVER.md`), Decisions 351 item 5, 362, 365, and Decision 315 item 6 (the School's "How did you hear about us?" list) · **Uses:** Decision 391 (Visitors)
+
+### Decision
+
+1. **A sign-up on the tablet waits for staff** (Decision 351). It records Visitor or Member, name, date of birth, gender (Female, Male or not given), email, phone, "How did you hear about us?", and an emergency contact. Name, date of birth and email are needed (the account and its emails use them); the rest may be left blank. It is not a member until approved. One waiting sign-up per email at a School.
+2. **Adults only on the tablet.** An under-18 is refused: a child is signed up by their Guardian in the ULTM8 app. *(Product owner, 29 Oct 2026: "Refuse under-18 for now".)*
+3. **Visitor is offered only when the School has set its visit pass length** (Decision 391).
+4. **Who approves:** the owner, for every Branch; Branch Staff with the Students access switch (Decision 387), for sign-ups from their own Branches (all of them with a School-wide grant). Coaches don't. *(Product owner, 29 Oct 2026.)* They see them under Students → Sign-ups: Waiting, Rejected and Done.
+5. **Approving a new email** makes the account with a temporary passcode emailed (as "Add manually", Decision 371) and enrols it at the tablet's Branch (staff choose the Branch for a School-wide tablet). A Visitor also gets a visit pass, given by the approver. If the email can't be sent, staff see the passcode once to hand over.
+6. **Approving an email that already has an account sends that account an invite** (email, and a card in the student app). It joins only when it accepts in the app (a Visitor then gets a visit pass); it can decline. Staff can withdraw an invite not yet answered. An email that already belongs to a student of the School is refused. *(Product owner, 29 Oct 2026: "Build an accept step".)*
+7. **Rejecting** (Decisions 362, 365): a polite email saying the sign-up wasn't accepted and to talk to the front desk, with no reason. The sign-up stays in Rejected for 30 days, where staff can still approve it; then the daily purge deletes it with everything typed. Who rejected and who approved are both kept.
+8. **The emergency contact and "heard from" stay on the sign-up**, where staff see them before and after approval. Putting them on the member's profile (Decision 315 item 5) is separate work. *(Product owner, 29 Oct 2026.)*
+9. **"How did you hear about us?" is each School's own list** (Decision 315 item 6), edited in School settings (add, rename, reorder, remove; 1 to 30 choices). Until a School edits it, the starting list (Friend, Instagram, Google, Walked past) shows in each viewer's language; saving keeps the list as written. *(Product owner, 29 Oct 2026: "Build the School's list".)*
+
+### How it is built
+
+- `SignUp` table (status PENDING, INVITED, APPROVED, REJECTED, DECLINED), read and written only on the jobs connection after the API's own checks; RLS is on with no grant to `ultm8_app`.
+- Tablet: `POST /front-desk/kiosk/sign-ups` (5 a minute per tablet); `GET /front-desk/kiosk/session` returns `visitorsOn` and `heardFromOptions`.
+- Staff: `GET /schools/{schoolId}/sign-ups?view=WAITING|REJECTED|DONE`, `POST …/sign-ups/{id}/approve`, `POST …/sign-ups/{id}/reject`.
+- The invited account: `GET /sign-ups/invites/me`, `POST /sign-ups/invites/{id}/accept`, `POST /sign-ups/invites/{id}/decline`.
+- `School.heardFromOptions` (null = the starting list), set through `PATCH /schools/{id}`.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** A Guardian signing up a child on the tablet (with consent). Refused for now (point 2).
+- **[UNRESOLVED]** Website sign-up forms and per-School form sections (Decision 318 item 9). Only the tablet's fixed form is built.
+- **[UNRESOLVED]** Whether an unanswered invite should expire. It stays until answered or withdrawn.
+- **[UNRESOLVED]** Emails are in English, like the other account emails today.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "yes start with sign-up from the tablet", then the answers quoted above.

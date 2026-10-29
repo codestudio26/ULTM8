@@ -172,6 +172,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       SATURDAY: "za",
       SUNDAY: "zo",
     },
+    signUpInvites: {
+      title: "Lid worden van {school}?",
+      body: "{school} heeft je aanmelding bij de balie goedgekeurd. Accepteer om daar leerling te worden.",
+      bodyVisitor: "{school} heeft je aanmelding bij de balie goedgekeurd. Accepteer om mee te doen als Bezoeker, met een gratis bezoekerspas.",
+      homeBranch: "Je thuisvestiging",
+      accept: "Accepteren",
+      decline: "Nee, bedankt",
+      failed: "Kon de uitnodiging niet beantwoorden. Probeer het opnieuw.",
+    },
     join: {
       me: "Ik",
       loadFailed: "Deze school kon niet worden geladen — probeer het opnieuw.",

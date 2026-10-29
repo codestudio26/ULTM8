@@ -15,8 +15,9 @@ export const FRONT_DESK_BACKEND = {
   kioskSession: true,
   /** One student's waiver status for the welcome card (GET /students/{id}/waiver-status, built 28 Oct 2026). */
   waiverStatus: true,
-  /** Sign-ups from the tablet waiting for staff approval (Decisions 318, 351). */
-  signUp: false,
+  /** Sign-ups from the tablet waiting for staff approval (Decisions 318, 351).
+   * Built 29 Oct 2026 (Decision 392). */
+  signUp: true,
   /** "Find me" on the tablet (Decisions 351, 362). Built 28 Oct 2026 (Decision 385). */
   findMe: true,
   /** Start an unplanned open mat (Decision 304). Built 28 Oct 2026 (Decision 386). */

@@ -1,5 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { SignUpsService } from './sign-ups.service';
+import { KioskSignUpCreatedDto, KioskSignUpDto } from './dto/sign-up.dto';
 import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { DeskQrLookupDto } from '../attendance/dto/desk-qr-lookup.dto';
@@ -28,6 +30,8 @@ const UNLOCK_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubT
 const CODE_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
 // Find me answers only yes or no, but is still kept to a few tries (Decision 362).
 const FIND_ME_THROTTLE = { identity: { limit: 10, ttl: 60_000, getTracker: jwtSubTracker } };
+// Decision 392: a sign-up is a few a minute at most from one tablet.
+const SIGN_UP_THROTTLE = { identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker } };
 const SEARCH_THROTTLE = { identity: { limit: 30, ttl: 60_000, getTracker: jwtSubTracker } };
 
 /**
@@ -42,7 +46,16 @@ export class FrontDeskKioskController {
   constructor(
     private readonly kiosk: FrontDeskKioskService,
     private readonly sessions: FrontDeskSessionsService,
+    private readonly signUps: SignUpsService,
   ) {}
+
+  /** Decision 392 (handover F5): a sign-up waiting for staff approval. */
+  @ApiCreatedResponse({ type: KioskSignUpCreatedDto })
+  @Throttle(SIGN_UP_THROTTLE)
+  @Post('sign-ups')
+  signUp(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskSignUpDto) {
+    return this.signUps.submitFromKiosk(session, dto);
+  }
 
   @ApiOkResponse({ type: KioskSessionInfoDto })
   @Get('session')

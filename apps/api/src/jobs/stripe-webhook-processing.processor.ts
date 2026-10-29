@@ -174,6 +174,27 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       dispute = await client.disputes.retrieve(objectId);
     }
 
+    // Decision 382 (Transactions G6) — a refund made in the Stripe dashboard (or
+    // anywhere else) is picked up here. Same pre-fetch discipline as the Dispute
+    // above: the Charge's live `amount_refunded` is what the handler syncs to, so
+    // a redelivered or out-of-order event can never leave a stale total. A
+    // charge.refund.updated event's object is the Refund (a refund that later
+    // failed lowers the Charge's total), so its Charge is fetched through it. No
+    // stripeAccountId means a platform charge (ULTM8's own billing), which is
+    // never a Transaction row: left to dispatch()'s log-only branch.
+    let refundedCharge: Stripe.Charge | undefined;
+    if ((eventType === 'charge.refunded' || eventType === 'charge.refund.updated') && stripeAccountId) {
+      const stripe = this.stripeClient.scopedClient(stripeAccountId);
+      let chargeId: string | null = objectId;
+      if (eventType === 'charge.refund.updated') {
+        const refund = await stripe.refunds.retrieve(objectId);
+        chargeId = typeof refund.charge === 'string' ? refund.charge : (refund.charge?.id ?? null);
+      }
+      if (chargeId) {
+        refundedCharge = await stripe.charges.retrieve(chargeId);
+      }
+    }
+
     // Decision 234's own saved-payment-method dependency — same "pre-fetch
     // outside the transaction" discipline as invoice/dispute above, plus one
     // more external call this event specifically needs: Checkout Session's
@@ -213,7 +234,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -339,6 +360,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     invoice: Stripe.Invoice | undefined,
     dispute: Stripe.Dispute | undefined,
     checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
+    refundedCharge?: Stripe.Charge,
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
@@ -395,6 +417,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           throw new Error(`dispatch() reached ${eventType} (event ${stripeEventId}) with no Dispute — this should be unreachable; see process()'s own guard.`);
         }
         return this.handleChargeDispute(tx, dispute, stripeEventId);
+      // Decision 382 (G6) — see process()'s own pre-fetch comment.
+      case 'charge.refunded':
+      case 'charge.refund.updated':
+        if (refundedCharge) {
+          return this.handleChargeRefunded(tx, refundedCharge, stripeEventId);
+        }
+        this.logger.log(`Stripe event ${stripeEventId} (${eventType}) is not on a School's connected account — recorded, no handler action.`);
+        return noSideEffects;
       // Decision 234's own saved-payment-method dependency — see process()'s own
       // pre-fetch comment for the full account.
       case 'checkout.session.completed':
@@ -1084,6 +1114,85 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   }
 
   /**
+   * Decision 382 (Transactions G6) — a refund made outside ULTM8 (the Stripe
+   * dashboard, Stripe's own API) shows on the Transactions page. Syncs the
+   * matching Transaction to the Charge's live `amount_refunded`: Refunded once
+   * it covers the whole payment, otherwise the partial total in the Refunded
+   * column with the status unchanged, the same rule CancellationService uses
+   * for its own refunds. A refund ULTM8 itself sent arrives here too and finds
+   * the total already recorded, so nothing changes. A refund that later fails
+   * lowers the total and turns a Refunded row back to Successful. A Disputed
+   * row keeps its status (the dispute handler owns it); only its total moves.
+   * Correlated by the Charge's PaymentIntent, as disputes are; a charge with no
+   * Transaction (a franchise fee, another platform's charge) is logged and left.
+   *
+   * A payment turning Refunded here also ends the Membership it paid for (the
+   * purchase or a renewal), the same way a lost dispute does: Expired, its
+   * future Bookings cancelled, and its Stripe Subscription cancelled after the
+   * commit. A partial refund only records the amount; the Membership carries
+   * on. A refund that later fails does not bring an ended Membership back.
+   */
+  private async handleChargeRefunded(tx: Prisma.TransactionClient, charge: Stripe.Charge, stripeEventId: string): Promise<DisputeSideEffects> {
+    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
+    const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+    const match = paymentIntentId
+      ? await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } })
+      : null;
+    if (!match) {
+      this.logger.log(`Refund on charge ${charge.id} (event ${stripeEventId}) matches no Transaction — recorded, nothing to update.`);
+      return noSideEffects;
+    }
+    // The same row lock CancellationService takes around its own refunds, so the
+    // two never write the total over each other.
+    await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
+    const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    const refunded = Math.min(charge.amount_refunded, transaction.amount);
+    let status = transaction.status;
+    if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
+    else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
+    const refundedAmount = refunded > 0 ? refunded : null;
+    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return noSideEffects;
+    await tx.transaction.update({ where: { id: transaction.id }, data: { refundedAmount, status } });
+    this.logger.log(`Transaction ${transaction.id} refund total synced from charge ${charge.id}: ${refunded} of ${transaction.amount}, ${status} (event ${stripeEventId}).`);
+    if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return noSideEffects;
+    return { ...noSideEffects, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
+  }
+
+  /**
+   * Ends the Membership a Transaction paid for, when it is still Active: Expired,
+   * its future Bookings cancelled (Decision 122), and — for a Subscription — the
+   * Stripe cancellation returned for process() to send after the commit.
+   * Shared by a lost dispute (Decision 55) and a full Stripe refund (Decision 382).
+   */
+  private async endMembershipPaidBy(
+    tx: Prisma.TransactionClient,
+    transaction: Transaction,
+    reason: string,
+  ): Promise<Pick<DisputeSideEffects, 'subscriptionCancellations' | 'freedClassIds'>> {
+    const subscriptionCancellations: DisputeSideEffects['subscriptionCancellations'] = [];
+    if (!transaction.membershipId) return { subscriptionCancellations, freedClassIds: [] };
+    const membershipUpdate = await tx.membership.updateMany({ where: { id: transaction.membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
+    if (membershipUpdate.count === 0) return { subscriptionCancellations, freedClassIds: [] };
+    this.logger.log(`${reason} — Membership ${transaction.membershipId} force-Expired.`);
+    const freedClassIds = await cancelFutureBookingsFundedByExpiredMembership(tx, transaction.membershipId, this.logger);
+    const membership = await tx.membership.findUnique({ where: { id: transaction.membershipId }, select: { stripeSubscriptionId: true } });
+    if (membership?.stripeSubscriptionId) {
+      // scopedClient(), not platformClient() — this Subscription was created
+      // on the School's own connected account (PaymentsService.subscribe()'s
+      // own Direct-charge pattern, Decision 86), never the platform account.
+      const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: transaction.schoolId } });
+      if (paymentAccount?.stripeConnectedAccountId) {
+        subscriptionCancellations.push({ connectedAccountId: paymentAccount.stripeConnectedAccountId, subscriptionId: membership.stripeSubscriptionId });
+      } else {
+        this.logger.error(
+          `${reason} — Membership ${transaction.membershipId}'s Subscription ${membership.stripeSubscriptionId} could not be canceled: School ${transaction.schoolId} has no PaymentAccount with a connected Stripe account.`,
+        );
+      }
+    }
+    return { subscriptionCancellations, freedClassIds };
+  }
+
+  /**
    * Decision 111 (Decision 55's own confirmed contract) — unified handler for
    * charge.dispute.created/updated/closed, driven entirely by `dispute.status`
    * rather than by which of the three event names delivered it: Stripe fires all
@@ -1172,32 +1281,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const disputeLostAt = outcome.lost ? new Date() : outcome.status === 'SUCCESSFUL' ? null : undefined;
     await tx.transaction.update({ where: { id: transaction.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount, disputeLostAt } });
 
-    const subscriptionCancellations: DisputeSideEffects['subscriptionCancellations'] = [];
-    let freedClassIds: string[] = [];
-    if (outcome.lost && transaction.membershipId) {
-      const membershipUpdate = await tx.membership.updateMany({ where: { id: transaction.membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
-      if (membershipUpdate.count > 0) {
-        this.logger.log(`Dispute ${dispute.id} lost — Membership ${transaction.membershipId} force-Expired (Decision 55).`);
-        // Decision 122 — same "force-Expiry cancels the Membership's own future
-        // Bookings" fix as handleSubscriptionDeleted() above; see
-        // cancelFutureBookingsFundedByExpiredMembership()'s own comment.
-        freedClassIds = await cancelFutureBookingsFundedByExpiredMembership(tx, transaction.membershipId, this.logger);
-        const membership = await tx.membership.findUnique({ where: { id: transaction.membershipId }, select: { stripeSubscriptionId: true } });
-        if (membership?.stripeSubscriptionId) {
-          // scopedClient(), not platformClient() — this Subscription was created
-          // on the School's own connected account (PaymentsService.subscribe()'s
-          // own Direct-charge pattern, Decision 86), never the platform account.
-          const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: transaction.schoolId } });
-          if (paymentAccount?.stripeConnectedAccountId) {
-            subscriptionCancellations.push({ connectedAccountId: paymentAccount.stripeConnectedAccountId, subscriptionId: membership.stripeSubscriptionId });
-          } else {
-            this.logger.error(
-              `Dispute ${dispute.id} — Membership ${transaction.membershipId}'s Subscription ${membership.stripeSubscriptionId} could not be canceled: School ${transaction.schoolId} has no PaymentAccount with a connected Stripe account.`,
-            );
-          }
-        }
-      }
-    }
+    // Decision 55 — a lost dispute force-Expires the Membership and cancels its
+    // Subscription; Decision 122 — its future Bookings are cancelled too. See
+    // endMembershipPaidBy().
+    const { subscriptionCancellations, freedClassIds } = outcome.lost
+      ? await this.endMembershipPaidBy(tx, transaction, `Dispute ${dispute.id} lost (Decision 55)`)
+      : { subscriptionCancellations: [], freedClassIds: [] };
 
     const ownerGrants = await tx.roleGrant.findMany({
       where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
