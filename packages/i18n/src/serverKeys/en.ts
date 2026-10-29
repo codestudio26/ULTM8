@@ -28,6 +28,7 @@ export const server = {
     waitlistFirst: 'Students are already waiting for a place in this class. Join the waitlist to take your turn.',
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
     classBusy: 'Lots of people are booking this class right now. Please try again in a moment.',
+    kioskBookFirst: 'Not booked into this class. Book it in the app, or scan the app QR, to check in here.',
     checkInNotOpen: "Check-in for this class hasn't opened yet.",
     checkInOpensAt: "Check-in for this class hasn't opened yet. It opens {time}.",
     capacityBelowBooked: 'Students already booked: {count}. Set the capacity to {count} or more, or cancel some bookings first.',

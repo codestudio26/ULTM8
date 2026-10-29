@@ -3155,6 +3155,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "출석 완료",
       booked: "예약됨",
       willBook: "자리 예약",
+      bookInApp: "예약 안 됨: 앱에서 예약하거나 앱의 QR 코드를 스캔하세요",
       opensAt: "출석 체크는 {time}부터",
       notCheckedIn: "미출석",
       failed: "출석 체크를 하지 못했습니다. 다시 시도해 주세요.",
