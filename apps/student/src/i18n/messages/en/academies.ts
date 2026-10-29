@@ -35,6 +35,10 @@ export const academies = {
     decline: 'No thanks',
     failed: "Couldn't answer the invite. Try again.",
   },
+  childInvites: {
+    title: "Add {child} to {school}?",
+    body: "{school} would like to add {child} as a student, with you as their Guardian. Accept to add {child} to your account and enrol them.",
+  },
   join: {
     /** The person themselves, in the "who is joining" list. */
     me: 'Me',

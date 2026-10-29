@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "Nein, danke",
       failed: "Die Einladung konnte nicht beantwortet werden. Versuch es noch mal.",
     },
+    childInvites: {
+      title: "{child} bei {school} hinzufügen?",
+      body: "{school} möchte {child} als Schüler aufnehmen, mit dir als Erziehungsberechtigtem. Nimm an, um {child} zu deinem Konto hinzuzufügen und anzumelden.",
+    },
     join: {
       me: "Ich",
       loadFailed: "Diese Schule konnte nicht geladen werden — bitte versuche es erneut.",
@@ -400,6 +404,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Gürtel bestätigen",
       beltVerified: "Gürtel bestätigt.",
       awardStripe: "Streifen vergeben: {rung}",
+      stepUp: "Eine Stufe höher: {rung}",
       gradeTo: "Graduieren zu {rung}",
       tooEarly: {
         one: "Zu früh: {count} Tag fehlt bis zur Mindestzeit.",
@@ -445,6 +450,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Befördert (Sammel)",
       stripeAward: "Streifen vergeben",
       bulkStripeAward: "Streifen vergeben (Sammel)",
+      stepUp: "Eine Stufe höher",
+      bulkStepUp: "Eine Stufe höher (Sammel)",
       downgrade: "Herabgestuft",
       adjustment: "Fortschritt angepasst",
       selfDeclared: "Gürtel angegeben",
@@ -613,6 +620,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Befördert",
       stripeAward: "Streifen vergeben",
+      stepUp: "Eine Stufe höher",
       downgrade: "Herabgestuft",
       adjustment: "Fortschritt angepasst",
       selfDeclared: "Gürtel angegeben",

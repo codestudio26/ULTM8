@@ -363,8 +363,13 @@ export class GradingNotificationsProcessor extends WorkerHost {
       where: { studentId: data.studentId, revokedAt: null },
       select: { guardianId: true },
     });
-    const title = data.kind === 'STRIPE' ? 'New stripe!' : data.kind === 'PROMOTED' ? 'Promoted!' : 'Rank updated';
-    const event = await this.prismaJobs.promotionEvent.findUnique({ where: { id: data.promotionEventId }, select: { schoolId: true } });
+    const event = await this.prismaJobs.promotionEvent.findUnique({
+      where: { id: data.promotionEventId },
+      select: { schoolId: true, studentRank: { select: { discipline: { select: { rankDisplay: true } } } } },
+    });
+    // On a Levels style the next rung inside a level is a step up, not a stripe (Decision 402).
+    const levels = event?.studentRank.discipline.rankDisplay === 'LEVELS';
+    const title = data.kind === 'STRIPE' ? (levels ? 'Step up!' : 'New stripe!') : data.kind === 'PROMOTED' ? 'Promoted!' : 'Rank updated';
     const base = { title, type: 'GRADING_RANK_CHANGE', ...(event ? { schoolId: event.schoolId } : {}), targetType: 'GRADING' as const };
 
     if (guardians.length === 0) {

@@ -171,6 +171,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Unterschrift für Haftungsausschluss angefordert",
     waiverRequestBody: "Du wurdest gebeten, folgenden Haftungsausschluss zu unterschreiben: {waiver}.",
     newStripeTitle: "Neuer Streifen!",
+    stepUpTitle: "Eine Stufe höher!",
     promotedTitle: "Befördert!",
     rankUpdatedTitle: "Grad aktualisiert",
     youEarned: "Du hast {rank} erreicht. ({style})",

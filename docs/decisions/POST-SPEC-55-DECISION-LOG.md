@@ -6920,6 +6920,23 @@ Claude, 29 Oct 2026, building Decision 290; it follows the v1.3 backlog's "Sugge
 
 ---
 
+## Decision 402 — "Step up" on a Levels style
+
+**Date:** 29 Oct 2026. **Builds:** Decision 290 (and 401). **Changes:** wording only; grading and the history types stay as they are.
+
+### Decision
+
+1. **On a style shown as Levels, moving up a step inside a level says "Step up"** wherever it would say a stripe was given. It is still recorded as `STRIPE_AWARD` or `BULK_STRIPE_AWARD`: only the words change.
+2. **Where:** the School Portal's grade button ("Step up" instead of "Award stripe"), its student history and Grading Board panel ("Step up", "Step up (bulk)"); in the student app, the coach's grade button ("Step up: {rung}"), the coach's history and the student's own history; and the student's or Guardian's notification title ("Step up!" instead of "New stripe!"; the body, "You've earned {rung}.", is unchanged).
+3. **Moving to a new level still says "Promoted"** (`PROMOTION`, `BULK_PROMOTION`). Belts styles are unchanged.
+4. **Which wording** follows the style's `rankDisplay` (Decision 401) when the text is shown: an entry's rung (or rank) tells its style, and the notification reads the style of the event's student rank. Every new text is in all 15 languages, with each language's existing word for a step.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "We know when we are giving a belt, stripe or Step up on NOGI. we should be able to use the right wording".
+
+---
+
 ## Decision 403 — Temporary passcode for a new student, on the Guardian's account for a child
 
 **Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.3's open point. **Builds on:** Decisions 72, 116, 175.

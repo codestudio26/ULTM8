@@ -32,6 +32,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   The Students list shows a blue **Frozen** badge and a **Frozen only** filter.
   Class packs can't be frozen. **Needs a database migration**
   (`20270106000000_membership_freeze`).
+- **"Step up" on a Levels style** (Decision 402) — on a style shown as Levels,
+  moving up a step inside a level now says **Step up** instead of "Stripe
+  awarded": the grade button ("Step up" instead of "Award stripe"), the
+  student's history and the Grading Board panel ("Step up", "Step up (bulk)"),
+  the coach and student screens in the student app, and the student's or
+  Guardian's notification ("Step up!" instead of "New stripe!"). Moving to a
+  new level still says "Promoted"; Belts styles are unchanged. In all 15
+  languages.
+- **Temporary passcode for a new student, and adding a child** (backlog 3.3;
+  Decision 403) — Add manually now always shows the owner the temporary
+  passcode once, and it stops working after 7 days unless used; while it's
+  unused, the owner can make a new one from the student's page ("App access").
+  A child can now be added too: a child has no login of their own, so the
+  owner names their Guardian. A new Guardian gets an account with the
+  temporary passcode and the child is enrolled at once; a Guardian who already
+  has an account is asked in the app to accept ("Add {child} to {School}?"),
+  and the owner sees these under "Waiting for a Guardian" on the Students page
+  and can withdraw them. Only the School that made an account can replace its
+  temporary passcode. **Needs a database migration**
+  (`20270103000000_temporary_passcode`).
 - **New staff must accept first** (Decision 396) — a new switch in the Staff
   page's "Give a role" card, off by default. When it's on, giving someone the
   Instructor or Branch Staff role emails them an invite link instead, and

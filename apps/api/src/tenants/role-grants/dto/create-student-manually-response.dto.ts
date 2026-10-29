@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 /** The new student (Decision 371). `emailSent` is false when the temporary
  * passcode email could not be sent: the account and enrolment still exist. */
@@ -18,9 +18,12 @@ export class CreateStudentManuallyResponseDto {
   @ApiProperty()
   emailSent!: boolean;
 
-  /** Only when the email could not be sent: the temporary passcode, shown to
-   * the owner once so they can give it to the student in person. Nobody else
-   * knows it, and the student must change it on first sign-in. Null otherwise. */
-  @ApiPropertyOptional({ type: String, nullable: true })
-  temporaryPasscode!: string | null;
+  /** The temporary passcode, shown to the owner once so they can give it to
+   * the student in person (Decision 403). It is stored only as a hash, and the
+   * student must change it on first sign-in. */
+  @ApiProperty()
+  temporaryPasscode!: string;
+
+  @ApiProperty({ description: 'When the temporary passcode stops working if it has not been used (7 days).' })
+  temporaryPasscodeExpiresAt!: string;
 }

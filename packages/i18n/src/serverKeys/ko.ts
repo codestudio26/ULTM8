@@ -157,6 +157,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "면책 동의서 서명 요청",
     waiverRequestBody: "다음 면책 동의서에 서명해 달라는 요청을 받았습니다: {waiver}.",
     newStripeTitle: "새 그랄!",
+    stepUpTitle: "단계 상승!",
     promotedTitle: "승급!",
     rankUpdatedTitle: "등급이 업데이트되었습니다",
     youEarned: "{rank}을(를) 획득했습니다. ({style})",

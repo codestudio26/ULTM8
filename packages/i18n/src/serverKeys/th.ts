@@ -157,6 +157,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "มีคำขอให้ลงนามเอกสารสละสิทธิ์",
     waiverRequestBody: "คุณได้รับเชิญให้ลงนามเอกสารสละสิทธิ์ต่อไปนี้: {waiver}",
     newStripeTitle: "แถบใหม่!",
+    stepUpTitle: "เลื่อนขั้น!",
     promotedTitle: "เลื่อนระดับแล้ว!",
     rankUpdatedTitle: "อัปเดตระดับแล้ว",
     youEarned: "คุณได้รับ {rank} แล้ว ({style})",

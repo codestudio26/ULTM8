@@ -164,6 +164,7 @@ export class SignUpsService {
         surname: signUp.surname,
         dateOfBirth: signUp.dateOfBirth,
         gender: signUp.gender,
+        schoolId,
       }));
       await this.roleGrants.enrolNewAccount(userId, () => this.schools.join(userId, schoolId, { branchId: branchId ?? undefined }, { notify: false }));
     } catch (err) {

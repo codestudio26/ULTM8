@@ -218,6 +218,37 @@ describe('CoachStudentScreen', () => {
     expect(award.mutateAsync).toHaveBeenCalledWith({ acknowledgeWithoutSkillSignoff: false, expectedCurrentRungId: 'w0' });
   });
 
+  it('on a Levels style says "Step up" for the next step and on its history; a new level is still "Promoted" (Decision 402)', async () => {
+    grading({ canPromote: true });
+    student({ nextRungId: 'n2' }, { currentStripeId: 'n1' });
+    mocked(q.useStyleRanks).mockReturnValue(
+      ok({
+        items: [
+          { id: 'beginner', order: 0, name: 'Beginner', primaryColour: '#0a0', rankDisplay: 'LEVELS', stripeTiers: [tier('n1', 0, 'Beginner 1'), tier('n2', 1, 'Beginner 2')] },
+          { id: 'inter', order: 1, name: 'Intermediate', primaryColour: '#00a', rankDisplay: 'LEVELS', stripeTiers: [tier('i1', 0, 'Intermediate 1')] },
+        ],
+      }),
+    );
+    mocked(q.useRankHistory).mockReturnValue(
+      ok({
+        items: [
+          { id: 'e2', type: 'BULK_PROMOTION', toStripeTierId: 'i1', effectiveDate: '2026-10-01T12:00:00Z', reason: null, note: null },
+          { id: 'e1', type: 'STRIPE_AWARD', toStripeTierId: 'n1', effectiveDate: '2026-09-01T12:00:00Z', reason: null, note: null },
+        ],
+      }),
+    );
+    const award = mutation();
+    mocked(q.useStripeAward).mockReturnValue(award);
+    const { getByText, queryByText, findByText } = await render(<CoachStudentScreen navigation={nav()} route={route} />);
+    expect(getByText('Step up: Beginner 1')).toBeTruthy();
+    expect(getByText('Promoted (bulk): Intermediate 1')).toBeTruthy();
+    expect(queryByText(/stripe/i)).toBeNull();
+    await fireEvent.press(getByText('Step up: Beginner 2'));
+    await fireEvent.press(getByText('Confirm'));
+    await findByText('Graded to Beginner 2.');
+    expect(award.mutateAsync).toHaveBeenCalledWith({ acknowledgeWithoutSkillSignoff: false, expectedCurrentRungId: 'n1' });
+  });
+
   it('grades into the next belt through promote, and asks for the skills acknowledgement', async () => {
     grading({ canPromote: true });
     mocked(q.useStudentEligibility).mockReset();

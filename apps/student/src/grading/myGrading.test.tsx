@@ -177,6 +177,29 @@ describe('GradingHistoryScreen', () => {
     expect(getByText('Moved down: White Belt')).toBeTruthy();
     expect(getByText('Reason: Missed basics')).toBeTruthy();
   });
+
+  it('on a Levels style a stripe award reads "Step up"; a promotion still reads "Promoted" (Decision 402)', async () => {
+    const level = { rankDisplay: 'LEVELS', step: 2, steps: 3 };
+    const NOGI = {
+      ...BJJ,
+      disciplineId: 'nogi',
+      disciplineName: 'No-Gi',
+      ladder: [rung('n1', 'Beginner 1', 'Beginner', level), rung('n2', 'Beginner 2', 'Beginner', level), rung('i1', 'Intermediate 1', 'Intermediate', level)],
+    };
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [NOGI] }));
+    mocked(q.useMyRankHistory).mockReturnValue(
+      ok({
+        items: [
+          { id: 'e2', type: 'PROMOTION', toStripeTierId: 'i1', effectiveDate: '2026-10-01T12:00:00Z', reason: null, note: null },
+          { id: 'e1', type: 'BULK_STRIPE_AWARD', toStripeTierId: 'n2', effectiveDate: '2026-09-01T12:00:00Z', reason: null, note: null },
+        ],
+      }),
+    );
+    const { getByText, queryByText } = await render(<GradingHistoryScreen navigation={nav()} route={{ params: { studentId: 'me', schoolId: 'alpha', title: 'No-Gi history' } } as never} />);
+    expect(getByText('Step up: Beginner 2')).toBeTruthy();
+    expect(getByText('Promoted: Intermediate 1')).toBeTruthy();
+    expect(queryByText(/Stripe awarded/)).toBeNull();
+  });
 });
 
 describe('asking for a belt correction (backlog 3.13)', () => {

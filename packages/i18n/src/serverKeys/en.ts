@@ -150,6 +150,7 @@ export const server = {
     waiverRequestTitle: 'Waiver signature requested',
     waiverRequestBody: '{waiver} has invited you to sign the following waiver.',
     newStripeTitle: 'New stripe!',
+    stepUpTitle: 'Step up!',
     promotedTitle: 'Promoted!',
     rankUpdatedTitle: 'Rank updated',
     youEarned: "You've earned {rank}. ({style})",

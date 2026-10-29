@@ -157,6 +157,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "免責同意書への署名のお願い",
     waiverRequestBody: "次の免責同意書への署名をお願いします：{waiver}。",
     newStripeTitle: "新しいストライプ！",
+    stepUpTitle: "ステップアップ！",
     promotedTitle: "昇級！",
     rankUpdatedTitle: "級が更新されました",
     youEarned: "{rank}を獲得しました。（{style}）",

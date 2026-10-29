@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "No, grazie",
       failed: "Impossibile rispondere all'invito. Riprova.",
     },
+    childInvites: {
+      title: "Aggiungere {child} a {school}?",
+      body: "{school} vorrebbe aggiungere {child} come allievo, con te come tutore. Accetta per aggiungere {child} al tuo account e iscriverlo.",
+    },
     join: {
       me: "Io",
       loadFailed: "Impossibile caricare questa scuola — riprova.",
@@ -406,6 +410,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Verifica cintura",
       beltVerified: "Cintura verificata.",
       awardStripe: "Assegna striscia: {rung}",
+      stepUp: "Avanza di un passo: {rung}",
       gradeTo: "Gradua a {rung}",
       tooEarly: {
         one: "Troppo presto: manca {count} giorno al minimo.",
@@ -453,6 +458,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Promosso (di gruppo)",
       stripeAward: "Striscia assegnata",
       bulkStripeAward: "Striscia assegnata (di gruppo)",
+      stepUp: "Avanzamento di passo",
+      bulkStepUp: "Avanzamento di passo (di gruppo)",
       downgrade: "Retrocesso",
       adjustment: "Progresso regolato",
       selfDeclared: "Cintura dichiarata",
@@ -622,6 +629,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Promosso",
       stripeAward: "Striscia assegnata",
+      stepUp: "Avanzamento di passo",
       downgrade: "Retrocesso",
       adjustment: "Progresso regolato",
       selfDeclared: "Cintura dichiarata",

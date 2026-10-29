@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "不用了，谢谢",
       failed: "无法回复邀请，请重试。",
     },
+    childInvites: {
+      title: "将 {child} 添加到 {school}？",
+      body: "{school} 希望将 {child} 添加为学员，由你担任监护人。接受后，{child} 将添加到你的账户并完成报名。",
+    },
     join: {
       me: "我",
       loadFailed: "无法加载这所学校，请重试。",
@@ -397,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "核实腰带",
       beltVerified: "腰带已核实。",
       awardStripe: "授予条纹：{rung}",
+      stepUp: "升至下一步骤：{rung}",
       gradeTo: "晋级到 {rung}",
       tooEarly: {
         other: "时间未到：距最少天数还差 {count} 天。",
@@ -440,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "已晋级（批量）",
       stripeAward: "已授予条纹",
       bulkStripeAward: "已授予条纹（批量）",
+      stepUp: "已升至下一步骤",
+      bulkStepUp: "已升至下一步骤（批量）",
       downgrade: "已降级",
       adjustment: "已调整进度",
       selfDeclared: "已自报腰带",
@@ -607,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "已晋级",
       stripeAward: "已授予条纹",
+      stepUp: "已升至下一步骤",
       downgrade: "已降级",
       adjustment: "已调整进度",
       selfDeclared: "已自报腰带",

@@ -185,6 +185,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Signature de décharge demandée",
     waiverRequestBody: "Vous êtes invité à signer la décharge suivante : {waiver}.",
     newStripeTitle: "Nouvelle barrette !",
+    stepUpTitle: "Montée d’étape !",
     promotedTitle: "Promu !",
     rankUpdatedTitle: "Grade mis à jour",
     youEarned: "Vous avez obtenu {rank}. ({style})",

@@ -171,6 +171,7 @@ export const server: PartialMessages<ServerKeys> = {
     waiverRequestTitle: "Feragatname imzası istendi",
     waiverRequestBody: "Şu feragatnameyi imzalamaya davet edildiniz: {waiver}.",
     newStripeTitle: "Yeni şerit!",
+    stepUpTitle: "Adım yükseldi!",
     promotedTitle: "Terfi!",
     rankUpdatedTitle: "Derece güncellendi",
     youEarned: "{rank} kazandınız. ({style})",

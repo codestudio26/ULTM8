@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "Нет, спасибо",
       failed: "Не удалось ответить на приглашение. Попробуйте ещё раз.",
     },
+    childInvites: {
+      title: "Добавить {child} в {school}?",
+      body: "{school} хочет добавить {child} учеником, а вас — опекуном. Подтвердите, чтобы добавить {child} в вашу учётную запись и записать.",
+    },
     join: {
       me: "Я",
       loadFailed: "Не удалось загрузить эту Школу — попробуйте ещё раз.",
@@ -411,6 +415,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Подтвердить пояс",
       beltVerified: "Пояс подтверждён.",
       awardStripe: "Присвоить полоску: {rung}",
+      stepUp: "Шаг вверх: {rung}",
       gradeTo: "Повысить до: {rung}",
       tooEarly: {
         one: "Слишком рано: до минимума не хватает {count} дня.",
@@ -460,6 +465,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Повышен (группой)",
       stripeAward: "Присвоена полоска",
       bulkStripeAward: "Присвоена полоска (группой)",
+      stepUp: "Шаг вверх",
+      bulkStepUp: "Шаг вверх (группой)",
       downgrade: "Понижен",
       adjustment: "Прогресс скорректирован",
       selfDeclared: "Пояс указан учеником",
@@ -630,6 +637,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Повышен",
       stripeAward: "Присвоена полоска",
+      stepUp: "Шаг вверх",
       downgrade: "Понижен",
       adjustment: "Прогресс скорректирован",
       selfDeclared: "Пояс указан учеником",

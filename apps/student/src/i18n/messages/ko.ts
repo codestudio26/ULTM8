@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "괜찮아요",
       failed: "초대에 응답하지 못했습니다. 다시 시도해 주세요.",
     },
+    childInvites: {
+      title: "{child}님을 {school}에 추가할까요?",
+      body: "{school}에서 회원님을 보호자로 하여 {child}님을 수련생으로 추가하려고 합니다. 수락하면 {child}님이 계정에 추가되고 등록됩니다.",
+    },
     join: {
       me: "나",
       loadFailed: "이 도장을 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -397,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "띠 확인",
       beltVerified: "띠를 확인했습니다.",
       awardStripe: "그랄 수여: {rung}",
+      stepUp: "단계 올리기: {rung}",
       gradeTo: "{rung}(으)로 승급",
       tooEarly: {
         other: "기간 부족: 최소 기간까지 {count}일 남았습니다.",
@@ -440,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "승급(일괄)",
       stripeAward: "그랄 수여",
       bulkStripeAward: "그랄 수여(일괄)",
+      stepUp: "단계 상승",
+      bulkStepUp: "단계 상승(일괄)",
       downgrade: "강등",
       adjustment: "진도 조정",
       selfDeclared: "띠 직접 입력",
@@ -607,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "승급",
       stripeAward: "그랄 수여",
+      stepUp: "단계 상승",
       downgrade: "강등",
       adjustment: "진도 조정",
       selfDeclared: "띠 직접 입력",

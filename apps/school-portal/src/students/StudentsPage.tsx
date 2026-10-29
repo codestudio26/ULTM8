@@ -12,6 +12,7 @@ import { StudentsTabs } from './StudentsTabs';
 import { useBranches } from '../branches/branchQueries';
 import { matchesSearch } from './studentSearch';
 import { useT } from '../i18n/I18nProvider';
+import { ChildInvitesCard } from './StudentAccess';
 import { formatLocale } from '../i18n/format';
 import { FreezeRequestsCard } from './FreezeRequestsCard';
 import { formatCalendarDay } from '../membershipPlans/freezeQueries';
@@ -133,6 +134,8 @@ export function StudentsPage() {
       ) : null}
       <StudentsTabs />
       {ownedSchoolId ? <FreezeRequestsCard schoolId={ownedSchoolId} /> : null}
+      {/* Decision 403: children waiting for their Guardian to accept. */}
+      {ownedSchoolId ? <ChildInvitesCard schoolId={ownedSchoolId} /> : null}
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>

@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
+import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { VisitorCard } from '../students/VisitorCard';
@@ -18,7 +19,7 @@ import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQu
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
-import { HISTORY_TYPE_LABEL } from './historyLabels';
+import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 import {
   type Eligibility,
   type GradingToggle,
@@ -208,6 +209,9 @@ export function StudentGradingPage() {
 
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
+
+      {/* Decision 403: a new temporary passcode while the account is unused. Owner only. */}
+      {!inactive && my.isOwner ? <TemporaryPasscodeCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 400: staff notes, some shown to the member. */}
       {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
@@ -525,6 +529,7 @@ function DisciplineGradingCard({
           <History
             entries={entries}
             loading={historyLoading}
+            ladder={ladder}
             rungName={rungName}
             performerName={performerName}
             onVoid={can('canVoidHistory') ? (e, summary) => setDialog({ voidEventId: e.id, summary }) : undefined}
@@ -973,6 +978,7 @@ function SkillsForNext({
 function History({
   entries,
   loading,
+  ladder,
   rungName,
   performerName,
   onVoid,
@@ -983,6 +989,8 @@ function History({
 }: {
   entries: PromotionEvent[];
   loading: boolean;
+  /** This style's ladder, for its Belts or Levels wording (Decision 402). */
+  ladder: Rung[];
   rungName: (id: string | null | undefined) => string;
   performerName: (userId: string | null | undefined) => string;
   /** Absent when the caller may not void history in this style. */
@@ -1006,7 +1014,7 @@ function History({
       ) : (
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
           {entries.map((e) => {
-            const labelKey = HISTORY_TYPE_LABEL[e.type];
+            const labelKey = historyTypeLabel(e.type, eventRankDisplay(ladder, e));
             const label = labelKey ? t(labelKey) : e.type;
             const change =
               e.fromStripeTierId && e.fromStripeTierId !== e.toStripeTierId

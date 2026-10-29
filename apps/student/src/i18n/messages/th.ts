@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "ไม่เป็นไร ขอบคุณ",
       failed: "ตอบคำเชิญไม่สำเร็จ โปรดลองอีกครั้ง",
     },
+    childInvites: {
+      title: "เพิ่ม {child} ใน {school} ไหม",
+      body: "{school} ต้องการเพิ่ม {child} เป็นนักเรียน โดยมีคุณเป็นผู้ปกครอง ยอมรับเพื่อเพิ่ม {child} ในบัญชีของคุณและลงทะเบียน",
+    },
     join: {
       me: "ฉัน",
       loadFailed: "ไม่สามารถโหลดโรงเรียนนี้ได้ โปรดลองอีกครั้ง",
@@ -397,6 +401,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "ยืนยันสายคาด",
       beltVerified: "ยืนยันสายคาดแล้ว",
       awardStripe: "มอบแถบ: {rung}",
+      stepUp: "เลื่อนขั้น: {rung}",
       gradeTo: "เลื่อนระดับเป็น {rung}",
       tooEarly: {
         other: "ยังเร็วเกินไป: ยังขาดอีก {count} วันจากจำนวนวันขั้นต่ำ",
@@ -440,6 +445,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "เลื่อนระดับ (หลายคน)",
       stripeAward: "มอบแถบ",
       bulkStripeAward: "มอบแถบ (หลายคน)",
+      stepUp: "เลื่อนขั้น",
+      bulkStepUp: "เลื่อนขั้น (หลายคน)",
       downgrade: "ลดระดับ",
       adjustment: "ปรับความคืบหน้า",
       selfDeclared: "แจ้งสายคาดเอง",
@@ -607,6 +614,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "เลื่อนระดับ",
       stripeAward: "มอบแถบ",
+      stepUp: "เลื่อนขั้น",
       downgrade: "ลดระดับ",
       adjustment: "ปรับความคืบหน้า",
       selfDeclared: "แจ้งสายคาดเอง",

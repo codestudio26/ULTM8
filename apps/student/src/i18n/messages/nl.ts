@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "Nee, bedankt",
       failed: "Kon de uitnodiging niet beantwoorden. Probeer het opnieuw.",
     },
+    childInvites: {
+      title: "{child} toevoegen aan {school}?",
+      body: "{school} wil {child} toevoegen als leerling, met jou als voogd. Accepteer om {child} aan je account toe te voegen en in te schrijven.",
+    },
     join: {
       me: "Ik",
       loadFailed: "Deze school kon niet worden geladen — probeer het opnieuw.",
@@ -400,6 +404,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verifyBelt: "Band verifiëren",
       beltVerified: "Band geverifieerd.",
       awardStripe: "Streep toekennen: {rung}",
+      stepUp: "Stap omhoog: {rung}",
       gradeTo: "Graderen naar {rung}",
       tooEarly: {
         one: "Te vroeg: {count} dag korter dan het minimum.",
@@ -445,6 +450,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       bulkPromotion: "Gepromoveerd (groep)",
       stripeAward: "Streep toegekend",
       bulkStripeAward: "Streep toegekend (groep)",
+      stepUp: "Stap omhoog",
+      bulkStepUp: "Stap omhoog (groep)",
       downgrade: "Teruggezet",
       adjustment: "Voortgang aangepast",
       selfDeclared: "Band opgegeven",
@@ -613,6 +620,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     events: {
       promotion: "Gepromoveerd",
       stripeAward: "Streep toegekend",
+      stepUp: "Stap omhoog",
       downgrade: "Teruggezet",
       adjustment: "Voortgang aangepast",
       selfDeclared: "Band opgegeven",
