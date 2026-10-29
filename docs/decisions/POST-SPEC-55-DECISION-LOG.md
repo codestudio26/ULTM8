@@ -6917,3 +6917,100 @@ User (Code), 29 Oct 2026, answering who may add, edit and delete staff notes.
 ### Recorded by
 
 Claude, 29 Oct 2026, building Decision 290; it follows the v1.3 backlog's "Suggested build" for §3.19.
+
+---
+
+## Decision 403 — Temporary passcode for a new student, on the Guardian's account for a child
+
+**Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.3's open point. **Builds on:** Decisions 72, 116, 175.
+
+### Decision
+
+1. **Adult student:** on Add student, staff can choose "Create a temporary passcode now" instead of an app invite. ULTM8 generates a 6-digit passcode, shows it to staff once, and stores only its hash. The student must change it at first login (`User.mustChangePasscode`), as Instructor "Add manually" already does.
+2. **A child has no login of their own** (Decision 175), so for a child the temporary passcode is set on the **Guardian's** account:
+   - **Guardian has no account yet:** their new account gets the temporary passcode, with the same change-at-first-login rule. The Guardian then sees the child in the app.
+   - **Guardian already has an account:** no passcode. The child is linked to the existing account and the Guardian confirms in the app, as linking works today.
+3. **The temporary passcode expires after 7 days** if it hasn't been used. Staff can create a new one, which replaces the old one.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.3.
+
+---
+
+## Decision 404 — Freezing a membership
+
+**Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.4 (it was flagged "NEEDS A DECISION ENTRY") and its open points. **Builds on:** Decisions 6, 26, 259.
+
+### Decision
+
+1. **Who freezes:** staff can freeze a membership straight away. A member, or the Guardian for a child, requests a freeze in the app, and staff approve or decline it.
+2. **Length:** each School sets the maximum. The default is **90 days in any 12 months**, and a freeze is at least **7 days**. A freeze has a start and an end date; it can start today or later.
+3. **Billing:**
+   - Card subscriptions are paused in Stripe for the freeze, so nothing is charged while frozen.
+   - When the freeze ends, billing restarts from that day, so the member never pays for frozen days.
+   - A fixed-term membership's end date moves later by the length of the freeze.
+   - Class packs can't be frozen.
+4. **Freeze fee:** optional, set by the School, and charged once when the freeze is approved. A card member pays it on their card; a cash or bank-transfer payer gets a pending charge, collected at the desk.
+5. **Access:** a frozen member can't book or check in, unless the School turns on "Allow frozen members to check in" (off by default).
+6. **Ending early:** staff or the member can end a freeze early. Billing restarts that day, and the fee isn't refunded.
+7. **Storage:** frozen is not a stored status. It is worked out live from the freeze dates, as expiry already is (Decision 26).
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.4.
+
+---
+
+## Decision 405 — Late fees
+
+**Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.7's open points.
+
+### Decision
+
+1. **Off by default.** The School sets a **fixed amount or a %**, and a **grace period**: 3 days by default, 0 to 30 allowed.
+2. **One late fee per overdue payment.** It is never repeated or compounded. Staff can waive it.
+3. **Never charged to a card automatically.** It is added as a charge the member sees in the app and pays from the app or at the desk.
+4. **Country limits:** Platform Admin keeps a maximum late fee per country (for example Brazil: 2% for consumers). A School's setting can't go above it.
+5. **Order:** it builds on §3.6 (member balance and staff-created charges), which is built first.
+
+### Still open `[UNRESOLVED]`
+
+§3.6's tax rule: is tax fixed per country, and who sets it (Platform Admin or the School)? §3.6 and then §3.7 wait for this answer.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.7.
+
+---
+
+## Decision 406 — Card-fee surcharge
+
+**Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.8.
+
+### Decision
+
+1. **Off everywhere by default.** Platform Admin keeps a list of countries where a card surcharge is allowed. **The list starts empty**; a country is added only after legal review. Surcharges on consumer cards are illegal in the UK and the EU.
+2. **Where allowed,** the School sets a **% up to 3%**, and the owner must tick "I confirm surcharges are legal where my School operates".
+3. **Card payments only.** The surcharge is shown before the member pays and as its own line on the receipt. It never applies to cash or bank transfer.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.8.
+
+---
+
+## Decision 407 — Franchise fees: connecting Stripe and paying by card
+
+**Date:** 29 Oct 2026. **Answers:** v1.3 backlog §3.22 (Decision 352 Q4 and Q5).
+
+### Decision
+
+1. **Franchise Owner:** a "Connect Stripe" button on the Franchise page starts Stripe's own onboarding, with the existing `POST /franchises/:id/payment-accounts`. The page shows Connected, Action needed or Not connected.
+2. **School Owner:** "Add card" on the School's franchise section opens Stripe's secure card form. The card is saved to a real, kept Stripe customer for that School on the Franchise's connected account, replacing today's throwaway customer with no card.
+3. **Charging:** the monthly fee is charged to the saved card automatically. A failed charge is retried by Stripe, and the School Owner gets a notice to update the card. **Nothing is locked or suspended** for an unpaid fee; that would need its own decision.
+4. **Visibility:** the School Owner sees the School's fee charges (period, amount, paid or failed); the Franchise Owner sees the same for each School.
+
+### Recorded by
+
+User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.22.
