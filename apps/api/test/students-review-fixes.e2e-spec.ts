@@ -439,7 +439,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       const res = await addManually('owner', body);
       expect(res.status).toBe(201);
       userIds.push(res.body.id);
-      expect(res.body).toMatchObject({ firstName: 'Ada', surname: 'Lovelace', email: body.email.toLowerCase(), emailSent: true, temporaryPasscode: null });
+      expect(res.body).toMatchObject({ firstName: 'Ada', surname: 'Lovelace', email: body.email.toLowerCase(), emailSent: true });
 
       const user = await superuser.user.findUniqueOrThrow({ where: { id: res.body.id } });
       expect(user.mustChangePasscode).toBe(true);
@@ -452,6 +452,8 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       expect(subject).toBe("You've been added to Students Fixes Dojo on ULTM8");
       const temp = /Temporary passcode: (\d{6})/.exec(text)![1];
       expect(await bcrypt.compare(temp, user.passcodeHash)).toBe(true);
+      // Decision 403: the owner is also shown it once.
+      expect(res.body.temporaryPasscode).toBe(temp);
       // The email already says it: no second, in-app "added" notice.
       expect(noticeAdd).not.toHaveBeenCalled();
       send.mockRestore();

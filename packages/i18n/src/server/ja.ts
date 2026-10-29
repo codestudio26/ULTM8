@@ -649,4 +649,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "申込を見られるのはオーナーと支店スタッフだけです。",
   "Sign-up not found": "申込が見つかりません",
   "Pack recharge not found": "回数券の再購入が見つかりません",
+  "Student not found": "生徒が見つかりません",
+  "This invite has already been answered or withdrawn.": "この招待はすでに回答済みか、取り消されています。",
+  "This is for children (under 18). Add an adult with their own email instead.": "これは子ども（18歳未満）用です。大人は本人のメールアドレスで追加してください。",
+  "A Guardian must be 18 or over.": "保護者は18歳以上である必要があります。",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "この保護者にはすでにこの子どもへの招待があります。アプリで回答されるまでお待ちください。",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "新しい仮パスコードを作成できるのは、あなたのスクールが作成し、まだ誰もサインインしていないアカウントだけです。",
+  "This temporary passcode has expired. Ask your School for a new one.": "この仮パスコードは有効期限が切れています。スクールに新しいパスコードを依頼してください。",
 };

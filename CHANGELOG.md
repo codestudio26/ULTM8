@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Temporary passcode for a new student, and adding a child** (backlog 3.3;
+  Decision 403) — Add manually now always shows the owner the temporary
+  passcode once, and it stops working after 7 days unless used; while it's
+  unused, the owner can make a new one from the student's page ("App access").
+  A child can now be added too: a child has no login of their own, so the
+  owner names their Guardian. A new Guardian gets an account with the
+  temporary passcode and the child is enrolled at once; a Guardian who already
+  has an account is asked in the app to accept ("Add {child} to {School}?"),
+  and the owner sees these under "Waiting for a Guardian" on the Students page
+  and can withdraw them. Only the School that made an account can replace its
+  temporary passcode. **Needs a database migration**
+  (`20270103000000_temporary_passcode`).
 - **New staff must accept first** (Decision 396) — a new switch in the Staff
   page's "Give a role" card, off by default. When it's on, giving someone the
   Instructor or Branch Staff role emails them an invite link instead, and

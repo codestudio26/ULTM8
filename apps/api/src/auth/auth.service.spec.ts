@@ -175,7 +175,7 @@ describe('AuthService', () => {
       // actually happened, not skipped.
       expect(prismaAuth.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'a@example.test' },
-        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true },
+        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true },
       });
       // The lock check must still reject before ever reaching the compare-and-record
       // step — recordFailure() must not fire for an already-locked account, same as
@@ -229,6 +229,16 @@ describe('AuthService', () => {
       );
       // Not an ordinary session — no refresh token minted for this short-circuit.
       expect(prismaAuth.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    // Decision 403: a temporary passcode stops working 7 days after it was made.
+    it('refuses an expired temporary passcode with its own code, and lets one still in date through', async () => {
+      const hash = await bcrypt.hash('123456', 4);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null, phone: null, mustChangePasscode: true, temporaryPasscodeExpiresAt: new Date(Date.now() - 1000) });
+      await expect(service.login({ email: 'a@example.test', passcode: '123456' })).rejects.toMatchObject({ response: { code: 'TEMPORARY_PASSCODE_EXPIRED' } });
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null, phone: null, mustChangePasscode: true, temporaryPasscodeExpiresAt: new Date(Date.now() + 60_000) });
+      const result = await service.login({ email: 'a@example.test', passcode: '123456' });
+      expect('mustChangePasscode' in result && result.mustChangePasscode).toBe(true);
     });
 
     it('returns a signed access token built from active RoleGrants on success', async () => {

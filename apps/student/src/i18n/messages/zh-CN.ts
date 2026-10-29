@@ -189,6 +189,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       decline: "不用了，谢谢",
       failed: "无法回复邀请，请重试。",
     },
+    childInvites: {
+      title: "将 {child} 添加到 {school}？",
+      body: "{school} 希望将 {child} 添加为学员，由你担任监护人。接受后，{child} 将添加到你的账户并完成报名。",
+    },
     join: {
       me: "我",
       loadFailed: "无法加载这所学校，请重试。",
