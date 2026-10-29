@@ -3310,6 +3310,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "Отмечен",
       booked: "Записан",
       willBook: "Займёт место",
+      bookInApp: "Нет записи: запишитесь в приложении или отсканируйте QR-код из приложения",
       opensAt: "Отметка открывается в {time}",
       notCheckedIn: "Не отмечен",
       failed: "Не удалось отметиться. Попробуйте ещё раз.",

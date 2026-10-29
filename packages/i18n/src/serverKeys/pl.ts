@@ -22,6 +22,7 @@ export const server: PartialMessages<ServerKeys> = {
     waitlistFirst: "Na miejsce na tych zajęciach czekają już uczniowie. Zapisz się na listę oczekujących, aby poczekać na swoją kolej.",
     bookingClosed: "Rezerwacje na te zajęcia są zamknięte. Członek personelu nadal może cię zapisać.",
     classBusy: "Wiele osób rezerwuje teraz te zajęcia. Spróbuj ponownie za chwilę.",
+    kioskBookFirst: "Brak rezerwacji na te zajęcia. Zarezerwuj je w aplikacji lub zeskanuj kod QR z aplikacji, aby zameldować się tutaj.",
     checkInNotOpen: "Meldowanie na te zajęcia nie zostało jeszcze otwarte.",
     checkInOpensAt: "Meldowanie na te zajęcia nie zostało jeszcze otwarte. Otwarcie: {time}.",
     capacityBelowBooked: "Już zarezerwowani uczniowie: {count}. Ustaw limit miejsc na {count} lub więcej albo najpierw anuluj część rezerwacji.",

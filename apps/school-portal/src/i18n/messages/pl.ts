@@ -3310,6 +3310,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "Zameldowano",
       booked: "Zarezerwowano",
       willBook: "Rezerwuje miejsce",
+      bookInApp: "Brak rezerwacji: zarezerwuj w aplikacji lub zeskanuj kod QR z aplikacji",
       opensAt: "Meldowanie od {time}",
       notCheckedIn: "Niezameldowany",
       failed: "Nie udało się zameldować. Spróbuj ponownie.",

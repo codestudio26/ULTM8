@@ -23,6 +23,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the meantime. Paused people stay on the Staff list with a "Paused" badge and
   have their own status filter. Owners can't be paused. Remove from School
   still works on someone who is paused.
+- **Front desk: the locked tablet is harder to misuse** (Decision 388) — someone
+  found by name on the tablet is checked in only to classes they've already
+  booked; booking a place there needs the app QR or their own personal
+  check-in code, so nobody can spend another member's credit by typing their
+  name. Ten wrong staff codes end the tablet's session, and closing a Branch
+  ends its tablet. The staff Check-in page is unchanged. **Needs a database
+  migration** (`20261220000000_front_desk_wrong_codes`).
 - **Front desk: Find me on the tablet** (Decision 385) — someone about to
   sign up types their full name and date of birth; the tablet says only
   whether they're already a member (both must match), and shows nothing

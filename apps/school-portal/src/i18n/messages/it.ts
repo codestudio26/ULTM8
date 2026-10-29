@@ -3209,6 +3209,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyIn: "Check-in fatto",
       booked: "Prenotato",
       willBook: "Prenota un posto",
+      bookInApp: "Non prenotato: prenota nell'app o scansiona il codice QR dell'app",
       opensAt: "Check-in dalle {time}",
       notCheckedIn: "Senza check-in",
       failed: "Impossibile fare il check-in. Riprova.",

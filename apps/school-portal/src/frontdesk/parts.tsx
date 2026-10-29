@@ -461,7 +461,9 @@ export function WelcomeCard(props: {
  * Who it is, their membership, waivers and belt progress, and today's Classes
  * to tick. Classes they're booked into start ticked. A Class whose check-in
  * hasn't opened yet is shown but can't be ticked, so Confirm never books a
- * place it can't check into (CI2). Anything the API refuses (no live
+ * place it can't check into (CI2). With `mayBook` off (the locked tablet,
+ * someone found by name: Decision 388) a Class they haven't booked can't be
+ * ticked either; booking there needs the app QR. Anything the API refuses (no live
  * membership, rank gate, full) comes back as its reason and is shown in place
  * of the Confirm button's result.
  */
@@ -477,6 +479,7 @@ export function WelcomeCardBody({
   onBack,
   onDone,
   opensMinutesBefore,
+  mayBook = true,
 }: {
   student: FrontDeskStudent;
   classes: DeskClass[];
@@ -489,12 +492,14 @@ export function WelcomeCardBody({
   onBack: () => void;
   onDone: (classIds: string[]) => void;
   opensMinutesBefore: number;
+  mayBook?: boolean;
 }) {
   const t = useT();
   const now = Date.now();
   const open = classes.filter((c) => !isOver(c, now));
-  const canTick = (c: DeskClass) => checkInOpensAt(c, opensMinutesBefore) <= Date.now();
   const mineIn = (c: DeskClass, status: DeskBooking['status']) => mine.get(c.id)?.status === status;
+  const needsBooking = (c: DeskClass) => !mayBook && !mineIn(c, 'UPCOMING') && !mineIn(c, 'COMPLETED');
+  const canTick = (c: DeskClass) => checkInOpensAt(c, opensMinutesBefore) <= Date.now() && !needsBooking(c);
   const [picks, setPicks] = useState<string[]>(() => {
     const ready = open.filter(canTick);
     const booked = ready.filter((c) => mineIn(c, 'UPCOMING')).map((c) => c.id);
@@ -565,12 +570,13 @@ export function WelcomeCardBody({
           {open.map((c) => {
             const already = mineIn(c, 'COMPLETED');
             const booked = mineIn(c, 'UPCOMING');
-            const notYet = !already && !canTick(c);
-            const on = picks.includes(c.id) && !notYet;
+            const bookFirst = !already && needsBooking(c);
+            const notYet = !already && !bookFirst && !canTick(c);
+            const on = picks.includes(c.id) && !notYet && !bookFirst;
             const booking = mine.get(c.id);
             return (
               <React.Fragment key={c.id}>
-                <button type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already || notYet}>
+                <button type="button" className="fd-tick" aria-pressed={on} onClick={() => toggle(c.id)} disabled={already || notYet || bookFirst}>
                   <span className="fd-tick__box" aria-hidden="true">
                     {on || already ? '✓' : ''}
                   </span>
@@ -581,7 +587,9 @@ export function WelcomeCardBody({
                   <span className="fd-tick__meta">
                     {already
                       ? t('frontDesk.welcome.alreadyIn')
-                      : notYet
+                      : bookFirst
+                        ? t('frontDesk.welcome.bookInApp')
+                        : notYet
                         ? t('frontDesk.welcome.opensAt', { time: timeOf(new Date(checkInOpensAt(c, opensMinutesBefore)).toISOString()) })
                         : booked
                           ? t('frontDesk.welcome.booked')
