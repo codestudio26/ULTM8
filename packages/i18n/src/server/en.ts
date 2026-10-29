@@ -546,6 +546,13 @@ export const SERVER_MESSAGES: string[] = [
   "This person is not paused.",
   "This person is paused at this School. Unpause them to give their roles back.",
   "Your roles at this School are paused. Ask the School to unpause you.",
+  "Student not found",
+  "This invite has already been answered or withdrawn.",
+  "This is for children (under 18). Add an adult with their own email instead.",
+  "A Guardian must be 18 or over.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.",
+  "This temporary passcode has expired. Ask your School for a new one.",
 ];
 
 export const SERVER_PATTERNS: string[] = [

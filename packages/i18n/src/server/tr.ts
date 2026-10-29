@@ -651,4 +651,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Kayıtları yalnızca okul sahibi veya şube personeli görebilir.",
   "Sign-up not found": "Kayıt bulunamadı",
   "Pack recharge not found": "Paket yenileme bulunamadı",
+  "Student not found": "Öğrenci bulunamadı",
+  "This invite has already been answered or withdrawn.": "Bu davet zaten yanıtlandı veya geri çekildi.",
+  "This is for children (under 18). Add an adult with their own email instead.": "Bu, çocuklar (18 yaş altı) içindir. Bir yetişkini kendi e-posta adresiyle ekleyin.",
+  "A Guardian must be 18 or over.": "Veli 18 yaşında veya daha büyük olmalıdır.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "Bu velinin bu çocuk için zaten bir daveti var. Uygulamada yanıtlamasını bekleyin.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Yeni geçici şifre yalnızca okulunuzun oluşturduğu ve henüz kimsenin giriş yapmadığı bir hesap için oluşturulabilir.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Bu geçici şifrenin süresi doldu. Okulunuzdan yenisini isteyin.",
 };

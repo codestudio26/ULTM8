@@ -651,4 +651,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "Zapisy może widzieć tylko właściciel lub personel oddziału.",
   "Sign-up not found": "Nie znaleziono zapisu",
   "Pack recharge not found": "Nie znaleziono doładowania pakietu",
+  "Student not found": "Nie znaleziono ucznia",
+  "This invite has already been answered or withdrawn.": "To zaproszenie zostało już przyjęte, odrzucone lub wycofane.",
+  "This is for children (under 18). Add an adult with their own email instead.": "To jest dla dzieci (poniżej 18 lat). Dorosłego dodaj z jego własnym adresem e-mail.",
+  "A Guardian must be 18 or over.": "Opiekun musi mieć co najmniej 18 lat.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "Ten opiekun ma już zaproszenie dla tego dziecka. Poczekaj, aż odpowie w aplikacji.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "Nowy tymczasowy kod można utworzyć tylko dla konta założonego przez Twoją szkołę, na które nikt się jeszcze nie zalogował.",
+  "This temporary passcode has expired. Ask your School for a new one.": "Ten tymczasowy kod wygasł. Poproś szkołę o nowy.",
 };

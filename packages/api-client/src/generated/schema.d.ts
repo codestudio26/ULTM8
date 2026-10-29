@@ -5732,6 +5732,118 @@ export interface paths {
         patch: operations["StudentNotesController_update"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/add-child-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_addChildManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/child-invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentAccessController_listChildInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/child-invites/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_withdrawChildInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/child-invites/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentAccessController_myChildInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/child-invites/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_acceptChildInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/child-invites/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_declineChildInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/temporary-passcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentAccessController_temporaryPasscodeStatus"];
+        put?: never;
+        post: operations["StudentAccessController_newTemporaryPasscode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/open-mats": {
         parameters: {
             query?: never;
@@ -6668,7 +6780,9 @@ export interface components {
             surname: string;
             email: string;
             emailSent: boolean;
-            temporaryPasscode?: string | null;
+            temporaryPasscode: string;
+            /** @description When the temporary passcode stops working if it has not been used (7 days). */
+            temporaryPasscodeExpiresAt: string;
         };
         StaffAccessDto: {
             /** @description Manage classes and the timetable at their branches (off by default). */
@@ -10715,6 +10829,85 @@ export interface components {
         UpdateStudentNoteDto: {
             body?: string;
             showToMember?: boolean;
+        };
+        ChildDetailsDto: {
+            firstName: string;
+            surname: string;
+            /** @description YYYY-MM-DD. The child must be under 18. */
+            dateOfBirth: string;
+            /**
+             * @description FEMALE, MALE, or null when not given.
+             * @enum {string|null}
+             */
+            gender?: "FEMALE" | "MALE" | null;
+        };
+        GuardianDetailsDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+        };
+        AddChildManuallyDto: {
+            child: components["schemas"]["ChildDetailsDto"];
+            /** @description An email that already has an account gets an invite to accept in the app; a new one gets an account with a temporary passcode. */
+            guardian: components["schemas"]["GuardianDetailsDto"];
+            /** @description Required when the School has open branches: the child's home branch. */
+            branchId?: string;
+        };
+        AddChildManuallyResponseDto: {
+            /**
+             * @description GUARDIAN_CREATED: a new Guardian account was made and the child enrolled. GUARDIAN_INVITED: the Guardian already has an account and must accept in the app.
+             * @enum {string}
+             */
+            outcome: "GUARDIAN_CREATED" | "GUARDIAN_INVITED";
+            guardianEmail: string;
+            /** @description False when the email to the Guardian could not be sent. */
+            emailSent: boolean;
+            /** @description GUARDIAN_CREATED: the enrolled child. */
+            studentId?: string | null;
+            /** @description GUARDIAN_INVITED: the invite. */
+            inviteId?: string | null;
+            /** @description GUARDIAN_CREATED: the Guardian's temporary passcode, shown once. Stored only as a hash. */
+            temporaryPasscode?: string | null;
+            temporaryPasscodeExpiresAt?: string | null;
+        };
+        ChildInviteDto: {
+            id: string;
+            schoolId: string;
+            schoolName: string;
+            childFirstName: string;
+            childSurname: string;
+            childDateOfBirth: string;
+            /** @description For the School's list: the Guardian's name. */
+            guardianName?: string | null;
+            /** @description For the School's list: the Guardian's email. */
+            guardianEmail?: string | null;
+            createdAt: string;
+        };
+        ChildInviteListDto: {
+            items: components["schemas"]["ChildInviteDto"][];
+        };
+        AcceptChildInviteResponseDto: {
+            schoolId: string;
+            studentId: string;
+        };
+        TemporaryPasscodeStatusDto: {
+            /** @description A new temporary passcode can be made: the account (the student's, or for a child their Guardian's) was made by this School and has not been signed in to yet. */
+            available: boolean;
+            /** @description The passcode is on the child's Guardian's account. */
+            forGuardian: boolean;
+            /** @description Whose account it is, for "for {name}". */
+            accountName?: string | null;
+            expiresAt?: string | null;
+            /** @description The current temporary passcode has expired. */
+            expired: boolean;
+        };
+        NewTemporaryPasscodeResponseDto: {
+            /** @description Shown once. Stored only as a hash. */
+            temporaryPasscode: string;
+            expiresAt: string;
+            forGuardian: boolean;
+            accountName: string;
+            email: string;
         };
         StartOpenMatDto: {
             /** @description One of the School's open Branches; null when it has none. */
@@ -20371,6 +20564,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentNoteDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_addChildManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddChildManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddChildManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_listChildInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildInviteListDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_withdrawChildInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentAccessController_myChildInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildInviteListDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_acceptChildInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptChildInviteResponseDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_declineChildInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentAccessController_temporaryPasscodeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryPasscodeStatusDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_newTemporaryPasscode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewTemporaryPasscodeResponseDto"];
                 };
             };
         };

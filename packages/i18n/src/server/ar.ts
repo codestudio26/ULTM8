@@ -651,4 +651,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "يمكن للمالك أو موظفي الفرع فقط رؤية التسجيلات.",
   "Sign-up not found": "لم يُعثر على التسجيل",
   "Pack recharge not found": "لم يتم العثور على تجديد الباقة",
+  "Student not found": "الطالب غير موجود",
+  "This invite has already been answered or withdrawn.": "تمت الإجابة عن هذه الدعوة أو سحبها بالفعل.",
+  "This is for children (under 18). Add an adult with their own email instead.": "هذا للأطفال (دون 18 عامًا). أضف البالغ ببريده الإلكتروني الخاص بدلًا من ذلك.",
+  "A Guardian must be 18 or over.": "يجب أن يكون ولي الأمر في الثامنة عشرة أو أكبر.",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "لدى ولي الأمر هذا دعوة لهذا الطفل بالفعل. انتظر حتى يرد عليها في التطبيق.",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "لا يمكن إنشاء رمز مرور مؤقت جديد إلا لحساب أنشأته مدرستك ولم يُسجَّل الدخول إليه بعد.",
+  "This temporary passcode has expired. Ask your School for a new one.": "انتهت صلاحية رمز المرور المؤقت هذا. اطلب رمزًا جديدًا من مدرستك.",
 };

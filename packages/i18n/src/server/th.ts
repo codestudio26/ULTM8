@@ -651,4 +651,11 @@ export const serverMessages: Record<string, string> = {
   "Only the owner or Branch Staff can see sign-ups.": "เฉพาะเจ้าของหรือพนักงานสาขาเท่านั้นที่ดูการสมัครได้",
   "Sign-up not found": "ไม่พบการสมัคร",
   "Pack recharge not found": "ไม่พบการซื้อแพ็กซ้ำ",
+  "Student not found": "ไม่พบนักเรียน",
+  "This invite has already been answered or withdrawn.": "คำเชิญนี้ได้รับการตอบหรือถูกถอนแล้ว",
+  "This is for children (under 18). Add an adult with their own email instead.": "ส่วนนี้สำหรับเด็ก (อายุต่ำกว่า 18 ปี) ให้เพิ่มผู้ใหญ่ด้วยอีเมลของตนเองแทน",
+  "A Guardian must be 18 or over.": "ผู้ปกครองต้องมีอายุ 18 ปีขึ้นไป",
+  "This Guardian already has an invite for this child. Wait for them to answer it in the app.": "ผู้ปกครองคนนี้มีคำเชิญสำหรับเด็กคนนี้อยู่แล้ว รอให้ตอบในแอปก่อน",
+  "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.": "สร้างรหัสผ่านชั่วคราวใหม่ได้เฉพาะบัญชีที่โรงเรียนของคุณสร้างและยังไม่มีใครลงชื่อเข้าใช้",
+  "This temporary passcode has expired. Ask your School for a new one.": "รหัสผ่านชั่วคราวนี้หมดอายุแล้ว ขอรหัสใหม่จากโรงเรียนของคุณ",
 };

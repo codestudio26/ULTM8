@@ -77,6 +77,18 @@ const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
  * School keeps what it set for them, and Remove from School still applies. */
 export const LIVE_OR_PAUSED = { OR: [{ revokedAt: null }, { pausedAt: { not: null } }] } satisfies Prisma.RoleGrantWhereInput;
 
+/** Decision 403: a student's temporary passcode stops working after this
+ * many days unless it has been used. */
+export const TEMPORARY_PASSCODE_DAYS = 7;
+
+/** A new 6-digit temporary passcode, its hash, and when it stops working. */
+export async function newTemporaryPasscode(now = new Date()) {
+  const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+  const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+  const expiresAt = new Date(now.getTime() + TEMPORARY_PASSCODE_DAYS * 24 * 60 * 60 * 1000);
+  return { tempPasscode, passcodeHash, expiresAt };
+}
+
 @Injectable()
 export class RoleGrantsService {
   private readonly logger = new Logger(RoleGrantsService.name);
@@ -425,18 +437,10 @@ export class RoleGrantsService {
       throw new BadRequestException("Add manually is for adults (18 or over). A child joins through their Guardian's app.");
     }
 
-    const branches = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.branch.findMany({ where: { schoolId }, select: { id: true, archivedAt: true } }),
-    );
-    const chosen = dto.branchId ? branches.find((b) => b.id === dto.branchId) : undefined;
-    if (dto.branchId && !chosen) throw new BadRequestException('branchId must be a branch of this School.');
-    if (chosen?.archivedAt) throw new BadRequestException('This branch has been archived. Choose another branch.');
-    if (!dto.branchId && branches.some((b) => !b.archivedAt)) {
-      throw new BadRequestException('This School has branches: choose your home branch (branchId).');
-    }
+    await this.assertHomeBranchChoice(callerId, schoolId, dto.branchId);
 
     const email = dto.email.trim().toLowerCase();
-    const { userId, tempPasscode } = await this.createStudentAccount({ email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: dto.dateOfBirth });
+    const { userId, tempPasscode, expiresAt } = await this.createStudentAccount({ email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: dto.dateOfBirth, schoolId });
     await this.enrolNewAccount(userId, () => this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false }));
 
     let emailSent = true;
@@ -456,18 +460,35 @@ export class RoleGrantsService {
       emailSent = false;
       this.logger.warn(`Student ${userId}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
     }
-    // Email isn't always set up (or can fail): the owner then gets the
-    // passcode once, to hand over in person, instead of an account nobody can
-    // sign in to.
-    return { id: userId, firstName: dto.firstName, surname: dto.surname, email, emailSent, temporaryPasscode: emailSent ? null : tempPasscode };
+    // Decision 403: the owner always sees the passcode once, to hand over in
+    // person, whether or not the email went out.
+    return { id: userId, firstName: dto.firstName, surname: dto.surname, email, emailSent, temporaryPasscode: tempPasscode, temporaryPasscodeExpiresAt: expiresAt };
+  }
+
+  /** A new student's home branch, chosen by the owner (Decision 371): one of
+   * the School's open branches, required while it has any. Checked before an
+   * account is made, so a wrong branch never leaves an account behind. */
+  async assertHomeBranchChoice(callerId: string, schoolId: string, branchId: string | undefined): Promise<void> {
+    const branches = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.findMany({ where: { schoolId }, select: { id: true, archivedAt: true } }),
+    );
+    const chosen = branchId ? branches.find((b) => b.id === branchId) : undefined;
+    if (branchId && !chosen) throw new BadRequestException('branchId must be a branch of this School.');
+    if (chosen?.archivedAt) throw new BadRequestException('This branch has been archived. Choose another branch.');
+    if (!branchId && branches.some((b) => !b.archivedAt)) {
+      throw new BadRequestException('This School has branches: choose your home branch (branchId).');
+    }
   }
 
   /**
    * A new adult student's account (Decision 371, and tablet sign-ups,
-   * Decision 392): a temporary passcode, changed at first sign-in. 409 if the
-   * email already has an account. Enrol it with enrolNewAccount.
+   * Decision 392), or a child's new Guardian (Decision 403): a temporary
+   * passcode, changed at first sign-in, that stops working after
+   * TEMPORARY_PASSCODE_DAYS unless used. `schoolId` is the School that made
+   * it, the only one that may make a new one. 409 if the email already has an
+   * account. Enrol a student with enrolNewAccount.
    */
-  async createStudentAccount(data: { email: string; firstName: string; surname: string; dateOfBirth: string | Date; gender?: string | null }) {
+  async createStudentAccount(data: { email: string; firstName: string; surname: string; dateOfBirth?: string | Date | null; gender?: string | null; schoolId: string }) {
     const email = data.email.trim().toLowerCase();
     const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
     if (existingUser) {
@@ -475,8 +496,7 @@ export class RoleGrantsService {
     }
 
     const userId = randomUUID();
-    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
-    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+    const { tempPasscode, passcodeHash, expiresAt } = await newTemporaryPasscode();
     // The bootstrap trick createStaffManually uses: a User row may only be
     // inserted under its own (about-to-exist) id.
     await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
@@ -488,10 +508,12 @@ export class RoleGrantsService {
             email,
             firstName: data.firstName,
             surname: data.surname,
-            dateOfBirth: new Date(data.dateOfBirth),
+            dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
             gender: data.gender ?? undefined,
             passcodeHash,
             mustChangePasscode: true,
+            temporaryPasscodeExpiresAt: expiresAt,
+            temporaryPasscodeSchoolId: data.schoolId,
           },
         });
       } catch (err) {
@@ -502,7 +524,7 @@ export class RoleGrantsService {
         throw err;
       }
     });
-    return { userId, tempPasscode };
+    return { userId, tempPasscode, expiresAt };
   }
 
   /** Runs `join` for an account createStudentAccount just made. join() runs
