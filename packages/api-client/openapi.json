@@ -17238,6 +17238,295 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/add-child-manually": {
+      "post": {
+        "operationId": "StudentAccessController_addChildManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddChildManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddChildManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/child-invites": {
+      "get": {
+        "operationId": "StudentAccessController_listChildInvites",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildInviteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/child-invites/{id}/withdraw": {
+      "post": {
+        "operationId": "StudentAccessController_withdrawChildInvite",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/child-invites/me": {
+      "get": {
+        "operationId": "StudentAccessController_myChildInvites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildInviteListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/child-invites/{id}/accept": {
+      "post": {
+        "operationId": "StudentAccessController_acceptChildInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptChildInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/child-invites/{id}/decline": {
+      "post": {
+        "operationId": "StudentAccessController_declineChildInvite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/temporary-passcode": {
+      "get": {
+        "operationId": "StudentAccessController_temporaryPasscodeStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemporaryPasscodeStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentAccessController_newTemporaryPasscode",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewTemporaryPasscodeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/open-mats": {
       "post": {
         "operationId": "OpenMatsController_start",
@@ -20195,8 +20484,11 @@
             "type": "boolean"
           },
           "temporaryPasscode": {
+            "type": "string"
+          },
+          "temporaryPasscodeExpiresAt": {
             "type": "string",
-            "nullable": true
+            "description": "When the temporary passcode stops working if it has not been used (7 days)."
           }
         },
         "required": [
@@ -20204,7 +20496,9 @@
           "firstName",
           "surname",
           "email",
-          "emailSent"
+          "emailSent",
+          "temporaryPasscode",
+          "temporaryPasscodeExpiresAt"
         ]
       },
       "StaffAccessDto": {
@@ -33524,6 +33818,255 @@
             "type": "boolean"
           }
         }
+      },
+      "ChildDetailsDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The child must be under 18."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ],
+            "nullable": true,
+            "description": "FEMALE, MALE, or null when not given."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "GuardianDetailsDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email"
+        ]
+      },
+      "AddChildManuallyDto": {
+        "type": "object",
+        "properties": {
+          "child": {
+            "$ref": "#/components/schemas/ChildDetailsDto"
+          },
+          "guardian": {
+            "description": "An email that already has an account gets an invite to accept in the app; a new one gets an account with a temporary passcode.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GuardianDetailsDto"
+              }
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has open branches: the child's home branch."
+          }
+        },
+        "required": [
+          "child",
+          "guardian"
+        ]
+      },
+      "AddChildManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "GUARDIAN_CREATED",
+              "GUARDIAN_INVITED"
+            ],
+            "description": "GUARDIAN_CREATED: a new Guardian account was made and the child enrolled. GUARDIAN_INVITED: the Guardian already has an account and must accept in the app."
+          },
+          "guardianEmail": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the email to the Guardian could not be sent."
+          },
+          "studentId": {
+            "type": "string",
+            "nullable": true,
+            "description": "GUARDIAN_CREATED: the enrolled child."
+          },
+          "inviteId": {
+            "type": "string",
+            "nullable": true,
+            "description": "GUARDIAN_INVITED: the invite."
+          },
+          "temporaryPasscode": {
+            "type": "string",
+            "nullable": true,
+            "description": "GUARDIAN_CREATED: the Guardian's temporary passcode, shown once. Stored only as a hash."
+          },
+          "temporaryPasscodeExpiresAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "outcome",
+          "guardianEmail",
+          "emailSent"
+        ]
+      },
+      "ChildInviteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "childFirstName": {
+            "type": "string"
+          },
+          "childSurname": {
+            "type": "string"
+          },
+          "childDateOfBirth": {
+            "type": "string"
+          },
+          "guardianName": {
+            "type": "string",
+            "nullable": true,
+            "description": "For the School's list: the Guardian's name."
+          },
+          "guardianEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "For the School's list: the Guardian's email."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolName",
+          "childFirstName",
+          "childSurname",
+          "childDateOfBirth",
+          "createdAt"
+        ]
+      },
+      "ChildInviteListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChildInviteDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptChildInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId",
+          "studentId"
+        ]
+      },
+      "TemporaryPasscodeStatusDto": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "A new temporary passcode can be made: the account (the student's, or for a child their Guardian's) was made by this School and has not been signed in to yet."
+          },
+          "forGuardian": {
+            "type": "boolean",
+            "description": "The passcode is on the child's Guardian's account."
+          },
+          "accountName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Whose account it is, for \"for {name}\"."
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "The current temporary passcode has expired."
+          }
+        },
+        "required": [
+          "available",
+          "forGuardian",
+          "expired"
+        ]
+      },
+      "NewTemporaryPasscodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "temporaryPasscode": {
+            "type": "string",
+            "description": "Shown once. Stored only as a hash."
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "forGuardian": {
+            "type": "boolean"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "temporaryPasscode",
+          "expiresAt",
+          "forGuardian",
+          "accountName",
+          "email"
+        ]
       },
       "StartOpenMatDto": {
         "type": "object",

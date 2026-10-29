@@ -184,22 +184,16 @@ test('Add manually makes an adult\'s account and enrols them; the list finds the
     await expect(page).toHaveURL(/\/students\/add$/);
     await page.getByLabel('First name').fill('Ada');
     await page.getByLabel('Surname').fill('Lovelace');
-    await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Date of birth').fill('2012-05-01');
-    await page.getByLabel('Home branch').selectOption(north.id);
-    await page.getByRole('button', { name: 'Add Student' }).click();
-    await expect(page.getByText("Add manually is for adults (18 or over). A child joins through their Guardian's app.")).toBeVisible();
-
     await page.getByLabel('Date of birth').fill('1990-05-01');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Home branch').selectOption(north.id);
     await page.getByRole('button', { name: 'Add Student' }).click();
     await expect(page.getByText('Ada Lovelace has been added.')).toBeVisible();
     const user = await db.user.findUniqueOrThrow({ where: { email } });
     expect(user.mustChangePasscode).toBe(true);
     expect((await db.studentHomeBranch.findFirstOrThrow({ where: { studentId: user.id, schoolId: s.schoolId } })).branchId).toBe(north.id);
-    // Without working email (as in most test setups) the owner is shown the
-    // temporary passcode once, to hand over.
-    const passcode = page.getByTestId('temporary-passcode');
-    if (await passcode.count()) await expect(passcode).toHaveText(/^\d{6}$/);
+    // Decision 403: the owner is always shown the temporary passcode once.
+    await expect(page.getByTestId('temporary-passcode')).toHaveText(/^\d{6}$/);
 
     await page.getByRole('button', { name: 'Back to Students' }).click();
     await expect(page.getByRole('row', { name: /Ada Lovelace/ }).getByText('North')).toBeVisible();

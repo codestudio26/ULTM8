@@ -394,7 +394,13 @@ model User {
   /// cleared the moment AuthService.changePasscodeFirstLogin() succeeds. Never
   /// set for any other path — this is specifically the "someone else set this
   /// account's first passcode" marker, not a general force-reset mechanism.
-  mustChangePasscode Boolean @default(false)
+  mustChangePasscode         Boolean   @default(false)
+  /// Decision 403: a student's (or a child's Guardian's) temporary passcode
+  /// stops working 7 days after it was made, unless it has been used.
+  temporaryPasscodeExpiresAt DateTime?
+  /// Decision 403: the School that made this account's temporary passcode.
+  /// Only that School's owner can make a new one, and only while it is unused.
+  temporaryPasscodeSchoolId  String?
 
   /// Set once Twilio Verify OTP confirms this phone (Spec §8.1's registerScreen ->
   /// verificationPin flow). NOT a confirmed schema field — a Developer-added column
@@ -544,6 +550,9 @@ model User {
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
+  childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
+  childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
+  childInvitesChild                 ChildInvite[]               @relation("ChildInviteStudent")
 
   @@index([email])
   @@index([phone])
@@ -1191,6 +1200,7 @@ model School {
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
   studentExportLogs      StudentExportLog[]
+  childInvites           ChildInvite[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
 
@@ -5021,7 +5031,7 @@ model StaffActivity {
   targetUser   User?   @relation("StaffActivityTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   /// One of STAFF_ACTIONS (staff-activity.ts).
-  action String
+  action  String
   /// What changed: role, branch name, switches before and after, and so on.
   details Json?
 
@@ -5029,4 +5039,47 @@ model StaffActivity {
 
   @@index([schoolId, createdAt])
   @@index([schoolId, targetUserId, createdAt])
+}
+
+enum ChildInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+/// Decision 403 (backlog 3.3): the School owner adds a child whose Guardian
+/// already has a ULTM8 account. The Guardian accepts in the app, which adds
+/// the child to their account (or uses the child already on it) and enrols
+/// them. Jobs connection only (RLS on, no app grant).
+model ChildInvite {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  /// The home branch the owner chose, at a School with branches.
+  branchId String?
+
+  guardianId String
+  guardian   User   @relation("ChildInviteGuardian", fields: [guardianId], references: [id], onDelete: Cascade)
+
+  childFirstName   String
+  childSurname     String
+  childDateOfBirth DateTime
+  /// FEMALE, MALE or null (Decision 315 item 15).
+  childGender      String?
+
+  status ChildInviteStatus @default(PENDING)
+
+  /// The child it became once accepted.
+  studentId String?
+  student   User?   @relation("ChildInviteStudent", fields: [studentId], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User?     @relation("ChildInviteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@index([guardianId, status])
+  @@index([schoolId, status])
 }

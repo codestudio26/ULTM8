@@ -12,6 +12,7 @@ import { StudentsTabs } from './StudentsTabs';
 import { useBranches } from '../branches/branchQueries';
 import { matchesSearch } from './studentSearch';
 import { useT } from '../i18n/I18nProvider';
+import { ChildInvitesCard } from './StudentAccess';
 import { formatLocale } from '../i18n/format';
 
 /** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
@@ -120,6 +121,8 @@ export function StudentsPage() {
         <StudentExportModal schoolId={schoolId} schoolName={school.data?.name ?? ''} withBranch={hasBranches} onClose={() => setExporting(false)} />
       ) : null}
       <StudentsTabs />
+      {/* Decision 403: children waiting for their Guardian to accept. */}
+      {ownedSchoolId ? <ChildInvitesCard schoolId={ownedSchoolId} /> : null}
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
