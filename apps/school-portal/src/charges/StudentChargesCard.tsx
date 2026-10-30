@@ -71,6 +71,36 @@ function LateFeeLines({ charge: c }: { charge: Charge }) {
   );
 }
 
+/**
+ * Backlog §3.6 step 6 (Decision 303 item 5): a promotion fee's charge, with
+ * the style and grade it is for and a link to that style's grading card on
+ * this page. Waived or cancelled from grading, which cancels the charge; the
+ * Payments card can't cancel it.
+ */
+function PromotionFeeLines({ charge: c }: { charge: Charge }) {
+  const t = useT();
+  const f = c.promotionFee;
+  if (!f) return null;
+  return (
+    <>
+      <div className="ultm8-field__hint">
+        {t('charges.promotionFee.forRank', { style: f.disciplineName, rank: f.toRungName })} ·{' '}
+        <a href={`#grading-${f.disciplineId}`} data-testid="promotion-fee-grading-link">
+          {t('charges.promotionFee.seeGrading')}
+        </a>
+      </div>
+      {c.status === 'CANCELLED' && c.cancelledAt && (f.status === 'WAIVED' || f.status === 'CANCELLED') ? (
+        <div className="ultm8-field__hint">
+          {t(f.status === 'WAIVED' ? 'charges.promotionFee.waivedLine' : 'charges.promotionFee.cancelledLine', {
+            date: formatDay(c.cancelledAt.slice(0, 10)),
+            name: c.cancelledByName ?? '',
+          })}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 /** How a payment was made: a desk method, or a card paid in the app or
  * charged automatically (backlog §3.6 step 2). */
 function paymentMethodText(t: ReturnType<typeof useT>, p: ChargePayment): string {
@@ -112,7 +142,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   if (charges.error instanceof ApiError && charges.error.status === 403) return null;
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div id="student-payments" style={{ marginBottom: 24 }}>
       <Card>
         <div data-testid="student-charges" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div>
@@ -300,13 +330,20 @@ function ChargesBody({
                 render: (c) => (
                   <div style={c.status === 'CANCELLED' ? { opacity: 0.6 } : undefined}>
                     <div>
-                      {c.lateFee ? <Badge variant="warning">{t('charges.lateFee.badge')}</Badge> : c.description}
+                      {c.lateFee ? <Badge variant="warning">{t('charges.lateFee.badge')}</Badge> : null}
+                      {c.promotionFee ? (
+                        <>
+                          <Badge variant="info">{t('charges.promotionFee.badge')}</Badge>{' '}
+                        </>
+                      ) : null}
+                      {c.lateFee ? null : c.description}
                     </div>
                     <LateFeeLines charge={c} />
+                    <PromotionFeeLines charge={c} />
                     {c.discountAmount > 0 ? <div className="ultm8-field__hint">{t('charges.card.discountLine', { amount: formatMoney(c.discountAmount, c.currency) })}</div> : null}
                     {c.status === 'CANCELLED' && c.cancelledAt && c.lateFee?.waived ? (
                       <div className="ultm8-field__hint">{t('charges.lateFee.waivedLine', { date: formatDay(c.cancelledAt.slice(0, 10)), name: c.cancelledByName ?? '' })}</div>
-                    ) : c.status === 'CANCELLED' && c.cancelledAt ? (
+                    ) : c.status === 'CANCELLED' && c.cancelledAt && !c.promotionFee ? (
                       <div className="ultm8-field__hint">
                         {c.cancelReason
                           ? t('charges.card.cancelledLine', { date: formatDay(c.cancelledAt.slice(0, 10)), name: c.cancelledByName ?? '', reason: c.cancelReason })
@@ -354,11 +391,13 @@ function ChargesBody({
                         {t('charges.card.resendInvoice')}
                       </Button>
                     ) : null}
-                    {open(c) && data.can.cancel && c.lateFee ? (
+                    {!open(c) ? null : c.promotionFee ? (
+                      <span className="ultm8-field__hint">{t('charges.promotionFee.cancelHint')}</span>
+                    ) : data.can.cancel && c.lateFee ? (
                       <Button variant="danger" onClick={() => onWaive(c)}>
                         {t('charges.lateFee.waive')}
                       </Button>
-                    ) : open(c) && data.can.cancel ? (
+                    ) : data.can.cancel ? (
                       <Button variant="danger" onClick={() => onCancel(c)}>
                         {t('charges.card.cancel')}
                       </Button>

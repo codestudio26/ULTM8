@@ -2138,6 +2138,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Взнос за повышение",
       },
+      feeList: {
+        title: "Сборы за повышение",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Ждёт ответа",
+          ACCEPTED: "Принят",
+          PAID: "Оплачен",
+          DECLINED: "Отклонён",
+          WAIVED: "Освобождён",
+          CANCELLED: "Отменён",
+        },
+        owed: "Счёт {invoice}: осталось оплатить {amount}",
+        paidInvoice: "Счёт {invoice} оплачен",
+        seePayments: "Открыть в Платежах",
+      },
       skills: {
         title: "Навыки для следующей ступени",
         failed: "Не удалось изменить этот навык. Попробуйте ещё раз.",
@@ -4232,6 +4247,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Введите целое число дней от 0 до 30.",
       confirmRequired: "Отметьте флажок, чтобы подтвердить, что пени за просрочку законны там, где работает ваша школа.",
       noCurrency: "Укажите выше валюту школы, чтобы использовать фиксированную сумму.",
+    },
+    promotionFee: {
+      badge: "Сбор за повышение",
+      forRank: "{style} · {rank}",
+      seeGrading: "Открыть в аттестации",
+      cancelHint: "Освободите от него или отмените его в аттестации",
+      waivedLine: "Сбор отменён без оплаты в аттестации {date}, {name}",
+      cancelledLine: "Сбор отменён в аттестации {date}, {name}",
     },
     lateFee: {
       badge: "Пеня за просрочку",

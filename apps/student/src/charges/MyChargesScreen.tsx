@@ -313,10 +313,14 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
   return (
     <View testID={`charge-${c.id}`} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border, opacity: cancelled ? 0.55 : 1 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontWeight: '600', flex: 1, marginRight: spacing[2] }}>{c.lateFee ? t('charges.lateFee.label') : c.description}</Text>
+        <Text style={{ fontWeight: '600', flex: 1, marginRight: spacing[2] }}>
+          {c.lateFee ? t('charges.lateFee.label') : c.promotionFee ? t('charges.promotionFee.label') : c.description}
+        </Text>
         <Text style={{ color: statusColor, fontWeight: '600' }}>{t(statusKey)}</Text>
       </View>
       <LateFeeFor charge={c} />
+      {/* Backlog 3.6 step 6: an accepted promotion fee, with the grade and style it is for. */}
+      {c.promotionFee ? <Muted>{t('charges.promotionFee.forRank', { rank: c.promotionFee.toRungName, style: c.promotionFee.disciplineName })}</Muted> : null}
       <Muted>
         {t('charges.invoice', { invoice: c.invoiceLabel })} · {t('charges.due', { date: formatDay(c.dueDate) })}
       </Muted>

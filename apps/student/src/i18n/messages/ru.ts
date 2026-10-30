@@ -622,6 +622,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "Оставить",
       accept: "Принять {amount}",
       decline: "Отклонить",
+      plusTax: "Плюс налог {tax}: всего {total}.",
+      acceptedInvoice: "Вы приняли сбор. Счёт {invoice}: к оплате {amount}, в приложении или на стойке.",
+      waitsForPayment: "Повышение до {rank} вступит в силу после оплаты.",
+      payNow: "Оплатить сейчас",
+      paid: "Оплачено. Спасибо.",
     },
     history: {
       loadError: "Не удалось загрузить историю — попробуйте ещё раз.",
@@ -1078,6 +1083,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Оплата: {invoice} {description}",
       itemBalance: "Оплата на ваш баланс",
+    },
+    promotionFee: {
+      label: "Сбор за повышение",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "Пеня за просрочку",

@@ -614,6 +614,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "No, mantieni",
       accept: "Accetta {amount}",
       decline: "Rifiuta",
+      plusTax: "Più {tax} di tasse: {total} in totale.",
+      acceptedInvoice: "Hai accettato la quota. Fattura {invoice}: {amount} da pagare, nell’app o alla reception.",
+      waitsForPayment: "La promozione a {rank} avviene appena è pagata.",
+      payNow: "Paga ora",
+      paid: "Pagata. Grazie.",
     },
     history: {
       loadError: "Impossibile caricare lo storico — riprova.",
@@ -1057,6 +1062,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Pagamento: {invoice} {description}",
       itemBalance: "Pagamento sul tuo saldo",
+    },
+    promotionFee: {
+      label: "Quota di promozione",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "Penale di ritardo",

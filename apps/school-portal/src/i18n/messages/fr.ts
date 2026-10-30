@@ -2072,6 +2072,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Frais de promotion",
       },
+      feeList: {
+        title: "Frais de promotion",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "En attente de réponse",
+          ACCEPTED: "Acceptés",
+          PAID: "Payés",
+          DECLINED: "Refusés",
+          WAIVED: "Renoncés",
+          CANCELLED: "Annulés",
+        },
+        owed: "Facture {invoice} : {amount} restant à payer",
+        paidInvoice: "Facture {invoice} payée",
+        seePayments: "Voir dans Paiements",
+      },
       skills: {
         title: "Compétences pour le grade suivant",
         failed: "Impossible de modifier cette compétence. Veuillez réessayer.",
@@ -4122,6 +4137,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Saisissez un nombre entier de jours de 0 à 30.",
       confirmRequired: "Cochez la case pour confirmer que les frais de retard sont légaux là où votre école exerce.",
       noCurrency: "Définissez la devise de l'école ci-dessus pour utiliser un montant fixe.",
+    },
+    promotionFee: {
+      badge: "Frais de promotion",
+      forRank: "{style} · {rank}",
+      seeGrading: "Voir dans la progression",
+      cancelHint: "Y renoncer ou les annuler dans la progression",
+      waivedLine: "Frais annulés par renonciation dans la progression le {date} par {name}",
+      cancelledLine: "Frais annulés dans la progression le {date} par {name}",
     },
     lateFee: {
       badge: "Frais de retard",

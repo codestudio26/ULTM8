@@ -103,6 +103,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Paying a promotion fee** (backlog 3.6 step 6; Decisions 300, 303) — when a
+  student, or a Guardian for a child, accepts a promotion fee, it becomes an
+  invoice on the student's balance: the rank it is for, the fee with the
+  School's tax, due that day. It is paid like any charge: at the desk, in the
+  app, or automatically with a saved card if the member turned that on; credit
+  on the balance pays it straight away. Once it is fully paid the fee shows
+  **Paid** and a promotion that was waiting for it goes through, with the
+  coach's grading date. Waiving or cancelling the fee in grading cancels the
+  invoice, and anything already paid becomes credit. On the student's
+  **Payments** card the invoice shows a **Promotion fee** badge, the style and
+  grade, and a link to grading; it can't be cancelled there (it is waived or
+  cancelled from grading). Each style on the student's page lists its
+  promotion fees and their invoices. In the student app the fee card shows
+  any tax added on top before accepting, then the invoice and **Pay now**;
+  Invoices labels it "Promotion fee". Late fees and payment notices apply to
+  it as to any charge. Fees accepted before this change get their invoice
+  from the next daily payments run. **Needs a database migration**
+  (`20270117000000_promotion_fee_charges`).
 - **Charges and member balance, step 3: recurring charges** (backlog 3.6;
   Decisions 303, 338, 412) — on a student's **Payments** card, staff who can
   create charges set up a **recurring charge**: description, price, discount,

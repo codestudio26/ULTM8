@@ -31,6 +31,7 @@ import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { FranchiseFeeBillingService } from '../src/franchise-fees/franchise-fee-billing.service';
 import { FranchiseFeeUsageReportingProcessor } from '../src/jobs/franchise-fee-usage-reporting.processor';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
+import { PromotionFeeService } from '../src/ranks/promotion-fee.service';
 import {
   CHARGEBACK_PATTERN_RESTRICTION_QUEUE,
   NOTIFICATION_FANOUT_QUEUE,
@@ -833,6 +834,8 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
           { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: queue },
           { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: queue },
           { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: queue },
+          // None of these pay a promotion fee (backlog 3.6 step 6).
+          { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
         ],
       }).compile();
       webhook = moduleRef.get(StripeWebhookProcessingProcessor);

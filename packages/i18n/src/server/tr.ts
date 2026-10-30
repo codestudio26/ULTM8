@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "Bu tekrarlayan ücret sona erdi: bitiş tarihi geçti ya da tüm ödemeleri yapıldı.",
   "This recurring charge isn't stopped.": "Bu tekrarlayan ücret durdurulmuş değil.",
   "Recurring charge not found": "Tekrarlayan ücret bulunamadı",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Bu bir terfi ücretidir. Okul sahibi öğrencinin kuşak sayfasından bu ücreti affeder veya iptal eder; bu da bu ödemeyi iptal eder.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Bu okul henüz para birimini ayarlamadı, bu yüzden ücret ödenemiyor. Okula sor.",
 };

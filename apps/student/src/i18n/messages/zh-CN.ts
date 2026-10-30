@@ -599,6 +599,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "保留",
       accept: "接受 {amount}",
       decline: "拒绝",
+      plusTax: "另加 {tax} 税费：共 {total}。",
+      acceptedInvoice: "你已接受该费用。账单 {invoice}：需支付 {amount}，可在应用内或前台支付。",
+      waitsForPayment: "支付后即晋级为 {rank}。",
+      payNow: "立即支付",
+      paid: "已支付，谢谢。",
     },
     history: {
       loadError: "无法加载历史，请重试。",
@@ -1031,6 +1036,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "付款：{invoice} {description}",
       itemBalance: "余额付款",
+    },
+    promotionFee: {
+      label: "晋级费",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "滞纳金",

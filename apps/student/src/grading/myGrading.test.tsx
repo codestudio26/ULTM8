@@ -159,6 +159,37 @@ describe('promotion fee', () => {
     expect(getByText(/You accepted the fee\. The promotion to Blue Belt goes through once it is paid\./)).toBeTruthy();
     expect(queryByText(/Purple Belt/)).toBeNull();
   });
+
+  it('shows tax the School adds on top, and accepting names the total (backlog 3.6 step 6)', async () => {
+    mocked(q.useMyFeeRequests).mockReturnValue(
+      ok({ items: [{ ...FEE, taxPreview: { netAmount: 6000, taxAmount: 1200, grossAmount: 7200, taxRateBasisPoints: 2000, taxInclusive: false, currency: 'BRL' } }] }),
+    );
+    const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: { openFeeId: 'fee1' } } as never} />);
+    expect(getByText(/^Plus .*12[.,]00 tax: .*72[.,]00 in all\.$/)).toBeTruthy();
+    expect(getByText(/^Accept .*72[.,]00$/)).toBeTruthy();
+  });
+
+  it('an accepted fee shows its invoice; "Pay now" opens Invoices (for a child, the child\'s); a paid one says so', async () => {
+    const charge = {
+      id: 'c1', invoiceLabel: '#0000012', status: 'OPEN', netAmount: 6000, taxAmount: 0, grossAmount: 6000, taxRateBasisPoints: 0,
+      taxInclusive: true, paidAmount: 0, owedAmount: 6000, currency: 'BRL', dueDate: '2026-10-30',
+    };
+    mocked(q.useMyFeeRequests).mockReturnValue(
+      ok({
+        items: [
+          { ...FEE, status: 'ACCEPTED', charge },
+          { ...FEE, id: 'fee2', status: 'ACCEPTED', toRungName: 'Blue Belt', charge: { ...charge, id: 'c2', invoiceLabel: '#0000013', status: 'PAID', paidAmount: 6000, owedAmount: 0 } },
+        ],
+      }),
+    );
+    const navigation = nav();
+    const { getByText } = await render(<MyGradingScreen navigation={navigation} route={{ params: { studentId: 'kid', name: 'Ben' } } as never} />);
+    expect(getByText(/^You accepted the fee\. Invoice #0000012: .*60[.,]00 to pay, in the app or at the front desk\.$/)).toBeTruthy();
+    expect(getByText('The promotion to White Belt · 1 Stripe goes through once it is paid.')).toBeTruthy();
+    expect(getByText('Paid. Thank you.')).toBeTruthy();
+    fireEvent.press(getByText('Pay now'));
+    expect((navigation as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith('MyCharges', { studentId: 'kid', name: 'Ben' });
+  });
 });
 
 describe('GradingHistoryScreen', () => {

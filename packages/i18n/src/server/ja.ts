@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "この定期請求は終了しました。終了日を過ぎたか、すべての支払いが完了しています。",
   "This recurring charge isn't stopped.": "この定期請求は停止されていません。",
   "Recurring charge not found": "定期請求が見つかりません",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "これは昇級費です。スクールのオーナーが生徒の昇級画面から免除または取り消すと、この請求も取り消されます。",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "このスクールはまだ通貨を設定していないため、料金を支払えません。スクールにお問い合わせください。",
 };

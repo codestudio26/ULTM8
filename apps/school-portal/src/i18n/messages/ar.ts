@@ -2204,6 +2204,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "رسوم الترقية",
       },
+      feeList: {
+        title: "رسوم الترقية",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "بانتظار الرد",
+          ACCEPTED: "مقبولة",
+          PAID: "مدفوعة",
+          DECLINED: "مرفوضة",
+          WAIVED: "معفاة",
+          CANCELLED: "ملغاة",
+        },
+        owed: "الفاتورة {invoice}: {amount} متبقية للدفع",
+        paidInvoice: "الفاتورة {invoice} مدفوعة",
+        seePayments: "عرض في المدفوعات",
+      },
       skills: {
         title: "مهارات الدرجة التالية",
         failed: "تعذّر تغيير هذه المهارة، يُرجى المحاولة مرة أخرى.",
@@ -4330,6 +4345,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "أدخل عددًا صحيحًا من الأيام من 0 إلى 30.",
       confirmRequired: "حدّد المربع لتأكيد أن رسوم التأخير قانونية حيث تعمل مدرستك.",
       noCurrency: "حدّد عملة المدرسة أعلاه لاستخدام مبلغ ثابت.",
+    },
+    promotionFee: {
+      badge: "رسوم الترقية",
+      forRank: "{style} · {rank}",
+      seeGrading: "عرض في الترقيات",
+      cancelHint: "أعفِ منها أو ألغها من الترقيات",
+      waivedLine: "أُعفي من الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
+      cancelledLine: "أُلغيت الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
     },
     lateFee: {
       badge: "رسوم تأخير",

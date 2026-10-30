@@ -53,7 +53,8 @@ export function isFeeToAnswer(r: FeeRequest): boolean {
 }
 
 /** Accept or decline a fee (the student, or the Guardian for a child). The
- * School is told either way; accepting never charges by itself. */
+ * School is told either way; accepting makes it an invoice to pay (backlog
+ * §3.6 step 6), and any credit on the balance pays it at once. */
 export function useAnswerFee(studentId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -65,6 +66,8 @@ export function useAnswerFee(studentId: string | null) {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['my-fee-requests', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['grading-overview', studentId] }),
+        // Accepting puts the fee on the member's invoices (backlog §3.6 step 6).
+        queryClient.invalidateQueries({ queryKey: ['member-charges'] }),
       ]),
   });
 }

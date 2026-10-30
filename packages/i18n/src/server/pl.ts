@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "Ta opłata cykliczna się zakończyła: minęła jej data zakończenia lub dokonano wszystkich płatności.",
   "This recurring charge isn't stopped.": "Ta opłata cykliczna nie jest zatrzymana.",
   "Recurring charge not found": "Nie znaleziono opłaty cyklicznej",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "To jest opłata za promocję. Właściciel szkoły umarza ją lub anuluje w stopniach ucznia, co anuluje tę należność.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Ta szkoła nie ustawiła jeszcze waluty, więc nie można zapłacić opłaty. Zapytaj w szkole.",
 };

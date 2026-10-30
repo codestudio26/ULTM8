@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "انتهى هذا الرسم المتكرر: انقضى تاريخ انتهائه أو تمت جميع دفعاته.",
   "This recurring charge isn't stopped.": "هذا الرسم المتكرر ليس متوقفًا.",
   "Recurring charge not found": "لم يتم العثور على الرسم المتكرر",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "هذه رسوم ترقية. يعفي منها مالك المدرسة أو يلغيها من صفحة تقييم الطالب، وهذا يلغي هذا الرسم.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "لم تحدد هذه المدرسة عملتها بعد، لذا لا يمكن دفع الرسوم. اسأل المدرسة.",
 };

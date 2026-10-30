@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "此定期收费项已结束：已过结束日期或所有付款均已完成。",
   "This recurring charge isn't stopped.": "此定期收费项未停止。",
   "Recurring charge not found": "未找到定期收费项",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "这是晋级费。学校所有者可在学员的晋级页面免除或取消它，这会同时取消这笔费用。",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "这所学校尚未设置货币，因此无法支付该费用。请咨询学校。",
 };

@@ -599,6 +599,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "그대로 두기",
       accept: "{amount} 수락",
       decline: "거절",
+      plusTax: "세금 {tax} 추가: 총 {total}.",
+      acceptedInvoice: "비용을 수락했습니다. 청구서 {invoice}: 앱이나 프런트 데스크에서 {amount}을(를) 결제하세요.",
+      waitsForPayment: "결제되면 {rank}(으)로 승급됩니다.",
+      payNow: "지금 결제",
+      paid: "결제되었습니다. 감사합니다.",
     },
     history: {
       loadError: "기록을 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -1032,6 +1037,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "결제: {invoice} {description}",
       itemBalance: "잔액 결제",
+    },
+    promotionFee: {
+      label: "승급비",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "연체료",

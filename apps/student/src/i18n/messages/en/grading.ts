@@ -82,6 +82,12 @@ export const grading = {
     keepIt: 'Keep it',
     accept: 'Accept {amount}',
     decline: 'Decline',
+    /** Backlog 3.6 step 6: an accepted fee is an invoice, paid like any other. {tax} and {total} are amounts. */
+    plusTax: "Plus {tax} tax: {total} in all.",
+    acceptedInvoice: "You accepted the fee. Invoice {invoice}: {amount} to pay, in the app or at the front desk.",
+    waitsForPayment: "The promotion to {rank} goes through once it is paid.",
+    payNow: "Pay now",
+    paid: "Paid. Thank you.",
   },
   history: {
     loadError: 'Could not load the history — please try again.',

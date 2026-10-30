@@ -138,6 +138,80 @@ export class PromotionFeeRequestResponseDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiPropertyOptional({
+    type: () => PromotionFeeChargeSummaryDto,
+    nullable: true,
+    description: 'Backlog §3.6 step 6 (Decision 303 item 5): the charge made when the fee was accepted, paid as any charge is. Null before it is accepted.',
+  })
+  charge!: PromotionFeeChargeSummaryDto | null;
+
+  @ApiPropertyOptional({
+    type: () => PromotionFeeTaxPreviewDto,
+    nullable: true,
+    description: "PENDING only: what accepting would charge with the School's tax settings today (Decision 411). The charge keeps the tax of the day it is made.",
+  })
+  taxPreview!: PromotionFeeTaxPreviewDto | null;
+}
+
+/** Backlog §3.6 step 6: the charge of an accepted promotion fee. */
+export class PromotionFeeChargeSummaryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ example: '#0000012' })
+  invoiceLabel!: string;
+
+  @ApiProperty({ enum: ['OPEN', 'PART_PAID', 'PAID', 'CANCELLED'] })
+  status!: 'OPEN' | 'PART_PAID' | 'PAID' | 'CANCELLED';
+
+  @ApiProperty({ description: 'Price excluding tax (minor units).' })
+  netAmount!: number;
+
+  @ApiProperty()
+  taxAmount!: number;
+
+  @ApiProperty({ description: 'Price including tax: what is owed in all.' })
+  grossAmount!: number;
+
+  @ApiProperty()
+  taxRateBasisPoints!: number;
+
+  @ApiProperty()
+  taxInclusive!: boolean;
+
+  @ApiProperty()
+  paidAmount!: number;
+
+  @ApiProperty({ description: 'Still to pay (0 when paid or cancelled).' })
+  owedAmount!: number;
+
+  @ApiProperty()
+  currency!: string;
+
+  @ApiProperty({ example: '2026-10-30' })
+  dueDate!: string;
+}
+
+/** Backlog §3.6 step 6: a pending fee's tax, before it is accepted. */
+export class PromotionFeeTaxPreviewDto {
+  @ApiProperty()
+  netAmount!: number;
+
+  @ApiProperty()
+  taxAmount!: number;
+
+  @ApiProperty()
+  grossAmount!: number;
+
+  @ApiProperty()
+  taxRateBasisPoints!: number;
+
+  @ApiProperty()
+  taxInclusive!: boolean;
+
+  @ApiProperty()
+  currency!: string;
 }
 
 export class PromotionFeeRequestListResponseDto {

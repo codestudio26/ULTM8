@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "Deze terugkerende kosten zijn beëindigd: de einddatum is voorbij of alle betalingen zijn gedaan.",
   "This recurring charge isn't stopped.": "Deze terugkerende kosten zijn niet gestopt.",
   "Recurring charge not found": "Terugkerende kosten niet gevonden",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dit is een promotievergoeding. De schooleigenaar scheldt deze kwijt of annuleert deze via de graduatie van de leerling, waardoor deze kosten worden geannuleerd.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Deze school heeft nog geen valuta ingesteld, dus de vergoeding kan niet worden betaald. Vraag het aan de school.",
 };

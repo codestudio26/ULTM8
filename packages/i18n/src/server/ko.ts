@@ -709,4 +709,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "이 정기 청구는 종료되었습니다. 종료일이 지났거나 모든 결제가 완료되었습니다.",
   "This recurring charge isn't stopped.": "이 정기 청구는 중지된 상태가 아닙니다.",
   "Recurring charge not found": "정기 청구를 찾을 수 없습니다",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "승급비입니다. 학교 소유자가 학생의 승급 화면에서 면제하거나 취소하면 이 청구도 취소됩니다.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "이 학교가 아직 통화를 설정하지 않아 비용을 결제할 수 없습니다. 학교에 문의하세요.",
 };

@@ -2039,6 +2039,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "晋级费用",
       },
+      feeList: {
+        title: "晋级费",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "等待回复",
+          ACCEPTED: "已接受",
+          PAID: "已支付",
+          DECLINED: "已拒绝",
+          WAIVED: "已免除",
+          CANCELLED: "已取消",
+        },
+        owed: "账单 {invoice}：仍需支付 {amount}",
+        paidInvoice: "账单 {invoice} 已支付",
+        seePayments: "在付款中查看",
+      },
       skills: {
         title: "下一级别所需技术",
         failed: "无法更改此技术，请重试。",
@@ -4077,6 +4092,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "请输入 0 到 30 之间的整数天数。",
       confirmRequired: "勾选此框以确认在你的学校所在地收取滞纳金是合法的。",
       noCurrency: "要使用固定金额，请先在上方设置学校的货币。",
+    },
+    promotionFee: {
+      badge: "晋级费",
+      forRank: "{style} · {rank}",
+      seeGrading: "在晋级中查看",
+      cancelHint: "在晋级页面免除或取消",
+      waivedLine: "{name} 于 {date} 在晋级页面免除了该费用",
+      cancelledLine: "{name} 于 {date} 在晋级页面取消了该费用",
     },
     lateFee: {
       badge: "滞纳金",

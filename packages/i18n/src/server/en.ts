@@ -723,4 +723,7 @@ export const SERVER_PATTERNS: string[] = [
  "This recurring charge has ended: its end date has passed or all its payments were made.",
  "This recurring charge isn't stopped.",
  "Recurring charge not found",
+ // Promotion fee charges (backlog 3.6 step 6, Decision 303 item 5).
+ "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.",
+ "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
 ];

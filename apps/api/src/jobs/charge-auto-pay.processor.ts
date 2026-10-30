@@ -13,6 +13,7 @@ import { allocate, chargeNoticeSwitches, chargeRemaining, freeCredit, lockBalanc
 import { formatInvoiceNumber } from '../charges/charge-maths';
 import { CHARGE_AUTO_PAY_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { PromotionFeeService } from '../ranks/promotion-fee.service';
 
 /** Daily, at 6am UTC: after the 5am waiver-renewal sweep. */
 const CRON_DAILY_AT_6AM_UTC = '0 6 * * *';
@@ -77,6 +78,11 @@ export type ChargeAutoPayOutcome = { paid: number; failed: number; skipped: numb
  *   ledger code as a desk or app payment and sends the receipt; a decline marks
  *   it Failed and sends "Automatic payment failed". The payment_intent.*
  *   webhooks for the same PaymentIntent settle the same row at most once.
+ * - Promotion fees (backlog §3.6 step 6) are charges like any other and are
+ *   paid automatically too: Decision 300 item 2 has an accepted fee "charged,
+ *   by saved card or as the school takes payment". Each run starts with the
+ *   fees' catch-up (PromotionFeeService.reconcile()), and a fee this pays in
+ *   full becomes Paid (settlePaidCharges()).
  */
 @Processor(CHARGE_AUTO_PAY_QUEUE)
 export class ChargeAutoPayProcessor extends WorkerHost {
@@ -87,6 +93,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
     private readonly prismaApp: PrismaAppService,
     private readonly payments: PaymentsService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
+    private readonly promotionFees: PromotionFeeService,
   ) {
     super();
   }
@@ -97,6 +104,16 @@ export class ChargeAutoPayProcessor extends WorkerHost {
 
   /** Separate from process() so tests can pass the date. */
   async run(now: Date): Promise<ChargeAutoPayOutcome> {
+    // Backlog §3.6 step 6: promotion fees first. Accepted fees with no charge
+    // yet get one (those accepted before charges existed included), so they
+    // are paid below like any charge; paid ones are settled; waived or
+    // cancelled ones lose their open charge. Never stops the payments.
+    try {
+      const caughtUp = await this.promotionFees.reconcile();
+      this.logger.log(`charge-auto-pay: promotion fees caught up: ${caughtUp.created} charges made, ${caughtUp.settled} settled, ${caughtUp.cancelled} cancelled.`);
+    } catch (err) {
+      this.logger.error('charge-auto-pay: the promotion fee catch-up failed; tried again on the next run.', err as Error);
+    }
     const members = await this.prismaJobs.studentPaymentMethod.findMany({ where: { autoPayCharges: true }, select: { studentId: true, schoolId: true } });
     const total: ChargeAutoPayOutcome = { paid: 0, failed: 0, skipped: 0 };
     for (const m of members) {
@@ -158,6 +175,8 @@ export class ChargeAutoPayProcessor extends WorkerHost {
       if (await this.charge(attempt)) outcome.paid++;
       else outcome.failed++;
     }
+    // A promotion fee paid by credit or by the card becomes Paid (step 6).
+    await this.promotionFees.settlePaidCharges(schoolId, studentId);
     return outcome;
   }
 

@@ -498,6 +498,22 @@ export const grading = {
     fee: {
       aria: 'Promotion fee',
     },
+    /** Backlog 3.6 step 6: this style's promotion fees and their charges. */
+    feeList: {
+      title: "Promotion fees",
+      row: "{rank} · {amount}",
+      status: {
+        PENDING: "Waiting for an answer",
+        ACCEPTED: "Accepted",
+        PAID: "Paid",
+        DECLINED: "Declined",
+        WAIVED: "Waived",
+        CANCELLED: "Cancelled",
+      },
+      owed: "Invoice {invoice}: {amount} still to pay",
+      paidInvoice: "Invoice {invoice} paid",
+      seePayments: "See in Payments",
+    },
     skills: {
       title: 'Skills for the next rank',
       failed: 'Could not change this skill — please try again.',

@@ -2072,6 +2072,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Taxa de promoção",
       },
+      feeList: {
+        title: "Taxas de graduação",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Aguardando resposta",
+          ACCEPTED: "Aceita",
+          PAID: "Paga",
+          DECLINED: "Recusada",
+          WAIVED: "Dispensada",
+          CANCELLED: "Cancelada",
+        },
+        owed: "Fatura {invoice}: falta pagar {amount}",
+        paidInvoice: "Fatura {invoice} paga",
+        seePayments: "Ver em Pagamentos",
+      },
       skills: {
         title: "Habilidades para a próxima graduação",
         failed: "Não foi possível alterar esta habilidade. Tente novamente.",
@@ -4122,6 +4137,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Informe um número inteiro de dias de 0 a 30.",
       confirmRequired: "Marque a caixa para confirmar que multas por atraso são legais onde sua Escola atua.",
       noCurrency: "Defina a moeda da Escola acima para usar um valor fixo.",
+    },
+    promotionFee: {
+      badge: "Taxa de graduação",
+      forRank: "{style} · {rank}",
+      seeGrading: "Ver na graduação",
+      cancelHint: "Dispense ou cancele na graduação",
+      waivedLine: "Taxa dispensada na graduação em {date} por {name}",
+      cancelledLine: "Taxa cancelada na graduação em {date} por {name}",
     },
     lateFee: {
       badge: "Multa por atraso",

@@ -36,7 +36,13 @@ export function useMemberRecurringCharges(studentId: string | null) {
  * webhook, so it may show as Pending for a moment first. */
 export function useInvalidateMemberCharges() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: ['member-charges'] });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['member-charges'] }),
+      // A payment can pay a promotion fee, which then shows Paid (backlog §3.6 step 6).
+      queryClient.invalidateQueries({ queryKey: ['my-fee-requests'] }),
+      queryClient.invalidateQueries({ queryKey: ['grading-overview'] }),
+    ]);
 }
 
 /** POST /students/{id}/charges/checkout — a hosted Stripe Checkout for one

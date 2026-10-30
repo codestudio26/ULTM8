@@ -2072,6 +2072,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Cuota de promoción",
       },
+      feeList: {
+        title: "Tarifas de promoción",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Esperando respuesta",
+          ACCEPTED: "Aceptada",
+          PAID: "Pagada",
+          DECLINED: "Rechazada",
+          WAIVED: "Condonada",
+          CANCELLED: "Cancelada",
+        },
+        owed: "Factura {invoice}: quedan {amount} por pagar",
+        paidInvoice: "Factura {invoice} pagada",
+        seePayments: "Ver en Pagos",
+      },
       skills: {
         title: "Habilidades para el siguiente grado",
         failed: "No se pudo cambiar esta habilidad. Inténtalo de nuevo.",
@@ -4122,6 +4137,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Introduce un número entero de días de 0 a 30.",
       confirmRequired: "Marca la casilla para confirmar que los recargos por retraso son legales donde opera tu escuela.",
       noCurrency: "Configura arriba la moneda de la escuela para usar un importe fijo.",
+    },
+    promotionFee: {
+      badge: "Tarifa de promoción",
+      forRank: "{style} · {rank}",
+      seeGrading: "Ver en graduación",
+      cancelHint: "Condónala o cancélala en graduación",
+      waivedLine: "Tarifa condonada en graduación el {date} por {name}",
+      cancelledLine: "Tarifa cancelada en graduación el {date} por {name}",
     },
     lateFee: {
       badge: "Recargo por retraso",

@@ -297,6 +297,29 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
     expect(getByText(/^Waived on .*\. Nothing to pay\.$/)).toBeTruthy();
   });
 
+  it('labels an accepted promotion fee "Promotion fee", with the grade and style (backlog 3.6 step 6)', async () => {
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({
+        schools: [
+          {
+            ...SCHOOL,
+            charges: [
+              charge({
+                id: 'p1',
+                invoiceLabel: '#0000005',
+                description: 'Blue Belt',
+                promotionFee: { requestId: 'fee1', disciplineId: 'bjj', disciplineName: 'BJJ', toRungName: 'Blue Belt', status: 'ACCEPTED' },
+              }),
+            ],
+          },
+        ],
+      }),
+    );
+    const { getByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('Promotion fee')).toBeTruthy();
+    expect(getByText('Blue Belt · BJJ')).toBeTruthy();
+  });
+
   describe('recurring charges (Decision 412)', () => {
     const recurring = (over: Record<string, unknown>) => ({
       id: 'r1',

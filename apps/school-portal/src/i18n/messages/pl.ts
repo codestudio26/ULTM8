@@ -2138,6 +2138,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Opłata za promocję",
       },
+      feeList: {
+        title: "Opłaty za promocję",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Czeka na odpowiedź",
+          ACCEPTED: "Zaakceptowana",
+          PAID: "Opłacona",
+          DECLINED: "Odrzucona",
+          WAIVED: "Umorzona",
+          CANCELLED: "Anulowana",
+        },
+        owed: "Faktura {invoice}: pozostało {amount} do zapłaty",
+        paidInvoice: "Faktura {invoice} opłacona",
+        seePayments: "Zobacz w Płatnościach",
+      },
       skills: {
         title: "Techniki na kolejny stopień",
         failed: "Nie udało się zmienić tej techniki. Spróbuj ponownie.",
@@ -4232,6 +4247,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Wpisz całkowitą liczbę dni od 0 do 30.",
       confirmRequired: "Zaznacz pole, aby potwierdzić, że opłaty za zwłokę są legalne tam, gdzie działa Twoja szkoła.",
       noCurrency: "Ustaw powyżej walutę szkoły, aby użyć stałej kwoty.",
+    },
+    promotionFee: {
+      badge: "Opłata za promocję",
+      forRank: "{style} · {rank}",
+      seeGrading: "Zobacz w stopniach",
+      cancelHint: "Umórz lub anuluj ją w stopniach",
+      waivedLine: "Opłata umorzona w stopniach {date} przez {name}",
+      cancelledLine: "Opłata anulowana w stopniach {date} przez {name}",
     },
     lateFee: {
       badge: "Opłata za zwłokę",

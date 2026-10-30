@@ -1,15 +1,36 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { Prisma, PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { RequestContext } from '../common/request-context';
 import { cursorPaginate } from '../common/pagination/cursor-paginate';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
+import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
+import { cancelChargeInTx, chargeCancelledNotice } from '../charges/charge-cancel';
+import { chargePaid, chargeRemaining, lockBalance } from '../charges/charge-ledger';
+import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { GradingService } from './grading.service';
 import { isOpenToDecide, isWaitingForFee, PendingGrade } from './promotion-fee';
 import { PromotionFeeRequestQueryDto, UpdatePromotionFeeSettingsDto } from './dto/promotion-fee.dto';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type FeeCharge = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
+
+/** What a charge has had put toward it, and what it still owes: total −
+ * refunded − paid (step 4), as everywhere else on the ledger. */
+const paidOn = (c: FeeCharge) => chargePaid(c);
+const owedOn = (c: FeeCharge) => (c.cancelledAt ? 0 : Math.max(0, chargeRemaining(c)));
+
+/** Money as the API's English notices write it ("120.00 BRL"), as ChargesService does. */
+const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
 /** Statuses the owner may still waive or cancel ("at any time", Decision 307). */
 const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED'];
@@ -30,21 +51,29 @@ const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED']
  *   in that style (Decision 307 item 3). The decisions say a coach decides
  *   "or decides not to" (Decision 313 item 1) but name no action for it; this
  *   endpoint is the narrowest one. Needs product-owner confirmation.
- * - Paying: staff-created charges (Decision 303) are not built. markPaid()
- *   is the internal step they will call; there is no endpoint for it, and no
- *   "paid at the desk" endpoint (not decided).
+ * - Paying (backlog §3.6 step 6; Decision 303 item 5): accepting makes a
+ *   Charge for the fee on the student's balance, paid like any charge (at the
+ *   desk, in the app, automatically with a saved card, or by credit). When it
+ *   is fully paid, settlePaidCharges() marks the request PAID through
+ *   markPaid(), which applies a waiting promotion. Waiving or cancelling the
+ *   fee cancels its charge. There is still no endpoint that marks a fee paid.
  *
  * Writes run under the student's own context, like every grading write
  * (Decision 88): the request's RLS lets the student's context write it, and
- * only after the checks above.
+ * only after the checks above. The charge itself is written on the jobs
+ * connection, as every Charge is.
  */
 @Injectable()
 export class PromotionFeeService {
+  private readonly logger = new Logger(PromotionFeeService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
     private readonly gradingService: GradingService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -122,7 +151,7 @@ export class PromotionFeeService {
         limit,
       ),
     );
-    return { items: page.items.map((r) => this.shape(r)), nextCursor: page.nextCursor };
+    return { items: await this.shapeWithCharges(page.items), nextCursor: page.nextCursor };
   }
 
   /** null for the School owner (every style); otherwise the styles the caller
@@ -155,17 +184,42 @@ export class PromotionFeeService {
         take: 200,
       }),
     );
-    return { items: rows.map(({ school, discipline, ...r }) => ({ ...this.shape(r), schoolName: school.name, disciplineName: discipline.name })) };
+    // shape() picks its own fields, so the joined names don't leak into it.
+    const shaped = await this.shapeWithCharges(rows);
+    return { items: rows.map((r, i) => ({ ...shaped[i], schoolName: r.school.name, disciplineName: r.discipline.name })) };
   }
 
   // ---------------------------------------------------------------------------
   // The payer: accept or decline (Decision 300 items 2, 3, 5)
   // ---------------------------------------------------------------------------
 
-  /** Accepting moves the request to ACCEPTED; it is then paid as a charge
-   * (Decision 303, not built). A waiting promotion still waits until paid. */
+  /**
+   * Accepting moves the request to ACCEPTED and makes its charge (backlog
+   * §3.6 step 6; Decision 303 item 5): on the student's balance, for the rank
+   * it is for, due today, with the School's tax (Decision 411), and paid at
+   * once by any credit the student has. A waiting promotion still waits until
+   * the charge is fully paid. A School with no currency can't take the fee,
+   * so the request isn't accepted at all.
+   */
   async accept(callerId: string, requestId: string) {
-    return this.answer(callerId, requestId, 'ACCEPTED');
+    const request = await this.find(callerId, requestId);
+    await this.assertPayer(callerId, request.studentId);
+    const school = await this.prismaJobs.school.findUnique({ where: { id: request.schoolId }, select: { defaultCurrency: true } });
+    if (!request.currency && !school?.defaultCurrency) {
+      throw new BadRequestException({
+        code: 'PROMOTION_FEE_NO_CURRENCY',
+        message: "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
+      });
+    }
+    await this.answer(callerId, requestId, 'ACCEPTED');
+    try {
+      await this.ensureCharge(requestId);
+      await this.settlePaidCharges(request.schoolId, request.studentId);
+    } catch (err) {
+      // Accepted all the same; the daily catch-up (reconcile) makes the charge.
+      this.logger.error(`Promotion fee ${requestId} was accepted but its charge could not be made now; the daily catch-up retries.`, err as Error);
+    }
+    return this.reread(request.studentId, request.id);
   }
 
   /** Declining: a promotion that applied stays; a waiting one never applies
@@ -209,9 +263,12 @@ export class PromotionFeeService {
     const request = await this.findForOwner(callerId, requestId);
     if (isWaitingForFee(request)) {
       await this.gradingService.applyWaitingPromotion(callerId, request, 'WAIVED', callerId);
-      return this.reread(request.studentId, request.id);
+    } else {
+      await this.close(callerId, request, 'WAIVED');
     }
-    return this.close(callerId, request, 'WAIVED');
+    // Step 6: nothing is owed for a waived fee; anything paid is credit.
+    await this.cancelOpenCharge(request.id, callerId);
+    return this.reread(request.studentId, request.id);
   }
 
   /**
@@ -224,7 +281,10 @@ export class PromotionFeeService {
    */
   async cancel(callerId: string, requestId: string) {
     const request = await this.findForOwner(callerId, requestId);
-    return this.close(callerId, request, 'CANCELLED');
+    await this.close(callerId, request, 'CANCELLED');
+    // Step 6: nothing is owed for a cancelled fee; anything paid is credit.
+    await this.cancelOpenCharge(request.id, callerId);
+    return this.reread(request.studentId, request.id);
   }
 
   private async close(callerId: string, request: PromotionFeeRequest, to: 'WAIVED' | 'CANCELLED') {
@@ -282,11 +342,11 @@ export class PromotionFeeService {
   // ---------------------------------------------------------------------------
 
   /**
-   * An accepted fee has been paid. For staff-created charges (Decision 303)
-   * to call once they exist: there is deliberately no endpoint. A promotion
-   * that waited for this fee applies now, with the coach's grading date, once
-   * only (GradingService.applyWaitingPromotion); otherwise the request is
-   * just marked paid.
+   * An accepted fee has been paid: its charge is fully paid (called by
+   * settlePaidCharges(), never by an endpoint). A promotion that waited for
+   * this fee applies now, with the coach's grading date, once only
+   * (GradingService.applyWaitingPromotion); otherwise the request is just
+   * marked paid.
    */
   async markPaid(studentId: string, requestId: string) {
     const request = await this.prismaApp.withTenantContext(studentId, (tx) => tx.promotionFeeRequest.findFirst({ where: { id: requestId, studentId } }));
@@ -303,6 +363,193 @@ export class PromotionFeeService {
       if (updated.count === 0) throw new ConflictException('This fee request was changed at the same time.');
     }
     return this.reread(studentId, request.id);
+  }
+
+  // ---------------------------------------------------------------------------
+  // The fee's charge (backlog §3.6 step 6; Decision 303 item 5)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Makes the charge of an accepted fee, once (Charge.promotionFeeRequestId
+   * is unique). Through the shared insertCharge(), as every charge: the next
+   * invoice number, the School's tax settings today (Decision 411; the
+   * decisions on the fee say nothing different, so the price is treated as
+   * any price the School sets: tax included or added, as the School chose),
+   * due today in the School's time zone, and any credit on the balance put on
+   * it at once (Decision 303 item 2). The description is the rank it is for.
+   * The member gets the usual "New invoice" notice. Nothing is made unless
+   * the request is still ACCEPTED, read under a share lock so a waive or
+   * cancel at the same moment either comes first (no charge) or waits for this
+   * one (and then cancels it).
+   */
+  private async ensureCharge(requestId: string): Promise<void> {
+    const request = await this.prismaJobs.promotionFeeRequest.findUnique({ where: { id: requestId } });
+    if (!request || request.status !== 'ACCEPTED') return;
+    if (await this.prismaJobs.charge.findUnique({ where: { promotionFeeRequestId: requestId }, select: { id: true } })) return;
+    const school = await this.prismaJobs.school.findUnique({
+      where: { id: request.schoolId },
+      select: { defaultCurrency: true, timezone: true, taxCountry: true, taxRateBasisPoints: true, taxInclusive: true },
+    });
+    const currency = (request.currency ?? school?.defaultCurrency)?.toUpperCase();
+    if (!school || !currency) return;
+    const totals = computeCharge({ unitAmount: request.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+
+    let created: { id: string; invoiceNumber: number } | null;
+    try {
+      created = await this.prismaJobs.$transaction(async (tx) => {
+        await lockSchoolOpen(tx, request.schoolId);
+        await lockInvoiceNumbers(tx, request.schoolId);
+        await lockBalance(tx, request.schoolId, request.studentId);
+        const [row] = await tx.$queryRaw<{ status: PromotionFeeStatus }[]>`SELECT "status" FROM "PromotionFeeRequest" WHERE "id" = ${requestId} FOR SHARE`;
+        if (row?.status !== 'ACCEPTED') return null;
+        return insertCharge(tx, {
+          schoolId: request.schoolId,
+          studentId: request.studentId,
+          description: request.toRungName,
+          unitAmount: request.amountMinor,
+          discountType: null,
+          discountValue: null,
+          taxCountry: school.taxCountry,
+          taxRateBasisPoints: school.taxRateBasisPoints,
+          taxInclusive: school.taxInclusive,
+          totals,
+          currency,
+          dueDate: dayToDate(dayIn(new Date(), school.timezone)),
+          createdById: null,
+          promotionFeeRequestId: requestId,
+        });
+      });
+    } catch (err) {
+      // Made at the same moment by another path (an accept and the catch-up).
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return;
+      throw err;
+    }
+    if (!created) return;
+    const due = dayIn(new Date(), school.timezone);
+    await this.notify(request.studentId, request.schoolId, `charge-created-${created.id}`, {
+      title: 'New invoice',
+      body: `Invoice ${formatInvoiceNumber(created.invoiceNumber)} for ${request.toRungName}: ${money(totals.grossAmount, currency)}, due ${due}.`,
+      targetId: created.id,
+    });
+  }
+
+  /**
+   * Cancels the open charge of a fee that was waived or cancelled, through the
+   * same ledger write as cancelling any charge (Decision 338 item 1): the
+   * charge stays as a record, marked Cancelled, and anything already paid on it
+   * is credit, put toward the member's next open charge. The member gets the
+   * usual "Charge cancelled" notice. Nothing to do when there is no charge
+   * (never accepted) or it is already cancelled. The ledger write is not
+   * refused for a School closed meanwhile: it only takes a debt away.
+   */
+  private async cancelOpenCharge(requestId: string, closedById: string | null): Promise<void> {
+    const charge = await this.prismaJobs.charge.findUnique({ where: { promotionFeeRequestId: requestId }, select: { id: true, schoolId: true, studentId: true, cancelledAt: true } });
+    if (!charge || charge.cancelledAt) return;
+    const cancelled = await this.prismaJobs.$transaction(async (tx) => {
+      await lockBalance(tx, charge.schoolId, charge.studentId);
+      return cancelChargeInTx(tx, { schoolId: charge.schoolId, chargeId: charge.id, cancelledById: closedById, reason: null });
+    });
+    if (!cancelled) return;
+    const notice = chargeCancelledNotice(cancelled.charge.description, cancelled.charge.grossAmount, cancelled.charge.currency, cancelled.paid);
+    await this.notify(charge.studentId, charge.schoolId, `charge-cancelled-${charge.id}`, { ...notice, targetId: charge.id });
+    // The credit it freed may have paid another promotion fee in full.
+    await this.settlePaidCharges(charge.schoolId, charge.studentId);
+  }
+
+  /**
+   * The ledger's "a charge became fully paid" step for promotion fees, called
+   * after every change that can pay a charge: a desk payment and a cancelled
+   * charge's freed credit (ChargesService), a card payment in the app (the
+   * Stripe webhook), automatic payment (charge-auto-pay), and accepting (credit
+   * already on the balance). Each fully paid, not cancelled promotion fee
+   * charge whose request is still ACCEPTED goes through markPaid(): PAID, and a
+   * waiting promotion applies, once. Safe to call any number of times; the
+   * daily catch-up (reconcile) calls it too, so a step lost to a crash after
+   * the payment committed is made up. Never throws: the payment already stands.
+   */
+  async settlePaidCharges(schoolId: string, studentId: string): Promise<void> {
+    try {
+      const charges = await this.prismaJobs.charge.findMany({
+        where: { schoolId, studentId, cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED' } },
+        include: { allocations: { select: { amount: true } } },
+      });
+      for (const c of charges) {
+        if (owedOn(c) > 0 || !c.promotionFeeRequestId) continue;
+        try {
+          await this.markPaid(studentId, c.promotionFeeRequestId);
+        } catch (err) {
+          // e.g. the student's rank or the ladder changed since the grade, so
+          // the waiting promotion can't apply as it was (GradingService says
+          // so). The fee stays Accepted with its charge paid; the owner can
+          // cancel the fee (the money becomes credit) and grade again.
+          this.logger.error(`Promotion fee ${c.promotionFeeRequestId}: its charge is paid but marking it paid failed.`, err as Error);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Settling promotion fee charges for student ${studentId} at School ${schoolId} failed; the daily catch-up retries.`, err as Error);
+    }
+  }
+
+  /**
+   * The daily catch-up, run by the charge-auto-pay job before it pays
+   * anything. Brings every promotion fee and its charge into line:
+   * 1. an ACCEPTED request with no charge gets one: requests accepted before
+   *    charges existed (the one-time backfill of step 6), or an accept whose
+   *    charge failed to be made;
+   * 2. a fully paid charge whose request is still ACCEPTED is settled
+   *    (settlePaidCharges);
+   * 3. a WAIVED or CANCELLED request whose charge is still open has it
+   *    cancelled (a waive or cancel whose second step was lost).
+   * Each request on its own, so one failure never stops the rest.
+   */
+  async reconcile(): Promise<{ created: number; settled: number; cancelled: number }> {
+    const out = { created: 0, settled: 0, cancelled: 0 };
+    const missing = await this.prismaJobs.promotionFeeRequest.findMany({ where: { status: 'ACCEPTED', charge: { is: null } }, select: { id: true, schoolId: true, studentId: true } });
+    for (const r of missing) {
+      try {
+        await this.ensureCharge(r.id);
+        if (await this.prismaJobs.charge.findUnique({ where: { promotionFeeRequestId: r.id }, select: { id: true } })) out.created++;
+      } catch (err) {
+        this.logger.error(`Promotion fee ${r.id}: making its charge failed; tried again on the next run.`, err as Error);
+      }
+    }
+    const accepted = await this.prismaJobs.charge.findMany({
+      where: { cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED' } },
+      distinct: ['schoolId', 'studentId'],
+      select: { schoolId: true, studentId: true },
+    });
+    for (const s of accepted) {
+      const before = await this.prismaJobs.promotionFeeRequest.count({ where: { schoolId: s.schoolId, studentId: s.studentId, status: 'PAID' } });
+      await this.settlePaidCharges(s.schoolId, s.studentId);
+      out.settled += (await this.prismaJobs.promotionFeeRequest.count({ where: { schoolId: s.schoolId, studentId: s.studentId, status: 'PAID' } })) - before;
+    }
+    const stale = await this.prismaJobs.charge.findMany({
+      where: { cancelledAt: null, promotionFeeRequest: { status: { in: ['WAIVED', 'CANCELLED'] } } },
+      select: { promotionFeeRequestId: true, promotionFeeRequest: { select: { closedById: true } } },
+    });
+    for (const c of stale) {
+      try {
+        await this.cancelOpenCharge(c.promotionFeeRequestId!, c.promotionFeeRequest?.closedById ?? null);
+        out.cancelled++;
+      } catch (err) {
+        this.logger.error(`Promotion fee ${c.promotionFeeRequestId}: cancelling its charge failed; tried again on the next run.`, err as Error);
+      }
+    }
+    return out;
+  }
+
+  /** The member's notice (as ChargesService.notify()): type CHARGE, opening
+   * their invoices; a Guardian gets a copy from the fanout job. Best-effort. */
+  private async notify(studentId: string, schoolId: string, key: string, n: { title: string; body: string; targetId: string }) {
+    try {
+      await this.fanoutQueue.add(
+        'notify',
+        { notificationId: key, userId: studentId, title: n.title, body: n.body, type: 'CHARGE', schoolId, targetType: 'PAYMENT', targetId: n.targetId } satisfies NotificationFanoutJobData,
+        { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the charge notice ${key}: ${err}`);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -347,7 +594,58 @@ export class PromotionFeeService {
 
   private async reread(studentId: string, requestId: string) {
     const row = await this.prismaApp.withTenantContext(studentId, (tx) => tx.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } }));
-    return this.shape(row);
+    return (await this.shapeWithCharges([row]))[0];
+  }
+
+  /**
+   * shape() plus each request's charge (step 6), and for a PENDING request the
+   * tax accepting would add today. The caller already checked who may see
+   * these requests; their charges are read on the jobs connection, as the
+   * Payments card's late-fee details are (a charge always belongs to its
+   * request's student and School, a database trigger holds it).
+   */
+  private async shapeWithCharges(rows: PromotionFeeRequest[]) {
+    const ids = rows.map((r) => r.id);
+    const charges = ids.length
+      ? await this.prismaJobs.charge.findMany({ where: { promotionFeeRequestId: { in: ids } }, include: { allocations: { select: { amount: true } } } })
+      : [];
+    const chargeOf = new Map(charges.map((c) => [c.promotionFeeRequestId!, c]));
+    const pendingSchools = [...new Set(rows.filter((r) => r.status === 'PENDING').map((r) => r.schoolId))];
+    const schools = pendingSchools.length
+      ? await this.prismaJobs.school.findMany({ where: { id: { in: pendingSchools } }, select: { id: true, defaultCurrency: true, taxRateBasisPoints: true, taxInclusive: true } })
+      : [];
+    const schoolOf = new Map(schools.map((s) => [s.id, s]));
+    return rows.map((r) => {
+      const c = chargeOf.get(r.id);
+      const school = r.status === 'PENDING' ? schoolOf.get(r.schoolId) : undefined;
+      const currency = (r.currency ?? school?.defaultCurrency)?.toUpperCase();
+      let taxPreview: { netAmount: number; taxAmount: number; grossAmount: number; taxRateBasisPoints: number; taxInclusive: boolean; currency: string } | null = null;
+      if (school && currency) {
+        try {
+          const t = computeCharge({ unitAmount: r.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+          taxPreview = { netAmount: t.netAmount, taxAmount: t.taxAmount, grossAmount: t.grossAmount, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive, currency };
+        } catch {
+          taxPreview = null;
+        }
+      }
+      const charge = c
+        ? {
+            id: c.id,
+            invoiceLabel: formatInvoiceNumber(c.invoiceNumber),
+            status: (c.cancelledAt ? 'CANCELLED' : owedOn(c) === 0 ? 'PAID' : paidOn(c) > 0 ? 'PART_PAID' : 'OPEN') as 'OPEN' | 'PART_PAID' | 'PAID' | 'CANCELLED',
+            netAmount: c.netAmount,
+            taxAmount: c.taxAmount,
+            grossAmount: c.grossAmount,
+            taxRateBasisPoints: c.taxRateBasisPoints,
+            taxInclusive: c.taxInclusive,
+            paidAmount: paidOn(c),
+            owedAmount: owedOn(c),
+            currency: c.currency,
+            dueDate: c.dueDate.toISOString().slice(0, 10),
+          }
+        : null;
+      return { ...this.shape(r), charge, taxPreview };
+    });
   }
 
   private assertUuid(value: string, name: string) {
