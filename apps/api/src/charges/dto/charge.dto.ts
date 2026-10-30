@@ -25,6 +25,16 @@ export type ChargePaymentChannelValue = (typeof CHARGE_PAYMENT_CHANNELS)[number]
 export const CHARGE_PAYMENT_STATUSES = ['SUCCESSFUL', 'PENDING', 'FAILED', 'REFUNDED', 'DISPUTED'] as const;
 export type ChargePaymentStatus = (typeof CHARGE_PAYMENT_STATUSES)[number];
 
+/** Step 4 (Decision 338 item 3): a charge or payment refunded in full or in part. */
+export const REFUND_STATUSES = ['REFUNDED', 'PART_REFUNDED'] as const;
+export type RefundStatus = (typeof REFUND_STATUSES)[number];
+
+/** ChargeRefund.kind. The owner picks CARD, MONEY_BACK or CREDIT; DISPUTE_LOST
+ * and STRIPE come from Stripe's webhooks. */
+export const CHARGE_REFUND_KINDS = ['CARD', 'MONEY_BACK', 'CREDIT', 'DISPUTE_LOST', 'STRIPE'] as const;
+export const CHARGE_REFUND_DESTINATIONS = ['CARD', 'MONEY_BACK', 'CREDIT'] as const;
+export type ChargeRefundDestination = (typeof CHARGE_REFUND_DESTINATIONS)[number];
+
 /** POST /schools/{schoolId}/students/{studentId}/charges (Decision 303). */
 export class CreateChargeDto {
   @ApiProperty({ maxLength: 200, example: 'Rash guard' })
@@ -186,6 +196,42 @@ export class ChargeResponseDto {
 
   @ApiProperty({ description: "Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff." })
   cardSurchargeAmount!: number;
+
+  @ApiProperty({ description: 'Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge.' })
+  refundedAmount!: number;
+
+  @ApiPropertyOptional({ enum: REFUND_STATUSES, enumName: 'RefundStatus', nullable: true, description: 'Refunded in full, in part, or not at all (null).' })
+  refundStatus!: RefundStatus | null;
+}
+
+/** One refund of a payment (step 4). */
+export class ChargeRefundResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: CHARGE_REFUND_KINDS, enumName: 'ChargeRefundKind', description: 'CARD: back to the card. MONEY_BACK: given back in cash, Pix, bank transfer or on the card terminal (records only). CREDIT: onto the balance as credit. DISPUTE_LOST: a lost card dispute. STRIPE: refunded in the Stripe dashboard.' })
+  kind!: (typeof CHARGE_REFUND_KINDS)[number];
+
+  @ApiProperty()
+  amount!: number;
+
+  @ApiProperty()
+  refundedAt!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only; never sent to the member.' })
+  notes!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only.' })
+  refundedByName!: string | null;
+}
+
+/** What the owner can still refund on a payment (step 4). */
+export class ChargePaymentRefundableDto {
+  @ApiProperty({ description: 'What can go back to the member: to the card for a card payment, otherwise given back in cash and recorded.' })
+  asMoney!: number;
+
+  @ApiProperty({ description: 'What can be turned into credit: the part of the payment still on charges.' })
+  asCredit!: number;
 }
 
 export class ChargePaymentAllocationDto {
@@ -243,6 +289,39 @@ export class ChargePaymentResponseDto {
 
   @ApiProperty({ description: 'The part that went onto the balance as credit when it was taken.' })
   creditAmount!: number;
+
+  @ApiProperty({ description: 'Step 4: refunded so far, of every kind.' })
+  refundedAmount!: number;
+
+  @ApiPropertyOptional({ enum: REFUND_STATUSES, enumName: 'RefundStatus', nullable: true })
+  refundStatus!: RefundStatus | null;
+
+  @ApiProperty({ type: [ChargeRefundResponseDto], description: 'Oldest first.' })
+  refunds!: ChargeRefundResponseDto[];
+
+  @ApiPropertyOptional({ type: ChargePaymentRefundableDto, nullable: true, description: 'The owner only, for a Successful payment; null otherwise.' })
+  refundable!: ChargePaymentRefundableDto | null;
+}
+
+/** Credit the owner gave (step 4). */
+export class BalanceCreditResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  amount!: number;
+
+  @ApiProperty()
+  currency!: string;
+
+  @ApiProperty()
+  givenAt!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only; never sent to the member.' })
+  note!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only.' })
+  givenByName!: string | null;
 }
 
 export class ChargeBalanceDto {
@@ -280,6 +359,15 @@ export class ChargeAbilitiesDto {
 
   @ApiProperty()
   recordPayment!: boolean;
+
+  @ApiProperty({ description: 'Refund a payment (owner only, Decision 303 item 3).' })
+  refund!: boolean;
+
+  @ApiProperty({ description: 'Give credit (owner only, Decision 303 item 3).' })
+  addCredit!: boolean;
+
+  @ApiProperty({ description: 'Resend a charge\'s invoice notice: whoever may create charges (Decision 338 item 5).' })
+  resendInvoice!: boolean;
 }
 
 export class ChargeSettingsDto {
@@ -300,6 +388,12 @@ export class ChargeSettingsDto {
 
   @ApiProperty({ description: 'A desk payment can be recorded: the School has its payments set up.' })
   paymentsSetUp!: boolean;
+
+  @ApiProperty({ description: 'Decision 338 item 3: notes are required when refunding.' })
+  refundNotesRequired!: boolean;
+
+  @ApiProperty({ description: 'Decision 338 item 10: the School sends payment receipts (on by default).' })
+  receiptNotice!: boolean;
 }
 
 /** GET /schools/{schoolId}/students/{studentId}/charges: the staff view. */
@@ -312,6 +406,9 @@ export class StudentChargesResponseDto {
 
   @ApiProperty({ type: [ChargePaymentResponseDto], description: 'Newest first.' })
   payments!: ChargePaymentResponseDto[];
+
+  @ApiProperty({ type: [BalanceCreditResponseDto], description: 'Credit the owner gave, newest first.' })
+  credits!: BalanceCreditResponseDto[];
 
   @ApiProperty({ type: ChargeAbilitiesDto, description: 'What the caller may do here.' })
   can!: ChargeAbilitiesDto;
@@ -353,6 +450,12 @@ export class MemberChargeSchoolDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: "The School's tax ID, for its invoices (Decision 338 item 6)." })
   taxId!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 338 item 6: the School's address for its invoices and receipts." })
+  receiptAddress!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 338 item 6: the School's payment instructions for its invoices." })
+  receiptPaymentInstructions!: string | null;
+
   @ApiProperty({ type: [ChargeBalanceDto] })
   balances!: ChargeBalanceDto[];
 
@@ -361,6 +464,9 @@ export class MemberChargeSchoolDto {
 
   @ApiProperty({ type: [ChargePaymentResponseDto] })
   payments!: ChargePaymentResponseDto[];
+
+  @ApiProperty({ type: [BalanceCreditResponseDto], description: 'Credit the School gave, newest first (no note).' })
+  credits!: BalanceCreditResponseDto[];
 
   @ApiProperty({ type: MemberPayInAppDto })
   payInApp!: MemberPayInAppDto;
@@ -475,4 +581,56 @@ export class ChargeAutoPayResponseDto {
 
   @ApiProperty()
   enabled!: boolean;
+}
+
+/** POST /schools/{schoolId}/charge-payments/{transactionId}/refund (step 4;
+ * Decision 338 item 3). Owner only. */
+export class RefundChargePaymentDto {
+  @ApiProperty({ minimum: 1, maximum: MAX_CHARGE_MINOR, description: 'Minor units. Part refunds are allowed; never more than is left to refund on the payment.' })
+  @IsInt()
+  @Min(1)
+  @Max(MAX_CHARGE_MINOR)
+  amount!: number;
+
+  @ApiProperty({
+    enum: CHARGE_REFUND_DESTINATIONS,
+    enumName: 'ChargeRefundDestination',
+    description: 'CARD: back to the card (a card payment made in the app). MONEY_BACK: a desk payment given back in cash, Pix, bank transfer or on the terminal; records only. CREDIT: onto the member\'s balance as credit.',
+  })
+  @IsIn(CHARGE_REFUND_DESTINATIONS)
+  destination!: ChargeRefundDestination;
+
+  @ApiPropertyOptional({ maxLength: 500, description: "For staff only. Required unless the School's owner made refund notes optional." })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+/** POST /schools/{schoolId}/students/{studentId}/credits (step 4; Decision
+ * 303 items 2 and 3). Owner only. */
+export class GiveCreditDto {
+  @ApiProperty({ minimum: 1, maximum: MAX_CHARGE_MINOR, description: "Minor units of the School's currency." })
+  @IsInt()
+  @Min(1)
+  @Max(MAX_CHARGE_MINOR)
+  amount!: number;
+
+  @ApiProperty({ maxLength: 500, description: 'Why: for staff only, never shown to the member.' })
+  @Transform(trim)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  note!: string;
+}
+
+export class ChargeBalancesResponseDto {
+  @ApiProperty({ type: [ChargeBalanceDto] })
+  balances!: ChargeBalanceDto[];
+}
+
+export class ResendInvoiceResponseDto {
+  @ApiProperty({ description: 'The invoice notice was sent again to the member (and a Guardian).' })
+  sent!: boolean;
 }

@@ -6,6 +6,10 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ChargesService } from './charges.service';
 import {
   CancelChargeDto,
+  ChargeBalancesResponseDto,
+  GiveCreditDto,
+  RefundChargePaymentDto,
+  ResendInvoiceResponseDto,
   ChargeAutoPayResponseDto,
   ChargeCheckoutResponseDto,
   SetChargeAutoPayDto,
@@ -24,8 +28,8 @@ import {
 
 /** Staff-created charges and the member balance (v1.3 backlog §3.6;
  * Decisions 303, 338, 411): step 1, charges and desk payments; step 2, paying
- * in the app and automatic payment with a saved card. Recurring charges,
- * refunds and reports come in later steps. */
+ * in the app and automatic payment with a saved card; step 4, refunds, credit
+ * and resending an invoice (the reports are ChargeReportsController). */
 @ApiTags('charges')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -78,6 +82,37 @@ export class ChargesController {
     @Body() dto: RecordChargePaymentDto,
   ) {
     return this.charges.recordPayment(user.sub, schoolId, studentId, dto);
+  }
+
+  /** Refund a payment toward charges: to the card, given back in cash (records only) or as credit (Decision 338 item 3). Owner only. */
+  @ApiCreatedResponse({ type: RecordChargePaymentResponseDto })
+  @Post('schools/:schoolId/charge-payments/:transactionId/refund')
+  refund(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @Body() dto: RefundChargePaymentDto,
+  ) {
+    return this.charges.refund(user.sub, schoolId, transactionId, dto);
+  }
+
+  /** Give the member credit, with a staff-only note (Decision 303 items 2 and 3). Owner only. */
+  @ApiCreatedResponse({ type: ChargeBalancesResponseDto })
+  @Post('schools/:schoolId/students/:studentId/credits')
+  giveCredit(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: GiveCreditDto,
+  ) {
+    return this.charges.giveCredit(user.sub, schoolId, studentId, dto);
+  }
+
+  /** Send a charge's invoice notice again (Decision 338 item 5): whoever may create charges for the student. */
+  @ApiCreatedResponse({ type: ResendInvoiceResponseDto })
+  @Post('schools/:schoolId/charges/:chargeId/resend-invoice')
+  resendInvoice(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Param('chargeId', ParseUUIDPipe) chargeId: string) {
+    return this.charges.resendInvoice(user.sub, schoolId, chargeId);
   }
 
   /** The student's own charges and receipts at every School, for the student or their Guardian (the app). */
