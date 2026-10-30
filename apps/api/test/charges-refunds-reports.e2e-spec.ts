@@ -56,7 +56,6 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
   let school: { id: string };
   let other: { id: string };
   let branchA: { id: string };
-  let branchB: { id: string };
   const tokens: Record<string, string> = {};
   const userIds: string[] = [];
   const schoolIds: string[] = [];
@@ -199,7 +198,6 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     schoolIds.push(school.id, other.id);
     await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: acct } });
     branchA = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Branch A' } });
-    branchB = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Branch B' } });
 
     const owner = await mkUser('owner');
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });
