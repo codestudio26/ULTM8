@@ -39,6 +39,7 @@ describeIfDb('Late fees (Decision 413)', () => {
   let webhook: StripeWebhookProcessingProcessor;
   let autoPay: ChargeAutoPayProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  const appDb = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL_APP });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const userIds: string[] = [];
   const schoolIds: string[] = [];
@@ -222,6 +223,7 @@ describeIfDb('Late fees (Decision 413)', () => {
     await su.user.deleteMany({ where: { id: { in: userIds } } });
     await su.school.deleteMany({ where: { id: { in: schoolIds } } });
     await su.$disconnect();
+    await appDb.$disconnect();
     await app.close();
   });
 
@@ -447,6 +449,31 @@ describeIfDb('Late fees (Decision 413)', () => {
       // Paid later, after the fee: the fee stands (staff may waive it).
       await invoiceEvent(s, 'invoice.paid', renewalInvoice(sub, id, true));
       expect(await su.charge.count({ where: { id: fees[0].id, cancelledAt: null } })).toBe(1);
+    });
+  });
+
+  describe('tenant isolation (RLS)', () => {
+    it("another School's owner can't see a late fee or the School's setting; the app connection can't write either", async () => {
+      const s = await seed();
+      const other = await seed();
+      expect((await turnOn(s, { fixedAmount: 1500 })).status).toBe(200);
+      await createCharge(s, 3000, day(1));
+      expect((await run(s, 5)).added).toBe(1);
+      const [fee] = await feesFor(s);
+      const asUser = <T>(userId: string, fn: (tx: PrismaClient) => Promise<T>) =>
+        appDb.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${userId}'`);
+          return fn(tx as unknown as PrismaClient);
+        });
+      expect(await asUser(other.owner.id, (tx) => tx.charge.count({ where: { id: fee.id } }))).toBe(0);
+      expect(await asUser(other.owner.id, (tx) => tx.school.count({ where: { id: s.school.id, lateFeeEnabled: true } }))).toBe(0);
+      expect(await asUser(s.owner.id, (tx) => tx.charge.count({ where: { id: fee.id } }))).toBe(1);
+      expect(await asUser(s.student.id, (tx) => tx.charge.count({ where: { id: fee.id } }))).toBe(1);
+      // Another School's owner can't switch this School's late fees off.
+      expect(await asUser(other.owner.id, (tx) => tx.school.updateMany({ where: { id: s.school.id }, data: { lateFeeEnabled: false } }))).toEqual({ count: 0 });
+      // The app connection can't write charges (late fees are written by the job only).
+      await expect(asUser(s.owner.id, (tx) => tx.charge.updateMany({ where: { id: fee.id }, data: { lateFeeWaived: true } }))).rejects.toThrow();
+      expect((await su.school.findUniqueOrThrow({ where: { id: s.school.id } })).lateFeeEnabled).toBe(true);
     });
   });
 
