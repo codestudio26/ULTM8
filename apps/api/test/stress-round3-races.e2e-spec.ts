@@ -215,7 +215,12 @@ describeIfDb('Round-3 stress-test races', () => {
           data: {
             id: randomUUID(), schoolId: school.id, weekday: weekdays[start.getUTCDay()], title: 'Race slot', membershipInclusion: true, capacity: 40,
             startTime: new Date(Date.UTC(1970, 0, 1, start.getUTCHours(), start.getUTCMinutes())),
-            endTime: new Date(Date.UTC(1970, 0, 1, (start.getUTCHours() + 1) % 24, start.getUTCMinutes())),
+            // An hour long, but never past midnight: a slot can't end before it
+            // starts, so a run between 21:00 and 22:00 UTC (start 23:xx) used to
+            // get a 400 here.
+            endTime: start.getUTCHours() === 23
+              ? new Date(Date.UTC(1970, 0, 1, 23, 59))
+              : new Date(Date.UTC(1970, 0, 1, start.getUTCHours() + 1, start.getUTCMinutes())),
           },
         });
         const cls = await mkClass({ capacity: 40, timetableSlotId: slot.id, occurrenceDate: new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())) });
