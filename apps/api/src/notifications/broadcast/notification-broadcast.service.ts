@@ -8,7 +8,7 @@ import { decodeDescCursor, encodeDescCursor, resolveLimit } from '../../common/p
 import { TenantAuthorizationService } from '../../tenants/tenant-authorization.service';
 import { SchoolsService } from '../../tenants/schools/schools.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
-import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
+import { BULK_NOTIFICATION_PRIORITY, NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
 import { BroadcastAudienceDto, BroadcastClassAudienceDto, BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 
 /**
@@ -100,6 +100,7 @@ export class NotificationBroadcastService {
             jobId: `broadcast-${broadcastId}-${studentId}`,
             attempts: 3,
             backoff: { type: 'exponential' as const, delay: 5000 },
+            priority: BULK_NOTIFICATION_PRIORITY,
           },
         })),
       );

@@ -1,4 +1,14 @@
 /**
+ * Bulk notices (a School broadcast, a waiver request to every member) queue
+ * with this BullMQ priority. BullMQ always takes jobs with no priority first,
+ * so a waitlist seat offer (60 minutes to claim), a cancelled class or a
+ * payment notice is never stuck behind thousands of bulk ones. Stress test
+ * round 4 (N1): 500 broadcasts and 500 waiver requests left ~270k jobs, about
+ * 40 minutes, in front of a seat offer.
+ */
+export const BULK_NOTIFICATION_PRIORITY = 10;
+
+/**
  * Shared payload shape for the `notification-fanout` queue — every producer
  * (WaiverSignatureRequestsProcessor today, more triggers in future phases)
  * and its one consumer (NotificationFanoutProcessor) import this instead of

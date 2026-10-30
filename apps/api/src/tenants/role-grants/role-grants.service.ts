@@ -1183,12 +1183,16 @@ export class RoleGrantsService {
       const closed = paused.filter((g) => g.branch?.archivedAt);
       const back = paused.filter((g) => !g.branch?.archivedAt && !held(g));
       const done = paused.filter((g) => !back.includes(g));
+      // Only rows still paused: of several Unpause clicks at once, one wins
+      // and the rest change nothing and log nothing (stress test round 4).
+      let changed = 0;
       if (done.length > 0) {
-        await tx.roleGrant.updateMany({ where: { id: { in: done.map((g) => g.id) } }, data: { pausedAt: null, pausedById: null } });
+        changed += (await tx.roleGrant.updateMany({ where: { id: { in: done.map((g) => g.id) }, pausedAt: { not: null } }, data: { pausedAt: null, pausedById: null } })).count;
       }
       if (back.length > 0) {
-        await tx.roleGrant.updateMany({ where: { id: { in: back.map((g) => g.id) } }, data: { revokedAt: null, pausedAt: null, pausedById: null } });
+        changed += (await tx.roleGrant.updateMany({ where: { id: { in: back.map((g) => g.id) }, pausedAt: { not: null } }, data: { revokedAt: null, pausedAt: null, pausedById: null } })).count;
       }
+      if (changed === 0) throw new ConflictException('This person is not paused.');
       // Rights kept for the paused roles go if none of them came back.
       await this.clearCoachRightsIfGone(tx, userId, schoolId);
       const outcome = { restoredRoles: back.length, closedBranches: [...new Set(closed.map((g) => g.branch!.name))] };
