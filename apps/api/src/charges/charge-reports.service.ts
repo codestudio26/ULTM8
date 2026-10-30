@@ -8,6 +8,10 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { dayIn, freezeZone } from '../memberships/freeze/membership-freeze';
 import { chargeRemaining } from './charge-ledger';
 
+/** The Transaction kinds that are membership revenue (Decision 414 item 3):
+ * plans bought in the app or sold at the desk, and Subscription renewals. */
+export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL'] as const;
+
 /**
  * The billing reports (backlog §3.6 step 4; Decision 338 item 11): an
  * Overview (scheduled, paid and overdue totals, revenue by month) and Member
@@ -18,10 +22,19 @@ import { chargeRemaining } from './charge-ledger';
  *
  * Read on the jobs connection after these checks, with the student filter
  * applied here: Branch Staff can't read Transaction under their own context
- * (Spec 55 §8.2), and the reports add up the ledger (BalanceEntry), not
- * Transaction rows. Revenue is the ledger's: payments toward charges when they
- * were settled, less money given back (refunds to the card or in cash, lost
- * disputes). A refund as credit moves no money and is not in it.
+ * (Spec 55 §8.2). Charges are added up from the ledger (BalanceEntry), not
+ * from their Transaction rows. Charges revenue is the ledger's: payments toward charges
+ * when they were settled, less money given back (refunds to the card or in
+ * cash, lost disputes). A refund as credit moves no money and is not in it.
+ *
+ * Decision 414 item 3: the Overview also shows membership revenue, and the
+ * total. Memberships are Transaction rows of kind MEMBERSHIP (a plan bought in
+ * the app or sold at the desk) and RENEWAL (a Subscription's later payments),
+ * counted as the Transactions page's Revenue tile counts them (Successful rows,
+ * by billing date, currency in capitals), less what was refunded on each row.
+ * CHARGE_PAYMENT rows are left out: they are the ledger's payments above, so
+ * counting them here would count them twice. Late-cancellation and freeze fees
+ * are neither part (Decision 414 names charges and memberships only).
  */
 @Injectable()
 export class ChargeReportsService {
@@ -91,18 +104,22 @@ export class ChargeReportsService {
     const first = now.startOf('month').minus({ months: months - 1 });
     const monthKeys = Array.from({ length: months }, (_, i) => first.plus({ months: i }).toFormat('yyyy-MM'));
 
-    const [owed, entries] = await Promise.all([
+    const [owed, entries, memberships] = await Promise.all([
       this.owedByStudent(schoolId, scope, dayIn(new Date(), school.timezone)),
       this.prismaJobs.balanceEntry.findMany({
         where: { ...this.where(schoolId, scope), kind: { in: ['PAYMENT', 'REFUND'] }, createdAt: { gte: first.toJSDate() } },
         select: { kind: true, amount: true, currency: true, createdAt: true },
       }),
+      this.prismaJobs.transaction.findMany({
+        where: { ...this.where(schoolId, scope), kind: { in: [...MEMBERSHIP_REVENUE_KINDS] }, status: 'SUCCESSFUL', billingDate: { gte: first.toJSDate() } },
+        select: { amount: true, refundedAmount: true, currency: true, billingDate: true },
+      }),
     ]);
-    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number }> }>();
+    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number; memberships: number }> }>();
     const bucket = (currency: string) => {
       let b = byCurrency.get(currency);
       if (!b) {
-        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0 }])) };
+        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0, memberships: 0 }])) };
         byCurrency.set(currency, b);
       }
       return b;
@@ -119,14 +136,26 @@ export class ChargeReportsService {
       if (e.kind === 'PAYMENT') m.received += -e.amount;
       else m.refunded += e.amount;
     }
+    for (const t of memberships) {
+      // Every priced plan's payment has a currency; a row without one can't be
+      // put in any currency's figures (the Transactions page lists it apart).
+      if (!t.currency) continue;
+      const month = DateTime.fromJSDate(t.billingDate, { zone }).toFormat('yyyy-MM');
+      if (!monthKeys.includes(month)) continue;
+      const m = bucket(t.currency.toUpperCase()).months.get(month)!;
+      m.memberships += Math.max(0, t.amount - (t.refundedAmount ?? 0));
+    }
     const currencies = [...byCurrency.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([currency, b]) => {
         const revenueByMonth = monthKeys.map((month) => {
           const m = b.months.get(month)!;
-          return { month, received: m.received, refunded: m.refunded, net: m.received - m.refunded };
+          const net = m.received - m.refunded;
+          return { month, received: m.received, refunded: m.refunded, net, memberships: m.memberships, total: net + m.memberships };
         });
-        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid: revenueByMonth.reduce((n, m) => n + m.net, 0), revenueByMonth };
+        const paid = revenueByMonth.reduce((n, m) => n + m.net, 0);
+        const membershipRevenue = revenueByMonth.reduce((n, m) => n + m.memberships, 0);
+        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid, memberships: membershipRevenue, total: paid + membershipRevenue, revenueByMonth };
       });
     return { months, wholeSchool: scope.wholeSchool, currencies };
   }

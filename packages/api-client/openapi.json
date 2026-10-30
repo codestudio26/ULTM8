@@ -38026,14 +38026,24 @@
           },
           "net": {
             "type": "number",
-            "description": "received − refunded."
+            "description": "Charges revenue that month: received − refunded."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received)."
+          },
+          "total": {
+            "type": "number",
+            "description": "net + memberships."
           }
         },
         "required": [
           "month",
           "received",
           "refunded",
-          "net"
+          "net",
+          "memberships",
+          "total"
         ]
       },
       "ChargeOverviewCurrencyDto": {
@@ -38052,7 +38062,15 @@
           },
           "paid": {
             "type": "number",
-            "description": "Paid over the months covered, less money given back (the sum of revenue by month)."
+            "description": "Charges revenue: paid toward charges over the months covered, less money given back (the sum of net by month)."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Membership revenue over the months covered (the sum of memberships by month)."
+          },
+          "total": {
+            "type": "number",
+            "description": "Total revenue over the months covered: paid + memberships."
           },
           "revenueByMonth": {
             "description": "Oldest month first.",
@@ -38067,6 +38085,8 @@
           "scheduled",
           "overdue",
           "paid",
+          "memberships",
+          "total",
           "revenueByMonth"
         ]
       },
