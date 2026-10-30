@@ -7031,3 +7031,40 @@ User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.8.
 ### Recorded by
 
 User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.22.
+
+---
+
+## Decision 408 — Staff page: activity log
+
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (g) · **Migration:** `20270110000000_staff_activity`
+
+The Staff build plan's last item was an activity log of staff changes. The product owner chose the suggested defaults on 29 Oct 2026 ("Yes, use these defaults").
+
+### Decision
+
+1. **What it records.** One line per change, written in the same transaction as the change:
+   - a role given (including "Add staff manually") or removed;
+   - Remove from School;
+   - Pause and Unpause;
+   - access switches, listing each switch turned on or off;
+   - display name or work phone;
+   - handing over the main owner role;
+   - invites sent, cancelled and accepted;
+   - the "New staff must accept first" setting;
+   - the open mat permission.
+   A save that changes nothing writes no line.
+2. **Each line shows** who made the change, who it was about, what changed and when. The portal turns it into a sentence such as "Olive Owner paused Bea Desk."
+3. **Who sees it.** The School's owners and co-owners only, in a new "Activity" section at the bottom of the Staff page, newest first, 50 at a time with "Load more", and a filter by person (`GET /schools/:schoolId/staff/activity?userId=&cursor=`). Branch Staff who can see the staff list don't see it. This is enforced in RLS as well.
+4. **How long it's kept.** As long as the School exists. Lines are never edited or deleted by the app, and they go when the School is purged. If an account is deleted, its lines stay and show "Someone".
+5. **No backfill.** The log starts on the day it is deployed.
+6. **Who may write a line** (RLS): the caller must be the line's author, and must be an owner or co-owner, or staff with "Can invite coaches" logging an invite they sent or cancelled, or the person accepting their own invite.
+
+### What this does NOT resolve
+
+- **[UNRESOLVED]** Student roles are not logged. The log covers staff only, as the plan named.
+- **[UNRESOLVED]** Roles that end on their own, such as when a Branch is closed or a whole School or Franchise is closed, are not logged as separate lines. Only changes a person makes on the Staff, Instructors, Coach invites or Check-in permission screens are logged.
+- **[UNRESOLVED]** There is no export of the log and no notice when a line is written. Neither was asked for.
+
+### Recorded by
+
+User (Code), 29 Oct 2026, choosing the suggested defaults for the Staff activity log (Decision 360, order of work (g)). Built 29 Oct 2026 in the Staff thread.

@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff activity log** (Decision 408) — a new "Activity" section on the
+  Staff page lists every staff change (roles, Remove from School, Pause,
+  access, display name and work phone, owners, invites, the "must accept
+  first" setting and open mat permission), newest first, with who did it and
+  when, and a filter by person. Owners and co-owners only; it starts from
+  deploy day.
 - **Freezing a membership** (backlog 3.4; Decision 404) — the owner can freeze
   a Subscription, Weekly Pass or Trial straight away with a **Freeze** button on
   the student's Memberships card, and approve or decline the freezes members

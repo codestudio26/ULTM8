@@ -40,6 +40,9 @@ export function useSetOpenMatPermission(schoolId: string | null) {
       unwrap(
         apiClient.PUT('/v1/schools/{schoolId}/open-mats/permissions/{userId}', { params: { path: { schoolId: schoolId!, userId } }, body: { canStartOpenMat } }),
       ),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['openMat', 'permissions', schoolId] }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['staff-activity'] });
+      return queryClient.invalidateQueries({ queryKey: ['openMat', 'permissions', schoolId] });
+    },
   });
 }

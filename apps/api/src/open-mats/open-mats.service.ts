@@ -13,6 +13,7 @@ import { isMembershipLive } from '../memberships/membership-creation-guard';
 import { OPEN_MAT_CLASS_TYPE } from '../ranks/hours-trained';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { StartOpenMatDto } from './dto/open-mat.dto';
 
 const STAFF_ROLES = ['BRANCH_STAFF', 'INSTRUCTOR'] as const;
@@ -169,13 +170,18 @@ export class OpenMatsService {
       tx.roleGrant.findFirst({ where: { userId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null }, select: { id: true } }),
     );
     if (!isStaff) throw new BadRequestException('"Can start open mat sessions" is for Branch Staff and coaches at this School.');
-    await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.staffPermission.upsert({
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const before = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canStartOpenMat: true } });
+      await tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
         create: { id: randomUUID(), schoolId, userId, canStartOpenMat, grantedById: callerId },
         update: { canStartOpenMat, grantedById: callerId },
-      }),
-    );
+      });
+      // Decision 408: a switch on the Staff page, so it goes in its log.
+      if ((before?.canStartOpenMat ?? false) !== canStartOpenMat) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'OPEN_MAT_CHANGED', details: { on: canStartOpenMat } });
+      }
+    });
     return (await this.listPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
   }
 
