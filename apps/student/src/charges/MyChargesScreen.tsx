@@ -15,13 +15,16 @@ import type { TranslationKey } from '../i18n/types';
 import {
   useInvalidateMemberCharges,
   useMemberCharges,
+  useMemberRecurringCharges,
   useSetChargeAutoPay,
   useStartChargeCheckout,
   type Charge,
   type ChargeBalance,
   type ChargePayment,
+  type MemberRecurringCharge,
   type MemberChargeSchool,
 } from './chargeQueries';
+import { RecurringChargesList } from './RecurringChargesList';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyCharges'>;
 type T = ReturnType<typeof useT>;
@@ -58,6 +61,9 @@ type Paying = { key: string; error: unknown | null; done: boolean };
  * may show as "Payment processing" for a moment. The member (never a
  * Guardian for a child, who has no saved card) can turn on "Pay charges
  * automatically with my saved card", confirmed with their passcode.
+ *
+ * Step 3 (Decision 412): the recurring charges the School set up, read-only
+ * (what, how much each time, how often, the next invoice date).
  */
 export function MyChargesScreen({ route }: Props) {
   const { claims } = useAuth();
@@ -65,6 +71,7 @@ export function MyChargesScreen({ route }: Props) {
   const studentId = route.params?.studentId ?? claims?.sub ?? null;
   const forChild = !!route.params?.studentId;
   const charges = useMemberCharges(studentId);
+  const recurring = useMemberRecurringCharges(studentId);
   const checkout = useStartChargeCheckout();
   const invalidate = useInvalidateMemberCharges();
   const [paying, setPaying] = useState<Paying | null>(null);
@@ -78,6 +85,9 @@ export function MyChargesScreen({ route }: Props) {
     );
   }
   const schools = charges.data?.schools ?? [];
+  const recurringItems = recurring.data?.items ?? [];
+  // A School whose recurring charge has made no invoice yet isn't in the charges list.
+  const recurringOnly = [...new Set(recurringItems.map((r) => r.schoolId))].filter((id) => !schools.some((s) => s.schoolId === id));
 
   function pay(key: string, schoolId: string, target: { chargeId?: string; currency?: string }) {
     if (!studentId || checkout.isPending) return;
@@ -100,7 +110,7 @@ export function MyChargesScreen({ route }: Props) {
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
-      {schools.length === 0 ? <Muted>{t('charges.empty')}</Muted> : null}
+      {schools.length === 0 && recurringOnly.length === 0 ? <Muted>{t('charges.empty')}</Muted> : null}
       {schools.map((s) => (
         <SchoolCharges
           key={s.schoolId}
@@ -111,8 +121,20 @@ export function MyChargesScreen({ route }: Props) {
           paying={paying}
           busy={checkout.isPending}
           onPay={pay}
+          recurring={recurringItems.filter((r) => r.schoolId === s.schoolId)}
         />
       ))}
+      {recurringOnly.map((schoolId) => {
+        const items = recurringItems.filter((r) => r.schoolId === schoolId);
+        return (
+          <View key={schoolId} style={{ marginBottom: spacing[6] }}>
+            {schools.length + recurringOnly.length > 1 ? (
+              <Text style={{ fontSize: fontSize.headingSm, fontWeight: '700', marginBottom: spacing[2] }}>{items[0].schoolName}</Text>
+            ) : null}
+            <RecurringChargesList items={items} />
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -127,6 +149,7 @@ function SchoolCharges({
   paying,
   busy,
   onPay,
+  recurring,
 }: {
   school: MemberChargeSchool;
   studentId: string | null;
@@ -135,6 +158,7 @@ function SchoolCharges({
   paying: Paying | null;
   busy: boolean;
   onPay: PayFn;
+  recurring: MemberRecurringCharge[];
 }) {
   const t = useT();
   const owed = school.charges.filter((c) => c.status !== 'CANCELLED');
@@ -149,6 +173,7 @@ function SchoolCharges({
       {[...owed, ...cancelled].map((c) => (
         <ChargeRow key={c.id} charge={c} payInApp={school.payInApp} paying={paying} busy={busy} onPay={() => onPay(`charge-${c.id}`, school.schoolId, { chargeId: c.id })} />
       ))}
+      <RecurringChargesList items={recurring} />
       {school.payments.length > 0 ? <Text style={{ fontWeight: '700', marginTop: spacing[4], marginBottom: spacing[2] }}>{t('charges.receiptsHeading')}</Text> : null}
       {school.payments.map((p) => (
         <ReceiptRow key={p.id} payment={p} />

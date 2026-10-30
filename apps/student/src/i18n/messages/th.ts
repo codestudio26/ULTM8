@@ -937,6 +937,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "รายการเรียกเก็บประจำ",
+      every: {
+        WEEKLY: "ทุกสัปดาห์",
+        MONTHLY: "ทุกเดือน",
+        YEARLY: "ทุกปี",
+      },
+      amount: "ครั้งละ {amount}",
+      next: "ใบแจ้งหนี้ถัดไปวันที่ {date}",
+      endsOn: "ครั้งสุดท้ายวันที่ {date}",
+      payments: "ชำระแล้ว: {done} / {count}",
+      status: {
+        STOPPED: "หยุดแล้ว",
+        ENDED: "สิ้นสุดแล้ว",
+      },
+      taxNote: "ตามอัตราภาษีวันนี้ ใบแจ้งหนี้แต่ละใบใช้อัตราของวันนั้น",
+    },
     home: "ใบแจ้งหนี้",
     childButton: "ใบแจ้งหนี้",
     title: "ใบแจ้งหนี้",

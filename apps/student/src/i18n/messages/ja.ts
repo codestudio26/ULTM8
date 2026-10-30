@@ -938,6 +938,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "定期請求",
+      every: {
+        WEEKLY: "毎週",
+        MONTHLY: "毎月",
+        YEARLY: "毎年",
+      },
+      amount: "1回 {amount}",
+      next: "次回の請求書：{date}",
+      endsOn: "最終回：{date}",
+      payments: "支払い済み：{done} / {count}",
+      status: {
+        STOPPED: "停止中",
+        ENDED: "終了",
+      },
+      taxNote: "本日の税率です。各請求書はその日の税率を使います。",
+    },
     home: "請求書",
     childButton: "請求書",
     title: "請求書",
