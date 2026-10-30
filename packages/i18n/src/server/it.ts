@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Questo addebito è già stato annullato.",
   "This charge is already paid.": "Questo addebito è già pagato.",
   "Give a reason for cancelling this charge.": "Indica un motivo per annullare questo addebito.",
+  "Give a reason for cancelling this payment.": "Indica un motivo per annullare questo pagamento.",
   "Only the student, or their Guardian, can see their charges.": "Solo l'allievo, o il suo tutore, può vedere i suoi addebiti.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Può creare addebiti\" e \"Può annullare addebiti\" valgono per il personale di sede e gli istruttori di questa scuola.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Questa scuola non accetta pagamenti con carta nell'app. Paga alla reception.",

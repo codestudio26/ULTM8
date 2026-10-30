@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Bu ücret zaten iptal edildi.",
   "This charge is already paid.": "Bu ücret zaten ödendi.",
   "Give a reason for cancelling this charge.": "Bu ücreti iptal etmek için bir neden yazın.",
+  "Give a reason for cancelling this payment.": "Bu ödemeyi iptal etmek için bir neden yazın.",
   "Only the student, or their Guardian, can see their charges.": "Ücretleri yalnızca öğrencinin kendisi veya velisi görebilir.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Ücret oluşturabilir\" ve \"Ücret iptal edebilir\" bu okuldaki şube personeli ve eğitmenler içindir.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Bu okul uygulamada kartla ödeme kabul etmiyor. Resepsiyonda ödeyin.",

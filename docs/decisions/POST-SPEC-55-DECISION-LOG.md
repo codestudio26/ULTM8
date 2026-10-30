@@ -7206,3 +7206,21 @@ User (Code), 30 Oct 2026: chose "Weekly/monthly/yearly + optional end" (Claude's
 ### Recorded by
 
 User (Code), 30 Oct 2026: "% should be down to each academy and in some countries is illegal. We must have a on and off toggle and default should be off"; chose "School confirms legality" and "Charges + failed renewals".
+
+## Decision 414 — Billing follow-ups: unappliable promotions, surcharge, revenue, refund notice, zero-rated items, currency first, cancelled cash payments
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 300, 303, 338, 339, 406, 411 · **Answers:** the open points reported with charges steps 4 and 6 (PRs #404, #407)
+
+### Decision
+
+1. **A promotion fee paid in full whose waiting promotion can no longer apply** (the student's rank or the belt ladder changed after the grade, so the grading code refuses it) **is put to the owner.** The owner is told, and decides: cancel the fee (what was paid becomes credit, as any cancelled charge) or grade the student again. Nothing happens to the money automatically.
+2. **The card surcharge (Decision 406) is not refunded** with a refund of the payment it was added to. Stripe keeps its fee on a refund, so the School has already lost it. Unchanged from what PR #404 built.
+3. **The Billing reports Overview shows total revenue:** charges and memberships (plans bought in the app or sold at the desk, and Subscription renewals), split into the two parts.
+4. **A refund sends the member a notice** ("Refund"), with its own switch on the School page among the payment notices (Decision 338 item 10), **on by default**. A Guardian gets the usual copy.
+5. **Tax applies to every charge unless it doesn't apply to the item** (e.g. children's clothing is 0% VAT in the UK). Staff creating a one-off or recurring charge can tick **"No tax on this item (0% or exempt)"**, off by default; the invoice then shows no tax. Promotion fees and late fees always take the School's tax settings (Decision 411). A rate is still never typed per charge.
+6. **Currency first.** Until the School has set its currency on the School page, no price can be saved anywhere (membership plans, belt prices for promotion fees, charges); the owner sees a warning to set the currency first, with a link to the setting.
+7. **Cancelling a membership's Pending cash or bank-transfer payment** (Decision 338 item 1, last point): the payment's status **stays Failed** in the data (Spec 55's five Transaction statuses are kept), and it records who cancelled it, when and the reason. Everywhere people see it, it reads **Cancelled**; reports and filters that count Failed payments leave it out.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "1a, 2 keep, 3 yes, 4 yes, 5 ok, 6 ok", answering the options put to them the same day ("tax applies to every charge unless it is not applicable by the country, for exemple some kids items in Uk are free of VAt"; "School should not be able to set an membership without setting the currency, we shpuld pop a warning for them to set the currency"); item 7: "Show Cancelled (Recommended)".

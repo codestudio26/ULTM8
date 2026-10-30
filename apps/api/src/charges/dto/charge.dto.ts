@@ -460,6 +460,44 @@ export class ChargeSettingsDto {
   receiptNotice!: boolean;
 }
 
+/** Decision 338 item 1 (last point): a membership's cash or bank-transfer
+ * payment waiting at the desk, or one that was cancelled. Staff only, and only
+ * for those who may cancel it (the owner, staff with "Can cancel charges"). */
+export class DeskMembershipPaymentDto {
+  @ApiProperty({ description: 'The Transaction id.' })
+  id!: string;
+
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE';
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The plan it is for (a freeze fee: the frozen membership\'s plan).' })
+  membershipPlanTitle!: string | null;
+
+  @ApiProperty()
+  amount!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currency!: string | null;
+
+  @ApiProperty({ description: 'CASH, BANK_TRANSFER, PIX or CARD_TERMINAL.' })
+  paymentMethod!: string;
+
+  @ApiProperty()
+  billingDate!: string;
+
+  @ApiProperty({ enum: ['PENDING', 'CANCELLED'], description: 'CANCELLED is stored as FAILED with cancelledAt set.' })
+  status!: 'PENDING' | 'CANCELLED';
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelledAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelledByName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only.' })
+  cancelReason!: string | null;
+}
+
 /** GET /schools/{schoolId}/students/{studentId}/charges: the staff view. */
 export class StudentChargesResponseDto {
   @ApiProperty({ type: [ChargeBalanceDto], description: 'One per currency; usually one.' })
@@ -473,6 +511,12 @@ export class StudentChargesResponseDto {
 
   @ApiProperty({ type: [BalanceCreditResponseDto], description: 'Credit the owner gave, newest first.' })
   credits!: BalanceCreditResponseDto[];
+
+  @ApiProperty({
+    type: [DeskMembershipPaymentDto],
+    description: "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+  })
+  deskMembershipPayments!: DeskMembershipPaymentDto[];
 
   @ApiProperty({ type: ChargeAbilitiesDto, description: 'What the caller may do here.' })
   can!: ChargeAbilitiesDto;

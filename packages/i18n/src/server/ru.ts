@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Это начисление уже отменено.",
   "This charge is already paid.": "Это начисление уже оплачено.",
   "Give a reason for cancelling this charge.": "Укажите причину отмены этого начисления.",
+  "Give a reason for cancelling this payment.": "Укажите причину отмены этого платежа.",
   "Only the student, or their Guardian, can see their charges.": "Только сам ученик или его опекун могут видеть его начисления.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "«Может создавать начисления» и «Может отменять начисления» — для сотрудников филиалов и тренеров этой школы.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Эта школа не принимает оплату картой в приложении. Оплатите на ресепшене.",

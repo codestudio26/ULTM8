@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "이 청구는 이미 취소되었습니다.",
   "This charge is already paid.": "이 청구는 이미 결제되었습니다.",
   "Give a reason for cancelling this charge.": "이 청구를 취소하는 이유를 입력하세요.",
+  "Give a reason for cancelling this payment.": "이 결제를 취소하는 이유를 입력하세요.",
   "Only the student, or their Guardian, can see their charges.": "청구는 학생 본인이나 보호자만 볼 수 있습니다.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"청구 만들기 가능\"과 \"청구 취소 가능\"은 이 학교의 지점 직원과 코치를 위한 설정입니다.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "이 학원은 앱에서 카드 결제를 받지 않습니다. 접수처에서 결제하세요.",

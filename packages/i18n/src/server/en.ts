@@ -689,6 +689,7 @@ export const SERVER_PATTERNS: string[] = [
  "This charge has already been cancelled.",
  "This charge is already paid.",
  "Give a reason for cancelling this charge.",
+ "Give a reason for cancelling this payment.",
  "Only the student, or their Guardian, can see their charges.",
  "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.",
  // Paying charges in the app (backlog 3.6 step 2).

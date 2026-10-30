@@ -107,6 +107,21 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true })
   refundedAmount!: number | null;
 
+  /** Decision 338 item 1: when a Pending cash or bank-transfer payment was
+   * cancelled. Its status stays FAILED; screens show it as Cancelled
+   * (Decision 414 item 7). */
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set when the payment was cancelled: shown as Cancelled (status stays FAILED).' })
+  cancelledAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only; null in the member\'s own list.' })
+  cancelledById!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Who cancelled it. Staff only; null in the member\'s own list.' })
+  cancelledByName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Why it was cancelled. Staff only; never sent to the member.' })
+  cancelReason!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -150,8 +165,11 @@ export class TransactionSummaryResponseDto {
   @ApiProperty()
   pending!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Failed (not cancelled) or disputed.' })
   failedOrDisputed!: number;
+
+  @ApiProperty({ description: 'Cancelled cash or bank-transfer payments (Decision 338 item 1).' })
+  cancelled!: number;
 
   @ApiProperty({ type: [TransactionRevenueDto], description: 'Successful rows only, one entry per currency.' })
   revenue!: TransactionRevenueDto[];

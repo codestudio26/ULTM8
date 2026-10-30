@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "この請求はすでに取り消されています。",
   "This charge is already paid.": "この請求はすでに支払い済みです。",
   "Give a reason for cancelling this charge.": "この請求を取り消す理由を入力してください。",
+  "Give a reason for cancelling this payment.": "この支払いを取り消す理由を入力してください。",
   "Only the student, or their Guardian, can see their charges.": "請求を見られるのは生徒本人か保護者だけです。",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "「請求を作成できる」と「請求を取り消せる」は、このスクールの支店スタッフとコーチが対象です。",
   "This School doesn't take card payments in the app. Pay at the front desk.": "このスクールはアプリでのカード払いに対応していません。受付でお支払いください。",

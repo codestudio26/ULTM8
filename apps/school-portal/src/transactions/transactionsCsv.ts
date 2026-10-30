@@ -41,6 +41,10 @@ export function transactionsCsv(rows: TransactionResponse[], labels: CsvLabels):
         money(row.refundedAmount),
         money(row.disputedAmount),
         row.id,
+        // Decision 338 item 1: a cancelled payment's when, who and why (staff only).
+        row.cancelledAt ?? '',
+        row.cancelledByName ?? '',
+        row.cancelReason ?? '',
       ]
         .map((v) => csvCell(String(v)))
         .join(','),
