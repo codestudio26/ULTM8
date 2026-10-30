@@ -66,6 +66,11 @@ export class CreateChargeDto {
   @Matches(DAY, { message: 'dueDate must be a date like 2026-11-15.' })
   @IsISO8601({ strict: true }, { message: 'dueDate must be a date like 2026-11-15.' })
   dueDate!: string;
+
+  @ApiPropertyOptional({ default: false, description: "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply." })
+  @IsOptional()
+  @IsBoolean()
+  taxExempt?: boolean;
 }
 
 /** POST /schools/{schoolId}/charges/{chargeId}/cancel (Decision 338 item 1). */
@@ -151,6 +156,9 @@ export class ChargeResponseDto {
 
   @ApiProperty()
   taxInclusive!: boolean;
+
+  @ApiProperty({ description: '"No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax".' })
+  taxExempt!: boolean;
 
   @ApiProperty({ description: 'The price excluding tax.' })
   netAmount!: number;
@@ -460,6 +468,44 @@ export class ChargeSettingsDto {
   receiptNotice!: boolean;
 }
 
+/** Decision 338 item 1 (last point): a membership's cash or bank-transfer
+ * payment waiting at the desk, or one that was cancelled. Staff only, and only
+ * for those who may cancel it (the owner, staff with "Can cancel charges"). */
+export class DeskMembershipPaymentDto {
+  @ApiProperty({ description: 'The Transaction id.' })
+  id!: string;
+
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE';
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The plan it is for (a freeze fee: the frozen membership\'s plan).' })
+  membershipPlanTitle!: string | null;
+
+  @ApiProperty()
+  amount!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currency!: string | null;
+
+  @ApiProperty({ description: 'CASH, BANK_TRANSFER, PIX or CARD_TERMINAL.' })
+  paymentMethod!: string;
+
+  @ApiProperty()
+  billingDate!: string;
+
+  @ApiProperty({ enum: ['PENDING', 'CANCELLED'], description: 'CANCELLED is stored as FAILED with cancelledAt set.' })
+  status!: 'PENDING' | 'CANCELLED';
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelledAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancelledByName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only.' })
+  cancelReason!: string | null;
+}
+
 /** GET /schools/{schoolId}/students/{studentId}/charges: the staff view. */
 export class StudentChargesResponseDto {
   @ApiProperty({ type: [ChargeBalanceDto], description: 'One per currency; usually one.' })
@@ -473,6 +519,12 @@ export class StudentChargesResponseDto {
 
   @ApiProperty({ type: [BalanceCreditResponseDto], description: 'Credit the owner gave, newest first.' })
   credits!: BalanceCreditResponseDto[];
+
+  @ApiProperty({
+    type: [DeskMembershipPaymentDto],
+    description: "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+  })
+  deskMembershipPayments!: DeskMembershipPaymentDto[];
 
   @ApiProperty({ type: ChargeAbilitiesDto, description: 'What the caller may do here.' })
   can!: ChargeAbilitiesDto;

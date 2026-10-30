@@ -18,6 +18,7 @@ const STATUS_COLOR: Record<string, string> = {
   FAILED: '#C5221F',
   REFUNDED: '#9AA0A6',
   DISPUTED: '#C5221F',
+  CANCELLED: '#9AA0A6',
 };
 
 const STATUS_LABEL: Record<string, TranslationKey> = {
@@ -26,7 +27,15 @@ const STATUS_LABEL: Record<string, TranslationKey> = {
   FAILED: 'transactions.status.failed',
   REFUNDED: 'transactions.status.refunded',
   DISPUTED: 'transactions.status.disputed',
+  CANCELLED: 'transactions.status.cancelled',
 };
+
+/** A cash or bank-transfer payment the School cancelled is stored FAILED with
+ * cancelledAt set, and reads Cancelled (Decision 338 item 1, Decision 414
+ * item 7). The reason is for staff only and never reaches the app. */
+function shownStatus(transaction: Transaction): string {
+  return transaction.status === 'FAILED' && transaction.cancelledAt ? 'CANCELLED' : transaction.status;
+}
 
 /** One receipt — what it paid for (the membership plan title, joined server-side,
  * see TransactionResponseDto's own header comment), the amount+currency (formatMoney,
@@ -64,8 +73,9 @@ function rowTitle(transaction: Transaction, t: ReturnType<typeof useT>): string 
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
   const t = useT();
-  const statusColor = STATUS_COLOR[transaction.status] ?? '#5F6368';
-  const statusLabel = STATUS_LABEL[transaction.status];
+  const status = shownStatus(transaction);
+  const statusColor = STATUS_COLOR[status] ?? '#5F6368';
+  const statusLabel = STATUS_LABEL[status];
   const getReceiptUrl = useTransactionReceiptUrl();
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +112,9 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDate(transaction.billingDate)}</Text>
         <Text style={{ color: statusColor, fontSize: 12, fontWeight: '600' }}>{statusLabel ? t(statusLabel) : transaction.status}</Text>
       </View>
+      {status === 'CANCELLED' && transaction.cancelledAt ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('transactions.row.cancelledOn', { date: formatDate(transaction.cancelledAt) })}</Text>
+      ) : null}
       <Pressable onPress={handleViewReceipt} disabled={getReceiptUrl.isPending} style={{ marginTop: 8 }}>
         <Text style={{ color: '#1A73E8', fontSize: 13, fontWeight: '600' }}>
           {getReceiptUrl.isPending ? t('transactions.row.loading') : t('transactions.row.viewReceipt')}

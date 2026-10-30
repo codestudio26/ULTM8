@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Deze kosten zijn al geannuleerd.",
   "This charge is already paid.": "Deze kosten zijn al betaald.",
   "Give a reason for cancelling this charge.": "Geef een reden op om deze kosten te annuleren.",
+  "Give a reason for cancelling this payment.": "Geef een reden op om deze betaling te annuleren.",
   "Only the student, or their Guardian, can see their charges.": "Alleen de leerling, of de ouder/voogd, kan de kosten zien.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Mag kosten aanmaken\" en \"Mag kosten annuleren\" zijn voor vestigingsmedewerkers en trainers van deze School.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Deze school accepteert geen kaartbetalingen in de app. Betaal bij de balie.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Terugkerende kosten niet gevonden",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dit is een promotievergoeding. De schooleigenaar scheldt deze kwijt of annuleert deze via de graduatie van de leerling, waardoor deze kosten worden geannuleerd.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Deze school heeft nog geen valuta ingesteld, dus de vergoeding kan niet worden betaald. Vraag het aan de school.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Deze vergoeding is betaald, maar de promotie kan niet meer worden toegepast. Annuleer de vergoeding (wat betaald is wordt tegoed) of gradeer de leerling opnieuw.",
 };

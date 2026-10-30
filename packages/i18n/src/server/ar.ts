@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "تم إلغاء هذا الرسم بالفعل.",
   "This charge is already paid.": "تم دفع هذا الرسم بالفعل.",
   "Give a reason for cancelling this charge.": "اذكر سببًا لإلغاء هذا الرسم.",
+  "Give a reason for cancelling this payment.": "اذكر سببًا لإلغاء هذه الدفعة.",
   "Only the student, or their Guardian, can see their charges.": "لا يرى رسوم الطالب إلا الطالب نفسه أو وليّ أمره.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"يمكنه إنشاء الرسوم\" و\"يمكنه إلغاء الرسوم\" مخصّصان لموظفي الفروع والمدرّبين في هذه المدرسة.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "لا تقبل هذه المدرسة الدفع بالبطاقة في التطبيق. ادفع في مكتب الاستقبال.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "لم يتم العثور على الرسم المتكرر",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "هذه رسوم ترقية. يعفي منها مالك المدرسة أو يلغيها من صفحة تقييم الطالب، وهذا يلغي هذا الرسم.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "لم تحدد هذه المدرسة عملتها بعد، لذا لا يمكن دفع الرسوم. اسأل المدرسة.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "تم دفع هذه الرسوم، لكن لم يعد بالإمكان تطبيق الترقية. ألغِ الرسوم (يصبح المبلغ المدفوع رصيدًا)، أو قم بتقييم الطالب مرة أخرى.",
 };

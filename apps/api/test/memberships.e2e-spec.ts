@@ -93,7 +93,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP School' } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP School', defaultCurrency: 'GBP' } });
 
     const mkUser = (label: string) =>
       superuser.user.create({
@@ -546,7 +546,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     // restriction guard to fire BEFORE MembershipsService.purchase() ever reaches
     // PaymentsService.charge()/subscribe(), which it does (see that method's own
     // comment) — no live Stripe call is actually made.
-    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School' } });
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
@@ -627,7 +627,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   // ---------------------------------------------------------------------------
 
   it('payWithSavedCard requires a fresh step-up proof, then 400s with no Stripe call when nothing is saved', async () => {
-    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (saved-card)' } });
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (saved-card)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
@@ -673,7 +673,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   it('payWithSavedCard on a SUBSCRIPTION plan is rejected — 400, before any step-up check or Stripe call', async () => {
-    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (subscription)' } });
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (subscription)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
@@ -763,7 +763,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   it('useHostedCheckout on a SUBSCRIPTION plan is rejected — 400, before any Stripe call', async () => {
-    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (hosted-checkout subscription)' } });
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (hosted-checkout subscription)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });

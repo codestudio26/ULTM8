@@ -75,6 +75,8 @@ test('archiving asks first, and an archived Class offers Unarchive but not Edit'
 });
 
 test("the form uses the Branch's clock, normal money amounts, and dates can be cleared", async ({ page }) => {
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   const tokyo = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Tokyo dojo', timezone: 'Asia/Tokyo' } });
   // 01:00 UTC is 10:00 in Tokyo, whatever the browser's own zone is.
   const cls = await mkClass({

@@ -7,6 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
+import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { ConnectOnboardingResponseDto, ConnectStatusResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
 import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment-method-response.dto';
 
@@ -126,12 +127,14 @@ export class PaymentsController {
     return this.paymentsService.confirmTransaction(user.sub, id);
   }
 
-  /** A Pending Cash/Bank Transfer payment that never arrived (Decision 339). */
+  /** A Pending Cash/Bank Transfer payment that never arrived (Decision 339),
+   * cancelled like a charge: by the owner or staff with "Can cancel charges",
+   * with a reason (Decision 338 item 1). */
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('transactions/:id/cancel')
-  cancelTransaction(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.paymentsService.cancelTransaction(user.sub, id);
+  cancelTransaction(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelTransactionDto) {
+    return this.paymentsService.cancelTransaction(user.sub, id, dto);
   }
 
   // ---- Webhook receiving — Stripe calls this directly, no ULTM8 access token ----

@@ -206,13 +206,65 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       expect(after.body.balances).toEqual([{ schoolId: school.id, currency: 'BRL', owed: 6000, credit: 0, net: 6000, overdue: 0, payableAmount: 6000, cardSurchargeAmount: 0 }]);
     });
 
+    it('"No tax on this item" (Decision 414 item 5): no tax, net = gross = the price, whichever way the School prices', async () => {
+      const student = await mkStudent('noTax');
+      await setTax({ taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false });
+      // Off by default: unchanged.
+      const taxed = await createCharge(student.id, { description: 'Adult rash guard', amount: 5000 });
+      expect(taxed.body).toMatchObject({ taxExempt: false, taxRateBasisPoints: 2000, netAmount: 5000, taxAmount: 1000, grossAmount: 6000 });
+      const onTop = await createCharge(student.id, { description: 'Kids rash guard', amount: 5000, taxExempt: true });
+      expect(onTop.status).toBe(201);
+      expect(onTop.body).toMatchObject({ taxExempt: true, taxCountry: 'GB', taxRateBasisPoints: 0, taxInclusive: false, netAmount: 5000, taxAmount: 0, grossAmount: 5000, owedAmount: 5000 });
+
+      await setTax({ taxInclusive: true });
+      const inclusive = await createCharge(student.id, { description: 'Kids gloves', amount: 4000, discountType: 'PERCENT', discountValue: 1000, taxExempt: true });
+      expect(inclusive.body).toMatchObject({ taxExempt: true, taxRateBasisPoints: 0, taxInclusive: true, discountAmount: 400, netAmount: 3600, taxAmount: 0, grossAmount: 3600 });
+      const unticked = await createCharge(student.id, { description: 'Adult gloves', amount: 6000, taxExempt: false });
+      expect(unticked.body).toMatchObject({ taxExempt: false, taxRateBasisPoints: 2000, netAmount: 5000, taxAmount: 1000, grossAmount: 6000 });
+      expect((await createCharge(student.id, { description: 'Bad tick', amount: 1000, taxExempt: 'yes' })).status).toBe(400);
+      // A rate is still never typed per charge.
+      expect((await createCharge(student.id, { description: 'Typed rate', amount: 1000, taxRateBasisPoints: 500 })).status).toBe(400);
+
+      // Kept as created; the member sees it too.
+      await setTax({ taxCountry: 'DE', taxRateBasisPoints: 1900 });
+      const staffView = await ledger(student.id);
+      expect(staffView.body.charges.find((c: { id: string }) => c.id === onTop.body.id)).toMatchObject({ taxExempt: true, taxAmount: 0, grossAmount: 5000 });
+      const mine = await as(tokens.noTax).get(`/v1/students/${student.id}/charges`);
+      const shown = mine.body.schools[0].charges.find((c: { id: string }) => c.id === inclusive.body.id);
+      expect(shown).toMatchObject({ taxExempt: true, taxRateBasisPoints: 0, taxAmount: 0, netAmount: 3600, grossAmount: 3600 });
+      expect(staffView.body.balances[0]).toMatchObject({ owed: 6000 + 5000 + 3600 + 6000 });
+    });
+
+    it('the database refuses a no-tax charge with tax, and a no-tax late fee', async () => {
+      const student = await mkStudent('noTaxDb');
+      const base = {
+        schoolId: school.id,
+        studentId: student.id,
+        description: 'Direct',
+        unitAmount: 1000,
+        taxRateBasisPoints: 0,
+        taxInclusive: true,
+        taxExempt: true,
+        netAmount: 1000,
+        taxAmount: 0,
+        grossAmount: 1000,
+        currency: 'BRL',
+        dueDate: new Date('2026-11-01'),
+      };
+      const withTax = superuser.charge.create({ data: { ...base, id: randomUUID(), invoiceNumber: 900001, taxRateBasisPoints: 2000, taxAmount: 200, netAmount: 1000, grossAmount: 1200 } });
+      await expect(withTax).rejects.toThrow(/Charge_taxExempt_check/);
+      const forCharge = await createCharge(student.id, { description: 'Overdue thing', amount: 1000 });
+      const lateFee = superuser.charge.create({ data: { ...base, id: randomUUID(), invoiceNumber: 900002, lateFeeForChargeId: forCharge.body.id, lateFeeOverdueAmount: 1000 } });
+      await expect(lateFee).rejects.toThrow(/Charge_taxExempt_check/);
+    });
+
     it('refuses a charge while the School has no currency', async () => {
       const student = await mkStudent('noCurrency');
       await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: null } });
       try {
         const res = await createCharge(student.id, { description: 'Belt', amount: 5000 });
         expect(res.status).toBe(400);
-        expect(res.body.error.code).toBe('CHARGE_NO_CURRENCY');
+        expect(res.body.error.code).toBe('SCHOOL_CURRENCY_REQUIRED'); // Decision 414 item 6
       } finally {
         await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'BRL' } });
       }

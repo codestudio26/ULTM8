@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "这节课已经结束。请选择一个未来的结束时间。",
     schoolCurrencyChange: "按学校货币收费的会员计划：{count} 个。从现在起将以 {currency} 收费，金额不变。",
     schoolCurrencyInUse: "按学校货币收费的会员计划：{count} 个。清空货币前，请先为这些计划设置各自的货币。",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "设置价格前，请先在学校页面设置学校的货币。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",
@@ -209,6 +211,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "费用付款",
     chargeDueReminderTitle: "付款即将到期",
     chargeDueReminderBody: "{description} 的发票 {invoice}：{amount} 应于 {due} 付清。",
+    chargeRefundTitle: "退款",
+    chargeRefundCardBody: "{amount} 已退回你的银行卡。",
+    chargeRefundMoneyBackBody: "{amount} 已退还给你。",
+    chargeRefundCreditBody: "{amount} 已作为预存款计入你的余额。",
+    chargeRefundRefusedBody: "{amount} 已退回你的银行卡：无法购买 {plan}。",
     lateFeeAddedTitle: "已添加滞纳金",
     lateFeeAddedChargeBody: "由于发票 {invoice}（{description}）已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",
     lateFeeAddedRenewalBody: "由于你的 {plan} 会员费 {amount} 已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",
@@ -258,6 +265,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
+    promotionFeeBlockedTitle: "晋级无法执行",
+    promotionFeeBlockedBody: "{name}晋级到{rank}（{style}）的费用已支付，但晋级无法执行：自评级以来其级别或腰带阶梯已更改。请取消费用（已付款项将转为余额抵扣）或重新晋级。",
     forChild: "关于{name}：{body}",
     disputeStatus: {
       warning_needs_response: "问询，需要回复",

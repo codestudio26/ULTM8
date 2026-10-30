@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Ce cours est déjà terminé. Choisis une heure de fin dans le futur.",
     schoolCurrencyChange: "Formules facturées dans la devise de l'école : {count}. Elles sont désormais facturées en {currency}, avec les mêmes montants.",
     schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Définissez la devise de votre école sur la page de l'école avant de fixer des prix.",
   },
   errors: {
     beltInHistoryDelete: "Cette ceinture figure dans l’historique de grades des élèves, elle ne peut donc pas être supprimée.",
@@ -237,6 +239,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "paiement de frais",
     chargeDueReminderTitle: "Paiement bientôt dû",
     chargeDueReminderBody: "Facture {invoice} pour {description} : {amount} à payer avant le {due}.",
+    chargeRefundTitle: "Remboursement",
+    chargeRefundCardBody: "{amount} ont été remboursés sur votre carte.",
+    chargeRefundMoneyBackBody: "{amount} vous ont été rendus.",
+    chargeRefundCreditBody: "{amount} ont été ajoutés à votre solde sous forme de crédit.",
+    chargeRefundRefusedBody: "{amount} ont été remboursés sur votre carte : {plan} n'a pas pu être acheté.",
     lateFeeAddedTitle: "Frais de retard ajoutés",
     lateFeeAddedChargeBody: "Des frais de retard de {fee} ont été ajoutés à votre solde car la facture {invoice} ({description}) est en retard. Payez-les dans l'app ou à l'accueil.",
     lateFeeAddedRenewalBody: "Des frais de retard de {fee} ont été ajoutés à votre solde car votre paiement d'abonnement {plan} de {amount} est en retard. Payez-les dans l'app ou à l'accueil.",
@@ -286,6 +293,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "La promotion de {name} au grade {rank} ({style}) attend votre décision. Promouvez, ou décidez de ne pas le faire.",
     promotionFeeBody: "Votre promotion au grade {rank} ({style}) entraîne des frais de {amount}. Ouvrez l’application pour accepter ou refuser.",
     childPromotionFeeBody: "La promotion de {name} au grade {rank} ({style}) entraîne des frais de {amount}. Ouvrez l’application pour accepter ou refuser.",
+    promotionFeeBlockedTitle: "La promotion ne peut pas s'appliquer",
+    promotionFeeBlockedBody: "Les frais de {name} pour {rank} ({style}) sont payés, mais la promotion ne peut pas s'appliquer : son grade ou l'échelle des ceintures a changé depuis l'évaluation. Annulez les frais (ce qui a été payé devient un crédit) ou évaluez-le de nouveau.",
     forChild: "Pour {name} : {body}",
     disputeStatus: {
       warning_needs_response: "demande de renseignements, réponse requise",

@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Это начисление уже отменено.",
   "This charge is already paid.": "Это начисление уже оплачено.",
   "Give a reason for cancelling this charge.": "Укажите причину отмены этого начисления.",
+  "Give a reason for cancelling this payment.": "Укажите причину отмены этого платежа.",
   "Only the student, or their Guardian, can see their charges.": "Только сам ученик или его опекун могут видеть его начисления.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "«Может создавать начисления» и «Может отменять начисления» — для сотрудников филиалов и тренеров этой школы.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Эта школа не принимает оплату картой в приложении. Оплатите на ресепшене.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Регулярное начисление не найдено",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Это сбор за повышение. Владелец школы освобождает от него или отменяет его в аттестации ученика, и это отменяет этот счёт.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Эта школа ещё не указала валюту, поэтому сбор нельзя оплатить. Обратитесь в школу.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Этот сбор оплачен, но повышение больше нельзя применить. Отмените сбор (оплаченное станет кредитом) или аттестуйте ученика заново.",
 };

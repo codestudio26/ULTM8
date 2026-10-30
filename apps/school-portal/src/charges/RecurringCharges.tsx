@@ -5,6 +5,7 @@ import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { MoneyField } from '../lib/MoneyField';
+import { NoTaxCheckbox, PreviewTaxRow } from './NoTaxFields';
 import {
   parseRate,
   previewCharge,
@@ -16,6 +17,7 @@ import {
   type StudentCharges,
   type StudentRecurringCharges,
 } from './chargeQueries';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 const STATUS_BADGE: Record<RecurringCharge['status'], 'success' | 'default' | 'info'> = { ACTIVE: 'success', STOPPED: 'default', ENDED: 'info' };
 const FREQUENCIES = ['WEEKLY', 'MONTHLY', 'YEARLY'] as const;
@@ -91,7 +93,9 @@ export function RecurringChargesList({ schoolId, studentId, data }: { schoolId: 
             render: (r) => (
               <>
                 {formatMoney(r.estimate.grossAmount, r.currency)}
-                <div className="ultm8-field__hint">{t('charges.recurring.taxNote', { rate: rateText(r.estimate.taxRateBasisPoints) })}</div>
+                <div className="ultm8-field__hint">
+                  {r.taxExempt ? t('charges.create.noTaxLabel') : t('charges.recurring.taxNote', { rate: rateText(r.estimate.taxRateBasisPoints) })}
+                </div>
               </>
             ),
           },
@@ -188,12 +192,14 @@ export function CreateRecurringChargeModal({
   const [endKind, setEndKind] = useState<EndKind>('NEVER');
   const [endDate, setEndDate] = useState('');
   const [count, setCount] = useState('');
+  // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
+  const [taxExempt, setTaxExempt] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const discountValue = discountType === 'PERCENT' ? parseRate(percent) : discountType === 'FIXED' ? fixed.minorUnits : null;
   const preview =
     amount.minorUnits && amount.valid
-      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: rate, taxInclusive })
+      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: taxExempt ? 0 : rate, taxInclusive })
       : null;
   const discountOk = !discountType || (!!discountValue && discountValue > 0 && preview !== null);
   const countNumber = /^\d+$/.test(count.trim()) ? Number(count.trim()) : NaN;
@@ -215,6 +221,7 @@ export function CreateRecurringChargeModal({
         firstDate,
         endDate: endKind === 'DATE' ? endDate : null,
         maxOccurrences: endKind === 'COUNT' ? countNumber : null,
+        taxExempt,
       });
       onClose();
     } catch (err) {
@@ -226,17 +233,24 @@ export function CreateRecurringChargeModal({
     <Modal title={t('charges.recurring.create.title', { name: studentName })} onClose={onClose}>
       <form onSubmit={handleSubmit} data-testid="create-recurring-charge-form">
         {error ? <ErrorBanner message={error} /> : null}
-        {!currency ? <ErrorBanner message={t('charges.create.noCurrency')} /> : null}
+        {/* Decision 414 item 6: no price until the School's currency is set. */}
+        {!currency ? <CurrencyFirstNotice /> : null}
         <Field label={t('charges.create.descriptionLabel')} htmlFor="recurring-description">
           <TextField id="recurring-description" maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} required />
         </Field>
         <Field
           label={t('charges.create.amountLabel')}
           htmlFor="recurring-amount"
-          hint={taxInclusive ? t('charges.create.amountHintInclusive', { rate: rateText(rate) }) : t('charges.create.amountHintOnTop', { rate: rateText(rate) })}
+          hint={
+            taxExempt
+              ? t('charges.create.amountHintNoTax')
+              : taxInclusive
+                ? t('charges.create.amountHintInclusive', { rate: rateText(rate) })
+                : t('charges.create.amountHintOnTop', { rate: rateText(rate) })
+          }
           error={amount.valid ? undefined : t('charges.create.amountInvalid')}
         >
-          <MoneyField id="recurring-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
+          <MoneyField id="recurring-amount" disabled={!currency} value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
         <Field label={t('charges.create.discountLabel')} htmlFor="recurring-discount-type">
           <SelectField
@@ -300,18 +314,18 @@ export function CreateRecurringChargeModal({
             <TextField id="recurring-count" inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} required />
           </Field>
         ) : null}
+        <NoTaxCheckbox id="recurring-no-tax" checked={taxExempt} onChange={setTaxExempt} />
         {preview && currency ? (
           <dl data-testid="recurring-charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 4px' }}>
             <dt>{t('charges.create.previewExTax')}</dt>
             <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
-            <dt>{t('charges.create.previewTax', { rate: rateText(rate) })}</dt>
-            <dd style={{ margin: 0 }}>{formatMoney(preview.tax, currency)}</dd>
+            <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
             <dt style={{ fontWeight: 600 }}>{t('charges.recurring.create.previewEach')}</dt>
             <dd style={{ margin: 0, fontWeight: 600 }}>{formatMoney(preview.gross, currency)}</dd>
           </dl>
         ) : null}
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          {t('charges.recurring.create.note')}
+          {taxExempt ? t('charges.recurring.create.noteNoTax') : t('charges.recurring.create.note')}
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button type="submit" loading={create.isPending} disabled={!ready}>

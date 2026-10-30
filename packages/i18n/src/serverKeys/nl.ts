@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Deze les is al afgelopen. Kies een eindtijd in de toekomst.",
     schoolCurrencyChange: "Lidmaatschappen in de valuta van de school: {count}. Vanaf nu worden ze in {currency} afgerekend, met dezelfde bedragen.",
     schoolCurrencyInUse: "Lidmaatschappen in de valuta van de school: {count}. Geef deze een eigen valuta voordat je hem leegmaakt.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Stel de valuta van je School in op de Schoolpagina voordat je prijzen instelt.",
   },
   errors: {
     beltInHistoryDelete: "Deze band staat in de graderingsgeschiedenis van leerlingen, dus hij kan niet worden verwijderd.",
@@ -223,6 +225,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "kostenbetaling",
     chargeDueReminderTitle: "Betaling bijna verschuldigd",
     chargeDueReminderBody: "Factuur {invoice} voor {description}: {amount} moet op {due} betaald zijn.",
+    chargeRefundTitle: "Terugbetaling",
+    chargeRefundCardBody: "{amount} is teruggestort op je kaart.",
+    chargeRefundMoneyBackBody: "{amount} is aan je terugbetaald.",
+    chargeRefundCreditBody: "{amount} is als tegoed op je saldo gezet.",
+    chargeRefundRefusedBody: "{amount} is teruggestort op je kaart: {plan} kon niet worden gekocht.",
     lateFeeAddedTitle: "Te-laatvergoeding toegevoegd",
     lateFeeAddedChargeBody: "Er is een te-laatvergoeding van {fee} aan je saldo toegevoegd omdat factuur {invoice} ({description}) te laat is. Betaal in de app of bij de balie.",
     lateFeeAddedRenewalBody: "Er is een te-laatvergoeding van {fee} aan je saldo toegevoegd omdat je lidmaatschapsbetaling voor {plan} van {amount} te laat is. Betaal in de app of bij de balie.",
@@ -272,6 +279,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "De promotie van {name} naar {rank} ({style}) wacht op je beslissing. Promoveer, of besluit het niet te doen.",
     promotionFeeBody: "Je promotie naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
     childPromotionFeeBody: "De promotie van {name} naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
+    promotionFeeBlockedTitle: "Promotie kan niet worden toegepast",
+    promotionFeeBlockedBody: "De vergoeding van {name} voor {rank} ({style}) is betaald, maar de promotie kan niet worden toegepast: de graad of de bandenladder is veranderd sinds de gradering. Annuleer de vergoeding (wat betaald is wordt tegoed) of gradeer opnieuw.",
     forChild: "Voor {name}: {body}",
     disputeStatus: {
       warning_needs_response: "vraag, reactie nodig",

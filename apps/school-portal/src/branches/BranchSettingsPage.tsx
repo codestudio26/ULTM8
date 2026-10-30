@@ -276,7 +276,7 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
             ]}
           />
         </Field>
-        <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} currency={branch.currencyOverride || school.defaultCurrency} />
+        <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} currency={branch.currencyOverride || school.defaultCurrency} schoolCurrencyMissing={!school.defaultCurrency} />
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>
             {t('schools.profile.saveChanges')}

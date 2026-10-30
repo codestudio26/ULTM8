@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Este cargo ya se ha cancelado.",
   "This charge is already paid.": "Este cargo ya está pagado.",
   "Give a reason for cancelling this charge.": "Indica un motivo para cancelar este cargo.",
+  "Give a reason for cancelling this payment.": "Indica un motivo para cancelar este pago.",
   "Only the student, or their Guardian, can see their charges.": "Solo el alumno, o su tutor, puede ver sus cargos.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Puede crear cargos\" y \"Puede cancelar cargos\" son para el Personal de sede y los instructores de esta Escuela.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Esta escuela no acepta pagos con tarjeta en la app. Paga en recepción.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Cargo recurrente no encontrado",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Esta es una tarifa de promoción. El propietario de la escuela la condona o la cancela desde la graduación del alumno, lo que cancela este cargo.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Esta escuela aún no ha configurado su moneda, así que la tarifa no se puede pagar. Pregunta a la escuela.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Esta cuota está pagada, pero su promoción ya no se puede aplicar. Cancela la cuota (lo pagado pasa a ser crédito) o vuelve a graduar al alumno.",
 };

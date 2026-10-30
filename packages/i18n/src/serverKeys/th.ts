@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "คลาสนี้จบไปแล้ว เลือกเวลาสิ้นสุดในอนาคต",
     schoolCurrencyChange: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน ต่อจากนี้จะเรียกเก็บเป็น {currency} ด้วยจำนวนเงินเท่าเดิม",
     schoolCurrencyInUse: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน กำหนดสกุลเงินของแผนเหล่านั้นเองก่อนล้างค่า",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "ตั้งค่าสกุลเงินของโรงเรียนในหน้าโรงเรียนก่อนกำหนดราคา",
   },
   errors: {
     beltInHistoryDelete: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงลบไม่ได้",
@@ -209,6 +211,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "การชำระค่าบริการ",
     chargeDueReminderTitle: "ใกล้ครบกำหนดชำระ",
     chargeDueReminderBody: "ใบแจ้งหนี้ {invoice} สำหรับ {description}: {amount} ครบกำหนดวันที่ {due}",
+    chargeRefundTitle: "คืนเงิน",
+    chargeRefundCardBody: "คืนเงิน {amount} เข้าบัตรของคุณแล้ว",
+    chargeRefundMoneyBackBody: "คืนเงิน {amount} ให้คุณแล้ว",
+    chargeRefundCreditBody: "เพิ่ม {amount} เข้ายอดคงเหลือของคุณเป็นเครดิตแล้ว",
+    chargeRefundRefusedBody: "คืนเงิน {amount} เข้าบัตรของคุณแล้ว: ไม่สามารถซื้อ {plan} ได้",
     lateFeeAddedTitle: "เพิ่มค่าปรับล่าช้าแล้ว",
     lateFeeAddedChargeBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากใบแจ้งหนี้ {invoice} ({description}) เกินกำหนดชำระ ชำระได้ในแอปหรือที่เคาน์เตอร์",
     lateFeeAddedRenewalBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากการชำระค่าสมาชิก {plan} จำนวน {amount} เกินกำหนด ชำระได้ในแอปหรือที่เคาน์เตอร์",
@@ -258,6 +265,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     childPromotionFeeBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
+    promotionFeeBlockedTitle: "ไม่สามารถใช้การเลื่อนระดับได้",
+    promotionFeeBlockedBody: "ค่าธรรมเนียมของ {name} สำหรับ {rank} ({style}) ชำระแล้ว แต่ไม่สามารถใช้การเลื่อนระดับได้ เนื่องจากระดับหรือลำดับสายคาดเปลี่ยนไปหลังการประเมิน ยกเลิกค่าธรรมเนียม (ยอดที่ชำระแล้วจะกลายเป็นเครดิต) หรือประเมินอีกครั้ง",
     forChild: "สำหรับ {name}: {body}",
     disputeStatus: {
       warning_needs_response: "สอบถามข้อมูล ต้องตอบกลับ",

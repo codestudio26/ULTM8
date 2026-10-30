@@ -236,6 +236,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment overdue': 'chargeOverdueTitle',
   'Payment due soon': 'chargeDueReminderTitle',
   'Payment dispute': 'chargeDisputeTitle',
+  // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+  'Refund': 'chargeRefundTitle',
   // Decision 413 — late fees.
   'Late fee added': 'lateFeeAddedTitle',
   'Late fee waived': 'lateFeeWaivedTitle',
@@ -247,6 +249,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
   'Promotion fee': 'promotionFeeTitle',
+  // Decision 414 item 1 — apps/api/src/ranks/promotion-fee.service.ts.
+  "Promotion can't apply": 'promotionFeeBlockedTitle',
   // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
   'School asking to join': 'joinAskedTitle',
   'Joined the Franchise': 'joinAcceptedTitle',
@@ -368,6 +372,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
     (m, { t }) => n(t, 'childPromotionFeeBody', { name: m[1], rank: m[2], style: m[3], amount: m[4] }),
   ],
+  // Decision 414 item 1 — PromotionFeeService, to the School's owner(s).
+  [
+    body(String.raw`^(.+)'s fee for (.+) \(${STYLE}\) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade\. Cancel the fee \(what was paid becomes credit\) or grade them again\.$`),
+    (m, { t }) => n(t, 'promotionFeeBlockedBody', { name: m[1], rank: m[2], style: m[3] }),
+  ],
   [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
   [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
   [body(String.raw`^Your rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],
@@ -429,6 +438,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (m, { t, locale }) => n(t, 'chargeCreatedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale), due: formatDay(m[5], locale) }),
   ],
   [/^Your payment of ([\d.]+) ([A-Z]{3}) was received\.$/s, (m, { t, locale }) => n(t, 'chargePaymentBody', { amount: formatAmount(m[1], m[2], locale) })],
+  // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+  [/^([\d.]+) ([A-Z]{3}) was refunded to your card\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCardBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [/^([\d.]+) ([A-Z]{3}) was given back to you\.$/s, (m, { t, locale }) => n(t, 'chargeRefundMoneyBackBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [/^([\d.]+) ([A-Z]{3}) was added to your balance as credit\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCreditBody', { amount: formatAmount(m[1], m[2], locale) })],
+  // Decision 415 item 4 — a refused membership purchase, refunded in full (refusedPurchaseRefundNotice).
+  [
+    /^([\d.]+) ([A-Z]{3}) was refunded to your card: (.+) couldn't be bought\.$/s,
+    (m, { t, locale }) => n(t, 'chargeRefundRefusedBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
   [
     /^We couldn't charge your saved card for invoice (#\d+) \((.+), ([\d.]+) ([A-Z]{3})\)\. Pay it in the app or at the front desk\.$/s,
     (m, { t, locale }) => n(t, 'chargeAutoPayFailedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale) }),

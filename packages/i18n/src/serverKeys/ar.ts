@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "انتهى هذا الصف بالفعل. اختر وقت انتهاء في المستقبل.",
     schoolCurrencyChange: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. من الآن تُحصَّل بعملة {currency} بالمبالغ نفسها.",
     schoolCurrencyInUse: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. حدّد لهذه الخطط عملتها الخاصة قبل مسح العملة.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "حدّد عملة مدرستك في صفحة المدرسة قبل تحديد الأسعار.",
   },
   errors: {
     beltInHistoryDelete: "هذا الحزام موجود في سجل ترقيات الطلاب، لذا لا يمكن حذفه.",
@@ -279,6 +281,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "دفعة رسوم",
     chargeDueReminderTitle: "دفعة مستحقة قريبًا",
     chargeDueReminderBody: "الفاتورة {invoice} لـ {description}: {amount} مستحقة في {due}.",
+    chargeRefundTitle: "استرداد",
+    chargeRefundCardBody: "تم رد {amount} إلى بطاقتك.",
+    chargeRefundMoneyBackBody: "تمت إعادة {amount} إليك.",
+    chargeRefundCreditBody: "تمت إضافة {amount} إلى رصيدك كرصيد دائن.",
+    chargeRefundRefusedBody: "تم رد {amount} إلى بطاقتك: تعذر شراء {plan}.",
     lateFeeAddedTitle: "تمت إضافة رسوم تأخير",
     lateFeeAddedChargeBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن الفاتورة {invoice} ({description}) متأخرة السداد. ادفعها في التطبيق أو في مكتب الاستقبال.",
     lateFeeAddedRenewalBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن دفعة اشتراك {plan} بقيمة {amount} متأخرة. ادفعها في التطبيق أو في مكتب الاستقبال.",
@@ -328,6 +335,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "ترقية {name} إلى {rank} ({style}) بانتظار قرارك. قم بالترقية أو قرر عدم الترقية.",
     promotionFeeBody: "ترقيتك إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     childPromotionFeeBody: "ترقية {name} إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
+    promotionFeeBlockedTitle: "لا يمكن تطبيق الترقية",
+    promotionFeeBlockedBody: "رسوم {name} لـ {rank} ({style}) مدفوعة، لكن لا يمكن تطبيق الترقية: تغيرت رتبته أو سلم الأحزمة منذ التقييم. ألغِ الرسوم (يصبح المبلغ المدفوع رصيدًا) أو قم بتقييمه مرة أخرى.",
     forChild: "بخصوص {name}: {body}",
     disputeStatus: {
       warning_needs_response: "استفسار، يحتاج إلى رد",

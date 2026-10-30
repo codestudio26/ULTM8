@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Esta clase ya terminó. Elige una hora de fin en el futuro.",
     schoolCurrencyChange: "Planes cobrados en la moneda de la escuela: {count}. A partir de ahora se cobran en {currency}, con los mismos importes.",
     schoolCurrencyInUse: "Planes cobrados en la moneda de la escuela: {count}. Dales una moneda propia antes de borrarla.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Define la moneda de tu Escuela en la página de la Escuela antes de poner precios.",
   },
   errors: {
     beltInHistoryDelete: "Este cinturón está en el historial de grados de los alumnos, así que no se puede eliminar.",
@@ -237,6 +239,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "pago de cargo",
     chargeDueReminderTitle: "Pago próximo a vencer",
     chargeDueReminderBody: "Factura {invoice} de {description}: {amount} vence el {due}.",
+    chargeRefundTitle: "Reembolso",
+    chargeRefundCardBody: "Se han reembolsado {amount} a tu tarjeta.",
+    chargeRefundMoneyBackBody: "Se te han devuelto {amount}.",
+    chargeRefundCreditBody: "Se han añadido {amount} a tu saldo a favor.",
+    chargeRefundRefusedBody: "Se han reembolsado {amount} a tu tarjeta: no se pudo comprar {plan}.",
     lateFeeAddedTitle: "Recargo por retraso añadido",
     lateFeeAddedChargeBody: "Se añadió a tu saldo un recargo por retraso de {fee} porque la factura {invoice} ({description}) está vencida. Págalo en la app o en recepción.",
     lateFeeAddedRenewalBody: "Se añadió a tu saldo un recargo por retraso de {fee} porque el pago de tu membresía {plan} de {amount} está vencido. Págalo en la app o en recepción.",
@@ -286,6 +293,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "La promoción de {name} a {rank} ({style}) espera tu decisión. Promuévelo o decide no hacerlo.",
     promotionFeeBody: "Tu promoción a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
     childPromotionFeeBody: "La promoción de {name} a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
+    promotionFeeBlockedTitle: "La promoción no se puede aplicar",
+    promotionFeeBlockedBody: "La cuota de {name} para {rank} ({style}) está pagada, pero la promoción no se puede aplicar: su grado o la escala de cinturones cambió desde la graduación. Cancela la cuota (lo pagado pasa a ser crédito) o vuelve a graduarlo.",
     forChild: "Para {name}: {body}",
     disputeStatus: {
       warning_needs_response: "consulta, requiere respuesta",

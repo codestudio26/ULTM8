@@ -1,4 +1,5 @@
 import { SERVER_KEY_LOADERS, createServerTextTranslator, serverKeys } from '@ultm8/i18n';
+import { paymentRefundNotice, refundNotice, refusedPurchaseRefundNotice } from './charge-ledger';
 
 /**
  * The charge notices (ChargesService.notify) are written in English and
@@ -19,6 +20,11 @@ const NOTICES = [
   { title: 'Payment dispute', body: 'Your card payment of 60.00 BRL is being disputed with your bank.' },
   { title: 'Payment dispute', body: 'The dispute on your card payment of 60.00 BRL was decided in your favour. The money goes back to your card.' },
   { title: 'Payment dispute', body: "The dispute on your card payment of 60.00 BRL was decided in the School's favour. The payment stands." },
+  // Decision 414 item 4: the refund notice (refundNotice), one body per kind.
+  ...(['CARD', 'MONEY_BACK', 'CREDIT', 'STRIPE'] as const).map((kind) => {
+    const { title, body } = refundNotice('r1', kind, 2500, 'brl')!;
+    return { title, body };
+  }),
 ];
 
 function lookup(tree: unknown, key: string): string | undefined {
@@ -45,7 +51,7 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
 
     const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
     const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
-    const [created, paid, cancelled, credit, autoFailed, overdue, dueSoon, opened, lost, won] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    const [created, paid, cancelled, credit, autoFailed, overdue, dueSoon, opened, lost, won, refundCard, refundBack, refundCredit, refundStripe] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
     expect(overdue.title).toBe('Pagamento em atraso');
     expect(overdue.body).toMatch(/^A fatura #0000012 de Rash guard venceu em .+\. Ainda falta pagar .*70,00\.$/);
     expect(dueSoon.title).toBe('Pagamento vence em breve');
@@ -67,9 +73,44 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
     expect(paid.body).toMatch(/^Seu pagamento de .*20,00.* foi recebido\.$/);
     expect(cancelled.body).toMatch(/^Sua cobrança 'Rash guard, .*120,00.*' foi cancelada\. Nada a pagar\.$/);
     expect(credit.body).toContain('30,00');
+    expect(refundCard.title).toBe('Reembolso');
+    expect(refundCard.body).toMatch(/^.*25,00 foi reembolsado no seu cartão\.$/);
+    expect(refundStripe.body).toBe(refundCard.body);
+    expect(refundBack.body).toMatch(/^.*25,00 foi devolvido a você\.$/);
+    expect(refundCredit.body).toMatch(/^.*25,00 foi adicionado ao seu saldo como crédito\.$/);
+    const refundForChild = pt.notification({ title: 'Refund', body: 'For Kai: 25.00 BRL was refunded to your card.', type: 'CHARGE' });
+    expect(refundForChild.body).toContain('Kai');
+    expect(refundForChild.body).toMatch(/25,00 foi reembolsado no seu cartão\.$/);
     // A Guardian's copy.
     const forChild = pt.notification({ title: 'Payment received', body: 'For Kai: Your payment of 20.00 BRL was received.', type: 'CHARGE' });
     expect(forChild.body).toContain('Kai');
     expect(forChild.body).toContain('20,00');
+  });
+});
+
+describe('the refund notice (Decision 414 item 4)', () => {
+  it('names the amount and where it went; a lost dispute has none of its own', () => {
+    expect(refundNotice('r1', 'CARD', 2500, 'brl')).toEqual({ key: 'charge-refund-r1', title: 'Refund', body: '25.00 BRL was refunded to your card.' });
+    expect(refundNotice('r1', 'STRIPE', 2500, 'brl')?.body).toBe('25.00 BRL was refunded to your card.');
+    expect(refundNotice('r1', 'MONEY_BACK', 2500, 'brl')?.body).toBe('25.00 BRL was given back to you.');
+    expect(refundNotice('r1', 'CREDIT', 2500, 'brl')?.body).toBe('25.00 BRL was added to your balance as credit.');
+    // The member already has the dispute notice ("The money goes back to your card").
+    expect(refundNotice('r1', 'DISPUTE_LOST', 2500, 'brl')).toBeNull();
+  });
+
+  it('refunds outside charges use the same texts; a refused purchase says why (Decision 415 item 4)', async () => {
+    expect(paymentRefundNotice('k', 'CARD', 1200, 'gbp')).toEqual({ key: 'k', title: 'Refund', body: '12.00 GBP was refunded to your card.' });
+    expect(paymentRefundNotice('k', 'GIVEN_BACK', 1200, 'gbp').body).toBe('12.00 GBP was given back to you.');
+    const refused = refusedPurchaseRefundNotice('k', 5000, 'brl', 'Kids: 10 classes');
+    expect(refused.body).toBe("50.00 BRL was refunded to your card: Kids: 10 classes couldn't be bought.");
+
+    const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
+    const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
+    const out = pt.notification({ ...refused, type: 'REFUND' });
+    expect(out.title).toBe('Reembolso');
+    expect(out.body).toMatch(/^.*50,00 foi reembolsado no seu cartão: não foi possível comprar Kids: 10 classes\.$/);
+    const forChild = pt.notification({ title: 'Refund', body: `For Kai: ${refused.body}`, type: 'REFUND' });
+    expect(forChild.body).toContain('Kai');
+    expect(forChild.body).toContain('não foi possível comprar Kids: 10 classes');
   });
 });

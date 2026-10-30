@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Te zajęcia już się skończyły. Wybierz godzinę zakończenia w przyszłości.",
     schoolCurrencyChange: "Plany rozliczane w walucie szkoły: {count}. Od teraz są rozliczane w {currency}, z tymi samymi kwotami.",
     schoolCurrencyInUse: "Plany rozliczane w walucie szkoły: {count}. Nadaj im własną walutę, zanim ją wyczyścisz.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Ustaw walutę swojej szkoły na stronie szkoły, zanim ustawisz ceny.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",
@@ -251,6 +253,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "płatność należności",
     chargeDueReminderTitle: "Płatność wkrótce",
     chargeDueReminderBody: "Faktura {invoice} za {description}: {amount} do zapłaty do {due}.",
+    chargeRefundTitle: "Zwrot",
+    chargeRefundCardBody: "{amount} zwrócono na twoją kartę.",
+    chargeRefundMoneyBackBody: "{amount} zwrócono ci.",
+    chargeRefundCreditBody: "{amount} dodano do twojego salda jako nadpłatę.",
+    chargeRefundRefusedBody: "{amount} zwrócono na twoją kartę: nie udało się kupić {plan}.",
     lateFeeAddedTitle: "Dodano opłatę za zwłokę",
     lateFeeAddedChargeBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ faktura {invoice} ({description}) jest przeterminowana. Zapłać w aplikacji lub w recepcji.",
     lateFeeAddedRenewalBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ płatność za karnet {plan} w kwocie {amount} jest przeterminowana. Zapłać w aplikacji lub w recepcji.",
@@ -300,6 +307,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Awans {name} na {rank} ({style}) czeka na twoją decyzję. Awansuj lub zdecyduj, że nie.",
     promotionFeeBody: "Twój awans na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
     childPromotionFeeBody: "Awans {name} na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
+    promotionFeeBlockedTitle: "Nie można zastosować awansu",
+    promotionFeeBlockedBody: "Opłata {name} za {rank} ({style}) jest zapłacona, ale awansu nie można zastosować: stopień lub drabinka pasów zmieniła się od oceny. Anuluj opłatę (zapłacona kwota staje się kredytem) lub oceń ponownie.",
     forChild: "Dla {name}: {body}",
     disputeStatus: {
       warning_needs_response: "zapytanie, wymaga odpowiedzi",

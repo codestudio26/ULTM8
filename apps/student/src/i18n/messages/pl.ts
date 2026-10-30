@@ -942,6 +942,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Opłata za późne anulowanie",
       freezeFee: "Opłata za zamrożenie: {plan}",
       freezeFeeNoPlan: "Opłata za zamrożenie",
+      cancelledOn: "Anulowano {date}. Nic do zapłaty.",
     },
     status: {
       successful: "UDANA",
@@ -949,6 +950,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "NIEUDANA",
       refunded: "ZWRÓCONA",
       disputed: "SPORNA",
+      cancelled: "ANULOWANA",
     },
   },
   waivers: {
@@ -1025,6 +1027,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "Cena netto",
     tax: "Podatek ({rate}%)",
     incTax: "Cena brutto",
+    noTax: "Bez podatku na tę pozycję",
     discount: "Rabat",
     paid: "Zapłacono",
     stillOwed: "Pozostało do zapłaty",

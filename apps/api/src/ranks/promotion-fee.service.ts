@@ -17,7 +17,9 @@ import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { GradingService } from './grading.service';
-import { isOpenToDecide, isWaitingForFee, PendingGrade } from './promotion-fee';
+import { loadLadder } from './grading-attendance';
+import { rungIndex } from './engine/ladder';
+import { isOpenToDecide, isPromotionBlocked, isWaitingForFee, PendingGrade } from './promotion-fee';
 import { PromotionFeeRequestQueryDto, UpdatePromotionFeeSettingsDto } from './dto/promotion-fee.dto';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,6 +59,13 @@ const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED']
  *   is fully paid, settlePaidCharges() marks the request PAID through
  *   markPaid(), which applies a waiting promotion. Waiving or cancelling the
  *   fee cancels its charge. There is still no endpoint that marks a fee paid.
+ * - A fee paid in full whose waiting promotion can no longer apply (the
+ *   student's rank or the ladder changed since the grade; Decision 414 item
+ *   1): recorded once (promotionBlockedAt), the owner(s) told once, and the
+ *   request left Accepted with its money paid until the owner cancels the fee
+ *   (cancel(): the money becomes credit) or the student is graded again
+ *   (GradingService cancels it the same way, so the money is credit toward
+ *   the new grade; Decision 415 item 1). Nothing happens to the money until then.
  *
  * Writes run under the student's own context, like every grading write
  * (Decision 88): the request's RLS lets the student's context write it, and
@@ -261,6 +270,11 @@ export class PromotionFeeService {
    */
   async waive(callerId: string, requestId: string) {
     const request = await this.findForOwner(callerId, requestId);
+    // Paid, with a promotion that can't apply: the owner's two choices are
+    // cancelling the fee or grading again (Decision 414 item 1), not waiving.
+    if (isPromotionBlocked(request)) {
+      throw new ConflictException('This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.');
+    }
     if (isWaitingForFee(request)) {
       await this.gradingService.applyWaitingPromotion(callerId, request, 'WAIVED', callerId);
     } else {
@@ -278,6 +292,10 @@ export class PromotionFeeService {
    * decisions don't say a cancelled fee undoes it, and undoing it would be a
    * downgrade nobody chose. Cancelling a declined fee is treated like waiving
    * one ("to decide"). Both readings need product-owner confirmation.
+   * A paid fee whose promotion can no longer apply (Decision 414 item 1) is
+   * cancelled the same way: its charge is cancelled and what was paid becomes
+   * credit. It isn't left "to decide": the promotion can't apply as made, and
+   * the owner who cancels it is the one who decides whether to grade again.
    */
   async cancel(callerId: string, requestId: string) {
     const request = await this.findForOwner(callerId, requestId);
@@ -292,7 +310,8 @@ export class PromotionFeeService {
       throw new ConflictException(`This fee is already ${request.status.toLowerCase()}.`);
     }
     const now = new Date();
-    const neverApplied = request.promotionWaits && request.promotionEventId === null;
+    // A paid fee whose promotion can't apply goes to no coach (see cancel()).
+    const neverApplied = request.promotionWaits && request.promotionEventId === null && request.promotionBlockedAt === null;
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.promotionFeeRequest.updateMany({
         where: { id: request.id, status: request.status, promotionEventId: request.promotionEventId, toDecideAt: null },
@@ -470,7 +489,8 @@ export class PromotionFeeService {
   async settlePaidCharges(schoolId: string, studentId: string): Promise<void> {
     try {
       const charges = await this.prismaJobs.charge.findMany({
-        where: { schoolId, studentId, cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED' } },
+        // One already put to the owner (promotionBlockedAt) waits for them.
+        where: { schoolId, studentId, cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED', promotionBlockedAt: null } },
         include: { allocations: { select: { amount: true } } },
       });
       for (const c of charges) {
@@ -478,10 +498,11 @@ export class PromotionFeeService {
         try {
           await this.markPaid(studentId, c.promotionFeeRequestId);
         } catch (err) {
-          // e.g. the student's rank or the ladder changed since the grade, so
-          // the waiting promotion can't apply as it was (GradingService says
-          // so). The fee stays Accepted with its charge paid; the owner can
-          // cancel the fee (the money becomes credit) and grade again.
+          // The student's rank or the ladder changed since the grade, so the
+          // waiting promotion can't apply as it was (GradingService refuses
+          // it): put to the owner, once (Decision 414 item 1). Anything else
+          // (a passing failure) is retried by the next call or the daily catch-up.
+          if (await this.flagIfCannotApply(studentId, c.promotionFeeRequestId)) continue;
           this.logger.error(`Promotion fee ${c.promotionFeeRequestId}: its charge is paid but marking it paid failed.`, err as Error);
         }
       }
@@ -514,7 +535,7 @@ export class PromotionFeeService {
       }
     }
     const accepted = await this.prismaJobs.charge.findMany({
-      where: { cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED' } },
+      where: { cancelledAt: null, promotionFeeRequest: { status: 'ACCEPTED', promotionBlockedAt: null } },
       distinct: ['schoolId', 'studentId'],
       select: { schoolId: true, studentId: true },
     });
@@ -536,6 +557,106 @@ export class PromotionFeeService {
       }
     }
     return out;
+  }
+
+  /**
+   * The charges, still open, of this student's fees that are waived or
+   * cancelled, cancelled now through the same ledger write as any cancel
+   * (cancelOpenCharge: anything paid becomes credit, the usual "Charge
+   * cancelled" notice, then settlePaidCharges). Called by GradingService after
+   * a grade up that cancelled a paid fee whose promotion couldn't apply, so
+   * what was paid counts toward the new grade (Decision 415 item 1); the daily
+   * catch-up (reconcile, step 3) does the same for every School.
+   */
+  async cancelChargesOfClosedFees(schoolId: string, studentId: string): Promise<void> {
+    const open = await this.prismaJobs.charge.findMany({
+      where: { schoolId, studentId, cancelledAt: null, promotionFeeRequest: { status: { in: ['WAIVED', 'CANCELLED'] } } },
+      select: { promotionFeeRequestId: true, promotionFeeRequest: { select: { closedById: true } } },
+    });
+    for (const c of open) await this.cancelOpenCharge(c.promotionFeeRequestId!, c.promotionFeeRequest?.closedById ?? null);
+  }
+
+  /**
+   * A paid fee whose waiting promotion was refused: is that because it can
+   * no longer apply as made (Decision 414 item 1: "the student's rank or the
+   * belt ladder changed after the grade")? Checked against the data, not the
+   * refusal's wording, so a passing failure is never mistaken for it:
+   * - the student is no longer on the rung the grade was made from (or has
+   *   no rank in the style any more);
+   * - that rung, or the rung the grade was to, is no longer on the ladder, or
+   *   the grade no longer lands on the same rung (a stripe award moves to the
+   *   next stripe of the same belt).
+   * If so, the request is marked once (promotionBlockedAt, only while it is
+   * still Accepted and unapplied) and the owner(s) told once. Returns true
+   * when the request is (now or already) in that state.
+   */
+  private async flagIfCannotApply(studentId: string, requestId: string): Promise<boolean> {
+    try {
+      const request = await this.prismaJobs.promotionFeeRequest.findUnique({ where: { id: requestId } });
+      if (!request || request.status !== 'ACCEPTED' || request.promotionEventId !== null || !request.promotionWaits) return false;
+      if (request.promotionBlockedAt) return true;
+      if (!(await this.cannotApplyAsMade(request))) return false;
+      const flagged = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.promotionFeeRequest.updateMany({
+          where: { id: request.id, status: 'ACCEPTED', promotionEventId: null, promotionBlockedAt: null },
+          data: { promotionBlockedAt: new Date() },
+        }),
+      );
+      if (flagged.count === 1) await this.notifyOwnersBlocked(request);
+      return true;
+    } catch (err) {
+      this.logger.error(`Promotion fee ${requestId}: checking whether its promotion can still apply failed; tried again on the next run.`, err as Error);
+      return false;
+    }
+  }
+
+  private async cannotApplyAsMade(request: PromotionFeeRequest): Promise<boolean> {
+    const pg = request.pendingGrade as unknown as PendingGrade | null;
+    if (!pg) return false;
+    const sr = await this.prismaJobs.studentRank.findUnique({
+      where: { studentId_disciplineId: { studentId: request.studentId, disciplineId: request.disciplineId } },
+      select: { currentStripeId: true },
+    });
+    if (!sr || sr.currentStripeId !== pg.expectedCurrentRungId) return true;
+    const ladder = await loadLadder(this.prismaJobs, request.disciplineId);
+    const from = pg.expectedCurrentRungId ? rungIndex(ladder, pg.expectedCurrentRungId) : -1;
+    if (from < 0) return true;
+    const to = pg.type === 'STRIPE_AWARD' ? from + 1 : rungIndex(ladder, pg.targetRungId);
+    if (to <= from || ladder[to]?.id !== request.toRungId) return true;
+    return pg.type === 'STRIPE_AWARD' && ladder[to].rankId !== ladder[from].rankId;
+  }
+
+  /** The School's owner(s) are told, once per owner (the notice id is the
+   * request's and the owner's), in the app's Notifications, opening grading
+   * (Decision 414 item 1). Best-effort, as every notice: the portal shows
+   * the state on the student's grading card either way. */
+  private async notifyOwnersBlocked(request: PromotionFeeRequest): Promise<void> {
+    try {
+      const [owners, student, discipline] = await Promise.all([
+        this.prismaJobs.roleGrant.findMany({ where: { schoolId: request.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { userId: true }, distinct: ['userId'] }),
+        this.prismaJobs.user.findUnique({ where: { id: request.studentId }, select: { firstName: true, surname: true } }),
+        this.prismaJobs.discipline.findUnique({ where: { id: request.disciplineId }, select: { name: true } }),
+      ]);
+      const name = student ? `${student.firstName} ${student.surname}`.trim() : 'A student';
+      for (const { userId } of owners) {
+        const key = `promotion-fee-blocked-${request.id}-${userId}`;
+        await this.fanoutQueue.add(
+          'notify',
+          {
+            notificationId: key,
+            userId,
+            title: "Promotion can't apply",
+            body: `${name}'s fee for ${request.toRungName} (${discipline?.name ?? 'grading'}) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.`,
+            type: 'GRADING_FEE_BLOCKED',
+            schoolId: request.schoolId,
+            targetType: 'GRADING',
+          } satisfies NotificationFanoutJobData,
+          { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the owner notice for promotion fee ${request.id}: ${err}`);
+    }
   }
 
   /** The member's notice (as ChargesService.notify()): type CHARGE, opening
@@ -672,6 +793,8 @@ export class PromotionFeeService {
       promotionEventId: r.promotionEventId,
       gradingDate: pg?.effectiveDate ?? null,
       toDecide: isOpenToDecide(r),
+      promotionBlocked: isPromotionBlocked(r),
+      promotionBlockedAt: r.promotionBlockedAt,
       toDecideAt: r.toDecideAt,
       toDecideResolution: r.toDecideResolution,
       acceptedAt: r.acceptedAt,

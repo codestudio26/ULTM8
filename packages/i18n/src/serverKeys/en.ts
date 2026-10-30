@@ -85,6 +85,8 @@ export const server = {
     // School Settings review (Decision 368, Q3).
     schoolCurrencyChange: "Membership plans charged in the School's currency: {count}. From now on they're charged in {currency}, with the same amounts.",
     schoolCurrencyInUse: "Membership plans charged in the School's currency: {count}. Give those plans their own currency before clearing it.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Set your School's currency on the School page before setting prices.",
   },
   errors: {
     slotHasBookings: {
@@ -209,6 +211,13 @@ export const server = {
     chargePaymentLabel: "charge payment",
     chargeDueReminderTitle: "Payment due soon",
     chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
+    // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+    chargeRefundTitle: "Refund",
+    chargeRefundCardBody: "{amount} was refunded to your card.",
+    chargeRefundMoneyBackBody: "{amount} was given back to you.",
+    chargeRefundCreditBody: "{amount} was added to your balance as credit.",
+    // Decision 415 item 4 — a refused membership purchase refunded in full.
+    chargeRefundRefusedBody: "{amount} was refunded to your card: {plan} couldn't be bought.",
     // Decision 413 — late fees (jobs/late-fee.processor.ts, ChargesService waive).
     lateFeeAddedTitle: "Late fee added",
     lateFeeAddedChargeBody: "A late fee of {fee} was added to your balance because invoice {invoice} ({description}) is overdue. Pay it in the app or at the front desk.",
@@ -260,6 +269,8 @@ export const server = {
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",
+    promotionFeeBlockedTitle: "Promotion can't apply",
+    promotionFeeBlockedBody: "{name}'s fee for {rank} ({style}) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.",
     forChild: "For {name}: {body}",
     disputeStatus: {
       warning_needs_response: 'inquiry, needs a response',

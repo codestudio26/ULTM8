@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "このクラスはすでに終了しています。未来の終了時刻を選んでください。",
     schoolCurrencyChange: "スクールの通貨で請求される会員プラン：{count}件。今後は同じ金額のまま {currency} で請求されます。",
     schoolCurrencyInUse: "スクールの通貨で請求される会員プラン：{count}件。通貨を空にする前に、それらのプランに個別の通貨を設定してください。",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "価格を設定する前に、スクールページでスクールの通貨を設定してください。",
   },
   errors: {
     beltInHistoryDelete: "この帯は生徒の昇級履歴に含まれているため、削除できません。",
@@ -209,6 +211,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "請求の支払い",
     chargeDueReminderTitle: "まもなく支払い期限",
     chargeDueReminderBody: "{description} の請求書 {invoice}: {amount} の期限は {due} です。",
+    chargeRefundTitle: "返金",
+    chargeRefundCardBody: "{amount} がカードに返金されました。",
+    chargeRefundMoneyBackBody: "{amount} をお返ししました。",
+    chargeRefundCreditBody: "{amount} が残高にクレジットとして追加されました。",
+    chargeRefundRefusedBody: "{amount} がカードに返金されました: {plan} を購入できませんでした。",
     lateFeeAddedTitle: "延滞料が追加されました",
     lateFeeAddedChargeBody: "請求書 {invoice}（{description}）の支払期限が過ぎているため、延滞料 {fee} が残高に追加されました。アプリまたは受付でお支払いください。",
     lateFeeAddedRenewalBody: "{plan} の会費 {amount} の支払期限が過ぎているため、延滞料 {fee} が残高に追加されました。アプリまたは受付でお支払いください。",
@@ -258,6 +265,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}さんの{rank}（{style}）への昇級があなたの判断を待っています。昇級させるか、見送るかを決めてください。",
     promotionFeeBody: "{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
     childPromotionFeeBody: "{name}さんの{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
+    promotionFeeBlockedTitle: "昇級を適用できません",
+    promotionFeeBlockedBody: "{name}さんの{rank}（{style}）の昇級料は支払い済みですが、昇級を適用できません。昇級後に段位または帯の順序が変わりました。昇級料をキャンセルする（支払われた金額はクレジットになります）か、もう一度昇級させてください。",
     forChild: "{name}さんについて：{body}",
     disputeStatus: {
       warning_needs_response: "問い合わせ・要回答",

@@ -6641,6 +6641,8 @@ export interface components {
             chargeNoticeDispute?: boolean;
             /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
             chargeNoticeDueReminder?: boolean;
+            /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
+            chargeNoticeRefund?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6758,6 +6760,8 @@ export interface components {
             chargeNoticeDispute: boolean;
             /** @description Decision 338 item 10: "Payment due soon", 3 days before a charge is due (default on). */
             chargeNoticeDueReminder: boolean;
+            /** @description Decisions 414 and 415 item 4: "Refund" notices to the member, for every refund (default on). */
+            chargeNoticeRefund: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6879,6 +6883,8 @@ export interface components {
             chargeNoticeDispute?: boolean;
             /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
             chargeNoticeDueReminder?: boolean;
+            /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
+            chargeNoticeRefund?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -8283,6 +8289,10 @@ export interface components {
             brand?: string;
             last4?: string;
         };
+        CancelTransactionDto: {
+            /** @description For staff only; never sent to the member. Required unless the School's owner made it optional. */
+            reason?: string;
+        };
         CreateTimetableSlotDto: {
             /** @description Branch to scope this slot to. Omit for a School-wide slot. */
             branchId?: string;
@@ -9363,6 +9373,14 @@ export interface components {
             paymentMethod: string;
             disputedAmount?: number | null;
             refundedAmount?: number | null;
+            /** @description Set when the payment was cancelled: shown as Cancelled (status stays FAILED). */
+            cancelledAt?: string | null;
+            /** @description Staff only; null in the member's own list. */
+            cancelledById?: string | null;
+            /** @description Who cancelled it. Staff only; null in the member's own list. */
+            cancelledByName?: string | null;
+            /** @description Why it was cancelled. Staff only; never sent to the member. */
+            cancelReason?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -9379,7 +9397,10 @@ export interface components {
             total: number;
             successful: number;
             pending: number;
+            /** @description Failed (not cancelled) or disputed. */
             failedOrDisputed: number;
+            /** @description Cancelled cash or bank-transfer payments (Decision 338 item 1). */
+            cancelled: number;
             /** @description Successful rows only, one entry per currency. */
             revenue: components["schemas"]["TransactionRevenueDto"][];
         };
@@ -10106,10 +10127,10 @@ export interface components {
             /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
             noHomeBranch: boolean;
             /**
-             * @description Promotion fee (Decisions 300, 307): "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
+             * @description Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
              * @enum {string|null}
              */
-            feeStatus?: "waiting" | "declined" | "toDecide" | null;
+            feeStatus?: "blocked" | "waiting" | "declined" | "toDecide" | null;
             /** @description The request behind feeStatus. */
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
             /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
@@ -10367,6 +10388,10 @@ export interface components {
             gradingDate?: string | null;
             /** @description Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
             toDecide: boolean;
+            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then. */
+            promotionBlocked: boolean;
+            /** @description When the paid fee's promotion was first found unable to apply. Kept after the owner decides. */
+            promotionBlockedAt?: string | null;
             toDecideAt?: string | null;
             /** @enum {string|null} */
             toDecideResolution?: "PROMOTED" | "DISMISSED" | null;
@@ -11909,6 +11934,8 @@ export interface components {
             /** @description Hundredths of a percent, as when the charge was created. */
             taxRateBasisPoints: number;
             taxInclusive: boolean;
+            /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
+            taxExempt: boolean;
             /** @description The price excluding tax. */
             netAmount: number;
             taxAmount: number;
@@ -12020,6 +12047,28 @@ export interface components {
             /** @description Staff only. */
             givenByName?: string | null;
         };
+        DeskMembershipPaymentDto: {
+            /** @description The Transaction id. */
+            id: string;
+            /** @enum {string} */
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
+            /** @description The plan it is for (a freeze fee: the frozen membership's plan). */
+            membershipPlanTitle?: string | null;
+            amount: number;
+            currency?: string | null;
+            /** @description CASH, BANK_TRANSFER, PIX or CARD_TERMINAL. */
+            paymentMethod: string;
+            billingDate: string;
+            /**
+             * @description CANCELLED is stored as FAILED with cancelledAt set.
+             * @enum {string}
+             */
+            status: "PENDING" | "CANCELLED";
+            cancelledAt?: string | null;
+            cancelledByName?: string | null;
+            /** @description Staff only. */
+            cancelReason?: string | null;
+        };
         ChargeAbilitiesDto: {
             create: boolean;
             cancel: boolean;
@@ -12053,6 +12102,8 @@ export interface components {
             payments: components["schemas"]["ChargePaymentResponseDto"][];
             /** @description Credit the owner gave, newest first. */
             credits: components["schemas"]["BalanceCreditResponseDto"][];
+            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them. */
+            deskMembershipPayments: components["schemas"]["DeskMembershipPaymentDto"][];
             /** @description What the caller may do here. */
             can: components["schemas"]["ChargeAbilitiesDto"];
             settings: components["schemas"]["ChargeSettingsDto"];
@@ -12071,6 +12122,11 @@ export interface components {
              * @example 2026-11-15
              */
             dueDate: string;
+            /**
+             * @description "No tax on this item (0% or exempt)" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply.
+             * @default false
+             */
+            taxExempt: boolean;
         };
         CancelChargeDto: {
             /** @description For staff only. Required unless the School's owner made it optional. */
@@ -12204,8 +12260,12 @@ export interface components {
             received: number;
             /** @description Money given back that month: refunds to the card or in cash, and lost disputes. Refunds as credit are not money given back. */
             refunded: number;
-            /** @description received − refunded. */
+            /** @description Charges revenue that month: received − refunded. */
             net: number;
+            /** @description Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
+            memberships: number;
+            /** @description net + memberships. */
+            total: number;
         };
         ChargeOverviewCurrencyDto: {
             currency: string;
@@ -12213,8 +12273,12 @@ export interface components {
             scheduled: number;
             /** @description Still owed on open charges past their due date. */
             overdue: number;
-            /** @description Paid over the months covered, less money given back (the sum of revenue by month). */
+            /** @description Charges revenue: paid toward charges over the months covered, less money given back (the sum of net by month). */
             paid: number;
+            /** @description Membership revenue over the months covered (the sum of memberships by month). */
+            memberships: number;
+            /** @description Total revenue over the months covered: paid + memberships. */
+            total: number;
             /** @description Oldest month first. */
             revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];
         };
@@ -12261,7 +12325,7 @@ export interface components {
             taxAmount: number;
             /** @description Price inc. tax of each charge at the School tax rate today. */
             grossAmount: number;
-            /** @description The School tax rate today, hundredths of a percent. */
+            /** @description The School tax rate today, hundredths of a percent; 0 for a series with no tax. */
             taxRateBasisPoints: number;
         };
         RecurringChargeResponseDto: {
@@ -12275,6 +12339,8 @@ export interface components {
             discountType?: "PERCENT" | "FIXED" | null;
             discountValue?: number | null;
             currency: string;
+            /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
+            taxExempt: boolean;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -12330,6 +12396,11 @@ export interface components {
             endDate?: string | null;
             /** @description Optional: the number of payments. Not with endDate. Neither: until stopped. */
             maxOccurrences?: number | null;
+            /**
+             * @description "No tax on this item (0% or exempt)" (Decision 414 item 5): every charge of the series is made with no tax. Off by default.
+             * @default false
+             */
+            taxExempt: boolean;
         };
         MemberRecurringChargeDto: {
             id: string;
@@ -12342,6 +12413,8 @@ export interface components {
             discountType?: "PERCENT" | "FIXED" | null;
             discountValue?: number | null;
             currency: string;
+            /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
+            taxExempt: boolean;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -15611,7 +15684,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelTransactionDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -17383,7 +17460,7 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
-                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
@@ -17413,7 +17490,7 @@ export interface operations {
     TransactionsController_summaryForSchool: {
         parameters: {
             query?: {
-                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;

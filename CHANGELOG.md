@@ -31,6 +31,79 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   scroll sideways. Booking no longer loads the whole belt ladder when no belt
   locks the class (about a third faster). Unpause clicked several times at
   once is recorded once.
+- **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
+  — every refund sends the member a "Refund" notice with the amount and where
+  it went: refunded to the card, given back, or added to the balance as credit
+  (a Guardian gets the usual copy). That covers refunds of payments toward
+  charges, a Class Pack's share when a booking is cancelled (to the card, or
+  cash marked paid out), a payment refunded in the Stripe dashboard, and a
+  membership purchase that couldn't go through and was refunded ("… was
+  refunded to your card: {plan} couldn't be bought."). A lost card dispute
+  sends none (the dispute notice already says the money goes back). The
+  owner's notes are never included. New switch "A refund of a payment" among
+  the payment notifications on the School page, on by default. 15 languages.
+- **Billing reports: total revenue, charges and memberships** (Decision 414
+  item 3) — the Overview now shows revenue in two parts and their total, for
+  the period and for each month: **Charges** (payments toward charges less
+  money given back, as before) and **Memberships** (plans bought in the app or
+  sold at the desk, Subscription renewals, and late-cancellation and freeze
+  fees (Decision 415 item 2): Successful payments by billing date, less what
+  was refunded on them), then **Total revenue**. Payments toward charges are
+  counted once, in Charges. Same people and scope as before (the owner the
+  whole School; Branch Staff, when the School lets them take payments, their
+  own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
+  gains `memberships` and `total`, and each month `memberships` and `total`.
+  15 languages.
+- **A paid promotion fee whose promotion can no longer apply** (Decision 414
+  item 1) — when a promotion fee is paid in full but the promotion that waited
+  for it can't go through any more (the student's rank or the belt ladder
+  changed after the grade), the School's owner is told once, in
+  Notifications ("Promotion can't apply"), and the student's grading card and
+  the Grading Board show **Paid — promotion can't apply**. The owner decides:
+  **Cancel fee** (the invoice is cancelled and what was paid becomes credit)
+  or grade the student again, which is no longer held up by the fee. Grading
+  again cancels the old fee and its invoice the same way, so what was paid
+  counts toward the new grade (Decision 415 item 1): it becomes credit, which
+  pays the new grade's fee once accepted (only any difference is left to pay;
+  anything over stays credit). Until the owner does one or the other nothing
+  happens to the money, and the daily payments run doesn't retry it or tell
+  the owner again.
+  The fee can't be waived in this state. The member sees the fee as Paid.
+  **Needs a database migration** (`20270120000000_promotion_fee_blocked`).
+- **"No tax on this item (0% or exempt)" on charges** (backlog 3.6; Decision 414
+  item 5) — staff creating a one-off charge or setting up a recurring charge
+  can tick it (off by default) for an item tax doesn't apply to, such as
+  children's clothing at 0% VAT in the UK. The charge then has no tax: the
+  price ex. tax and inc. tax are both the price typed (after any discount),
+  whether the School's prices include tax or have it added on top, and every
+  charge of a recurring series set up with the tick has no tax. The form's live
+  preview, the student's charges table and recurring list, and the invoice in
+  the student app show "No tax". A tax rate is still never typed per charge.
+  Late fees and promotion fees always take the School's tax settings.
+  Migration `20270119000000_charges_no_tax`.
+- **Currency first** (backlog 3.6; Decision 414 item 6) — until the School has
+  set its currency on the School page, no price can be saved: membership
+  plans, belt prices for promotion fees, charges, recurring charges, credit,
+  the late fee's fixed amount, the freeze fee, the no-show fee (School and
+  Branch) and Class and timetable slot cancellation charges. Each of those
+  forms shows "Set your School's currency first" with a link to the setting,
+  and its price field is off. A price of 0 (free) is still allowed, and
+  anything priced before keeps its price and can still be edited. The API
+  refuses with `SCHOOL_CURRENCY_REQUIRED` (charges used `CHARGE_NO_CURRENCY`).
+- **Cancelling a cash or bank-transfer membership payment works like
+  cancelling a charge** (backlog 3.6; Decision 338 item 1, Decision 414 item 7)
+  — a membership payment waiting at the desk is cancelled by the owner, and
+  now also by staff the owner has given "Can cancel charges" (for the students
+  of their own branches). A reason is always asked for, required unless the
+  owner turned that off on the School page (the same setting as for charges),
+  and is for staff only. The payment is still stored as Failed but reads
+  **Cancelled** everywhere, with its date: the Transactions page (with who
+  cancelled it and why, a new Cancelled tile, a Cancelled status filter, and
+  three new CSV columns), and the student app's payment history (the date
+  only). Failed counts and the Failed filter leave cancelled payments out.
+  Staff who may cancel also see the student's waiting and cancelled
+  membership payments on the student's Payments card, with a Cancel button.
+  Migration `20270118000000_transaction_cancel_reason`.
 - **Charges, step 4: refunds, credit, billing reports and payment notices**
   (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
   owner refunds a payment toward charges from the student's Payments card,

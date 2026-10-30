@@ -24,6 +24,8 @@ const planIds: string[] = [];
 
 test.beforeEach(async ({ page }) => {
   s = await seedGradingSchool();
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   const cls = await db.class.create({
     data: {
       id: randomUUID(),

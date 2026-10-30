@@ -340,6 +340,7 @@ export function ClassesPage() {
           schoolId={schoolId}
           schoolTimezone={school?.timezone ?? null}
           currency={school?.defaultCurrency ?? null}
+          schoolCurrencyMissing={!!school && !school.defaultCurrency}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -360,6 +361,7 @@ export function ClassesPage() {
           schoolId={schoolId}
           schoolTimezone={school?.timezone ?? null}
           currency={school?.defaultCurrency ?? null}
+          schoolCurrencyMissing={!!school && !school.defaultCurrency}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -421,6 +423,7 @@ function EditClassModal({
   schoolId,
   schoolTimezone,
   currency,
+  schoolCurrencyMissing,
   branches,
   instructors,
   disciplines,
@@ -431,6 +434,7 @@ function EditClassModal({
   schoolId: string;
   schoolTimezone: string | null;
   currency: string | null;
+  schoolCurrencyMissing: boolean;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
   disciplines: DisciplineResponse[];
@@ -446,6 +450,7 @@ function EditClassModal({
       schoolId={schoolId}
       schoolTimezone={schoolTimezone}
       currency={currency}
+      schoolCurrencyMissing={schoolCurrencyMissing}
       initial={classItem}
       branches={branches}
       instructors={instructors}

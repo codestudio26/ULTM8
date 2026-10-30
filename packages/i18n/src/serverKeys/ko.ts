@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "이 수업은 이미 끝났습니다. 미래의 종료 시간을 선택하세요.",
     schoolCurrencyChange: "학교 통화로 청구되는 회원권 플랜: {count}개. 이제부터 같은 금액으로 {currency}로 청구됩니다.",
     schoolCurrencyInUse: "학교 통화로 청구되는 회원권 플랜: {count}개. 통화를 지우기 전에 해당 플랜에 자체 통화를 지정하세요.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "가격을 설정하기 전에 학교 페이지에서 학교 통화를 설정하세요.",
   },
   errors: {
     beltInHistoryDelete: "이 띠는 수련생의 승급 기록에 있어 삭제할 수 없습니다.",
@@ -209,6 +211,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "요금 결제",
     chargeDueReminderTitle: "곧 결제 기한",
     chargeDueReminderBody: "{description}의 청구서 {invoice}: {amount}, 기한 {due}.",
+    chargeRefundTitle: "환불",
+    chargeRefundCardBody: "{amount}이(가) 카드로 환불되었습니다.",
+    chargeRefundMoneyBackBody: "{amount}을(를) 돌려드렸습니다.",
+    chargeRefundCreditBody: "{amount}이(가) 잔액에 크레딧으로 추가되었습니다.",
+    chargeRefundRefusedBody: "{amount}이(가) 카드로 환불되었습니다: {plan}을(를) 구매할 수 없었습니다.",
     lateFeeAddedTitle: "연체료가 추가되었습니다",
     lateFeeAddedChargeBody: "청구서 {invoice}({description})가 연체되어 연체료 {fee}이(가) 잔액에 추가되었습니다. 앱이나 프런트 데스크에서 결제하세요.",
     lateFeeAddedRenewalBody: "{plan} 회원권 결제 {amount}이(가) 연체되어 연체료 {fee}이(가) 잔액에 추가되었습니다. 앱이나 프런트 데스크에서 결제하세요.",
@@ -258,6 +265,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}님의 {rank}({style}) 승급이 결정을 기다리고 있습니다. 승급하거나 하지 않기로 결정하세요.",
     promotionFeeBody: "{rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
     childPromotionFeeBody: "{name}님의 {rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
+    promotionFeeBlockedTitle: "승급을 적용할 수 없음",
+    promotionFeeBlockedBody: "{name}님의 {rank}({style}) 심사비는 결제되었지만 승급을 적용할 수 없습니다. 심사 이후 등급이나 띠 순서가 바뀌었습니다. 심사비를 취소하거나(결제된 금액은 크레딧이 됩니다) 다시 승급하세요.",
     forChild: "{name} 관련: {body}",
     disputeStatus: {
       warning_needs_response: "문의, 응답 필요",

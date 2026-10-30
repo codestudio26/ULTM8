@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Bu ders zaten bitti. Gelecekte bir bitiş saati seç.",
     schoolCurrencyChange: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Artık aynı tutarlarla {currency} cinsinden ücretlendirilecekler.",
     schoolCurrencyInUse: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Temizlemeden önce bu planlara kendi para birimlerini verin.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Fiyat belirlemeden önce Okul sayfasından okulunuzun para birimini ayarlayın.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",
@@ -223,6 +225,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "ücret ödemesi",
     chargeDueReminderTitle: "Ödemenin vadesi yaklaşıyor",
     chargeDueReminderBody: "{description} için {invoice} faturası: {amount}, vadesi {due}.",
+    chargeRefundTitle: "İade",
+    chargeRefundCardBody: "{amount} kartınıza iade edildi.",
+    chargeRefundMoneyBackBody: "{amount} size geri verildi.",
+    chargeRefundCreditBody: "{amount} bakiyenize alacak olarak eklendi.",
+    chargeRefundRefusedBody: "{amount} kartınıza iade edildi: {plan} satın alınamadı.",
     lateFeeAddedTitle: "Gecikme ücreti eklendi",
     lateFeeAddedChargeBody: "{invoice} numaralı fatura ({description}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",
     lateFeeAddedRenewalBody: "{plan} üyelik ödemeniz ({amount}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",
@@ -272,6 +279,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
     childPromotionFeeBody: "{name} için {rank} ({style}) terfisinin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
+    promotionFeeBlockedTitle: "Terfi uygulanamıyor",
+    promotionFeeBlockedBody: "{name} adlı öğrencinin {rank} ({style}) ücreti ödendi, ancak terfi uygulanamıyor: derecesi ya da kuşak sıralaması terfiden bu yana değişti. Ücreti iptal edin (ödenen tutar krediye dönüşür) ya da yeniden terfi ettirin.",
     forChild: "{name} için: {body}",
     disputeStatus: {
       warning_needs_response: "bilgi talebi, yanıt gerekiyor",

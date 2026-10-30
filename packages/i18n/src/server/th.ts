@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "รายการเรียกเก็บนี้ถูกยกเลิกไปแล้ว",
   "This charge is already paid.": "รายการเรียกเก็บนี้ชำระครบแล้ว",
   "Give a reason for cancelling this charge.": "โปรดระบุเหตุผลในการยกเลิกรายการเรียกเก็บนี้",
+  "Give a reason for cancelling this payment.": "โปรดระบุเหตุผลในการยกเลิกการชำระเงินนี้",
   "Only the student, or their Guardian, can see their charges.": "เฉพาะนักเรียนหรือผู้ปกครองเท่านั้นที่ดูรายการเรียกเก็บได้",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"สร้างรายการเรียกเก็บได้\" และ \"ยกเลิกรายการเรียกเก็บได้\" ใช้กับเจ้าหน้าที่สาขาและโค้ชของโรงเรียนนี้",
   "This School doesn't take card payments in the app. Pay at the front desk.": "โรงเรียนนี้ไม่รับชำระด้วยบัตรในแอป โปรดชำระที่เคาน์เตอร์",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "ไม่พบรายการเรียกเก็บประจำ",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "นี่คือค่าเลื่อนระดับ เจ้าของโรงเรียนยกเว้นหรือยกเลิกได้จากหน้าการเลื่อนระดับของนักเรียน ซึ่งจะยกเลิกรายการเรียกเก็บนี้ด้วย",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "โรงเรียนนี้ยังไม่ได้ตั้งค่าสกุลเงิน จึงยังชำระค่าธรรมเนียมไม่ได้ โปรดสอบถามโรงเรียน",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "ค่าธรรมเนียมนี้ชำระแล้ว แต่ไม่สามารถใช้การเลื่อนระดับได้อีกต่อไป ยกเลิกค่าธรรมเนียม (ยอดที่ชำระแล้วจะกลายเป็นเครดิต) หรือประเมินนักเรียนอีกครั้ง",
 };

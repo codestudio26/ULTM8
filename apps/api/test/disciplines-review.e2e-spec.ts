@@ -66,7 +66,7 @@ describeIfDb('Disciplines review fixes (Decisions 308, 309)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: tag, ranksToggle: true } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: tag, ranksToggle: true, defaultCurrency: 'GBP' } });
     const mkUser = (label: string) =>
       superuser.user.create({
         data: {

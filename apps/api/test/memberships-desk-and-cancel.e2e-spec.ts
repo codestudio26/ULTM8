@@ -110,7 +110,7 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     stripeCancel = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
     jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({ subscriptions: { update: stripeCancel } } as never);
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships Desk School' } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships Desk School', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id);
     await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },

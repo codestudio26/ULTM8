@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Questa lezione è già finita. Scegli un orario di fine nel futuro.",
     schoolCurrencyChange: "Piani addebitati nella valuta della scuola: {count}. D'ora in poi sono addebitati in {currency}, con gli stessi importi.",
     schoolCurrencyInUse: "Piani addebitati nella valuta della scuola: {count}. Dai a questi piani una valuta propria prima di cancellarla.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Imposta la valuta della tua scuola nella pagina della scuola prima di impostare i prezzi.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",
@@ -237,6 +239,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "pagamento di addebito",
     chargeDueReminderTitle: "Pagamento in scadenza",
     chargeDueReminderBody: "Fattura {invoice} per {description}: {amount} scade il {due}.",
+    chargeRefundTitle: "Rimborso",
+    chargeRefundCardBody: "{amount} sono stati rimborsati sulla tua carta.",
+    chargeRefundMoneyBackBody: "{amount} ti sono stati restituiti.",
+    chargeRefundCreditBody: "{amount} sono stati aggiunti al tuo saldo come credito.",
+    chargeRefundRefusedBody: "{amount} sono stati rimborsati sulla tua carta: non è stato possibile acquistare {plan}.",
     lateFeeAddedTitle: "Penale di ritardo aggiunta",
     lateFeeAddedChargeBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché la fattura {invoice} ({description}) è scaduta. Pagala nell'app o alla reception.",
     lateFeeAddedRenewalBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché il pagamento dell'abbonamento {plan} di {amount} è scaduto. Pagala nell'app o alla reception.",
@@ -286,6 +293,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "La promozione di {name} a {rank} ({style}) attende la tua decisione. Promuovi o decidi di non farlo.",
     promotionFeeBody: "La tua promozione a {rank} ({style}) ha una quota di {amount}. Apri l’app per accettare o rifiutare.",
     childPromotionFeeBody: "La promozione di {name} a {rank} ({style}) ha una quota di {amount}. Apri l’app per accettare o rifiutare.",
+    promotionFeeBlockedTitle: "La promozione non può essere applicata",
+    promotionFeeBlockedBody: "La quota di {name} per {rank} ({style}) è pagata, ma la promozione non può essere applicata: il suo grado o la scala delle cinture è cambiata dalla promozione. Annulla la quota (quanto pagato diventa credito) o promuovi di nuovo.",
     forChild: "Per {name}: {body}",
     disputeStatus: {
       warning_needs_response: "richiesta di informazioni, serve una risposta",

@@ -16,8 +16,9 @@ import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
-import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
+import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxForCharge } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
+import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
 import {
   allocate,
   chargePaid,
@@ -28,6 +29,7 @@ import {
   lockBalance,
   paymentRefundable,
   receiptNotice,
+  refundNotice,
   recordChargeRefund,
 } from './charge-ledger';
 import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
@@ -54,6 +56,7 @@ import {
   SetChargePermissionDto,
   StartChargeCheckoutDto,
 } from './dto/charge.dto';
+import { schoolCurrencyRequired } from '../common/school-currency';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a desk sale (DESK_REPEAT, memberships.service.ts). */
@@ -62,12 +65,6 @@ const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] as co
 
 type Tx = Prisma.TransactionClient;
 
-export interface ChargeAbilities {
-  owner: boolean;
-  create: boolean;
-  cancel: boolean;
-  recordPayment: boolean;
-}
 
 type ChargeRow = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
 type EntryRow = Prisma.BalanceEntryGetPayload<object>;
@@ -144,31 +141,10 @@ export class ChargesService {
   // Who may do what
   // ---------------------------------------------------------------------------
 
-  /** What the caller may do with this student's charges at this School. */
+  /** What the caller may do with this student's charges at this School
+   * (charge-abilities.ts, shared with a membership's cash-payment cancel). */
   async abilities(callerId: string, schoolId: string, studentId: string): Promise<ChargeAbilities> {
-    const none: ChargeAbilities = { owner: false, create: false, cancel: false, recordPayment: false };
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findMany({ where: { userId: callerId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null }, select: { role: true } }),
-    );
-    if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { owner: true, create: true, cancel: true, recordPayment: true };
-    if (grants.length === 0) return none;
-    try {
-      await this.tenantAuth.assertBranchCoversStudent(await this.tenantAuth.staffBranchCoverage(callerId, schoolId), schoolId, studentId);
-    } catch (err) {
-      if (err instanceof ForbiddenException) return none;
-      throw err;
-    }
-    const branchStaff = grants.some((g) => g.role === 'BRANCH_STAFF');
-    const [row, school] = await this.prismaApp.withTenantContext(callerId, async (tx) => [
-      await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canCreateCharges: true, canCancelCharges: true } }),
-      await tx.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } }),
-    ]);
-    return {
-      owner: false,
-      create: row?.canCreateCharges ?? branchStaff,
-      cancel: row?.canCancelCharges ?? false,
-      recordPayment: branchStaff && !!school?.branchStaffCanRecordPayments,
-    };
+    return chargeAbilities(this.prismaApp, this.tenantAuth, callerId, schoolId, studentId);
   }
 
   private async assertMay(callerId: string, schoolId: string, studentId: string, what: 'create' | 'cancel' | 'recordPayment' | 'read') {
@@ -204,6 +180,7 @@ export class ChargesService {
     const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, can.owner);
     return {
       ...view,
+      deskMembershipPayments: can.cancel ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
       can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
       settings: {
         currency: school.defaultCurrency?.toUpperCase() ?? null,
@@ -230,18 +207,20 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const currency = school.defaultCurrency?.toUpperCase();
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
+    // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
+    const taxExempt = dto.taxExempt === true;
+    const tax = taxForCharge(school, taxExempt);
     let totals;
     try {
       totals = computeCharge({
         unitAmount: dto.amount,
         discount: dto.discountType ? { type: dto.discountType, value: dto.discountValue! } : null,
-        taxRateBasisPoints: school.taxRateBasisPoints,
-        taxInclusive: school.taxInclusive,
+        ...tax,
       });
     } catch (err) {
       if (err instanceof ChargeMathsError) throw new BadRequestException({ code: `CHARGE_${err.code}`, message: err.message });
@@ -266,8 +245,8 @@ export class ChargesService {
         discountType: dto.discountType ?? null,
         discountValue: dto.discountType ? dto.discountValue! : null,
         taxCountry: school.taxCountry,
-        taxRateBasisPoints: school.taxRateBasisPoints,
-        taxInclusive: school.taxInclusive,
+        ...tax,
+        taxExempt,
         totals,
         currency,
         dueDate: dayToDate(dto.dueDate),
@@ -368,7 +347,7 @@ export class ChargesService {
       currency = target.currency;
     }
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
 
     const transactionId = randomUUID();
@@ -466,6 +445,8 @@ export class ChargesService {
    * re-opens a charge. Notes are required unless the owner made them optional,
    * and are for staff only. The card surcharge (Decision 406) is not refunded:
    * nothing decided says it is, so only the payment toward charges is.
+   * The member is sent a "Refund" notice after the commit (Decision 414 item
+   * 4), unless the School switched it off; it never carries the notes.
    */
   async refund(callerId: string, schoolId: string, transactionId: string, dto: RefundChargePaymentDto) {
     this.assertUuid(transactionId);
@@ -489,8 +470,9 @@ export class ChargesService {
       throw new BadRequestException({ code: 'CHARGE_REFUND_CARD_PAYMENT', message: 'A card payment goes back to the card, or onto the balance as credit.' });
     }
 
+    let refundId: string;
     try {
-      await this.prismaJobs.$transaction(
+      refundId = await this.prismaJobs.$transaction(
         async (tx) => {
           await lockBalance(tx, schoolId, payment.studentId);
           // The same row lock as CancellationService and the charge.refunded
@@ -523,7 +505,7 @@ export class ChargesService {
               `charge-refund-${fresh.id}-${before._sum.amount ?? 0}-${dto.amount}`,
             );
           }
-          await recordChargeRefund(tx, { transaction: fresh, kind: dto.destination, amount: dto.amount, notes, refundedById: callerId, stripeRefundId });
+          return recordChargeRefund(tx, { transaction: fresh, kind: dto.destination, amount: dto.amount, notes, refundedById: callerId, stripeRefundId });
         },
         { timeout: 20_000 },
       );
@@ -534,6 +516,10 @@ export class ChargesService {
     // A refund as credit leaves the money on the balance, where it pays open
     // charges, which may pay a promotion fee in full (step 6).
     await this.promotionFees.settlePaidCharges(schoolId, payment.studentId);
+
+    // Decision 414 item 4: the School may switch refund notices off.
+    const notice = school.chargeNoticeRefund && payment.currency ? refundNotice(refundId, dto.destination, dto.amount, payment.currency) : null;
+    if (notice) await this.notify(payment.studentId, schoolId, notice.key, notice.title, notice.body, payment.id);
     return this.paymentResult(schoolId, payment.studentId, payment.id, school.timezone, true);
   }
 
@@ -552,7 +538,7 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const currency = school.defaultCurrency?.toUpperCase();
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
     const note = dto.note.trim();
     if (!note) throw new BadRequestException({ code: 'CHARGE_CREDIT_NOTE_REQUIRED', message: 'Add a note saying why this credit is given.' });
@@ -905,6 +891,46 @@ export class ChargesService {
     });
   }
 
+  /** Decision 338 item 1 (last point): the student's membership payments by
+   * cash or bank transfer still waiting at the desk, and the ones cancelled,
+   * so the owner and staff with "Can cancel charges" can cancel them from the
+   * Payments card (PATCH /transactions/{id}/cancel). Read on the jobs
+   * connection after the caller's access was checked, as above. */
+  private async readDeskMembershipPayments(schoolId: string, studentId: string) {
+    const rows = await this.prismaJobs.transaction.findMany({
+      where: {
+        schoolId,
+        studentId,
+        kind: { not: 'CHARGE_PAYMENT' },
+        paymentMethod: { not: 'STRIPE' },
+        OR: [{ status: 'PENDING' }, { status: 'FAILED', cancelledAt: { not: null } }],
+      },
+      include: {
+        membershipPlan: { select: { title: true } },
+        membership: { select: { membershipPlan: { select: { title: true } } } },
+      },
+      orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
+      take: 50,
+    });
+    const names = await resolveUserNames(this.prismaAuth, rows.map((r) => r.cancelledById).filter((id): id is string => !!id));
+    return rows.map((r) => {
+      const n = r.cancelledById ? names.get(r.cancelledById) : undefined;
+      return {
+        id: r.id,
+        kind: r.kind as 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE',
+        membershipPlanTitle: r.membershipPlan?.title ?? r.membership?.membershipPlan.title ?? null,
+        amount: r.amount,
+        currency: r.currency ? r.currency.toUpperCase() : null,
+        paymentMethod: r.paymentMethod,
+        billingDate: r.billingDate.toISOString(),
+        status: r.cancelledAt ? ('CANCELLED' as const) : ('PENDING' as const),
+        cancelledAt: r.cancelledAt?.toISOString() ?? null,
+        cancelledByName: n ? `${n.firstName} ${n.surname}`.trim() : null,
+        cancelReason: r.cancelReason,
+      };
+    });
+  }
+
   private async shapeLedger(
     data: { schoolId: string; charges: ChargeRow[]; entries: EntryRow[]; allocations: AllocationRow[]; refunds: RefundRow[] },
     transactions: PaymentTxRow[],
@@ -1073,6 +1099,7 @@ export class ChargesService {
         taxCountry: c.taxCountry,
         taxRateBasisPoints: c.taxRateBasisPoints,
         taxInclusive: c.taxInclusive,
+        taxExempt: c.taxExempt,
         netAmount: c.netAmount,
         taxAmount: c.taxAmount,
         grossAmount: c.grossAmount,
@@ -1186,6 +1213,7 @@ export class ChargesService {
         chargeCancelReasonRequired: true,
         chargeRefundNotesRequired: true,
         chargeNoticeReceipt: true,
+        chargeNoticeRefund: true,
       },
     });
     if (!school) throw new NotFoundException('School not found');

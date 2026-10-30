@@ -62,7 +62,7 @@ describeIfDb('Branch Staff "Can manage disciplines" (Decision 383)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: tag, ranksToggle: true } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: tag, ranksToggle: true, defaultCurrency: 'GBP' } });
     other = await superuser.school.create({ data: { id: randomUUID(), name: `${tag}-other`, ranksToggle: true } });
     north = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'North' } });
     south = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'South' } });

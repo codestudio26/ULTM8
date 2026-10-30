@@ -895,6 +895,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "迟取消费用",
       freezeFee: "冻结费：{plan}",
       freezeFeeNoPlan: "冻结费",
+      cancelledOn: "已于 {date} 取消。无需付款。",
     },
     status: {
       successful: "成功",
@@ -902,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "失败",
       refunded: "已退款",
       disputed: "有争议",
+      cancelled: "已取消",
     },
   },
   waivers: {
@@ -978,6 +980,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "不含税价格",
     tax: "税（{rate}%）",
     incTax: "含税价格",
+    noTax: "此项目不征税",
     discount: "折扣",
     paid: "已付",
     stillOwed: "尚需支付",

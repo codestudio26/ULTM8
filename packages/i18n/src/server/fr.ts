@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Ces frais ont déjà été annulés.",
   "This charge is already paid.": "Ces frais sont déjà payés.",
   "Give a reason for cancelling this charge.": "Indiquez un motif pour annuler ces frais.",
+  "Give a reason for cancelling this payment.": "Indiquez un motif pour annuler ce paiement.",
   "Only the student, or their Guardian, can see their charges.": "Seul l'élève, ou son responsable légal, peut voir ses frais.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "« Peut créer des frais » et « Peut annuler des frais » concernent le personnel de site et les instructeurs de cette école.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Cette école n'accepte pas les paiements par carte dans l'app. Payez à l'accueil.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Frais récurrents introuvables",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Ce sont des frais de promotion. Le propriétaire de l'école les annule ou y renonce depuis la progression de l'élève, ce qui annule cette facture.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Cette école n'a pas encore défini sa devise, les frais ne peuvent donc pas être payés. Renseignez-vous auprès de l'école.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Ces frais sont payés, mais la promotion ne peut plus s'appliquer. Annulez les frais (ce qui a été payé devient un crédit), ou évaluez de nouveau l'élève.",
 };

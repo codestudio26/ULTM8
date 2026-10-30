@@ -6,8 +6,10 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
  * Charges, step 4 of 6 (v1.3 backlog §3.6; Decision 338 items 3 and 11), the
  * owner's side: a cash payment partly given back with a note, which leaves
  * the charge paid and marked Part refunded, and the Billing reports page
- * (Overview and Member balances). The rules behind each step are covered by
- * apps/api/test/charges-refunds-reports.e2e-spec.ts.
+ * (Overview, with revenue split into charges, memberships and the total,
+ * Decision 414 item 3; and Member balances); and the refund notice's switch on
+ * the School page (Decision 414 item 4). The rules behind each step are
+ * covered by apps/api/test/charges-refunds-reports.e2e-spec.ts.
  */
 let s: GradingSchool;
 
@@ -24,6 +26,7 @@ test.afterEach(async () => {
   await db.balanceEntry.deleteMany({ where });
   await db.chargeRefund.deleteMany({ where });
   await db.transaction.deleteMany({ where });
+  await db.membershipPlan.deleteMany({ where });
   await db.charge.deleteMany({ where });
   await db.paymentAccount.deleteMany({ where });
 });
@@ -60,9 +63,37 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   await expect(page.getByText('Part refunded').first()).toBeVisible();
   await expect(card.getByText('Nothing owed')).toBeVisible();
 
+  // Membership payments (Decision 414 item 3): a plan sold at the desk, and a
+  // renewal with 25.00 of its 50.00 refunded. The desk payment toward the
+  // charge is a Transaction too, and is counted once, in Charges.
+  const account = await db.paymentAccount.findFirstOrThrow({ where: { schoolId: s.schoolId } });
+  const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: '10 classes', price: 7500, currency: 'GBP' } });
+  const membershipRow = { schoolId: s.schoolId, studentId: s.student.id, paymentAccountId: account.id, membershipPlanId: plan.id, currency: 'GBP', status: 'SUCCESSFUL' as const, paymentMethod: 'CASH' as const };
+  await db.transaction.create({ data: { ...membershipRow, id: randomUUID(), kind: 'MEMBERSHIP', amount: 7500 } });
+  await db.transaction.create({ data: { ...membershipRow, id: randomUUID(), kind: 'RENEWAL', amount: 5000, refundedAmount: 2500 } });
+
   await page.goto('/billing-reports');
   await expect(page.getByRole('heading', { name: 'Billing reports' })).toBeVisible();
-  await expect(page.getByTestId('charge-overview')).toContainText('Paid40.00 GBP');
+  const overview = page.getByTestId('charge-overview');
+  await expect(overview).toContainText('Charges40.00 GBP');
+  await expect(overview).toContainText('Memberships100.00 GBP');
+  await expect(overview).toContainText('Total revenue140.00 GBP');
+  // The table's header, then this month: received, given back, charges, memberships, total.
+  const rows = overview.getByRole('row');
+  await expect(rows.nth(0)).toHaveText(/Month\s*Received\s*Given back\s*Charges\s*Memberships\s*Total/);
+  await expect(rows.nth(1)).toContainText(/60\.00 GBP\s*20\.00 GBP\s*40\.00 GBP\s*100\.00 GBP\s*140\.00 GBP/);
   await page.getByRole('tab', { name: 'Member balances' }).click();
   await expect(page.getByText('Every balance is zero')).toBeVisible();
+});
+
+test('the refund notice has its own switch among the payment notifications, on by default (Decision 414 item 4)', async ({ page }) => {
+  await page.goto('/school');
+  const settings = page.getByTestId('charge-settings');
+  const refundSwitch = settings.getByRole('switch', { name: 'A refund of a payment' });
+  await expect(refundSwitch).toBeChecked();
+  await refundSwitch.click();
+  await expect(refundSwitch).not.toBeChecked();
+  await settings.getByRole('button', { name: 'Save' }).click();
+  await expect(settings.getByText('Saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).chargeNoticeRefund).toBe(false);
 });

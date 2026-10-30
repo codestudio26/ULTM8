@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Kosten voor late annulering",
       freezeFee: "Kosten voor bevriezen: {plan}",
       freezeFeeNoPlan: "Kosten voor bevriezen",
+      cancelledOn: "Geannuleerd op {date}. Niets te betalen.",
     },
     status: {
       successful: "GESLAAGD",
@@ -910,6 +911,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "MISLUKT",
       refunded: "TERUGBETAALD",
       disputed: "BETWIST",
+      cancelled: "GEANNULEERD",
     },
   },
   waivers: {
@@ -986,6 +988,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "Prijs excl. btw",
     tax: "Btw ({rate}%)",
     incTax: "Prijs incl. btw",
+    noTax: "Geen btw op dit artikel",
     discount: "Korting",
     paid: "Betaald",
     stillOwed: "Nog te betalen",

@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Esta aula já terminou. Escolha um horário de término no futuro.",
     schoolCurrencyChange: "Planos cobrados na moeda da escola: {count}. A partir de agora eles são cobrados em {currency}, com os mesmos valores.",
     schoolCurrencyInUse: "Planos cobrados na moeda da escola: {count}. Dê a esses planos uma moeda própria antes de limpá-la.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Defina a moeda da sua Escola na página da Escola antes de definir preços.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",
@@ -237,6 +239,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "pagamento de cobrança",
     chargeDueReminderTitle: "Pagamento vence em breve",
     chargeDueReminderBody: "A fatura {invoice} de {description}: {amount} vence em {due}.",
+    chargeRefundTitle: "Reembolso",
+    chargeRefundCardBody: "{amount} foi reembolsado no seu cartão.",
+    chargeRefundMoneyBackBody: "{amount} foi devolvido a você.",
+    chargeRefundCreditBody: "{amount} foi adicionado ao seu saldo como crédito.",
+    chargeRefundRefusedBody: "{amount} foi reembolsado no seu cartão: não foi possível comprar {plan}.",
     lateFeeAddedTitle: "Multa por atraso adicionada",
     lateFeeAddedChargeBody: "Uma multa por atraso de {fee} foi adicionada ao seu saldo porque a fatura {invoice} ({description}) está vencida. Pague no app ou na recepção.",
     lateFeeAddedRenewalBody: "Uma multa por atraso de {fee} foi adicionada ao seu saldo porque o pagamento do seu plano {plan} de {amount} está vencido. Pague no app ou na recepção.",
@@ -286,6 +293,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "A promoção de {name} para {rank} ({style}) aguarda sua decisão. Promova ou decida não promover.",
     promotionFeeBody: "Sua promoção para {rank} ({style}) tem uma taxa de {amount}. Abra o app para aceitar ou recusar.",
     childPromotionFeeBody: "A promoção de {name} para {rank} ({style}) tem uma taxa de {amount}. Abra o app para aceitar ou recusar.",
+    promotionFeeBlockedTitle: "A promoção não pode ser aplicada",
+    promotionFeeBlockedBody: "A taxa de {name} para {rank} ({style}) está paga, mas a promoção não pode ser aplicada: a graduação dele ou a sequência de faixas mudou desde a avaliação. Cancele a taxa (o que foi pago vira crédito) ou gradue novamente.",
     forChild: "Para {name}: {body}",
     disputeStatus: {
       warning_needs_response: "consulta, precisa de resposta",

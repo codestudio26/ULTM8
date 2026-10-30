@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Dieser Kurs ist bereits vorbei. Wähle eine Endzeit in der Zukunft.",
     schoolCurrencyChange: "Mitgliedschaftstarife in der Währung der Schule: {count}. Ab jetzt werden sie in {currency} abgerechnet, mit denselben Beträgen.",
     schoolCurrencyInUse: "Mitgliedschaftstarife in der Währung der Schule: {count}. Gib diesen Tarifen eine eigene Währung, bevor du sie leerst.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Lege die Währung deiner Schule auf der Schulseite fest, bevor du Preise festlegst.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",
@@ -223,6 +225,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "Gebührenzahlung",
     chargeDueReminderTitle: "Zahlung bald fällig",
     chargeDueReminderBody: "Rechnung {invoice} für {description}: {amount} ist am {due} fällig.",
+    chargeRefundTitle: "Rückerstattung",
+    chargeRefundCardBody: "{amount} wurden auf deine Karte zurückerstattet.",
+    chargeRefundMoneyBackBody: "{amount} wurden dir zurückgegeben.",
+    chargeRefundCreditBody: "{amount} wurden deinem Konto als Guthaben gutgeschrieben.",
+    chargeRefundRefusedBody: "{amount} wurden auf deine Karte zurückerstattet: {plan} konnte nicht gekauft werden.",
     lateFeeAddedTitle: "Säumnisgebühr hinzugefügt",
     lateFeeAddedChargeBody: "Eine Säumnisgebühr von {fee} wurde deinem Saldo hinzugefügt, weil die Rechnung {invoice} ({description}) überfällig ist. Bezahle sie in der App oder am Empfang.",
     lateFeeAddedRenewalBody: "Eine Säumnisgebühr von {fee} wurde deinem Saldo hinzugefügt, weil deine Mitgliedszahlung für {plan} über {amount} überfällig ist. Bezahle sie in der App oder am Empfang.",
@@ -272,6 +279,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Die Beförderung von {name} zu {rank} ({style}) wartet auf deine Entscheidung. Befördere oder entscheide dich dagegen.",
     promotionFeeBody: "Deine Beförderung zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     childPromotionFeeBody: "Die Beförderung von {name} zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
+    promotionFeeBlockedTitle: "Beförderung kann nicht angewendet werden",
+    promotionFeeBlockedBody: "Die Gebühr von {name} für {rank} ({style}) ist bezahlt, aber die Beförderung kann nicht angewendet werden: Rang oder Gürtelfolge haben sich seit der Graduierung geändert. Storniere die Gebühr (das Bezahlte wird zu Guthaben) oder graduiere erneut.",
     forChild: "Für {name}: {body}",
     disputeStatus: {
       warning_needs_response: "Anfrage, Antwort erforderlich",

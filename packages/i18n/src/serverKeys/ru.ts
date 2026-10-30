@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Это занятие уже закончилось. Выберите время окончания в будущем.",
     schoolCurrencyChange: "Тарифы, оплачиваемые в валюте школы: {count}. Теперь они оплачиваются в {currency}, с теми же суммами.",
     schoolCurrencyInUse: "Тарифы, оплачиваемые в валюте школы: {count}. Задайте этим тарифам свою валюту, прежде чем очищать её.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Укажите валюту школы на странице школы, прежде чем задавать цены.",
   },
   errors: {
     beltInHistoryDelete: "Этот пояс есть в истории аттестаций учеников, поэтому его нельзя удалить.",
@@ -251,6 +253,11 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "оплата начисления",
     chargeDueReminderTitle: "Скоро срок оплаты",
     chargeDueReminderBody: "Счёт {invoice} за {description}: {amount} нужно оплатить до {due}.",
+    chargeRefundTitle: "Возврат",
+    chargeRefundCardBody: "{amount} возвращено на вашу карту.",
+    chargeRefundMoneyBackBody: "Вам вернули {amount}.",
+    chargeRefundCreditBody: "{amount} зачислено на ваш баланс как аванс.",
+    chargeRefundRefusedBody: "{amount} возвращено на вашу карту: не удалось купить {plan}.",
     lateFeeAddedTitle: "Начислена пеня за просрочку",
     lateFeeAddedChargeBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что счёт {invoice} ({description}) просрочен. Оплатите её в приложении или на ресепшене.",
     lateFeeAddedRenewalBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что платёж за абонемент {plan} на сумму {amount} просрочен. Оплатите её в приложении или на ресепшене.",
@@ -300,6 +307,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     childPromotionFeeBody: "За повышение {name} до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
+    promotionFeeBlockedTitle: "Повышение нельзя применить",
+    promotionFeeBlockedBody: "Сбор {name} за {rank} ({style}) оплачен, но повышение нельзя применить: ранг или порядок поясов изменился после аттестации. Отмените сбор (оплаченное станет кредитом) или аттестуйте заново.",
     forChild: "Для {name}: {body}",
     disputeStatus: {
       warning_needs_response: "запрос, нужен ответ",

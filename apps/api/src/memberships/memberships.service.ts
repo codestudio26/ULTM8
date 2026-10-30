@@ -32,6 +32,8 @@ import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -105,6 +107,9 @@ export class MembershipsService {
 
     if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, schoolId, dto.disciplineIds);
     const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
+    // Decision 414 item 6: no price is saved before the School's currency is
+    // set, even on a plan given its own currency. A free plan needs none.
+    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) await this.assertSchoolCurrencySet(callerId, schoolId);
 
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -210,6 +215,12 @@ export class MembershipsService {
     // value) was wrongly rejected as invalid, even though the write below would
     // have forced them correctly. Mirror createPlan's own create-time shape exactly.
     const nextPrice = nextType === 'FRIEND_PASS' ? 0 : dto.price ?? existing.price;
+    // Decision 414 item 6: a new non-zero price (or late-cancel charge) needs
+    // the School's currency. Editing anything else on a plan priced before the
+    // rule, or saving its price unchanged, is still allowed.
+    if (setsNewPrice(nextPrice, existing.price) || setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
+      await this.assertSchoolCurrencySet(callerId, existing.schoolId);
+    }
     // Decision 334 (Memberships review M2/M4): a type change clears the fields
     // the new type doesn't use (Class Pack -> Subscription used to keep its 10
     // credits). Required fields are only checked when this edit touches them or
@@ -589,6 +600,10 @@ export class MembershipsService {
       throw new BadRequestException(`${currency} is not a supported currency. Pick one from the list.`);
     }
     return code;
+  }
+
+  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
   }
 
   /**
@@ -1082,9 +1097,20 @@ export class MembershipsService {
         // the async webhook path's queued/idempotency-keyed equivalent
         // (resolveMembershipCollision, stripe-webhook-processing.processor.ts).
         await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId);
-        await this.prismaApp.withTenantContext(studentId, (tx) =>
-          tx.transaction.update({ where: { id: transactionId }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
+        // Only while still Successful: Stripe's charge.refunded may have got
+        // here first (it then sent the member the "Refund" notice itself).
+        const marked = await this.prismaApp.withTenantContext(studentId, (tx) =>
+          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
         );
+        // Decision 415 item 4: the whole payment went back to the card, with
+        // any surcharge (the PaymentIntent is refunded in full).
+        if (marked.count > 0) {
+          await this.paymentsService.sendRefundNotice(
+            refusedPurchaseRefundNotice(`refund-refused-${transactionId}`, plan.price + surcharge, currency, plan.title),
+            studentId,
+            plan.schoolId,
+          );
+        }
         throw new ConflictException(`${err.message} Your saved card was charged and has now been refunded.`);
       }
       throw err;

@@ -5623,6 +5623,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTransactionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -8859,6 +8869,7 @@
                 "SUCCESSFUL",
                 "PENDING",
                 "FAILED",
+                "CANCELLED",
                 "REFUNDED",
                 "DISPUTED"
               ],
@@ -8965,6 +8976,7 @@
                 "SUCCESSFUL",
                 "PENDING",
                 "FAILED",
+                "CANCELLED",
                 "REFUNDED",
                 "DISPUTED"
               ],
@@ -19907,6 +19919,10 @@
             "type": "boolean",
             "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
           },
+          "chargeNoticeRefund": {
+            "type": "boolean",
+            "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -20224,6 +20240,10 @@
             "type": "boolean",
             "description": "Decision 338 item 10: \"Payment due soon\", 3 days before a charge is due (default on)."
           },
+          "chargeNoticeRefund": {
+            "type": "boolean",
+            "description": "Decisions 414 and 415 item 4: \"Refund\" notices to the member, for every refund (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -20349,6 +20369,7 @@
           "chargeNoticeFailedOverdue",
           "chargeNoticeDispute",
           "chargeNoticeDueReminder",
+          "chargeNoticeRefund",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -20572,6 +20593,10 @@
           "chargeNoticeDueReminder": {
             "type": "boolean",
             "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
+          },
+          "chargeNoticeRefund": {
+            "type": "boolean",
+            "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -25227,6 +25252,16 @@
           "hasSavedPaymentMethod"
         ]
       },
+      "CancelTransactionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "For staff only; never sent to the member. Required unless the School's owner made it optional."
+          }
+        }
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -28854,6 +28889,26 @@
             "type": "number",
             "nullable": true
           },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the payment was cancelled: shown as Cancelled (status stays FAILED)."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only; null in the member's own list."
+          },
+          "cancelledByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who cancelled it. Staff only; null in the member's own list."
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why it was cancelled. Staff only; never sent to the member."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -28925,7 +28980,12 @@
             "type": "number"
           },
           "failedOrDisputed": {
-            "type": "number"
+            "type": "number",
+            "description": "Failed (not cancelled) or disputed."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Cancelled cash or bank-transfer payments (Decision 338 item 1)."
           },
           "revenue": {
             "description": "Successful rows only, one entry per currency.",
@@ -28940,6 +29000,7 @@
           "successful",
           "pending",
           "failedOrDisputed",
+          "cancelled",
           "revenue"
         ]
       },
@@ -31149,12 +31210,13 @@
           "feeStatus": {
             "type": "string",
             "enum": [
+              "blocked",
               "waiting",
               "declined",
               "toDecide"
             ],
             "nullable": true,
-            "description": "Promotion fee (Decisions 300, 307): \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
+            "description": "Promotion fee (Decisions 300, 307, 414): \"blocked\" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
           },
           "feeRequest": {
             "nullable": true,
@@ -32003,6 +32065,15 @@
             "type": "boolean",
             "description": "Open \"to decide\": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request."
           },
+          "promotionBlocked": {
+            "type": "boolean",
+            "description": "Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then."
+          },
+          "promotionBlockedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the paid fee's promotion was first found unable to apply. Kept after the owner decides."
+          },
           "toDecideAt": {
             "type": "string",
             "nullable": true
@@ -32069,6 +32140,7 @@
           "promotionWaits",
           "promotionApplied",
           "toDecide",
+          "promotionBlocked",
           "createdAt"
         ]
       },
@@ -37082,6 +37154,10 @@
           "taxInclusive": {
             "type": "boolean"
           },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show \"No tax\"."
+          },
           "netAmount": {
             "type": "number",
             "description": "The price excluding tax."
@@ -37185,6 +37261,7 @@
           "discountAmount",
           "taxRateBasisPoints",
           "taxInclusive",
+          "taxExempt",
           "netAmount",
           "taxAmount",
           "grossAmount",
@@ -37437,6 +37514,72 @@
           "givenAt"
         ]
       },
+      "DeskMembershipPaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Transaction id."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEMBERSHIP",
+              "RENEWAL",
+              "LATE_CANCEL_FEE",
+              "FREEZE_FEE"
+            ]
+          },
+          "membershipPlanTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The plan it is for (a freeze fee: the frozen membership's plan)."
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "CASH, BANK_TRANSFER, PIX or CARD_TERMINAL."
+          },
+          "billingDate": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CANCELLED"
+            ],
+            "description": "CANCELLED is stored as FAILED with cancelledAt set."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "paymentMethod",
+          "billingDate",
+          "status"
+        ]
+      },
       "ChargeAbilitiesDto": {
         "type": "object",
         "properties": {
@@ -37544,6 +37687,13 @@
               "$ref": "#/components/schemas/BalanceCreditResponseDto"
             }
           },
+          "deskMembershipPayments": {
+            "description": "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskMembershipPaymentDto"
+            }
+          },
           "can": {
             "description": "What the caller may do here.",
             "allOf": [
@@ -37561,6 +37711,7 @@
           "charges",
           "payments",
           "credits",
+          "deskMembershipPayments",
           "can",
           "settings"
         ]
@@ -37596,6 +37747,11 @@
             "type": "string",
             "example": "2026-11-15",
             "description": "The due date (YYYY-MM-DD)."
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "default": false,
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply."
           }
         },
         "required": [
@@ -38026,14 +38182,24 @@
           },
           "net": {
             "type": "number",
-            "description": "received − refunded."
+            "description": "Charges revenue that month: received − refunded."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received)."
+          },
+          "total": {
+            "type": "number",
+            "description": "net + memberships."
           }
         },
         "required": [
           "month",
           "received",
           "refunded",
-          "net"
+          "net",
+          "memberships",
+          "total"
         ]
       },
       "ChargeOverviewCurrencyDto": {
@@ -38052,7 +38218,15 @@
           },
           "paid": {
             "type": "number",
-            "description": "Paid over the months covered, less money given back (the sum of revenue by month)."
+            "description": "Charges revenue: paid toward charges over the months covered, less money given back (the sum of net by month)."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Membership revenue over the months covered (the sum of memberships by month)."
+          },
+          "total": {
+            "type": "number",
+            "description": "Total revenue over the months covered: paid + memberships."
           },
           "revenueByMonth": {
             "description": "Oldest month first.",
@@ -38067,6 +38241,8 @@
           "scheduled",
           "overdue",
           "paid",
+          "memberships",
+          "total",
           "revenueByMonth"
         ]
       },
@@ -38198,7 +38374,7 @@
           },
           "taxRateBasisPoints": {
             "type": "number",
-            "description": "The School tax rate today, hundredths of a percent."
+            "description": "The School tax rate today, hundredths of a percent; 0 for a series with no tax."
           }
         },
         "required": [
@@ -38241,6 +38417,10 @@
           },
           "currency": {
             "type": "string"
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
           },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"
@@ -38302,6 +38482,7 @@
           "description",
           "unitAmount",
           "currency",
+          "taxExempt",
           "frequency",
           "firstDate",
           "createdCount",
@@ -38398,6 +38579,11 @@
             "minimum": 1,
             "maximum": 520,
             "description": "Optional: the number of payments. Not with endDate. Neither: until stopped."
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "default": false,
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): every charge of the series is made with no tax. Off by default."
           }
         },
         "required": [
@@ -38440,6 +38626,10 @@
           },
           "currency": {
             "type": "string"
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
           },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"
@@ -38504,6 +38694,7 @@
           "description",
           "unitAmount",
           "currency",
+          "taxExempt",
           "frequency",
           "firstDate",
           "createdCount",

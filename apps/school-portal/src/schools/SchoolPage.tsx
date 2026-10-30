@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -48,6 +48,16 @@ export function SchoolPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
+  // A link to one setting ("/school#edit-currency", Decision 414 item 6)
+  // brings it into view once the page has loaded, and puts the cursor in it.
+  const { hash } = useLocation();
+  const loaded = !!school;
+  useEffect(() => {
+    if (!loaded || !hash) return;
+    const el = document.getElementById(decodeURIComponent(hash.slice(1)));
+    el?.scrollIntoView({ block: 'center' });
+    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) el.focus();
+  }, [loaded, hash]);
 
   // Decision 368 (S7) — a Branch Staff member or Instructor has no owned School;
   // the query never runs, so this used to spin for ever.
@@ -612,7 +622,7 @@ function CancellationSettingsCard({ schoolId, school }: { schoolId: string; scho
         ) : null}
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-        <CancellationSettingsFields form={form} onChange={setForm} currency={school.defaultCurrency} />
+        <CancellationSettingsFields form={form} onChange={setForm} currency={school.defaultCurrency} schoolCurrencyMissing={!school.defaultCurrency} />
         <Field
           label={t('schools.form.lateCancel')}
           htmlFor="edit-late-cancel"

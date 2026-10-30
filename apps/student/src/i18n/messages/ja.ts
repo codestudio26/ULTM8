@@ -896,6 +896,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "直前キャンセル料",
       freezeFee: "休会手数料: {plan}",
       freezeFeeNoPlan: "休会手数料",
+      cancelledOn: "{date}に取り消されました。お支払いは不要です。",
     },
     status: {
       successful: "成功",
@@ -903,6 +904,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "失敗",
       refunded: "返金済み",
       disputed: "異議申し立て中",
+      cancelled: "取り消し済み",
     },
   },
   waivers: {
@@ -979,6 +981,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "税抜価格",
     tax: "税（{rate}%）",
     incTax: "税込価格",
+    noTax: "この品目は非課税",
     discount: "割引",
     paid: "支払い済み",
     stillOwed: "残りの支払い",

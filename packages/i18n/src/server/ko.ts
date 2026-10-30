@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "이 청구는 이미 취소되었습니다.",
   "This charge is already paid.": "이 청구는 이미 결제되었습니다.",
   "Give a reason for cancelling this charge.": "이 청구를 취소하는 이유를 입력하세요.",
+  "Give a reason for cancelling this payment.": "이 결제를 취소하는 이유를 입력하세요.",
   "Only the student, or their Guardian, can see their charges.": "청구는 학생 본인이나 보호자만 볼 수 있습니다.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"청구 만들기 가능\"과 \"청구 취소 가능\"은 이 학교의 지점 직원과 코치를 위한 설정입니다.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "이 학원은 앱에서 카드 결제를 받지 않습니다. 접수처에서 결제하세요.",
@@ -711,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "정기 청구를 찾을 수 없습니다",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "승급비입니다. 학교 소유자가 학생의 승급 화면에서 면제하거나 취소하면 이 청구도 취소됩니다.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "이 학교가 아직 통화를 설정하지 않아 비용을 결제할 수 없습니다. 학교에 문의하세요.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "이 심사비는 결제되었지만 승급을 더 이상 적용할 수 없습니다. 심사비를 취소하거나(결제된 금액은 크레딧이 됩니다) 수련생을 다시 승급하세요.",
 };

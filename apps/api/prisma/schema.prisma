@@ -513,6 +513,7 @@ model User {
   franchiseJoinRequestsDecided      FranchiseJoinRequest[]      @relation("FranchiseJoinRequestDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
   transactionsRecorded              Transaction[]               @relation("TransactionRecordedBy")
+  transactionsCancelled             Transaction[]               @relation("TransactionCancelledBy")
   studentRanks                      StudentRank[]
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
   promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
@@ -1182,6 +1183,10 @@ model School {
   /// "Payment due soon", 3 days before a charge's due date (lead time: product
   /// owner, 30 Oct 2026). On by default.
   chargeNoticeDueReminder        Boolean                         @default(true)
+  /// Decision 414 item 4: the "Refund" notice to the member when a payment is
+  /// refunded (Decision 415 item 4: every refund, charges or memberships; not
+  /// a lost dispute, which has its own notice). On by default.
+  chargeNoticeRefund             Boolean                         @default(true)
   /// Decision 413: late fees, the School's choice. Off by default; switching
   /// them on needs the owner's tick "I confirm late fees are legal where my
   /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed
@@ -2412,6 +2417,16 @@ model Transaction {
   // anything the Student paid themselves.
   recordedById String?
   recordedBy   User?   @relation("TransactionRecordedBy", fields: [recordedById], references: [id])
+
+  /// Decision 338 item 1 (last point): a Pending cash or bank-transfer payment
+  /// cancelled by the owner, or by staff with "Can cancel charges". The status
+  /// stays FAILED (Spec 55's five statuses are kept, Decision 414 item 7); a row with cancelledAt
+  /// set is shown as Cancelled everywhere. cancelReason is for staff only and
+  /// is never sent to the member.
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("TransactionCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancelReason  String?
 
   // Only ever reachable for Stripe-paid Transactions (Decision 55) — Cash/Bank rows
   // have no Stripe charge id to match. No Phase 9 code path sets this (out of scope
@@ -4910,6 +4925,15 @@ model PromotionFeeRequest {
   closedBy      User?     @relation("PromotionFeeRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
   waivedAt      DateTime?
   cancelledAt   DateTime?
+  /// The fee's charge was paid in full but the promotion that waited for it
+  /// can no longer apply as made (the student's rank or the belt ladder changed
+  /// since the grade). Set once, when first found; the School's owner(s) are
+  /// told once, and decide: cancel the fee (what was paid becomes credit) or
+  /// grade the student again (the request is then cancelled the same way, so
+  /// the money is credit toward the new grade; Decision 415 item 1). The
+  /// request stays ACCEPTED until then; nothing happens to the money before
+  /// (Decision 414 item 1).
+  promotionBlockedAt DateTime?
 
   toDecideAt           DateTime?
   toDecideRemindedAt   DateTime?
@@ -5399,6 +5423,11 @@ model Charge {
   taxCountry         String?
   taxRateBasisPoints Int
   taxInclusive       Boolean
+  /// "No tax on this item (0% or exempt)", ticked by staff (Decision 414
+  /// item 5): no tax at all, so taxRateBasisPoints and taxAmount are 0 and
+  /// netAmount = grossAmount = the price after any discount. Never on a late
+  /// fee or a promotion fee (they always take the School's tax settings).
+  taxExempt          Boolean @default(false)
 
   /// Price excluding tax, the tax, and the price including tax (what is owed).
   netAmount   Int
@@ -5640,6 +5669,9 @@ model RecurringCharge {
   discountType  ChargeDiscountType?
   discountValue Int?
   currency      String
+  /// "No tax on this item (0% or exempt)" (Decision 414 item 5): every
+  /// occurrence is made with no tax.
+  taxExempt     Boolean             @default(false)
 
   frequency      RecurringChargeFrequency
   firstDate      DateTime                 @db.Date

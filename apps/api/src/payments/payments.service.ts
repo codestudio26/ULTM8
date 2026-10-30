@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -16,6 +16,9 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { toStripeAmount } from './stripe-amount';
+import { chargeAbilities } from '../charges/charge-abilities';
+import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
+import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -1129,32 +1132,65 @@ export class PaymentsService {
   }
 
   /**
-   * PATCH /transactions/{id}/cancel (Decision 339) — clears a Pending Cash/Bank
-   * Transfer payment that never arrived, marking it FAILED (the nearest of the
-   * five confirmed Transaction statuses; no Membership was ever created for it,
-   * Decision 6). School Owner/Manager only, same gate as confirm. Idempotent: a
-   * row that is no longer Pending is returned unchanged.
+   * PATCH /transactions/{id}/cancel (Decision 339; Decision 338 item 1, last
+   * point) — clears a Pending Cash/Bank Transfer payment that never arrived.
+   * No Membership was ever created for it (Decision 6).
+   *
+   * - The status becomes FAILED, the nearest of Spec 55's five statuses, which
+   *   are kept (Decision 414 item 7); cancelledAt, cancelledById and
+   *   cancelReason say it was cancelled, and every screen shows it as Cancelled.
+   * - Who: the same people as cancelling a charge — the owner, and staff who
+   *   cover the student with "Can cancel charges" (charge-abilities.ts).
+   * - Reason: required unless the School made it optional
+   *   (`chargeCancelReasonRequired`, the charges setting). Staff only.
+   * - Idempotent: a row that is no longer Pending is returned unchanged.
+   *
+   * Read and written on the jobs connection after the checks here: Branch
+   * Staff and coaches can't see Transaction rows under their own context
+   * (Spec 55 §8.2), as for a charge's desk payments. A caller with no part in
+   * the row's School gets 404, as before, never a hint that it exists.
    */
-  async cancelTransaction(callerId: string, transactionId: string) {
-    const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
-      if (!transaction) {
-        throw new NotFoundException('Transaction not found');
+  async cancelTransaction(callerId: string, transactionId: string, dto: CancelTransactionDto = {}) {
+    const transaction = await this.prismaJobs.transaction.findUnique({ where: { id: transactionId } });
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+    const can = await chargeAbilities(this.prismaApp, this.tenantAuth, callerId, transaction.schoolId, transaction.studentId);
+    if (!can.cancel) {
+      if (await this.tenantAuth.isStaffAtSchool(callerId, transaction.schoolId)) {
+        throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you cancel charges." });
       }
-      await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
-      if (transaction.status !== 'PENDING') {
-        return { transaction, cancelled: false };
+      if (transaction.studentId === callerId) {
+        throw new ForbiddenException("Only that School's Owner/Manager may perform this action.");
       }
-      if (transaction.paymentMethod === 'STRIPE') {
-        throw new BadRequestException('Card payments are settled by Stripe and cannot be cancelled here.');
+      throw new NotFoundException('Transaction not found');
+    }
+    if (transaction.status !== 'PENDING') {
+      return { transaction, cancelled: false };
+    }
+    if (transaction.paymentMethod === 'STRIPE') {
+      throw new BadRequestException('Card payments are settled by Stripe and cannot be cancelled here.');
+    }
+    const reason = dto.reason?.trim() || null;
+    if (!reason) {
+      const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: transaction.schoolId }, select: { chargeCancelReasonRequired: true } });
+      if (school.chargeCancelReasonRequired) {
+        throw new BadRequestException({ code: 'PAYMENT_CANCEL_REASON_REQUIRED', message: 'Give a reason for cancelling this payment.' });
       }
-      await this.assertCashPaymentCanBeSettled(tx, transaction, 'cancel');
-      const updated = await tx.transaction.updateMany({ where: { id: transactionId, status: 'PENDING' }, data: { status: 'FAILED' } });
-      if (updated.count === 0) {
-        return { transaction, cancelled: false };
-      }
-      return { transaction: { ...transaction, status: 'FAILED' as const }, cancelled: true };
-    }, CASH_SETTLE_TX_OPTIONS);
+    }
+    const result = await this.prismaJobs.$transaction(
+      async (tx) => {
+        await this.assertCashPaymentCanBeSettled(tx, transaction, 'cancel');
+        const updated = await tx.transaction.updateMany({
+          where: { id: transactionId, status: 'PENDING' },
+          data: { status: 'FAILED', cancelledAt: new Date(), cancelledById: callerId, cancelReason: reason },
+        });
+        // Lost a race with a concurrent confirm or cancel: whichever won stands.
+        const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+        return { transaction: now, cancelled: updated.count > 0 };
+      },
+      { maxWait: CASH_SETTLE_TX_OPTIONS.maxWaitMs },
+    );
     if (result.cancelled) {
       await this.notifyCashPayment(result.transaction, 'cancelled');
     }
@@ -1236,6 +1272,28 @@ export class PaymentsService {
       }
     } catch (err) {
       this.logger.warn(`Failed to enqueue the ${event} cash-payment notices for Transaction ${transaction.id}: ${err}`);
+    }
+  }
+
+  /**
+   * Decision 415 item 4 (every refund tells the member, Decision 414 item 4's
+   * "Refund" notice): sends one refund notice to the student who paid, unless
+   * the School switched refund notices off (School.chargeNoticeRefund). Called
+   * after the refund has committed. Best-effort: a failure is logged, never
+   * thrown, so it never undoes the refund. The notice's key is one per refund
+   * (and the job id), so a retry sends it once; a Guardian gets the usual copy
+   * from the fanout job.
+   */
+  async sendRefundNotice(notice: RefundNotice, studentId: string, schoolId: string): Promise<void> {
+    try {
+      if (!(await chargeNoticeSwitches(this.prismaJobs, schoolId)).refund) return;
+      await this.notificationFanoutQueue.add(
+        'notify',
+        { notificationId: notice.key, userId: studentId, title: notice.title, body: notice.body, type: 'REFUND', schoolId, targetType: 'PAYMENT' } satisfies NotificationFanoutJobData,
+        { jobId: notice.key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the refund notice ${notice.key}: ${err}`);
     }
   }
 }

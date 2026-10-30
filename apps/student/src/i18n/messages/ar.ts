@@ -966,6 +966,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "رسوم الإلغاء المتأخر",
       freezeFee: "رسوم التجميد: {plan}",
       freezeFeeNoPlan: "رسوم التجميد",
+      cancelledOn: "أُلغيت في {date}. لا شيء للدفع.",
     },
     status: {
       successful: "ناجحة",
@@ -973,6 +974,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "فاشلة",
       refunded: "مستردة",
       disputed: "متنازع عليها",
+      cancelled: "ملغاة",
     },
   },
   waivers: {
@@ -1049,6 +1051,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "السعر بدون ضريبة",
     tax: "الضريبة ({rate}%)",
     incTax: "السعر شامل الضريبة",
+    noTax: "لا ضريبة على هذا البند",
     discount: "الخصم",
     paid: "المدفوع",
     stillOwed: "المتبقي للدفع",

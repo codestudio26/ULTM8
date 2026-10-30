@@ -10,6 +10,7 @@ import type { ClassResponse } from './classQueries';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 import { useT } from '../i18n/I18nProvider';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 export interface ClassFormValues {
   /**
@@ -64,6 +65,7 @@ export function ClassFormModal({
   schoolId,
   schoolTimezone,
   currency,
+  schoolCurrencyMissing = false,
   initial,
   branches,
   instructors,
@@ -83,6 +85,10 @@ export function ClassFormModal({
   schoolTimezone: string | null;
   /** The School's currency, shown beside the cancellation charge. */
   currency: string | null;
+  /** Decision 414 item 6: the School has no currency yet, so the
+   * cancellation charge (a price) is off, with a notice linking to the
+   * School page setting. */
+  schoolCurrencyMissing?: boolean;
   initial?: Partial<ClassResponse>;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
@@ -287,9 +293,11 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, refundFeeDate: e.target.value }))}
           />
         </Field>
+        {schoolCurrencyMissing ? <CurrencyFirstNotice /> : null}
         <Field label={t('classes.form.cancellationChargeLabel')} htmlFor="class-cancellationCharge" hint={t('classes.form.cancellationChargeHint')}>
           <MoneyField
             id="class-cancellationCharge"
+            disabled={schoolCurrencyMissing}
             value={cancellationCharge}
             currency={currency}
             onChange={(minorUnits, valid) => {
