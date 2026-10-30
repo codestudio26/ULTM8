@@ -123,7 +123,7 @@ test('the owner sets the freezing limit and fee on the School page, and lets fro
   await card.getByLabel('Most frozen days in any 12 months').fill('60');
   await card.getByLabel('Freeze fee').fill('12.50');
   await card.getByRole('button', { name: 'Save' }).click();
-  await expect(card.getByText('Saved')).toBeVisible();
+  await expect(card.getByText('Saved.', { exact: true })).toBeVisible();
   const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(school).toMatchObject({ freezeMaxDaysPer12Months: 60, freezeFeeAmount: 1250 });
 
