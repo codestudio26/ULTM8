@@ -258,6 +258,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     childPromotionFeeBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
+    promotionFeeBlockedTitle: "ไม่สามารถใช้การเลื่อนระดับได้",
+    promotionFeeBlockedBody: "ค่าธรรมเนียมของ {name} สำหรับ {rank} ({style}) ชำระแล้ว แต่ไม่สามารถใช้การเลื่อนระดับได้ เนื่องจากระดับหรือลำดับสายคาดเปลี่ยนไปหลังการประเมิน ยกเลิกค่าธรรมเนียม (ยอดที่ชำระแล้วจะกลายเป็นเครดิต) หรือประเมินอีกครั้ง",
     forChild: "สำหรับ {name}: {body}",
     disputeStatus: {
       warning_needs_response: "สอบถามข้อมูล ต้องตอบกลับ",

@@ -727,4 +727,6 @@ export const SERVER_PATTERNS: string[] = [
  // Promotion fee charges (backlog 3.6 step 6, Decision 303 item 5).
  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.",
  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
+ // A paid promotion fee whose promotion can no longer apply (Decision 414 item 1).
+ "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.",
 ];

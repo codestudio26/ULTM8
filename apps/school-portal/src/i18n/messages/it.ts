@@ -1790,6 +1790,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "Annulla la quota",
         promoteTo: "Promuovi a {rank}",
         dontPromote: "Non promuovere",
+        blocked: "Pagata — la promozione non può essere applicata",
+        blockedText: "La quota di {name} per {rank} è pagata, ma la promozione non può essere applicata: il grado o la scala delle cinture è cambiata dalla promozione. Annulla la quota per restituire quanto pagato come credito, oppure promuovi di nuovo {name}: la quota viene annullata e quanto pagato vale per la nuova promozione, come credito.",
         priceFor: "Quota di promozione per {rank}: {amount}",
       },
       decide: {

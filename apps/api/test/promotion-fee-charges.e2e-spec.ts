@@ -7,7 +7,11 @@
  * cancels its charge (paid money becomes credit), and the Payments card can't
  * cancel it; declining makes none; a Guardian accepts for a child; a late fee
  * applies to it; the daily catch-up makes the charges of fees accepted before
- * this change; and another School sees nothing. Real HTTP, real Postgres
+ * this change; and another School sees nothing. A fee paid after the
+ * student's rank or the ladder changed (its promotion can't apply) is put to
+ * the owner once (Decision 414 item 1): cancelling it gives the money back as
+ * credit, and grading again cancels it the same way, so the money pays the new
+ * grade's fee (Decision 415 item 1). Real HTTP, real Postgres
  * roles and RLS, the real webhook and job processors; Stripe is faked.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -449,6 +453,208 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     await deskPay(user.hal.id, 1800, c.id);
     expect((await requestRow(id)).status).toBe('PAID');
     expect(await stripeOf('hal')).toBe(rung['white-1'].id);
+  });
+
+  describe('a paid fee whose promotion can no longer apply is put to the owner (Decision 414 item 1)', () => {
+    const blockedNotices = (id: string) => su.notification.findMany({ where: { id: { startsWith: `promotion-fee-blocked-${id}-` } } });
+    const boardCard = async (label: string) => {
+      const res = await http().get(`/v1/schools/${school.id}/grading-board?disciplineId=${bjj.id}`).set(as('owner'));
+      expect(res.status).toBe(200);
+      return (res.body.items as Array<{ studentId: string; feeStatus: string | null; feeRequest: Record<string, unknown> | null }>).find((i) => i.studentId === user[label].id);
+    };
+    const ownerView = async (label: string, id: string) => {
+      const res = await http().get(`/v1/schools/${school.id}/promotion-fee-requests?studentId=${user[label].id}`).set(as('owner'));
+      expect(res.status).toBe(200);
+      return res.body.items.find((r: { id: string }) => r.id === id);
+    };
+    /** Graded (the promotion waits), accepted, then the student's rank changes
+     * (here: corrected straight to the rung the grade was for), then paid. */
+    async function paidAfterRankChange(label: string) {
+      await mkStudent(label, 'white-0');
+      const id = await gradeToPricedStripe(label);
+      expect((await feeAction(label, id, 'accept')).status).toBe(201);
+      await su.studentRank.update({
+        where: { studentId_disciplineId: { studentId: user[label].id, disciplineId: bjj.id } },
+        data: { currentRankId: rung['white-1'].rankId, currentStripeId: rung['white-1'].id },
+      });
+      const c = (await chargeOf(id))!;
+      expect((await deskPay(user[label].id, 1800, c.id)).status).toBe(201);
+      return { id, chargeId: c.id };
+    }
+
+    it('flagged once, the owner told once; the daily catch-up neither retries it nor tells them again; waiving is refused', async () => {
+      const { id, chargeId } = await paidAfterRankChange('jon');
+      const row = await requestRow(id);
+      expect(row).toMatchObject({ status: 'ACCEPTED', promotionEventId: null, paidAt: null, toDecideAt: null });
+      expect(row.promotionBlockedAt).not.toBeNull();
+      // The money stays paid: nothing happens to it on its own.
+      const c = (await chargeOf(id))!;
+      expect(c.cancelledAt).toBeNull();
+      expect(paidOn(c)).toBe(1800);
+      expect(await promotionsOf('jon')).toBe(0);
+
+      const notices = await waitFor(() => blockedNotices(id), (v) => v.length > 0);
+      expect(notices).toHaveLength(1);
+      expect(notices[0]).toMatchObject({
+        userId: user.owner.id,
+        title: "Promotion can't apply",
+        body: "jon Charge's fee for white-1 (BJJ) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.",
+        type: 'GRADING_FEE_BLOCKED',
+        schoolId: school.id,
+      });
+
+      // Shown to the owner on grading: the card's fee box and the board.
+      expect(await ownerView('jon', id)).toMatchObject({ status: 'ACCEPTED', promotionBlocked: true, charge: { id: chargeId, status: 'PAID', owedAmount: 0 } });
+      expect(await boardCard('jon')).toMatchObject({ feeStatus: 'blocked', feeRequest: { id, status: 'ACCEPTED', promotionApplied: false } });
+      // The member's own view: Accepted, its charge Paid.
+      const mine = await http().get(`/v1/students/${user.jon.id}/promotion-fee-requests`).set(as('jon'));
+      expect(mine.body.items.find((r: { id: string }) => r.id === id)).toMatchObject({ status: 'ACCEPTED', charge: { status: 'PAID' } });
+
+      // Settling again and the daily catch-up: no retry, no second flag, no second notice.
+      const flaggedAt = row.promotionBlockedAt!.getTime();
+      await fees.settlePaidCharges(school.id, user.jon.id);
+      await fees.reconcile();
+      await fees.reconcile();
+      expect((await requestRow(id)).promotionBlockedAt!.getTime()).toBe(flaggedAt);
+      await new Promise((r) => setTimeout(r, 500));
+      expect(await blockedNotices(id)).toHaveLength(1);
+
+      // Waiving isn't one of the owner's two choices.
+      const waived = await feeAction('owner', id, 'waive');
+      expect(waived.status).toBe(409);
+      expect(waived.body.error.message).toBe('This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.');
+      expect((await requestRow(id)).status).toBe('ACCEPTED');
+    });
+
+    const balanceOf = async (label: string) => {
+      const view = await http().get(`/v1/schools/${school.id}/students/${user[label].id}/charges`).set(as('owner'));
+      expect(view.status).toBe(200);
+      return view.body.balances[0];
+    };
+
+    it('grading again is not held up: the old fee is cancelled and what was paid pays a new fee of the same price (Decision 415 item 1)', async () => {
+      const id = (await su.promotionFeeRequest.findFirstOrThrow({ where: { studentId: user.jon.id } })).id;
+      const oldCharge = (await chargeOf(id))!;
+      // The rank is put back to white-0, and the owner grades again: the same stripe, the same price.
+      await su.studentRank.update({
+        where: { studentId_disciplineId: { studentId: user.jon.id, disciplineId: bjj.id } },
+        data: { currentRankId: rung['white-0'].rankId, currentStripeId: rung['white-0'].id },
+      });
+      const newId = await gradeToPricedStripe('jon');
+      expect(newId).not.toBe(id);
+      // The old fee is cancelled (by whoever graded), not left "to decide", and its charge cancelled: 18.00 credit.
+      const row = await requestRow(id);
+      expect(row).toMatchObject({ status: 'CANCELLED', promotionEventId: null, paidAt: null, toDecideAt: null, closedById: user.owner.id });
+      expect(row.cancelledAt).not.toBeNull();
+      const c = (await chargeOf(id))!;
+      expect(c.cancelledAt).not.toBeNull();
+      expect(await balanceOf('jon')).toMatchObject({ currency: 'GBP', owed: 0, credit: 1800 });
+      const n = await waitFor(() => su.notification.findUnique({ where: { id: `charge-cancelled-${oldCharge.id}` } }), (v) => v !== null);
+      expect(n?.body).toBe("Your charge 'white-1, 18.00 GBP' was cancelled. Nothing to pay. The 18.00 GBP already paid is now credit on your balance.");
+      expect(await ownerView('jon', id)).toMatchObject({ status: 'CANCELLED', promotionBlocked: false, toDecide: false });
+
+      // The new fee, once accepted, is paid by that credit: nothing more to pay, and the promotion applies.
+      const accepted = await feeAction('jon', newId, 'accept');
+      expect(accepted.status).toBe(201);
+      expect(accepted.body).toMatchObject({ status: 'PAID', promotionApplied: true, charge: { status: 'PAID', owedAmount: 0, paidAmount: 1800 } });
+      expect(await stripeOf('jon')).toBe(rung['white-1'].id);
+      expect(await balanceOf('jon')).toMatchObject({ owed: 0, credit: 0 });
+      // Closed: the owner can no longer cancel the old fee, and nobody is told again.
+      expect((await feeAction('owner', id, 'cancel')).status).toBe(409);
+      await fees.reconcile();
+      expect(await blockedNotices(id)).toHaveLength(1);
+    });
+
+    it('graded again to a higher-priced rank, only the difference is left to pay', async () => {
+      // blue-0 priced 25.00 (30.00 with the 20% tax) for this test.
+      await su.rankStripeTier.update({ where: { id: rung['blue-0'].id }, data: { promotionFeeMinor: 2500 } });
+      try {
+        const { id } = await paidAfterRankChange('nat');
+        await waitFor(() => blockedNotices(id), (v) => v.length > 0);
+        // From white-1 (where the rank was changed to), the normal Promote to blue-0.
+        const res = await http().post(`/v1/students/${user.nat.id}/ranks/${bjj.id}/promote`).set(as('owner')).send({});
+        expect(res.status).toBe(201);
+        const newId = res.body.feeRequest.id as string;
+        expect((await requestRow(id)).status).toBe('CANCELLED');
+        expect(await balanceOf('nat')).toMatchObject({ owed: 0, credit: 1800 });
+        const accepted = await feeAction('nat', newId, 'accept');
+        expect(accepted.status).toBe(201);
+        expect(accepted.body).toMatchObject({ status: 'ACCEPTED', charge: { status: 'PART_PAID', grossAmount: 3000, paidAmount: 1800, owedAmount: 1200 } });
+        expect(await balanceOf('nat')).toMatchObject({ owed: 1200, credit: 0 });
+        expect(await stripeOf('nat')).toBe(rung['white-1'].id);
+        // Paying the difference applies the promotion.
+        expect((await deskPay(user.nat.id, 1200, (await chargeOf(newId))!.id)).status).toBe(201);
+        expect((await requestRow(newId)).status).toBe('PAID');
+        expect(await stripeOf('nat')).toBe(rung['blue-0'].id);
+      } finally {
+        await su.rankStripeTier.update({ where: { id: rung['blue-0'].id }, data: { promotionFeeMinor: null } });
+      }
+    });
+
+    it('the owner cancels the fee: its charge is cancelled, what was paid becomes credit, and nothing is left "to decide"', async () => {
+      const { id, chargeId } = await paidAfterRankChange('kai');
+      await waitFor(() => blockedNotices(id), (v) => v.length > 0);
+      // Owner only, and another School sees nothing.
+      expect((await feeAction('desk', id, 'cancel')).status).toBe(403);
+      expect((await feeAction('ownerB', id, 'cancel')).status).toBe(404);
+      const otherSchool = await http().get(`/v1/schools/${schoolB.id}/promotion-fee-requests`).set(as('ownerB'));
+      expect(otherSchool.body.items.find((r: { id: string }) => r.id === id)).toBeUndefined();
+      expect(await su.notification.count({ where: { userId: user.ownerB.id, id: { startsWith: 'promotion-fee-blocked-' } } })).toBe(0);
+
+      const res = await feeAction('owner', id, 'cancel');
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ status: 'CANCELLED', toDecide: false, promotionBlocked: false, promotionApplied: false, charge: { status: 'CANCELLED' } });
+      const row = await requestRow(id);
+      expect(row.toDecideAt).toBeNull();
+      expect(row.closedById).toBe(user.owner.id);
+      const c = (await chargeOf(id))!;
+      expect(c.cancelledAt).not.toBeNull();
+      expect(c.cancelledById).toBe(user.owner.id);
+      const view = await http().get(`/v1/schools/${school.id}/students/${user.kai.id}/charges`).set(as('owner'));
+      expect(view.body.balances[0]).toMatchObject({ currency: 'GBP', owed: 0, credit: 1800 });
+      const n = await waitFor(() => su.notification.findUnique({ where: { id: `charge-cancelled-${chargeId}` } }), (v) => v !== null);
+      expect(n?.body).toBe("Your charge 'white-1, 18.00 GBP' was cancelled. Nothing to pay. The 18.00 GBP already paid is now credit on your balance.");
+      expect(await boardCard('kai')).toMatchObject({ feeStatus: null });
+      await fees.reconcile();
+      expect(await blockedNotices(id)).toHaveLength(1);
+    });
+
+    it('a passing failure is not mistaken for it: a fee whose promotion can still apply is never flagged', async () => {
+      // Paid while the student is still where the grade was made from: it applies, as before.
+      await mkStudent('lia', 'white-0');
+      const id = await gradeToPricedStripe('lia');
+      await feeAction('lia', id, 'accept');
+      await deskPay(user.lia.id, 1800, (await chargeOf(id))!.id);
+      const row = await requestRow(id);
+      expect(row).toMatchObject({ status: 'PAID', promotionBlockedAt: null });
+      expect(row.promotionEventId).not.toBeNull();
+    });
+
+    it('the belt ladder changing after the grade is caught the same way', async () => {
+      await mkStudent('max', 'white-0');
+      const id = await gradeToPricedStripe('max');
+      await feeAction('max', id, 'accept');
+      // A new stripe goes in between: the stripe award would now land on it, not on white-1.
+      const white1 = await su.rankStripeTier.findUniqueOrThrow({ where: { id: rung['white-1'].id } });
+      await su.rankStripeTier.update({ where: { id: white1.id }, data: { order: 2 } });
+      const inserted = await su.rankStripeTier.create({
+        data: {
+          id: randomUUID(), rankId: white1.rankId, schoolId: school.id, order: 1, count: 1, colour: '#000000', name: 'white-new',
+          stripeSegments: [{ count: 1, colour: '#000000' }], classesRequired: 3,
+        },
+      });
+      try {
+        await deskPay(user.max.id, 1800, (await chargeOf(id))!.id);
+        const row = await requestRow(id);
+        expect(row).toMatchObject({ status: 'ACCEPTED', promotionEventId: null });
+        expect(row.promotionBlockedAt).not.toBeNull();
+        expect(await stripeOf('max')).toBe(rung['white-0'].id);
+        expect(await waitFor(() => blockedNotices(id), (v) => v.length > 0)).toHaveLength(1);
+      } finally {
+        await su.rankStripeTier.delete({ where: { id: inserted.id } });
+        await su.rankStripeTier.update({ where: { id: white1.id }, data: { order: 1 } });
+      }
+    });
   });
 
   it('another School never sees or acts on these fees or charges (API and RLS)', async () => {

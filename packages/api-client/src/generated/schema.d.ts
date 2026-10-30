@@ -10121,10 +10121,10 @@ export interface components {
             /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
             noHomeBranch: boolean;
             /**
-             * @description Promotion fee (Decisions 300, 307): "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
+             * @description Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
              * @enum {string|null}
              */
-            feeStatus?: "waiting" | "declined" | "toDecide" | null;
+            feeStatus?: "blocked" | "waiting" | "declined" | "toDecide" | null;
             /** @description The request behind feeStatus. */
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
             /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
@@ -10382,6 +10382,10 @@ export interface components {
             gradingDate?: string | null;
             /** @description Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
             toDecide: boolean;
+            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then. */
+            promotionBlocked: boolean;
+            /** @description When the paid fee's promotion was first found unable to apply. Kept after the owner decides. */
+            promotionBlockedAt?: string | null;
             toDecideAt?: string | null;
             /** @enum {string|null} */
             toDecideResolution?: "PROMOTED" | "DISMISSED" | null;

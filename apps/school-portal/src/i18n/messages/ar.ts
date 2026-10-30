@@ -1874,6 +1874,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "إلغاء الرسوم",
         promoteTo: "الترقية إلى {rank}",
         dontPromote: "عدم الترقية",
+        blocked: "مدفوعة — لا يمكن تطبيق الترقية",
+        blockedText: "رسوم {name} لـ {rank} مدفوعة، لكن لا يمكن تطبيق الترقية: تغيرت رتبته أو سلم الأحزمة منذ التقييم. ألغِ الرسوم لإرجاع المبلغ المدفوع كرصيد، أو قيّم {name} مرة أخرى: عندها تُلغى الرسوم ويُحتسب المبلغ المدفوع للتقييم الجديد كرصيد.",
         priceFor: "رسوم الترقية إلى {rank}: {amount}",
       },
       decide: {

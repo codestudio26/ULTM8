@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A paid promotion fee whose promotion can no longer apply** (Decision 414
+  item 1) — when a promotion fee is paid in full but the promotion that waited
+  for it can't go through any more (the student's rank or the belt ladder
+  changed after the grade), the School's owner is told once, in
+  Notifications ("Promotion can't apply"), and the student's grading card and
+  the Grading Board show **Paid — promotion can't apply**. The owner decides:
+  **Cancel fee** (the invoice is cancelled and what was paid becomes credit)
+  or grade the student again, which is no longer held up by the fee. Grading
+  again cancels the old fee and its invoice the same way, so what was paid
+  counts toward the new grade (Decision 415 item 1): it becomes credit, which
+  pays the new grade's fee once accepted (only any difference is left to pay;
+  anything over stays credit). Until the owner does one or the other nothing
+  happens to the money, and the daily payments run doesn't retry it or tell
+  the owner again.
+  The fee can't be waived in this state. The member sees the fee as Paid.
+  **Needs a database migration** (`20270120000000_promotion_fee_blocked`).
 - **"No tax on this item (0% or exempt)" on charges** (backlog 3.6; Decision 414
   item 5) — staff creating a one-off charge or setting up a recurring charge
   can tick it (off by default) for an item tax doesn't apply to, such as

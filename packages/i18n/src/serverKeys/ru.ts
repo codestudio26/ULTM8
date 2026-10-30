@@ -300,6 +300,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     childPromotionFeeBody: "За повышение {name} до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
+    promotionFeeBlockedTitle: "Повышение нельзя применить",
+    promotionFeeBlockedBody: "Сбор {name} за {rank} ({style}) оплачен, но повышение нельзя применить: ранг или порядок поясов изменился после аттестации. Отмените сбор (оплаченное станет кредитом) или аттестуйте заново.",
     forChild: "Для {name}: {body}",
     disputeStatus: {
       warning_needs_response: "запрос, нужен ответ",

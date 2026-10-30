@@ -328,6 +328,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "ترقية {name} إلى {rank} ({style}) بانتظار قرارك. قم بالترقية أو قرر عدم الترقية.",
     promotionFeeBody: "ترقيتك إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     childPromotionFeeBody: "ترقية {name} إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
+    promotionFeeBlockedTitle: "لا يمكن تطبيق الترقية",
+    promotionFeeBlockedBody: "رسوم {name} لـ {rank} ({style}) مدفوعة، لكن لا يمكن تطبيق الترقية: تغيرت رتبته أو سلم الأحزمة منذ التقييم. ألغِ الرسوم (يصبح المبلغ المدفوع رصيدًا) أو قم بتقييمه مرة أخرى.",
     forChild: "بخصوص {name}: {body}",
     disputeStatus: {
       warning_needs_response: "استفسار، يحتاج إلى رد",

@@ -247,6 +247,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
   'Promotion fee': 'promotionFeeTitle',
+  // Decision 414 item 1 — apps/api/src/ranks/promotion-fee.service.ts.
+  "Promotion can't apply": 'promotionFeeBlockedTitle',
   // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
   'School asking to join': 'joinAskedTitle',
   'Joined the Franchise': 'joinAcceptedTitle',
@@ -367,6 +369,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) has a fee of (.+)\. Open the app to accept or decline it\.$`),
     (m, { t }) => n(t, 'childPromotionFeeBody', { name: m[1], rank: m[2], style: m[3], amount: m[4] }),
+  ],
+  // Decision 414 item 1 — PromotionFeeService, to the School's owner(s).
+  [
+    body(String.raw`^(.+)'s fee for (.+) \(${STYLE}\) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade\. Cancel the fee \(what was paid becomes credit\) or grade them again\.$`),
+    (m, { t }) => n(t, 'promotionFeeBlockedBody', { name: m[1], rank: m[2], style: m[3] }),
   ],
   [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
   [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
