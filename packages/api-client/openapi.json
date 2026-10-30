@@ -17010,6 +17010,42 @@
         ]
       }
     },
+    "/v1/front-desk/kiosk/resume": {
+      "post": {
+        "operationId": "FrontDeskKioskController_resume",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KioskUnlockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KioskResumedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "front-desk"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/check-in-code": {
       "get": {
         "operationId": "StudentCheckInCodesController_get",
@@ -19959,7 +19995,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           },
           "lateCancelRefundPolicy": {
             "type": "string",
@@ -20634,7 +20670,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           },
           "lateCancelRefundPolicy": {
             "type": "string",
@@ -33472,7 +33508,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           }
         },
         "required": [
@@ -35501,6 +35537,10 @@
             "type": "boolean",
             "description": "Decision 392: the School has a visitor period, so the sign-up form offers Visitor."
           },
+          "locked": {
+            "type": "boolean",
+            "description": "Decision 417: locked after too many wrong member codes in a row; only a staff code (resume or unlock) works until then."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "The School's \"How did you hear about us?\" choices. Null: show the starting list in the tablet's language.",
@@ -35518,7 +35558,8 @@
           "checkInOpensMinutesBeforeStart",
           "checkInSeveralClasses",
           "checkInCodeDigits",
-          "visitorsOn"
+          "visitorsOn",
+          "locked"
         ]
       },
       "KioskClassDto": {
@@ -35892,6 +35933,18 @@
         },
         "required": [
           "unlockedBy"
+        ]
+      },
+      "KioskResumedDto": {
+        "type": "object",
+        "properties": {
+          "resumedBy": {
+            "type": "string",
+            "description": "First name of the staff member whose code it was."
+          }
+        },
+        "required": [
+          "resumedBy"
         ]
       },
       "StudentCheckInCodeDto": {

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -16,6 +16,11 @@ export const FRONT_DESK_SESSION_HOURS = 24;
  * code; a staff member starts the tablet again. */
 export const FRONT_DESK_MAX_WRONG_CODES = 10;
 
+/** Wrong member check-in codes in a row before the tablet locks until a staff
+ * code is typed (Decision 417): codes are short, and at a big School a random
+ * guess is often someone's. */
+export const FRONT_DESK_MAX_WRONG_MEMBER_CODES = 10;
+
 const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] as const;
 // Who may start a tablet (handover F1): the owner, or Branch Staff for their Branch.
 const STARTER_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] as const;
@@ -29,9 +34,16 @@ export interface FrontDeskSessionContext {
    * the kiosk endpoints only. */
   startedById: string;
   expiresAt: Date;
+  /** Locked after too many wrong member codes (Decision 417). */
+  lockedAt: Date | null;
 }
 
 const SESSION_ENDED = { code: 'FRONT_DESK_SESSION_ENDED', message: 'This front-desk session has ended. Ask a member of staff to start it again.' };
+/** The tablet is locked (Decision 417): every kiosk call but a few answers this. */
+export const FRONT_DESK_LOCKED = {
+  code: 'FRONT_DESK_LOCKED',
+  message: 'Too many wrong check-in codes, so this tablet is locked. Ask a member of staff to type their code.',
+};
 const TOO_MANY_WRONG_CODES = {
   code: 'FRONT_DESK_SESSION_ENDED',
   message: 'Too many wrong staff codes, so this front-desk session has ended. Ask a member of staff to start it again.',
@@ -154,7 +166,14 @@ export class FrontDeskSessionsService {
     ]);
     const branchClosed = session.branchId !== null && (!branch || branch.archivedAt !== null);
     if (!starterStillStaff || !school || school.archivedAt || branchClosed) throw new UnauthorizedException(SESSION_ENDED);
-    return { id: session.id, schoolId: session.schoolId, branchId: session.branchId, startedById: session.startedById, expiresAt: session.expiresAt };
+    return {
+      id: session.id,
+      schoolId: session.schoolId,
+      branchId: session.branchId,
+      startedById: session.startedById,
+      expiresAt: session.expiresAt,
+      lockedAt: session.lockedAt,
+    };
   }
 
   /** POST /front-desk/kiosk/unlock: a staff member types their own code on the
@@ -162,12 +181,7 @@ export class FrontDeskSessionsService {
    * code is logged and counted; the route is rate-limited per session, and the
    * FRONT_DESK_MAX_WRONG_CODES-th wrong code ends the session (Decision 388). */
   async unlock(session: FrontDeskSessionContext, code: string) {
-    const match = await this.prismaJobs.staffKioskCode.findUnique({ where: { schoolId_code: { schoolId: session.schoolId, code } } });
-    const allowed = match ? await this.holdsGrant(match.userId, session.schoolId, session.branchId, STAFF_ROLES) : false;
-    if (!match || !allowed) {
-      await this.countWrongCode(session);
-      throw new ForbiddenException({ code: 'WRONG_STAFF_CODE', message: "That staff code isn't right." });
-    }
+    const match = await this.matchStaffCode(session, code);
     await this.prismaApp.withTenantContext(match.userId, (tx) =>
       tx.frontDeskSession.updateMany({ where: { id: session.id, endedAt: null }, data: { endedAt: new Date(), endedById: match.userId } }),
     );
@@ -175,7 +189,61 @@ export class FrontDeskSessionsService {
     return { unlockedBy: names.get(match.userId)?.firstName ?? '' };
   }
 
+  /** POST /front-desk/kiosk/resume: a staff member types their own code on a
+   * tablet locked by wrong member codes (Decision 417). The tablet carries on
+   * in front-desk mode and the count starts again. A wrong staff code counts
+   * as on the exit screen. */
+  async resume(session: FrontDeskSessionContext, code: string) {
+    const match = await this.matchStaffCode(session, code);
+    await this.prismaApp.withTenantContext(session.startedById, (tx) =>
+      tx.frontDeskSession.updateMany({ where: { id: session.id, endedAt: null }, data: { lockedAt: null, wrongMemberCodeCount: 0 } }),
+    );
+    if (session.lockedAt) this.logger.log(`Front-desk session ${session.id} (School ${session.schoolId}) unlocked by staff ${match.userId}`);
+    const names = await resolveUserNames(this.prismaAuth, [match.userId]);
+    return { resumedBy: names.get(match.userId)?.firstName ?? '' };
+  }
+
+  /** A member code typed on the tablet was wrong (Decision 417). Counted in
+   * one statement, like wrong staff codes; at FRONT_DESK_MAX_WRONG_MEMBER_CODES
+   * in a row the tablet locks, and this answers with the lock. */
+  async countWrongMemberCode(session: FrontDeskSessionContext): Promise<void> {
+    const wrong = await this.prismaApp.withTenantContext(session.startedById, async (tx) => {
+      const row = await tx.frontDeskSession.update({
+        where: { id: session.id },
+        data: { wrongMemberCodeCount: { increment: 1 } },
+        select: { wrongMemberCodeCount: true },
+      });
+      if (row.wrongMemberCodeCount >= FRONT_DESK_MAX_WRONG_MEMBER_CODES) {
+        await tx.frontDeskSession.updateMany({ where: { id: session.id, lockedAt: null }, data: { lockedAt: new Date() } });
+      }
+      return row.wrongMemberCodeCount;
+    });
+    if (wrong >= FRONT_DESK_MAX_WRONG_MEMBER_CODES) {
+      this.logger.warn(`Front-desk session ${session.id} (School ${session.schoolId}) locked after ${wrong} wrong member codes in a row`);
+      throw new HttpException(FRONT_DESK_LOCKED, 423);
+    }
+  }
+
+  /** A right member code starts the count again ("in a row"). */
+  async resetWrongMemberCodes(session: FrontDeskSessionContext): Promise<void> {
+    await this.prismaApp.withTenantContext(session.startedById, (tx) =>
+      tx.frontDeskSession.updateMany({ where: { id: session.id, wrongMemberCodeCount: { gt: 0 } }, data: { wrongMemberCodeCount: 0 } }),
+    );
+  }
+
   // ---------------------------------------------------------------------------
+
+  /** The staff member whose own code this is, if they're staff covering the
+   * tablet's Branch; otherwise the wrong code is counted and refused. */
+  private async matchStaffCode(session: FrontDeskSessionContext, code: string) {
+    const match = await this.prismaJobs.staffKioskCode.findUnique({ where: { schoolId_code: { schoolId: session.schoolId, code } } });
+    const allowed = match ? await this.holdsGrant(match.userId, session.schoolId, session.branchId, STAFF_ROLES) : false;
+    if (!match || !allowed) {
+      await this.countWrongCode(session);
+      throw new ForbiddenException({ code: 'WRONG_STAFF_CODE', message: "That staff code isn't right." });
+    }
+    return match;
+  }
 
   /** Counts a wrong staff code on the session, and ends it at the limit. Runs
    * as the staff member who started it: a tablet has no login of its own, and

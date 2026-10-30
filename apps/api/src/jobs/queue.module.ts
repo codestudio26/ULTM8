@@ -26,6 +26,7 @@ import {
   CHARGE_DUE_REMINDER_QUEUE,
   LATE_FEE_QUEUE,
   CHARGE_RECURRING_QUEUE,
+  LARGE_SCHOOL_CHECK_IN_CODES_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -101,6 +102,7 @@ export {
   CHARGE_DUE_REMINDER_QUEUE,
   LATE_FEE_QUEUE,
   CHARGE_RECURRING_QUEUE,
+  LARGE_SCHOOL_CHECK_IN_CODES_QUEUE,
 };
 
 @Module({
@@ -130,6 +132,7 @@ export {
       { name: CHARGE_DUE_REMINDER_QUEUE },
       { name: LATE_FEE_QUEUE },
       { name: CHARGE_RECURRING_QUEUE },
+      { name: LARGE_SCHOOL_CHECK_IN_CODES_QUEUE },
     ),
   ],
   exports: [BullModule],

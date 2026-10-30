@@ -52,6 +52,11 @@ export function isSessionEnded(err: unknown): boolean {
   return err instanceof ApiError && err.status === 401;
 }
 
+/** The tablet is locked after too many wrong member codes (Decision 417). */
+export function isTabletLocked(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 423;
+}
+
 export type KioskClass = components['schemas']['KioskClassDto'];
 export type KioskStudentCard = components['schemas']['KioskStudentCardDto'];
 
@@ -77,7 +82,7 @@ export function useKioskToday(enabled: boolean, now: number) {
     queryKey: ['kiosk', 'today', day],
     queryFn: () => unwrap(kioskClient.GET('/v1/front-desk/kiosk/today', { params: { query: todayWindow(new Date(now)) } })),
     enabled,
-    retry: (count, err) => !isSessionEnded(err) && count < 2,
+    retry: (count, err) => !isSessionEnded(err) && !isTabletLocked(err) && count < 2,
     refetchInterval: 30_000,
   });
 }
@@ -166,6 +171,11 @@ export function useKioskCheckIn() {
 
 export function useKioskUnlock() {
   return useMutation({ mutationFn: (staffCode: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/unlock', { body: { staffCode } })) });
+}
+
+/** A staff member's own code lets a locked tablet carry on (Decision 417). */
+export function useKioskResume() {
+  return useMutation({ mutationFn: (staffCode: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/resume', { body: { staffCode } })) });
 }
 
 // ---------------------------------------------------------------------------

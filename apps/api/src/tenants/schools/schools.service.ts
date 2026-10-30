@@ -5,6 +5,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
+import { assertCodeDigitsAllowed } from '../../front-desk/check-in-code';
 import { JOIN_REQUEST_SELECT } from '../franchises/franchises.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
@@ -943,6 +944,7 @@ export class SchoolsService {
       await this.assertCurrencyChangeAllowed(callerId, schoolId, dto.defaultCurrency, dto.confirmCurrencyChange === true);
     }
     await this.assertCurrencyForNewFees(callerId, schoolId, dto);
+    await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({

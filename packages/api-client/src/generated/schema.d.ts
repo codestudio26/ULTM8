@@ -5652,6 +5652,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/front-desk/kiosk/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FrontDeskKioskController_resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/{studentId}/check-in-code": {
         parameters: {
             query?: never;
@@ -6646,7 +6662,7 @@ export interface components {
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
-             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}
              */
             checkInCodeDigits?: 4 | 6;
@@ -6888,7 +6904,7 @@ export interface components {
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
-             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length.
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}
              */
             checkInCodeDigits?: 4 | 6;
@@ -10824,7 +10840,7 @@ export interface components {
             /** @description Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is. */
             frozenMembers?: boolean;
             /**
-             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length.
+             * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}
              */
             codeDigits: 4 | 6;
@@ -11409,6 +11425,8 @@ export interface components {
             checkInCodeDigits: 4 | 6;
             /** @description Decision 392: the School has a visitor period, so the sign-up form offers Visitor. */
             visitorsOn: boolean;
+            /** @description Decision 417: locked after too many wrong member codes in a row; only a staff code (resume or unlock) works until then. */
+            locked: boolean;
             /** @description The School's "How did you hear about us?" choices. Null: show the starting list in the tablet's language. */
             heardFromOptions?: string[] | null;
         };
@@ -11522,6 +11540,10 @@ export interface components {
         KioskUnlockedDto: {
             /** @description First name of the staff member whose code it was. */
             unlockedBy: string;
+        };
+        KioskResumedDto: {
+            /** @description First name of the staff member whose code it was. */
+            resumedBy: string;
         };
         StudentCheckInCodeDto: {
             /** @description The personal check-in code, typed at the front desk in place of the app QR. */
@@ -21920,6 +21942,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KioskUnlockedDto"];
+                };
+            };
+        };
+    };
+    FrontDeskKioskController_resume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KioskUnlockDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KioskResumedDto"];
                 };
             };
         };

@@ -1133,7 +1133,9 @@ model School {
   /// Check-in opens this many minutes before a Class starts (product owner, 26 Oct 2026).
   checkInOpensMinutesBeforeStart Int                             @default(30)
   /// Length of ULTM8-generated check-in codes here: staff kiosk codes (Decision
-  /// 320) and members' personal codes (Decision 315). 4 (default) or 6.
+  /// 320) and members' personal codes (Decision 315). 4 (default) or 6. A
+  /// School with more than 500 current Students is moved to 6 by ULTM8 and
+  /// can't go back to 4 (Decision 417).
   checkInCodeDigits              Int                             @default(4)
   /// Check-in rules (Decision 394, Decision 317 item 1, handover F9). Each
   /// default is what check-in did before the rules existed. Applied to every
@@ -4720,6 +4722,14 @@ model FrontDeskSession {
   /// Wrong staff codes typed on this tablet (Decision 388). At
   /// FRONT_DESK_MAX_WRONG_CODES the session ends, so the code can't be guessed.
   wrongCodeCount Int @default(0)
+
+  /// Wrong member check-in codes typed in a row on this tablet (Decision 417).
+  /// A right one sets it back to 0; at FRONT_DESK_MAX_WRONG_MEMBER_CODES the
+  /// tablet locks.
+  wrongMemberCodeCount Int @default(0)
+  /// Set when the tablet locks after too many wrong member codes (Decision
+  /// 417). Only a staff code lets it carry on; until then it does nothing else.
+  lockedAt DateTime?
 
   @@index([schoolId])
   @@index([startedById])

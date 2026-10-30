@@ -39,6 +39,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   scroll sideways. Booking no longer loads the whole belt ladder when no belt
   locks the class (about a third faster). Unpause clicked several times at
   once is recorded once.
+- **Check-in codes at large Schools** (Decision 417, stress test round 4 Q1)
+  — a School with more than 500 members moves to 6-digit check-in codes on
+  its own, and its shorter member and staff codes are replaced with new
+  6-digit ones (shown on each member's Student page and on the staff's own
+  code screen). It then can't choose 4 digits again. A front-desk tablet
+  locks after 10 wrong member codes in a row; a staff member's own code lets
+  it carry on.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit

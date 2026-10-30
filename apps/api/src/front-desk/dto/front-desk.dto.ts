@@ -102,6 +102,9 @@ export class KioskSessionInfoDto {
   @ApiProperty({ description: 'Decision 392: the School has a visitor period, so the sign-up form offers Visitor.' })
   visitorsOn!: boolean;
 
+  @ApiProperty({ description: 'Decision 417: locked after too many wrong member codes in a row; only a staff code (resume or unlock) works until then.' })
+  locked!: boolean;
+
   @ApiPropertyOptional({ type: [String], nullable: true, description: 'The School\'s "How did you hear about us?" choices. Null: show the starting list in the tablet\'s language.' })
   heardFromOptions!: string[] | null;
 }
@@ -336,6 +339,12 @@ export class StudentCheckInCodeDto {
 export class KioskUnlockedDto {
   @ApiProperty({ description: 'First name of the staff member whose code it was.' })
   unlockedBy!: string;
+}
+
+/** POST /front-desk/kiosk/resume (Decision 417). */
+export class KioskResumedDto {
+  @ApiProperty({ description: 'First name of the staff member whose code it was.' })
+  resumedBy!: string;
 }
 
 export class MembershipCardMembershipDto {

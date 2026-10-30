@@ -138,6 +138,10 @@ export const frontDesk = {
     staffSignIn: 'Staff sign-in',
     endedTitle: 'Front-desk mode has ended',
     endedBody: 'A member of staff ended it, or it ran for 24 hours. Sign in to start it again.',
+    /** Decision 417: locked after too many wrong member codes in a row. */
+    lockedTitle: 'This tablet is locked',
+    lockedBody: 'Too many wrong check-in codes were typed in a row. A member of staff types their own code to carry on.',
+    lockedCodeTitle: 'Staff code',
     noSessionTitle: 'This device isn’t in front-desk mode',
     noSessionBody: 'A member of staff signs in and starts it from Check-in.',
     loadFailed: 'Could not reach ULTM8. Check the internet connection.',
@@ -269,7 +273,7 @@ export const frontDesk = {
     severalClasses: 'Check in to several classes at once',
     severalClassesHint: 'When off, the desk and the tablet tick one class at a time.',
     codeDigits: 'Code length',
-    codeDigitsHint: 'How many digits check-in codes and staff tablet codes have.',
+    codeDigitsHint: 'How many digits check-in codes and staff tablet codes have. A School with more than 500 members always uses 6 digits, and shorter codes are replaced.',
     everyWayIn: 'What booking needs (a membership, a class’s own waiver) stays as it is.',
   },
   studentCode: {
