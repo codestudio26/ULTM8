@@ -54,6 +54,8 @@ const charge = (over: Record<string, unknown>) => ({
   cancelledByName: null,
   cancelReason: null,
   cardSurchargeAmount: 0,
+  refundedAmount: 0,
+  refundStatus: null,
   ...over,
 });
 
@@ -72,6 +74,10 @@ const payment = (over: Record<string, unknown>) => ({
   recordedByName: null,
   allocations: [{ chargeId: 'c1', invoiceLabel: '#0000001', amount: 5000 }],
   creditAmount: 0,
+  refundedAmount: 0,
+  refundStatus: null,
+  refunds: [],
+  refundable: null,
   ...over,
 });
 
@@ -79,6 +85,9 @@ const SCHOOL = {
   schoolId: 's1',
   schoolName: 'Alpha Dojo',
   taxId: 'GB123',
+  receiptAddress: null,
+  receiptPaymentInstructions: null,
+  credits: [],
   balances: [{ schoolId: 's1', currency: 'GBP', owed: 7000, credit: 0, net: 7000, overdue: 7000, payableAmount: 7000, cardSurchargeAmount: 0 }],
   charges: [
     charge({}),
@@ -241,5 +250,38 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
     expect(getByText('Includes a card surcharge of £1.00')).toBeTruthy();
     expect(getByText(/£50.00 card payment processing/)).toBeTruthy();
     expect(getByText(/Automatic payment of £50.00 failed on/)).toBeTruthy();
+  });
+});
+
+describe('MyChargesScreen: refunds, credit and receipt details (backlog 3.6 step 4)', () => {
+  it('shows Refunded on a refunded charge and payment, each refund, credit from the School and the School\'s address and payment instructions', async () => {
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({
+        schools: [
+          {
+            ...SCHOOL,
+            receiptAddress: '1 High Street, London',
+            receiptPaymentInstructions: 'Sort code 00-00-00',
+            balances: [{ ...SCHOOL.balances[0], owed: 0, net: 0, overdue: 0, payableAmount: 0 }],
+            charges: [charge({ status: 'PAID', owedAmount: 0, paidAmount: 7000, overdue: false, refundedAmount: 5000, refundStatus: 'PART_REFUNDED' })],
+            payments: [
+              payment({
+                amount: 12000,
+                refundedAmount: 5000,
+                refundStatus: 'PART_REFUNDED',
+                refunds: [{ id: 'r1', kind: 'CARD', amount: 5000, refundedAt: '2026-10-31T10:00:00.000Z', notes: null, refundedByName: null }],
+              }),
+            ],
+            credits: [{ id: 'cr1', amount: 1000, currency: 'GBP', givenAt: '2026-10-31T12:00:00.000Z', note: null, givenByName: null }],
+          },
+        ],
+      }),
+    );
+    const { getByText, getAllByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getAllByText('Part refunded')).toHaveLength(2);
+    expect(getByText(/£50.00 refunded to your card on/)).toBeTruthy();
+    expect(getByText(/£10.00 credit from your School on/)).toBeTruthy();
+    expect(getByText('Address: 1 High Street, London')).toBeTruthy();
+    expect(getByText('How to pay: Sort code 00-00-00')).toBeTruthy();
   });
 });
