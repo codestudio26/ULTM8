@@ -15,6 +15,26 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Charges, step 4: refunds, credit, billing reports and payment notices**
+  (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
+  owner refunds a payment toward charges from the student's Payments card,
+  choosing each time: back to the card (through Stripe), given back in cash,
+  Pix, bank transfer or on the terminal (records only), or onto the balance as
+  credit. Part refunds are allowed, never more than was paid; a refund never
+  re-opens a paid charge. Notes are staff-only and required unless the owner
+  turns that off on the School page. The member sees "Refunded" or "Part
+  refunded" in the app. A lost card dispute counts as a refund to the card, and
+  a refund made in the Stripe dashboard goes on the balance too. The owner can
+  also **add credit** with a note. New **Billing reports** page next to
+  Transactions: an Overview (scheduled, overdue and paid, revenue by month) and
+  Member balances (with CSV), for the owner and for Branch Staff the School lets
+  take payments (their branches only). Staff who can create charges can
+  **resend an invoice**. On the School page: the address and payment
+  instructions shown on invoices in the app, and switches for the payment
+  receipt, failed or overdue payment, and dispute notices (all on by default);
+  a new daily "Payment overdue" notice goes once per charge the day after it is
+  due. Not built: the reminder before a charge is due (no decision says how many
+  days before). Migration `20270114000000_charges_refunds_reports`.
 - **Charges and member balance, step 1** (backlog 3.6; Decisions 303, 338,
   411) — staff can charge a student for something outside a membership plan,
   such as a rash guard, from a new **Payments** card on the student's page:
