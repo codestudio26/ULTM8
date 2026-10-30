@@ -973,6 +973,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} ging als tegoed naar je saldo",
     payAtDesk: "Vraag aan de balie van je School om te betalen.",
     receiptSurcharge: "Inclusief een kaarttoeslag van {amount}",
+    address: "Adres: {address}",
+    paymentInstructions: "Zo betaal je: {instructions}",
+    refunded: "Terugbetaald",
+    creditGiven: "{amount} tegoed van je School op {date}",
+    refundStatus: {
+      REFUNDED: "Terugbetaald",
+      PART_REFUNDED: "Deels terugbetaald",
+    },
+    refund: {
+      CARD: "{amount} op {date} teruggestort op je kaart",
+      MONEY_BACK: "{amount} op {date} aan je teruggegeven",
+      CREDIT: "{amount} op {date} terugbetaald als tegoed",
+      DISPUTE_LOST: "{amount} op {date} na een geschil teruggestort op je kaart",
+      STRIPE: "{amount} op {date} teruggestort op je kaart",
+    },
     pay: {
       balance: "Saldo betalen ({amount})",
       charge: "{amount} betalen",

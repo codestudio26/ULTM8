@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Il n'y a rien à payer.",
   "Only the member can set automatic payment, with their own saved card.": "Seul le membre lui-même peut activer le paiement automatique, avec sa propre carte enregistrée.",
   "Save a card for this School first.": "Enregistrez d'abord une carte pour cette école.",
+  "Add a note for this refund.": "Ajoutez une note pour ce remboursement.",
+  "Payment not found": "Paiement introuvable",
+  "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.": "Ce paiement n'a pas été fait par carte dans l'app, il ne peut donc pas revenir sur une carte. Enregistrez l'argent rendu, ou donnez-le en crédit.",
+  "A card payment goes back to the card, or onto the balance as credit.": "Un paiement par carte revient sur la carte, ou sur le solde en crédit.",
+  "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.": "Seul un paiement réussi peut être remboursé. Un paiement contesté, en attente, échoué ou déjà entièrement remboursé ne le peut pas.",
+  "This is more than is left to refund on this payment.": "C'est plus que ce qu'il reste à rembourser sur ce paiement.",
+  "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.": "Seule la partie de ce paiement qui a réglé des frais peut devenir du crédit. Le reste est déjà du crédit.",
+  "Part of this payment is credit that has already paid other charges, so it can't be given back.": "Une partie de ce paiement est du crédit qui a déjà réglé d'autres frais, elle ne peut donc pas être rendue.",
+  "Add a note saying why this credit is given.": "Ajoutez une note expliquant pourquoi ce crédit est accordé.",
 };

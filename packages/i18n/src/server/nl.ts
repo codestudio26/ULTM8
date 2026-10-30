@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Er is niets te betalen.",
   "Only the member can set automatic payment, with their own saved card.": "Alleen het lid zelf kan automatisch betalen instellen, met zijn eigen opgeslagen kaart.",
   "Save a card for this School first.": "Sla eerst een kaart op voor deze school.",
+  "Add a note for this refund.": "Voeg een notitie toe voor deze terugbetaling.",
+  "Payment not found": "Betaling niet gevonden",
+  "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.": "Deze betaling is niet met een kaart in de app gedaan, dus kan niet terug naar een kaart. Registreer het teruggegeven geld of geef het als tegoed.",
+  "A card payment goes back to the card, or onto the balance as credit.": "Een kaartbetaling gaat terug naar de kaart, of als tegoed naar het saldo.",
+  "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.": "Alleen een gelukte betaling kan worden terugbetaald. Een betwiste, openstaande, mislukte of volledig terugbetaalde niet.",
+  "This is more than is left to refund on this payment.": "Dit is meer dan er nog terug te betalen is op deze betaling.",
+  "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.": "Alleen het deel van deze betaling dat kosten betaalde, kan tegoed worden. De rest is al tegoed.",
+  "Part of this payment is credit that has already paid other charges, so it can't be given back.": "Een deel van deze betaling is tegoed dat al andere kosten heeft betaald, dus het kan niet worden teruggegeven.",
+  "Add a note saying why this credit is given.": "Voeg een notitie toe waarom dit tegoed wordt gegeven.",
 };
