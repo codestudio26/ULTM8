@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { MAX_CHARGE_MINOR } from '../charge-maths';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -42,6 +42,7 @@ export class CreateChargeDto {
 
   @ApiProperty({ example: '2026-11-15', description: 'The due date (YYYY-MM-DD).' })
   @Matches(DAY, { message: 'dueDate must be a date like 2026-11-15.' })
+  @IsISO8601({ strict: true }, { message: 'dueDate must be a date like 2026-11-15.' })
   dueDate!: string;
 }
 

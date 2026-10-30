@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
@@ -42,6 +42,14 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const parsedRate = parseRate(rate);
   const standard = (rates.data?.items ?? []).find((r) => r.country === country);
   const countryLabel = countries.find((c) => c.value === country)?.label ?? country;
+
+  // A School that never set its tax starts from the country in its address,
+  // with that country's rate filled in (it is saved only when the owner saves).
+  useEffect(() => {
+    if (school.taxCountry || !school.addressCountry || (school.taxRateBasisPoints ?? 0) !== 0) return;
+    const pre = (rates.data?.items ?? []).find((r) => r.country === school.addressCountry);
+    if (pre) setRate(rateText(pre.rateBasisPoints));
+  }, [rates.data, school.taxCountry, school.addressCountry, school.taxRateBasisPoints]);
 
   function changed() {
     setSaved(false);

@@ -192,6 +192,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       expect(tooBig.status).toBe(400);
       expect(tooBig.body.error.code).toBe('CHARGE_DISCOUNT_TOO_BIG');
       expect((await createCharge(student.id, { description: 'Half', amount: 1000, discountType: 'PERCENT' })).status).toBe(400);
+      expect((await createCharge(student.id, { description: 'Bad day', amount: 1000, dueDate: '2026-02-30' })).status).toBe(400);
     });
 
     it('keeps the tax a charge was created with when the settings change', async () => {
@@ -433,7 +434,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       expect(theirs.status).toBe(200);
       expect(theirs.body.schools[0].charges).toHaveLength(2);
 
-      const stranger = await mkStudent('stranger');
+      await mkStudent('stranger');
       expect((await as(tokens.stranger).get(`/v1/students/${student.id}/charges`)).status).toBe(403);
     });
 
