@@ -119,12 +119,15 @@ describeIfDb('Currency first (Decision 414 item 6)', () => {
     await su.class.deleteMany({ where });
     await su.timetableSlot.deleteMany({ where });
     await su.discipline.deleteMany({ where });
+    await su.staffActivity.deleteMany({ where });
+    // The charges' notices are sent by the fan-out worker: close the app first so none lands after.
+    await app.close();
+    await su.notification.deleteMany({ where: { userId: { in: userIds } } });
     await su.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await su.branch.deleteMany({ where });
     await su.school.deleteMany({ where: { id: { in: schoolIds } } });
     await su.user.deleteMany({ where: { id: { in: userIds } } });
     await su.$disconnect();
-    await app.close();
   });
 
   describe('membership plans', () => {
