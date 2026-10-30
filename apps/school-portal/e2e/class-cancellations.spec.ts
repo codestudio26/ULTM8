@@ -40,6 +40,8 @@ test.afterAll(async () => {
 });
 
 test('the owner chooses the class cancellation settings on the School page', async ({ page }) => {
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   await signIn(page, s.ownerToken);
   await page.goto('/school');
   const card = page.locator('form').filter({ hasText: 'Class cancellations' });
@@ -112,6 +114,8 @@ test('an owner who has not chosen a policy is asked to, until they save one', as
 });
 
 test('a branch can use its own cancellation settings instead of the school\'s', async ({ page }) => {
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   const branch = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Riverside' } });
   await signIn(page, s.ownerToken);
   await page.goto(`/branches/${branch.id}`);
