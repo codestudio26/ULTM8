@@ -1770,7 +1770,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         promoteTo: "晋级至 {rank}",
         dontPromote: "不晋级",
         blocked: "已支付 — 晋级无法执行",
-        blockedText: "{name}晋级到{rank}的费用已支付，但晋级无法执行：自评级以来其级别或腰带阶梯已更改。取消费用可将已付款项退为余额抵扣，或重新为{name}晋级（费用保持已支付）。",
+        blockedText: "{name}晋级到{rank}的费用已支付，但晋级无法执行：自评级以来其级别或腰带阶梯已更改。取消费用可将已付款项退为余额抵扣，或重新为{name}晋级：届时该费用会被取消，已付款项将作为余额抵扣计入新的晋级。",
         priceFor: "{rank} 的晋级费用：{amount}",
       },
       decide: {

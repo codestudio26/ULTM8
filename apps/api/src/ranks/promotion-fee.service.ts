@@ -64,7 +64,8 @@ const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED']
  *   1): recorded once (promotionBlockedAt), the owner(s) told once, and the
  *   request left Accepted with its money paid until the owner cancels the fee
  *   (cancel(): the money becomes credit) or the student is graded again
- *   (GradingService closes it as PAID). Nothing happens to the money on its own.
+ *   (GradingService cancels it the same way, so the money is credit toward
+ *   the new grade; Decision 415 item 1). Nothing happens to the money until then.
  *
  * Writes run under the student's own context, like every grading write
  * (Decision 88): the request's RLS lets the student's context write it, and
@@ -556,6 +557,23 @@ export class PromotionFeeService {
       }
     }
     return out;
+  }
+
+  /**
+   * The charges, still open, of this student's fees that are waived or
+   * cancelled, cancelled now through the same ledger write as any cancel
+   * (cancelOpenCharge: anything paid becomes credit, the usual "Charge
+   * cancelled" notice, then settlePaidCharges). Called by GradingService after
+   * a grade up that cancelled a paid fee whose promotion couldn't apply, so
+   * what was paid counts toward the new grade (Decision 415 item 1); the daily
+   * catch-up (reconcile, step 3) does the same for every School.
+   */
+  async cancelChargesOfClosedFees(schoolId: string, studentId: string): Promise<void> {
+    const open = await this.prismaJobs.charge.findMany({
+      where: { schoolId, studentId, cancelledAt: null, promotionFeeRequest: { status: { in: ['WAIVED', 'CANCELLED'] } } },
+      select: { promotionFeeRequestId: true, promotionFeeRequest: { select: { closedById: true } } },
+    });
+    for (const c of open) await this.cancelOpenCharge(c.promotionFeeRequestId!, c.promotionFeeRequest?.closedById ?? null);
   }
 
   /**

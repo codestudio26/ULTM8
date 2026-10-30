@@ -4925,9 +4925,10 @@ model PromotionFeeRequest {
   /// can no longer apply as made (the student's rank or the belt ladder changed
   /// since the grade). Set once, when first found; the School's owner(s) are
   /// told once, and decide: cancel the fee (what was paid becomes credit) or
-  /// grade the student again (the request then closes as PAID, its money left
-  /// as paid). The request stays ACCEPTED until then; nothing happens to the
-  /// money on its own (Decision 414 item 1).
+  /// grade the student again (the request is then cancelled the same way, so
+  /// the money is credit toward the new grade; Decision 415 item 1). The
+  /// request stays ACCEPTED until then; nothing happens to the money before
+  /// (Decision 414 item 1).
   promotionBlockedAt DateTime?
 
   toDecideAt           DateTime?

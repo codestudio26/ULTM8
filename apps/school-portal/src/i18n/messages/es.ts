@@ -1791,7 +1791,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         promoteTo: "Promover a {rank}",
         dontPromote: "No promover",
         blocked: "Pagada — la promoción no se puede aplicar",
-        blockedText: "La cuota de {name} para {rank} está pagada, pero la promoción no se puede aplicar: su grado o la escala de cinturones cambió desde la graduación. Cancela la cuota para devolver lo pagado como crédito, o vuelve a graduar a {name} (la cuota sigue pagada).",
+        blockedText: "La cuota de {name} para {rank} está pagada, pero la promoción no se puede aplicar: su grado o la escala de cinturones cambió desde la graduación. Cancela la cuota para devolver lo pagado como crédito, o vuelve a graduar a {name}: la cuota se cancela y lo pagado cuenta para la nueva graduación, como crédito.",
         priceFor: "Cuota de promoción para {rank}: {amount}",
       },
       decide: {

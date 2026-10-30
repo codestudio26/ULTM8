@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -119,6 +120,8 @@ async function isActiveForGrading(
  */
 @Injectable()
 export class GradingService {
+  private readonly logger = new Logger(GradingService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
@@ -128,6 +131,9 @@ export class GradingService {
     // Backlog 3.20: dates of birth for "Ready for Adult program" on the board,
     // read for the students the caller's board already shows.
     private readonly prismaJobs: PrismaJobsService,
+    // PromotionFeeService depends on this service (applying a waiting
+    // promotion), so it is looked up when needed rather than injected.
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -857,6 +863,21 @@ export class GradingService {
       return { studentRank, promotionEvent: promotionEvent as typeof promotionEvent | null, toRungName: to.name, feeRequest };
     });
 
+    // A grade up may have cancelled a paid fee whose promotion couldn't apply
+    // (feeForGrade): its charge is cancelled now, so what was paid is credit
+    // toward this grade (Decision 415 item 1). Best-effort: the grade stands,
+    // and the daily catch-up (PromotionFeeService.reconcile) cancels a charge
+    // left open.
+    if (type !== 'DOWNGRADE' && !applying) {
+      try {
+        // Loaded here, not at the top: promotion-fee.service imports this file.
+        const { PromotionFeeService } = await import('./promotion-fee.service');
+        await this.moduleRef.get(PromotionFeeService, { strict: false }).cancelChargesOfClosedFees(discipline.schoolId, studentId);
+      } catch (err) {
+        this.logger.error(`Cancelling the charge of a superseded promotion fee for student ${studentId} failed; the daily catch-up retries.`, err as Error);
+      }
+    }
+
     if (result.feeRequest) {
       await this.notifyFeeRequested({
         feeRequestId: result.feeRequest.id,
@@ -961,9 +982,13 @@ export class GradingService {
    *
    * A fee paid in full whose promotion can no longer apply (Decision 414 item
    * 1) doesn't hold grading up: grading the student again is one of the
-   * owner's two choices. Grading again closes it, in the same transaction, as
-   * PAID (the fee was paid; nothing happens to the money), its promotion never
-   * applied. The new grade takes the fee rules like any other grade.
+   * owner's two choices. Grading again cancels it, in the same transaction
+   * (CANCELLED, closed by whoever graded; not "to decide"), and what was paid
+   * counts toward the new grade (Decision 415 item 1): once the grade commits,
+   * changeRung has its charge cancelled through the shared cancel
+   * (PromotionFeeService.cancelChargesOfClosedFees), so the money is credit,
+   * which pays the new grade's fee once accepted, like any credit. The new
+   * grade takes the fee rules like any other grade.
    */
   private async feeForGrade(tx: TenantTx, callerId: string, schoolId: string, studentId: string, disciplineId: string, fromRungId: string, to: Rung) {
     const open = await tx.promotionFeeRequest.findMany({
@@ -978,10 +1003,11 @@ export class GradingService {
     });
     const waiting = open.find(isWaitingForFee);
     if (waiting) throw new ConflictException(WAITING_MESSAGE(waiting.toRungName));
-    // Graded again: a paid fee whose promotion couldn't apply is settled (Decision 414 item 1).
+    // Graded again: a paid fee whose promotion couldn't apply is cancelled; its
+    // money becomes credit toward this grade (Decisions 414 item 1, 415 item 1).
     await tx.promotionFeeRequest.updateMany({
       where: { studentId, disciplineId, status: 'ACCEPTED', promotionBlockedAt: { not: null }, promotionEventId: null },
-      data: { status: 'PAID', paidAt: new Date() },
+      data: { status: 'CANCELLED', cancelledAt: new Date(), closedById: callerId },
     });
     const toDecide = open.find((r) => isOpenToDecide(r) && r.expectedCurrentRungId === fromRungId && r.toRungId === to.id);
     if (toDecide) {

@@ -1791,7 +1791,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         promoteTo: "Zu {rank} befördern",
         dontPromote: "Nicht befördern",
         blocked: "Bezahlt — Beförderung nicht anwendbar",
-        blockedText: "Die Gebühr von {name} für {rank} ist bezahlt, aber die Beförderung kann nicht angewendet werden: Rang oder Gürtelfolge haben sich seit der Graduierung geändert. Storniere die Gebühr, um das Bezahlte als Guthaben zurückzugeben, oder graduiere {name} erneut (die Gebühr bleibt dann bezahlt).",
+        blockedText: "Die Gebühr von {name} für {rank} ist bezahlt, aber die Beförderung kann nicht angewendet werden: Rang oder Gürtelfolge haben sich seit der Graduierung geändert. Storniere die Gebühr, um das Bezahlte als Guthaben zurückzugeben, oder graduiere {name} erneut: Die Gebühr wird dann storniert und das Bezahlte als Guthaben auf die neue Graduierung angerechnet.",
         priceFor: "Beförderungsgebühr für {rank}: {amount}",
       },
       decide: {

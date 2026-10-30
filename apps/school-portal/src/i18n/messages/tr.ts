@@ -1791,7 +1791,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         promoteTo: "{rank} derecesine terfi ettir",
         dontPromote: "Terfi ettirme",
         blocked: "Ödendi — terfi uygulanamıyor",
-        blockedText: "{name} adlı öğrencinin {rank} ücreti ödendi, ancak terfi uygulanamıyor: derecesi ya da kuşak sıralaması terfiden bu yana değişti. Ödeneni kredi olarak geri vermek için ücreti iptal edin ya da {name} adlı öğrenciyi yeniden terfi ettirin (ücret ödenmiş olarak kalır).",
+        blockedText: "{name} adlı öğrencinin {rank} ücreti ödendi, ancak terfi artık uygulanamıyor: derecesi ya da kuşak sıralaması terfiden bu yana değişti. Ödeneni kredi olarak geri vermek için ücreti iptal edin ya da {name} adlı öğrenciyi yeniden terfi ettirin: ücret iptal edilir ve ödenen tutar kredi olarak yeni terfiye sayılır.",
         priceFor: "{rank} terfi ücreti: {amount}",
       },
       decide: {
