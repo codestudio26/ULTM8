@@ -12,9 +12,9 @@ import {
   UpdatePromotionFeeSettingsDto,
 } from './dto/promotion-fee.dto';
 
-/** Promotion fee (Decisions 287, 297, 300, 307, 313). Paying an accepted fee
- * belongs to staff-created charges (Decision 303), not built: there is no
- * endpoint for it here. */
+/** Promotion fee (Decisions 287, 297, 300, 307, 313). Accepting makes a
+ * charge for the fee (backlog §3.6 step 6; Decision 303 item 5), paid through
+ * the charges endpoints like any charge; there is no "mark paid" endpoint. */
 @ApiTags('ranks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -52,7 +52,8 @@ export class PromotionFeeController {
     return this.promotionFeeService.listForStudent(user.sub, id);
   }
 
-  /** The student (or their Guardian) accepts the fee. */
+  /** The student (or their Guardian) accepts the fee: its charge is made on
+   * the student's balance (and paid at once by any credit). */
   @ApiOkResponse({ type: PromotionFeeRequestResponseDto })
   @Post('promotion-fee-requests/:id/accept')
   accept(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
@@ -67,7 +68,7 @@ export class PromotionFeeController {
   }
 
   /** The owner waives the fee: a waiting promotion applies now; a declined
-   * one becomes "to decide". */
+   * one becomes "to decide". Its open charge is cancelled. */
   @ApiOkResponse({ type: PromotionFeeRequestResponseDto })
   @Post('promotion-fee-requests/:id/waive')
   waive(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
@@ -75,7 +76,7 @@ export class PromotionFeeController {
   }
 
   /** The owner cancels the fee: a promotion that never applied becomes
-   * "to decide". */
+   * "to decide". Its open charge is cancelled. */
   @ApiOkResponse({ type: PromotionFeeRequestResponseDto })
   @Post('promotion-fee-requests/:id/cancel')
   cancel(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {

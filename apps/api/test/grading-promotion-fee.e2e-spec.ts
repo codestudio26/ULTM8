@@ -168,6 +168,10 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
 
   afterAll(async () => {
     const schools = [school.id, schoolB.id];
+    // Accepting a fee makes its charge (backlog §3.6 step 6): the ledger first.
+    await superuser.chargeAllocation.deleteMany({ where: { schoolId: { in: schools } } });
+    await superuser.balanceEntry.deleteMany({ where: { schoolId: { in: schools } } });
+    await superuser.charge.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.promotionFeeRequest.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schools } } });
