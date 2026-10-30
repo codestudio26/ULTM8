@@ -769,6 +769,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },
       durationDays: { other: "{count}日間" },
       purchaseError: "購入を完了できませんでした。もう一度お試しください。",
@@ -880,6 +881,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "支払い履歴を読み込めませんでした。もう一度お試しください。",
     },
     row: {
+      surchargeLine: "{price} + カード手数料 {surcharge}",
       loading: "読み込み中…",
       viewReceipt: "領収書を表示",
       noReceipt: "この支払いの領収書はありません。",

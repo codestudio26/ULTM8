@@ -327,6 +327,7 @@ export function TransactionsPage() {
           t('transactions.columnPlan'),
           t('transactions.columnKind'),
           t('transactions.columnAmount'),
+          t('transactions.columnSurcharge'),
           t('transactions.columnCurrency'),
           t('transactions.columnStatus'),
           t('transactions.columnMethod'),
@@ -462,7 +463,20 @@ export function TransactionsPage() {
               // a late-cancellation fee says so (Decision 346).
               { key: 'plan', header: t('transactions.columnPlan'), render: (row) => itemLabel(row) },
               { key: 'student', header: t('transactions.columnStudent'), render: (row) => studentName(row) },
-              { key: 'amount', header: t('transactions.columnAmount'), render: (row) => formatMoney(row.amount, row.currency) },
+              {
+                key: 'amount',
+                header: t('transactions.columnAmount'),
+                // Decision 406: a card surcharge is its own line under the plan's price.
+                render: (row) =>
+                  row.surchargeAmount > 0 ? (
+                    <div>
+                      <div>{formatMoney(row.amount, row.currency)}</div>
+                      <div className="ultm8-field__hint">{t('transactions.surchargeLine', { amount: formatMoney(row.surchargeAmount, row.currency) })}</div>
+                    </div>
+                  ) : (
+                    formatMoney(row.amount, row.currency)
+                  ),
+              },
               { key: 'status', header: t('transactions.columnStatus'), render: (row) => paymentStatusBadge(row.status) },
               {
                 key: 'paymentMethod',

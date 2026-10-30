@@ -62,7 +62,11 @@ export class AcademyMembershipPlanDto extends PickType(MembershipPlanResponseDto
   'expiryDurationDays',
   'classesIncluded',
   'visible',
-] as const) {}
+] as const) {
+  /** Decision 406: shown before the member pays. */
+  @ApiProperty({ description: "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass)." })
+  cardSurchargeAmount!: number;
+}
 
 export class AcademyClassDto extends PickType(ClassResponseDto, [
   'id',

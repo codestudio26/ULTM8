@@ -768,6 +768,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },
       durationDays: { other: "{count} วัน" },
       purchaseError: "ไม่สามารถซื้อรายการนี้ให้เสร็จสมบูรณ์ได้ โปรดลองอีกครั้ง",
@@ -879,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "ไม่สามารถโหลดประวัติการชำระเงินของคุณได้ โปรดลองอีกครั้ง",
     },
     row: {
+      surchargeLine: "{price} + ค่าธรรมเนียมบัตร {surcharge}",
       loading: "กำลังโหลด…",
       viewReceipt: "ดูใบเสร็จ",
       noReceipt: "ไม่มีใบเสร็จสำหรับการชำระเงินนี้",

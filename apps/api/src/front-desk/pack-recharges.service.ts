@@ -6,6 +6,7 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { QrTokenService } from '../attendance/qr-token.service';
 import { assertAtKioskBranch, frontDeskLookupOwner, FrontDeskCheckInService, KIOSK_BOOK_FIRST } from '../attendance/front-desk-check-in.service';
 import { isMembershipLive } from '../memberships/membership-creation-guard';
+import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 import { CreatePackRechargeDto, MyPackRechargeDto, PackRechargeDto, PackRechargeStatusDto } from './dto/pack-recharge.dto';
 
 type Kiosk = { sessionId: string; branchId: string | null };
@@ -125,13 +126,15 @@ export class PackRechargesService {
     for (const r of rows) {
       if (r.membershipPlan.archivedAt || (await this.isPaid(r))) continue;
       const { archivedAt: _archived, ...plan } = r.membershipPlan;
+      // Decision 406: the card surcharge, shown before the member pays.
+      const cardSurchargeAmount = planCardSurcharge(plan, await readCardSurchargeBps(this.prismaJobs, r.schoolId));
       items.push({
         id: r.id,
         schoolId: r.schoolId,
         schoolName: r.school.name,
         studentId: r.studentId,
         childFirstName: r.studentId === callerId ? null : r.student.firstName,
-        plan,
+        plan: { ...plan, cardSurchargeAmount },
         expiresAt: r.expiresAt,
       });
     }

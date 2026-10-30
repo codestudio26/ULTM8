@@ -32,6 +32,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   The Students list shows a blue **Frozen** badge and a **Frozen only** filter.
   Class packs can't be frozen. **Needs a database migration**
   (`20270106000000_membership_freeze`).
+- **Card surcharge** (backlog 3.8; Decision 406) — off everywhere by default.
+  Platform Admin has a new **Card Surcharge** page listing the countries where
+  a School may add a surcharge to members' card payments; the list starts
+  empty and a country is added only after legal review (Billing & Payments
+  Ops or Full Admins; every change is audit-logged). Where the School's
+  country is listed, the owner turns it on in School settings with a % up to
+  3% and must tick "I confirm surcharges are legal where my School operates".
+  Members see it on the plan before paying, it is its own line on the hosted
+  checkout, the Transactions page and the student app's payment history, and
+  it is never added to cash, bank transfer or Subscription payments.
+  Removing a country stops it at once (the School's % is kept). **Needs a
+  database migration** (`20270105000000_card_surcharge`).
 - **Franchise fee paid by card** (backlog 3.22; Decisions 352, 407) — the
   Franchise page has a **Connect Stripe** card showing Connected, Action needed
   or Not connected; it starts Stripe's own onboarding (the country of the

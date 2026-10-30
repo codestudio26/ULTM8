@@ -16,6 +16,8 @@ export const transactions = {
   columnStatus: 'Status',
   columnMethod: 'Method',
   columnRefunded: 'Refunded',
+  columnSurcharge: "Card surcharge",
+  surchargeLine: "+ {amount} card surcharge",
   columnDisputed: 'Disputed',
   columnReceipt: 'Receipt',
   receipt: 'Receipt',

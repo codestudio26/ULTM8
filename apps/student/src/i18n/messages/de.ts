@@ -775,6 +775,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "+ {amount} Kartenzuschlag bei Kartenzahlung",
       classesIncluded: { one: "{count} Kurs", other: "{count} Kurse" },
       durationDays: { one: "{count} Tag", other: "{count} Tage" },
       purchaseError: "Dieser Kauf konnte nicht abgeschlossen werden — bitte versuche es erneut.",
@@ -887,6 +888,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Dein Zahlungsverlauf konnte nicht geladen werden — bitte versuche es erneut.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} Kartenzuschlag",
       loading: "Wird geladen…",
       viewReceipt: "Beleg ansehen",
       noReceipt: "Für diese Zahlung ist kein Beleg verfügbar.",

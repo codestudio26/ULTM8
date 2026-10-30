@@ -296,6 +296,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       checkInNote: "To, czy zamrożeni członkowie mogą się meldować, ustawiasz w zasadach meldowania.",
       checkInLink: "Otwórz zasady meldowania",
     },
+    cardSurcharge: {
+      title: "Dopłata za kartę",
+      subtitle: "Dodaj dopłatę do kwoty, którą członkowie płacą kartą w aplikacji, aby pokryć opłaty za kartę. Widzą ją przed zapłatą i jako osobną pozycję na paragonie. Nigdy nie jest doliczana do płatności gotówką, przelewem ani do subskrypcji.",
+      enabled: "Dodaj dopłatę za kartę",
+      percent: "Dopłata (%)",
+      percentHint: "Do 3%, np. 2,5.",
+      legalConfirm: "Potwierdzam, że dopłaty są legalne tam, gdzie działa moja szkoła",
+      invalidPercent: "Wpisz dopłatę powyżej 0% i maksymalnie 3%, z co najwyżej dwoma miejscami po przecinku.",
+      confirmRequired: "Zaznacz pole, aby potwierdzić, że dopłaty są legalne tam, gdzie działa Twoja szkoła.",
+      notApplying: "Nie jest jeszcze doliczana: Twoja szkoła nie przyjmuje płatności kartą.",
+    },
     heardFrom: {
       title: "Skąd o nas wiesz?",
       subtitle: "Opcje w formularzu zapisu w recepcji. Dopóki ich nie zmienisz, lista startowa wyświetla się w języku każdej osoby.",
@@ -558,6 +569,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Dopłata za kartę",
+    surchargeLine: "+ {amount} dopłaty za kartę",
     title: "Transakcje",
     subtitle: "Wszystkie zrealizowane lub próbowane płatności za plany członkostwa Twojej szkoły.",
     loadFailed: "Nie udało się wczytać transakcji.",

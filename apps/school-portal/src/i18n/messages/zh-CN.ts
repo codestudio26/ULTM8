@@ -287,6 +287,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       checkInNote: "已冻结会员能否签到，在签到规则中设置。",
       checkInLink: "打开签到规则",
     },
+    cardSurcharge: {
+      title: "刷卡附加费",
+      subtitle: "在会员通过 App 刷卡支付的金额上加收附加费，以抵扣刷卡手续费。会员付款前即可看到，收据上也会单独列出一行。现金、银行转账付款以及订阅永远不会加收。",
+      enabled: "加收刷卡附加费",
+      percent: "附加费（%）",
+      percentHint: "最多 3%，例如 2.5。",
+      legalConfirm: "我确认在我的学校经营所在地收取附加费是合法的",
+      invalidPercent: "请输入大于 0%、不超过 3% 的附加费，最多两位小数。",
+      confirmRequired: "请勾选此框，确认在你的学校经营所在地收取附加费是合法的。",
+      notApplying: "尚未加收：你的学校不接受刷卡付款。",
+    },
     heardFrom: {
       title: "你是怎么知道我们的？",
       subtitle: "前台报名表上的选项。在你修改之前，默认列表会以每个人自己的语言显示。",
@@ -549,6 +560,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "刷卡附加费",
+    surchargeLine: "+ {amount} 刷卡附加费",
     title: "交易",
     subtitle: "你学校会员方案的所有已完成或尝试的扣款。",
     loadFailed: "无法加载交易。",

@@ -5,6 +5,7 @@ export const transactions = {
     loadFailed: 'Failed to load your payment history — please try again.',
   },
   row: {
+    surchargeLine: "{price} + {surcharge} card surcharge",
     loading: 'Loading…',
     viewReceipt: 'View receipt',
     noReceipt: 'No receipt is available for this payment.',

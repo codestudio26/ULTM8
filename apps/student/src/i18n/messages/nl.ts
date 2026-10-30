@@ -775,6 +775,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "+ {amount} kaarttoeslag bij betalen met een kaart",
       classesIncluded: { one: "{count} les", other: "{count} lessen" },
       durationDays: { one: "{count} dag", other: "{count} dagen" },
       purchaseError: "Deze aankoop kon niet worden afgerond — probeer het opnieuw.",
@@ -887,6 +888,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Je betaalgeschiedenis kon niet worden geladen — probeer het opnieuw.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} kaarttoeslag",
       loading: "Laden…",
       viewReceipt: "Bon bekijken",
       noReceipt: "Er is geen bon beschikbaar voor deze betaling.",

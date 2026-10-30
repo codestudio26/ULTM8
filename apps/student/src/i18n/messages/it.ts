@@ -792,6 +792,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "+ {amount} di sovrapprezzo se paghi con carta",
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
       durationDays: { one: "{count} giorno", many: "{count} giorni", other: "{count} giorni" },
       purchaseError: "Impossibile completare questo acquisto — riprova.",
@@ -905,6 +906,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Impossibile caricare il tuo storico pagamenti — riprova.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} di sovrapprezzo carta",
       loading: "Caricamento…",
       viewReceipt: "Vedi ricevuta",
       noReceipt: "Nessuna ricevuta disponibile per questo pagamento.",

@@ -1012,6 +1012,18 @@ model School {
   /// giving the role at once.
   staffMustAcceptFirst Boolean @default(false)
 
+  /// Decision 406: a card surcharge added on top of a member's card payment.
+  /// Off by default. It applies only while the School's country
+  /// (addressCountry) is on CardSurchargeCountry and the School takes card
+  /// payments; when the country is taken off the list these stay as they were
+  /// and are simply not applied. Basis points: 250 = 2.5%, at most 300.
+  cardSurchargeEnabled       Boolean   @default(false)
+  cardSurchargeBps           Int       @default(0)
+  /// When, and by whom, the owner last ticked "I confirm surcharges are legal
+  /// where my School operates" while switching it on.
+  cardSurchargeConfirmedAt   DateTime?
+  cardSurchargeConfirmedById String?
+
   defaultLanguage String?
   defaultCurrency String?
   /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
@@ -2346,6 +2358,12 @@ model Transaction {
   /// interim. SUBSCRIPTION-type purchases only; not unique itself (unlike
   /// Membership.stripeSubscriptionId) since nothing looks a Transaction up by it.
   stripeSubscriptionId String?
+
+  /// Decision 406: the card surcharge charged on top of `amount`, in the same
+  /// minor units; 0 when none. The member paid amount + surchargeAmount.
+  /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
+  /// reports aren't changed by the surcharge.
+  surchargeAmount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5138,4 +5156,15 @@ model ChildInvite {
 
   @@index([guardianId, status])
   @@index([schoolId, status])
+}
+
+/// Decision 406: the countries where a School may add a card surcharge. Starts
+/// empty; Platform Admin (Billing & Payments Ops or Full Admin) adds a country
+/// only after legal review (consumer card surcharges are illegal in the UK and
+/// the EU). Global, no tenant column, so no RLS: the API reads it, only the
+/// Platform Admin connection writes it, and every change is audit-logged.
+model CardSurchargeCountry {
+  /// ISO 3166-1 alpha-2, in capitals.
+  countryCode String   @id
+  createdAt   DateTime @default(now())
 }

@@ -802,6 +802,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {
         one: "{count} занятие",
         few: "{count} занятия",
@@ -926,6 +927,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Не удалось загрузить историю платежей — попробуйте ещё раз.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} надбавка за оплату картой",
       loading: "Загрузка…",
       viewReceipt: "Посмотреть чек",
       noReceipt: "Для этого платежа чек недоступен.",

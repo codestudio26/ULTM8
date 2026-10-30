@@ -290,6 +290,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       checkInNote: "Of bevroren leden mogen inchecken, staat in de incheckregels.",
       checkInLink: "Incheckregels openen",
     },
+    cardSurcharge: {
+      title: "Kaarttoeslag",
+      subtitle: "Tel een toeslag op bij wat leden in de app met een kaart betalen, om de kaartkosten te dekken. Ze zien die vóór het betalen en als eigen regel op de bon. Hij wordt nooit opgeteld bij contante betalingen, overboekingen of abonnementen.",
+      enabled: "Een kaarttoeslag toevoegen",
+      percent: "Toeslag (%)",
+      percentHint: "Tot 3%, bijv. 2,5.",
+      legalConfirm: "Ik bevestig dat toeslagen wettelijk zijn toegestaan waar mijn school actief is",
+      invalidPercent: "Vul een toeslag in van meer dan 0% en tot 3%, met hooguit twee decimalen.",
+      confirmRequired: "Vink het vakje aan om te bevestigen dat toeslagen zijn toegestaan waar je school actief is.",
+      notApplying: "Hij wordt nog niet toegevoegd: je school neemt geen kaartbetalingen aan.",
+    },
     heardFrom: {
       title: "Hoe heb je over ons gehoord?",
       subtitle: "De keuzes op het aanmeldformulier bij de balie. Zolang je ze niet wijzigt, staat de startlijst in de taal van elke persoon.",
@@ -552,6 +563,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Kaarttoeslag",
+    surchargeLine: "+ {amount} kaarttoeslag",
     title: "Transacties",
     subtitle: "Alle voltooide of geprobeerde betalingen voor de lidmaatschappen van je school.",
     loadFailed: "Transacties konden niet worden geladen.",

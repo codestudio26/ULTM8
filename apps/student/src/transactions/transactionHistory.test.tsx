@@ -92,6 +92,22 @@ describe('TransactionHistoryScreen', () => {
     expect(getByText('SUCCESSFUL')).toBeTruthy();
   });
 
+  it('shows a card surcharge as its own line, with the total paid (Decision 406)', async () => {
+    mocked(transactionQueries.useMyTransactions).mockReturnValue(
+      pagedQuery([
+        {
+          id: 'tx1', schoolId: 's1', studentId: 'me', paymentAccountId: 'pa1', membershipPlanId: 'mp1', membershipPlanTitle: '5-Class Pack',
+          membershipId: 'm1', billingDate: '2026-10-01T12:00:00.000Z', amount: 5000, surchargeAmount: 125, currency: 'gbp',
+          status: 'SUCCESSFUL', paymentMethod: 'STRIPE', disputedAmount: null, refundedAmount: null,
+          createdAt: '2026-10-01T12:00:00.000Z', updatedAt: '2026-10-01T12:00:00.000Z',
+        },
+      ]),
+    );
+    const { getByText } = await render(<TransactionHistoryScreen />);
+    expect(getByText('£51.25')).toBeTruthy();
+    expect(getByText('£50.00 + £1.25 card surcharge')).toBeTruthy();
+  });
+
   it('labels a renewal and a late-cancellation fee (Decision 346)', async () => {
     const base = {
       schoolId: 's1',
