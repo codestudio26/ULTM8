@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Billing reports: total revenue, charges and memberships** (Decision 414
+  item 3) — the Overview now shows revenue in two parts and their total, for
+  the period and for each month: **Charges** (payments toward charges less
+  money given back, as before) and **Memberships** (plans bought in the app or
+  sold at the desk, and Subscription renewals: Successful payments by billing
+  date, less what was refunded on them), then **Total revenue**. Payments
+  toward charges are counted once, in Charges. Late-cancellation and freeze
+  fees are in neither part. Same people and scope as before (the owner the
+  whole School; Branch Staff, when the School lets them take payments, their
+  own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
+  gains `memberships` and `total`, and each month `memberships` and `total`.
+  15 languages.
 - **Charges, step 4: refunds, credit, billing reports and payment notices**
   (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
   owner refunds a payment toward charges from the student's Payments card,
