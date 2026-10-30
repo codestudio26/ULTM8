@@ -94,6 +94,9 @@ export const WAIVER_RENEWAL_SWEEP_QUEUE = 'waiver-renewal-sweep';
 // charges to their saved card, for those who turned on "Pay charges
 // automatically with my saved card".
 export const CHARGE_AUTO_PAY_QUEUE = 'charge-auto-pay';
+// Backlog §3.7 (Decision 413): the daily run that adds a late fee to the
+// balance for each payment still unpaid after the School's grace days.
+export const LATE_FEE_QUEUE = 'late-fee';
 // Backlog §3.6 step 3 (Decision 412): the daily run that makes each recurring
 // charge's occurrences, half an hour before charge-auto-pay.
 export const CHARGE_RECURRING_QUEUE = 'charge-recurring';

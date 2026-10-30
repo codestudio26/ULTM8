@@ -232,6 +232,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled.
   'Bookings cancelled': 'freezeBookingsCancelledTitle',
   'Automatic payment failed': 'chargeAutoPayFailedTitle',
+  // Decision 413 — late fees.
+  'Late fee added': 'lateFeeAddedTitle',
+  'Late fee waived': 'lateFeeWaivedTitle',
   // Decision 412 — apps/api/src/charges/recurring-charges.service.ts.
   'Recurring charge set up': 'recurringChargeSetUpTitle',
   'Recurring charge stopped': 'recurringChargeStoppedTitle',
@@ -425,6 +428,20 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^We couldn't charge your saved card for invoice (#\d+) \((.+), ([\d.]+) ([A-Z]{3})\)\. Pay it in the app or at the front desk\.$/s,
     (m, { t, locale }) => n(t, 'chargeAutoPayFailedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale) }),
   ],
+  // Decision 413 — late fees (apps/api/src/late-fees/late-fee-notices.ts).
+  [
+    /^A late fee of ([\d.]+) ([A-Z]{3}) was added to your balance because invoice (#\d+) \((.+)\) is overdue\. Pay it in the app or at the front desk\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeAddedChargeBody', { fee: formatAmount(m[1], m[2], locale), invoice: m[3], description: m[4] }),
+  ],
+  [
+    /^A late fee of ([\d.]+) ([A-Z]{3}) was added to your balance because your (.+) membership payment of ([\d.]+) ([A-Z]{3}) is overdue\. Pay it in the app or at the front desk\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeAddedRenewalBody', { fee: formatAmount(m[1], m[2], locale), plan: m[3], amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  [
+    /^Your late fee of ([\d.]+) ([A-Z]{3}) was waived\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeWaivedCreditBody', { fee: formatAmount(m[1], m[2], locale), paid: formatAmount(m[3], m[4], locale) }),
+  ],
+  [/^Your late fee of ([\d.]+) ([A-Z]{3}) was waived\. Nothing to pay\.$/s, (m, { t, locale }) => n(t, 'lateFeeWaivedBody', { fee: formatAmount(m[1], m[2], locale) })],
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
     (m, { t, locale }) =>

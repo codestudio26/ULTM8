@@ -1025,5 +1025,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Ödeme: {invoice} {description}",
       itemBalance: "Bakiyenize ödeme",
     },
+    lateFee: {
+      label: "Gecikme ücreti",
+      forInvoice: "{invoice} numaralı fatura ({description}) için, son tarih {date}",
+      forRenewal: "{plan} üyelik ödemeniz ({amount}) için, son tarih {date}",
+      waivedOn: "{date} tarihinde silindi. Ödenecek bir şey yok.",
+    },
   },
 };

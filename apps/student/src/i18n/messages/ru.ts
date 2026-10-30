@@ -1064,5 +1064,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Оплата: {invoice} {description}",
       itemBalance: "Оплата на ваш баланс",
     },
+    lateFee: {
+      label: "Пеня за просрочку",
+      forInvoice: "За счёт {invoice} ({description}), срок {date}",
+      forRenewal: "За платёж по вашему абонементу {plan} на сумму {amount}, срок {date}",
+      waivedOn: "Списана {date}. Платить ничего не нужно.",
+    },
   },
 };

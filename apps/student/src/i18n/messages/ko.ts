@@ -1018,5 +1018,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "결제: {invoice} {description}",
       itemBalance: "잔액 결제",
     },
+    lateFee: {
+      label: "연체료",
+      forInvoice: "청구서 {invoice}({description}), 기한 {date}",
+      forRenewal: "{plan} 회원권 결제 {amount}, 기한 {date}",
+      waivedOn: "{date}에 면제되었습니다. 결제할 금액이 없습니다.",
+    },
   },
 };

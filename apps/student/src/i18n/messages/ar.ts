@@ -1088,5 +1088,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "دفعة: {invoice} {description}",
       itemBalance: "دفعة إلى رصيدك",
     },
+    lateFee: {
+      label: "رسوم تأخير",
+      forInvoice: "عن الفاتورة {invoice} ({description})، المستحقة في {date}",
+      forRenewal: "عن دفعة اشتراك {plan} بقيمة {amount}، المستحقة في {date}",
+      waivedOn: "تم الإعفاء منها في {date}. لا شيء للدفع.",
+    },
   },
 };

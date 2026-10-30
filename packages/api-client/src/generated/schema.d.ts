@@ -6180,6 +6180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/charges/{chargeId}/waive-late-fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_waiveLateFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/{studentId}/charge-payments": {
         parameters: {
             query?: never;
@@ -6333,6 +6349,22 @@ export interface paths {
         };
         get: operations["RecurringChargesController_listForMember"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/late-fees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["LateFeesController_get"];
+        put: operations["LateFeesController_update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -11660,6 +11692,34 @@ export interface components {
             /** @description Decision 406: the card surcharge on payableAmount when paid by card (0 = none). Member's view only; 0 for staff. */
             cardSurchargeAmount: number;
         };
+        LateFeeDetailsDto: {
+            /**
+             * @description CHARGE: an overdue charge. RENEWAL: a card membership renewal Stripe could not collect.
+             * @enum {string}
+             */
+            forType: "CHARGE" | "RENEWAL";
+            /**
+             * @description CHARGE only.
+             * @example #0000003
+             */
+            forInvoiceLabel?: string | null;
+            /** @description CHARGE only: the overdue charge's description. */
+            forDescription?: string | null;
+            /** @description RENEWAL only: the membership plan's title. */
+            forPlanTitle?: string | null;
+            /**
+             * @description The overdue payment's due day (a renewal's invoice date, in the School's time zone).
+             * @example 2026-11-01
+             */
+            forDueDate: string;
+            /** @description What was still owed on it when the late fee was added (minor units). */
+            overdueAmount: number;
+            overdueCurrency: string;
+            /** @description The % used, in hundredths of a percent; null for a fixed fee. */
+            percentBps?: number | null;
+            /** @description Staff waived it (it is then Cancelled). */
+            waived: boolean;
+        };
         ChargeResponseDto: {
             id: string;
             schoolId: string;
@@ -11705,6 +11765,8 @@ export interface components {
             cancelReason?: string | null;
             /** @description Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff. */
             cardSurchargeAmount: number;
+            /** @description Decision 413: set when this charge is a late fee, with what it is for. */
+            lateFee?: components["schemas"]["LateFeeDetailsDto"] | null;
         };
         /** @enum {string} */
         ChargePaymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL" | "STRIPE";
@@ -11995,6 +12057,42 @@ export interface components {
         };
         MemberRecurringChargesResponseDto: {
             items: components["schemas"]["MemberRecurringChargeDto"][];
+        };
+        LateFeeSettingsDto: {
+            /** @description Off by default. */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "FIXED" | "PERCENT";
+            /** @description FIXED: the fee in minor units of the School's currency. Kept while off. */
+            fixedAmount?: number | null;
+            /** @description PERCENT: hundredths of a percent of what is still owed (250 = 2.5%), 1 to 10000. Kept while off. */
+            percentBps?: number | null;
+            /** @description Days after the due date before a late fee is added, 0 to 30. Default 3. */
+            graceDays: number;
+            /** @description The School's currency, for a fixed fee. Null until it is set on the School page. */
+            currency?: string | null;
+            /**
+             * Format: date-time
+             * @description When the owner last confirmed late fees are legal where the School operates.
+             */
+            confirmedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When late fees were last switched on. Only a payment whose grace period ends on or after that day gets a late fee.
+             */
+            enabledAt?: string | null;
+        };
+        UpdateLateFeeSettingsDto: {
+            enabled: boolean;
+            /** @enum {string} */
+            type: "FIXED" | "PERCENT";
+            /** @description FIXED: minor units of the School's currency, more than 0. Required to switch a fixed fee on. */
+            fixedAmount?: number | null;
+            /** @description PERCENT: hundredths of a percent (250 = 2.5%), 1 to 10000. Required to switch a % fee on. */
+            percentBps?: number | null;
+            graceDays: number;
+            /** @description "I confirm late fees are legal where my School operates." Required (true) to switch late fees on, or to save them while on. */
+            legalConfirmed?: boolean;
         };
     };
     responses: never;
@@ -22325,6 +22423,28 @@ export interface operations {
             };
         };
     };
+    ChargesController_waiveLateFee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                chargeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeResponseDto"];
+                };
+            };
+        };
+    };
     ChargesController_recordPayment: {
         parameters: {
             query?: never;
@@ -22581,6 +22701,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberRecurringChargesResponseDto"];
+                };
+            };
+        };
+    };
+    LateFeesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LateFeeSettingsDto"];
+                };
+            };
+        };
+    };
+    LateFeesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLateFeeSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LateFeeSettingsDto"];
                 };
             };
         };

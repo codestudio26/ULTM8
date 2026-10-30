@@ -1025,5 +1025,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Pagamento: {invoice} {description}",
       itemBalance: "Pagamento no seu saldo",
     },
+    lateFee: {
+      label: "Multa por atraso",
+      forInvoice: "Referente à fatura {invoice} ({description}), vencida em {date}",
+      forRenewal: "Referente ao pagamento do seu plano {plan} de {amount}, vencido em {date}",
+      waivedOn: "Dispensada em {date}. Nada a pagar.",
+    },
   },
 };

@@ -199,6 +199,13 @@ export const server = {
     freezeBookingsCancelledBody: "Your {plan} membership is frozen from {start} and you're back on {back}, so your bookings in between were cancelled: {list}. You can book again once the freeze ends.",
     chargeAutoPayFailedTitle: "Automatic payment failed",
     chargeAutoPayFailedBody: "We couldn't charge your saved card for invoice {invoice} ({description}, {amount}). Pay it in the app or at the front desk.",
+    // Decision 413 — late fees (jobs/late-fee.processor.ts, ChargesService waive).
+    lateFeeAddedTitle: "Late fee added",
+    lateFeeAddedChargeBody: "A late fee of {fee} was added to your balance because invoice {invoice} ({description}) is overdue. Pay it in the app or at the front desk.",
+    lateFeeAddedRenewalBody: "A late fee of {fee} was added to your balance because your {plan} membership payment of {amount} is overdue. Pay it in the app or at the front desk.",
+    lateFeeWaivedTitle: "Late fee waived",
+    lateFeeWaivedBody: "Your late fee of {fee} was waived. Nothing to pay.",
+    lateFeeWaivedCreditBody: "Your late fee of {fee} was waived. Nothing to pay. The {paid} already paid is now credit on your balance.",
     // Decision 412 — apps/api/src/charges/recurring-charges.service.ts.
     recurringChargeSetUpTitle: "Recurring charge set up",
     recurringChargeSetUpWeeklyBody: "A recurring charge was set up: {description}, {amount} every week, first on {first}.",

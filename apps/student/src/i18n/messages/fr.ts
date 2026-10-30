@@ -1043,5 +1043,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Paiement : {invoice} {description}",
       itemBalance: "Paiement sur votre solde",
     },
+    lateFee: {
+      label: "Frais de retard",
+      forInvoice: "Pour la facture {invoice} ({description}), échue le {date}",
+      forRenewal: "Pour le paiement de votre abonnement {plan} de {amount}, échu le {date}",
+      waivedOn: "Annulés le {date}. Rien à payer.",
+    },
   },
 };

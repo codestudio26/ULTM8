@@ -27,6 +27,7 @@ import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migrati
 import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiver-renewal-sweep.processor';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
+import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 
 /**
@@ -171,6 +172,10 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
  * PaymentsModule import; its ledger writes are the plain functions in
  * charges/charge-ledger.ts, so no ChargesModule import.
  *
+ * Backlog §3.7 adds LateFeeProcessor/Scheduler — a daily run (7am UTC, after
+ * charge-auto-pay) adding one late fee to the member's balance for each
+ * payment still unpaid after the School's grace days (Decision 413). Plain
+ * ledger functions and the notification queue only; no new module import.
  * Backlog §3.6 step 3 adds ChargeRecurringProcessor/Scheduler — a daily run
  * (5:30am UTC, before charge-auto-pay) making recurring charges' occurrences
  * (Decision 412), with the plain functions in charges/recurring-occurrences.ts.
@@ -212,6 +217,8 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
     WaiverRenewalSweepScheduler,
     ChargeAutoPayProcessor,
     ChargeAutoPayScheduler,
+    LateFeeProcessor,
+    LateFeeScheduler,
     ChargeRecurringProcessor,
     ChargeRecurringScheduler,
   ],

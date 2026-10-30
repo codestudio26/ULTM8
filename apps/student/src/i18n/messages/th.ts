@@ -1017,5 +1017,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "ชำระเงิน: {invoice} {description}",
       itemBalance: "ชำระเข้ายอดคงเหลือ",
     },
+    lateFee: {
+      label: "ค่าปรับล่าช้า",
+      forInvoice: "สำหรับใบแจ้งหนี้ {invoice} ({description}) ครบกำหนด {date}",
+      forRenewal: "สำหรับค่าสมาชิก {plan} จำนวน {amount} ครบกำหนด {date}",
+      waivedOn: "ได้รับการยกเว้นเมื่อ {date} ไม่ต้องชำระ",
+    },
   },
 };
