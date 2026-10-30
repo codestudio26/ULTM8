@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "Annulla",
     save: "Salva",
     none: "—",
+    currencyFirst: {
+      title: "Imposta prima la valuta della tua scuola.",
+      body: "Non è possibile salvare prezzi finché la scuola non ha una valuta.",
+      link: "Imposta la valuta nella pagina della scuola",
+    },
   },
   layout: {
     trial: {

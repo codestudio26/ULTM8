@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Ce cours est déjà terminé. Choisis une heure de fin dans le futur.",
     schoolCurrencyChange: "Formules facturées dans la devise de l'école : {count}. Elles sont désormais facturées en {currency}, avec les mêmes montants.",
     schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Définissez la devise de votre école sur la page de l'école avant de fixer des prix.",
   },
   errors: {
     beltInHistoryDelete: "Cette ceinture figure dans l’historique de grades des élèves, elle ne peut donc pas être supprimée.",

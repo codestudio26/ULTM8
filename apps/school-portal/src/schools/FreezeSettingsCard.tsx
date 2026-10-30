@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { MoneyField } from '../lib/MoneyField';
 import { useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 /**
  * Decision 404: freezing memberships. The owner sets the most days a
@@ -65,6 +66,8 @@ export function FreezeSettingsCard({ schoolId, school }: { schoolId: string; sch
             }}
           />
         </Field>
+        {/* Decision 414 item 6: no fee until the School's currency is set. */}
+        {school.defaultCurrency ? null : <CurrencyFirstNotice />}
         <Field
           label={t('schools.freezing.feeLabel')}
           htmlFor="freeze-fee"
@@ -73,6 +76,7 @@ export function FreezeSettingsCard({ schoolId, school }: { schoolId: string; sch
         >
           <MoneyField
             id="freeze-fee"
+            disabled={!school.defaultCurrency}
             value={fee.minorUnits}
             currency={school.defaultCurrency}
             onChange={(minorUnits, valid) => {

@@ -264,7 +264,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       try {
         const res = await createCharge(student.id, { description: 'Belt', amount: 5000 });
         expect(res.status).toBe(400);
-        expect(res.body.error.code).toBe('CHARGE_NO_CURRENCY');
+        expect(res.body.error.code).toBe('SCHOOL_CURRENCY_REQUIRED'); // Decision 414 item 6
       } finally {
         await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'BRL' } });
       }

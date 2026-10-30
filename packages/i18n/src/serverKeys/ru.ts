@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Это занятие уже закончилось. Выберите время окончания в будущем.",
     schoolCurrencyChange: "Тарифы, оплачиваемые в валюте школы: {count}. Теперь они оплачиваются в {currency}, с теми же суммами.",
     schoolCurrencyInUse: "Тарифы, оплачиваемые в валюте школы: {count}. Задайте этим тарифам свою валюту, прежде чем очищать её.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Укажите валюту школы на странице школы, прежде чем задавать цены.",
   },
   errors: {
     beltInHistoryDelete: "Этот пояс есть в истории аттестаций учеников, поэтому его нельзя удалить.",

@@ -184,8 +184,8 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
       paymentIntents: { create: intentCreate },
     } as never);
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Freeze School' } });
-    otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Freeze School' } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Freeze School', defaultCurrency: 'GBP' } });
+    otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Freeze School', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id, otherSchool.id);
     await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
@@ -738,7 +738,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
     const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
 
     it("staff with it act for their own branches' students only; the School's freeze settings stay the owner's; turning it on is logged", async () => {
-      const branched = await superuser.school.create({ data: { id: randomUUID(), name: 'Branched Freeze School' } });
+      const branched = await superuser.school.create({ data: { id: randomUUID(), name: 'Branched Freeze School', defaultCurrency: 'GBP' } });
       schoolIds.push(branched.id);
       const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: branched.id, name: 'A' } });
       const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: branched.id, name: 'B' } });

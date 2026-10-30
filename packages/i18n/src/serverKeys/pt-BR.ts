@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Esta aula já terminou. Escolha um horário de término no futuro.",
     schoolCurrencyChange: "Planos cobrados na moeda da escola: {count}. A partir de agora eles são cobrados em {currency}, com os mesmos valores.",
     schoolCurrencyInUse: "Planos cobrados na moeda da escola: {count}. Dê a esses planos uma moeda própria antes de limpá-la.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Defina a moeda da sua Escola na página da Escola antes de definir preços.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",

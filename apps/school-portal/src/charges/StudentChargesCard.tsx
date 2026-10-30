@@ -31,6 +31,7 @@ import { useWaiveLateFee } from './lateFeeQueries';
 import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -640,7 +641,8 @@ function CreateChargeModal({
     <Modal title={t('charges.create.title', { name: studentName })} onClose={onClose}>
       <form onSubmit={handleSubmit} data-testid="create-charge-form">
         {error ? <ErrorBanner message={error} /> : null}
-        {!currency ? <ErrorBanner message={t('charges.create.noCurrency')} /> : null}
+        {/* Decision 414 item 6: no price until the School's currency is set. */}
+        {!currency ? <CurrencyFirstNotice /> : null}
         <Field label={t('charges.create.descriptionLabel')} htmlFor="charge-description">
           <TextField
             id="charge-description"
@@ -663,7 +665,7 @@ function CreateChargeModal({
           }
           error={amount.valid ? undefined : t('charges.create.amountInvalid')}
         >
-          <MoneyField id="charge-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
+          <MoneyField id="charge-amount" disabled={!currency} value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
         <Field label={t('charges.create.discountLabel')} htmlFor="charge-discount-type">
           <SelectField
@@ -741,7 +743,7 @@ function RecordPaymentModal({
   const [sendReceipt, setSendReceipt] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currency = target?.currency ?? data.settings.currency;
-  const ready = !!amount.minorUnits && amount.valid;
+  const ready = !!currency && !!amount.minorUnits && amount.valid;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -759,6 +761,7 @@ function RecordPaymentModal({
     <Modal title={t('charges.pay.title', { name: studentName })} onClose={onClose}>
       <form onSubmit={handleSubmit} data-testid="record-charge-payment-form">
         {error ? <ErrorBanner message={error} /> : null}
+        {!currency ? <CurrencyFirstNotice /> : null}
         <Field label={t('charges.pay.towardLabel')} htmlFor="charge-pay-toward">
           <SelectField
             id="charge-pay-toward"

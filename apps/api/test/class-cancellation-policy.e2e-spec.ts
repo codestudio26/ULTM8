@@ -112,7 +112,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     chargeSpy = jest.spyOn(moduleRef.get(PaymentsService), 'chargeOffSession').mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_test_no_show' });
     noShowProcessor = moduleRef.get(BookingNoShowProcessingProcessor);
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Cancellation Policy School' } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Cancellation Policy School', defaultCurrency: 'GBP' } });
     const mkUser = (label: string) =>
       superuser.user.create({
         data: {

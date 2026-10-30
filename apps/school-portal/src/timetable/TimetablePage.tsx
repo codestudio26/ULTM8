@@ -372,6 +372,7 @@ export function TimetablePage() {
         <TimetableSlotFormModal
           title={t('timetable.addSlotTitle')}
           wholeSchool={isOwner}
+          schoolCurrencyMissing={!!school && !school.defaultCurrency}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -388,7 +389,7 @@ export function TimetablePage() {
       ) : null}
 
       {editing && canEdit ? (
-        <EditSlotModal schoolId={schoolId} wholeSchool={isOwner} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
+        <EditSlotModal schoolId={schoolId} wholeSchool={isOwner} schoolCurrencyMissing={!!school && !school.defaultCurrency} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
       ) : null}
 
       {booking ? (
@@ -687,6 +688,7 @@ function MonthGrid({ days, weekStartsOn, onBook }: { days: DayOccurrences[]; wee
 function EditSlotModal({
   schoolId,
   wholeSchool,
+  schoolCurrencyMissing,
   branches,
   instructors,
   disciplines,
@@ -695,6 +697,7 @@ function EditSlotModal({
 }: {
   schoolId: string;
   wholeSchool: boolean;
+  schoolCurrencyMissing: boolean;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
   disciplines: DisciplineResponse[];
@@ -724,6 +727,7 @@ function EditSlotModal({
       <TimetableSlotFormModal
         title={t('timetable.editSlotTitle')}
         wholeSchool={wholeSchool}
+        schoolCurrencyMissing={schoolCurrencyMissing}
         initial={slot}
         branches={branches}
         instructors={instructors}

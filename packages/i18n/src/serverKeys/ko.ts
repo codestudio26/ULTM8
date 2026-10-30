@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "이 수업은 이미 끝났습니다. 미래의 종료 시간을 선택하세요.",
     schoolCurrencyChange: "학교 통화로 청구되는 회원권 플랜: {count}개. 이제부터 같은 금액으로 {currency}로 청구됩니다.",
     schoolCurrencyInUse: "학교 통화로 청구되는 회원권 플랜: {count}개. 통화를 지우기 전에 해당 플랜에 자체 통화를 지정하세요.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "가격을 설정하기 전에 학교 페이지에서 학교 통화를 설정하세요.",
   },
   errors: {
     beltInHistoryDelete: "이 띠는 수련생의 승급 기록에 있어 삭제할 수 없습니다.",

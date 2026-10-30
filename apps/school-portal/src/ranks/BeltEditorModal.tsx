@@ -9,6 +9,7 @@ import { moveItem, useDragReorder } from './dragReorder';
 import type { RankResponse, RankStripeTierInput } from './rankQueries';
 import { formatMoney } from '../lib/money';
 import { useT } from '../i18n/I18nProvider';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 type Holder = { studentId: string; firstName: string; surname: string };
 
@@ -504,8 +505,10 @@ export function BeltEditorModal({
 
             {fee ? (
               <Chapter number="03" title={t('ranks.editor.chapterFee')}>
+                {/* Decision 414 item 6: no price until the School's currency is set. */}
+                {fee.currency ? null : <CurrencyFirstNotice />}
                 <Field label={fee.currency ? `${t('ranks.editor.priceLabel')} (${fee.currency})` : t('ranks.editor.priceLabel')} htmlFor={`grade-price-${current.key}`} hint={t('ranks.editor.priceHint')}>
-                  <TextField type="number" min={0} step="0.01" value={current.price} placeholder={t('ranks.editor.free')} onChange={(e) => update(current.key, { price: e.target.value })} />
+                  <TextField id={`grade-price-${current.key}`} type="number" min={0} step="0.01" disabled={!fee.currency} value={current.price} placeholder={t('ranks.editor.free')} onChange={(e) => update(current.key, { price: e.target.value })} />
                 </Field>
                 <p className="ultm8-field__hint" style={{ margin: 0 }}>
                   {pricedSummary.length === 0

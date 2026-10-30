@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "Annuler",
     save: "Enregistrer",
     none: "—",
+    currencyFirst: {
+      title: "Définissez d'abord la devise de votre école.",
+      body: "Aucun prix ne peut être enregistré tant que l'école n'a pas de devise.",
+      link: "Définir la devise sur la page de l'école",
+    },
   },
   layout: {
     trial: {

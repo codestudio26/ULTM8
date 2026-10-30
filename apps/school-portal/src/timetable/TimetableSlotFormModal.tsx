@@ -8,6 +8,7 @@ import type { TimetableSlotResponse } from './timetableQueries';
 import { weekdayName } from './timetableOccurrences';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -62,6 +63,7 @@ export function TimetableSlotFormModal({
   onSubmit,
   onClose,
   wholeSchool = true,
+  schoolCurrencyMissing = false,
 }: {
   title: string;
   initial?: Partial<TimetableSlotResponse>;
@@ -75,6 +77,10 @@ export function TimetableSlotFormModal({
   /** False for Branch Staff (Decision 387): a School-wide slot is the
    * owner's, so they pick one of their own branches. */
   wholeSchool?: boolean;
+  /** Decision 414 item 6: the School has no currency yet, so the
+   * cancellation charge (a price) is off, with a notice linking to the
+   * School page setting. */
+  schoolCurrencyMissing?: boolean;
 }) {
   const { t, locale } = useI18n();
   const [form, setForm] = useState({
@@ -286,8 +292,10 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, refundCutoffHoursBeforeStart: e.target.value }))}
           />
         </Field>
+        {schoolCurrencyMissing ? <CurrencyFirstNotice /> : null}
         <Field label={t('timetable.form.cancellationChargeLabel')} htmlFor="slot-cancellationCharge" hint={t('timetable.form.cancellationChargeHint')}>
           <TextField
+            disabled={schoolCurrencyMissing}
             type="number"
             min={0}
             value={form.cancellationCharge}

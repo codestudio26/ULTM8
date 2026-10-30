@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "このクラスはすでに終了しています。未来の終了時刻を選んでください。",
     schoolCurrencyChange: "スクールの通貨で請求される会員プラン：{count}件。今後は同じ金額のまま {currency} で請求されます。",
     schoolCurrencyInUse: "スクールの通貨で請求される会員プラン：{count}件。通貨を空にする前に、それらのプランに個別の通貨を設定してください。",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "価格を設定する前に、スクールページでスクールの通貨を設定してください。",
   },
   errors: {
     beltInHistoryDelete: "この帯は生徒の昇級履歴に含まれているため、削除できません。",

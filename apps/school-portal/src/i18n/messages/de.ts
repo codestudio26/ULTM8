@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "Abbrechen",
     save: "Speichern",
     none: "—",
+    currencyFirst: {
+      title: "Lege zuerst die Währung deiner Schule fest.",
+      body: "Preise können erst gespeichert werden, wenn die Schule eine Währung hat.",
+      link: "Währung auf der Schulseite festlegen",
+    },
   },
   layout: {
     trial: {

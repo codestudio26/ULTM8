@@ -157,6 +157,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       const n = Number(message.match(/^(\d+) membership plan/)?.[1]);
       return Number.isFinite(n) ? t('server.codes.schoolCurrencyInUse', { count: n }) : null;
     }
+    // Currency first (Decision 414 item 6), from any form that sets a price.
+    case 'SCHOOL_CURRENCY_REQUIRED':
+      return t('server.codes.schoolCurrencyRequired');
     default:
       return null;
   }

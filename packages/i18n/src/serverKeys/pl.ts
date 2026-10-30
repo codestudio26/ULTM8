@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Te zajęcia już się skończyły. Wybierz godzinę zakończenia w przyszłości.",
     schoolCurrencyChange: "Plany rozliczane w walucie szkoły: {count}. Od teraz są rozliczane w {currency}, z tymi samymi kwotami.",
     schoolCurrencyInUse: "Plany rozliczane w walucie szkoły: {count}. Nadaj im własną walutę, zanim ją wyczyścisz.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Ustaw walutę swojej szkoły na stronie szkoły, zanim ustawisz ceny.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",

@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Bu ders zaten bitti. Gelecekte bir bitiş saati seç.",
     schoolCurrencyChange: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Artık aynı tutarlarla {currency} cinsinden ücretlendirilecekler.",
     schoolCurrencyInUse: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Temizlemeden önce bu planlara kendi para birimlerini verin.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Fiyat belirlemeden önce Okul sayfasından okulunuzun para birimini ayarlayın.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",
