@@ -973,6 +973,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} bakiyenize alacak olarak geçti",
     payAtDesk: "Ödemek için okulunuzun resepsiyonuna başvurun.",
     receiptSurcharge: "{amount} kart ek ücreti dahil",
+    address: "Adres: {address}",
+    paymentInstructions: "Nasıl ödenir: {instructions}",
+    refunded: "İade edildi",
+    creditGiven: "{date} tarihinde Okulunuzdan {amount} kredi",
+    refundStatus: {
+      REFUNDED: "İade edildi",
+      PART_REFUNDED: "Kısmen iade edildi",
+    },
+    refund: {
+      CARD: "{amount} {date} tarihinde kartınıza iade edildi",
+      MONEY_BACK: "{amount} {date} tarihinde size geri verildi",
+      CREDIT: "{amount} {date} tarihinde kredi olarak iade edildi",
+      DISPUTE_LOST: "{amount} bir itirazdan sonra {date} tarihinde kartınıza döndü",
+      STRIPE: "{amount} {date} tarihinde kartınıza iade edildi",
+    },
     pay: {
       balance: "Bakiyeyi öde ({amount})",
       charge: "{amount} öde",
