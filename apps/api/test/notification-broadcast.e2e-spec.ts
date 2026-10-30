@@ -40,6 +40,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
+import { BULK_NOTIFICATION_PRIORITY } from '../src/jobs/notification-fanout.types';
 import { NotificationBroadcastService } from '../src/notifications/broadcast/notification-broadcast.service';
 import { PrismaAppService } from '../src/common/prisma/prisma-app.service';
 import { BroadcastAudienceDto, BroadcastClassAudienceDto } from '../src/notifications/broadcast/dto/broadcast-notification.dto';
@@ -590,6 +591,14 @@ describeIfDb('NotificationBroadcastModule — POST /schools/:schoolId/notificati
         expect(job.data.notificationId).toBe(`broadcast-${result.broadcastId}-${job.data.userId}`);
         expect(job.opts.jobId).toBe(job.data.notificationId);
       }
+    });
+
+    it('queues as bulk, behind urgent notices such as a seat offer (stress test round 4, N1)', async () => {
+      await broadcastService.broadcast(owner.id, school.id, { title: 'Bulk', body: 'Body', audience: BroadcastAudienceDto.ALL });
+      const calls = fakeQueue.addBulk.mock.calls;
+      const jobs: Array<{ opts: { priority?: number } }> = calls[calls.length - 1][0];
+      expect(jobs.length).toBeGreaterThan(0);
+      for (const job of jobs) expect(job.opts.priority).toBe(BULK_NOTIFICATION_PRIORITY);
     });
   });
 });

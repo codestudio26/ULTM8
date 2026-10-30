@@ -324,6 +324,7 @@ export class CancellationService {
           schoolId,
           fresh.stripePaymentIntentId!,
           row.refundAmount,
+          fresh.currency,
           `booking-refund-${seat.attendeeId ?? seat.bookingId}`,
         );
 

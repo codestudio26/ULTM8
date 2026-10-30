@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Stress test round 4** — 500 Schools in 40 countries (32 currencies, 60
+  time zones, 126,428 students): a busy day, money, Staff, the front desk,
+  members' features, tenant isolation, the portal in a browser and how far one
+  server goes; report in `docs/handover/STRESS-TEST-ROUND4.md`, scripts in
+  `apps/api/scripts/stress/round4/`. Fixes below.
+- **Round-4 stress-test fixes** — card prices in yen, won, Chilean pesos and
+  other currencies without decimals were sent to Stripe 100 times too high,
+  and Kuwaiti and Bahraini dinars (three decimals) at a tenth; every amount to
+  and from Stripe is now converted for its currency (payments, Subscriptions,
+  checkout, refunds, renewals, disputes). A waitlist seat offer, a cancelled
+  class or a payment notice no longer waits behind thousands of broadcast and
+  waiver notices (one seat offer arrived 40 minutes late): bulk notices now
+  go last. The portal header wraps on a phone instead of making every page
+  scroll sideways. Booking no longer loads the whole belt ladder when no belt
+  locks the class (about a third faster). Unpause clicked several times at
+  once is recorded once.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit
