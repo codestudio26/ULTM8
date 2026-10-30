@@ -43,7 +43,7 @@ export function RecurringChargesList({ items }: { items: MemberRecurringCharge[]
             {active && r.nextDate ? <Muted>{t('charges.recurring.next', { date: formatDay(r.nextDate) })}</Muted> : null}
             {active && r.endDate ? <Muted>{t('charges.recurring.endsOn', { date: formatDay(r.endDate) })}</Muted> : null}
             {r.maxOccurrences ? <Muted>{t('charges.recurring.payments', { done: r.createdCount, count: r.maxOccurrences })}</Muted> : null}
-            {active ? <Muted>{t('charges.recurring.taxNote')}</Muted> : null}
+            {active ? <Muted>{r.taxExempt ? t('charges.noTax') : t('charges.recurring.taxNote')}</Muted> : null}
           </View>
         );
       })}

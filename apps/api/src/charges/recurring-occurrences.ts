@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient, RecurringCharge } from '@prisma/client';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
-import { computeCharge, formatInvoiceNumber } from './charge-maths';
+import { computeCharge, formatInvoiceNumber, taxForCharge } from './charge-maths';
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { MAX_OCCURRENCES_PER_RUN, dayOf, dayValue, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
 
@@ -123,13 +123,14 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
         await advance(1);
         return { notice: null };
       }
-      // The School's tax at this moment (Decision 411), kept on the charge.
-      const tax = await tx.school.findUniqueOrThrow({ where: { id: row.schoolId }, select: { taxCountry: true, taxRateBasisPoints: true, taxInclusive: true } });
+      // The School's tax at this moment (Decision 411), kept on the charge;
+      // none for a series set up with "No tax on this item" (Decision 414 item 5).
+      const school = await tx.school.findUniqueOrThrow({ where: { id: row.schoolId }, select: { taxCountry: true, taxRateBasisPoints: true, taxInclusive: true } });
+      const tax = taxForCharge(school, row.taxExempt);
       const totals = computeCharge({
         unitAmount: row.unitAmount,
         discount: row.discountType ? { type: row.discountType, value: row.discountValue! } : null,
-        taxRateBasisPoints: tax.taxRateBasisPoints,
-        taxInclusive: tax.taxInclusive,
+        ...tax,
       });
       const charge = await insertCharge(tx, {
         schoolId: row.schoolId,
@@ -138,9 +139,9 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
         unitAmount: row.unitAmount,
         discountType: row.discountType,
         discountValue: row.discountValue,
-        taxCountry: tax.taxCountry,
-        taxRateBasisPoints: tax.taxRateBasisPoints,
-        taxInclusive: tax.taxInclusive,
+        taxCountry: school.taxCountry,
+        ...tax,
+        taxExempt: row.taxExempt,
         totals,
         currency: row.currency,
         dueDate: occurrenceDate,

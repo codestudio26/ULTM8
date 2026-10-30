@@ -134,8 +134,8 @@ describeIfDb('Late fees (Decision 413)', () => {
   const settingsUrl = (s: Seeded) => `/v1/schools/${s.school.id}/late-fees`;
   const turnOn = (s: Seeded, body: Record<string, unknown>) =>
     as(s.ownerToken).put(settingsUrl(s), { enabled: true, type: 'FIXED', graceDays: 3, ...LEGAL, ...body });
-  async function createCharge(s: Seeded, amount: number, dueDate: string) {
-    const res = await as(s.ownerToken).post(`/v1/schools/${s.school.id}/students/${s.student.id}/charges`, { description: `Item ${++seq}`, amount, dueDate });
+  async function createCharge(s: Seeded, amount: number, dueDate: string, extra: Record<string, unknown> = {}) {
+    const res = await as(s.ownerToken).post(`/v1/schools/${s.school.id}/students/${s.student.id}/charges`, { description: `Item ${++seq}`, amount, dueDate, ...extra });
     expect(res.status).toBe(201);
     return res.body as { id: string; invoiceLabel: string; description: string };
   }
@@ -349,6 +349,15 @@ describeIfDb('Late fees (Decision 413)', () => {
       const [fee] = await feesFor(s);
       // 2.5% of 70.00 = 1.75; tax added on top: 0.18 (half up); 1.93 owed.
       expect(fee).toMatchObject({ lateFeeOverdueAmount: 7000, lateFeePercentBps: 250, unitAmount: 175, netAmount: 175, taxRateBasisPoints: 1000, taxAmount: 18, grossAmount: 193 });
+    });
+
+    it('a late fee on a no-tax charge still takes the School tax (Decision 414 item 5)', async () => {
+      const s = await seed({ tax: { rate: 1000, inclusive: false } }); // 10% added on top
+      expect((await turnOn(s, { type: 'FIXED', fixedAmount: 500 })).status).toBe(200);
+      await createCharge(s, 10000, day(1), { taxExempt: true }); // 100.00, no tax
+      expect((await run(s, 5)).added).toBe(1);
+      const [fee] = await feesFor(s);
+      expect(fee).toMatchObject({ taxExempt: false, unitAmount: 500, netAmount: 500, taxRateBasisPoints: 1000, taxAmount: 50, grossAmount: 550, lateFeeOverdueAmount: 10000 });
     });
 
     it('a charge paid (or cancelled) within the grace period gets nothing', async () => {

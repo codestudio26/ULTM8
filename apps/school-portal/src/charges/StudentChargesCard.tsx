@@ -5,6 +5,7 @@ import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { MoneyField } from '../lib/MoneyField';
+import { NoTaxCheckbox, PreviewTaxRow } from './NoTaxFields';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import {
   CHARGE_PAYMENT_METHODS,
@@ -453,7 +454,12 @@ function ChargesBody({
                 render: (c) => <span style={c.overdue ? { color: 'var(--danger, #C5221F)', fontWeight: 600 } : undefined}>{formatDay(c.dueDate)}</span>,
               },
               { key: 'net', header: t('charges.card.columnExTax'), render: (c) => formatMoney(c.netAmount, c.currency) },
-              { key: 'tax', header: t('charges.card.columnTax'), render: (c) => `${formatMoney(c.taxAmount, c.currency)} (${rateText(c.taxRateBasisPoints)}%)` },
+              {
+                key: 'tax',
+                header: t('charges.card.columnTax'),
+                // Decision 414 item 5: a charge made with "No tax on this item".
+                render: (c) => (c.taxExempt ? t('charges.card.noTax') : `${formatMoney(c.taxAmount, c.currency)} (${rateText(c.taxRateBasisPoints)}%)`),
+              },
               { key: 'gross', header: t('charges.card.columnTotal'), render: (c) => formatMoney(c.grossAmount, c.currency) },
               { key: 'owed', header: t('charges.card.columnOwed'), render: (c) => formatMoney(c.owedAmount, c.currency) },
               {
@@ -599,12 +605,14 @@ function CreateChargeModal({
   const [percent, setPercent] = useState('');
   const [fixed, setFixed] = useState<{ minorUnits: number | null; valid: boolean }>({ minorUnits: null, valid: true });
   const [dueDate, setDueDate] = useState(today());
+  // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
+  const [taxExempt, setTaxExempt] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const discountValue = discountType === 'PERCENT' ? parseRate(percent) : discountType === 'FIXED' ? fixed.minorUnits : null;
   const preview =
     amount.minorUnits && amount.valid
-      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: rate, taxInclusive })
+      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: taxExempt ? 0 : rate, taxInclusive })
       : null;
   const discountOk = !discountType || (!!discountValue && discountValue > 0 && preview !== null);
   const ready = !!currency && description.trim().length > 0 && !!amount.minorUnits && amount.valid && discountOk && !!dueDate;
@@ -620,6 +628,7 @@ function CreateChargeModal({
         discountType: discountType || null,
         discountValue: discountType ? discountValue : null,
         dueDate,
+        taxExempt,
       });
       onClose();
     } catch (err) {
@@ -645,7 +654,13 @@ function CreateChargeModal({
         <Field
           label={t('charges.create.amountLabel')}
           htmlFor="charge-amount"
-          hint={taxInclusive ? t('charges.create.amountHintInclusive', { rate: rateText(rate) }) : t('charges.create.amountHintOnTop', { rate: rateText(rate) })}
+          hint={
+            taxExempt
+              ? t('charges.create.amountHintNoTax')
+              : taxInclusive
+                ? t('charges.create.amountHintInclusive', { rate: rateText(rate) })
+                : t('charges.create.amountHintOnTop', { rate: rateText(rate) })
+          }
           error={amount.valid ? undefined : t('charges.create.amountInvalid')}
         >
           <MoneyField id="charge-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
@@ -678,12 +693,12 @@ function CreateChargeModal({
         <Field label={t('charges.create.dueLabel')} htmlFor="charge-due">
           <TextField id="charge-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
         </Field>
+        <NoTaxCheckbox id="charge-no-tax" checked={taxExempt} onChange={setTaxExempt} />
         {preview && currency ? (
           <dl data-testid="charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 16px' }}>
             <dt>{t('charges.create.previewExTax')}</dt>
             <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
-            <dt>{t('charges.create.previewTax', { rate: rateText(rate) })}</dt>
-            <dd style={{ margin: 0 }}>{formatMoney(preview.tax, currency)}</dd>
+            <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
             <dt style={{ fontWeight: 600 }}>{t('charges.create.previewIncTax')}</dt>
             <dd style={{ margin: 0, fontWeight: 600 }}>{formatMoney(preview.gross, currency)}</dd>
           </dl>

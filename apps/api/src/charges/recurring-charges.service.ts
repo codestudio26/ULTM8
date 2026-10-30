@@ -15,7 +15,7 @@ import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ChargesService } from './charges.service';
-import { ChargeMathsError, ChargeTotals, computeCharge } from './charge-maths';
+import { ChargeMathsError, ChargeTotals, computeCharge, taxForCharge } from './charge-maths';
 import { InvoiceNotice, runSeries, seriesState } from './recurring-occurrences';
 import { dayOf, dayValue, firstIndexOnOrAfter, nextDay, schoolToday, type RecurringFrequency } from './recurring-schedule';
 import { CreateRecurringChargeDto, RecurringChargeStatus } from './dto/recurring-charge.dto';
@@ -120,7 +120,9 @@ export class RecurringChargesService {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
     // The same checks as a single charge: the discount must leave something to pay.
-    const estimate = this.estimate({ unitAmount: dto.amount, discountType: dto.discountType ?? null, discountValue: dto.discountValue ?? null }, school);
+    // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
+    const taxExempt = dto.taxExempt === true;
+    const estimate = this.estimate({ unitAmount: dto.amount, discountType: dto.discountType ?? null, discountValue: dto.discountValue ?? null, taxExempt }, school);
 
     const today = schoolToday(new Date(), school.timezone);
     if (dto.firstDate < today) {
@@ -154,6 +156,7 @@ export class RecurringChargesService {
           discountType: dto.discountType ?? null,
           discountValue: dto.discountType ? dto.discountValue! : null,
           currency,
+          taxExempt,
           frequency: dto.frequency,
           firstDate: dayValue(dto.firstDate),
           endDate: endDate ? dayValue(endDate) : null,
@@ -320,14 +323,18 @@ export class RecurringChargesService {
     return this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { taxRateBasisPoints: true, taxInclusive: true } });
   }
 
-  /** What each charge would be at the School's tax today (each charge uses the rate on its own day). */
-  private estimate(r: { unitAmount: number; discountType: 'PERCENT' | 'FIXED' | null; discountValue: number | null }, tax: SchoolTax): ChargeTotals & { taxRateBasisPoints: number } {
+  /** What each charge would be at the School's tax today (each charge uses the
+   * rate on its own day), or with no tax for a no-tax series (Decision 414 item 5). */
+  private estimate(
+    r: { unitAmount: number; discountType: 'PERCENT' | 'FIXED' | null; discountValue: number | null; taxExempt: boolean },
+    school: SchoolTax,
+  ): ChargeTotals & { taxRateBasisPoints: number } {
+    const tax = taxForCharge(school, r.taxExempt);
     try {
       const totals = computeCharge({
         unitAmount: r.unitAmount,
         discount: r.discountType ? { type: r.discountType, value: r.discountValue! } : null,
-        taxRateBasisPoints: tax.taxRateBasisPoints,
-        taxInclusive: tax.taxInclusive,
+        ...tax,
       });
       return { ...totals, taxRateBasisPoints: tax.taxRateBasisPoints };
     } catch (err) {
@@ -356,6 +363,7 @@ export class RecurringChargesService {
         discountType: r.discountType,
         discountValue: r.discountValue,
         currency: r.currency,
+        taxExempt: r.taxExempt,
         frequency: r.frequency,
         firstDate: dayOf(r.firstDate),
         endDate: r.endDate ? dayOf(r.endDate) : null,

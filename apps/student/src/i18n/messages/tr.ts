@@ -988,6 +988,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "Vergi hariç fiyat",
     tax: "Vergi (%{rate})",
     incTax: "Vergi dahil fiyat",
+    noTax: "Bu kalemde vergi yok",
     discount: "İndirim",
     paid: "Ödenen",
     stillOwed: "Kalan borç",

@@ -246,7 +246,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     const c = await chargeOf(id);
     expect(c).toMatchObject({
       schoolId: school.id, studentId: user.ann.id, description: 'white-1', unitAmount: 1500, discountAmount: 0,
-      taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false, netAmount: 1500, taxAmount: 300, grossAmount: 1800, currency: 'GBP', createdById: null,
+      taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false, taxExempt: false, netAmount: 1500, taxAmount: 300, grossAmount: 1800, currency: 'GBP', createdById: null,
     });
     expect(c!.dueDate.toISOString().slice(0, 10)).toBe(today());
     expect(await su.charge.count({ where: { promotionFeeRequestId: id } })).toBe(1);
