@@ -6212,6 +6212,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/charges/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_startCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/charge-auto-pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ChargesController_setAutoPay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/charge-permissions": {
         parameters: {
             query?: never;
@@ -11559,6 +11591,10 @@ export interface components {
             net: number;
             /** @description Of what is owed, the part past its due date. */
             overdue: number;
+            /** @description What "Pay balance" asks for in the app: what is owed after credit (0 = nothing to pay). */
+            payableAmount: number;
+            /** @description Decision 406: the card surcharge on payableAmount when paid by card (0 = none). Member's view only; 0 for staff. */
+            cardSurchargeAmount: number;
         };
         ChargeResponseDto: {
             id: string;
@@ -11603,7 +11639,21 @@ export interface components {
             cancelledByName?: string | null;
             /** @description Staff only; never sent to the member. */
             cancelReason?: string | null;
+            /** @description Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff. */
+            cardSurchargeAmount: number;
         };
+        /** @enum {string} */
+        ChargePaymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL" | "STRIPE";
+        /**
+         * @description Taken at the desk, paid in the app, or charged automatically to the saved card.
+         * @enum {string}
+         */
+        ChargePaymentChannel: "DESK" | "APP" | "AUTOMATIC";
+        /**
+         * @description PENDING: a card payment started in the app and not confirmed by Stripe yet (nothing is on the balance until it is). FAILED: an automatic charge that was declined.
+         * @enum {string}
+         */
+        ChargePaymentStatus: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
         ChargePaymentAllocationDto: {
             chargeId: string;
             /** @example #0000001 */
@@ -11616,8 +11666,13 @@ export interface components {
             schoolId: string;
             amount: number;
             currency: string;
-            /** @enum {string} */
-            paymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL";
+            paymentMethod: components["schemas"]["ChargePaymentMethod"];
+            channel: components["schemas"]["ChargePaymentChannel"];
+            status: components["schemas"]["ChargePaymentStatus"];
+            /** @description Decision 406: the card surcharge paid on top, in minor units (0 = none). Not part of the balance. */
+            surchargeAmount: number;
+            /** @description The invoice the payment was made for, when it was made for one charge. */
+            invoiceLabel?: string | null;
             receivedAt: string;
             /** @description Staff only. */
             recordedByName?: string | null;
@@ -11687,6 +11742,22 @@ export interface components {
             payment: components["schemas"]["ChargePaymentResponseDto"];
             balances: components["schemas"]["ChargeBalanceDto"][];
         };
+        /**
+         * @description Why not: the School doesn't take card payments, or the account is restricted to cash and bank transfer (Decision 68).
+         * @enum {string}
+         */
+        PayInAppBlockedReason: "NO_CARD_PAYMENTS" | "RESTRICTED";
+        MemberPayInAppDto: {
+            /** @description Card payments in the app are possible: the School takes Stripe payments and the account is not restricted to cash and bank transfer. */
+            available: boolean;
+            blockedReason?: components["schemas"]["PayInAppBlockedReason"];
+            /** @description The member has a saved card at this School (Decision 238). */
+            savedCard: boolean;
+            /** @description "Pay charges automatically with my saved card" is on (Decision 338 item 8). */
+            autoPay: boolean;
+            /** @description The caller may change the automatic-payment switch: the member themselves, with a saved card here. Never a Guardian for a child, who has no saved card of their own. */
+            canSetAutoPay: boolean;
+        };
         MemberChargeSchoolDto: {
             schoolId: string;
             schoolName: string;
@@ -11695,9 +11766,36 @@ export interface components {
             balances: components["schemas"]["ChargeBalanceDto"][];
             charges: components["schemas"]["ChargeResponseDto"][];
             payments: components["schemas"]["ChargePaymentResponseDto"][];
+            payInApp: components["schemas"]["MemberPayInAppDto"];
         };
         MemberChargesResponseDto: {
             schools: components["schemas"]["MemberChargeSchoolDto"][];
+        };
+        StartChargeCheckoutDto: {
+            schoolId: string;
+            /** @description Pay this one charge. Null or missing: pay the whole balance, oldest due first. */
+            chargeId?: string | null;
+            /** @description Paying the balance: which currency, when the member owes in more than one. */
+            currency?: string;
+        };
+        ChargeCheckoutResponseDto: {
+            /** @description The hosted Stripe Checkout page, opened in the browser. */
+            checkoutUrl: string;
+            /** @description The Pending Transaction; it becomes Successful only from the Stripe webhook. */
+            transactionId: string;
+            /** @description What goes toward the balance (after credit), minor units. */
+            amount: number;
+            /** @description Decision 406: the card surcharge on top (0 = none). */
+            surchargeAmount: number;
+            currency: string;
+        };
+        SetChargeAutoPayDto: {
+            schoolId: string;
+            enabled: boolean;
+        };
+        ChargeAutoPayResponseDto: {
+            schoolId: string;
+            enabled: boolean;
         };
         ChargePermissionDto: {
             userId: string;
@@ -22086,6 +22184,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberChargesResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_startCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartChargeCheckoutDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeCheckoutResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_setAutoPay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required only to turn it on (Decision 239) — from POST /auth/step-up/verify. */
+                "x-step-up-token"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChargeAutoPayDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeAutoPayResponseDto"];
                 };
             };
         };

@@ -203,7 +203,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       await setTax({ taxCountry: 'DE', taxRateBasisPoints: 1900, taxInclusive: true });
       const after = await ledger(student.id);
       expect(after.body.charges[0]).toMatchObject({ id: created.body.id, taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false, netAmount: 5000, taxAmount: 1000, grossAmount: 6000 });
-      expect(after.body.balances).toEqual([{ schoolId: school.id, currency: 'BRL', owed: 6000, credit: 0, net: 6000, overdue: 0 }]);
+      expect(after.body.balances).toEqual([{ schoolId: school.id, currency: 'BRL', owed: 6000, credit: 0, net: 6000, overdue: 0, payableAmount: 6000, cardSurchargeAmount: 0 }]);
     });
 
     it('refuses a charge while the School has no currency', async () => {
@@ -336,7 +336,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       const part = await pay(student.id, { chargeId: charge.body.id, amount: 5000 });
       expect(part.status).toBe(201);
       expect(part.body.payment).toMatchObject({ amount: 5000, paymentMethod: 'CASH', allocations: [{ chargeId: charge.body.id, amount: 5000 }], creditAmount: 0 });
-      expect(part.body.balances).toEqual([{ schoolId: school.id, currency: 'BRL', owed: 7000, credit: 0, net: 7000, overdue: 7000 }]);
+      expect(part.body.balances).toEqual([{ schoolId: school.id, currency: 'BRL', owed: 7000, credit: 0, net: 7000, overdue: 7000, payableAmount: 7000, cardSurchargeAmount: 0 }]);
       const view = await ledger(student.id);
       expect(view.body.charges[0]).toMatchObject({ status: 'PART_PAID', paidAmount: 5000, owedAmount: 7000 });
 

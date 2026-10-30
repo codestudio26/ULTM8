@@ -26,6 +26,7 @@ import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migration.processor';
 import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiver-renewal-sweep.processor';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
+import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -162,6 +163,12 @@ import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
  * its own queue directly (@InjectQueue(FRANCHISE_FEE_RATE_MIGRATION_QUEUE)) to
  * enqueue its own deferred `deferred-swap` follow-up job — already registered in
  * QueueModule, imported above.
+ *
+ * Backlog §3.6 step 2 adds ChargeAutoPayProcessor/Scheduler — a daily sweep
+ * charging members' due charges to their saved card (Decision 338 item 8).
+ * Needs PaymentsService.chargeOffSession(), already available via the
+ * PaymentsModule import; its ledger writes are the plain functions in
+ * charges/charge-ledger.ts, so no ChargesModule import.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
@@ -198,6 +205,8 @@ import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
     FranchiseFeeRateMigrationProcessor,
     WaiverRenewalSweepProcessor,
     WaiverRenewalSweepScheduler,
+    ChargeAutoPayProcessor,
+    ChargeAutoPayScheduler,
   ],
 })
 export class JobsModule {}

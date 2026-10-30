@@ -1,11 +1,15 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Put, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ChargesService } from './charges.service';
 import {
   CancelChargeDto,
+  ChargeAutoPayResponseDto,
+  ChargeCheckoutResponseDto,
+  SetChargeAutoPayDto,
+  StartChargeCheckoutDto,
   ChargePermissionDto,
   ChargePermissionListDto,
   ChargeResponseDto,
@@ -18,8 +22,9 @@ import {
   StudentChargesResponseDto,
 } from './dto/charge.dto';
 
-/** Staff-created charges and the member balance, step 1 of 6 (v1.3 backlog
- * §3.6; Decisions 303, 338, 411). Paying in the app, recurring charges,
+/** Staff-created charges and the member balance (v1.3 backlog §3.6;
+ * Decisions 303, 338, 411): step 1, charges and desk payments; step 2, paying
+ * in the app and automatic payment with a saved card. Recurring charges,
  * refunds and reports come in later steps. */
 @ApiTags('charges')
 @ApiBearerAuth()
@@ -80,6 +85,26 @@ export class ChargesController {
   @Get('students/:id/charges')
   listForMember(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
     return this.charges.listForMember(user.sub, id);
+  }
+
+  /** Pay one charge, or the whole balance, by card in the app: a hosted Stripe Checkout (Decision 303 item 4). The student or their Guardian. */
+  @ApiCreatedResponse({ type: ChargeCheckoutResponseDto })
+  @Post('students/:id/charges/checkout')
+  startCheckout(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: StartChargeCheckoutDto) {
+    return this.charges.startCheckout(user.sub, id, dto);
+  }
+
+  /** "Pay charges automatically with my saved card" at one School (Decision 338 item 8). The member only; turning it on needs the X-Step-Up-Token header. */
+  @ApiOkResponse({ type: ChargeAutoPayResponseDto })
+  @ApiHeader({ name: 'x-step-up-token', required: false, description: 'Required only to turn it on (Decision 239) — from POST /auth/step-up/verify.' })
+  @Put('students/:id/charge-auto-pay')
+  setAutoPay(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetChargeAutoPayDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    return this.charges.setAutoPay(user.sub, id, dto, stepUpToken);
   }
 
   /** Branch Staff and coaches, with "Can create charges" and "Can cancel charges". Owner only. */

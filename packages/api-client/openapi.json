@@ -18647,6 +18647,105 @@
         ]
       }
     },
+    "/v1/students/{id}/charges/checkout": {
+      "post": {
+        "operationId": "ChargesController_startCheckout",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartChargeCheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeCheckoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/charge-auto-pay": {
+      "put": {
+        "operationId": "ChargesController_setAutoPay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": false,
+            "in": "header",
+            "description": "Required only to turn it on (Decision 239) — from POST /auth/step-up/verify.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChargeAutoPayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeAutoPayResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/charge-permissions": {
       "get": {
         "operationId": "ChargesController_listPermissions",
@@ -36025,6 +36124,14 @@
           "overdue": {
             "type": "number",
             "description": "Of what is owed, the part past its due date."
+          },
+          "payableAmount": {
+            "type": "number",
+            "description": "What \"Pay balance\" asks for in the app: what is owed after credit (0 = nothing to pay)."
+          },
+          "cardSurchargeAmount": {
+            "type": "number",
+            "description": "Decision 406: the card surcharge on payableAmount when paid by card (0 = none). Member's view only; 0 for staff."
           }
         },
         "required": [
@@ -36033,7 +36140,9 @@
           "owed",
           "credit",
           "net",
-          "overdue"
+          "overdue",
+          "payableAmount",
+          "cardSurchargeAmount"
         ]
       },
       "ChargeResponseDto": {
@@ -36149,6 +36258,10 @@
             "type": "string",
             "nullable": true,
             "description": "Staff only; never sent to the member."
+          },
+          "cardSurchargeAmount": {
+            "type": "number",
+            "description": "Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff."
           }
         },
         "required": [
@@ -36171,7 +36284,38 @@
           "owedAmount",
           "status",
           "overdue",
-          "createdAt"
+          "createdAt",
+          "cardSurchargeAmount"
+        ]
+      },
+      "ChargePaymentMethod": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "PIX",
+          "BANK_TRANSFER",
+          "CARD_TERMINAL",
+          "STRIPE"
+        ]
+      },
+      "ChargePaymentChannel": {
+        "type": "string",
+        "description": "Taken at the desk, paid in the app, or charged automatically to the saved card.",
+        "enum": [
+          "DESK",
+          "APP",
+          "AUTOMATIC"
+        ]
+      },
+      "ChargePaymentStatus": {
+        "type": "string",
+        "description": "PENDING: a card payment started in the app and not confirmed by Stripe yet (nothing is on the balance until it is). FAILED: an automatic charge that was declined.",
+        "enum": [
+          "SUCCESSFUL",
+          "PENDING",
+          "FAILED",
+          "REFUNDED",
+          "DISPUTED"
         ]
       },
       "ChargePaymentAllocationDto": {
@@ -36211,13 +36355,22 @@
             "type": "string"
           },
           "paymentMethod": {
+            "$ref": "#/components/schemas/ChargePaymentMethod"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/ChargePaymentChannel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChargePaymentStatus"
+          },
+          "surchargeAmount": {
+            "type": "number",
+            "description": "Decision 406: the card surcharge paid on top, in minor units (0 = none). Not part of the balance."
+          },
+          "invoiceLabel": {
             "type": "string",
-            "enum": [
-              "CASH",
-              "PIX",
-              "BANK_TRANSFER",
-              "CARD_TERMINAL"
-            ]
+            "nullable": true,
+            "description": "The invoice the payment was made for, when it was made for one charge."
           },
           "receivedAt": {
             "type": "string"
@@ -36245,6 +36398,9 @@
           "amount",
           "currency",
           "paymentMethod",
+          "channel",
+          "status",
+          "surchargeAmount",
           "receivedAt",
           "allocations",
           "creditAmount"
@@ -36446,6 +36602,45 @@
           "balances"
         ]
       },
+      "PayInAppBlockedReason": {
+        "type": "string",
+        "description": "Why not: the School doesn't take card payments, or the account is restricted to cash and bank transfer (Decision 68).",
+        "enum": [
+          "NO_CARD_PAYMENTS",
+          "RESTRICTED"
+        ]
+      },
+      "MemberPayInAppDto": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Card payments in the app are possible: the School takes Stripe payments and the account is not restricted to cash and bank transfer."
+          },
+          "blockedReason": {
+            "nullable": true,
+            "$ref": "#/components/schemas/PayInAppBlockedReason"
+          },
+          "savedCard": {
+            "type": "boolean",
+            "description": "The member has a saved card at this School (Decision 238)."
+          },
+          "autoPay": {
+            "type": "boolean",
+            "description": "\"Pay charges automatically with my saved card\" is on (Decision 338 item 8)."
+          },
+          "canSetAutoPay": {
+            "type": "boolean",
+            "description": "The caller may change the automatic-payment switch: the member themselves, with a saved card here. Never a Guardian for a child, who has no saved card of their own."
+          }
+        },
+        "required": [
+          "available",
+          "savedCard",
+          "autoPay",
+          "canSetAutoPay"
+        ]
+      },
       "MemberChargeSchoolDto": {
         "type": "object",
         "properties": {
@@ -36477,6 +36672,9 @@
             "items": {
               "$ref": "#/components/schemas/ChargePaymentResponseDto"
             }
+          },
+          "payInApp": {
+            "$ref": "#/components/schemas/MemberPayInAppDto"
           }
         },
         "required": [
@@ -36484,7 +36682,8 @@
           "schoolName",
           "balances",
           "charges",
-          "payments"
+          "payments",
+          "payInApp"
         ]
       },
       "MemberChargesResponseDto": {
@@ -36499,6 +36698,87 @@
         },
         "required": [
           "schools"
+        ]
+      },
+      "StartChargeCheckoutDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "chargeId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pay this one charge. Null or missing: pay the whole balance, oldest due first."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Paying the balance: which currency, when the member owes in more than one."
+          }
+        },
+        "required": [
+          "schoolId"
+        ]
+      },
+      "ChargeCheckoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "checkoutUrl": {
+            "type": "string",
+            "description": "The hosted Stripe Checkout page, opened in the browser."
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "The Pending Transaction; it becomes Successful only from the Stripe webhook."
+          },
+          "amount": {
+            "type": "number",
+            "description": "What goes toward the balance (after credit), minor units."
+          },
+          "surchargeAmount": {
+            "type": "number",
+            "description": "Decision 406: the card surcharge on top (0 = none)."
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkoutUrl",
+          "transactionId",
+          "amount",
+          "surchargeAmount",
+          "currency"
+        ]
+      },
+      "SetChargeAutoPayDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schoolId",
+          "enabled"
+        ]
+      },
+      "ChargeAutoPayResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schoolId",
+          "enabled"
         ]
       },
       "ChargePermissionDto": {

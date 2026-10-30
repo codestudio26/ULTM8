@@ -11,6 +11,8 @@ const NOTICES = [
   { title: 'Payment received', body: 'Your payment of 20.00 BRL was received.' },
   { title: 'Charge cancelled', body: "Your charge 'Rash guard, 120.00 BRL' was cancelled. Nothing to pay." },
   { title: 'Charge cancelled', body: "Your charge 'Rash guard, 120.00 BRL' was cancelled. Nothing to pay. The 30.00 BRL already paid is now credit on your balance." },
+  // Step 2: the daily charge-auto-pay job's notice when the saved card is declined.
+  { title: 'Automatic payment failed', body: "We couldn't charge your saved card for invoice #0000012 (Rash guard, 120.00 BRL). Pay it in the app or at the front desk." },
 ];
 
 function lookup(tree: unknown, key: string): string | undefined {
@@ -37,7 +39,9 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
 
     const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
     const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
-    const [created, paid, cancelled, credit] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    const [created, paid, cancelled, credit, autoFailed] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    expect(autoFailed.title).toBe('Pagamento automático falhou');
+    expect(autoFailed.body).toMatch(/^Não conseguimos cobrar no seu cartão salvo a fatura #0000012 \(Rash guard, .*120,00\)\. Pague no app ou na recepção\.$/);
     expect(created.title).toBe('Nova fatura');
     expect(created.body).toContain('#0000012');
     expect(created.body).toContain('Rash guard');

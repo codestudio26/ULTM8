@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -18,7 +18,22 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
-import { CancelChargeDto, ChargeStatus, CreateChargeDto, DeskChargePaymentMethod, RecordChargePaymentDto, SetChargePermissionDto } from './dto/charge.dto';
+import { allocate, freeCredit, lockBalance, receiptNotice } from './charge-ledger';
+import { PaymentsService } from '../payments/payments.service';
+import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
+import { StepUpService } from '../auth/step-up.service';
+import {
+  CancelChargeDto,
+  ChargePaymentChannelValue,
+  ChargePaymentMethod,
+  ChargePaymentStatus,
+  ChargeStatus,
+  CreateChargeDto,
+  RecordChargePaymentDto,
+  SetChargeAutoPayDto,
+  SetChargePermissionDto,
+  StartChargeCheckoutDto,
+} from './dto/charge.dto';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a desk sale (DESK_REPEAT, memberships.service.ts). */
@@ -37,6 +52,22 @@ export interface ChargeAbilities {
 type ChargeRow = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
 type EntryRow = Prisma.BalanceEntryGetPayload<object>;
 type AllocationRow = Prisma.ChargeAllocationGetPayload<object>;
+/** A CHARGE_PAYMENT Transaction, as the payments list needs it (step 2). */
+type PaymentTxRow = {
+  id: string;
+  status: ChargePaymentStatus;
+  chargePaymentChannel: ChargePaymentChannelValue | null;
+  surchargeAmount: number;
+  amount: number;
+  currency: string | null;
+  chargeId: string | null;
+  paymentMethod: string;
+  createdAt: Date;
+};
+/** Repeated Checkout taps within this window reach Stripe with the same
+ * idempotency key and get the same session back (as MembershipsService's
+ * PURCHASE_KEY_WINDOW_MS does for a plan). */
+const CHECKOUT_KEY_WINDOW_MS = 10 * 60 * 1000;
 
 /** Money as the API's English notices write it ("120.00 BRL"); @ultm8/i18n
  * matches the shape and shows it in the reader's language. */
@@ -77,6 +108,8 @@ export class ChargesService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly subscriptionGate: SubscriptionGateService,
     private readonly guardiansService: GuardiansService,
+    private readonly paymentsService: PaymentsService,
+    private readonly stepUpService: StepUpService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
   ) {}
 
@@ -146,7 +179,7 @@ export class ChargesService {
     const can = await this.assertMay(callerId, schoolId, studentId, 'read');
     const school = await this.loadSchool(schoolId);
     const data = await this.prismaApp.withTenantContext(callerId, (tx) => this.readLedger(tx, schoolId, studentId));
-    const view = await this.shapeLedger(data, school.timezone, true);
+    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true);
     return {
       ...view,
       can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment },
@@ -196,7 +229,7 @@ export class ChargesService {
       await lockSchoolOpen(tx, schoolId);
       // Invoice numbers: one at a time per School, so they never repeat or skip.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`charge-invoice:${schoolId}`}, 0))`;
-      await this.lockBalance(tx, schoolId, studentId);
+      await lockBalance(tx, schoolId, studentId);
       const recent = await tx.charge.findFirst({
         where: { schoolId, studentId, description: dto.description, unitAmount: dto.amount, createdById: callerId, createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) } },
         select: { id: true },
@@ -227,7 +260,7 @@ export class ChargesService {
       });
       await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId, studentId, kind: 'CHARGE', amount: totals.grossAmount, currency, chargeId: id } });
       // Credit already on the balance pays this charge straight away.
-      await this.allocate(tx, schoolId, studentId, currency, null, null);
+      await allocate(tx, schoolId, studentId, currency, null, null);
     });
 
     const charge = await this.prismaJobs.charge.findUniqueOrThrow({ where: { id }, include: { allocations: { select: { amount: true } } } });
@@ -250,7 +283,7 @@ export class ChargesService {
 
     const { charge, paid } = await this.prismaJobs.$transaction(async (tx) => {
       await lockSchoolOpen(tx, schoolId);
-      await this.lockBalance(tx, schoolId, found.studentId);
+      await lockBalance(tx, schoolId, found.studentId);
       const now = new Date();
       const updated = await tx.charge.updateMany({
         where: { id: chargeId, schoolId, cancelledAt: null },
@@ -264,7 +297,7 @@ export class ChargesService {
         data: { id: randomUUID(), schoolId, studentId: row.studentId, kind: 'CHARGE_CANCELLED', amount: -row.grossAmount, currency: row.currency, chargeId },
       });
       // Anything already paid toward it is credit now, and goes to the next open charge.
-      await this.allocate(tx, schoolId, row.studentId, row.currency, null, null);
+      await allocate(tx, schoolId, row.studentId, row.currency, null, null);
       return { charge: row, paid: row.allocations.reduce((n, a) => n + a.amount, 0) };
     });
 
@@ -307,7 +340,7 @@ export class ChargesService {
     const transactionId = randomUUID();
     await this.prismaJobs.$transaction(async (tx) => {
       await lockSchoolOpen(tx, schoolId);
-      await this.lockBalance(tx, schoolId, studentId);
+      await lockBalance(tx, schoolId, studentId);
       if (dto.chargeId) {
         const target = await tx.charge.findUniqueOrThrow({ where: { id: dto.chargeId }, include: { allocations: { select: { amount: true } } } });
         if (target.cancelledAt) throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
@@ -342,6 +375,7 @@ export class ChargesService {
           status: 'SUCCESSFUL',
           paymentMethod: dto.paymentMethod,
           recordedById: callerId,
+          chargePaymentChannel: 'DESK',
         },
       });
       await tx.balanceEntry.create({
@@ -357,14 +391,15 @@ export class ChargesService {
           recordedById: callerId,
         },
       });
-      await this.allocate(tx, schoolId, studentId, currency!, transactionId, dto.chargeId ?? null);
+      await allocate(tx, schoolId, studentId, currency!, transactionId, dto.chargeId ?? null);
     });
 
     if (dto.sendReceipt !== false) {
-      await this.notify(studentId, schoolId, `charge-payment-${transactionId}`, 'Payment received', `Your payment of ${money(dto.amount, currency)} was received.`, transactionId);
+      const receipt = receiptNotice(transactionId, dto.amount, currency);
+      await this.notify(studentId, schoolId, receipt.key, receipt.title, receipt.body, transactionId);
     }
     const data = await this.prismaJobs.$transaction((tx) => this.readLedger(tx, schoolId, studentId));
-    const view = await this.shapeLedger(data, school.timezone, true);
+    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true);
     return { payment: view.payments.find((p) => p.id === transactionId)!, balances: view.balances };
   }
 
@@ -376,15 +411,7 @@ export class ChargesService {
    * School, for the student or an active Guardian. Read under the student's
    * own context, as the app's other reads for a child are. */
   async listForMember(callerId: string, studentId: string) {
-    this.assertUuid(studentId);
-    if (callerId !== studentId) {
-      try {
-        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
-      } catch (err) {
-        if (!(err instanceof ForbiddenException)) throw err;
-        throw new ForbiddenException('Only the student, or their Guardian, can see their charges.');
-      }
-    }
+    await this.assertMemberOrGuardian(callerId, studentId);
     const impersonationSchoolId = RequestContext.getImpersonationSchoolId();
     const schoolIds = (
       await this.prismaApp.withTenantContext(studentId, (tx) =>
@@ -392,13 +419,202 @@ export class ChargesService {
       )
     ).map((r) => r.schoolId);
     const schools = await this.prismaJobs.school.findMany({ where: { id: { in: schoolIds } }, select: { id: true, name: true, taxId: true, timezone: true } });
-    const out: Array<{ schoolId: string; schoolName: string; taxId: string | null } & Awaited<ReturnType<ChargesService['shapeLedger']>>> = [];
+    const restricted = await this.isPaymentRestricted(studentId);
+    const out: Array<
+      { schoolId: string; schoolName: string; taxId: string | null; payInApp: Awaited<ReturnType<ChargesService['payInApp']>> } & Awaited<ReturnType<ChargesService['shapeLedger']>>
+    > = [];
     for (const school of schools.sort((a, b) => a.name.localeCompare(b.name))) {
       const data = await this.prismaApp.withTenantContext(studentId, (tx) => this.readLedger(tx, school.id, studentId));
-      const view = await this.shapeLedger(data, school.timezone, false);
-      out.push({ schoolId: school.id, schoolName: school.name, taxId: school.taxId, ...view });
+      const view = await this.shapeLedger(data, await this.readPaymentTransactions(school.id, studentId), school.timezone, false);
+      const payInApp = await this.payInApp(callerId, studentId, school.id, restricted);
+      // Decision 406: the card surcharge, shown before paying.
+      const bps = payInApp.available ? await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, school.id)) : 0;
+      out.push({
+        schoolId: school.id,
+        schoolName: school.name,
+        taxId: school.taxId,
+        payInApp,
+        balances: view.balances.map((b) => ({ ...b, cardSurchargeAmount: cardSurchargeAmount(b.payableAmount, bps) })),
+        charges: view.charges.map((c) => ({ ...c, cardSurchargeAmount: cardSurchargeAmount(c.owedAmount, bps) })),
+        payments: view.payments,
+      });
     }
     return { schools: out };
+  }
+
+  // ---------------------------------------------------------------------------
+  // The member (or Guardian): paying in the app (step 2; Decision 303 item 4,
+  // Decision 338 item 8)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /students/{id}/charges/checkout: pay one charge, or the whole
+   * balance, by card on a hosted Stripe Checkout on the School's connected
+   * account, as a membership is bought (Decisions 238/243). The amount asked
+   * is what is owed after credit (Decision 303 item 2), plus the School's card
+   * surcharge as its own line (Decision 406). A Pending CHARGE_PAYMENT
+   * Transaction is written now; only the payment_intent.succeeded webhook
+   * makes it Successful and puts it on the ledger (settleChargePayment), and
+   * an abandoned or expired Checkout turns it Failed (Decision 339 item 11).
+   * Two sessions open at once can both be paid: the second payment never
+   * over-pays a charge, it goes to the next one and then to credit.
+   */
+  async startCheckout(callerId: string, studentId: string, dto: StartChargeCheckoutDto) {
+    await this.assertMemberOrGuardian(callerId, studentId);
+    const schoolId = dto.schoolId;
+    // A current or former student of this School: someone who left may still owe.
+    const wasStudent = await this.prismaJobs.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT' }, select: { id: true } });
+    if (!wasStudent) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
+    // A closed School takes no payments (Decision 110), nor a degraded one
+    // (Spec 55 §10.2), checked under the student's own context as a
+    // membership purchase is.
+    await this.tenantAuth.assertSchoolNotArchived(studentId, schoolId);
+    await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, provider: true, stripeConnectedAccountId: true } });
+    if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
+      throw new BadRequestException({ code: 'CHARGE_NO_CARD_PAYMENTS', message: "This School doesn't take card payments in the app. Pay at the front desk." });
+    }
+    // Decision 68/112: restricted to cash and bank transfer, as a membership purchase is.
+    if (await this.isPaymentRestricted(studentId)) {
+      throw new BadRequestException({ code: 'CHARGE_PAYMENT_RESTRICTED', message: 'This account can only pay by cash or bank transfer. Pay at the front desk.' });
+    }
+
+    const target = await this.prismaJobs.$transaction(async (tx) => {
+      await lockBalance(tx, schoolId, studentId);
+      if (dto.chargeId) {
+        const charge = await tx.charge.findFirst({ where: { id: dto.chargeId, schoolId, studentId }, include: { allocations: { select: { amount: true } } } });
+        if (!charge) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
+        if (charge.cancelledAt) throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
+        const owed = charge.grossAmount - charge.allocations.reduce((n, a) => n + a.amount, 0);
+        const amount = owed - (await freeCredit(tx, schoolId, studentId, charge.currency));
+        if (amount <= 0) throw new ConflictException({ code: 'CHARGE_ALREADY_PAID', message: 'This charge is already paid.' });
+        return { amount, currency: charge.currency, description: `Invoice ${formatInvoiceNumber(charge.invoiceNumber)}: ${charge.description}` };
+      }
+      const sums = await tx.balanceEntry.groupBy({ by: ['currency'], where: { schoolId, studentId }, _sum: { amount: true } });
+      const owing = sums.filter((r) => (r._sum.amount ?? 0) > 0);
+      const wanted = dto.currency?.toUpperCase();
+      if (!wanted && owing.length > 1) {
+        throw new BadRequestException({ code: 'CHARGE_CHOOSE_CURRENCY', message: 'You owe in more than one currency. Choose which one to pay.' });
+      }
+      const row = wanted ? owing.find((r) => r.currency === wanted) : owing[0];
+      if (!row) throw new ConflictException({ code: 'CHARGE_NOTHING_OWED', message: 'There is nothing to pay.' });
+      return { amount: row._sum.amount ?? 0, currency: row.currency, description: 'Balance payment' };
+    });
+
+    const surcharge = cardSurchargeAmount(target.amount, await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, schoolId)));
+    // The same request while a Checkout is still open gets that session back
+    // (a double tap). Once one has ended (paid, or failed or abandoned), the
+    // next request is a new session, even for the same amount.
+    const ended = await this.prismaJobs.transaction.count({
+      where: { schoolId, studentId, kind: 'CHARGE_PAYMENT', chargePaymentChannel: 'APP', status: { not: 'PENDING' } },
+    });
+    const key = createHash('sha256')
+      .update(JSON.stringify([studentId, schoolId, dto.chargeId ?? null, target.amount, target.currency, surcharge, ended]))
+      .digest('hex')
+      .slice(0, 24);
+    const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
+      studentId,
+      schoolId,
+      target.amount,
+      target.currency,
+      target.description,
+      `charge-checkout-${key}-${Math.floor(Date.now() / CHECKOUT_KEY_WINDOW_MS)}`,
+      surcharge,
+      'charge-payment',
+    );
+    const result = { checkoutUrl, amount: target.amount, surchargeAmount: surcharge, currency: target.currency };
+    const transactionId = randomUUID();
+    try {
+      await this.prismaJobs.transaction.create({
+        data: {
+          id: transactionId,
+          schoolId,
+          studentId,
+          paymentAccountId: account.id,
+          kind: 'CHARGE_PAYMENT',
+          chargeId: dto.chargeId ?? null,
+          amount: target.amount,
+          surchargeAmount: surcharge,
+          currency: target.currency,
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: paymentIntentId,
+          chargePaymentChannel: 'APP',
+        },
+      });
+    } catch (err) {
+      // A repeated tap got the same session (and PaymentIntent) back: return its row.
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err;
+      const existing = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } });
+      if (!existing) throw err;
+      return { ...result, transactionId: existing.id };
+    }
+    return { ...result, transactionId };
+  }
+
+  /**
+   * PUT /students/{id}/charge-auto-pay: "Pay charges automatically with my
+   * saved card" (Decision 338 item 8), per member per School, off by default.
+   * Turning it on authorises later charges to the saved card with no one
+   * there to confirm them, so it asks for the passcode again (step-up,
+   * Decisions 236/239), as paying with the saved card does; turning it off
+   * never does. The member only: the saved card is theirs (Decision 238), and
+   * Decision 239 leaves a Guardian's card for a child undecided.
+   */
+  async setAutoPay(callerId: string, studentId: string, dto: SetChargeAutoPayDto, stepUpToken?: string) {
+    this.assertUuid(studentId);
+    if (callerId !== studentId) {
+      await this.assertMemberOrGuardian(callerId, studentId);
+      throw new BadRequestException({ code: 'CHARGE_AUTO_PAY_SELF_ONLY', message: 'Only the member can set automatic payment, with their own saved card.' });
+    }
+    if (dto.enabled) {
+      this.stepUpService.assertVerified(callerId, stepUpToken);
+      if (await this.isPaymentRestricted(studentId)) {
+        throw new BadRequestException({ code: 'CHARGE_PAYMENT_RESTRICTED', message: 'This account can only pay by cash or bank transfer. Pay at the front desk.' });
+      }
+    }
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentPaymentMethod.updateMany({ where: { studentId, schoolId: dto.schoolId }, data: { autoPayCharges: dto.enabled } }),
+    );
+    if (updated.count === 0) {
+      throw new BadRequestException({ code: 'CHARGE_AUTO_PAY_NO_CARD', message: 'Save a card for this School first.' });
+    }
+    return { schoolId: dto.schoolId, enabled: dto.enabled };
+  }
+
+  /** What the member's Payments screen offers at one School. */
+  private async payInApp(callerId: string, studentId: string, schoolId: string, restricted: boolean) {
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true, stripeConnectedAccountId: true } });
+    const cards = !!account && account.provider === 'STRIPE' && !!account.stripeConnectedAccountId;
+    const blockedReason: 'NO_CARD_PAYMENTS' | 'RESTRICTED' | null = !cards ? 'NO_CARD_PAYMENTS' : restricted ? 'RESTRICTED' : null;
+    // Self-only RLS: read under the student's context; a child never has one.
+    const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } }, select: { autoPayCharges: true } }),
+    );
+    return {
+      available: blockedReason === null,
+      blockedReason,
+      savedCard: !!saved,
+      autoPay: !!saved?.autoPayCharges,
+      canSetAutoPay: callerId === studentId && !!saved && blockedReason === null,
+    };
+  }
+
+  private async isPaymentRestricted(studentId: string): Promise<boolean> {
+    const user = await this.prismaApp.withTenantContext(studentId, (tx) => tx.user.findUnique({ where: { id: studentId }, select: { paymentRestrictedAt: true } }));
+    return !!user?.paymentRestrictedAt;
+  }
+
+  /** The student themselves, or an active Guardian of theirs. */
+  private async assertMemberOrGuardian(callerId: string, studentId: string) {
+    this.assertUuid(studentId);
+    if (callerId === studentId) return;
+    try {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+      throw new ForbiddenException('Only the student, or their Guardian, can see their charges.');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -465,39 +681,8 @@ export class ChargesService {
   // The ledger
   // ---------------------------------------------------------------------------
 
-  /** One student's balance at one School, one at a time. */
-  private async lockBalance(tx: Tx, schoolId: string, studentId: string) {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`charge-balance:${schoolId}:${studentId}`}, 0))`;
-  }
-
-  /**
-   * Puts money that isn't on a charge yet toward open charges in `currency`:
-   * `firstChargeId` first, then the oldest due. Money not on a charge is the
-   * total paid in minus what is on charges still standing (money on a
-   * cancelled charge is free again). Each step is a ChargeAllocation row,
-   * marked with the desk payment it came from, or none for credit.
-   */
-  private async allocate(tx: Tx, schoolId: string, studentId: string, currency: string, transactionId: string | null, firstChargeId: string | null) {
-    const [sum, charges] = await Promise.all([
-      tx.balanceEntry.aggregate({ where: { schoolId, studentId, currency }, _sum: { amount: true } }),
-      tx.charge.findMany({
-        where: { schoolId, studentId, currency, cancelledAt: null },
-        include: { allocations: { select: { amount: true } } },
-        orderBy: [{ dueDate: 'asc' }, { invoiceNumber: 'asc' }],
-      }),
-    ]);
-    const remaining = (c: ChargeRow) => c.grossAmount - c.allocations.reduce((n, a) => n + a.amount, 0);
-    const owed = charges.reduce((n, c) => n + Math.max(0, remaining(c)), 0);
-    let free = owed - (sum._sum.amount ?? 0);
-    const ordered = firstChargeId ? [...charges.filter((c) => c.id === firstChargeId), ...charges.filter((c) => c.id !== firstChargeId)] : charges;
-    for (const c of ordered) {
-      if (free <= 0) break;
-      const take = Math.min(free, remaining(c));
-      if (take <= 0) continue;
-      await tx.chargeAllocation.create({ data: { id: randomUUID(), schoolId, studentId, chargeId: c.id, amount: take, transactionId } });
-      free -= take;
-    }
-  }
+  // lockBalance(), allocate() and settleChargePayment() live in
+  // charge-ledger.ts, shared with the webhook and the auto-pay job.
 
   private async readLedger(tx: Tx, schoolId: string, studentId: string) {
     const [charges, entries, allocations] = await Promise.all([
@@ -508,8 +693,20 @@ export class ChargesService {
     return { schoolId, charges, entries, allocations };
   }
 
+  /** The student's CHARGE_PAYMENT Transactions at one School, read on the jobs
+   * connection after the caller's access was checked (Branch Staff can't read
+   * Transaction under their own context, Spec 55 §8.2): how each payment was
+   * made, its surcharge, and the card payments still Pending or that failed. */
+  private async readPaymentTransactions(schoolId: string, studentId: string): Promise<PaymentTxRow[]> {
+    return this.prismaJobs.transaction.findMany({
+      where: { schoolId, studentId, kind: 'CHARGE_PAYMENT' },
+      select: { id: true, status: true, chargePaymentChannel: true, surchargeAmount: true, amount: true, currency: true, chargeId: true, paymentMethod: true, createdAt: true },
+    });
+  }
+
   private async shapeLedger(
     data: { schoolId: string; charges: ChargeRow[]; entries: EntryRow[]; allocations: AllocationRow[] },
+    transactions: PaymentTxRow[],
     timezone: string | null,
     forStaff: boolean,
   ) {
@@ -527,29 +724,65 @@ export class ChargesService {
     }
     const balances = [...byCurrency.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([currency, b]) => ({ schoolId: data.schoolId, currency, owed: b.owed, credit: Math.max(0, b.owed - b.sum), net: b.sum, overdue: b.overdue }));
+      .map(([currency, b]) => ({
+        schoolId: data.schoolId,
+        currency,
+        owed: b.owed,
+        credit: Math.max(0, b.owed - b.sum),
+        net: b.sum,
+        overdue: b.overdue,
+        payableAmount: Math.max(0, b.sum),
+        cardSurchargeAmount: 0,
+      }));
 
     const invoiceOf = new Map(data.charges.map((c) => [c.id, formatInvoiceNumber(c.invoiceNumber)]));
+    const txOf = new Map(transactions.map((t) => [t.id, t]));
     const recorders = forStaff ? await resolveUserNames(this.prismaAuth, data.entries.map((e) => e.recordedById).filter((id): id is string => !!id)) : new Map();
-    const payments = data.entries
+    const settled = data.entries
       .filter((e) => e.kind === 'PAYMENT')
       .map((e) => {
         const allocations = data.allocations
           .filter((a) => a.transactionId === e.transactionId)
           .map((a) => ({ chargeId: a.chargeId, invoiceLabel: invoiceOf.get(a.chargeId) ?? '', amount: a.amount }));
         const recorder = e.recordedById ? recorders.get(e.recordedById) : undefined;
+        const t = e.transactionId ? txOf.get(e.transactionId) : undefined;
         return {
           id: e.transactionId!,
           schoolId: e.schoolId,
           amount: -e.amount,
           currency: e.currency,
-          paymentMethod: e.paymentMethod as DeskChargePaymentMethod,
+          paymentMethod: e.paymentMethod as ChargePaymentMethod,
+          channel: t?.chargePaymentChannel ?? ('DESK' as const),
+          status: t?.status ?? ('SUCCESSFUL' as const),
+          surchargeAmount: t?.surchargeAmount ?? 0,
+          invoiceLabel: t?.chargeId ? (invoiceOf.get(t.chargeId) ?? null) : null,
           receivedAt: e.createdAt.toISOString(),
           recordedByName: forStaff && recorder ? `${recorder.firstName} ${recorder.surname}`.trim() : null,
           allocations,
           creditAmount: -e.amount - allocations.reduce((n, a) => n + a.amount, 0),
         };
       });
+    // Card payments not on the ledger: Pending ones (started in the app, or an
+    // automatic charge in flight), and automatic charges that failed. A
+    // Checkout the member walked away from (Failed, APP) isn't shown.
+    const open = transactions
+      .filter((t) => t.status === 'PENDING' || (t.status === 'FAILED' && t.chargePaymentChannel === 'AUTOMATIC'))
+      .map((t) => ({
+        id: t.id,
+        schoolId: data.schoolId,
+        amount: t.amount,
+        currency: t.currency ?? '',
+        paymentMethod: t.paymentMethod as ChargePaymentMethod,
+        channel: t.chargePaymentChannel ?? ('DESK' as const),
+        status: t.status,
+        surchargeAmount: t.surchargeAmount,
+        invoiceLabel: t.chargeId ? (invoiceOf.get(t.chargeId) ?? null) : null,
+        receivedAt: t.createdAt.toISOString(),
+        recordedByName: null,
+        allocations: [] as Array<{ chargeId: string; invoiceLabel: string; amount: number }>,
+        creditAmount: 0,
+      }));
+    const payments = [...settled, ...open].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt) || b.id.localeCompare(a.id));
     return { balances, charges, payments };
   }
 
@@ -596,6 +829,7 @@ export class ChargesService {
         cancelledAt: c.cancelledAt?.toISOString() ?? null,
         cancelledByName: nameOf(c.cancelledById),
         cancelReason: forStaff ? c.cancelReason : null,
+        cardSurchargeAmount: 0,
       };
     });
   }

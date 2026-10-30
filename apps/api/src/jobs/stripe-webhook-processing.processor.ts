@@ -13,6 +13,7 @@ import { cancelFutureBookingsFundedByExpiredMembership } from './membership-book
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
+import { receiptNotice, settleChargePayment } from '../charges/charge-ledger';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -387,8 +388,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
       case 'payment_intent.succeeded':
-        await this.handlePaymentIntentSucceeded(tx, objectId);
-        return noSideEffects;
+        // Backlog §3.6 step 2: a charge payment's receipt, sent after the commit.
+        return { ...noSideEffects, notifications: await this.handlePaymentIntentSucceeded(tx, objectId) };
       case 'payment_intent.payment_failed':
       // Decision 339 (T12) — a card payment the Student walked away from: Stripe
       // cancels the PaymentIntent (or its expired Checkout Session's), and the
@@ -475,11 +476,11 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * looked up against Transaction.stripePaymentIntentId, the correlation column
    * MembershipsService.purchase() sets at Transaction-creation time.
    */
-  private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string): Promise<void> {
+  private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string): Promise<NotificationFanoutJobData[]> {
     const transaction = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
     if (!transaction) {
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
-      return;
+      return [];
     }
     // FAILED is not final: payment_intent.payment_failed fires for each failed
     // attempt, and the payer can try again (another card in Checkout) on the
@@ -490,11 +491,26 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // Already settled by an earlier delivery of this same event, or a duplicate
       // payment_intent.succeeded Stripe occasionally sends for the same intent —
       // idempotent no-op, not an error.
-      return;
+      return [];
+    }
+    // Backlog §3.6 step 2 (Decision 303 item 4): a card payment toward charges,
+    // made in the app (hosted Checkout) or charged automatically. Settled the
+    // same way a desk payment is (charge-ledger.ts): Successful, on the
+    // ledger, put toward its charge, then the oldest due, then credit. Never
+    // refused here, even if the School closed meanwhile: it pays money the
+    // member already owed (as Decision 339 item 8 keeps recording a cash
+    // payment made to a School that stopped its subscription).
+    if (transaction.kind === 'CHARGE_PAYMENT') {
+      const settled = await settleChargePayment(tx, transaction.id);
+      if (!settled || !settled.currency) return [];
+      const receipt = receiptNotice(settled.id, settled.amount + settled.surchargeAmount, settled.currency);
+      return [
+        { notificationId: receipt.key, userId: settled.studentId, title: receipt.title, body: receipt.body, type: 'CHARGE', schoolId: settled.schoolId, targetType: 'PAYMENT', targetId: settled.id },
+      ];
     }
     const membershipPlanId = transaction.membershipPlanId;
     if (transaction.kind !== 'MEMBERSHIP' || !membershipPlanId) {
-      return; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
+      return []; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
     }
 
     // Decision 334 §8: a closed School takes no purchases or confirmations, and
@@ -514,7 +530,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       data: { status: 'SUCCESSFUL' },
     });
     if (updateResult.count === 0) {
-      return; // lost a race with a concurrent delivery — the other one already won.
+      return []; // lost a race with a concurrent delivery — the other one already won.
     }
 
     const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: membershipPlanId } });
@@ -597,6 +613,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       }
       throw err;
     }
+    return [];
   }
 
   /**
