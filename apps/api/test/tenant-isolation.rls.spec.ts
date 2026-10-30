@@ -160,6 +160,38 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
     }
   });
 
+  it('charges, balance entries and allocations are visible only within their School (Decisions 303, 338)', async () => {
+    const chargeId = randomUUID();
+    const entryId = randomUUID();
+    const allocationId = randomUUID();
+    // userB owns School B; the charge is on userB's own account there.
+    await superuser.charge.create({
+      data: {
+        id: chargeId, schoolId: schoolB.id, studentId: userB.id, invoiceNumber: 1, description: 'RLS charge', unitAmount: 1000,
+        taxRateBasisPoints: 0, taxInclusive: true, netAmount: 1000, taxAmount: 0, grossAmount: 1000, currency: 'GBP', dueDate: new Date('2026-11-01'),
+      },
+    });
+    try {
+      await superuser.balanceEntry.create({ data: { id: entryId, schoolId: schoolB.id, studentId: userB.id, kind: 'CHARGE', amount: 1000, currency: 'GBP', chargeId } });
+      await superuser.chargeAllocation.create({ data: { id: allocationId, schoolId: schoolB.id, studentId: userB.id, chargeId, amount: 100 } });
+
+      expect(await withUser(userA.id, (tx) => tx.charge.findMany({ where: { id: chargeId } }))).toHaveLength(0);
+      expect(await withUser(userA.id, (tx) => tx.balanceEntry.findMany({ where: { id: entryId } }))).toHaveLength(0);
+      expect(await withUser(userA.id, (tx) => tx.chargeAllocation.findMany({ where: { id: allocationId } }))).toHaveLength(0);
+      expect(await withUser(userB.id, (tx) => tx.charge.findMany({ where: { id: chargeId } }))).toHaveLength(1);
+
+      // The app connection never writes them: no INSERT or UPDATE grant at all.
+      await expect(withUser(userA.id, (tx) => tx.charge.updateMany({ where: { id: chargeId }, data: { grossAmount: 1 } }))).rejects.toThrow();
+      await expect(
+        withUser(userA.id, (tx) => tx.balanceEntry.create({ data: { schoolId: schoolA.id, studentId: userA.id, kind: 'PAYMENT', amount: -1, currency: 'GBP', transactionId: randomUUID() } })),
+      ).rejects.toThrow();
+    } finally {
+      await superuser.chargeAllocation.deleteMany({ where: { chargeId } });
+      await superuser.balanceEntry.deleteMany({ where: { chargeId } });
+      await superuser.charge.deleteMany({ where: { id: chargeId } });
+    }
+  });
+
   it('a request with no tenant context set sees zero rows, not an error and not all rows', async () => {
     // Deliberately bypass withUser — no SET LOCAL app.current_user_id at all.
     const schools = await appDb.school.findMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });

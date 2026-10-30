@@ -8,6 +8,7 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
+import { formatInvoiceNumber } from '../charges/charge-maths';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -47,9 +48,21 @@ export class TransactionsService {
    * `include` is safe here, unlike the User-relation join these two methods
    * each handle separately via resolveUserNames/not-at-all). */
   private withMembershipPlanTitle<
-    T extends { membershipPlan: { title: string } | null; booking?: { class: { title: string } } | null; membership?: { membershipPlan: { title: string } } | null },
-  >(t: T): Omit<T, 'membershipPlan' | 'booking' | 'membership'> & { membershipPlanTitle: string | null; bookingClassTitle: string | null } {
-    const { membershipPlan, booking, membership, ...rest } = t;
+    T extends {
+      membershipPlan: { title: string } | null;
+      booking?: { class: { title: string } } | null;
+      membership?: { membershipPlan: { title: string } } | null;
+      charge?: { description: string; invoiceNumber: number } | null;
+    },
+  >(
+    t: T,
+  ): Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge'> & {
+    membershipPlanTitle: string | null;
+    bookingClassTitle: string | null;
+    chargeDescription: string | null;
+    chargeInvoiceLabel: string | null;
+  } {
+    const { membershipPlan, booking, membership, charge, ...rest } = t;
     // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
@@ -59,6 +72,9 @@ export class TransactionsService {
       membershipPlanTitle: membershipPlan?.title ?? membership?.membershipPlan.title ?? null,
       // A late-cancellation fee (Decision 346) names the class it was for.
       bookingClassTitle: booking?.class.title ?? null,
+      // A desk payment toward a staff-created charge (Decision 338 item 9).
+      chargeDescription: charge?.description ?? null,
+      chargeInvoiceLabel: charge ? formatInvoiceNumber(charge.invoiceNumber) : null,
     };
   }
 
@@ -108,6 +124,8 @@ export class TransactionsService {
         booking: { select: { class: { select: { title: true } } } },
         // Decision 404: a freeze fee names the frozen membership's plan.
         membership: { select: { membershipPlan: { select: { title: true } } } },
+        // Decision 338 item 9: a desk payment names the charge it paid.
+        charge: { select: { description: true, invoiceNumber: true } },
       },
       orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
       take: take + 1,

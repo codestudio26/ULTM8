@@ -18,6 +18,7 @@ export const STAFF_ACTIONS = [
   'INVITE_ACCEPTED', // { role, branchName } — written by the invited person
   'OPEN_MAT_CHANGED', // { on }
   'SETTING_CHANGED', // { mustAcceptFirst }
+  'CHARGE_ACCESS_CHANGED', // { changes: [{ switch: 'createCharges' | 'cancelCharges', on }] } (Decisions 303, 338)
 ] as const;
 export type StaffAction = (typeof STAFF_ACTIONS)[number];
 
