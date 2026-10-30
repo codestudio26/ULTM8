@@ -36,6 +36,9 @@ export const waivers = {
     tab_signed: 'Signed',
     tab_unsigned: 'Not signed',
     noneInTab: 'No one here.',
+    search: 'Search by name',
+    noMatch: 'No one matches your search.',
+    loadMore: 'Load more',
     formerStudents: 'Former students',
   },
   signatureDetail: {

@@ -3380,6 +3380,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "Подписали",
       tab_unsigned: "Не подписали",
       noneInTab: "Здесь никого нет.",
+      search: "Поиск по имени",
+      noMatch: "Никто не подходит под поиск.",
+      loadMore: "Загрузить ещё",
       formerStudents: "Бывшие ученики",
     },
     signatureDetail: {

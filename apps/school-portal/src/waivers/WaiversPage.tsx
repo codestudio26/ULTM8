@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
@@ -15,6 +15,7 @@ import {
   useWaiverSettings,
   useWaiverSignature,
   useWaiverSignatures,
+  useWaiverSignatureSummary,
   type WaiverResponse,
   type WaiverSignatureResponse,
 } from './waiverQueries';
@@ -245,9 +246,12 @@ function statusBadgeVariant(status: string): 'success' | 'danger' | undefined {
  * Who has signed, and who still needs to. Unsigned entries are only for
  * current students; a signature from someone who has left stays, under
  * "Former students" (Waivers review W1). Tabs and A-to-Z order (W8, W14).
- * Opening a signature shows exactly what was signed (W3).
+ * Opening a signature shows exactly what was signed (W3). The first 100,
+ * then "Load more"; the server sorts, filters and searches, current students
+ * before former ones (Decision 418).
  */
 type SignatureTab = 'all' | 'signed' | 'unsigned';
+const SEARCH_DEBOUNCE_MS = 300;
 
 function signatureName(s: WaiverSignatureResponse, t: TranslateFn): string {
   return s.studentName ?? s.signerFullName ?? t('waivers.signatures.unknownStudent');
@@ -255,10 +259,17 @@ function signatureName(s: WaiverSignatureResponse, t: TranslateFn): string {
 
 function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: WaiverResponse }) {
   const t = useT();
-  const { data, isLoading, error } = useWaiverSignatures(schoolId, waiver.id);
+  const [tab, setTab] = useState<SignatureTab>('all');
+  const [search, setSearch] = useState('');
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setQ(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  const list = useWaiverSignatures(schoolId, waiver.id, { filter: tab === 'all' ? undefined : tab, q });
+  const { data, isLoading, error } = list;
   const settings = useWaiverSettings(schoolId);
   const remind = useRemindWaiver(schoolId, waiver.id);
-  const [tab, setTab] = useState<SignatureTab>('all');
   const [opened, setOpened] = useState<WaiverSignatureResponse | null>(null);
   const [recording, setRecording] = useState<WaiverSignatureResponse | null>(null);
   const [remindNote, setRemindNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -276,11 +287,12 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
       setRemindNote({ ok: false, text: err instanceof ApiError ? err.message : t('waivers.remind.failed') });
     }
   }
-  const summary = data?.summary;
-  const byName = (a: WaiverSignatureResponse, b: WaiverSignatureResponse) =>
-    signatureName(a, t).localeCompare(signatureName(b, t), formatLocale() ?? undefined, { sensitivity: 'base' });
-  const all = [...(data?.items ?? [])].sort(byName);
-  const shown = all.filter((s) => (tab === 'signed' ? s.status === 'SIGNED' : tab === 'unsigned' ? s.status !== 'SIGNED' : true));
+  // The totals are the whole roster's, whatever the tab or search.
+  const summary = data?.pages[0]?.summary;
+  const shown = data?.pages.flatMap((page) => page.items) ?? [];
+  const narrowed = tab !== 'all' || q !== '';
+  // Nobody on the list at all: no tabs or search to offer.
+  const nobody = !narrowed && shown.length === 0;
   const current = shown.filter((s) => !s.formerStudent);
   const former = shown.filter((s) => s.formerStudent);
 
@@ -331,7 +343,7 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
           {t('waivers.signatures.summary', { signed: summary.signed, total: summary.total })}
         </p>
       ) : null}
-      {!waiver.archivedAt && all.some(isOpenEntry) ? (
+      {!waiver.archivedAt && summary && summary.unsigned + summary.pending > 0 ? (
         <div style={{ marginBottom: 8 }}>
           <Button variant="secondary" onClick={sendReminders} loading={remind.isPending}>
             {t('waivers.remind.button')}
@@ -339,31 +351,43 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
         </div>
       ) : null}
       {remindNote ? remindNote.ok ? <SuccessBanner message={remindNote.text} /> : <ErrorBanner message={remindNote.text} /> : null}
-      {all.length > 0 ? (
-        <div className="ultm8-view-toggle" role="group" aria-label={t('waivers.signatures.filterLabel')} style={{ marginBottom: 8 }}>
-          {(['all', 'signed', 'unsigned'] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={['ultm8-view-toggle__btn', tab === key ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
-              aria-pressed={tab === key}
-              onClick={() => setTab(key)}
-            >
-              {t(`waivers.signatures.tab_${key}` as TranslationKey)}
-            </button>
-          ))}
+      {!isLoading && !error && !nobody ? (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+          <div className="ultm8-view-toggle" role="group" aria-label={t('waivers.signatures.filterLabel')}>
+            {(['all', 'signed', 'unsigned'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={['ultm8-view-toggle__btn', tab === key ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
+                aria-pressed={tab === key}
+                onClick={() => setTab(key)}
+              >
+                {t(`waivers.signatures.tab_${key}` as TranslationKey)}
+              </button>
+            ))}
+          </div>
+          <div style={{ minWidth: 200, flex: '1 1 200px', maxWidth: 320 }}>
+            <TextField
+              id="waiver-signatures-search"
+              type="search"
+              aria-label={t('waivers.signatures.search')}
+              placeholder={t('waivers.signatures.search')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       ) : null}
       {isLoading ? (
         <Spinner />
       ) : error ? (
         <ErrorBanner message={error instanceof ApiError ? error.message : t('waivers.signatures.loadFailed')} />
-      ) : all.length === 0 ? (
+      ) : nobody ? (
         <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{t('waivers.signatures.empty')}</p>
       ) : (
         <>
-          {current.length === 0 && former.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{t('waivers.signatures.noneInTab')}</p>
+          {shown.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{q ? t('waivers.signatures.noMatch') : t('waivers.signatures.noneInTab')}</p>
           ) : null}
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>{current.map(row)}</ul>
           {former.length > 0 ? (
@@ -371,6 +395,13 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
               <h4 style={{ fontSize: 13, margin: '16px 0 8px', color: 'var(--text-secondary)' }}>{t('waivers.signatures.formerStudents')}</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>{former.map(row)}</ul>
             </>
+          ) : null}
+          {list.hasNextPage ? (
+            <div style={{ marginTop: 12 }}>
+              <Button variant="secondary" onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage}>
+                {t('waivers.signatures.loadMore')}
+              </Button>
+            </div>
           ) : null}
         </>
       )}
@@ -495,10 +526,10 @@ function PaperSignatureModal({ schoolId, waiver, signature, onClose }: { schoolI
 function EditWaiverModal({ schoolId, waiver, onClose }: { schoolId: string; waiver: WaiverResponse; onClose: () => void }) {
   const t = useT();
   const updateWaiver = useUpdateWaiver(schoolId, waiver.id);
-  const signatures = useWaiverSignatures(schoolId, waiver.id);
+  const signatureSummary = useWaiverSignatureSummary(schoolId, waiver.id);
   const [pending, setPending] = useState<{ title: string; body: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const signedCount = signatures.data?.summary?.signed ?? 0;
+  const signedCount = signatureSummary.data?.signed ?? 0;
 
   async function saveWith(values: { title: string; body: string }, resign: boolean) {
     setError(null);

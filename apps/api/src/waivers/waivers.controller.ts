@@ -13,6 +13,7 @@ import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
 import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
 import { WaiversQueryDto } from './dto/waivers-query.dto';
+import { WaiverSignaturesQueryDto } from './dto/waiver-signatures-query.dto';
 import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto, RemindResponseDto } from './dto/paper-signature.dto';
 import { UpdateWaiverSettingsDto, WaiverSettingsDto } from './dto/waiver-settings.dto';
 import { StudentWaiverStatusDto } from './dto/student-waiver-status.dto';
@@ -53,16 +54,14 @@ export class WaiversController {
   /** v1.2 backend backlog — the Waivers page's "Signatures" panel. See
    * WaiversService.findSignaturesForWaiver's own header comment. */
   @ApiOkResponse({ type: WaiverSignatureListResponseDto })
-  @ApiQuery({ name: 'cursor', required: false, description: 'nextCursor from the previous page.' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get('schools/:schoolId/waivers/:id/signatures')
   findSignatures(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
     @Param('id') id: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: WaiverSignaturesQueryDto,
   ) {
-    return this.waiversService.findSignaturesForWaiver(user.sub, schoolId, id, query.cursor, query.limit);
+    return this.waiversService.findSignaturesForWaiver(user.sub, schoolId, id, query);
   }
 
   /** One signature with the text as it was signed (Waivers review W3). */

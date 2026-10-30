@@ -3296,6 +3296,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "İmzalayanlar",
       tab_unsigned: "İmzalamayanlar",
       noneInTab: "Burada kimse yok.",
+      search: "Ada göre ara",
+      noMatch: "Aramayla eşleşen kimse yok.",
+      loadMore: "Daha fazla yükle",
       formerStudents: "Eski öğrenciler",
     },
     signatureDetail: {

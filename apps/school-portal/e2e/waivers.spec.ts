@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Waivers page (Split-Pane Reader) against the real API: create, select in
@@ -164,6 +164,34 @@ test('opening a signature shows the wording that was signed, and says when the w
   await expect(dialog.getByText('Signed text')).toBeVisible();
   await expect(dialog.getByText('Today text')).toHaveCount(0);
   await expect(dialog.getByText('This waiver has been changed since it was signed.')).toBeVisible();
+});
+
+/** Stress test round 4 (Q2): a big roster shows its first 100 with "Load
+ * more", and the search asks the server. */
+test('the Signatures panel shows the first 100 with Load more, and searches by name', async ({ page }) => {
+  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Big Waiver', body: 'text' } });
+  waiverIds.push(waiver.id);
+  for (let i = 1; i <= 101; i++) {
+    const pupil = await addPerson('Pupil', String(i).padStart(3, '0'), [{ role: 'STUDENT', schoolId: s.schoolId }]);
+    await db.waiverSignature.create({ data: { id: randomUUID(), waiverId: waiver.id, studentId: pupil.id, schoolId: s.schoolId, status: 'UNSIGNED' } });
+  }
+
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Big Waiver' }).click();
+  const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
+  await expect(panel.getByText('0 of 101 signed')).toBeVisible();
+  await expect(panel.getByText(/^Pupil \d{3}$/)).toHaveCount(100);
+  await expect(panel.getByText('Pupil 101')).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Load more' }).click();
+  await expect(panel.getByText('Pupil 101')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Load more' })).toHaveCount(0);
+
+  await panel.getByRole('searchbox', { name: 'Search by name' }).fill('pupil 042');
+  await expect(panel.getByText(/^Pupil \d{3}$/)).toHaveCount(1);
+  await expect(panel.getByText('Pupil 042')).toBeVisible();
+  await expect(panel.getByText('0 of 101 signed')).toBeVisible(); // still the whole roster
+  await panel.getByRole('searchbox', { name: 'Search by name' }).fill('nobody like this');
+  await expect(panel.getByText('No one matches your search.')).toBeVisible();
 });
 
 test('archiving a waiver asks first; Cancel leaves it as it was', async ({ page }) => {

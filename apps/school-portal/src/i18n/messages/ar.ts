@@ -3464,6 +3464,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "وقّعوا",
       tab_unsigned: "لم يوقّعوا",
       noneInTab: "لا يوجد أحد هنا.",
+      search: "البحث بالاسم",
+      noMatch: "لا يوجد أحد يطابق البحث.",
+      loadMore: "تحميل المزيد",
       formerStudents: "طلاب سابقون",
     },
     signatureDetail: {
