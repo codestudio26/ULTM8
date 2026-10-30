@@ -7240,6 +7240,24 @@ User (Code), 30 Oct 2026: "1a, 2 keep, 3 yes, 4 yes, 5 ok, 6 ok", answering the 
 
 User (Code), 30 Oct 2026: "Count it toward new fee (Recommended)"; "Under Memberships (Recommended)"; "Net of refunds (Recommended)"; "Yes, all refunds (Recommended)".
 
+## Decision 416 — Billing follow-ups: build choices confirmed
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 338, 414, 415 · **Answers:** the choices to confirm in PRs #409, #410, #411, #413 and #415
+
+### Decision
+
+The product owner confirmed these choices made while building, as built:
+
+1. **Cancelling a cash or bank-transfer membership payment** (Decision 414 item 7, PR #409): staff with "Can cancel charges" cancel it from the student's Payments card, since the Transactions page is owner-only. "Mark as paid" stays owner-only. Payments cancelled before this change stay plain Failed.
+2. **"No tax on this item"** (Decision 414 item 5, PR #410): a ticked charge is shown as "No tax", never "0%". For a School whose prices include tax, a ticked charge takes no tax out of the price typed: the member pays the price typed.
+3. **Grading again after an unappliable promotion fee** (Decision 415 item 1, PR #411): the credit isn't held for the new fee; like all credit it pays the member's earliest open charge first. If the new fee is declined, the money stays as credit.
+4. **Refund notice for a refused purchase** (Decision 415 item 4, PR #413): "{amount} was refunded to your card: {plan} couldn't be bought.", the amount being the whole card payment.
+5. **Currency first** (Decision 414 item 6, PR #415): a plan with its own currency is also refused a price while the School has no currency; the Branch no-show fee checks the School's currency, not a Branch override; and nothing stops an owner clearing the School's currency after prices exist (left as it is).
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "ok", to the list of these choices.
+
 ## Decision 418 — Waivers page Signatures panel: first 100 with "Load more", search on the server, totals counted once
 
 **Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 340, 354 (Waivers review W1, W8, W14) · **Answers:** stress test round 4, Q2 (`docs/handover/STRESS-TEST-ROUND4.md`)
