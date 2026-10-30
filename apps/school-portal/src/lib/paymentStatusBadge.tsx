@@ -7,6 +7,9 @@ export const PAYMENT_STATUS_LABELS: Record<string, TranslationKey> = {
   SUCCESSFUL: 'lib.paymentStatus.successful',
   PENDING: 'lib.paymentStatus.pending',
   FAILED: 'lib.paymentStatus.failed',
+  // Decision 338 item 1: a cancelled cash or bank-transfer payment, stored
+  // FAILED with cancelledAt set (see transactionStatus below).
+  CANCELLED: 'lib.paymentStatus.cancelled',
   REFUNDED: 'lib.paymentStatus.refunded',
   DISPUTED: 'lib.paymentStatus.disputed',
 };
@@ -32,4 +35,11 @@ function PaymentStatusBadge({ status }: { status: string }) {
  * logic for fee-charge status, Phase 23). */
 export function paymentStatusBadge(status: string) {
   return <PaymentStatusBadge status={status} />;
+}
+
+/** The status a Transaction is shown with: a FAILED row that was cancelled
+ * reads Cancelled (Decision 338 item 1, Decision 414 item 7; the stored
+ * status stays FAILED). */
+export function transactionStatus(row: { status: string; cancelledAt?: string | null }): string {
+  return row.status === 'FAILED' && row.cancelledAt ? 'CANCELLED' : row.status;
 }

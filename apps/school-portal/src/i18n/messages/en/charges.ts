@@ -200,6 +200,11 @@ export const charges = {
     submit: 'Record payment',
     failed: "Couldn't record the payment. Try again.",
   },
+  /** Decision 338 item 1: a membership's cash or bank-transfer payment, on the Payments card. */
+  deskPayments: {
+    heading: "Membership payments at the desk",
+    hint: "Cash and bank-transfer payments for a membership: waiting for the money, or cancelled.",
+  },
   cancelDialog: {
     title: 'Cancel {invoice}?',
     body: "Cancel '{description}, {amount}'? The charge stays on record as Cancelled, and the member is told there is nothing to pay.",

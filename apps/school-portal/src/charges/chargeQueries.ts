@@ -8,6 +8,7 @@ export type Charge = components['schemas']['ChargeResponseDto'];
 export type ChargePayment = components['schemas']['ChargePaymentResponseDto'];
 export type ChargeBalance = components['schemas']['ChargeBalanceDto'];
 export type StudentCharges = components['schemas']['StudentChargesResponseDto'];
+export type DeskMembershipPayment = components['schemas']['DeskMembershipPaymentDto'];
 export type CreateChargeInput = components['schemas']['CreateChargeDto'];
 export type RecordChargePaymentInput = components['schemas']['RecordChargePaymentDto'];
 export type ChargePermission = components['schemas']['ChargePermissionDto'];
