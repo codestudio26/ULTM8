@@ -161,9 +161,14 @@ jobs:
         # --runInBand process, and the heap now reaches Node's ~4 GB default
         # (a run on PR #337 died "JavaScript heap out of memory" mid-suite with
         # no test failing). The runner has 16 GB; 6 GB is what local runs use.
+        # One worker instead of --runInBand: still one spec file at a time
+        # (they share a database), but --workerIdleMemoryLimit lets Jest
+        # replace the worker once its heap passes 3 GB between files, so the
+        # heap no longer grows with the number of spec files (a run on PR #404
+        # died the same way at 6 GB after 95 files).
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-        run: npx jest --config ./test/jest-e2e.json --runInBand --forceExit
+        run: npx jest --config ./test/jest-e2e.json --maxWorkers=1 --workerIdleMemoryLimit=3GB --forceExit
 
   # Everything else that doesn't need a live database (build, unit tests).
   build-and-unit-test:

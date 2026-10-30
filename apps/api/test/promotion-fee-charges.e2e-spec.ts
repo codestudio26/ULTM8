@@ -312,6 +312,21 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     expect(await promotionsOf('ben')).toBe(1);
   });
 
+  it('credit the owner adds, or a refund kept as credit, pays it and settles it (step 4)', async () => {
+    await mkStudent('ivy', 'white-0');
+    const id = await gradeToPricedStripe('ivy');
+    expect((await feeAction('ivy', id, 'accept')).status).toBe(201);
+    // Part paid at the desk, then the owner adds credit for the rest.
+    const c = (await chargeOf(id))!;
+    expect((await deskPay(user.ivy.id, 500, c.id)).status).toBe(201);
+    expect((await requestRow(id)).status).toBe('ACCEPTED');
+    const credit = await http().post(`/v1/schools/${school.id}/students/${user.ivy.id}/credits`).set(as('owner')).send({ amount: 1300, note: 'Goodwill' });
+    expect(credit.status).toBe(201);
+    expect((await requestRow(id)).status).toBe('PAID');
+    expect(await stripeOf('ivy')).toBe(rung['white-1'].id);
+    expect(await promotionsOf('ivy')).toBe(1);
+  });
+
   it('a card payment in the app (Checkout, then the webhook) settles it the same way', async () => {
     await mkStudent('cat', 'white-0');
     const id = await gradeToPricedStripe('cat');

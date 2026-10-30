@@ -11,8 +11,8 @@ import { cursorPaginate } from '../common/pagination/cursor-paginate';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
-import { lockBalance } from '../charges/charge-ledger';
 import { cancelChargeInTx, chargeCancelledNotice } from '../charges/charge-cancel';
+import { chargePaid, chargeRemaining, lockBalance } from '../charges/charge-ledger';
 import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
@@ -24,11 +24,10 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 type FeeCharge = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
 
-/** What a charge has had put toward it. Step 4 (refunds, PR #404) changes what
- * a charge still owes to total − refunded − paid (charge-ledger.ts
- * chargeRemaining()); use that here once it is on master. */
-const paidOn = (c: FeeCharge) => c.allocations.reduce((n, a) => n + a.amount, 0);
-const owedOn = (c: FeeCharge) => (c.cancelledAt ? 0 : Math.max(0, c.grossAmount - paidOn(c)));
+/** What a charge has had put toward it, and what it still owes: total −
+ * refunded − paid (step 4), as everywhere else on the ledger. */
+const paidOn = (c: FeeCharge) => chargePaid(c);
+const owedOn = (c: FeeCharge) => (c.cancelledAt ? 0 : Math.max(0, chargeRemaining(c)));
 
 /** Money as the API's English notices write it ("120.00 BRL"), as ChargesService does. */
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;

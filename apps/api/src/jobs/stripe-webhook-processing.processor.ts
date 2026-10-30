@@ -13,7 +13,7 @@ import { cancelFutureBookingsFundedByExpiredMembership } from './membership-book
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
-import { receiptNotice, settleChargePayment } from '../charges/charge-ledger';
+import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, recordChargeRefund, settleChargePayment } from '../charges/charge-ledger';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
@@ -522,6 +522,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     if (transaction.kind === 'CHARGE_PAYMENT') {
       const settled = await settleChargePayment(tx, transaction.id);
       if (!settled || !settled.currency) return [];
+      // Decision 338 item 10: the School may switch receipts off.
+      if (!(await chargeNoticeSwitches(tx, settled.schoolId)).receipt) return [];
       const receipt = receiptNotice(settled.id, settled.amount + settled.surchargeAmount, settled.currency);
       return [
         { notificationId: receipt.key, userId: settled.studentId, title: receipt.title, body: receipt.body, type: 'CHARGE', schoolId: settled.schoolId, targetType: 'PAYMENT', targetId: settled.id },
@@ -1301,16 +1303,22 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
     const match = paymentIntentId
-      ? await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } })
+      ? await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true, kind: true, schoolId: true, studentId: true } })
       : null;
     if (!match) {
       this.logger.log(`Refund on charge ${charge.id} (event ${stripeEventId}) matches no Transaction — recorded, nothing to update.`);
       return noSideEffects;
     }
+    // A payment toward charges: the member's balance lock first, in the same
+    // order as ChargesService.refund(), so the two never wait on each other.
+    if (match.kind === 'CHARGE_PAYMENT') await lockBalance(tx, match.schoolId, match.studentId);
     // The same row lock CancellationService takes around its own refunds, so the
     // two never write the total over each other.
     await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
-    const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    let transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    if (transaction.kind === 'CHARGE_PAYMENT') {
+      transaction = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+    }
     const refunded = Math.min(charge.amount_refunded, transaction.amount);
     let status = transaction.status;
     if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
@@ -1321,6 +1329,39 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     this.logger.log(`Transaction ${transaction.id} refund total synced from charge ${charge.id}: ${refunded} of ${transaction.amount}, ${status} (event ${stripeEventId}).`);
     if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return noSideEffects;
     return { ...noSideEffects, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
+  }
+
+  /**
+   * Backlog §3.6 step 4: a refund made in the Stripe dashboard on a card
+   * payment toward charges goes on the member's ledger as a refund to the card
+   * (kind STRIPE), by the same rules as a refund the owner makes in ULTM8
+   * (recordChargeRefund): the charge is never re-opened. Refunds ULTM8 sent
+   * itself (kind CARD) are already recorded, so only what Stripe holds beyond
+   * them is new. A refund that later fails is logged and left: the ledger is
+   * not put back. Returns the Transaction as it now stands.
+   */
+  private async recordStripeRefundOnLedger(tx: Prisma.TransactionClient, transaction: Transaction, refunded: number, stripeEventId: string): Promise<Transaction> {
+    if (!transaction.currency || transaction.status === 'PENDING' || transaction.status === 'FAILED') return transaction;
+    const recorded = await tx.chargeRefund.aggregate({ where: { transactionId: transaction.id, kind: { in: ['CARD', 'STRIPE'] } }, _sum: { amount: true } });
+    const delta = refunded - (recorded._sum.amount ?? 0);
+    if (delta < 0) {
+      this.logger.warn(`Transaction ${transaction.id}: Stripe now holds less refunded than the ledger (a failed refund?) (event ${stripeEventId}). The ledger is left as it is.`);
+      return transaction;
+    }
+    if (delta === 0) return transaction;
+    const state = await paymentRefundable(tx, transaction);
+    const amount = Math.min(delta, state.asMoney);
+    if (amount < delta) {
+      this.logger.warn(`Transaction ${transaction.id}: ${delta} refunded in Stripe, only ${amount} could go on the member's ledger (event ${stripeEventId}).`);
+    }
+    if (amount <= 0) return transaction;
+    try {
+      await recordChargeRefund(tx, { transaction, kind: 'STRIPE', amount, notes: null, refundedById: null });
+    } catch (err) {
+      if (!(err instanceof ChargeRefundError)) throw err;
+      this.logger.warn(`Transaction ${transaction.id}: the Stripe refund could not go on the ledger: ${err.message} (event ${stripeEventId}).`);
+    }
+    return tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
   }
 
   /**
@@ -1444,7 +1485,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // (`undefined`, no-op in Prisma's data object) for every other in-progress
     // status — it isn't resolved yet either way.
     const disputeLostAt = outcome.lost ? new Date() : outcome.status === 'SUCCESSFUL' ? null : undefined;
+    if (transaction.kind === 'CHARGE_PAYMENT') await lockBalance(tx, transaction.schoolId, transaction.studentId);
     await tx.transaction.update({ where: { id: transaction.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount, disputeLostAt } });
+    // Backlog §3.6 step 4: a payment toward charges.
+    const memberNotices = transaction.kind === 'CHARGE_PAYMENT' ? await this.applyDisputeToChargePayment(tx, transaction, dispute, outcome, stripeEventId) : [];
 
     // Decision 55 — a lost dispute force-Expires the Membership and cancels its
     // Subscription; Decision 122 — its future Bookings are cancelled too. See
@@ -1459,7 +1503,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       distinct: ['userId'],
     });
     return {
-      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment', transaction.schoolId)),
+      notifications: [
+        ...ownerGrants.map((grant) =>
+          this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, transaction.kind === 'CHARGE_PAYMENT' ? 'charge payment' : 'Membership payment', transaction.schoolId),
+        ),
+        ...memberNotices,
+      ],
       subscriptionCancellations,
       // Decision 112 — only on a NEWLY-recorded loss (never on a redelivery of an
       // already-lost dispute, since disputeLostAt is set unconditionally above
@@ -1469,6 +1518,62 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       chargebackPatternCheckStudentIds: outcome.lost ? [transaction.studentId] : [],
       freedClassIds,
     };
+  }
+
+  /**
+   * Backlog §3.6 step 4: a dispute on a card payment toward charges.
+   * - Lost: treated as a refund to the card of the disputed amount (kind
+   *   DISPUTE_LOST, recordChargeRefund): the money left the School, and the
+   *   charges it paid are not re-opened. Once per payment: a later event for
+   *   the same lost dispute finds it recorded. A loss later reversed to won is
+   *   logged and the ledger left as it is.
+   * - The member (a Guardian gets the usual copy) is told when the dispute is
+   *   opened and how it ended, unless the School switched dispute notices off
+   *   (Decision 338 item 10). The owner's own dispute notice is unchanged.
+   */
+  private async applyDisputeToChargePayment(
+    tx: Prisma.TransactionClient,
+    transaction: Transaction,
+    dispute: Stripe.Dispute,
+    outcome: { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean },
+    stripeEventId: string,
+  ): Promise<NotificationFanoutJobData[]> {
+    const lostBefore = await tx.chargeRefund.findFirst({ where: { transactionId: transaction.id, kind: 'DISPUTE_LOST' }, select: { id: true } });
+    if (outcome.lost && !lostBefore && transaction.currency) {
+      const state = await paymentRefundable(tx, transaction);
+      const amount = Math.min(dispute.amount, state.asMoney);
+      if (amount < Math.min(dispute.amount, transaction.amount)) {
+        this.logger.warn(`Dispute ${dispute.id} lost on Transaction ${transaction.id}: only ${amount} of ${dispute.amount} could go on the member's ledger.`);
+      }
+      if (amount > 0) {
+        await recordChargeRefund(tx, { transaction, kind: 'DISPUTE_LOST', amount, notes: null, refundedById: null });
+      }
+    } else if (!outcome.lost && outcome.status === 'SUCCESSFUL' && lostBefore) {
+      this.logger.warn(`Dispute ${dispute.id} on Transaction ${transaction.id} turned to won after it was recorded as lost. The member's ledger is left as it is.`);
+    }
+
+    const opened = transaction.status !== 'DISPUTED' && outcome.status === 'DISPUTED' && !outcome.lost;
+    // Told once each: a later event for the same lost dispute finds it recorded.
+    const ended = (outcome.lost && !lostBefore) || (outcome.status === 'SUCCESSFUL' && transaction.status === 'DISPUTED');
+    if ((!opened && !ended) || !(await chargeNoticeSwitches(tx, transaction.schoolId)).dispute) return [];
+    const amount = noticeMoney(dispute.amount, dispute.currency);
+    const body = outcome.lost
+      ? `The dispute on your card payment of ${amount} was decided in your favour. The money goes back to your card.`
+      : opened
+        ? `Your card payment of ${amount} is being disputed with your bank.`
+        : `The dispute on your card payment of ${amount} was decided in the School's favour. The payment stands.`;
+    return [
+      {
+        notificationId: `charge-dispute-${stripeEventId}-${transaction.studentId}`,
+        userId: transaction.studentId,
+        title: 'Payment dispute',
+        body,
+        type: 'CHARGE',
+        schoolId: transaction.schoolId,
+        targetType: 'PAYMENT',
+        targetId: transaction.id,
+      },
+    ];
   }
 
   /** FranchiseFeeCharge disputes — no further forced consequence beyond recording

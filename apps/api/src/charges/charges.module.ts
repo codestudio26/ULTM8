@@ -8,6 +8,8 @@ import { AuthModule } from '../auth/auth.module';
 import { RanksModule } from '../ranks/ranks.module';
 import { ChargesController } from './charges.controller';
 import { ChargesService } from './charges.service';
+import { ChargeReportsController } from './charge-reports.controller';
+import { ChargeReportsService } from './charge-reports.service';
 import { RecurringChargesController } from './recurring-charges.controller';
 import { RecurringChargesService } from './recurring-charges.service';
 
@@ -17,8 +19,8 @@ import { RecurringChargesService } from './recurring-charges.service';
   // RanksModule: PromotionFeeService, to settle a promotion fee once its charge
   // is fully paid (backlog §3.6 step 6).
   imports: [TenantsModule, SubscriptionPlansModule, GuardiansModule, QueueModule, PaymentsModule, AuthModule, RanksModule],
-  controllers: [ChargesController, RecurringChargesController],
-  providers: [ChargesService, RecurringChargesService],
+  controllers: [ChargesController, ChargeReportsController, RecurringChargesController],
+  providers: [ChargesService, ChargeReportsService, RecurringChargesService],
   exports: [ChargesService],
 })
 export class ChargesModule {}

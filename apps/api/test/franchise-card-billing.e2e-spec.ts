@@ -28,6 +28,7 @@ import { StripeClientService } from '../src/payments/stripe-client.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { FranchiseFeeBillingService } from '../src/franchise-fees/franchise-fee-billing.service';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
+import { PromotionFeeService } from '../src/ranks/promotion-fee.service';
 import { CHARGEBACK_PATTERN_RESTRICTION_QUEUE, NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../src/jobs/queue.constants';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -156,6 +157,8 @@ describeIfDb('Franchise fee paid by card (Decision 407)', () => {
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: queue },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: queue },
         { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: queue },
+        // None of these pay a promotion fee (backlog 3.6 step 6).
+        { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     webhook = jobsRef.get(StripeWebhookProcessingProcessor);

@@ -995,6 +995,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} wurden deinem Guthaben gutgeschrieben",
     payAtDesk: "Zum Bezahlen wende dich an den Empfang deiner Schule.",
     receiptSurcharge: "Inklusive Kartenzuschlag von {amount}",
+    address: "Adresse: {address}",
+    paymentInstructions: "So bezahlst du: {instructions}",
+    refunded: "Erstattet",
+    creditGiven: "{amount} Guthaben von deiner Schule am {date}",
+    refundStatus: {
+      REFUNDED: "Erstattet",
+      PART_REFUNDED: "Teilweise erstattet",
+    },
+    refund: {
+      CARD: "{amount} am {date} auf deine Karte erstattet",
+      MONEY_BACK: "{amount} am {date} an dich zurückgegeben",
+      CREDIT: "{amount} am {date} als Guthaben erstattet",
+      DISPUTE_LOST: "{amount} nach einer Anfechtung am {date} auf deine Karte zurück",
+      STRIPE: "{amount} am {date} auf deine Karte erstattet",
+    },
     pay: {
       balance: "Saldo bezahlen ({amount})",
       charge: "{amount} bezahlen",

@@ -1034,6 +1034,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} trafiło na twoje saldo jako nadpłata",
     payAtDesk: "Aby zapłacić, zapytaj w recepcji swojej szkoły.",
     receiptSurcharge: "Zawiera opłatę za kartę w wysokości {amount}",
+    address: "Adres: {address}",
+    paymentInstructions: "Jak zapłacić: {instructions}",
+    refunded: "Zwrócono",
+    creditGiven: "{amount} środków od Twojej Szkoły {date}",
+    refundStatus: {
+      REFUNDED: "Zwrócono",
+      PART_REFUNDED: "Zwrócono częściowo",
+    },
+    refund: {
+      CARD: "{amount} zwrócono na Twoją kartę {date}",
+      MONEY_BACK: "{amount} oddano Ci {date}",
+      CREDIT: "{amount} zwrócono jako środki {date}",
+      DISPUTE_LOST: "{amount} wróciło na Twoją kartę po sporze {date}",
+      STRIPE: "{amount} zwrócono na Twoją kartę {date}",
+    },
     pay: {
       balance: "Zapłać saldo ({amount})",
       charge: "Zapłać {amount}",

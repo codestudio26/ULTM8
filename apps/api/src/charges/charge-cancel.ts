@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { allocate } from './charge-ledger';
+import { allocate, chargePaid } from './charge-ledger';
 
 type Tx = Prisma.TransactionClient;
 type ChargeRow = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
@@ -26,12 +26,17 @@ export async function cancelChargeInTx(
   });
   if (updated.count === 0) return null;
   const row = await tx.charge.findUniqueOrThrow({ where: { id: input.chargeId }, include: { allocations: { select: { amount: true } } } });
-  await tx.balanceEntry.create({
-    data: { id: randomUUID(), schoolId: input.schoolId, studentId: row.studentId, kind: 'CHARGE_CANCELLED', amount: -row.grossAmount, currency: row.currency, chargeId: row.id },
-  });
+  // What is left of its total after refunds (step 4) comes off the
+  // balance; a charge refunded in full has nothing left to take off.
+  const left = row.grossAmount - row.refundedAmount;
+  if (left > 0) {
+    await tx.balanceEntry.create({
+      data: { id: randomUUID(), schoolId: input.schoolId, studentId: row.studentId, kind: 'CHARGE_CANCELLED', amount: -left, currency: row.currency, chargeId: row.id },
+    });
+  }
   // Anything already paid toward it is credit now, and goes to the next open charge.
   await allocate(tx, input.schoolId, row.studentId, row.currency, null, null);
-  return { charge: row, paid: row.allocations.reduce((n, a) => n + a.amount, 0) };
+  return { charge: row, paid: chargePaid(row) };
 }
 
 /** The member's "Charge cancelled" notice (Decision 338 item 1), the same

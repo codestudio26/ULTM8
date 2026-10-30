@@ -90,7 +90,7 @@ test('the Payments card labels the charge a promotion fee, links it to grading, 
   await page.goto(`/students/${s.student.id}`);
   const card = page.getByTestId('student-charges');
   await expect(card.getByText('Owes 18.00 GBP')).toBeVisible();
-  const row = page.getByRole('row', { name: /#0000001/ });
+  const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await expect(row).toContainText('Promotion fee');
   await expect(row).toContainText('BJJ · White 2');
   await expect(row.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
@@ -105,7 +105,7 @@ test('the Payments card labels the charge a promotion fee, links it to grading, 
 
 test('a desk payment in full shows the fee Paid in grading', async ({ page }) => {
   await page.goto(`/students/${s.student.id}`);
-  const row = page.getByRole('row', { name: /#0000001/ });
+  const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await row.getByRole('button', { name: 'Pay' }).click();
   const pay = page.getByTestId('record-charge-payment-form');
   await expect(pay.getByLabel('Amount received')).toHaveValue('18');
@@ -122,7 +122,7 @@ test('waiving the fee in grading cancels its charge', async ({ page }) => {
   await page.goto(`/students/${s.student.id}`);
   const box = page.getByRole('region', { name: 'Promotion fee', exact: true });
   await box.getByRole('button', { name: 'Waive fee' }).click();
-  const row = page.getByRole('row', { name: /#0000001/ });
+  const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await expect(row).toContainText('Cancelled');
   await expect(row).toContainText('Fee waived in grading on');
   await expect(page.getByTestId('student-charges').getByText('Nothing owed')).toBeVisible();

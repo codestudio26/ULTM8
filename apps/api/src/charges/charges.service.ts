@@ -18,7 +18,18 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
-import { allocate, freeCredit, lockBalance, receiptNotice } from './charge-ledger';
+import {
+  allocate,
+  chargePaid,
+  chargeRemaining,
+  ChargeRefundError,
+  freeCredit,
+  giveCredit,
+  lockBalance,
+  paymentRefundable,
+  receiptNotice,
+  recordChargeRefund,
+} from './charge-ledger';
 import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
@@ -35,7 +46,10 @@ import {
   ChargePaymentStatus,
   ChargeStatus,
   CreateChargeDto,
+  GiveCreditDto,
   RecordChargePaymentDto,
+  RefundChargePaymentDto,
+  RefundStatus,
   SetChargeAutoPayDto,
   SetChargePermissionDto,
   StartChargeCheckoutDto,
@@ -58,6 +72,7 @@ export interface ChargeAbilities {
 type ChargeRow = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
 type EntryRow = Prisma.BalanceEntryGetPayload<object>;
 type AllocationRow = Prisma.ChargeAllocationGetPayload<object>;
+type RefundRow = Prisma.ChargeRefundGetPayload<object>;
 /** A CHARGE_PAYMENT Transaction, as the payments list needs it (step 2). */
 type PaymentTxRow = {
   id: string;
@@ -186,10 +201,10 @@ export class ChargesService {
     const can = await this.assertMay(callerId, schoolId, studentId, 'read');
     const school = await this.loadSchool(schoolId);
     const data = await this.prismaApp.withTenantContext(callerId, (tx) => this.readLedger(tx, schoolId, studentId));
-    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true);
+    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, can.owner);
     return {
       ...view,
-      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment },
+      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
       settings: {
         currency: school.defaultCurrency?.toUpperCase() ?? null,
         taxCountry: school.taxCountry,
@@ -197,6 +212,8 @@ export class ChargesService {
         taxInclusive: school.taxInclusive,
         cancelReasonRequired: school.chargeCancelReasonRequired,
         paymentsSetUp: !!(await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } })),
+        refundNotesRequired: school.chargeRefundNotesRequired,
+        receiptNotice: school.chargeNoticeReceipt,
       },
     };
   }
@@ -259,7 +276,7 @@ export class ChargesService {
     });
 
     const charge = await this.prismaJobs.charge.findUniqueOrThrow({ where: { id }, include: { allocations: { select: { amount: true } } } });
-    await this.notify(studentId, schoolId, `charge-created-${id}`, 'New invoice', `Invoice ${formatInvoiceNumber(charge.invoiceNumber)} for ${charge.description}: ${money(charge.grossAmount, currency)}, due ${dayString(charge.dueDate)}.`, id);
+    await this.notify(studentId, schoolId, `charge-created-${id}`, 'New invoice', invoiceNoticeBody(charge), id);
     return (await this.shapeCharges([charge], school.timezone, true))[0];
   }
 
@@ -361,7 +378,7 @@ export class ChargesService {
       if (dto.chargeId) {
         const target = await tx.charge.findUniqueOrThrow({ where: { id: dto.chargeId }, include: { allocations: { select: { amount: true } } } });
         if (target.cancelledAt) throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
-        if (target.allocations.reduce((n, a) => n + a.amount, 0) >= target.grossAmount) {
+        if (chargeRemaining(target) <= 0) {
           throw new ConflictException({ code: 'CHARGE_ALREADY_PAID', message: 'This charge is already paid.' });
         }
       }
@@ -414,13 +431,161 @@ export class ChargesService {
     // for it applies (backlog §3.6 step 6).
     await this.promotionFees.settlePaidCharges(schoolId, studentId);
 
-    if (dto.sendReceipt !== false) {
+    // Decision 338 item 10: the School may switch receipts off.
+    if (dto.sendReceipt !== false && school.chargeNoticeReceipt) {
       const receipt = receiptNotice(transactionId, dto.amount, currency);
       await this.notify(studentId, schoolId, receipt.key, receipt.title, receipt.body, transactionId);
     }
+    return this.paymentResult(schoolId, studentId, transactionId, school.timezone, (await this.abilities(callerId, schoolId, studentId)).owner);
+  }
+
+  /** The payments list's row for one payment and the balances after it. */
+  private async paymentResult(schoolId: string, studentId: string, transactionId: string, timezone: string | null, forOwner: boolean) {
     const data = await this.prismaJobs.$transaction((tx) => this.readLedger(tx, schoolId, studentId));
-    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true);
+    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), timezone, true, forOwner);
     return { payment: view.payments.find((p) => p.id === transactionId)!, balances: view.balances };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 4: refunds, credit and resending an invoice (Decision 338 items 3
+  // and 5; Decision 303 item 3: refunds and credit are owner-only)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /schools/{schoolId}/charge-payments/{transactionId}/refund. The owner
+   * chooses each time where the money goes (Decision 338 item 3):
+   * - CARD: back to the card, through Stripe on the School's connected
+   *   account, as a Class Pack refund is (PaymentsService.refundPayment,
+   *   Decision 291). Only a card payment made in the app or automatically.
+   * - MONEY_BACK: a cash, Pix, bank-transfer or card-terminal payment given
+   *   back at the desk; only the records change ("Refunding a cash payment
+   *   only updates the records").
+   * - CREDIT: onto the member's balance as credit.
+   * Part refunds are allowed, never more than is left of the payment. The
+   * ledger rules are recordChargeRefund()'s (charge-ledger.ts): a refund never
+   * re-opens a charge. Notes are required unless the owner made them optional,
+   * and are for staff only. The card surcharge (Decision 406) is not refunded:
+   * nothing decided says it is, so only the payment toward charges is.
+   */
+  async refund(callerId: string, schoolId: string, transactionId: string, dto: RefundChargePaymentDto) {
+    this.assertUuid(transactionId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const school = await this.loadSchool(schoolId);
+    const notes = dto.notes?.trim() || null;
+    if (!notes && school.chargeRefundNotesRequired) {
+      throw new BadRequestException({ code: 'CHARGE_REFUND_NOTES_REQUIRED', message: 'Add a note for this refund.' });
+    }
+    const payment = await this.prismaJobs.transaction.findFirst({ where: { id: transactionId, schoolId, kind: 'CHARGE_PAYMENT' } });
+    if (!payment) throw new NotFoundException({ code: 'CHARGE_PAYMENT_NOT_FOUND', message: 'Payment not found' });
+    const card = payment.paymentMethod === 'STRIPE';
+    if (dto.destination === 'CARD' && (!card || !payment.stripePaymentIntentId)) {
+      throw new BadRequestException({
+        code: 'CHARGE_REFUND_NOT_A_CARD_PAYMENT',
+        message: "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.",
+      });
+    }
+    if (dto.destination === 'MONEY_BACK' && card) {
+      throw new BadRequestException({ code: 'CHARGE_REFUND_CARD_PAYMENT', message: 'A card payment goes back to the card, or onto the balance as credit.' });
+    }
+
+    try {
+      await this.prismaJobs.$transaction(
+        async (tx) => {
+          await lockBalance(tx, schoolId, payment.studentId);
+          // The same row lock as CancellationService and the charge.refunded
+          // webhook (Decision 382), so the refunded totals never cross.
+          await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${payment.id} FOR UPDATE`;
+          const fresh = await tx.transaction.findUniqueOrThrow({ where: { id: payment.id } });
+          if (fresh.status !== 'SUCCESSFUL') {
+            throw new ConflictException({ code: 'CHARGE_REFUND_NOT_PAID', message: 'Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.' });
+          }
+          // Checked before Stripe is called; recordChargeRefund checks again.
+          const state = await paymentRefundable(tx, fresh);
+          if (dto.amount > state.left) throw new ChargeRefundError('CHARGE_REFUND_TOO_MUCH', 'This is more than is left to refund on this payment.');
+          if (dto.destination === 'CREDIT' && dto.amount > state.asCredit) {
+            throw new ChargeRefundError('CHARGE_REFUND_NOT_ON_CHARGES', 'Only the part of this payment that paid charges can be turned into credit. The rest is credit already.');
+          }
+          if (dto.destination !== 'CREDIT' && dto.amount > state.asMoney) {
+            throw new ChargeRefundError('CHARGE_REFUND_USED_ELSEWHERE', "Part of this payment is credit that has already paid other charges, so it can't be given back.");
+          }
+          let stripeRefundId: string | null = null;
+          if (dto.destination === 'CARD') {
+            // One key per state refunded from, as a franchise-fee refund does:
+            // a retry of this same refund reaches Stripe as the same request.
+            const before = await tx.chargeRefund.aggregate({ where: { transactionId: fresh.id }, _sum: { amount: true } });
+            stripeRefundId = await this.paymentsService.refundPayment(
+              callerId,
+              schoolId,
+              fresh.stripePaymentIntentId!,
+              dto.amount,
+              `charge-refund-${fresh.id}-${before._sum.amount ?? 0}-${dto.amount}`,
+            );
+          }
+          await recordChargeRefund(tx, { transaction: fresh, kind: dto.destination, amount: dto.amount, notes, refundedById: callerId, stripeRefundId });
+        },
+        { timeout: 20_000 },
+      );
+    } catch (err) {
+      if (err instanceof ChargeRefundError) throw new BadRequestException({ code: err.code, message: err.message });
+      throw err;
+    }
+    // A refund as credit leaves the money on the balance, where it pays open
+    // charges, which may pay a promotion fee in full (step 6).
+    await this.promotionFees.settlePaidCharges(schoolId, payment.studentId);
+    return this.paymentResult(schoolId, payment.studentId, payment.id, school.timezone, true);
+  }
+
+  /** POST /schools/{schoolId}/students/{studentId}/credits: credit the owner
+   * gives (goodwill, say), in the School's currency, with a required
+   * staff-only note. It pays the member's open charges straight away, as all
+   * credit does (Decision 303 item 2). */
+  async giveCredit(callerId: string, schoolId: string, studentId: string, dto: GiveCreditDto) {
+    this.assertUuid(studentId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const wasStudent = await this.prismaJobs.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT' }, select: { id: true } });
+    if (!wasStudent) {
+      throw new BadRequestException({ code: 'CHARGE_NOT_A_STUDENT', message: 'Charges can only be created for a current student of this School.' });
+    }
+    const school = await this.loadSchool(schoolId);
+    const currency = school.defaultCurrency?.toUpperCase();
+    if (!currency) {
+      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+    }
+    const note = dto.note.trim();
+    if (!note) throw new BadRequestException({ code: 'CHARGE_CREDIT_NOTE_REQUIRED', message: 'Add a note saying why this credit is given.' });
+    await this.prismaJobs.$transaction(async (tx) => {
+      await lockSchoolOpen(tx, schoolId);
+      await lockBalance(tx, schoolId, studentId);
+      const recent = await tx.balanceEntry.findFirst({
+        where: { schoolId, studentId, kind: 'CREDIT_GIVEN', amount: -dto.amount, recordedById: callerId, createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) } },
+        select: { id: true },
+      });
+      if (recent) throw new ConflictException({ code: 'DESK_REPEAT', message: 'This was just recorded. Check before adding another.' });
+      await giveCredit(tx, { schoolId, studentId, currency, amount: dto.amount, note, recordedById: callerId });
+    });
+    // The credit may have paid a promotion fee in full (step 6).
+    await this.promotionFees.settlePaidCharges(schoolId, studentId);
+    const data = await this.prismaJobs.$transaction((tx) => this.readLedger(tx, schoolId, studentId));
+    const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, true);
+    return { balances: view.balances };
+  }
+
+  /** POST /schools/{schoolId}/charges/{chargeId}/resend-invoice (Decision 338
+   * item 5): the "New invoice" notice again, to the member and a Guardian.
+   * Whoever may create charges for the student. Taps within the same minute
+   * send it once. */
+  async resendInvoice(callerId: string, schoolId: string, chargeId: string) {
+    this.assertUuid(chargeId);
+    const charge = await this.prismaJobs.charge.findFirst({ where: { id: chargeId, schoolId } });
+    if (!charge) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
+    await this.assertMay(callerId, schoolId, charge.studentId, 'create');
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    if (charge.cancelledAt) throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
+    const minute = Math.floor(Date.now() / 60_000);
+    await this.notify(charge.studentId, schoolId, `charge-invoice-${chargeId}-${minute}`, 'New invoice', invoiceNoticeBody(charge), chargeId);
+    return { sent: true };
   }
 
   // ---------------------------------------------------------------------------
@@ -438,14 +603,24 @@ export class ChargesService {
         tx.balanceEntry.findMany({ where: { studentId, ...(impersonationSchoolId ? { schoolId: impersonationSchoolId } : {}) }, distinct: ['schoolId'], select: { schoolId: true } }),
       )
     ).map((r) => r.schoolId);
-    const schools = await this.prismaJobs.school.findMany({ where: { id: { in: schoolIds } }, select: { id: true, name: true, taxId: true, timezone: true } });
+    const schools = await this.prismaJobs.school.findMany({
+      where: { id: { in: schoolIds } },
+      select: { id: true, name: true, taxId: true, timezone: true, receiptAddress: true, receiptPaymentInstructions: true },
+    });
     const restricted = await this.isPaymentRestricted(studentId);
     const out: Array<
-      { schoolId: string; schoolName: string; taxId: string | null; payInApp: Awaited<ReturnType<ChargesService['payInApp']>> } & Awaited<ReturnType<ChargesService['shapeLedger']>>
+      {
+        schoolId: string;
+        schoolName: string;
+        taxId: string | null;
+        receiptAddress: string | null;
+        receiptPaymentInstructions: string | null;
+        payInApp: Awaited<ReturnType<ChargesService['payInApp']>>;
+      } & Awaited<ReturnType<ChargesService['shapeLedger']>>
     > = [];
     for (const school of schools.sort((a, b) => a.name.localeCompare(b.name))) {
       const data = await this.prismaApp.withTenantContext(studentId, (tx) => this.readLedger(tx, school.id, studentId));
-      const view = await this.shapeLedger(data, await this.readPaymentTransactions(school.id, studentId), school.timezone, false);
+      const view = await this.shapeLedger(data, await this.readPaymentTransactions(school.id, studentId), school.timezone, false, false);
       const payInApp = await this.payInApp(callerId, studentId, school.id, restricted);
       // Decision 406: the card surcharge, shown before paying.
       const bps = payInApp.available ? await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, school.id)) : 0;
@@ -453,10 +628,14 @@ export class ChargesService {
         schoolId: school.id,
         schoolName: school.name,
         taxId: school.taxId,
+        // Decision 338 item 6: shown on the School's invoices and receipts.
+        receiptAddress: school.receiptAddress,
+        receiptPaymentInstructions: school.receiptPaymentInstructions,
         payInApp,
         balances: view.balances.map((b) => ({ ...b, cardSurchargeAmount: cardSurchargeAmount(b.payableAmount, bps) })),
         charges: view.charges.map((c) => ({ ...c, cardSurchargeAmount: cardSurchargeAmount(c.owedAmount, bps) })),
         payments: view.payments,
+        credits: view.credits,
       });
     }
     return { schools: out };
@@ -505,7 +684,7 @@ export class ChargesService {
         const charge = await tx.charge.findFirst({ where: { id: dto.chargeId, schoolId, studentId }, include: { allocations: { select: { amount: true } } } });
         if (!charge) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
         if (charge.cancelledAt) throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
-        const owed = charge.grossAmount - charge.allocations.reduce((n, a) => n + a.amount, 0);
+        const owed = chargeRemaining(charge);
         const amount = owed - (await freeCredit(tx, schoolId, studentId, charge.currency));
         if (amount <= 0) throw new ConflictException({ code: 'CHARGE_ALREADY_PAID', message: 'This charge is already paid.' });
         return { amount, currency: charge.currency, description: `Invoice ${formatInvoiceNumber(charge.invoiceNumber)}: ${charge.description}` };
@@ -705,12 +884,13 @@ export class ChargesService {
   // charge-ledger.ts, shared with the webhook and the auto-pay job.
 
   private async readLedger(tx: Tx, schoolId: string, studentId: string) {
-    const [charges, entries, allocations] = await Promise.all([
+    const [charges, entries, allocations, refunds] = await Promise.all([
       tx.charge.findMany({ where: { schoolId, studentId }, include: { allocations: { select: { amount: true } } } }),
       tx.balanceEntry.findMany({ where: { schoolId, studentId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] }),
       tx.chargeAllocation.findMany({ where: { schoolId, studentId } }),
+      tx.chargeRefund.findMany({ where: { schoolId, studentId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] }),
     ]);
-    return { schoolId, charges, entries, allocations };
+    return { schoolId, charges, entries, allocations, refunds };
   }
 
   /** The student's CHARGE_PAYMENT Transactions at one School, read on the jobs
@@ -725,10 +905,12 @@ export class ChargesService {
   }
 
   private async shapeLedger(
-    data: { schoolId: string; charges: ChargeRow[]; entries: EntryRow[]; allocations: AllocationRow[] },
+    data: { schoolId: string; charges: ChargeRow[]; entries: EntryRow[]; allocations: AllocationRow[]; refunds: RefundRow[] },
     transactions: PaymentTxRow[],
     timezone: string | null,
     forStaff: boolean,
+    /** The owner: each Successful payment says what can still be refunded. */
+    forOwner = false,
   ) {
     const charges = await this.shapeCharges(data.charges, timezone, forStaff);
     const order = (c: { status: ChargeStatus }) => (c.status === 'OPEN' || c.status === 'PART_PAID' ? 0 : c.status === 'PAID' ? 1 : 2);
@@ -757,16 +939,54 @@ export class ChargesService {
 
     const invoiceOf = new Map(data.charges.map((c) => [c.id, formatInvoiceNumber(c.invoiceNumber)]));
     const txOf = new Map(transactions.map((t) => [t.id, t]));
-    const recorders = forStaff ? await resolveUserNames(this.prismaAuth, data.entries.map((e) => e.recordedById).filter((id): id is string => !!id)) : new Map();
+    const recorders = forStaff
+      ? await resolveUserNames(
+          this.prismaAuth,
+          [...data.entries.map((e) => e.recordedById), ...data.refunds.map((r) => r.refundedById)].filter((id): id is string => !!id),
+        )
+      : new Map();
+    const nameOf = (id: string | null) => {
+      const n = forStaff && id ? recorders.get(id) : undefined;
+      return n ? `${n.firstName} ${n.surname}`.trim() : null;
+    };
+    const credit = new Map(balances.map((b) => [b.currency, b.credit]));
+    const cancelled = new Set(data.charges.filter((c) => c.cancelledAt).map((c) => c.id));
     const settled = data.entries
       .filter((e) => e.kind === 'PAYMENT')
       .map((e) => {
+        // A refund's negative rows are not where the payment went.
         const allocations = data.allocations
-          .filter((a) => a.transactionId === e.transactionId)
+          .filter((a) => a.transactionId === e.transactionId && !a.refundId)
           .map((a) => ({ chargeId: a.chargeId, invoiceLabel: invoiceOf.get(a.chargeId) ?? '', amount: a.amount }));
         const recorder = e.recordedById ? recorders.get(e.recordedById) : undefined;
         const t = e.transactionId ? txOf.get(e.transactionId) : undefined;
+        const refunds = data.refunds.filter((r) => r.transactionId === e.transactionId);
+        const refundedAmount = refunds.reduce((n, r) => n + r.amount, 0);
+        const paidAmount = -e.amount;
+        const refundStatus: RefundStatus | null = refundedAmount <= 0 ? null : refundedAmount >= paidAmount ? 'REFUNDED' : 'PART_REFUNDED';
+        // The same sums as paymentRefundable() (charge-ledger.ts), from what
+        // is loaded; the refund itself checks again under the lock.
+        let refundable: { asMoney: number; asCredit: number } | null = null;
+        if (forOwner && (t?.status ?? 'SUCCESSFUL') === 'SUCCESSFUL') {
+          const left = Math.max(0, paidAmount - refundedAmount);
+          const net = data.allocations
+            .filter((a) => a.transactionId === e.transactionId && !cancelled.has(a.chargeId))
+            .reduce((m, a) => m.set(a.chargeId, (m.get(a.chargeId) ?? 0) + a.amount), new Map<string, number>());
+          const onCharges = Math.min(left, [...net.values()].filter((v) => v > 0).reduce((n, v) => n + v, 0));
+          refundable = { asMoney: Math.min(left - onCharges, credit.get(e.currency) ?? 0) + onCharges, asCredit: onCharges };
+        }
         return {
+          refundedAmount,
+          refundStatus,
+          refunds: refunds.map((r) => ({
+            id: r.id,
+            kind: r.kind,
+            amount: r.amount,
+            refundedAt: r.createdAt.toISOString(),
+            notes: forStaff ? r.notes : null,
+            refundedByName: nameOf(r.refundedById),
+          })),
+          refundable,
           id: e.transactionId!,
           schoolId: e.schoolId,
           amount: -e.amount,
@@ -801,9 +1021,24 @@ export class ChargesService {
         recordedByName: null,
         allocations: [] as Array<{ chargeId: string; invoiceLabel: string; amount: number }>,
         creditAmount: 0,
+        refundedAmount: 0,
+        refundStatus: null,
+        refunds: [] as Array<{ id: string; kind: RefundRow['kind']; amount: number; refundedAt: string; notes: string | null; refundedByName: string | null }>,
+        refundable: null,
       }));
     const payments = [...settled, ...open].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt) || b.id.localeCompare(a.id));
-    return { balances, charges, payments };
+    // Credit the owner gave (step 4). The note is for staff only.
+    const credits = data.entries
+      .filter((e) => e.kind === 'CREDIT_GIVEN')
+      .map((e) => ({
+        id: e.id,
+        amount: -e.amount,
+        currency: e.currency,
+        givenAt: e.createdAt.toISOString(),
+        note: forStaff ? e.note : null,
+        givenByName: nameOf(e.recordedById),
+      }));
+    return { balances, charges, payments, credits };
   }
 
   private async shapeCharges(rows: ChargeRow[], timezone: string | null, forStaff: boolean) {
@@ -818,9 +1053,9 @@ export class ChargesService {
     const lateFees = await this.lateFeeDetails(rows, timezone);
     const promotionFees = await this.promotionFeeDetails(rows);
     return rows.map((c) => {
-      const paid = c.allocations.reduce((n, a) => n + a.amount, 0);
+      const paid = chargePaid(c);
       const cancelled = !!c.cancelledAt;
-      const owed = cancelled ? 0 : Math.max(0, c.grossAmount - paid);
+      const owed = cancelled ? 0 : Math.max(0, chargeRemaining(c));
       const status: ChargeStatus = cancelled ? 'CANCELLED' : owed === 0 ? 'PAID' : paid > 0 ? 'PART_PAID' : 'OPEN';
       const due = dayString(c.dueDate);
       return {
@@ -852,6 +1087,9 @@ export class ChargesService {
         cancelledByName: nameOf(c.cancelledById),
         cancelReason: forStaff ? c.cancelReason : null,
         cardSurchargeAmount: 0,
+        // Step 4 (Decision 338 item 3): what was refunded off its total.
+        refundedAmount: c.refundedAmount,
+        refundStatus: c.refundedAmount <= 0 ? null : c.refundedAmount >= c.grossAmount ? ('REFUNDED' as const) : ('PART_REFUNDED' as const),
         lateFee: lateFees.get(c.id) ?? null,
         promotionFee: promotionFees.get(c.id) ?? null,
       };
@@ -945,6 +1183,8 @@ export class ChargesService {
         taxRateBasisPoints: true,
         taxInclusive: true,
         chargeCancelReasonRequired: true,
+        chargeRefundNotesRequired: true,
+        chargeNoticeReceipt: true,
       },
     });
     if (!school) throw new NotFoundException('School not found');
@@ -969,6 +1209,11 @@ export class ChargesService {
   private assertUuid(id: string) {
     if (!UUID_PATTERN.test(id)) throw new BadRequestException('id must be a valid UUID');
   }
+}
+
+/** The "New invoice" notice (Decision 338 item 5), also sent again on request. */
+function invoiceNoticeBody(c: { invoiceNumber: number; description: string; grossAmount: number; currency: string; dueDate: Date }): string {
+  return `Invoice ${formatInvoiceNumber(c.invoiceNumber)} for ${c.description}: ${money(c.grossAmount, c.currency)}, due ${dayString(c.dueDate)}.`;
 }
 
 /** A @db.Date as YYYY-MM-DD. */

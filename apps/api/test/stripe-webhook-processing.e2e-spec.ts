@@ -21,6 +21,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
+import { PromotionFeeService } from '../src/ranks/promotion-fee.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../src/payments/stripe-client.service';
 import { NOTIFICATION_FANOUT_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../src/jobs/queue.constants';
@@ -94,6 +95,8 @@ describeIfDb('stripe-webhook-processing job', () => {
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
         { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: fakeWaitlistCascadeQueue },
+        // None of these pay a promotion fee (backlog 3.6 step 6).
+        { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
@@ -531,6 +534,8 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: fakeNotificationFanoutQueue },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: fakeChargebackPatternRestrictionQueue },
         { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: fakeWaitlistCascadeQueue },
+        // None of these pay a promotion fee (backlog 3.6 step 6).
+        { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
@@ -871,6 +876,8 @@ describeIfDb('stripe-webhook-processing job — Membership-purchase-collision au
         // force-Expires here), so a bare faked queue is enough, same reasoning the
         // other two describe blocks above already apply to their own unrelated queues.
         { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        // None of these pay a promotion fee (backlog 3.6 step 6).
+        { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);

@@ -50,6 +50,7 @@ export const layout = {
     membershipPlans: 'Membership Plans',
     transactions: 'Transactions',
     recordPayment: 'Record a payment',
+    billingReports: 'Billing reports',
     cancellations: 'Cancellations',
     waivers: 'Waivers',
     franchises: 'Franchises',

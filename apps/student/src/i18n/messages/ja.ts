@@ -988,6 +988,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} が残高のクレジットになりました",
     payAtDesk: "お支払いはスクールの受付でお尋ねください。",
     receiptSurcharge: "カード手数料 {amount} を含みます",
+    address: "住所: {address}",
+    paymentInstructions: "支払い方法: {instructions}",
+    refunded: "返金済み",
+    creditGiven: "{date} にスクールから {amount} のクレジット",
+    refundStatus: {
+      REFUNDED: "返金済み",
+      PART_REFUNDED: "一部返金済み",
+    },
+    refund: {
+      CARD: "{date} に {amount} をカードに返金しました",
+      MONEY_BACK: "{date} に {amount} を返却しました",
+      CREDIT: "{date} に {amount} をクレジットとして返金しました",
+      DISPUTE_LOST: "{date} の異議申し立て後、{amount} がカードに戻りました",
+      STRIPE: "{date} に {amount} をカードに返金しました",
+    },
     pay: {
       balance: "残高を支払う（{amount}）",
       charge: "{amount} を支払う",

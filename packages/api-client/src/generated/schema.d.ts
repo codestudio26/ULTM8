@@ -6212,6 +6212,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/charge-payments/{transactionId}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_giveCredit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charges/{chargeId}/resend-invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_resendInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/charges": {
         parameters: {
             query?: never;
@@ -6285,6 +6333,38 @@ export interface paths {
         };
         get?: never;
         put: operations["ChargesController_setPermission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charge-reports/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargeReportsController_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charge-reports/member-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargeReportsController_memberBalances"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -6547,6 +6627,20 @@ export interface components {
             taxId?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
+            /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
+            chargeRefundNotesRequired?: boolean;
+            /** @description Decision 338 item 6: the School's address on its invoices and receipts in the app. Empty or null clears it. */
+            receiptAddress?: string | null;
+            /** @description Decision 338 item 6: how to pay (bank details, Pix key…), on its invoices in the app. Empty or null clears it. */
+            receiptPaymentInstructions?: string | null;
+            /** @description Decision 338 item 10: send the member a receipt for each payment toward charges (default on). */
+            chargeNoticeReceipt?: boolean;
+            /** @description Decision 338 item 10: tell the member when an automatic payment fails or a charge becomes overdue (default on). */
+            chargeNoticeFailedOverdue?: boolean;
+            /** @description Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on). */
+            chargeNoticeDispute?: boolean;
+            /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6650,6 +6744,20 @@ export interface components {
             taxId?: string | null;
             /** @description Decision 338 item 1: a reason is required when cancelling a charge (default on). */
             chargeCancelReasonRequired: boolean;
+            /** @description Decision 338 item 3: notes are required when refunding (default on). */
+            chargeRefundNotesRequired: boolean;
+            /** @description Decision 338 item 6: the School's address on its invoices and receipts. */
+            receiptAddress?: string | null;
+            /** @description Decision 338 item 6: payment instructions on its invoices. */
+            receiptPaymentInstructions?: string | null;
+            /** @description Decision 338 item 10: payment receipts to the member (default on). */
+            chargeNoticeReceipt: boolean;
+            /** @description Decision 338 item 10: failed or overdue payment notices to the member (default on). */
+            chargeNoticeFailedOverdue: boolean;
+            /** @description Decision 338 item 10: dispute notices to the member (default on). */
+            chargeNoticeDispute: boolean;
+            /** @description Decision 338 item 10: "Payment due soon", 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6757,6 +6865,20 @@ export interface components {
             taxId?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
+            /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
+            chargeRefundNotesRequired?: boolean;
+            /** @description Decision 338 item 6: the School's address on its invoices and receipts in the app. Empty or null clears it. */
+            receiptAddress?: string | null;
+            /** @description Decision 338 item 6: how to pay (bank details, Pix key…), on its invoices in the app. Empty or null clears it. */
+            receiptPaymentInstructions?: string | null;
+            /** @description Decision 338 item 10: send the member a receipt for each payment toward charges (default on). */
+            chargeNoticeReceipt?: boolean;
+            /** @description Decision 338 item 10: tell the member when an automatic payment fails or a charge becomes overdue (default on). */
+            chargeNoticeFailedOverdue?: boolean;
+            /** @description Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on). */
+            chargeNoticeDispute?: boolean;
+            /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -11763,6 +11885,11 @@ export interface components {
             /** @enum {string} */
             status: "PENDING" | "ACCEPTED" | "PAID" | "DECLINED" | "WAIVED" | "CANCELLED";
         };
+        /**
+         * @description Refunded in full, in part, or not at all (null).
+         * @enum {string}
+         */
+        RefundStatus: "REFUNDED" | "PART_REFUNDED";
         ChargeResponseDto: {
             id: string;
             schoolId: string;
@@ -11812,6 +11939,9 @@ export interface components {
             lateFee?: components["schemas"]["LateFeeDetailsDto"] | null;
             /** @description Backlog §3.6 step 6 (Decision 303 item 5): set when this charge is an accepted promotion fee, with the grade it is for. */
             promotionFee?: components["schemas"]["PromotionFeeChargeDetailsDto"] | null;
+            /** @description Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge. */
+            refundedAmount: number;
+            refundStatus?: components["schemas"]["RefundStatus"];
         };
         /** @enum {string} */
         ChargePaymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL" | "STRIPE";
@@ -11830,6 +11960,27 @@ export interface components {
             /** @example #0000001 */
             invoiceLabel: string;
             amount: number;
+        };
+        /**
+         * @description CARD: back to the card. MONEY_BACK: given back in cash, Pix, bank transfer or on the card terminal (records only). CREDIT: onto the balance as credit. DISPUTE_LOST: a lost card dispute. STRIPE: refunded in the Stripe dashboard.
+         * @enum {string}
+         */
+        ChargeRefundKind: "CARD" | "MONEY_BACK" | "CREDIT" | "DISPUTE_LOST" | "STRIPE";
+        ChargeRefundResponseDto: {
+            id: string;
+            kind: components["schemas"]["ChargeRefundKind"];
+            amount: number;
+            refundedAt: string;
+            /** @description Staff only; never sent to the member. */
+            notes?: string | null;
+            /** @description Staff only. */
+            refundedByName?: string | null;
+        };
+        ChargePaymentRefundableDto: {
+            /** @description What can go back to the member: to the card for a card payment, otherwise given back in cash and recorded. */
+            asMoney: number;
+            /** @description What can be turned into credit: the part of the payment still on charges. */
+            asCredit: number;
         };
         ChargePaymentResponseDto: {
             /** @description The Transaction id. */
@@ -11851,11 +12002,34 @@ export interface components {
             allocations: components["schemas"]["ChargePaymentAllocationDto"][];
             /** @description The part that went onto the balance as credit when it was taken. */
             creditAmount: number;
+            /** @description Step 4: refunded so far, of every kind. */
+            refundedAmount: number;
+            refundStatus?: components["schemas"]["RefundStatus"];
+            /** @description Oldest first. */
+            refunds: components["schemas"]["ChargeRefundResponseDto"][];
+            /** @description The owner only, for a Successful payment; null otherwise. */
+            refundable?: components["schemas"]["ChargePaymentRefundableDto"] | null;
+        };
+        BalanceCreditResponseDto: {
+            id: string;
+            amount: number;
+            currency: string;
+            givenAt: string;
+            /** @description Staff only; never sent to the member. */
+            note?: string | null;
+            /** @description Staff only. */
+            givenByName?: string | null;
         };
         ChargeAbilitiesDto: {
             create: boolean;
             cancel: boolean;
             recordPayment: boolean;
+            /** @description Refund a payment (owner only, Decision 303 item 3). */
+            refund: boolean;
+            /** @description Give credit (owner only, Decision 303 item 3). */
+            addCredit: boolean;
+            /** @description Resend a charge's invoice notice: whoever may create charges (Decision 338 item 5). */
+            resendInvoice: boolean;
         };
         ChargeSettingsDto: {
             currency?: string | null;
@@ -11865,6 +12039,10 @@ export interface components {
             cancelReasonRequired: boolean;
             /** @description A desk payment can be recorded: the School has its payments set up. */
             paymentsSetUp: boolean;
+            /** @description Decision 338 item 3: notes are required when refunding. */
+            refundNotesRequired: boolean;
+            /** @description Decision 338 item 10: the School sends payment receipts (on by default). */
+            receiptNotice: boolean;
         };
         StudentChargesResponseDto: {
             /** @description One per currency; usually one. */
@@ -11873,6 +12051,8 @@ export interface components {
             charges: components["schemas"]["ChargeResponseDto"][];
             /** @description Newest first. */
             payments: components["schemas"]["ChargePaymentResponseDto"][];
+            /** @description Credit the owner gave, newest first. */
+            credits: components["schemas"]["BalanceCreditResponseDto"][];
             /** @description What the caller may do here. */
             can: components["schemas"]["ChargeAbilitiesDto"];
             settings: components["schemas"]["ChargeSettingsDto"];
@@ -11914,6 +12094,31 @@ export interface components {
             balances: components["schemas"]["ChargeBalanceDto"][];
         };
         /**
+         * @description CARD: back to the card (a card payment made in the app). MONEY_BACK: a desk payment given back in cash, Pix, bank transfer or on the terminal; records only. CREDIT: onto the member's balance as credit.
+         * @enum {string}
+         */
+        ChargeRefundDestination: "CARD" | "MONEY_BACK" | "CREDIT";
+        RefundChargePaymentDto: {
+            /** @description Minor units. Part refunds are allowed; never more than is left to refund on the payment. */
+            amount: number;
+            destination: components["schemas"]["ChargeRefundDestination"];
+            /** @description For staff only. Required unless the School's owner made refund notes optional. */
+            notes?: string;
+        };
+        GiveCreditDto: {
+            /** @description Minor units of the School's currency. */
+            amount: number;
+            /** @description Why: for staff only, never shown to the member. */
+            note: string;
+        };
+        ChargeBalancesResponseDto: {
+            balances: components["schemas"]["ChargeBalanceDto"][];
+        };
+        ResendInvoiceResponseDto: {
+            /** @description The invoice notice was sent again to the member (and a Guardian). */
+            sent: boolean;
+        };
+        /**
          * @description Why not: the School doesn't take card payments, or the account is restricted to cash and bank transfer (Decision 68).
          * @enum {string}
          */
@@ -11934,9 +12139,15 @@ export interface components {
             schoolName: string;
             /** @description The School's tax ID, for its invoices (Decision 338 item 6). */
             taxId?: string | null;
+            /** @description Decision 338 item 6: the School's address for its invoices and receipts. */
+            receiptAddress?: string | null;
+            /** @description Decision 338 item 6: the School's payment instructions for its invoices. */
+            receiptPaymentInstructions?: string | null;
             balances: components["schemas"]["ChargeBalanceDto"][];
             charges: components["schemas"]["ChargeResponseDto"][];
             payments: components["schemas"]["ChargePaymentResponseDto"][];
+            /** @description Credit the School gave, newest first (no note). */
+            credits: components["schemas"]["BalanceCreditResponseDto"][];
             payInApp: components["schemas"]["MemberPayInAppDto"];
         };
         MemberChargesResponseDto: {
@@ -11982,6 +12193,58 @@ export interface components {
         SetChargePermissionDto: {
             canCreateCharges: boolean;
             canCancelCharges: boolean;
+        };
+        ChargeRevenueMonthDto: {
+            /**
+             * @description The month, in the School's time zone.
+             * @example 2026-10
+             */
+            month: string;
+            /** @description Payments toward charges received that month (desk, app and automatic), minor units. */
+            received: number;
+            /** @description Money given back that month: refunds to the card or in cash, and lost disputes. Refunds as credit are not money given back. */
+            refunded: number;
+            /** @description received − refunded. */
+            net: number;
+        };
+        ChargeOverviewCurrencyDto: {
+            currency: string;
+            /** @description Still owed on open charges that are not due yet (due today or later). */
+            scheduled: number;
+            /** @description Still owed on open charges past their due date. */
+            overdue: number;
+            /** @description Paid over the months covered, less money given back (the sum of revenue by month). */
+            paid: number;
+            /** @description Oldest month first. */
+            revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];
+        };
+        ChargeOverviewResponseDto: {
+            /** @description The months covered. */
+            months: number;
+            /** @description false: Branch Staff, who see their own branches' students only. */
+            wholeSchool: boolean;
+            /** @description One per currency; usually one. */
+            currencies: components["schemas"]["ChargeOverviewCurrencyDto"][];
+        };
+        MemberBalanceRowDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            currency: string;
+            /** @description Still to pay on open charges. */
+            owed: number;
+            /** @description In credit. */
+            credit: number;
+            /** @description owed − credit. Positive = owes; negative = in credit. */
+            net: number;
+            /** @description Of what is owed, the part past its due date. */
+            overdue: number;
+        };
+        MemberBalancesResponseDto: {
+            /** @description false: Branch Staff, who see their own branches' students only. */
+            wholeSchool: boolean;
+            /** @description Every member whose balance is not zero: owes (overdue first, most owed first), then in credit. */
+            items: components["schemas"]["MemberBalanceRowDto"][];
         };
         /** @enum {string} */
         RecurringChargeFrequency: "WEEKLY" | "MONTHLY" | "YEARLY";
@@ -22516,6 +22779,80 @@ export interface operations {
             };
         };
     };
+    ChargesController_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                transactionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundChargePaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordChargePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_giveCredit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiveCreditDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeBalancesResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_resendInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                chargeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResendInvoiceResponseDto"];
+                };
+            };
+        };
+    };
     ChargesController_listForMember: {
         parameters: {
             query?: never;
@@ -22633,6 +22970,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChargePermissionDto"];
+                };
+            };
+        };
+    };
+    ChargeReportsController_overview: {
+        parameters: {
+            query?: {
+                /** @description How many months, this one included, the Paid total and revenue by month cover. */
+                months?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeOverviewResponseDto"];
+                };
+            };
+        };
+    };
+    ChargeReportsController_memberBalances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberBalancesResponseDto"];
                 };
             };
         };

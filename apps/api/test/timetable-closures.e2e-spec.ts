@@ -20,6 +20,16 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ClassOccurrenceGenerationProcessor } from '../src/jobs/class-occurrence-generation.processor';
 
+/** Reads until the value is there (up to 5 s): queue workers write after the response. */
+async function waitFor<T>(read: () => Promise<T | null>): Promise<T | null> {
+  for (let i = 0; i < 25; i++) {
+    const value = await read();
+    if (value) return value;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return read();
+}
+
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -146,7 +156,9 @@ describeIfDb('Timetable closures (Decision 353, Q8; Decision 319 §3)', () => {
 
     expect((await superuser.class.findUniqueOrThrow({ where: { id: a.id } })).cancelledAt).not.toBeNull();
     expect((await superuser.booking.findFirstOrThrow({ where: { classId: a.id } })).status).toBe('CANCELLED');
-    const notice = await superuser.notification.findFirst({ where: { userId: student.id, type: 'CLASS_CANCELLED' } });
+    // The notice is written by the notification queue's worker, after the
+    // response: wait for it rather than reading it straight away.
+    const notice = await waitFor(() => superuser.notification.findFirst({ where: { userId: student.id, type: 'CLASS_CANCELLED' } }));
     expect(notice?.body).toContain('Flooded mats');
     for (const other of [b, all]) expect((await superuser.class.findUniqueOrThrow({ where: { id: other.id } })).cancelledAt).toBeNull();
 

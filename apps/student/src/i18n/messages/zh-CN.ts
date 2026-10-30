@@ -987,6 +987,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount} 已计入你的余额，作为预存款",
     payAtDesk: "如需付款，请到学校前台咨询。",
     receiptSurcharge: "含刷卡附加费 {amount}",
+    address: "地址：{address}",
+    paymentInstructions: "付款方式：{instructions}",
+    refunded: "已退款",
+    creditGiven: "{date} 学校给你的 {amount} 余额",
+    refundStatus: {
+      REFUNDED: "已退款",
+      PART_REFUNDED: "部分退款",
+    },
+    refund: {
+      CARD: "{date} 已退款 {amount} 到你的银行卡",
+      MONEY_BACK: "{date} 已向你退还 {amount}",
+      CREDIT: "{date} 已以余额形式退款 {amount}",
+      DISPUTE_LOST: "{date} 争议后 {amount} 已退回你的银行卡",
+      STRIPE: "{date} 已退款 {amount} 到你的银行卡",
+    },
     pay: {
       balance: "支付余额（{amount}）",
       charge: "支付 {amount}",
