@@ -635,6 +635,7 @@ export const serverMessages: Record<string, string> = {
   "Only the note's author or a School owner can change it.": "Solo el autor de la nota o un propietario de la Escuela puede cambiarla.",
   "A note can't be empty.": "Una nota no puede estar vacía.",
   "The School owner hasn't let you export the student list.": "El propietario de la Escuela no te ha permitido exportar la lista de alumnos.",
+  "The School owner hasn't let you freeze memberships.": "El propietario de la Escuela no te ha permitido congelar membresías.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Los permisos de acceso son para el personal de sede. Los instructores tienen los derechos de su rol y los propietarios tienen todos los derechos.",
   "You are not on the staff of this School.": "No formas parte del personal de esta escuela.",
   "Only the School owner can invite Branch Staff.": "Solo el propietario de la escuela puede invitar a Personal de sede.",

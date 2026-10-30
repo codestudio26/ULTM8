@@ -217,6 +217,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Il tuo abbonamento {plan} è sospeso dal {start}. Riprendi il {back}.",
     freezeDeclinedTitle: "Sospensione rifiutata",
     freezeDeclinedBody: "La tua scuola ha rifiutato la richiesta di sospendere {plan} dal {start}.",
+    freezeBookingsCancelledTitle: "Prenotazioni cancellate",
+    freezeBookingsCancelledBody: "Il tuo abbonamento {plan} è sospeso dal {start} e riprendi il {back}, quindi le tue prenotazioni in quel periodo sono state cancellate: {list}. Potrai prenotare di nuovo al termine della sospensione.",
     classMovedTitle: "Lezione spostata",
     classCancelledTitle: "Lezione annullata",
     toDecideTitle: "Promozione da decidere",

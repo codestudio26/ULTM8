@@ -101,6 +101,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: 'Export the student list as a spreadsheet (off by default; Decision 399).' })
   @IsBoolean()
   exportStudents!: boolean;
+
+  @ApiProperty({ description: "Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409)." })
+  @IsBoolean()
+  freezeMemberships!: boolean;
 }
 
 export class StaffAccessResponseDto {

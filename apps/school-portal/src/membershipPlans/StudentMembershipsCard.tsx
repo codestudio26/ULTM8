@@ -18,7 +18,14 @@ import {
   type MembershipPlanResponse,
   type StudentMembershipResponse,
 } from './membershipPlanQueries';
-import { FREEZABLE_TYPES, dayFromToday, formatCalendarDay, useFreezeAction, useFreezeMembership } from './freezeQueries';
+import {
+  FREEZABLE_TYPES,
+  dayFromToday,
+  formatCalendarDay,
+  useFreezeAction,
+  useFreezeMembership,
+  useStudentFreezableMemberships,
+} from './freezeQueries';
 import { useSchool } from '../schools/schoolQueries';
 
 const TYPE_LABELS: Record<string, TranslationKey> = {
@@ -38,22 +45,49 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+/** A row of the card: a full membership for the owner, or (freezeOnly) the
+ * few fields Branch Staff who may freeze get (Decision 409). */
+type MembershipRow = Pick<StudentMembershipResponse, 'id' | 'planTitle' | 'planType' | 'live' | 'frozen' | 'freeze'> & {
+  expiryDate?: string | null;
+  cancelAt?: string | null;
+  classesRemaining?: number | null;
+  giftedById?: string | null;
+};
+
 /**
  * The owner's view of one Student's memberships (Decision 348): what they
  * hold, selling a plan at the desk (cash, bank transfer, Pix or card
  * terminal), giving a Friend
  * Pass, and cancelling a Subscription at the end of its paid month.
+ *
+ * `freezeOnly` (Decision 409): Branch Staff with "Can freeze memberships"
+ * see only the memberships that can be frozen, with the freeze actions; no
+ * selling, Friend Pass or cancelling, which stay the owner's.
  */
-export function StudentMembershipsCard({ schoolId, studentId, studentName }: { schoolId: string; studentId: string; studentName: string }) {
+export function StudentMembershipsCard({
+  schoolId,
+  studentId,
+  studentName,
+  freezeOnly = false,
+}: {
+  schoolId: string;
+  studentId: string;
+  studentName: string;
+  freezeOnly?: boolean;
+}) {
   const t = useT();
-  const memberships = useStudentMemberships(schoolId, studentId);
-  const plans = useMembershipPlans(schoolId);
+  const full = useStudentMemberships(freezeOnly ? null : schoolId, studentId);
+  const freezable = useStudentFreezableMemberships(freezeOnly ? schoolId : null, studentId);
+  const memberships = freezeOnly
+    ? { ...freezable, data: freezable.data ? { items: freezable.data.items.map((m): MembershipRow => ({ ...m, live: true })) } : undefined }
+    : full;
+  const plans = useMembershipPlans(freezeOnly ? null : schoolId);
   const cancel = useCancelMembership(schoolId, studentId);
   const [dialog, setDialog] = useState<'sell' | 'gift' | null>(null);
-  const [cancelling, setCancelling] = useState<StudentMembershipResponse | null>(null);
+  const [cancelling, setCancelling] = useState<MembershipRow | null>(null);
   // Decision 404: freezing a membership.
-  const [freezing, setFreezing] = useState<StudentMembershipResponse | null>(null);
-  const [ending, setEnding] = useState<StudentMembershipResponse | null>(null);
+  const [freezing, setFreezing] = useState<MembershipRow | null>(null);
+  const [ending, setEnding] = useState<MembershipRow | null>(null);
   const freezeAction = useFreezeAction(schoolId);
   const [freezeError, setFreezeError] = useState<string | null>(null);
 
@@ -70,7 +104,7 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
   const sellable = activePlans.filter((p) => DESK_TYPES.includes(p.type));
   const friendPasses = activePlans.filter((p) => p.type === 'FRIEND_PASS');
 
-  function statusOf(m: StudentMembershipResponse) {
+  function statusOf(m: MembershipRow) {
     if (!m.live) return <Badge variant="default">{t('membershipPlans.studentCard.ended')}</Badge>;
     // Decision 404: frozen, a freeze to come, or a request waiting.
     if (m.frozen && m.freeze) return <Badge variant="info">{t('membershipPlans.studentCard.freeze.frozenUntil', { date: formatCalendarDay(m.freeze.endsAt) })}</Badge>;
@@ -86,7 +120,7 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
     return <Badge variant="success">{t('membershipPlans.studentCard.active')}</Badge>;
   }
 
-  function detailsOf(m: StudentMembershipResponse) {
+  function detailsOf(m: MembershipRow) {
     const parts: string[] = [];
     if (m.classesRemaining !== null && m.classesRemaining !== undefined) parts.push(t('membershipPlans.studentCard.classesLeft', { count: m.classesRemaining }));
     if (m.expiryDate) parts.push(t('membershipPlans.studentCard.expires', { date: formatDay(m.expiryDate) }));
@@ -102,14 +136,16 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
           <h2 className="ultm8-page-header__title" style={{ fontSize: 15, margin: 0 }}>
             {t('membershipPlans.studentCard.title')}
           </h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" onClick={() => setDialog('sell')}>
-              {t('membershipPlans.studentCard.sell')}
-            </Button>
-            <Button variant="secondary" onClick={() => setDialog('gift')}>
-              {t('membershipPlans.studentCard.gift')}
-            </Button>
-          </div>
+          {freezeOnly ? null : (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Button variant="secondary" onClick={() => setDialog('sell')}>
+                {t('membershipPlans.studentCard.sell')}
+              </Button>
+              <Button variant="secondary" onClick={() => setDialog('gift')}>
+                {t('membershipPlans.studentCard.gift')}
+              </Button>
+            </div>
+          )}
         </div>
         {memberships.isLoading ? (
           <Spinner />
@@ -118,9 +154,13 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
         ) : null}
         {freezeError ? <ErrorBanner message={freezeError} /> : null}
         {memberships.isLoading || memberships.error ? null : (memberships.data?.items ?? []).length === 0 ? (
-          <EmptyState title={t('membershipPlans.studentCard.emptyTitle')} description={t('membershipPlans.studentCard.emptyDescription')} />
+          freezeOnly ? (
+            <p style={{ margin: 0 }}>{t('membershipPlans.studentCard.freeze.staffEmpty')}</p>
+          ) : (
+            <EmptyState title={t('membershipPlans.studentCard.emptyTitle')} description={t('membershipPlans.studentCard.emptyDescription')} />
+          )
         ) : (
-          <Table<StudentMembershipResponse>
+          <Table<MembershipRow>
             rows={memberships.data?.items ?? []}
             columns={[
               { key: 'plan', header: t('membershipPlans.studentCard.columnPlan'), render: (m) => m.planTitle },
@@ -132,7 +172,7 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
                 header: '',
                 render: (m) => (
                   <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-                    {m.planType === 'SUBSCRIPTION' && m.live && !m.cancelAt ? (
+                    {!freezeOnly && m.planType === 'SUBSCRIPTION' && m.live && !m.cancelAt ? (
                       <Button variant="secondary" onClick={() => setCancelling(m)}>
                         {t('membershipPlans.studentCard.cancel')}
                       </Button>
@@ -197,7 +237,8 @@ export function StudentMembershipsCard({ schoolId, studentId, studentName }: { s
 }
 
 /**
- * Decision 404: the owner freezes a membership straight away. At least 7 days,
+ * Decision 404: staff freeze a membership straight away (the owner, or
+ * Branch Staff with "Can freeze memberships", Decision 409). At least 7 days,
  * starting today or later; the member is back on the end date. Shows the
  * School's maximum and its fee, if any (charged when the freeze is made).
  */
@@ -208,7 +249,7 @@ function FreezeModal({
   onClose,
 }: {
   schoolId: string;
-  membership: StudentMembershipResponse;
+  membership: Pick<MembershipRow, 'id' | 'planTitle'>;
   studentName: string;
   onClose: () => void;
 }) {
@@ -236,6 +277,8 @@ function FreezeModal({
       <form onSubmit={submit} data-testid="freeze-modal">
         {error ? <ErrorBanner message={error} /> : null}
         <p style={{ marginTop: 0 }}>{t('membershipPlans.studentCard.freeze.intro')}</p>
+        {/* Decision 409: approving cancels the bookings inside the freeze. */}
+        <p className="ultm8-field__hint">{t('membershipPlans.studentCard.freeze.bookingsNote')}</p>
         <Field label={t('membershipPlans.studentCard.freeze.startLabel')} htmlFor="freeze-start">
           <TextField id="freeze-start" type="date" required min={dayFromToday(0)} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
         </Field>

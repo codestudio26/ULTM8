@@ -10,6 +10,7 @@ import {
   MembershipFreezeResponseDto,
   MyFreezableMembershipListResponseDto,
   SchoolMembershipFreezeListResponseDto,
+  StudentFreezableMembershipListResponseDto,
 } from './dto/membership-freeze.dto';
 
 /** Decision 404: freezing a membership. See MembershipFreezesService. */
@@ -20,7 +21,8 @@ import {
 export class MembershipFreezesController {
   constructor(private readonly freezes: MembershipFreezesService) {}
 
-  /** The School's owner freezes a membership straight away. */
+  /** Staff freeze a membership straight away: the owner, or Branch Staff with
+   * "Can freeze memberships" for their branches' students (Decision 409). */
   @ApiCreatedResponse({ type: MembershipFreezeResponseDto })
   @Post('schools/:schoolId/memberships/:membershipId/freezes')
   createByStaff(
@@ -32,7 +34,18 @@ export class MembershipFreezesController {
     return this.freezes.createByStaff(user.sub, schoolId, membershipId, dto);
   }
 
-  /** The School's freezes and freeze requests (?status=REQUESTED for the ones waiting). Owner only. */
+  /** Decision 409: a student's memberships that can be frozen, with their
+   * freeze. The owner, or Branch Staff with "Can freeze memberships" for the
+   * students of their branches. */
+  @ApiOkResponse({ type: StudentFreezableMembershipListResponseDto })
+  @Get('schools/:schoolId/students/:studentId/freezable-memberships')
+  listForStudent(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.freezes.listForStudent(user.sub, schoolId, studentId);
+  }
+
+  /** The School's freezes and freeze requests (?status=REQUESTED for the ones
+   * waiting). The owner; Branch Staff with "Can freeze memberships" see their
+   * branches' students' (Decision 409). */
   @ApiOkResponse({ type: SchoolMembershipFreezeListResponseDto })
   @Get('schools/:schoolId/freezes')
   listForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Query() query: MembershipFreezeListQueryDto) {

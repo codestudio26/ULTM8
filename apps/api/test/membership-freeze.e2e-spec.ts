@@ -8,7 +8,9 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import { Job } from 'bullmq';
 import { applyDueFreezeBilling, applyFreezeBillingShift } from '../src/memberships/freeze/freeze-billing';
+import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 
 /**
  * Decision 404 (backlog 3.4): freezing a membership. Staff freeze straight
@@ -16,7 +18,10 @@ import { applyDueFreezeBilling, applyFreezeBillingShift } from '../src/membershi
  * declines. Length rules, which plans can be frozen, the Subscription's next
  * charge moving (Stripe stubbed), a fixed-term expiry date moving, the fee,
  * booking and check-in refused while frozen, and the tenant boundaries.
- * Everything else runs against a real Postgres.
+ * Decision 409: the bookings inside a freeze cancelled, the "Can freeze
+ * memberships" access switch, when the next charge moves (at approval, or
+ * after the renewal that falls before the freeze) and £0 invoices kept off
+ * the ledger. Everything else runs against a real Postgres.
  */
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -52,11 +57,17 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
   const schoolIds: string[] = [];
   const plans: Record<string, string> = {};
 
-  // Stripe, stubbed. The paid period ends in 20 days.
+  // Stripe, stubbed. The paid period ends in 20 days unless a test sets its
+  // own (periods). A trial_end sent is kept (trials) and read back, as Stripe
+  // would.
   const periodEnd = Math.floor((Date.now() + 20 * DAY) / 1000);
+  const periods = new Map<string, number>();
+  const trials = new Map<string, number>();
+  const invoices = new Map<string, object>();
   let subUpdate: jest.Mock;
   let subRetrieve: jest.Mock;
   let intentCreate: jest.Mock;
+  const eventIds: string[] = [];
 
   const http = () => request(app.getHttpServer());
   const as = (token: string) => ({
@@ -120,6 +131,28 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
     });
   }
 
+  /** A Membership Subscription's renewal invoice, as Stripe would send it. */
+  const renewalInvoice = (subscriptionId: string, amount: number) => ({
+    id: `in_${randomUUID()}`,
+    billing_reason: 'subscription_cycle',
+    amount_paid: amount,
+    amount_due: amount,
+    currency: 'gbp',
+    created: Math.floor(Date.now() / 1000),
+    status_transitions: { paid_at: Math.floor(Date.now() / 1000) },
+    parent: { subscription_details: { subscription: subscriptionId } },
+    payments: { data: [] },
+  });
+  /** Runs the webhook job for one invoice.paid event. */
+  async function invoicePaid(invoice: { id: string } & Record<string, unknown>) {
+    invoices.set(invoice.id, invoice);
+    const stripeEventId = `evt_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+    await app
+      .get(StripeWebhookProcessingProcessor)
+      .process({ data: { stripeEventId, eventType: 'invoice.paid', objectId: invoice.id, stripeAccountId: 'acct_fixture' } } as unknown as Job);
+  }
+
   const staffFreeze = (membershipId: string, startsAt: string, endsAt: string, token = tokenOwner, schoolId = school.id) =>
     as(token).post(`/v1/schools/${schoolId}/memberships/${membershipId}/freezes`, { startsAt, endsAt });
   const askFreeze = (membershipId: string, startsAt: string, endsAt: string, token: string) =>
@@ -134,11 +167,19 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
     await app.listen(0);
     prismaJobs = app.get(PrismaJobsService);
 
-    subRetrieve = jest.fn().mockImplementation(async () => ({ status: 'active', trial_end: null, items: { data: [{ current_period_end: periodEnd }] } }));
-    subUpdate = jest.fn().mockResolvedValue({});
+    subRetrieve = jest.fn().mockImplementation(async (id: string) => ({
+      status: 'active',
+      trial_end: trials.get(id) ?? null,
+      items: { data: [{ current_period_end: periods.get(id) ?? periodEnd }] },
+    }));
+    subUpdate = jest.fn().mockImplementation(async (id: string, params: { trial_end?: number }) => {
+      if (params.trial_end) trials.set(id, params.trial_end);
+      return {};
+    });
     intentCreate = jest.fn().mockImplementation(async () => ({ id: `pi_${randomUUID()}`, status: 'succeeded' }));
     jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({
       subscriptions: { retrieve: subRetrieve, update: subUpdate },
+      invoices: { retrieve: jest.fn(async (id: string) => invoices.get(id)) },
       customers: { retrieve: jest.fn().mockResolvedValue({ invoice_settings: { default_payment_method: 'pm_fixture' } }) },
       paymentIntents: { create: intentCreate },
     } as never);
@@ -176,6 +217,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
   afterAll(async () => {
     const where = { schoolId: { in: schoolIds } };
     await superuser.membershipFreeze.deleteMany({ where });
+    await superuser.waitlistEntry.deleteMany({ where });
     await superuser.trainingLog.deleteMany({ where });
     await superuser.booking.deleteMany({ where });
     await superuser.class.deleteMany({ where });
@@ -186,7 +228,12 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
     await superuser.paymentAccount.deleteMany({ where });
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: userIds } } });
+    await superuser.staffActivity.deleteMany({ where });
+    await superuser.staffPermission.deleteMany({ where });
+    await superuser.studentHomeBranch.deleteMany({ where });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.branch.deleteMany({ where });
+    await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
@@ -241,18 +288,103 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
       expect(again.body.error.code).toBe('FREEZE_NOT_RUNNING');
     });
 
-    it('a freeze starting later shifts nothing until its start day, when the sweep does it', async () => {
+    it('Decision 409: a freeze starting later, with no renewal before it, moves the next charge at approval; ended before it started, the charge goes back', async () => {
       const { user } = await mkStudent('later');
-      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: `sub_${randomUUID()}` });
+      const subId = `sub_${randomUUID()}`;
+      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: subId });
+      // Paid until day 20, so no renewal falls before day 3.
       const res = await staffFreeze(m.id, day(3), day(13));
       expect(res.status).toBe(201);
       expect(res.body.frozenNow).toBe(false);
+      expect(subUpdate).toHaveBeenCalledTimes(1);
+      expect(subUpdate).toHaveBeenCalledWith(subId, { trial_end: periodEnd + 10 * DAY_S, proration_behavior: 'none' }, expect.anything());
+      expect((await superuser.membershipFreeze.findUniqueOrThrow({ where: { id: res.body.id } })).billingShiftAppliedAt).not.toBeNull();
+
+      // The sweep on the start day finds nothing left to do.
+      const startDay = new Date(Date.now() + 3 * DAY);
+      await applyDueFreezeBilling(prismaJobs, app.get(StripeClientService), { error: jest.fn() } as never, startDay);
+      expect(subUpdate).toHaveBeenCalledTimes(1);
+
+      // Ended before it started: every day unused, back to the paid period's end.
+      const ended = await as(tokenOwner).post(`/v1/schools/${school.id}/freezes/${res.body.id}/end`);
+      expect(ended.status).toBe(201);
+      expect(subUpdate).toHaveBeenCalledTimes(2);
+      expect(subUpdate.mock.calls[1]).toEqual([subId, { trial_end: periodEnd, proration_behavior: 'none' }, { idempotencyKey: `membership-freeze-restore-${res.body.id}-${periodEnd}` }]);
+      const stored = await superuser.membershipFreeze.findUniqueOrThrow({ where: { id: res.body.id } });
+      expect(stored.billingRestoredAt).not.toBeNull();
+      expect(stored.restoredTrialEnd?.getTime()).toBe(periodEnd * 1000);
+    });
+
+    it('Decision 409: a renewal before the freeze: nothing moves at approval; the renewal\'s invoice.paid moves it (the sweep is the backup)', async () => {
+      const { user } = await mkStudent('renewal-first');
+      const subId = `sub_${randomUUID()}`;
+      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: subId });
+      // Paid only until day 2; the freeze starts on day 5.
+      periods.set(subId, Math.floor((Date.now() + 2 * DAY) / 1000));
+      const res = await staffFreeze(m.id, day(5), day(15));
+      expect(res.status).toBe(201);
+      expect(subUpdate).not.toHaveBeenCalled();
+      expect((await superuser.membershipFreeze.findUniqueOrThrow({ where: { id: res.body.id } })).shiftedTrialEnd).toBeNull();
+      // The sweep before the start day leaves it waiting too.
+      await applyDueFreezeBilling(prismaJobs, app.get(StripeClientService), { error: jest.fn() } as never);
       expect(subUpdate).not.toHaveBeenCalled();
 
-      // On the start day (the sweep runs every 15 minutes).
-      const startDay = new Date(Date.now() + 3 * DAY);
+      // The renewal is paid: the period now runs to day 32, and the freeze's 10 days go on top.
+      const renewed = Math.floor((Date.now() + 32 * DAY) / 1000);
+      periods.set(subId, renewed);
+      await invoicePaid(renewalInvoice(subId, 5000));
+      expect(subUpdate).toHaveBeenCalledTimes(1);
+      expect(subUpdate).toHaveBeenCalledWith(subId, { trial_end: renewed + 10 * DAY_S, proration_behavior: 'none' }, expect.anything());
+      const rows = await superuser.transaction.findMany({ where: { membershipId: m.id, kind: 'RENEWAL' } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ status: 'SUCCESSFUL', amount: 5000 });
+
+      // A second renewal event changes nothing more.
+      await invoicePaid(renewalInvoice(subId, 5000));
+      expect(subUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('Decision 409: when no renewal webhook comes, the sweep moves it on the start day', async () => {
+      const { user } = await mkStudent('sweep-backup');
+      const subId = `sub_${randomUUID()}`;
+      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: subId });
+      const paid = Math.floor((Date.now() + 2 * DAY) / 1000);
+      periods.set(subId, paid);
+      const res = await staffFreeze(m.id, day(5), day(15));
+      expect(res.status).toBe(201);
+      expect(subUpdate).not.toHaveBeenCalled();
+      const startDay = new Date(Date.now() + 5 * DAY);
       expect(await applyDueFreezeBilling(prismaJobs, app.get(StripeClientService), { error: jest.fn() } as never, startDay)).toBeGreaterThanOrEqual(1);
-      expect(subUpdate).toHaveBeenCalledWith(expect.any(String), { trial_end: periodEnd + 10 * DAY_S, proration_behavior: 'none' }, expect.anything());
+      expect(subUpdate).toHaveBeenCalledWith(subId, { trial_end: paid + 10 * DAY_S, proration_behavior: 'none' }, expect.anything());
+    });
+
+    it('Decision 409: a £0 renewal invoice (a trial_end move) is not put on the ledger', async () => {
+      const { user } = await mkStudent('zero-invoice');
+      const subId = `sub_${randomUUID()}`;
+      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: subId });
+      await invoicePaid({ ...renewalInvoice(subId, 0), billing_reason: 'subscription_update', amount_due: 0 });
+      expect(await superuser.transaction.count({ where: { membershipId: m.id } })).toBe(0);
+      // A real renewal still is.
+      await invoicePaid(renewalInvoice(subId, 5000));
+      expect(await superuser.transaction.count({ where: { membershipId: m.id, kind: 'RENEWAL' } })).toBe(1);
+    });
+
+    it('Decision 409: two freezes shifted out of date order; ending the later one early keeps the earlier one\'s days', async () => {
+      const { user } = await mkStudent('two-freezes');
+      const subId = `sub_${randomUUID()}`;
+      const m = await mkMembership(user.id, 'SUBSCRIPTION', { stripeSubscriptionId: subId });
+      const paid = Math.floor((Date.now() + 60 * DAY) / 1000);
+      periods.set(subId, paid);
+      // The later freeze (10 days) first, then an earlier one (7 days).
+      const later = await staffFreeze(m.id, day(20), day(30));
+      expect(later.status).toBe(201);
+      const earlier = await staffFreeze(m.id, day(2), day(9));
+      expect(earlier.status).toBe(201);
+      expect(trials.get(subId)).toBe(paid + 17 * DAY_S);
+
+      // The later one ends before it started: its 10 days come off, the earlier one's 7 stay.
+      expect((await as(tokenOwner).post(`/v1/schools/${school.id}/freezes/${later.body.id}/end`)).status).toBe(201);
+      expect(trials.get(subId)).toBe(paid + 7 * DAY_S);
     });
 
     it('a cash-paid Weekly Pass: the expiry date moves later by the freeze, and back when ended before it started', async () => {
@@ -452,8 +584,10 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
       const { user } = await mkStudent('checker');
       const m = await mkMembership(user.id, 'SUBSCRIPTION');
       const cls = await classIn(5);
-      await superuser.booking.create({ data: { id: randomUUID(), studentId: user.id, classId: cls.id, schoolId: school.id, sourceMembershipId: m.id } });
       expect((await staffFreeze(m.id, day(0), day(10))).status).toBe(201);
+      // Made after the approval, which cancels the bookings already inside a
+      // freeze (Decision 409): a booking left in place, say by staff.
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: user.id, classId: cls.id, schoolId: school.id, sourceMembershipId: m.id } });
 
       const scan = () => as(tokenCoach).post(`/v1/classes/${cls.id}/attendance-scan`, { studentId: user.id });
       const refused = await scan();
@@ -479,7 +613,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
       expect((await as(tokenOwner).patch(`/v1/schools/${school.id}`, { freezeFeeAmount: null })).body.freezeFeeAmount).toBeNull();
     });
 
-    it('only the owner freezes, lists, approves, declines and ends; another School gets 404 for this School\'s ids', async () => {
+    it('without the switch, staff, coaches and members can\'t freeze, list, approve, decline or end; another School gets 404 for this School\'s ids', async () => {
       const { user, token } = await mkStudent('guarded');
       const m = await mkMembership(user.id, 'SUBSCRIPTION');
       const asked = await askFreeze(m.id, day(2), day(12), token);
@@ -503,6 +637,173 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
       expect((await askFreeze(m.id, day(1), day(10), tokenOtherOwner)).status).toBe(404);
       // The request is untouched.
       expect((await superuser.membershipFreeze.findUniqueOrThrow({ where: { id: asked.body.id } })).status).toBe('REQUESTED');
+    });
+  });
+
+  describe('Decision 409: the bookings inside a freeze are cancelled', () => {
+    async function waitFor<T>(fn: () => Promise<T>, done: (v: T) => boolean, timeoutMs = 8000): Promise<T> {
+      const deadline = Date.now() + timeoutMs;
+      let value = await fn();
+      while (!done(value) && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        value = await fn();
+      }
+      return value;
+    }
+    const mkClass = (offsetDays: number, title: string, extra: { capacity?: number; refundFeeDate?: Date; cancellationCharge?: number } = {}) =>
+      superuser.class.create({
+        data: {
+          id: randomUUID(), schoolId: school.id, title, membershipInclusion: true,
+          startDate: new Date(Date.now() + offsetDays * DAY), endDate: new Date(Date.now() + offsetDays * DAY + 60 * 60_000), ...extra,
+        },
+      });
+    const book = (studentId: string, classId: string, sourceMembershipId: string) =>
+      superuser.booking.create({ data: { id: randomUUID(), studentId, classId, schoolId: school.id, sourceMembershipId } });
+    const status = async (id: string) => (await superuser.booking.findUniqueOrThrow({ where: { id } })).status;
+
+    it('only the ones this membership paid for, with no late fee; the seat goes to the waitlist; one notice; ending early brings none back', async () => {
+      await superuser.school.update({ where: { id: school.id }, data: { chargeLateCancellationFee: true } });
+      const { user, token } = await mkStudent('booked');
+      // A saved card, so a late fee would be charged if one were due.
+      await superuser.studentPaymentMethod.create({ data: { id: randomUUID(), studentId: user.id, schoolId: school.id, stripeCustomerId: 'cus_fixture' } });
+      const weekly = await mkMembership(user.id, 'WEEKLY_PASS', { expiryDate: new Date(Date.now() + 60 * DAY) });
+      const pack = await mkMembership(user.id, 'CLASS_PACK', { classesRemaining: 5 });
+
+      // Inside the freeze: a full class past its refund cut-off with a cancellation charge, and another.
+      const full = await mkClass(3, 'Full class', { capacity: 1, refundFeeDate: new Date(Date.now() - DAY), cancellationCharge: 700 });
+      const second = await mkClass(5, 'Second class');
+      // Inside too, but paid by the class pack; and one after the freeze.
+      const packClass = await mkClass(4, 'Pack class');
+      const later = await mkClass(12, 'Later class');
+      const inFull = await book(user.id, full.id, weekly.id);
+      const inSecond = await book(user.id, second.id, weekly.id);
+      const byPack = await book(user.id, packClass.id, pack.id);
+      const afterFreeze = await book(user.id, later.id, weekly.id);
+      const other = await mkStudent('waiting');
+      const entry = await superuser.waitlistEntry.create({ data: { id: randomUUID(), studentId: other.user.id, classId: full.id, schoolId: school.id, position: 1 } });
+
+      const asked = await askFreeze(weekly.id, day(1), day(10), token);
+      const approved = await as(tokenOwner).post(`/v1/schools/${school.id}/freezes/${asked.body.id}/approve`);
+      expect(approved.status).toBe(201);
+
+      expect(await status(inFull.id)).toBe('CANCELLED');
+      expect(await status(inSecond.id)).toBe('CANCELLED');
+      expect(await status(byPack.id)).toBe('UPCOMING');
+      expect(await status(afterFreeze.id)).toBe('UPCOMING');
+      const cancelled = await superuser.booking.findUniqueOrThrow({ where: { id: inFull.id } });
+      expect(cancelled).toMatchObject({ refundResolution: 'REFUNDED', resolvedById: owner.id, cancellationChargeOutcome: null });
+      // No late-cancellation fee, whatever the cut-off says.
+      expect(intentCreate).not.toHaveBeenCalled();
+      expect(await superuser.transaction.count({ where: { studentId: user.id, kind: 'LATE_CANCEL_FEE' } })).toBe(0);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(5);
+
+      // The freed seat is offered to the waitlist, as for any cancellation.
+      const offered = await waitFor(() => superuser.waitlistEntry.findUniqueOrThrow({ where: { id: entry.id } }), (e) => e.status === 'NOTIFIED');
+      expect(offered.status).toBe('NOTIFIED');
+
+      // One notice naming both classes.
+      const noticeId = `membership-freeze-bookings-${asked.body.id}`;
+      const notice = await waitFor(() => superuser.notification.findUnique({ where: { id: noticeId } }), (n) => n !== null);
+      expect(notice).toMatchObject({ userId: user.id, title: 'Bookings cancelled' });
+      expect(notice!.body).toBe(
+        `Your WEEKLY_PASS plan membership is frozen from ${day(1)} and you're back on ${day(10)}, ` +
+          `so your bookings in between were cancelled: Full class (${day(3)}); Second class (${day(5)}). You can book again once the freeze ends.`,
+      );
+      expect(await superuser.notification.count({ where: { userId: user.id, title: 'Bookings cancelled' } })).toBe(1);
+
+      // Ending early doesn't bring them back; the member can book again.
+      expect((await as(token).post(`/v1/freezes/${asked.body.id}/end`)).status).toBe(201);
+      expect(await status(inSecond.id)).toBe('CANCELLED');
+    });
+
+    it('a staff-made freeze cancels them too; nothing to cancel means no notice', async () => {
+      const { user } = await mkStudent('staff-made');
+      const weekly = await mkMembership(user.id, 'WEEKLY_PASS', { expiryDate: new Date(Date.now() + 60 * DAY) });
+      const inside = await mkClass(2, 'Inside class');
+      const booking = await book(user.id, inside.id, weekly.id);
+      const res = await staffFreeze(weekly.id, day(1), day(9));
+      expect(res.status).toBe(201);
+      expect(await status(booking.id)).toBe('CANCELLED');
+
+      const { user: quiet } = await mkStudent('no-bookings');
+      const quietPass = await mkMembership(quiet.id, 'WEEKLY_PASS', { expiryDate: new Date(Date.now() + 60 * DAY) });
+      const quietFreeze = await staffFreeze(quietPass.id, day(1), day(9));
+      expect(quietFreeze.status).toBe(201);
+      await waitFor(() => superuser.notification.findUnique({ where: { id: `membership-freeze-approved-${quietFreeze.body.id}` } }), (n) => n !== null);
+      expect(await superuser.notification.count({ where: { userId: quiet.id, title: 'Bookings cancelled' } })).toBe(0);
+    });
+  });
+
+  describe('Decision 409: the "Can freeze memberships" switch', () => {
+    const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
+
+    it("staff with it act for their own branches' students only; the School's freeze settings stay the owner's; turning it on is logged", async () => {
+      const branched = await superuser.school.create({ data: { id: randomUUID(), name: 'Branched Freeze School' } });
+      schoolIds.push(branched.id);
+      const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: branched.id, name: 'A' } });
+      const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: branched.id, name: 'B' } });
+      const bOwner = await mkUser('branched-owner');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: bOwner.id, schoolId: branched.id, isMainOwner: true } });
+      const ownerToken = sign(bOwner, 'SCHOOL_OWNER_MANAGER', branched.id);
+      const staffA = await mkUser('staff-a');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffA.id, schoolId: branched.id, branchId: branchA.id } });
+      const staffToken = jwt.sign({ sub: staffA.id, email: staffA.email, grants: [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: branched.id, branchId: branchA.id }] });
+      const x = await mkStudent('home-a', branched.id);
+      const y = await mkStudent('home-b', branched.id);
+      await superuser.studentHomeBranch.createMany({
+        data: [
+          { id: randomUUID(), schoolId: branched.id, studentId: x.user.id, branchId: branchA.id },
+          { id: randomUUID(), schoolId: branched.id, studentId: y.user.id, branchId: branchB.id },
+        ],
+      });
+      const expiryDate = new Date(Date.now() + 60 * DAY);
+      const mx = await mkMembership(x.user.id, 'WEEKLY_PASS', { expiryDate, schoolId: branched.id });
+      const my = await mkMembership(y.user.id, 'WEEKLY_PASS', { expiryDate, schoolId: branched.id });
+      const base = `/v1/schools/${branched.id}`;
+
+      // Off by default: refused.
+      const off = await staffFreeze(mx.id, day(1), day(8), staffToken, branched.id);
+      expect(off.status).toBe(403);
+      expect(off.body.error.code).toBe('STAFF_ACCESS_OFF');
+      expect((await as(staffToken).get(`${base}/students/${x.user.id}/freezable-memberships`)).status).toBe(403);
+      expect((await as(staffToken).get(`${base}/freezes`)).status).toBe(403);
+      expect((await as(staffToken).get(`${base}/staff/me/access`)).body.access.freezeMemberships).toBe(false);
+
+      // The owner turns it on; the staff activity log records it.
+      const put = await as(ownerToken).put(`${base}/staff/${staffA.id}/access`, { ...ACCESS, freezeMemberships: true });
+      expect(put.status).toBe(200);
+      const logged = await superuser.staffActivity.findFirstOrThrow({ where: { schoolId: branched.id, targetUserId: staffA.id, action: 'ACCESS_CHANGED' } });
+      expect(logged.details).toEqual({ changes: [{ switch: 'freezeMemberships', on: true }] });
+      expect((await as(staffToken).get(`${base}/staff/me/access`)).body.access.freezeMemberships).toBe(true);
+
+      // Their branch's student: list, freeze, decline a request, end.
+      const list = await as(staffToken).get(`${base}/students/${x.user.id}/freezable-memberships`);
+      expect(list.status).toBe(200);
+      expect(list.body.items).toEqual([expect.objectContaining({ id: mx.id, planType: 'WEEKLY_PASS', frozen: false, freeze: null })]);
+      expect(Object.keys(list.body.items[0]).sort()).toEqual(['cancelAt', 'expiryDate', 'freeze', 'frozen', 'id', 'planTitle', 'planType']);
+      const frozen = await staffFreeze(mx.id, day(1), day(8), staffToken, branched.id);
+      expect(frozen.status).toBe(201);
+      expect(frozen.body).toMatchObject({ status: 'APPROVED', decidedById: staffA.id });
+      const askX = await askFreeze(mx.id, day(20), day(27), x.token);
+      const askY = await askFreeze(my.id, day(20), day(27), y.token);
+      const waiting = await as(staffToken).get(`${base}/freezes?status=REQUESTED`);
+      expect(waiting.status).toBe(200);
+      expect(waiting.body.items.map((f: { id: string }) => f.id)).toEqual([askX.body.id]);
+      expect((await as(staffToken).post(`${base}/freezes/${askX.body.id}/decline`)).status).toBe(201);
+      expect((await as(staffToken).post(`${base}/freezes/${frozen.body.id}/end`)).status).toBe(201);
+
+      // Another branch's student: refused.
+      expect((await as(staffToken).get(`${base}/students/${y.user.id}/freezable-memberships`)).status).toBe(403);
+      expect((await staffFreeze(my.id, day(1), day(8), staffToken, branched.id)).status).toBe(403);
+      expect((await as(staffToken).post(`${base}/freezes/${askY.body.id}/approve`)).status).toBe(403);
+      expect((await as(staffToken).post(`${base}/freezes/${askY.body.id}/decline`)).status).toBe(403);
+      expect((await superuser.membershipFreeze.findUniqueOrThrow({ where: { id: askY.body.id } })).status).toBe('REQUESTED');
+      // The owner sees both.
+      const ownerList = await as(ownerToken).get(`${base}/freezes?status=REQUESTED`);
+      expect(ownerList.body.items.map((f: { id: string }) => f.id)).toEqual([askY.body.id]);
+
+      // The School's freeze settings stay the owner's.
+      expect((await as(staffToken).patch(base, { freezeMaxDaysPer12Months: 30 })).status).toBe(403);
     });
   });
 });

@@ -203,6 +203,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "{plan} üyeliğiniz {start} tarihinden itibaren donduruldu. {back} tarihinde dönüyorsunuz.",
     freezeDeclinedTitle: "Dondurma reddedildi",
     freezeDeclinedBody: "Okulunuz {plan} üyeliğini {start} tarihinden itibaren dondurma talebinizi reddetti.",
+    freezeBookingsCancelledTitle: "Rezervasyonlar iptal edildi",
+    freezeBookingsCancelledBody: "{plan} üyeliğiniz {start} tarihinden itibaren donduruldu ve {back} tarihinde dönüyorsunuz; bu yüzden bu aradaki rezervasyonlarınız iptal edildi: {list}. Dondurma bitince yeniden rezervasyon yapabilirsiniz.",
     classMovedTitle: "Ders taşındı",
     classCancelledTitle: "Ders iptal edildi",
     toDecideTitle: "Karar bekleyen terfi",

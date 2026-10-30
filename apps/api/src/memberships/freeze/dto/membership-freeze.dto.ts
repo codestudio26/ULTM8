@@ -159,3 +159,37 @@ export class MyFreezableMembershipListResponseDto {
   @ApiProperty({ type: [MyFreezableMembershipDto] })
   items!: MyFreezableMembershipDto[];
 }
+
+/**
+ * Decision 409: one of a student's memberships that can be frozen, for staff
+ * who may freeze (the owner, or Branch Staff with "Can freeze memberships").
+ * Only what freezing needs: Branch Staff have no other view of a membership
+ * (Spec 55 §8.2).
+ */
+export class StudentFreezableMembershipDto {
+  @ApiProperty({ description: 'The membership id.' })
+  id!: string;
+
+  @ApiProperty()
+  planTitle!: string;
+
+  @ApiProperty({ enum: ['SUBSCRIPTION', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP'] })
+  planType!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  expiryDate!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set to end at this time (a Subscription cancelled at the end of its paid period).' })
+  cancelAt!: string | null;
+
+  @ApiProperty({ description: 'An approved freeze covers today.' })
+  frozen!: boolean;
+
+  @ApiPropertyOptional({ type: FreezeSummaryDto, nullable: true })
+  freeze!: FreezeSummaryDto | null;
+}
+
+export class StudentFreezableMembershipListResponseDto {
+  @ApiProperty({ type: [StudentFreezableMembershipDto] })
+  items!: StudentFreezableMembershipDto[];
+}

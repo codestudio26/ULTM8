@@ -10,7 +10,8 @@ import { useUpdateSchool, type SchoolResponse } from './schoolQueries';
  * Decision 404: freezing memberships. The owner sets the most days a
  * membership can be frozen in any 12 months (default 90) and an optional
  * one-off fee, charged when a freeze is approved. Whether frozen members may
- * check in is one of the check-in rules (linked from here).
+ * check in is one of the check-in rules (linked from here). Owner only, even
+ * when Branch Staff may freeze (Decision 409).
  */
 export function FreezeSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
   const t = useT();
@@ -82,6 +83,10 @@ export function FreezeSettingsCard({ schoolId, school }: { schoolId: string; sch
         </Field>
         <p style={{ fontSize: 13, opacity: 0.75 }}>
           {t('schools.freezing.checkInNote')} <Link to="/check-in/rules">{t('schools.freezing.checkInLink')}</Link>
+        </p>
+        {/* Decision 409: a frozen card subscription is a trial in Stripe. */}
+        <p style={{ fontSize: 13, opacity: 0.75 }} data-testid="freeze-stripe-note">
+          {t('schools.freezing.stripeTrialNote')}
         </p>
         <Button type="submit" loading={update.isPending} disabled={!maxValid || !fee.valid}>
           {t('common.save')}

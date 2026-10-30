@@ -133,7 +133,8 @@ export function StudentsPage() {
         <StudentExportModal schoolId={schoolId} schoolName={school.data?.name ?? ''} withBranch={hasBranches} onClose={() => setExporting(false)} />
       ) : null}
       <StudentsTabs />
-      {ownedSchoolId ? <FreezeRequestsCard schoolId={ownedSchoolId} /> : null}
+      {/* Decision 409: the owner, or Branch Staff the owner let freeze memberships. */}
+      {ownedSchoolId || myAccess.data?.access.freezeMemberships ? <FreezeRequestsCard schoolId={schoolId} /> : null}
       {/* Decision 403: children waiting for their Guardian to accept. */}
       {ownedSchoolId ? <ChildInvitesCard schoolId={ownedSchoolId} /> : null}
       <Card>

@@ -4547,6 +4547,12 @@ model StaffPermission {
   /// only; off by default; owners always can.
   canExportStudents Boolean @default(false)
 
+  /// Decision 409: may freeze members' memberships, approve, decline or end
+  /// a freeze, for the students of their own branches. Branch Staff only;
+  /// off by default; owners always can. The School's freeze settings stay
+  /// the owner's.
+  canFreezeMemberships Boolean @default(false)
+
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
 

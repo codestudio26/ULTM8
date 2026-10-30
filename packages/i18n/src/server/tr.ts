@@ -635,6 +635,7 @@ export const serverMessages: Record<string, string> = {
   "Only the note's author or a School owner can change it.": "Notu yalnızca yazan kişi veya bir okul sahibi değiştirebilir.",
   "A note can't be empty.": "Not boş olamaz.",
   "The School owner hasn't let you export the student list.": "Okul sahibi öğrenci listesini dışa aktarmana izin vermedi.",
+  "The School owner hasn't let you freeze memberships.": "Okul sahibi üyelikleri dondurmana izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
   "Only the School owner can invite Branch Staff.": "Şube Personelini yalnızca okul sahibi davet edebilir.",

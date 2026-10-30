@@ -2916,6 +2916,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/freezable-memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipFreezesController_listForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/freezes": {
         parameters: {
             query?: never;
@@ -7029,6 +7045,8 @@ export interface components {
             checkInRules: boolean;
             /** @description Export the student list as a spreadsheet (off by default; Decision 399). */
             exportStudents: boolean;
+            /** @description Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409). */
+            freezeMemberships: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -8846,6 +8864,22 @@ export interface components {
             feeAmount?: number | null;
             feeTransactionId?: string | null;
             createdAt: string;
+        };
+        StudentFreezableMembershipDto: {
+            /** @description The membership id. */
+            id: string;
+            planTitle: string;
+            /** @enum {string} */
+            planType: "SUBSCRIPTION" | "WEEKLY_PASS" | "TRIAL_MEMBERSHIP";
+            expiryDate?: string | null;
+            /** @description Set to end at this time (a Subscription cancelled at the end of its paid period). */
+            cancelAt?: string | null;
+            /** @description An approved freeze covers today. */
+            frozen: boolean;
+            freeze?: components["schemas"]["FreezeSummaryDto"] | null;
+        };
+        StudentFreezableMembershipListResponseDto: {
+            items: components["schemas"]["StudentFreezableMembershipDto"][];
         };
         SchoolMembershipFreezeResponseDto: {
             id: string;
@@ -16124,6 +16158,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_listForStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentFreezableMembershipListResponseDto"];
                 };
             };
         };

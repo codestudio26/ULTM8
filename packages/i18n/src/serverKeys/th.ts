@@ -189,6 +189,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "สมาชิก {plan} ของคุณถูกพักตั้งแต่ {start} คุณจะกลับมาได้ในวันที่ {back}",
     freezeDeclinedTitle: "ไม่อนุมัติการพักสมาชิก",
     freezeDeclinedBody: "โรงเรียนไม่อนุมัติคำขอพัก {plan} ตั้งแต่ {start} ของคุณ",
+    freezeBookingsCancelledTitle: "ยกเลิกการจองแล้ว",
+    freezeBookingsCancelledBody: "สมาชิก {plan} ของคุณถูกพักตั้งแต่ {start} และจะกลับมาได้ในวันที่ {back} จึงยกเลิกการจองในช่วงนี้แล้ว: {list} คุณจองใหม่ได้เมื่อการพักสิ้นสุด",
     classMovedTitle: "ย้ายคลาสแล้ว",
     classCancelledTitle: "ยกเลิกคลาสแล้ว",
     toDecideTitle: "การเลื่อนระดับที่รอการตัดสินใจ",

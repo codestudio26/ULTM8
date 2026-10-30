@@ -635,6 +635,7 @@ export const serverMessages: Record<string, string> = {
   "Only the note's author or a School owner can change it.": "只有备注的作者或学校所有者可以修改它。",
   "A note can't be empty.": "备注不能为空。",
   "The School owner hasn't let you export the student list.": "学校所有者未允许你导出学员名单。",
+  "The School owner hasn't let you freeze memberships.": "学校所有者未允许你冻结会员资格。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
   "Only the School owner can invite Branch Staff.": "只有学校所有者可以邀请分店员工。",

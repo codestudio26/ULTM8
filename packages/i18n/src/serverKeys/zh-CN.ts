@@ -189,6 +189,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "你的 {plan} 会员资格自 {start} 起冻结，{back} 恢复。",
     freezeDeclinedTitle: "冻结被拒绝",
     freezeDeclinedBody: "学校拒绝了你自 {start} 起冻结 {plan} 的申请。",
+    freezeBookingsCancelledTitle: "预约已取消",
+    freezeBookingsCancelledBody: "你的 {plan} 会员资格自 {start} 起冻结，{back} 恢复，因此这期间的预约已取消：{list}。冻结结束后可以重新预约。",
     classMovedTitle: "课程已调整",
     classCancelledTitle: "课程已取消",
     toDecideTitle: "待决定的晋级",

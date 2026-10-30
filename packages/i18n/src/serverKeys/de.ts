@@ -203,6 +203,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Deine Mitgliedschaft {plan} ist ab {start} eingefroren. Ab {back} bist du wieder dabei.",
     freezeDeclinedTitle: "Einfrieren abgelehnt",
     freezeDeclinedBody: "Deine Schule hat deine Anfrage abgelehnt, {plan} ab {start} einzufrieren.",
+    freezeBookingsCancelledTitle: "Buchungen storniert",
+    freezeBookingsCancelledBody: "Deine Mitgliedschaft {plan} ist ab {start} eingefroren und ab {back} bist du wieder dabei. Deine Buchungen in dieser Zeit wurden storniert: {list}. Nach dem Einfrieren kannst du wieder buchen.",
     classMovedTitle: "Kurs verschoben",
     classCancelledTitle: "Kurs abgesagt",
     toDecideTitle: "Beförderung zu entscheiden",

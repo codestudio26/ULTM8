@@ -189,6 +189,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "{plan} 멤버십이 {start}부터 일시정지되었습니다. {back}에 다시 시작합니다.",
     freezeDeclinedTitle: "일시정지 거절됨",
     freezeDeclinedBody: "학교에서 {start}부터 {plan}을(를) 일시정지하려는 요청을 거절했습니다.",
+    freezeBookingsCancelledTitle: "예약이 취소되었습니다",
+    freezeBookingsCancelledBody: "{plan} 멤버십이 {start}부터 일시정지되어 {back}에 다시 시작하므로, 그 사이의 예약이 취소되었습니다: {list}. 일시정지가 끝나면 다시 예약할 수 있습니다.",
     classMovedTitle: "수업이 변경되었습니다",
     classCancelledTitle: "수업이 취소되었습니다",
     toDecideTitle: "결정 대기 중인 승급",

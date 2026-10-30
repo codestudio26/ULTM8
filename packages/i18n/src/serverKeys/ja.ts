@@ -189,6 +189,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "{plan} は {start} から休会中です。{back} に再開します。",
     freezeDeclinedTitle: "休会が却下されました",
     freezeDeclinedBody: "{start} からの {plan} の休会申請はスクールにより却下されました。",
+    freezeBookingsCancelledTitle: "予約がキャンセルされました",
+    freezeBookingsCancelledBody: "{plan} は {start} から休会中で、{back} に再開します。そのため、この期間の予約はキャンセルされました：{list}。休会が終わると、また予約できます。",
     classMovedTitle: "クラスが移動しました",
     classCancelledTitle: "クラスが中止されました",
     toDecideTitle: "判断待ちの昇級",
