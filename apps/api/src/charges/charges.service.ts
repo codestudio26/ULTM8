@@ -16,7 +16,7 @@ import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
-import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
+import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxForCharge } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
 import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
 import {
@@ -211,13 +211,15 @@ export class ChargesService {
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
+    // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
+    const taxExempt = dto.taxExempt === true;
+    const tax = taxForCharge(school, taxExempt);
     let totals;
     try {
       totals = computeCharge({
         unitAmount: dto.amount,
         discount: dto.discountType ? { type: dto.discountType, value: dto.discountValue! } : null,
-        taxRateBasisPoints: school.taxRateBasisPoints,
-        taxInclusive: school.taxInclusive,
+        ...tax,
       });
     } catch (err) {
       if (err instanceof ChargeMathsError) throw new BadRequestException({ code: `CHARGE_${err.code}`, message: err.message });
@@ -242,8 +244,8 @@ export class ChargesService {
         discountType: dto.discountType ?? null,
         discountValue: dto.discountType ? dto.discountValue! : null,
         taxCountry: school.taxCountry,
-        taxRateBasisPoints: school.taxRateBasisPoints,
-        taxInclusive: school.taxInclusive,
+        ...tax,
+        taxExempt,
         totals,
         currency,
         dueDate: dayToDate(dto.dueDate),
@@ -1095,6 +1097,7 @@ export class ChargesService {
         taxCountry: c.taxCountry,
         taxRateBasisPoints: c.taxRateBasisPoints,
         taxInclusive: c.taxInclusive,
+        taxExempt: c.taxExempt,
         netAmount: c.netAmount,
         taxAmount: c.taxAmount,
         grossAmount: c.grossAmount,

@@ -8,6 +8,9 @@
  * - Tax added on top: tax = round(price × rate).
  * - Prices include tax: tax = price − round(price ÷ (1 + rate)).
  * - Rounding is half up, to the minor unit.
+ * - "No tax on this item" (Decision 414 item 5): a rate of 0, so the price
+ *   excluding tax and the price including tax are both the price after the
+ *   discount, whichever way the School prices (taxForCharge()).
  */
 
 export type DiscountType = 'PERCENT' | 'FIXED';
@@ -43,6 +46,19 @@ export class ChargeMathsError extends Error {
   ) {
     super(message);
   }
+}
+
+/**
+ * The tax a charge is worked out and kept with: the School's settings
+ * (Decision 411), or a rate of 0 when staff ticked "No tax on this item (0% or
+ * exempt)" (Decision 414 item 5). The School's inclusive/added-on-top setting
+ * is kept either way; at 0% it changes nothing.
+ */
+export function taxForCharge(
+  school: { taxRateBasisPoints: number; taxInclusive: boolean },
+  taxExempt: boolean,
+): { taxRateBasisPoints: number; taxInclusive: boolean } {
+  return { taxRateBasisPoints: taxExempt ? 0 : school.taxRateBasisPoints, taxInclusive: school.taxInclusive };
 }
 
 /** numerator ÷ denominator, rounded half up. Both must be non-negative
