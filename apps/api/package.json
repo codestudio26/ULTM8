@@ -11,6 +11,7 @@
     "lint": "eslint src test --max-warnings 0",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
+    "test:stripe-sandbox": "jest --config ./test/jest-stripe-sandbox.json --runInBand --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "export:openapi": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts",
