@@ -232,6 +232,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled.
   'Bookings cancelled': 'freezeBookingsCancelledTitle',
   'Automatic payment failed': 'chargeAutoPayFailedTitle',
+  // Backlog 3.6 step 4 — charge-overdue-notice job and the dispute webhook.
+  'Payment overdue': 'chargeOverdueTitle',
+  'Payment dispute': 'chargeDisputeTitle',
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
@@ -253,6 +256,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
 const CHARGES: Record<string, string> = {
   'Membership payment': 'membershipPayment',
   'franchise fee charge': 'franchiseFeeCharge',
+  'charge payment': 'chargePaymentLabel',
 };
 const DISPUTE_STATUSES = new Set([
   'warning_needs_response', 'warning_under_review', 'warning_closed', 'needs_response', 'under_review', 'won', 'lost', 'prevented',
@@ -366,15 +370,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [body(String.raw`^(.+) has been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childPromoted', { name: m[1], rank: m[2], style: m[3] })],
   [body(String.raw`^(.+)'s rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childAdjusted', { name: m[1], rank: m[2], style: m[3] })],
   [
-    /^A disputed (Membership payment|franchise fee charge) of ([\d.]+) ([A-Z]{3}) was lost — the charge is no longer considered paid\.$/,
+    /^A disputed (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) was lost — the charge is no longer considered paid\.$/,
     (m, { t, locale }) => n(t, 'disputeLostBody', { charge: charge(t, m[1]), amount: formatAmount(m[2], m[3], locale) }),
   ],
   [
-    /^A disputed (Membership payment|franchise fee charge) of ([\d.]+) ([A-Z]{3}) was resolved in your favor\.$/,
+    /^A disputed (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) was resolved in your favor\.$/,
     (m, { t, locale }) => n(t, 'disputeResolvedBody', { charge: charge(t, m[1]), amount: formatAmount(m[2], m[3], locale) }),
   ],
   [
-    /^A (Membership payment|franchise fee charge) of ([\d.]+) ([A-Z]{3}) has been disputed by the payer \(status: (\w+)\)\.$/,
+    /^A (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) has been disputed by the payer \(status: (\w+)\)\.$/,
     (m, { t, locale }) =>
       n(t, 'disputeOpenedBody', {
         charge: charge(t, m[1]),
@@ -420,6 +424,20 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^We couldn't charge your saved card for invoice (#\d+) \((.+), ([\d.]+) ([A-Z]{3})\)\. Pay it in the app or at the front desk\.$/s,
     (m, { t, locale }) => n(t, 'chargeAutoPayFailedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale) }),
+  ],
+  // Backlog 3.6 step 4 — ChargeOverdueNoticeProcessor and the dispute webhook.
+  [
+    /^Invoice (#\d+) for (.+) was due on (\d{4}-\d{2}-\d{2})\. ([\d.]+) ([A-Z]{3}) is still to pay\.$/s,
+    (m, { t, locale }) => n(t, 'chargeOverdueBody', { invoice: m[1], description: m[2], due: formatDay(m[3], locale), amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  [/^Your card payment of ([\d.]+) ([A-Z]{3}) is being disputed with your bank\.$/s, (m, { t, locale }) => n(t, 'chargeDisputeOpenedBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [
+    /^The dispute on your card payment of ([\d.]+) ([A-Z]{3}) was decided in your favour\. The money goes back to your card\.$/s,
+    (m, { t, locale }) => n(t, 'chargeDisputeLostBody', { amount: formatAmount(m[1], m[2], locale) }),
+  ],
+  [
+    /^The dispute on your card payment of ([\d.]+) ([A-Z]{3}) was decided in the School's favour\. The payment stands\.$/s,
+    (m, { t, locale }) => n(t, 'chargeDisputeWonBody', { amount: formatAmount(m[1], m[2], locale) }),
   ],
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
