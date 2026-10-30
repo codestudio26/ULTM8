@@ -4077,6 +4077,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "Квитанция за каждый платёж",
       noticeFailedOverdue: "Автоплатёж не прошёл или начисление просрочено",
       noticeDispute: "Спор по платежу картой",
+      noticeDueReminder: "Напоминание за 3 дня до срока оплаты начисления",
     },
     card: {
       title: "Платежи",

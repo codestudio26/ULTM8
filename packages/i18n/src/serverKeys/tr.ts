@@ -221,6 +221,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "{amount} tutarındaki kart ödemenize yapılan itiraz sizin lehinize sonuçlandı. Para kartınıza geri dönüyor.",
     chargeDisputeWonBody: "{amount} tutarındaki kart ödemenize yapılan itiraz Okul lehine sonuçlandı. Ödeme geçerli.",
     chargePaymentLabel: "ücret ödemesi",
+    chargeDueReminderTitle: "Ödemenin vadesi yaklaşıyor",
+    chargeDueReminderBody: "{description} için {invoice} faturası: {amount}, vadesi {due}.",
     lateFeeAddedTitle: "Gecikme ücreti eklendi",
     lateFeeAddedChargeBody: "{invoice} numaralı fatura ({description}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",
     lateFeeAddedRenewalBody: "{plan} üyelik ödemeniz ({amount}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",

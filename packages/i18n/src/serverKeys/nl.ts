@@ -221,6 +221,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Het geschil over je kaartbetaling van {amount} is in jouw voordeel beslist. Het geld gaat terug naar je kaart.",
     chargeDisputeWonBody: "Het geschil over je kaartbetaling van {amount} is in het voordeel van de School beslist. De betaling blijft staan.",
     chargePaymentLabel: "kostenbetaling",
+    chargeDueReminderTitle: "Betaling bijna verschuldigd",
+    chargeDueReminderBody: "Factuur {invoice} voor {description}: {amount} moet op {due} betaald zijn.",
     lateFeeAddedTitle: "Te-laatvergoeding toegevoegd",
     lateFeeAddedChargeBody: "Er is een te-laatvergoeding van {fee} aan je saldo toegevoegd omdat factuur {invoice} ({description}) te laat is. Betaal in de app of bij de balie.",
     lateFeeAddedRenewalBody: "Er is een te-laatvergoeding van {fee} aan je saldo toegevoegd omdat je lidmaatschapsbetaling voor {plan} van {amount} te laat is. Betaal in de app of bij de balie.",

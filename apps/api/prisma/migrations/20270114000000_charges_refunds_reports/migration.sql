@@ -23,7 +23,9 @@
 --    payment instructions for receipts, and three payment notification
 --    switches, each on by default (receipt; failed or overdue; dispute).
 -- 4. Charge.overdueNoticeAt: the daily charge-overdue-notice job's
---    once-per-charge marker.
+--    once-per-charge marker; Charge.dueReminderAt and
+--    School.chargeNoticeDueReminder: the "Payment due soon" reminder, 3 days
+--    before the due date (product owner, 30 Oct 2026), on by default.
 --
 -- RLS: ChargeRefund is read like Charge (owner, covering staff, the student,
 -- an active Guardian) and written only on the jobs connection. Its notes are
@@ -41,12 +43,14 @@ ALTER TYPE "BalanceEntryKind" ADD VALUE 'CREDIT_GIVEN';
 ALTER TABLE "School" ADD COLUMN     "chargeNoticeDispute" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "chargeNoticeFailedOverdue" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "chargeNoticeReceipt" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "chargeNoticeDueReminder" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "chargeRefundNotesRequired" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "receiptAddress" TEXT,
 ADD COLUMN     "receiptPaymentInstructions" TEXT;
 
 -- AlterTable
 ALTER TABLE "Charge" ADD COLUMN     "overdueNoticeAt" TIMESTAMP(3),
+ADD COLUMN     "dueReminderAt" TIMESTAMP(3),
 ADD COLUMN     "refundedAmount" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "Charge" ADD CONSTRAINT "Charge_refunded_check" CHECK ("refundedAmount" >= 0 AND "refundedAmount" <= "grossAmount");
 

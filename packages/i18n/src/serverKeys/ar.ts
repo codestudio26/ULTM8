@@ -277,6 +277,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "حُسم النزاع على دفعتك بالبطاقة بقيمة {amount} لصالحك. يعود المال إلى بطاقتك.",
     chargeDisputeWonBody: "حُسم النزاع على دفعتك بالبطاقة بقيمة {amount} لصالح المدرسة. تبقى الدفعة قائمة.",
     chargePaymentLabel: "دفعة رسوم",
+    chargeDueReminderTitle: "دفعة مستحقة قريبًا",
+    chargeDueReminderBody: "الفاتورة {invoice} لـ {description}: {amount} مستحقة في {due}.",
     lateFeeAddedTitle: "تمت إضافة رسوم تأخير",
     lateFeeAddedChargeBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن الفاتورة {invoice} ({description}) متأخرة السداد. ادفعها في التطبيق أو في مكتب الاستقبال.",
     lateFeeAddedRenewalBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن دفعة اشتراك {plan} بقيمة {amount} متأخرة. ادفعها في التطبيق أو في مكتب الاستقبال.",

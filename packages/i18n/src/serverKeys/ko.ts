@@ -207,6 +207,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "{amount} 카드 결제 분쟁이 회원님에게 유리하게 결정되었습니다. 돈은 카드로 돌아갑니다.",
     chargeDisputeWonBody: "{amount} 카드 결제 분쟁이 학교에 유리하게 결정되었습니다. 결제는 그대로 유지됩니다.",
     chargePaymentLabel: "요금 결제",
+    chargeDueReminderTitle: "곧 결제 기한",
+    chargeDueReminderBody: "{description}의 청구서 {invoice}: {amount}, 기한 {due}.",
     lateFeeAddedTitle: "연체료가 추가되었습니다",
     lateFeeAddedChargeBody: "청구서 {invoice}({description})가 연체되어 연체료 {fee}이(가) 잔액에 추가되었습니다. 앱이나 프런트 데스크에서 결제하세요.",
     lateFeeAddedRenewalBody: "{plan} 회원권 결제 {amount}이(가) 연체되어 연체료 {fee}이(가) 잔액에 추가되었습니다. 앱이나 프런트 데스크에서 결제하세요.",

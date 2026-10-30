@@ -235,6 +235,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "La contestazione del tuo pagamento con carta di {amount} è stata decisa a tuo favore. Il denaro torna sulla tua carta.",
     chargeDisputeWonBody: "La contestazione del tuo pagamento con carta di {amount} è stata decisa a favore della Scuola. Il pagamento resta valido.",
     chargePaymentLabel: "pagamento di addebito",
+    chargeDueReminderTitle: "Pagamento in scadenza",
+    chargeDueReminderBody: "Fattura {invoice} per {description}: {amount} scade il {due}.",
     lateFeeAddedTitle: "Penale di ritardo aggiunta",
     lateFeeAddedChargeBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché la fattura {invoice} ({description}) è scaduta. Pagala nell'app o alla reception.",
     lateFeeAddedRenewalBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché il pagamento dell'abbonamento {plan} di {amount} è scaduto. Pagala nell'app o alla reception.",

@@ -1000,6 +1000,7 @@ export class SchoolsService {
           chargeNoticeReceipt: dto.chargeNoticeReceipt,
           chargeNoticeFailedOverdue: dto.chargeNoticeFailedOverdue,
           chargeNoticeDispute: dto.chargeNoticeDispute,
+          chargeNoticeDueReminder: dto.chargeNoticeDueReminder,
         },
       }),
     );

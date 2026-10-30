@@ -235,6 +235,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "La disputa de tu pago con tarjeta de {amount} se resolvió a tu favor. El dinero vuelve a tu tarjeta.",
     chargeDisputeWonBody: "La disputa de tu pago con tarjeta de {amount} se resolvió a favor de la Escuela. El pago se mantiene.",
     chargePaymentLabel: "pago de cargo",
+    chargeDueReminderTitle: "Pago próximo a vencer",
+    chargeDueReminderBody: "Factura {invoice} de {description}: {amount} vence el {due}.",
     lateFeeAddedTitle: "Recargo por retraso añadido",
     lateFeeAddedChargeBody: "Se añadió a tu saldo un recargo por retraso de {fee} porque la factura {invoice} ({description}) está vencida. Págalo en la app o en recepción.",
     lateFeeAddedRenewalBody: "Se añadió a tu saldo un recargo por retraso de {fee} porque el pago de tu membresía {plan} de {amount} está vencido. Págalo en la app o en recepción.",

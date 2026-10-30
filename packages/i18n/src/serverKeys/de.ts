@@ -221,6 +221,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Die Anfechtung deiner Kartenzahlung über {amount} wurde zu deinen Gunsten entschieden. Das Geld geht auf deine Karte zurück.",
     chargeDisputeWonBody: "Die Anfechtung deiner Kartenzahlung über {amount} wurde zugunsten der Schule entschieden. Die Zahlung bleibt bestehen.",
     chargePaymentLabel: "Gebührenzahlung",
+    chargeDueReminderTitle: "Zahlung bald fällig",
+    chargeDueReminderBody: "Rechnung {invoice} für {description}: {amount} ist am {due} fällig.",
     lateFeeAddedTitle: "Säumnisgebühr hinzugefügt",
     lateFeeAddedChargeBody: "Eine Säumnisgebühr von {fee} wurde deinem Saldo hinzugefügt, weil die Rechnung {invoice} ({description}) überfällig ist. Bezahle sie in der App oder am Empfang.",
     lateFeeAddedRenewalBody: "Eine Säumnisgebühr von {fee} wurde deinem Saldo hinzugefügt, weil deine Mitgliedszahlung für {plan} über {amount} überfällig ist. Bezahle sie in der App oder am Empfang.",

@@ -207,6 +207,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "ข้อโต้แย้งการชำระด้วยบัตรจำนวน {amount} ตัดสินให้คุณชนะ เงินจะคืนเข้าบัตรของคุณ",
     chargeDisputeWonBody: "ข้อโต้แย้งการชำระด้วยบัตรจำนวน {amount} ตัดสินให้โรงเรียนชนะ การชำระเงินยังคงมีผล",
     chargePaymentLabel: "การชำระค่าบริการ",
+    chargeDueReminderTitle: "ใกล้ครบกำหนดชำระ",
+    chargeDueReminderBody: "ใบแจ้งหนี้ {invoice} สำหรับ {description}: {amount} ครบกำหนดวันที่ {due}",
     lateFeeAddedTitle: "เพิ่มค่าปรับล่าช้าแล้ว",
     lateFeeAddedChargeBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากใบแจ้งหนี้ {invoice} ({description}) เกินกำหนดชำระ ชำระได้ในแอปหรือที่เคาน์เตอร์",
     lateFeeAddedRenewalBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากการชำระค่าสมาชิก {plan} จำนวน {amount} เกินกำหนด ชำระได้ในแอปหรือที่เคาน์เตอร์",

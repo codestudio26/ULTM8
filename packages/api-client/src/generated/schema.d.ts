@@ -6639,6 +6639,8 @@ export interface components {
             chargeNoticeFailedOverdue?: boolean;
             /** @description Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on). */
             chargeNoticeDispute?: boolean;
+            /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6754,6 +6756,8 @@ export interface components {
             chargeNoticeFailedOverdue: boolean;
             /** @description Decision 338 item 10: dispute notices to the member (default on). */
             chargeNoticeDispute: boolean;
+            /** @description Decision 338 item 10: "Payment due soon", 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6873,6 +6877,8 @@ export interface components {
             chargeNoticeFailedOverdue?: boolean;
             /** @description Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on). */
             chargeNoticeDispute?: boolean;
+            /** @description Decision 338 item 10: remind the member 3 days before a charge is due (default on). */
+            chargeNoticeDueReminder?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**

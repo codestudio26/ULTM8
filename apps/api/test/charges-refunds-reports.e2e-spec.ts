@@ -10,6 +10,8 @@ import { StripeClientService } from '../src/payments/stripe-client.service';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 import { ChargeOverdueNoticeProcessor } from '../src/jobs/charge-overdue-notice.processor';
+import { ChargeDueReminderProcessor } from '../src/jobs/charge-due-reminder.processor';
+import { LateFeeProcessor } from '../src/jobs/late-fee.processor';
 
 /**
  * Charges and the member balance, step 4 of 6 (v1.3 backlog §3.6; Decision
@@ -49,6 +51,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
   let webhook: StripeWebhookProcessingProcessor;
   let autoPay: ChargeAutoPayProcessor;
   let overdueJob: ChargeOverdueNoticeProcessor;
+  let dueReminder: ChargeDueReminderProcessor;
+  let lateFees: LateFeeProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const acct = `acct_${randomUUID().slice(0, 8)}`;
@@ -191,6 +195,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     webhook = app.get(StripeWebhookProcessingProcessor);
     autoPay = app.get(ChargeAutoPayProcessor);
     overdueJob = app.get(ChargeOverdueNoticeProcessor);
+    dueReminder = app.get(ChargeDueReminderProcessor);
+    lateFees = app.get(LateFeeProcessor);
     await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
 
     school = await su.school.create({ data: { id: randomUUID(), name: 'Refunds School', defaultCurrency: 'BRL', addressCountry: COUNTRY, timezone: 'UTC' } });
@@ -220,6 +226,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     await su.balanceEntry.deleteMany({ where });
     await su.chargeRefund.deleteMany({ where });
     await su.transaction.deleteMany({ where });
+    // Late fees point at the charge they are for: those go first.
+    await su.charge.deleteMany({ where: { ...where, lateFeeForChargeId: { not: null } } });
     await su.charge.deleteMany({ where });
     await su.studentPaymentMethod.deleteMany({ where });
     await su.paymentAccount.deleteMany({ where });
@@ -626,6 +634,93 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect((await as(tokens.otherOwner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(403);
       await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/cancel`, { reason: 'Mistake' });
       expect((await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(409);
+    });
+  });
+
+  describe('Refunds and the other jobs: what a charge owes is after refunds', () => {
+    it('a late fee is never charged on a refunded part', async () => {
+      const lf = await su.school.create({
+        data: {
+          id: randomUUID(), name: 'Late Fee Refunds School', defaultCurrency: 'BRL', timezone: 'UTC',
+          lateFeeEnabled: true, lateFeeType: 'PERCENT', lateFeePercentBps: 1000, lateFeeGraceDays: 0,
+          lateFeeEnabledAt: new Date('2026-01-01T00:00:00Z'), lateFeeConfirmedAt: new Date('2026-01-01T00:00:00Z'),
+        },
+      });
+      schoolIds.push(lf.id);
+      await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: lf.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
+      const owner = await mkUser('lfOwner');
+      await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: lf.id, isMainOwner: true } });
+      const token = sign(owner, 'SCHOOL_OWNER_MANAGER', lf.id);
+      const post = (url: string, body: Record<string, unknown>) => as(token).post(`/v1/schools/${lf.id}${url}`, body);
+      const pay = async (studentId: string, chargeId: string, amount: number) =>
+        (await post(`/students/${studentId}/charge-payments`, { amount, chargeId, paymentMethod: 'CASH', sendReceipt: false })).body.payment.id as string;
+
+      // Paid in full, then 30.00 given back: nothing is owed, so no late fee.
+      const full = await mkStudent('lfFull', null, lf.id);
+      const c1 = (await post(`/students/${full.id}/charges`, { description: 'Gi', amount: 10000, dueDate: day(-3) })).body;
+      const p1 = await pay(full.id, c1.id, 10000);
+      expect((await post(`/charge-payments/${p1}/refund`, { amount: 3000, destination: 'MONEY_BACK', notes: 'x' })).status).toBe(201);
+      // Part paid (60.00 of 100.00), then 20.00 of it given back: 40.00 still owed, and 10% of that.
+      const part = await mkStudent('lfPart', null, lf.id);
+      const c2 = (await post(`/students/${part.id}/charges`, { description: 'Belt', amount: 10000, dueDate: day(-3) })).body;
+      const p2 = await pay(part.id, c2.id, 6000);
+      expect((await post(`/charge-payments/${p2}/refund`, { amount: 2000, destination: 'MONEY_BACK', notes: 'x' })).status).toBe(201);
+      // Paid in full, then 50.00 turned into credit: nothing owed either.
+      const credited = await mkStudent('lfCredit', null, lf.id);
+      const c3 = (await post(`/students/${credited.id}/charges`, { description: 'Patch', amount: 10000, dueDate: day(-3) })).body;
+      const p3 = await pay(credited.id, c3.id, 10000);
+      expect((await post(`/charge-payments/${p3}/refund`, { amount: 5000, destination: 'CREDIT', notes: 'x' })).status).toBe(201);
+
+      await lateFees.run(new Date(), [lf.id]);
+      const fees = await su.charge.findMany({ where: { schoolId: lf.id, lateFeeForChargeId: { not: null } } });
+      expect(fees).toEqual([expect.objectContaining({ lateFeeForChargeId: c2.id, lateFeeOverdueAmount: 4000, grossAmount: 400 })]);
+    });
+
+    it('automatic payment never charges a refunded part', async () => {
+      const student = await mkStudent('autoRefunded');
+      await su.studentPaymentMethod.create({ data: { id: randomUUID(), studentId: student.id, schoolId: school.id, stripeCustomerId: `cus_${randomUUID()}`, autoPayCharges: true } });
+      const c = await createCharge(student.id, 10000, day(0));
+      const paymentId = await deskPay(student.id, 10000, c.id);
+      expect((await refund(paymentId, { amount: 3000, destination: 'MONEY_BACK' })).status).toBe(201);
+      await autoPay.run(new Date());
+      expect(await su.transaction.count({ where: { chargeId: c.id, chargePaymentChannel: 'AUTOMATIC' } })).toBe(0);
+    });
+  });
+
+  describe('"Payment due soon" (Decision 338 item 10; 3 days before, product owner 30 Oct 2026)', () => {
+    it('goes once, 3 days before the due date, to a charge still owed; not to one created later than that, paid, or switched off', async () => {
+      const student = await mkStudent('dueSoon');
+      const inThree = await createCharge(student.id, 2500, day(3));
+      const inTwo = await createCharge(student.id, 1000, day(2)); // created 2 days before: no reminder
+      const paid = await createCharge(student.id, 1500, day(3));
+      await deskPay(student.id, 1500, paid.id);
+      const later = await createCharge(student.id, 1200, day(5));
+
+      await dueReminder.run(new Date());
+      await dueReminder.run(new Date());
+      const rows = await notices(student.id, 1, 'Payment due soon');
+      await settle();
+      expect(await su.notification.count({ where: { userId: student.id, title: 'Payment due soon' } })).toBe(1);
+      expect(rows[0].body).toBe(`Invoice ${inThree.invoiceLabel} for Item ${seq - 3}: 25.00 BRL is due on ${day(3)}.`);
+      expect((await su.charge.findUniqueOrThrow({ where: { id: inTwo.id } })).dueReminderAt).toBeNull();
+      expect((await su.charge.findUniqueOrThrow({ where: { id: paid.id } })).dueReminderAt).toBeNull();
+      expect((await su.charge.findUniqueOrThrow({ where: { id: later.id } })).dueReminderAt).toBeNull();
+      // Two days on, the later one is 3 days away.
+      await dueReminder.run(new Date(Date.now() + 2 * DAY));
+      expect(await notices(student.id, 2, 'Payment due soon')).toHaveLength(2);
+
+      const quiet = await mkStudent('dueSoonQuiet');
+      const q = await createCharge(quiet.id, 2500, day(3));
+      await setSchool({ chargeNoticeDueReminder: false });
+      try {
+        await dueReminder.run(new Date());
+      } finally {
+        await setSchool({ chargeNoticeDueReminder: true });
+      }
+      await dueReminder.run(new Date());
+      await settle();
+      expect((await su.charge.findUniqueOrThrow({ where: { id: q.id } })).dueReminderAt).not.toBeNull();
+      expect(await su.notification.count({ where: { userId: quiet.id, title: 'Payment due soon' } })).toBe(0);
     });
   });
 

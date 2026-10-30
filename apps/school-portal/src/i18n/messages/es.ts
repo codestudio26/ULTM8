@@ -3967,6 +3967,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "Un recibo por cada pago",
       noticeFailedOverdue: "Un pago automático ha fallado o un cargo está vencido",
       noticeDispute: "Una disputa de un pago con tarjeta",
+      noticeDueReminder: "Un recordatorio 3 días antes de que venza un cargo",
     },
     card: {
       title: "Pagos",

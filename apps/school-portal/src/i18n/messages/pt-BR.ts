@@ -3967,6 +3967,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "Um recibo para cada pagamento",
       noticeFailedOverdue: "Um pagamento automático falhou, ou uma cobrança está em atraso",
       noticeDispute: "Uma contestação de pagamento com cartão",
+      noticeDueReminder: "Um lembrete 3 dias antes do vencimento de uma cobrança",
     },
     card: {
       title: "Pagamentos",

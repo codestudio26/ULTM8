@@ -3922,6 +3922,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "每笔付款的收据",
       noticeFailedOverdue: "自动付款失败或费用逾期",
       noticeDispute: "银行卡付款争议",
+      noticeDueReminder: "费用到期前 3 天提醒",
     },
     card: {
       title: "付款",

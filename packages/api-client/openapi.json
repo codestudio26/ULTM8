@@ -19903,6 +19903,10 @@
             "type": "boolean",
             "description": "Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on)."
           },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -20216,6 +20220,10 @@
             "type": "boolean",
             "description": "Decision 338 item 10: dispute notices to the member (default on)."
           },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: \"Payment due soon\", 3 days before a charge is due (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -20340,6 +20348,7 @@
           "chargeNoticeReceipt",
           "chargeNoticeFailedOverdue",
           "chargeNoticeDispute",
+          "chargeNoticeDueReminder",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -20559,6 +20568,10 @@
           "chargeNoticeDispute": {
             "type": "boolean",
             "description": "Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on)."
+          },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
           },
           "heardFromOptions": {
             "nullable": true,

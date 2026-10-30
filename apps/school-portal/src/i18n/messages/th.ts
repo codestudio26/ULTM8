@@ -3922,6 +3922,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "ใบเสร็จสำหรับการชำระทุกครั้ง",
       noticeFailedOverdue: "การชำระอัตโนมัติล้มเหลว หรือค่าบริการเกินกำหนด",
       noticeDispute: "ข้อโต้แย้งการชำระด้วยบัตร",
+      noticeDueReminder: "แจ้งเตือน 3 วันก่อนครบกำหนดค่าบริการ",
     },
     card: {
       title: "การชำระเงิน",

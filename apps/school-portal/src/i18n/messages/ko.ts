@@ -3922,6 +3922,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeReceipt: "결제마다 영수증",
       noticeFailedOverdue: "자동 결제 실패 또는 요금 연체",
       noticeDispute: "카드 결제 분쟁",
+      noticeDueReminder: "요금 기한 3일 전 알림",
     },
     card: {
       title: "결제",

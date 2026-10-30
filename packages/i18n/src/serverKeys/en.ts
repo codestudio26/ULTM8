@@ -207,6 +207,8 @@ export const server = {
     chargeDisputeLostBody: "The dispute on your card payment of {amount} was decided in your favour. The money goes back to your card.",
     chargeDisputeWonBody: "The dispute on your card payment of {amount} was decided in the School's favour. The payment stands.",
     chargePaymentLabel: "charge payment",
+    chargeDueReminderTitle: "Payment due soon",
+    chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
     // Decision 413 — late fees (jobs/late-fee.processor.ts, ChargesService waive).
     lateFeeAddedTitle: "Late fee added",
     lateFeeAddedChargeBody: "A late fee of {fee} was added to your balance because invoice {invoice} ({description}) is overdue. Pay it in the app or at the front desk.",

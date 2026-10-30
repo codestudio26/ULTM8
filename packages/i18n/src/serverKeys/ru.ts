@@ -249,6 +249,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Спор по вашему платежу картой на {amount} решён в вашу пользу. Деньги вернутся на карту.",
     chargeDisputeWonBody: "Спор по вашему платежу картой на {amount} решён в пользу Школы. Платёж остаётся в силе.",
     chargePaymentLabel: "оплата начисления",
+    chargeDueReminderTitle: "Скоро срок оплаты",
+    chargeDueReminderBody: "Счёт {invoice} за {description}: {amount} нужно оплатить до {due}.",
     lateFeeAddedTitle: "Начислена пеня за просрочку",
     lateFeeAddedChargeBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что счёт {invoice} ({description}) просрочен. Оплатите её в приложении или на ресепшене.",
     lateFeeAddedRenewalBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что платёж за абонемент {plan} на сумму {amount} просрочен. Оплатите её в приложении или на ресепшене.",

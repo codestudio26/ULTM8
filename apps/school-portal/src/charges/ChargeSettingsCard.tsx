@@ -46,6 +46,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [noticeReceipt, setNoticeReceipt] = useState(school.chargeNoticeReceipt ?? true);
   const [noticeFailedOverdue, setNoticeFailedOverdue] = useState(school.chargeNoticeFailedOverdue ?? true);
   const [noticeDispute, setNoticeDispute] = useState(school.chargeNoticeDispute ?? true);
+  const [noticeDueReminder, setNoticeDueReminder] = useState(school.chargeNoticeDueReminder ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const parsedRate = parseRate(rate);
@@ -89,6 +90,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         chargeNoticeReceipt: noticeReceipt,
         chargeNoticeFailedOverdue: noticeFailedOverdue,
         chargeNoticeDispute: noticeDispute,
+        chargeNoticeDueReminder: noticeDueReminder,
       });
       setSaved(true);
     } catch (err) {
@@ -204,6 +206,15 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         <p className="ultm8-field__hint" style={{ margin: '0 0 8px' }}>
           {t('charges.settings.noticesIntro')}
         </p>
+        <Switch
+          id="charge-notice-due-reminder"
+          label={t('charges.settings.noticeDueReminder')}
+          checked={noticeDueReminder}
+          onChange={(on) => {
+            setNoticeDueReminder(on);
+            changed();
+          }}
+        />
         <Switch
           id="charge-notice-receipt"
           label={t('charges.settings.noticeReceipt')}

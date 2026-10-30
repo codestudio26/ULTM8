@@ -382,6 +382,11 @@ export class CreateSchoolDto {
   @IsBoolean()
   chargeNoticeDispute?: boolean;
 
+  @ApiPropertyOptional({ description: 'Decision 338 item 10: remind the member 3 days before a charge is due (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeDueReminder?: boolean;
+
   @ApiPropertyOptional({
     type: [String],
     nullable: true,

@@ -249,6 +249,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Spór o Twoją płatność kartą na {amount} rozstrzygnięto na Twoją korzyść. Pieniądze wracają na Twoją kartę.",
     chargeDisputeWonBody: "Spór o Twoją płatność kartą na {amount} rozstrzygnięto na korzyść Szkoły. Płatność pozostaje.",
     chargePaymentLabel: "płatność należności",
+    chargeDueReminderTitle: "Płatność wkrótce",
+    chargeDueReminderBody: "Faktura {invoice} za {description}: {amount} do zapłaty do {due}.",
     lateFeeAddedTitle: "Dodano opłatę za zwłokę",
     lateFeeAddedChargeBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ faktura {invoice} ({description}) jest przeterminowana. Zapłać w aplikacji lub w recepcji.",
     lateFeeAddedRenewalBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ płatność za karnet {plan} w kwocie {amount} jest przeterminowana. Zapłać w aplikacji lub w recepcji.",

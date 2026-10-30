@@ -15,6 +15,7 @@ const NOTICES = [
   { title: 'Automatic payment failed', body: "We couldn't charge your saved card for invoice #0000012 (Rash guard, 120.00 BRL). Pay it in the app or at the front desk." },
   // Step 4: the overdue notice and the member's dispute notices.
   { title: 'Payment overdue', body: 'Invoice #0000012 for Rash guard was due on 2026-11-15. 70.00 BRL is still to pay.' },
+  { title: 'Payment due soon', body: 'Invoice #0000012 for Rash guard: 70.00 BRL is due on 2026-11-15.' },
   { title: 'Payment dispute', body: 'Your card payment of 60.00 BRL is being disputed with your bank.' },
   { title: 'Payment dispute', body: 'The dispute on your card payment of 60.00 BRL was decided in your favour. The money goes back to your card.' },
   { title: 'Payment dispute', body: "The dispute on your card payment of 60.00 BRL was decided in the School's favour. The payment stands." },
@@ -44,9 +45,11 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
 
     const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
     const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
-    const [created, paid, cancelled, credit, autoFailed, overdue, opened, lost, won] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    const [created, paid, cancelled, credit, autoFailed, overdue, dueSoon, opened, lost, won] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
     expect(overdue.title).toBe('Pagamento em atraso');
     expect(overdue.body).toMatch(/^A fatura #0000012 de Rash guard venceu em .+\. Ainda falta pagar .*70,00\.$/);
+    expect(dueSoon.title).toBe('Pagamento vence em breve');
+    expect(dueSoon.body).toMatch(/^A fatura #0000012 de Rash guard: .*70,00 vence em .+\.$/);
     expect(opened).toMatchObject({ title: 'Contestação de pagamento' });
     expect(opened.body).toMatch(/^Seu pagamento com cartão de .*60,00 está sendo contestado/);
     expect(lost.body).toMatch(/a seu favor\. O dinheiro volta para o seu cartão\.$/);

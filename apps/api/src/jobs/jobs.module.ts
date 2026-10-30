@@ -28,6 +28,7 @@ import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiv
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
 import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './charge-overdue-notice.processor';
+import { ChargeDueReminderProcessor, ChargeDueReminderScheduler } from './charge-due-reminder.processor';
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 
@@ -174,7 +175,8 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
  * charges/charge-ledger.ts, so no ChargesModule import.
  *
  * Backlog §3.6 step 4 adds ChargeOverdueNoticeProcessor/Scheduler — a daily
- * "Payment overdue" notice, once per charge (Decision 338 item 10).
+ * "Payment overdue" notice, once per charge (Decision 338 item 10); and
+ * ChargeDueReminderProcessor/Scheduler — "Payment due soon", 3 days before.
  * Backlog §3.7 adds LateFeeProcessor/Scheduler — a daily run (7am UTC, after
  * charge-auto-pay) adding one late fee to the member's balance for each
  * payment still unpaid after the School's grace days (Decision 413). Plain
@@ -222,6 +224,8 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
     ChargeAutoPayScheduler,
     ChargeOverdueNoticeProcessor,
     ChargeOverdueNoticeScheduler,
+    ChargeDueReminderProcessor,
+    ChargeDueReminderScheduler,
     LateFeeProcessor,
     LateFeeScheduler,
     ChargeRecurringProcessor,

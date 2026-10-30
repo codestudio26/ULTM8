@@ -234,6 +234,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Automatic payment failed': 'chargeAutoPayFailedTitle',
   // Backlog 3.6 step 4 — charge-overdue-notice job and the dispute webhook.
   'Payment overdue': 'chargeOverdueTitle',
+  'Payment due soon': 'chargeDueReminderTitle',
   'Payment dispute': 'chargeDisputeTitle',
   // Decision 413 — late fees.
   'Late fee added': 'lateFeeAddedTitle',
@@ -436,6 +437,10 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Invoice (#\d+) for (.+) was due on (\d{4}-\d{2}-\d{2})\. ([\d.]+) ([A-Z]{3}) is still to pay\.$/s,
     (m, { t, locale }) => n(t, 'chargeOverdueBody', { invoice: m[1], description: m[2], due: formatDay(m[3], locale), amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  [
+    /^Invoice (#\d+) for (.+): ([\d.]+) ([A-Z]{3}) is due on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'chargeDueReminderBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale), due: formatDay(m[5], locale) }),
   ],
   [/^Your card payment of ([\d.]+) ([A-Z]{3}) is being disputed with your bank\.$/s, (m, { t, locale }) => n(t, 'chargeDisputeOpenedBody', { amount: formatAmount(m[1], m[2], locale) })],
   [

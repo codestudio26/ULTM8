@@ -207,6 +207,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "你 {amount} 银行卡付款的争议已判你胜诉。钱款将退回你的银行卡。",
     chargeDisputeWonBody: "你 {amount} 银行卡付款的争议已判学校胜诉。付款依然有效。",
     chargePaymentLabel: "费用付款",
+    chargeDueReminderTitle: "付款即将到期",
+    chargeDueReminderBody: "{description} 的发票 {invoice}：{amount} 应于 {due} 付清。",
     lateFeeAddedTitle: "已添加滞纳金",
     lateFeeAddedChargeBody: "由于发票 {invoice}（{description}）已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",
     lateFeeAddedRenewalBody: "由于你的 {plan} 会员费 {amount} 已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",

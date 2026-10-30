@@ -185,6 +185,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decision 338 item 10: dispute notices to the member (default on).' })
   chargeNoticeDispute!: boolean;
 
+  @ApiProperty({ description: 'Decision 338 item 10: "Payment due soon", 3 days before a charge is due (default on).' })
+  chargeNoticeDueReminder!: boolean;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 
