@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Refund notice** (backlog 3.6; Decision 414 item 4) — when a payment
+  toward charges is refunded, the member is sent a "Refund" notice with the
+  amount and where it went: refunded to the card, given back, or added to the
+  balance as credit (a Guardian gets the usual copy). A refund made in the
+  Stripe dashboard sends it too; a lost card dispute does not (the dispute
+  notice already says the money goes back). The owner's notes are never
+  included. New switch "A refund of a payment" among the payment
+  notifications on the School page, on by default. 15 languages.
 - **Charges, step 4: refunds, credit, billing reports and payment notices**
   (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
   owner refunds a payment toward charges from the student's Payments card,

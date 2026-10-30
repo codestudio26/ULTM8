@@ -4093,6 +4093,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Автоплатёж не прошёл или начисление просрочено",
       noticeDispute: "Спор по платежу картой",
       noticeDueReminder: "Напоминание за 3 дня до срока оплаты начисления",
+      noticeRefund: "Возврат платежа",
     },
     card: {
       title: "Платежи",

@@ -236,6 +236,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment overdue': 'chargeOverdueTitle',
   'Payment due soon': 'chargeDueReminderTitle',
   'Payment dispute': 'chargeDisputeTitle',
+  // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+  'Refund': 'chargeRefundTitle',
   // Decision 413 — late fees.
   'Late fee added': 'lateFeeAddedTitle',
   'Late fee waived': 'lateFeeWaivedTitle',
@@ -429,6 +431,10 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (m, { t, locale }) => n(t, 'chargeCreatedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale), due: formatDay(m[5], locale) }),
   ],
   [/^Your payment of ([\d.]+) ([A-Z]{3}) was received\.$/s, (m, { t, locale }) => n(t, 'chargePaymentBody', { amount: formatAmount(m[1], m[2], locale) })],
+  // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+  [/^([\d.]+) ([A-Z]{3}) was refunded to your card\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCardBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [/^([\d.]+) ([A-Z]{3}) was given back to you\.$/s, (m, { t, locale }) => n(t, 'chargeRefundMoneyBackBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [/^([\d.]+) ([A-Z]{3}) was added to your balance as credit\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCreditBody', { amount: formatAmount(m[1], m[2], locale) })],
   [
     /^We couldn't charge your saved card for invoice (#\d+) \((.+), ([\d.]+) ([A-Z]{3})\)\. Pay it in the app or at the front desk\.$/s,
     (m, { t, locale }) => n(t, 'chargeAutoPayFailedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale) }),

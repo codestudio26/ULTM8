@@ -3983,6 +3983,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Eine automatische Zahlung ist fehlgeschlagen oder eine Gebühr ist überfällig",
       noticeDispute: "Eine Anfechtung einer Kartenzahlung",
       noticeDueReminder: "Eine Erinnerung 3 Tage vor Fälligkeit einer Gebühr",
+      noticeRefund: "Eine Rückerstattung einer Zahlung",
     },
     card: {
       title: "Zahlungen",

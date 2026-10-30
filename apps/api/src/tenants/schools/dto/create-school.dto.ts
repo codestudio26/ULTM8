@@ -387,6 +387,11 @@ export class CreateSchoolDto {
   @IsBoolean()
   chargeNoticeDueReminder?: boolean;
 
+  @ApiPropertyOptional({ description: 'Decision 414 item 4: tell the member when a payment toward charges is refunded (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeRefund?: boolean;
+
   @ApiPropertyOptional({
     type: [String],
     nullable: true,

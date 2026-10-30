@@ -28,6 +28,7 @@ import {
   lockBalance,
   paymentRefundable,
   receiptNotice,
+  refundNotice,
   recordChargeRefund,
 } from './charge-ledger';
 import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
@@ -466,6 +467,8 @@ export class ChargesService {
    * re-opens a charge. Notes are required unless the owner made them optional,
    * and are for staff only. The card surcharge (Decision 406) is not refunded:
    * nothing decided says it is, so only the payment toward charges is.
+   * The member is sent a "Refund" notice after the commit (Decision 414 item
+   * 4), unless the School switched it off; it never carries the notes.
    */
   async refund(callerId: string, schoolId: string, transactionId: string, dto: RefundChargePaymentDto) {
     this.assertUuid(transactionId);
@@ -489,8 +492,9 @@ export class ChargesService {
       throw new BadRequestException({ code: 'CHARGE_REFUND_CARD_PAYMENT', message: 'A card payment goes back to the card, or onto the balance as credit.' });
     }
 
+    let refundId: string;
     try {
-      await this.prismaJobs.$transaction(
+      refundId = await this.prismaJobs.$transaction(
         async (tx) => {
           await lockBalance(tx, schoolId, payment.studentId);
           // The same row lock as CancellationService and the charge.refunded
@@ -522,7 +526,7 @@ export class ChargesService {
               `charge-refund-${fresh.id}-${before._sum.amount ?? 0}-${dto.amount}`,
             );
           }
-          await recordChargeRefund(tx, { transaction: fresh, kind: dto.destination, amount: dto.amount, notes, refundedById: callerId, stripeRefundId });
+          return recordChargeRefund(tx, { transaction: fresh, kind: dto.destination, amount: dto.amount, notes, refundedById: callerId, stripeRefundId });
         },
         { timeout: 20_000 },
       );
@@ -533,6 +537,10 @@ export class ChargesService {
     // A refund as credit leaves the money on the balance, where it pays open
     // charges, which may pay a promotion fee in full (step 6).
     await this.promotionFees.settlePaidCharges(schoolId, payment.studentId);
+
+    // Decision 414 item 4: the School may switch refund notices off.
+    const notice = school.chargeNoticeRefund && payment.currency ? refundNotice(refundId, dto.destination, dto.amount, payment.currency) : null;
+    if (notice) await this.notify(payment.studentId, schoolId, notice.key, notice.title, notice.body, payment.id);
     return this.paymentResult(schoolId, payment.studentId, payment.id, school.timezone, true);
   }
 
@@ -1185,6 +1193,7 @@ export class ChargesService {
         chargeCancelReasonRequired: true,
         chargeRefundNotesRequired: true,
         chargeNoticeReceipt: true,
+        chargeNoticeRefund: true,
       },
     });
     if (!school) throw new NotFoundException('School not found');

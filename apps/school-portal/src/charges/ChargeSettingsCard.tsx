@@ -47,6 +47,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [noticeFailedOverdue, setNoticeFailedOverdue] = useState(school.chargeNoticeFailedOverdue ?? true);
   const [noticeDispute, setNoticeDispute] = useState(school.chargeNoticeDispute ?? true);
   const [noticeDueReminder, setNoticeDueReminder] = useState(school.chargeNoticeDueReminder ?? true);
+  const [noticeRefund, setNoticeRefund] = useState(school.chargeNoticeRefund ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const parsedRate = parseRate(rate);
@@ -91,6 +92,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         chargeNoticeFailedOverdue: noticeFailedOverdue,
         chargeNoticeDispute: noticeDispute,
         chargeNoticeDueReminder: noticeDueReminder,
+        chargeNoticeRefund: noticeRefund,
       });
       setSaved(true);
     } catch (err) {
@@ -239,6 +241,15 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
           checked={noticeDispute}
           onChange={(on) => {
             setNoticeDispute(on);
+            changed();
+          }}
+        />
+        <Switch
+          id="charge-notice-refund"
+          label={t('charges.settings.noticeRefund')}
+          checked={noticeRefund}
+          onChange={(on) => {
+            setNoticeRefund(on);
             changed();
           }}
         />

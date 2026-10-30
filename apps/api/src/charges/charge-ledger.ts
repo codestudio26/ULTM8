@@ -118,6 +118,27 @@ export function receiptNotice(transactionId: string, amountPaid: number, currenc
   return { key: `charge-payment-${transactionId}`, title: 'Payment received', body: `Your payment of ${noticeMoney(amountPaid, currency)} was received.` };
 }
 
+/**
+ * The refund notice (Decision 414 item 4): the amount and where it went, never
+ * the owner's notes. Sent for a refund the owner makes (to the card, money
+ * given back, as credit) and for one made in the Stripe dashboard; a lost
+ * dispute sends none, as the member already has the dispute notice ("The
+ * money goes back to your card"). Translated by @ultm8/i18n's pattern, as the
+ * receipt is.
+ */
+export function refundNotice(refundId: string, kind: ChargeRefundKindValue, amount: number, currency: string) {
+  const money = noticeMoney(amount, currency);
+  const body: Record<ChargeRefundKindValue, string | null> = {
+    CARD: `${money} was refunded to your card.`,
+    STRIPE: `${money} was refunded to your card.`,
+    MONEY_BACK: `${money} was given back to you.`,
+    CREDIT: `${money} was added to your balance as credit.`,
+    DISPUTE_LOST: null,
+  };
+  const text = body[kind];
+  return text ? { key: `charge-refund-${refundId}`, title: 'Refund', body: text } : null;
+}
+
 // ---------------------------------------------------------------------------
 // Step 4: refunds and owner-given credit (Decision 338 item 3, Decision 303
 // item 3: owner only).
@@ -277,12 +298,18 @@ export async function giveCredit(tx: Tx, input: { schoolId: string; studentId: s
   return id;
 }
 
-/** The School's payment notification switches (Decision 338 item 10). "New
- * invoice" and "Charge cancelled" have none: they are always sent. */
+/** The School's payment notification switches (Decision 338 item 10; the
+ * refund notice, Decision 414 item 4). "New invoice" and "Charge cancelled"
+ * have none: they are always sent. */
 export async function chargeNoticeSwitches(db: Pick<Tx, 'school'>, schoolId: string) {
   const school = await db.school.findUnique({
     where: { id: schoolId },
-    select: { chargeNoticeReceipt: true, chargeNoticeFailedOverdue: true, chargeNoticeDispute: true },
+    select: { chargeNoticeReceipt: true, chargeNoticeFailedOverdue: true, chargeNoticeDispute: true, chargeNoticeRefund: true },
   });
-  return { receipt: school?.chargeNoticeReceipt ?? true, failedOverdue: school?.chargeNoticeFailedOverdue ?? true, dispute: school?.chargeNoticeDispute ?? true };
+  return {
+    receipt: school?.chargeNoticeReceipt ?? true,
+    failedOverdue: school?.chargeNoticeFailedOverdue ?? true,
+    dispute: school?.chargeNoticeDispute ?? true,
+    refund: school?.chargeNoticeRefund ?? true,
+  };
 }

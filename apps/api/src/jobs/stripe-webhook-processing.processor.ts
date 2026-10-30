@@ -13,7 +13,7 @@ import { cancelFutureBookingsFundedByExpiredMembership } from './membership-book
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
-import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, recordChargeRefund, settleChargePayment } from '../charges/charge-ledger';
+import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, recordChargeRefund, refundNotice, settleChargePayment } from '../charges/charge-ledger';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
@@ -1316,19 +1316,25 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // two never write the total over each other.
     await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
     let transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    // Decision 414 item 4: a dashboard refund on a payment toward charges sends
+    // the member the "Refund" notice, as a refund the owner makes in ULTM8 does.
+    let refundNotices: NotificationFanoutJobData[] = [];
     if (transaction.kind === 'CHARGE_PAYMENT') {
-      transaction = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+      const recorded = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+      transaction = recorded.transaction;
+      refundNotices = recorded.notices;
     }
+    const withNotices = { ...noSideEffects, notifications: refundNotices };
     const refunded = Math.min(charge.amount_refunded, transaction.amount);
     let status = transaction.status;
     if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
     else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
     const refundedAmount = refunded > 0 ? refunded : null;
-    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return noSideEffects;
+    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return withNotices;
     await tx.transaction.update({ where: { id: transaction.id }, data: { refundedAmount, status } });
     this.logger.log(`Transaction ${transaction.id} refund total synced from charge ${charge.id}: ${refunded} of ${transaction.amount}, ${status} (event ${stripeEventId}).`);
-    if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return noSideEffects;
-    return { ...noSideEffects, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
+    if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return withNotices;
+    return { ...withNotices, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
   }
 
   /**
@@ -1338,30 +1344,48 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * (recordChargeRefund): the charge is never re-opened. Refunds ULTM8 sent
    * itself (kind CARD) are already recorded, so only what Stripe holds beyond
    * them is new. A refund that later fails is logged and left: the ledger is
-   * not put back. Returns the Transaction as it now stands.
+   * not put back. Returns the Transaction as it now stands, and the member's
+   * "Refund" notice for what went on the ledger (Decision 414 item 4), sent by
+   * process() after the commit, unless the School switched it off.
    */
-  private async recordStripeRefundOnLedger(tx: Prisma.TransactionClient, transaction: Transaction, refunded: number, stripeEventId: string): Promise<Transaction> {
-    if (!transaction.currency || transaction.status === 'PENDING' || transaction.status === 'FAILED') return transaction;
+  private async recordStripeRefundOnLedger(
+    tx: Prisma.TransactionClient,
+    transaction: Transaction,
+    refunded: number,
+    stripeEventId: string,
+  ): Promise<{ transaction: Transaction; notices: NotificationFanoutJobData[] }> {
+    const unchanged = { transaction, notices: [] };
+    if (!transaction.currency || transaction.status === 'PENDING' || transaction.status === 'FAILED') return unchanged;
     const recorded = await tx.chargeRefund.aggregate({ where: { transactionId: transaction.id, kind: { in: ['CARD', 'STRIPE'] } }, _sum: { amount: true } });
     const delta = refunded - (recorded._sum.amount ?? 0);
     if (delta < 0) {
       this.logger.warn(`Transaction ${transaction.id}: Stripe now holds less refunded than the ledger (a failed refund?) (event ${stripeEventId}). The ledger is left as it is.`);
-      return transaction;
+      return unchanged;
     }
-    if (delta === 0) return transaction;
+    if (delta === 0) return unchanged;
     const state = await paymentRefundable(tx, transaction);
     const amount = Math.min(delta, state.asMoney);
     if (amount < delta) {
       this.logger.warn(`Transaction ${transaction.id}: ${delta} refunded in Stripe, only ${amount} could go on the member's ledger (event ${stripeEventId}).`);
     }
-    if (amount <= 0) return transaction;
+    if (amount <= 0) return unchanged;
+    let refundId: string;
     try {
-      await recordChargeRefund(tx, { transaction, kind: 'STRIPE', amount, notes: null, refundedById: null });
+      refundId = await recordChargeRefund(tx, { transaction, kind: 'STRIPE', amount, notes: null, refundedById: null });
     } catch (err) {
       if (!(err instanceof ChargeRefundError)) throw err;
       this.logger.warn(`Transaction ${transaction.id}: the Stripe refund could not go on the ledger: ${err.message} (event ${stripeEventId}).`);
+      return { transaction: await tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } }), notices: [] };
     }
-    return tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    const after = await tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    const notice = (await chargeNoticeSwitches(tx, transaction.schoolId)).refund ? refundNotice(refundId, 'STRIPE', amount, transaction.currency) : null;
+    if (!notice) return { transaction: after, notices: [] };
+    return {
+      transaction: after,
+      notices: [
+        { notificationId: notice.key, userId: transaction.studentId, title: notice.title, body: notice.body, type: 'CHARGE', schoolId: transaction.schoolId, targetType: 'PAYMENT', targetId: transaction.id },
+      ],
+    };
   }
 
   /**

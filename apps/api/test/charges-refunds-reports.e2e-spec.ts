@@ -27,6 +27,8 @@ import { LateFeeProcessor } from '../src/jobs/late-fee.processor';
  *   their branches;
  * - the payment notification switches, the overdue notice job, resending an
  *   invoice, the receipt's address and payment instructions;
+ * - the refund notice (Decision 414 item 4): each kind's text, a Guardian's
+ *   copy, a dashboard refund, none for a lost dispute, its switch;
  * - another School refused.
  */
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -234,6 +236,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     await su.studentHomeBranch.deleteMany({ where });
     await su.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
     await su.notification.deleteMany({ where: { userId: { in: userIds } } });
+    await su.guardianLink.deleteMany({ where: { studentId: { in: userIds } } });
     await su.staffPermission.deleteMany({ where });
     await su.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await su.branch.deleteMany({ where });
@@ -465,6 +468,112 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       const view = await staffView(student.id);
       expect(view.charges[0]).toMatchObject({ owedAmount: 0, refundedAmount: 3000, refundStatus: 'PART_REFUNDED' });
       expect(view.balances[0]).toMatchObject({ net: 0 });
+    });
+  });
+
+  describe('The refund notice (Decision 414 item 4)', () => {
+    const refundNotices = (userId: string, expected: number) => notices(userId, expected, 'Refund');
+
+    it('each refund the owner makes tells the member how much and where it went, never the notes', async () => {
+      const student = await mkStudent('rnKinds');
+      const c1 = await createCharge(student.id, 10000);
+      const card = await cardPay('rnKinds', student.id, c1.id);
+      const c2 = await createCharge(student.id, 8000);
+      const cash = await deskPay(student.id, 8000, c2.id);
+
+      expect((await refund(card, { amount: 2500, destination: 'CARD', notes: 'Staff only: wrong size' })).status).toBe(201);
+      expect((await refund(cash, { amount: 1000, destination: 'MONEY_BACK', notes: 'Staff only: cash from the till' })).status).toBe(201);
+      expect((await refund(cash, { amount: 1500, destination: 'CREDIT', notes: 'Staff only: goodwill' })).status).toBe(201);
+
+      const rows = await refundNotices(student.id, 3);
+      // Sent by the notification worker, so in any order.
+      expect(rows.map((n) => n.body).sort()).toEqual([
+        '10.00 BRL was given back to you.',
+        '15.00 BRL was added to your balance as credit.',
+        '25.00 BRL was refunded to your card.',
+      ]);
+      for (const n of rows) expect(n.body).not.toContain('Staff only');
+
+      // Stripe's own charge.refunded for the refund sent from ULTM8 is not a
+      // second refund: no second notice.
+      nextCharge = { id: `ch_${randomUUID()}`, amount_refunded: 2500, payment_intent: (await tx(card)).stripePaymentIntentId! };
+      await event('charge.refunded', nextCharge.id);
+      await settle();
+      expect(await su.notification.count({ where: { userId: student.id, title: 'Refund' } })).toBe(3);
+    });
+
+    it('a Guardian gets the usual copy for a child', async () => {
+      const child = await mkStudent('rnChild');
+      const guardian = await mkUser('rnGuardian');
+      await su.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: child.id } });
+      const c = await createCharge(child.id, 5000);
+      const paymentId = await deskPay(child.id, 5000, c.id);
+      expect((await refund(paymentId, { amount: 2000, destination: 'MONEY_BACK' })).status).toBe(201);
+
+      expect((await refundNotices(child.id, 1)).map((n) => n.body)).toEqual(['20.00 BRL was given back to you.']);
+      expect((await refundNotices(guardian.id, 1)).map((n) => n.body)).toEqual(['For rnChild: 20.00 BRL was given back to you.']);
+    });
+
+    it('a refund made in the Stripe dashboard tells the member once', async () => {
+      const student = await mkStudent('rnDashboard');
+      const c = await createCharge(student.id, 9000);
+      const paymentId = await cardPay('rnDashboard', student.id, c.id);
+      nextCharge = { id: `ch_${randomUUID()}`, amount_refunded: 3000, payment_intent: (await tx(paymentId)).stripePaymentIntentId! };
+      await event('charge.refunded', nextCharge.id);
+      await event('charge.refunded', nextCharge.id);
+      expect((await refundNotices(student.id, 1)).map((n) => n.body)).toEqual(['30.00 BRL was refunded to your card.']);
+      await settle();
+      expect(await su.notification.count({ where: { userId: student.id, title: 'Refund' } })).toBe(1);
+    });
+
+    it('a lost dispute sends the dispute notice only, no refund notice', async () => {
+      const student = await mkStudent('rnDispute');
+      const c = await createCharge(student.id, 4000);
+      const paymentId = await cardPay('rnDispute', student.id, c.id);
+      nextDispute = { id: `dp_${randomUUID()}`, status: 'lost', amount: 4000, currency: 'brl', payment_intent: (await tx(paymentId)).stripePaymentIntentId! };
+      await event('charge.dispute.closed', nextDispute.id);
+      expect(await notices(student.id, 1, 'Payment dispute')).toHaveLength(1);
+      await settle();
+      expect(await su.chargeRefund.count({ where: { transactionId: paymentId, kind: 'DISPUTE_LOST' } })).toBe(1);
+      expect(await su.notification.count({ where: { userId: student.id, title: 'Refund' } })).toBe(0);
+    });
+
+    it('switched off, no refund notice of any kind; another School is unaffected', async () => {
+      const student = await mkStudent('rnQuiet');
+      const c1 = await createCharge(student.id, 6000);
+      const card = await cardPay('rnQuiet', student.id, c1.id);
+      const c2 = await createCharge(student.id, 6000);
+      const cash = await deskPay(student.id, 6000, c2.id);
+
+      await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: other.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
+      const elsewhere = await mkStudent('rnElsewhere', null, other.id);
+      const otherPost = (url: string, body: Record<string, unknown>) => as(tokens.otherOwner).post(`/v1/schools/${other.id}${url}`, body);
+      const oc = await otherPost(`/students/${elsewhere.id}/charges`, { description: 'Gi', amount: 3000, dueDate: day(7) });
+      expect(oc.status).toBe(201);
+      const op = await otherPost(`/students/${elsewhere.id}/charge-payments`, { amount: 3000, chargeId: oc.body.id, paymentMethod: 'CASH', sendReceipt: false });
+      expect(op.status).toBe(201);
+
+      const patch = await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.owner}`).send({ chargeNoticeRefund: false });
+      expect(patch.status).toBe(200);
+      expect(patch.body.chargeNoticeRefund).toBe(false);
+      try {
+        expect((await refund(card, { amount: 1000, destination: 'CARD' })).status).toBe(201);
+        expect((await refund(cash, { amount: 1000, destination: 'MONEY_BACK' })).status).toBe(201);
+        expect((await refund(cash, { amount: 1000, destination: 'CREDIT' })).status).toBe(201);
+        nextCharge = { id: `ch_${randomUUID()}`, amount_refunded: 3000, payment_intent: (await tx(card)).stripePaymentIntentId! };
+        await event('charge.refunded', nextCharge.id);
+        expect(await su.chargeRefund.count({ where: { transactionId: card, kind: 'STRIPE' } })).toBe(1);
+
+        // The other School keeps its own switch (on by default).
+        expect((await otherPost(`/charge-payments/${op.body.payment.id}/refund`, { amount: 500, destination: 'MONEY_BACK', notes: 'x' })).status).toBe(201);
+        expect((await refundNotices(elsewhere.id, 1)).map((n) => n.body)).toEqual(['5.00 BRL was given back to you.']);
+        await settle();
+        expect(await su.notification.count({ where: { userId: student.id, title: 'Refund' } })).toBe(0);
+      } finally {
+        await setSchool({ chargeNoticeRefund: true });
+      }
+      // Only the owner changes it.
+      expect((await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.staffA}`).send({ chargeNoticeRefund: false })).status).toBe(403);
     });
   });
 
