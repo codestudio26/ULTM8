@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A paid promotion fee whose promotion can no longer apply** (Decision 414
+  item 1) — when a promotion fee is paid in full but the promotion that waited
+  for it can't go through any more (the student's rank or the belt ladder
+  changed after the grade), the School's owner is told once, in
+  Notifications ("Promotion can't apply"), and the student's grading card and
+  the Grading Board show **Paid — promotion can't apply**. The owner decides:
+  **Cancel fee** (the invoice is cancelled and what was paid becomes credit)
+  or grade the student again, which is no longer held up by the fee (the fee
+  then stays paid and closes as Paid). Nothing happens to the money on its
+  own, and the daily payments run doesn't retry it or tell the owner again.
+  The fee can't be waived in this state. The member sees the fee as Paid.
+  **Needs a database migration** (`20270120000000_promotion_fee_blocked`).
 - **Charges, step 4: refunds, credit, billing reports and payment notices**
   (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
   owner refunds a payment toward charges from the student's Payments card,
