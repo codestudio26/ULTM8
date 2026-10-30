@@ -4795,8 +4795,9 @@ model InstructorBelt {
 }
 
 /// Promotion fee request status (Decisions 300, 307). PENDING: waiting for the
-/// student (or Guardian) to answer. ACCEPTED: they accepted; paying it is the
-/// charges work (Decision 303, not built yet). PAID, WAIVED, CANCELLED and
+/// student (or Guardian) to answer. ACCEPTED: they accepted, and it is a charge
+/// on their balance (Decision 303 item 5); PAID once that charge is fully
+/// paid. PAID, WAIVED, CANCELLED and
 /// DECLINED are answers; the owner may still waive or cancel a DECLINED one.
 enum PromotionFeeStatus {
   PENDING
@@ -4818,8 +4819,9 @@ enum PromotionToDecideResolution {
 /// A promotion fee asked of a student, or of the Guardian for a linked minor
 /// (Decisions 287, 300, 307, 313). Created when a grade targets a priced rung
 /// while the School's promotion fee is on. Never charged directly: the payer
-/// accepts it first, and paying belongs to staff-created charges (Decision
-/// 303, not built). One row per promoted student, bulk included.
+/// accepts it first; accepting makes a Charge for it on the student's balance
+/// (Decision 303 item 5, `Charge.promotionFeeRequestId`), paid as any charge
+/// is. One row per promoted student, bulk included.
 ///
 /// Two shapes, fixed when the request is created:
 /// - Applied (`promotionWaits` false, "Allow grading before the fee is paid"
@@ -4894,6 +4896,9 @@ model PromotionFeeRequest {
   toDecideResolution   PromotionToDecideResolution?
   toDecideResolvedById String?
   toDecideResolvedBy   User?                        @relation("PromotionFeeRequestToDecideResolvedBy", fields: [toDecideResolvedById], references: [id], onDelete: SetNull)
+
+  /// The charge made when the fee was accepted (Decision 303 item 5).
+  charge Charge?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5392,6 +5397,15 @@ model Charge {
   lateFeeOverdueAmount    Int?
   lateFeePercentBps       Int?
   lateFeeWaived           Boolean      @default(false)
+
+  /// Backlog §3.6 step 6 (Decision 303 item 5): the accepted promotion fee
+  /// this charge is (Decision 300). Unique, so a request never has two
+  /// charges. Made when the payer accepts; when it is fully paid the request
+  /// becomes PAID and a waiting promotion applies; waiving or cancelling the
+  /// fee cancels it. Staff can't cancel it from the Payments card: the fee is
+  /// waived or cancelled from grading (PromotionFeeService).
+  promotionFeeRequestId String?              @unique
+  promotionFeeRequest   PromotionFeeRequest? @relation(fields: [promotionFeeRequestId], references: [id], onDelete: Restrict)
 
   /// Backlog §3.6 step 3 (Decision 412): the recurring charge this charge is
   /// one occurrence of, and that occurrence's date (also its due date). One
