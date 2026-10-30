@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "Geef een reden op om deze kosten te annuleren.",
   "Only the student, or their Guardian, can see their charges.": "Alleen de leerling, of de ouder/voogd, kan de kosten zien.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Mag kosten aanmaken\" en \"Mag kosten annuleren\" zijn voor vestigingsmedewerkers en trainers van deze School.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "Deze school accepteert geen kaartbetalingen in de app. Betaal bij de balie.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "Dit account kan alleen contant of per bankoverschrijving betalen. Betaal bij de balie.",
+  "You owe in more than one currency. Choose which one to pay.": "Je hebt openstaande bedragen in meer dan één valuta. Kies welke je wilt betalen.",
+  "There is nothing to pay.": "Er is niets te betalen.",
+  "Only the member can set automatic payment, with their own saved card.": "Alleen het lid zelf kan automatisch betalen instellen, met zijn eigen opgeslagen kaart.",
+  "Save a card for this School first.": "Sla eerst een kaart op voor deze school.",
 };

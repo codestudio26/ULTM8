@@ -226,6 +226,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "Vos frais « {description}, {amount} » ont été annulés. Rien à payer. Les {paid} déjà payés sont maintenant un crédit sur votre solde.",
     freezeBookingsCancelledTitle: "Réservations annulées",
     freezeBookingsCancelledBody: "Votre abonnement {plan} est gelé à partir du {start} et vous reprenez le {back} : vos réservations sur cette période ont donc été annulées : {list}. Vous pourrez réserver à nouveau une fois le gel terminé.",
+    chargeAutoPayFailedTitle: "Échec du paiement automatique",
+    chargeAutoPayFailedBody: "Nous n'avons pas pu débiter votre carte enregistrée pour la facture {invoice} ({description}, {amount}). Payez-la dans l'app ou à l'accueil.",
     classMovedTitle: "Cours déplacé",
     classCancelledTitle: "Cours annulé",
     toDecideTitle: "Promotion à décider",

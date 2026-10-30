@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "이 청구를 취소하는 이유를 입력하세요.",
   "Only the student, or their Guardian, can see their charges.": "청구는 학생 본인이나 보호자만 볼 수 있습니다.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"청구 만들기 가능\"과 \"청구 취소 가능\"은 이 학교의 지점 직원과 코치를 위한 설정입니다.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "이 학원은 앱에서 카드 결제를 받지 않습니다. 접수처에서 결제하세요.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "이 계정은 현금이나 계좌 이체로만 결제할 수 있습니다. 접수처에서 결제하세요.",
+  "You owe in more than one currency. Choose which one to pay.": "두 가지 이상의 통화로 미납액이 있습니다. 결제할 통화를 선택하세요.",
+  "There is nothing to pay.": "결제할 금액이 없습니다.",
+  "Only the member can set automatic payment, with their own saved card.": "자동 결제는 회원 본인만 본인의 저장된 카드로 설정할 수 있습니다.",
+  "Save a card for this School first.": "먼저 이 학원용 카드를 저장하세요.",
 };

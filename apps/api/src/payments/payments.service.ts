@@ -829,6 +829,9 @@ export class PaymentsService {
     // Decision 406: the card surcharge, its own line on the hosted page and
     // on Stripe's receipt (0 = none).
     surchargeAmount = 0,
+    // Where the browser returns in the app: the membership purchase, or paying
+    // charges (backlog §3.6 step 2), which reuses this same Checkout.
+    returnPath: 'membership-purchase' | 'charge-payment' = 'membership-purchase',
   ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
@@ -855,8 +858,8 @@ export class PaymentsService {
           : []),
       ],
       ...(surchargeAmount > 0 ? { payment_intent_data: { metadata: { surchargeAmount: String(surchargeAmount) } } } : {}),
-      success_url: 'ultm8-student://membership-purchase/complete',
-      cancel_url: 'ultm8-student://membership-purchase/cancel',
+      success_url: `ultm8-student://${returnPath}/complete`,
+      cancel_url: `ultm8-student://${returnPath}/cancel`,
       expand: ['payment_intent'],
     }, idempotencyKey ? { idempotencyKey } : undefined));
     if (!session.url) {

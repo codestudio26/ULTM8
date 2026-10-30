@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "اذكر سببًا لإلغاء هذا الرسم.",
   "Only the student, or their Guardian, can see their charges.": "لا يرى رسوم الطالب إلا الطالب نفسه أو وليّ أمره.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"يمكنه إنشاء الرسوم\" و\"يمكنه إلغاء الرسوم\" مخصّصان لموظفي الفروع والمدرّبين في هذه المدرسة.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "لا تقبل هذه المدرسة الدفع بالبطاقة في التطبيق. ادفع في مكتب الاستقبال.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "لا يمكن لهذا الحساب الدفع إلا نقدًا أو بتحويل بنكي. ادفع في مكتب الاستقبال.",
+  "You owe in more than one currency. Choose which one to pay.": "عليك مبالغ بأكثر من عملة. اختر العملة التي تريد الدفع بها.",
+  "There is nothing to pay.": "لا يوجد ما تدفعه.",
+  "Only the member can set automatic payment, with their own saved card.": "لا يمكن إعداد الدفع التلقائي إلا للعضو نفسه، ببطاقته المحفوظة.",
+  "Save a card for this School first.": "احفظ بطاقة لهذه المدرسة أولًا.",
 };

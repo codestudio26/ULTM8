@@ -212,6 +212,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "'{description}, {amount}' ücretiniz iptal edildi. Ödenecek bir şey yok. Daha önce ödenen {paid} artık bakiyenizde alacak olarak duruyor.",
     freezeBookingsCancelledTitle: "Rezervasyonlar iptal edildi",
     freezeBookingsCancelledBody: "{plan} üyeliğiniz {start} tarihinden itibaren donduruldu ve {back} tarihinde dönüyorsunuz; bu yüzden bu aradaki rezervasyonlarınız iptal edildi: {list}. Dondurma bitince yeniden rezervasyon yapabilirsiniz.",
+    chargeAutoPayFailedTitle: "Otomatik ödeme başarısız oldu",
+    chargeAutoPayFailedBody: "{invoice} numaralı fatura ({description}, {amount}) için kayıtlı kartınızdan ödeme alamadık. Uygulamada veya resepsiyonda ödeyin.",
     classMovedTitle: "Ders taşındı",
     classCancelledTitle: "Ders iptal edildi",
     toDecideTitle: "Karar bekleyen terfi",

@@ -198,6 +198,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "'{description}, {amount}' 청구가 취소되었습니다. 결제할 금액이 없습니다. 이미 결제한 {paid}은(는) 잔액의 크레딧이 되었습니다.",
     freezeBookingsCancelledTitle: "예약이 취소되었습니다",
     freezeBookingsCancelledBody: "{plan} 멤버십이 {start}부터 일시정지되어 {back}에 다시 시작하므로, 그 사이의 예약이 취소되었습니다: {list}. 일시정지가 끝나면 다시 예약할 수 있습니다.",
+    chargeAutoPayFailedTitle: "자동 결제 실패",
+    chargeAutoPayFailedBody: "청구서 {invoice}({description}, {amount})를 저장된 카드로 결제하지 못했습니다. 앱이나 접수처에서 결제하세요.",
     classMovedTitle: "수업이 변경되었습니다",
     classCancelledTitle: "수업이 취소되었습니다",
     toDecideTitle: "결정 대기 중인 승급",

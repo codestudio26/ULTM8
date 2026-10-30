@@ -28,6 +28,24 @@ export const charges = {
   toward: 'Toward {invoices}',
   toCredit: '{amount} went onto your balance as credit',
   payAtDesk: "To pay, ask at your School's front desk.",
+  receiptSurcharge: 'Includes a card surcharge of {amount}',
+  pay: {
+    balance: 'Pay balance ({amount})',
+    charge: 'Pay {amount}',
+    surcharge: 'Includes a card surcharge of {amount}',
+    failed: "Couldn't start the payment — please try again.",
+    submitted: 'Payment sent. It shows here once your card payment is confirmed.',
+    restricted: 'This account can only pay by cash or bank transfer. Pay at the front desk.',
+    processing: '{amount} card payment processing ({date})',
+    autoFailed: 'Automatic payment of {amount} failed on {date}. Pay in the app or at the front desk.',
+  },
+  autoPay: {
+    label: 'Pay charges automatically with my saved card',
+    onHint: 'Your saved card is charged on each due date.',
+    offHint: 'You pay each charge yourself, here or at the front desk.',
+    noCard: 'Save a card in Payment methods to pay charges automatically.',
+    failed: "Couldn't change automatic payment — please try again.",
+  },
   status: {
     OPEN: 'Open',
     PART_PAID: 'Part paid',
@@ -39,6 +57,8 @@ export const charges = {
     PIX: 'Pix',
     BANK_TRANSFER: 'bank transfer',
     CARD_TERMINAL: 'card at the desk',
+    app: 'card in the app',
+    automatic: 'automatic card payment',
   },
   transactions: {
     item: 'Payment: {invoice} {description}',

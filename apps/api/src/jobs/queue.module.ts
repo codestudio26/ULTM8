@@ -21,6 +21,7 @@ import {
   VIDEO_PROCESSING_POLL_QUEUE,
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
   WAIVER_RENEWAL_SWEEP_QUEUE,
+  CHARGE_AUTO_PAY_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -91,6 +92,7 @@ export {
   VIDEO_PROCESSING_POLL_QUEUE,
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
   WAIVER_RENEWAL_SWEEP_QUEUE,
+  CHARGE_AUTO_PAY_QUEUE,
 };
 
 @Module({
@@ -115,6 +117,7 @@ export {
       { name: VIDEO_PROCESSING_POLL_QUEUE },
       { name: FRANCHISE_FEE_RATE_MIGRATION_QUEUE },
       { name: WAIVER_RENEWAL_SWEEP_QUEUE },
+      { name: CHARGE_AUTO_PAY_QUEUE },
     ),
   ],
   exports: [BullModule],

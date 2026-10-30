@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "Укажите причину отмены этого начисления.",
   "Only the student, or their Guardian, can see their charges.": "Только сам ученик или его опекун могут видеть его начисления.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "«Может создавать начисления» и «Может отменять начисления» — для сотрудников филиалов и тренеров этой школы.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "Эта школа не принимает оплату картой в приложении. Оплатите на ресепшене.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "С этого аккаунта можно платить только наличными или банковским переводом. Оплатите на ресепшене.",
+  "You owe in more than one currency. Choose which one to pay.": "У вас долг в нескольких валютах. Выберите, какую оплатить.",
+  "There is nothing to pay.": "Платить нечего.",
+  "Only the member can set automatic payment, with their own saved card.": "Включить автоплатёж может только сам участник, своей сохранённой картой.",
+  "Save a card for this School first.": "Сначала сохраните карту для этой школы.",
 };

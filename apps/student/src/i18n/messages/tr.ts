@@ -972,6 +972,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Mahsup edilen: {invoices}",
     toCredit: "{amount} bakiyenize alacak olarak geçti",
     payAtDesk: "Ödemek için okulunuzun resepsiyonuna başvurun.",
+    receiptSurcharge: "{amount} kart ek ücreti dahil",
+    pay: {
+      balance: "Bakiyeyi öde ({amount})",
+      charge: "{amount} öde",
+      surcharge: "{amount} kart ek ücreti dahil",
+      failed: "Ödeme başlatılamadı — lütfen tekrar deneyin.",
+      submitted: "Ödeme gönderildi. Kartla ödemeniz onaylanınca burada görünür.",
+      restricted: "Bu hesap yalnızca nakit veya banka havalesiyle ödeyebilir. Resepsiyonda ödeyin.",
+      processing: "{amount} kartla ödeme işleniyor ({date})",
+      autoFailed: "{amount} otomatik ödeme {date} tarihinde başarısız oldu. Uygulamada veya resepsiyonda ödeyin.",
+    },
+    autoPay: {
+      label: "Ücretleri kayıtlı kartımla otomatik öde",
+      onHint: "Kayıtlı kartınızdan her son ödeme tarihinde tahsilat yapılır.",
+      offHint: "Her ücreti kendiniz, burada veya resepsiyonda ödersiniz.",
+      noCard: "Ücretleri otomatik ödemek için Ödeme yöntemlerinde bir kart kaydedin.",
+      failed: "Otomatik ödeme değiştirilemedi — lütfen tekrar deneyin.",
+    },
     status: {
       OPEN: "Açık",
       PART_PAID: "Kısmen ödendi",
@@ -983,6 +1001,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "banka havalesi",
       CARD_TERMINAL: "resepsiyonda kart",
+      app: "uygulamada kart",
+      automatic: "otomatik kartla ödeme",
     },
     transactions: {
       item: "Ödeme: {invoice} {description}",

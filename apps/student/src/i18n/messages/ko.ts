@@ -965,6 +965,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "충당: {invoices}",
     toCredit: "{amount}이(가) 잔액의 크레딧이 되었습니다",
     payAtDesk: "결제하려면 학교 데스크에 문의하세요.",
+    receiptSurcharge: "카드 수수료 {amount} 포함",
+    pay: {
+      balance: "잔액 결제 ({amount})",
+      charge: "{amount} 결제",
+      surcharge: "카드 수수료 {amount} 포함",
+      failed: "결제를 시작하지 못했습니다. 다시 시도해 주세요.",
+      submitted: "결제를 보냈습니다. 카드 결제가 확인되면 여기에 표시됩니다.",
+      restricted: "이 계정은 현금이나 계좌 이체로만 결제할 수 있습니다. 접수처에서 결제하세요.",
+      processing: "{amount} 카드 결제 처리 중 ({date})",
+      autoFailed: "{date}에 {amount} 자동 결제가 실패했습니다. 앱이나 접수처에서 결제하세요.",
+    },
+    autoPay: {
+      label: "저장된 카드로 청구 금액 자동 결제",
+      onHint: "납부일마다 저장된 카드로 결제됩니다.",
+      offHint: "청구 금액을 여기나 접수처에서 직접 결제합니다.",
+      noCard: "청구 금액을 자동 결제하려면 결제 수단에서 카드를 저장하세요.",
+      failed: "자동 결제를 변경하지 못했습니다. 다시 시도해 주세요.",
+    },
     status: {
       OPEN: "미결제",
       PART_PAID: "일부 결제",
@@ -976,6 +994,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "계좌 이체",
       CARD_TERMINAL: "데스크 카드",
+      app: "앱에서 카드 결제",
+      automatic: "카드 자동 결제",
     },
     transactions: {
       item: "결제: {invoice} {description}",

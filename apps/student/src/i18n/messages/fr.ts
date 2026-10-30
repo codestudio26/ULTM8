@@ -990,6 +990,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Affecté à {invoices}",
     toCredit: "{amount} sont allés sur votre solde en crédit",
     payAtDesk: "Pour payer, adressez-vous à l'accueil de votre école.",
+    receiptSurcharge: "Inclut des frais de carte de {amount}",
+    pay: {
+      balance: "Payer le solde ({amount})",
+      charge: "Payer {amount}",
+      surcharge: "Inclut des frais de carte de {amount}",
+      failed: "Impossible de lancer le paiement — veuillez réessayer.",
+      submitted: "Paiement envoyé. Il apparaîtra ici une fois votre paiement par carte confirmé.",
+      restricted: "Ce compte ne peut payer qu'en espèces ou par virement bancaire. Payez à l'accueil.",
+      processing: "Paiement par carte de {amount} en cours ({date})",
+      autoFailed: "Le paiement automatique de {amount} a échoué le {date}. Payez dans l'app ou à l'accueil.",
+    },
+    autoPay: {
+      label: "Payer les frais automatiquement avec ma carte enregistrée",
+      onHint: "Votre carte enregistrée est débitée à chaque échéance.",
+      offHint: "Vous payez chaque frais vous-même, ici ou à l'accueil.",
+      noCard: "Enregistrez une carte dans Moyens de paiement pour payer les frais automatiquement.",
+      failed: "Impossible de modifier le paiement automatique — veuillez réessayer.",
+    },
     status: {
       OPEN: "Ouverte",
       PART_PAID: "Payée en partie",
@@ -1001,6 +1019,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "virement bancaire",
       CARD_TERMINAL: "carte à l'accueil",
+      app: "carte dans l'app",
+      automatic: "paiement automatique par carte",
     },
     transactions: {
       item: "Paiement : {invoice} {description}",

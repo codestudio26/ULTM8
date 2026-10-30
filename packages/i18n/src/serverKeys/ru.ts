@@ -240,6 +240,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "Ваше начисление «{description}, {amount}» отменено. Платить ничего не нужно. Уже оплаченные {paid} теперь числятся на вашем балансе как аванс.",
     freezeBookingsCancelledTitle: "Записи отменены",
     freezeBookingsCancelledBody: "Ваш абонемент «{plan}» заморожен с {start}, вы возвращаетесь {back}, поэтому ваши записи на это время отменены: {list}. Записаться снова можно после окончания заморозки.",
+    chargeAutoPayFailedTitle: "Автоплатёж не прошёл",
+    chargeAutoPayFailedBody: "Не удалось списать оплату счёта {invoice} ({description}, {amount}) с вашей сохранённой карты. Оплатите его в приложении или на ресепшене.",
     classMovedTitle: "Занятие перенесено",
     classCancelledTitle: "Занятие отменено",
     toDecideTitle: "Повышение ждёт решения",

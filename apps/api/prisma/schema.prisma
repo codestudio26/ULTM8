@@ -356,6 +356,16 @@ enum TransactionKind {
   CHARGE_PAYMENT
 }
 
+/// How a CHARGE_PAYMENT Transaction was paid (backlog §3.6 step 2): DESK,
+/// taken by staff; APP, by the member or a Guardian on a hosted Stripe
+/// Checkout (Decision 303 item 4); AUTOMATIC, charged to the member's saved
+/// card on the due date (Decision 338 item 8).
+enum ChargePaymentChannel {
+  DESK
+  APP
+  AUTOMATIC
+}
+
 /// MembershipFreeze.status (Decision 404). REQUESTED waits for staff; APPROVED
 /// is a freeze (staff-made ones start here); DECLINED was refused; CANCELLED is a
 /// request the member withdrew before anyone decided.
@@ -1935,6 +1945,12 @@ model StudentPaymentMethod {
   /// object is the single source of truth for "which card," read live each time.
   stripeCustomerId String
 
+  /// "Pay charges automatically with my saved card" (Decision 338 item 8;
+  /// backlog §3.6 step 2): off by default. When on, the daily charge-auto-pay
+  /// job charges this card for the member's charges on their due date.
+  /// Removing the card removes the row, so the switch goes with it.
+  autoPayCharges Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2396,6 +2412,13 @@ model Transaction {
   /// it was paid toward the balance as a whole (Decision 338 item 9).
   chargeId String?
   charge   Charge? @relation(fields: [chargeId], references: [id])
+
+  /// CHARGE_PAYMENT only: taken at the desk, paid by the member in the app
+  /// (hosted Checkout) or charged automatically to their saved card (backlog
+  /// §3.6 step 2). At most one AUTOMATIC row per charge: the hand-written
+  /// partial unique index Transaction_one_auto_pay_attempt_per_charge
+  /// (migration 20270113000000_charges_pay_in_app).
+  chargePaymentChannel ChargePaymentChannel?
 
   balanceEntries    BalanceEntry[]
   chargeAllocations ChargeAllocation[]

@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "请填写取消该收费项的原因。",
   "Only the student, or their Guardian, can see their charges.": "只有学员本人或其监护人可以查看其收费项。",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "“可以创建收费项”和“可以取消收费项”适用于本学校的分馆员工和教练。",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "这所学校不接受在 App 中刷卡付款。请到前台付款。",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "此账户只能用现金或银行转账付款。请到前台付款。",
+  "You owe in more than one currency. Choose which one to pay.": "你有多种货币的欠款。请选择要支付的货币。",
+  "There is nothing to pay.": "没有需要支付的款项。",
+  "Only the member can set automatic payment, with their own saved card.": "只有会员本人可以用自己保存的卡设置自动付款。",
+  "Save a card for this School first.": "请先为这所学校保存一张卡。",
 };

@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "この請求を取り消す理由を入力してください。",
   "Only the student, or their Guardian, can see their charges.": "請求を見られるのは生徒本人か保護者だけです。",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "「請求を作成できる」と「請求を取り消せる」は、このスクールの支店スタッフとコーチが対象です。",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "このスクールはアプリでのカード払いに対応していません。受付でお支払いください。",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "このアカウントは現金または銀行振込でのみ支払えます。受付でお支払いください。",
+  "You owe in more than one currency. Choose which one to pay.": "複数の通貨で未払いがあります。支払う通貨を選んでください。",
+  "There is nothing to pay.": "支払うものはありません。",
+  "Only the member can set automatic payment, with their own saved card.": "自動支払いを設定できるのは、本人の保存済みカードを使う会員本人だけです。",
+  "Save a card for this School first.": "先にこのスクール用のカードを保存してください。",
 };

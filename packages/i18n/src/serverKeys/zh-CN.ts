@@ -198,6 +198,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "你的收费项“{description}，{amount}”已取消。无需付款。已支付的 {paid} 现已计入你的余额，作为预存款。",
     freezeBookingsCancelledTitle: "预约已取消",
     freezeBookingsCancelledBody: "你的 {plan} 会员资格自 {start} 起冻结，{back} 恢复，因此这期间的预约已取消：{list}。冻结结束后可以重新预约。",
+    chargeAutoPayFailedTitle: "自动付款失败",
+    chargeAutoPayFailedBody: "无法从你保存的卡中扣取发票 {invoice}（{description}，{amount}）的款项。请在 App 中或到前台付款。",
     classMovedTitle: "课程已调整",
     classCancelledTitle: "课程已取消",
     toDecideTitle: "待决定的晋级",

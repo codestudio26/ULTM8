@@ -13,6 +13,18 @@ export type ChargeStatus = (typeof CHARGE_STATUSES)[number];
 export const DESK_CHARGE_PAYMENT_METHODS = ['CASH', 'PIX', 'BANK_TRANSFER', 'CARD_TERMINAL'] as const;
 export type DeskChargePaymentMethod = (typeof DESK_CHARGE_PAYMENT_METHODS)[number];
 
+/** How a payment toward charges was made: a desk method, or STRIPE (a card in
+ * the app, or the saved card charged automatically; backlog §3.6 step 2). */
+export const CHARGE_PAYMENT_METHODS = [...DESK_CHARGE_PAYMENT_METHODS, 'STRIPE'] as const;
+export type ChargePaymentMethod = (typeof CHARGE_PAYMENT_METHODS)[number];
+
+/** Transaction.chargePaymentChannel (step 2). */
+export const CHARGE_PAYMENT_CHANNELS = ['DESK', 'APP', 'AUTOMATIC'] as const;
+export type ChargePaymentChannelValue = (typeof CHARGE_PAYMENT_CHANNELS)[number];
+
+export const CHARGE_PAYMENT_STATUSES = ['SUCCESSFUL', 'PENDING', 'FAILED', 'REFUNDED', 'DISPUTED'] as const;
+export type ChargePaymentStatus = (typeof CHARGE_PAYMENT_STATUSES)[number];
+
 /** POST /schools/{schoolId}/students/{studentId}/charges (Decision 303). */
 export class CreateChargeDto {
   @ApiProperty({ maxLength: 200, example: 'Rash guard' })
@@ -171,6 +183,9 @@ export class ChargeResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Staff only; never sent to the member.' })
   cancelReason!: string | null;
+
+  @ApiProperty({ description: "Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff." })
+  cardSurchargeAmount!: number;
 }
 
 export class ChargePaymentAllocationDto {
@@ -198,8 +213,24 @@ export class ChargePaymentResponseDto {
   @ApiProperty()
   currency!: string;
 
-  @ApiProperty({ enum: DESK_CHARGE_PAYMENT_METHODS })
-  paymentMethod!: DeskChargePaymentMethod;
+  @ApiProperty({ enum: CHARGE_PAYMENT_METHODS, enumName: 'ChargePaymentMethod' })
+  paymentMethod!: ChargePaymentMethod;
+
+  @ApiProperty({ enum: CHARGE_PAYMENT_CHANNELS, enumName: 'ChargePaymentChannel', description: 'Taken at the desk, paid in the app, or charged automatically to the saved card.' })
+  channel!: ChargePaymentChannelValue;
+
+  @ApiProperty({
+    enum: CHARGE_PAYMENT_STATUSES,
+    enumName: 'ChargePaymentStatus',
+    description: 'PENDING: a card payment started in the app and not confirmed by Stripe yet (nothing is on the balance until it is). FAILED: an automatic charge that was declined.',
+  })
+  status!: ChargePaymentStatus;
+
+  @ApiProperty({ description: 'Decision 406: the card surcharge paid on top, in minor units (0 = none). Not part of the balance.' })
+  surchargeAmount!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The invoice the payment was made for, when it was made for one charge.' })
+  invoiceLabel!: string | null;
 
   @ApiProperty()
   receivedAt!: string;
@@ -232,6 +263,12 @@ export class ChargeBalanceDto {
 
   @ApiProperty({ description: 'Of what is owed, the part past its due date.' })
   overdue!: number;
+
+  @ApiProperty({ description: 'What "Pay balance" asks for in the app: what is owed after credit (0 = nothing to pay).' })
+  payableAmount!: number;
+
+  @ApiProperty({ description: "Decision 406: the card surcharge on payableAmount when paid by card (0 = none). Member's view only; 0 for staff." })
+  cardSurchargeAmount!: number;
 }
 
 export class ChargeAbilitiesDto {
@@ -283,6 +320,29 @@ export class StudentChargesResponseDto {
   settings!: ChargeSettingsDto;
 }
 
+/** Paying in the app at one School (backlog §3.6 step 2). */
+export class MemberPayInAppDto {
+  @ApiProperty({ description: 'Card payments in the app are possible: the School takes Stripe payments and the account is not restricted to cash and bank transfer.' })
+  available!: boolean;
+
+  @ApiPropertyOptional({
+    enum: ['NO_CARD_PAYMENTS', 'RESTRICTED'],
+    enumName: 'PayInAppBlockedReason',
+    nullable: true,
+    description: "Why not: the School doesn't take card payments, or the account is restricted to cash and bank transfer (Decision 68).",
+  })
+  blockedReason!: 'NO_CARD_PAYMENTS' | 'RESTRICTED' | null;
+
+  @ApiProperty({ description: 'The member has a saved card at this School (Decision 238).' })
+  savedCard!: boolean;
+
+  @ApiProperty({ description: '"Pay charges automatically with my saved card" is on (Decision 338 item 8).' })
+  autoPay!: boolean;
+
+  @ApiProperty({ description: 'The caller may change the automatic-payment switch: the member themselves, with a saved card here. Never a Guardian for a child, who has no saved card of their own.' })
+  canSetAutoPay!: boolean;
+}
+
 export class MemberChargeSchoolDto {
   @ApiProperty()
   schoolId!: string;
@@ -301,6 +361,9 @@ export class MemberChargeSchoolDto {
 
   @ApiProperty({ type: [ChargePaymentResponseDto] })
   payments!: ChargePaymentResponseDto[];
+
+  @ApiProperty({ type: MemberPayInAppDto })
+  payInApp!: MemberPayInAppDto;
 }
 
 /** GET /students/{id}/charges: the member's (or Guardian's) view, per School. */
@@ -358,3 +421,58 @@ export class StandardTaxRateListDto {
   items!: StandardTaxRateDto[];
 }
 
+
+/** POST /students/{id}/charges/checkout (Decision 303 item 4). */
+export class StartChargeCheckoutDto {
+  @ApiProperty()
+  @IsUUID()
+  schoolId!: string;
+
+  @ApiPropertyOptional({ nullable: true, type: String, description: 'Pay this one charge. Null or missing: pay the whole balance, oldest due first.' })
+  @ValidateIf((_o, v) => v !== null && v !== undefined)
+  @IsUUID()
+  chargeId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Paying the balance: which currency, when the member owes in more than one.' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z]{3}$/)
+  currency?: string;
+}
+
+export class ChargeCheckoutResponseDto {
+  @ApiProperty({ description: 'The hosted Stripe Checkout page, opened in the browser.' })
+  checkoutUrl!: string;
+
+  @ApiProperty({ description: 'The Pending Transaction; it becomes Successful only from the Stripe webhook.' })
+  transactionId!: string;
+
+  @ApiProperty({ description: 'What goes toward the balance (after credit), minor units.' })
+  amount!: number;
+
+  @ApiProperty({ description: 'Decision 406: the card surcharge on top (0 = none).' })
+  surchargeAmount!: number;
+
+  @ApiProperty()
+  currency!: string;
+}
+
+/** PUT /students/{id}/charge-auto-pay (Decision 338 item 8). Turning it on
+ * needs the X-Step-Up-Token header (Decision 239). */
+export class SetChargeAutoPayDto {
+  @ApiProperty()
+  @IsUUID()
+  schoolId!: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  enabled!: boolean;
+}
+
+export class ChargeAutoPayResponseDto {
+  @ApiProperty()
+  schoolId!: string;
+
+  @ApiProperty()
+  enabled!: boolean;
+}

@@ -990,6 +990,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Imputato a {invoices}",
     toCredit: "{amount} sono andati sul tuo saldo come credito",
     payAtDesk: "Per pagare, chiedi alla reception della tua scuola.",
+    receiptSurcharge: "Include un sovrapprezzo carta di {amount}",
+    pay: {
+      balance: "Paga il saldo ({amount})",
+      charge: "Paga {amount}",
+      surcharge: "Include un sovrapprezzo carta di {amount}",
+      failed: "Impossibile avviare il pagamento — riprova.",
+      submitted: "Pagamento inviato. Comparirà qui quando il pagamento con carta sarà confermato.",
+      restricted: "Questo account può pagare solo in contanti o con bonifico bancario. Paga alla reception.",
+      processing: "Pagamento con carta di {amount} in elaborazione ({date})",
+      autoFailed: "Il pagamento automatico di {amount} non è riuscito il {date}. Paga nell'app o alla reception.",
+    },
+    autoPay: {
+      label: "Paga gli addebiti automaticamente con la mia carta salvata",
+      onHint: "La tua carta salvata viene addebitata a ogni scadenza.",
+      offHint: "Paghi tu ogni addebito, qui o alla reception.",
+      noCard: "Salva una carta in Metodi di pagamento per pagare gli addebiti automaticamente.",
+      failed: "Impossibile modificare il pagamento automatico — riprova.",
+    },
     status: {
       OPEN: "Aperta",
       PART_PAID: "Pagata in parte",
@@ -1001,6 +1019,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "bonifico bancario",
       CARD_TERMINAL: "carta alla reception",
+      app: "carta nell'app",
+      automatic: "pagamento automatico con carta",
     },
     transactions: {
       item: "Pagamento: {invoice} {description}",

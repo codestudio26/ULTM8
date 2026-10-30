@@ -39,6 +39,14 @@ function formatDay(day: string): string {
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
+/** How a payment was made: a desk method, or a card paid in the app or
+ * charged automatically (backlog §3.6 step 2). */
+function paymentMethodText(t: ReturnType<typeof useT>, p: ChargePayment): string {
+  if (p.channel === 'APP') return t('charges.card.methodApp');
+  if (p.channel === 'AUTOMATIC') return t('charges.card.methodAutomatic');
+  return PAYMENT_METHOD_LABELS[p.paymentMethod] ? t(PAYMENT_METHOD_LABELS[p.paymentMethod]) : p.paymentMethod;
+}
+
 /**
  * The student page's Payments card (v1.3 backlog §3.6, step 1; Decisions
  * 303, 338): the balance (red when something is overdue), the student's
@@ -209,16 +217,31 @@ function ChargesBody({ data, onPay, onCancel }: { data: StudentCharges; onPay: (
             rows={data.payments}
             columns={[
               { key: 'date', header: t('charges.card.columnDate'), render: (p) => formatDay(p.receivedAt.slice(0, 10)) },
-              { key: 'amount', header: t('charges.card.columnAmount'), render: (p) => formatMoney(p.amount, p.currency) },
-              { key: 'method', header: t('charges.card.columnMethod'), render: (p) => (PAYMENT_METHOD_LABELS[p.paymentMethod] ? t(PAYMENT_METHOD_LABELS[p.paymentMethod]) : p.paymentMethod) },
+              {
+                key: 'amount',
+                header: t('charges.card.columnAmount'),
+                render: (p) => (
+                  <>
+                    {formatMoney(p.amount, p.currency)}
+                    {p.surchargeAmount > 0 ? <div className="ultm8-field__hint">{t('charges.card.surchargeLine', { amount: formatMoney(p.surchargeAmount, p.currency) })}</div> : null}
+                    {p.status === 'PENDING' ? <Badge variant="warning">{t('charges.card.paymentPending')}</Badge> : null}
+                    {p.status === 'FAILED' ? <Badge variant="danger">{t('charges.card.paymentFailed')}</Badge> : null}
+                  </>
+                ),
+              },
+              { key: 'method', header: t('charges.card.columnMethod'), render: (p) => paymentMethodText(t, p) },
               {
                 key: 'toward',
                 header: t('charges.card.columnToward'),
                 render: (p) =>
-                  [
-                    ...p.allocations.map((a) => `${a.invoiceLabel} (${formatMoney(a.amount, p.currency)})`),
-                    ...(p.creditAmount > 0 ? [t('charges.card.toCredit', { amount: formatMoney(p.creditAmount, p.currency) })] : []),
-                  ].join(', '),
+                  p.status === 'PENDING' || p.status === 'FAILED'
+                    ? p.invoiceLabel
+                      ? t('charges.card.forInvoice', { invoice: p.invoiceLabel })
+                      : ''
+                    : [
+                        ...p.allocations.map((a) => `${a.invoiceLabel} (${formatMoney(a.amount, p.currency)})`),
+                        ...(p.creditAmount > 0 ? [t('charges.card.toCredit', { amount: formatMoney(p.creditAmount, p.currency) })] : []),
+                      ].join(', '),
               },
               { key: 'by', header: t('charges.card.columnRecordedBy'), render: (p) => p.recordedByName ?? '' },
             ]}

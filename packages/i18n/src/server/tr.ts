@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "Bu ücreti iptal etmek için bir neden yazın.",
   "Only the student, or their Guardian, can see their charges.": "Ücretleri yalnızca öğrencinin kendisi veya velisi görebilir.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Ücret oluşturabilir\" ve \"Ücret iptal edebilir\" bu okuldaki şube personeli ve eğitmenler içindir.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "Bu okul uygulamada kartla ödeme kabul etmiyor. Resepsiyonda ödeyin.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "Bu hesap yalnızca nakit veya banka havalesiyle ödeyebilir. Resepsiyonda ödeyin.",
+  "You owe in more than one currency. Choose which one to pay.": "Birden fazla para biriminde borcunuz var. Hangisini ödeyeceğinizi seçin.",
+  "There is nothing to pay.": "Ödenecek bir şey yok.",
+  "Only the member can set automatic payment, with their own saved card.": "Otomatik ödemeyi yalnızca üyenin kendisi, kendi kayıtlı kartıyla ayarlayabilir.",
+  "Save a card for this School first.": "Önce bu okul için bir kart kaydedin.",
 };

@@ -90,3 +90,7 @@ export const FRANCHISE_FEE_RATE_MIGRATION_QUEUE = 'franchise-fee-rate-migration'
 
 /** Decision 354 — daily: waiver renewals, the sign-again-at-18 rule and repeat reminders. */
 export const WAIVER_RENEWAL_SWEEP_QUEUE = 'waiver-renewal-sweep';
+// Backlog §3.6 step 2 (Decision 338 item 8): the daily charge of members' open
+// charges to their saved card, for those who turned on "Pay charges
+// automatically with my saved card".
+export const CHARGE_AUTO_PAY_QUEUE = 'charge-auto-pay';

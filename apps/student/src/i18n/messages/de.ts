@@ -972,6 +972,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Verrechnet mit {invoices}",
     toCredit: "{amount} wurden deinem Guthaben gutgeschrieben",
     payAtDesk: "Zum Bezahlen wende dich an den Empfang deiner Schule.",
+    receiptSurcharge: "Inklusive Kartenzuschlag von {amount}",
+    pay: {
+      balance: "Saldo bezahlen ({amount})",
+      charge: "{amount} bezahlen",
+      surcharge: "Inklusive Kartenzuschlag von {amount}",
+      failed: "Die Zahlung konnte nicht gestartet werden — bitte versuche es erneut.",
+      submitted: "Zahlung gesendet. Sie erscheint hier, sobald deine Kartenzahlung bestätigt ist.",
+      restricted: "Dieses Konto kann nur bar oder per Überweisung zahlen. Bitte am Empfang bezahlen.",
+      processing: "Kartenzahlung über {amount} wird bearbeitet ({date})",
+      autoFailed: "Automatische Zahlung über {amount} am {date} fehlgeschlagen. Bezahle in der App oder am Empfang.",
+    },
+    autoPay: {
+      label: "Gebühren automatisch mit meiner gespeicherten Karte bezahlen",
+      onHint: "Deine gespeicherte Karte wird an jedem Fälligkeitstag belastet.",
+      offHint: "Du bezahlst jede Gebühr selbst, hier oder am Empfang.",
+      noCard: "Speichere unter Zahlungsmethoden eine Karte, um Gebühren automatisch zu bezahlen.",
+      failed: "Die automatische Zahlung konnte nicht geändert werden — bitte versuche es erneut.",
+    },
     status: {
       OPEN: "Offen",
       PART_PAID: "Teilweise bezahlt",
@@ -983,6 +1001,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "Banküberweisung",
       CARD_TERMINAL: "Karte am Empfang",
+      app: "Karte in der App",
+      automatic: "automatische Kartenzahlung",
     },
     transactions: {
       item: "Zahlung: {invoice} {description}",

@@ -226,6 +226,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "Tu cargo '{description}, {amount}' se ha cancelado. No hay nada que pagar. Los {paid} ya pagados son ahora saldo a tu favor.",
     freezeBookingsCancelledTitle: "Reservas canceladas",
     freezeBookingsCancelledBody: "Tu membresía {plan} está congelada desde el {start} y vuelves el {back}, así que se cancelaron tus reservas de ese periodo: {list}. Podrás reservar de nuevo cuando termine la congelación.",
+    chargeAutoPayFailedTitle: "El pago automático falló",
+    chargeAutoPayFailedBody: "No pudimos cobrar en tu tarjeta guardada la factura {invoice} ({description}, {amount}). Págala en la app o en recepción.",
     classMovedTitle: "Clase cambiada",
     classCancelledTitle: "Clase cancelada",
     toDecideTitle: "Promoción pendiente de decisión",

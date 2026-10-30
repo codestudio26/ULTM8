@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "Indiquez un motif pour annuler ces frais.",
   "Only the student, or their Guardian, can see their charges.": "Seul l'élève, ou son responsable légal, peut voir ses frais.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "« Peut créer des frais » et « Peut annuler des frais » concernent le personnel de site et les instructeurs de cette école.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "Cette école n'accepte pas les paiements par carte dans l'app. Payez à l'accueil.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "Ce compte ne peut payer qu'en espèces ou par virement bancaire. Payez à l'accueil.",
+  "You owe in more than one currency. Choose which one to pay.": "Vous devez des montants dans plusieurs devises. Choisissez celle à payer.",
+  "There is nothing to pay.": "Il n'y a rien à payer.",
+  "Only the member can set automatic payment, with their own saved card.": "Seul le membre lui-même peut activer le paiement automatique, avec sa propre carte enregistrée.",
+  "Save a card for this School first.": "Enregistrez d'abord une carte pour cette école.",
 };

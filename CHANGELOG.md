@@ -50,6 +50,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Transactions page. The Freezing memberships card notes that Stripe shows a
   frozen subscription as a trial. **Needs a database migration**
   (`20270111000000_freeze_follow_ups`).
+- **Charges and member balance, step 2: paying in the app** (backlog 3.6;
+  Decisions 303, 338, 406) — in the student app's **Invoices**, a member (or a
+  Guardian, for a child) can **Pay balance** or **Pay** a single charge by card
+  on Stripe's hosted Checkout page, for what is owed after credit; the
+  School's card surcharge, where allowed, is shown first and charged as its
+  own line. The payment counts only once Stripe confirms it, then pays the
+  charge (or the oldest due first) and the receipt appears; an abandoned
+  payment is marked Failed. A member with a saved card can turn on **Pay
+  charges automatically with my saved card** (confirmed with their passcode):
+  each charge is then charged once on its due date, and if the card is
+  declined the member is told and pays it themselves. On the portal, the
+  student's **Payments** card shows card payments as paid in the app or paid
+  automatically, and Pending or Failed ones. **Needs a database migration**
+  (`20270113000000_charges_pay_in_app`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30
