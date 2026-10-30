@@ -123,7 +123,7 @@ test('a waiting fee: tag first, no Grade or Ready; cancelling it leaves the prom
   const card = bjj(page);
   await expect(card.getByText('Waiting for fee').first()).toBeVisible();
   await expect(card.getByRole('button', { name: 'Grade', exact: true })).toHaveCount(0);
-  const box = card.getByRole('region', { name: 'Promotion fee' });
+  const box = card.getByRole('region', { name: 'Promotion fee', exact: true });
   await expect(box.getByText(/40\.00.* · White 2/)).toBeVisible();
   await expect(box.getByText('Sam was asked to accept the fee. The promotion to White 2 applies once it is accepted and paid.')).toBeVisible();
 
@@ -139,6 +139,6 @@ test('a waiting fee: tag first, no Grade or Ready; cancelling it leaves the prom
   await expect(grade.getByRole('combobox').first()).toContainText('White 2');
   await grade.getByRole('button', { name: 'Cancel' }).click();
   await box.getByRole('button', { name: "Don't promote" }).click();
-  await expect(card.getByRole('region', { name: 'Promotion fee' })).toHaveCount(0);
+  await expect(card.getByRole('region', { name: 'Promotion fee', exact: true })).toHaveCount(0);
   expect((await db.promotionFeeRequest.findFirstOrThrow({ where: { studentId: s.student.id } })).status).toBe('CANCELLED');
 });
