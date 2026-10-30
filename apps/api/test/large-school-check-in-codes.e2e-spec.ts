@@ -1,5 +1,5 @@
 /**
- * Decision 418 (stress test round 4 Q1): a School with more than 500 current
+ * Decision 417 (stress test round 4 Q1): a School with more than 500 current
  * Students moves to 6-digit check-in codes and its shorter member and staff
  * codes are replaced; settings can't take it back to 4. A front-desk tablet
  * locks after 10 wrong member codes in a row until a staff code is typed.
@@ -22,7 +22,7 @@ const hasDb = Boolean(DATABASE_URL && DATABASE_URL_APP && JWT_ACCESS_SECRET && p
 
 const describeIfDb = hasDb ? describe : describe.skip;
 
-describeIfDb('Large Schools: 6-digit codes and the tablet lock (Decision 418)', () => {
+describeIfDb('Large Schools: 6-digit codes and the tablet lock (Decision 417)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

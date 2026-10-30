@@ -52,7 +52,7 @@ export function isSessionEnded(err: unknown): boolean {
   return err instanceof ApiError && err.status === 401;
 }
 
-/** The tablet is locked after too many wrong member codes (Decision 418). */
+/** The tablet is locked after too many wrong member codes (Decision 417). */
 export function isTabletLocked(err: unknown): boolean {
   return err instanceof ApiError && err.status === 423;
 }
@@ -173,7 +173,7 @@ export function useKioskUnlock() {
   return useMutation({ mutationFn: (staffCode: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/unlock', { body: { staffCode } })) });
 }
 
-/** A staff member's own code lets a locked tablet carry on (Decision 418). */
+/** A staff member's own code lets a locked tablet carry on (Decision 417). */
 export function useKioskResume() {
   return useMutation({ mutationFn: (staffCode: string) => unwrap(kioskClient.POST('/v1/front-desk/kiosk/resume', { body: { staffCode } })) });
 }

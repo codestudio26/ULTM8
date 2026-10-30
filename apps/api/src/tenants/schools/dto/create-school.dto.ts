@@ -407,7 +407,7 @@ export class CreateSchoolDto {
   @MaxLength(60, { each: true })
   heardFromOptions?: string[] | null;
 
-  @ApiPropertyOptional({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members\' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 418: a School with more than 500 current Students has 6 and can\'t choose 4; its shorter codes are replaced.' })
+  @ApiPropertyOptional({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members\' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can\'t choose 4; its shorter codes are replaced.' })
   @IsOptional()
   @IsIn([4, 6])
   checkInCodeDigits?: number;

@@ -241,7 +241,7 @@ export class FrontDeskKioskService {
   /** A typed personal check-in code (Decision 384); like a scanned QR, the
    * lookup only works on this tablet. */
   async codeLookup(session: FrontDeskSessionContext, code: string) {
-    // Wrong codes in a row lock the tablet (Decision 418); a right one starts the count again.
+    // Wrong codes in a row lock the tablet (Decision 417); a right one starts the count again.
     const r = await this.checkInCodes.lookup(session.schoolId, code, frontDeskLookupOwner(session.id), `tablet ${session.id}`).catch(async (err) => {
       if (err instanceof NotFoundException) await this.sessions.countWrongMemberCode(session);
       throw err;

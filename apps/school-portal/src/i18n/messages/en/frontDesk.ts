@@ -138,7 +138,7 @@ export const frontDesk = {
     staffSignIn: 'Staff sign-in',
     endedTitle: 'Front-desk mode has ended',
     endedBody: 'A member of staff ended it, or it ran for 24 hours. Sign in to start it again.',
-    /** Decision 418: locked after too many wrong member codes in a row. */
+    /** Decision 417: locked after too many wrong member codes in a row. */
     lockedTitle: 'This tablet is locked',
     lockedBody: 'Too many wrong check-in codes were typed in a row. A member of staff types their own code to carry on.',
     lockedCodeTitle: 'Staff code',

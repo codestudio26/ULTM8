@@ -1,4 +1,4 @@
--- Large Schools' check-in codes (Decision 418, stress test round 4 Q1). A
+-- Large Schools' check-in codes (Decision 417, stress test round 4 Q1). A
 -- School with more than 500 current Students is moved to 6-digit codes, and
 -- its shorter member and staff codes are replaced. A front-desk tablet counts
 -- wrong member codes in a row and locks at 10 until a staff code is typed.

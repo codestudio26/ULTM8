@@ -3,7 +3,7 @@ import { randomInt } from 'crypto';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 
 /** Above this many current Students, a School's codes have 6 digits
- * (Decision 418): at 782 members, 1 in 10 random 4-digit guesses was someone's. */
+ * (Decision 417): at 782 members, 1 in 10 random 4-digit guesses was someone's. */
 export const LARGE_SCHOOL_STUDENTS = 500;
 
 const logger = new Logger('CheckInCodes');
@@ -26,7 +26,7 @@ export async function checkInCodeDigits(prismaJobs: PrismaJobsService, schoolId:
   return 6;
 }
 
-/** Settings refuse 4 digits at a large School (Decision 418). */
+/** Settings refuse 4 digits at a large School (Decision 417). */
 export async function assertCodeDigitsAllowed(prismaJobs: PrismaJobsService, schoolId: string, digits: number | undefined): Promise<void> {
   if (digits === undefined || digits === 6) return;
   if ((await currentStudentCount(prismaJobs, schoolId)) > LARGE_SCHOOL_STUDENTS) {
@@ -56,7 +56,7 @@ export async function largeSchoolIds(prismaJobs: PrismaJobsService): Promise<str
 }
 
 /**
- * A large School (Decision 418): 6-digit codes, and every shorter member or
+ * A large School (Decision 417): 6-digit codes, and every shorter member or
  * staff code replaced by a new 6-digit one, so the old ones stop working.
  * Safe to run again: it only touches codes still shorter than 6. A code made
  * at 4 digits by a request that started just before the switch is caught by

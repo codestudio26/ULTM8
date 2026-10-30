@@ -17,7 +17,7 @@ export const FRONT_DESK_SESSION_HOURS = 24;
 export const FRONT_DESK_MAX_WRONG_CODES = 10;
 
 /** Wrong member check-in codes in a row before the tablet locks until a staff
- * code is typed (Decision 418): codes are short, and at a big School a random
+ * code is typed (Decision 417): codes are short, and at a big School a random
  * guess is often someone's. */
 export const FRONT_DESK_MAX_WRONG_MEMBER_CODES = 10;
 
@@ -34,12 +34,12 @@ export interface FrontDeskSessionContext {
    * the kiosk endpoints only. */
   startedById: string;
   expiresAt: Date;
-  /** Locked after too many wrong member codes (Decision 418). */
+  /** Locked after too many wrong member codes (Decision 417). */
   lockedAt: Date | null;
 }
 
 const SESSION_ENDED = { code: 'FRONT_DESK_SESSION_ENDED', message: 'This front-desk session has ended. Ask a member of staff to start it again.' };
-/** The tablet is locked (Decision 418): every kiosk call but a few answers this. */
+/** The tablet is locked (Decision 417): every kiosk call but a few answers this. */
 export const FRONT_DESK_LOCKED = {
   code: 'FRONT_DESK_LOCKED',
   message: 'Too many wrong check-in codes, so this tablet is locked. Ask a member of staff to type their code.',
@@ -190,7 +190,7 @@ export class FrontDeskSessionsService {
   }
 
   /** POST /front-desk/kiosk/resume: a staff member types their own code on a
-   * tablet locked by wrong member codes (Decision 418). The tablet carries on
+   * tablet locked by wrong member codes (Decision 417). The tablet carries on
    * in front-desk mode and the count starts again. A wrong staff code counts
    * as on the exit screen. */
   async resume(session: FrontDeskSessionContext, code: string) {
@@ -203,7 +203,7 @@ export class FrontDeskSessionsService {
     return { resumedBy: names.get(match.userId)?.firstName ?? '' };
   }
 
-  /** A member code typed on the tablet was wrong (Decision 418). Counted in
+  /** A member code typed on the tablet was wrong (Decision 417). Counted in
    * one statement, like wrong staff codes; at FRONT_DESK_MAX_WRONG_MEMBER_CODES
    * in a row the tablet locks, and this answers with the lock. */
   async countWrongMemberCode(session: FrontDeskSessionContext): Promise<void> {

@@ -7240,7 +7240,7 @@ User (Code), 30 Oct 2026: "1a, 2 keep, 3 yes, 4 yes, 5 ok, 6 ok", answering the 
 
 User (Code), 30 Oct 2026: "Count it toward new fee (Recommended)"; "Under Memberships (Recommended)"; "Net of refunds (Recommended)"; "Yes, all refunds (Recommended)".
 
-## Decision 418 — Front-desk check-in codes at large Schools: 6 digits past 500 members, and the tablet locks after 10 wrong member codes
+## Decision 417 — Front-desk check-in codes at large Schools: 6 digits past 500 members, and the tablet locks after 10 wrong member codes
 
 **Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 315, 320, 380, 384, 388, 394 · **Answers:** stress test round 4 Q1 (`docs/handover/STRESS-TEST-ROUND4.md`, finding FD1)
 

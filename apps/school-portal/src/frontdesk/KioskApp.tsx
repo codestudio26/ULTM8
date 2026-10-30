@@ -87,7 +87,7 @@ export function KioskApp() {
     if (ended) clearKioskToken();
   }, [ended]);
 
-  // Too many wrong member codes locked the tablet (Decision 418): whatever
+  // Too many wrong member codes locked the tablet (Decision 417): whatever
   // heard so fetches the session again, which shows the locked screen.
   const refreshLock = () => void queryClient.invalidateQueries({ queryKey: ['kiosk', 'session'] });
   const todayLocked = isTabletLocked(today.error);
@@ -443,7 +443,7 @@ function KioskWelcome({
   );
 }
 
-/** Too many wrong member codes in a row (Decision 418): only a staff member's
+/** Too many wrong member codes in a row (Decision 417): only a staff member's
  * own code lets the tablet carry on in front-desk mode. */
 function LockedScreen({ digits, onResumed }: { digits: number; onResumed: () => void }) {
   const t = useT();

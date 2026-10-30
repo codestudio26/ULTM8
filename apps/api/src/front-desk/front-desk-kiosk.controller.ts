@@ -148,7 +148,7 @@ export class FrontDeskKioskController {
   }
 
   /** A staff member's own code lets a tablet locked by wrong member codes
-   * carry on (Decision 418). */
+   * carry on (Decision 417). */
   @ApiOkResponse({ type: KioskResumedDto })
   @Throttle(UNLOCK_THROTTLE)
   @AllowWhileLocked()

@@ -19973,7 +19973,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 418: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           },
           "lateCancelRefundPolicy": {
             "type": "string",
@@ -20648,7 +20648,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 418: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes (Decision 320) and members' personal codes (Decision 315). Default 4. Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           },
           "lateCancelRefundPolicy": {
             "type": "string",
@@ -33486,7 +33486,7 @@
               4,
               6
             ],
-            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 418: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
+            "description": "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced."
           }
         },
         "required": [
@@ -35517,7 +35517,7 @@
           },
           "locked": {
             "type": "boolean",
-            "description": "Decision 418: locked after too many wrong member codes in a row; only a staff code (resume or unlock) works until then."
+            "description": "Decision 417: locked after too many wrong member codes in a row; only a staff code (resume or unlock) works until then."
           },
           "heardFromOptions": {
             "nullable": true,

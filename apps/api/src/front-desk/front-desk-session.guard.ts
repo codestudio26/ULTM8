@@ -4,7 +4,7 @@ import { FRONT_DESK_LOCKED, FrontDeskSessionContext, FrontDeskSessionsService } 
 
 const ALLOW_WHILE_LOCKED = 'frontDeskAllowWhileLocked';
 
-/** A kiosk route a locked tablet can still reach (Decision 418): its own
+/** A kiosk route a locked tablet can still reach (Decision 417): its own
  * session info, and a staff code to carry on or leave. */
 export const AllowWhileLocked = () => SetMetadata(ALLOW_WHILE_LOCKED, true);
 
@@ -13,7 +13,7 @@ export const AllowWhileLocked = () => SetMetadata(ALLOW_WHILE_LOCKED, true);
  * the token and that its session is still live, and puts the session on the
  * request. A staff login token is refused here, and the tablet's token is
  * refused everywhere else (JwtStrategy can't verify it). A tablet locked by
- * wrong member codes reaches only the @AllowWhileLocked routes (Decision 418).
+ * wrong member codes reaches only the @AllowWhileLocked routes (Decision 417).
  */
 @Injectable()
 export class FrontDeskSessionGuard implements CanActivate {

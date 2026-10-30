@@ -192,7 +192,7 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
  * promotion applies; charge-auto-pay also runs the fees' daily catch-up first.
  * RanksModule imports nothing that imports this module.
  *
- * Decision 418 adds LargeSchoolCheckInCodesProcessor/Scheduler: a 15-minute
+ * Decision 417 adds LargeSchoolCheckInCodesProcessor/Scheduler: a 15-minute
  * sweep moving Schools past 500 Students to 6-digit check-in codes. Only
  * PrismaJobsService; no new module import.
  */

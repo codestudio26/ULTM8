@@ -43,7 +43,7 @@ export class LargeSchoolCheckInCodesScheduler implements OnModuleInit {
 }
 
 /**
- * Decision 418 (stress test round 4 Q1): a School with more than 500 current
+ * Decision 417 (stress test round 4 Q1): a School with more than 500 current
  * Students moves to 6-digit check-in codes, and its shorter member and staff
  * codes are replaced (the member's Student page and the staff's own code
  * screen show the new ones). Runs as ultm8_jobs: a cross-School sweep with no caller.

@@ -106,6 +106,6 @@ export const LATE_FEE_QUEUE = 'late-fee';
 // Backlog §3.6 step 3 (Decision 412): the daily run that makes each recurring
 // charge's occurrences, half an hour before charge-auto-pay.
 export const CHARGE_RECURRING_QUEUE = 'charge-recurring';
-// Decision 418 (stress test round 4 Q1): every 15 minutes, a School that has
+// Decision 417 (stress test round 4 Q1): every 15 minutes, a School that has
 // grown past 500 current Students moves to 6-digit check-in codes.
 export const LARGE_SCHOOL_CHECK_IN_CODES_QUEUE = 'large-school-check-in-codes';

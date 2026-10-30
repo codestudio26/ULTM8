@@ -261,7 +261,7 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await expect(page).toHaveURL(/\/login/);
 });
 
-test('ten wrong member codes in a row lock the tablet until a staff code; it then carries on (Decision 418)', async ({ page }) => {
+test('ten wrong member codes in a row lock the tablet until a staff code; it then carries on (Decision 417)', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/front-desk');
   const myCode = ((await page.getByTestId('fd-my-code').textContent()) ?? '').match(/(\d{4,6})/)?.[1] ?? '';
