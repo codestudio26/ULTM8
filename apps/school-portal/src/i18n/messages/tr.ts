@@ -2071,6 +2071,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Terfi ücreti",
       },
+      feeList: {
+        title: "Terfi ücretleri",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Yanıt bekliyor",
+          ACCEPTED: "Kabul edildi",
+          PAID: "Ödendi",
+          DECLINED: "Reddedildi",
+          WAIVED: "Affedildi",
+          CANCELLED: "İptal edildi",
+        },
+        owed: "Fatura {invoice}: ödenecek {amount} kaldı",
+        paidInvoice: "Fatura {invoice} ödendi",
+        seePayments: "Ödemeler bölümünde gör",
+      },
       skills: {
         title: "Bir sonraki derecenin teknikleri",
         failed: "Bu teknik değiştirilemedi. Lütfen tekrar deneyin.",
@@ -4022,6 +4037,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "0 ile 30 arasında tam sayı gün girin.",
       confirmRequired: "Okulunuzun faaliyet gösterdiği yerde gecikme ücretlerinin yasal olduğunu onaylamak için kutuyu işaretleyin.",
       noCurrency: "Sabit tutar kullanmak için yukarıda okulun para birimini ayarlayın.",
+    },
+    promotionFee: {
+      badge: "Terfi ücreti",
+      forRank: "{style} · {rank}",
+      seeGrading: "Kuşak sayfasında gör",
+      cancelHint: "Kuşak sayfasından affet veya iptal et",
+      waivedLine: "Ücret {date} tarihinde {name} tarafından kuşak sayfasında affedildi",
+      cancelledLine: "Ücret {date} tarihinde {name} tarafından kuşak sayfasında iptal edildi",
     },
     lateFee: {
       badge: "Gecikme ücreti",

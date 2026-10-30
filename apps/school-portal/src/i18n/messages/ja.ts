@@ -2038,6 +2038,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "昇級料",
       },
+      feeList: {
+        title: "昇級費",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "回答待ち",
+          ACCEPTED: "承諾済み",
+          PAID: "支払済み",
+          DECLINED: "辞退",
+          WAIVED: "免除",
+          CANCELLED: "取り消し",
+        },
+        owed: "請求書 {invoice}: 未払い {amount}",
+        paidInvoice: "請求書 {invoice} 支払済み",
+        seePayments: "支払いで表示",
+      },
       skills: {
         title: "次の級に必要な技",
         failed: "この技を変更できませんでした。もう一度お試しください。",
@@ -3977,6 +3992,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "0〜30の整数の日数を入力してください。",
       confirmRequired: "スクールの所在地で延滞料が合法であることを確認するには、チェックボックスをオンにしてください。",
       noCurrency: "固定額を使うには、上でスクールの通貨を設定してください。",
+    },
+    promotionFee: {
+      badge: "昇級費",
+      forRank: "{style} · {rank}",
+      seeGrading: "昇級で表示",
+      cancelHint: "昇級画面で免除または取り消し",
+      waivedLine: "{date}に{name}が昇級画面で免除",
+      cancelledLine: "{date}に{name}が昇級画面で取り消し",
     },
     lateFee: {
       badge: "延滞料",

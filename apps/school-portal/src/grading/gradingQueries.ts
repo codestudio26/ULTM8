@@ -438,6 +438,8 @@ export function useFeeRequestAction(action: 'waive' | 'cancel' | 'dismiss') {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
         queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+        // Waiving or cancelling a fee cancels its charge (backlog §3.6 step 6).
+        queryClient.invalidateQueries({ queryKey: ['charges'] }),
       ]),
   });
 }

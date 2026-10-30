@@ -2071,6 +2071,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Quota di promozione",
       },
+      feeList: {
+        title: "Quote di promozione",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "In attesa di risposta",
+          ACCEPTED: "Accettata",
+          PAID: "Pagata",
+          DECLINED: "Rifiutata",
+          WAIVED: "Condonata",
+          CANCELLED: "Annullata",
+        },
+        owed: "Fattura {invoice}: {amount} ancora da pagare",
+        paidInvoice: "Fattura {invoice} pagata",
+        seePayments: "Vedi in Pagamenti",
+      },
       skills: {
         title: "Tecniche per il grado successivo",
         failed: "Impossibile modificare questa tecnica. Riprova.",
@@ -4022,6 +4037,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Inserisci un numero intero di giorni da 0 a 30.",
       confirmRequired: "Spunta la casella per confermare che le penali di ritardo sono legali dove opera la tua scuola.",
       noCurrency: "Imposta qui sopra la valuta della scuola per usare un importo fisso.",
+    },
+    promotionFee: {
+      badge: "Quota di promozione",
+      forRank: "{style} · {rank}",
+      seeGrading: "Vedi nella graduazione",
+      cancelHint: "Condonala o annullala nella graduazione",
+      waivedLine: "Quota condonata nella graduazione il {date} da {name}",
+      cancelledLine: "Quota annullata nella graduazione il {date} da {name}",
     },
     lateFee: {
       badge: "Penale di ritardo",

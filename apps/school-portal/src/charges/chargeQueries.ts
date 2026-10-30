@@ -33,6 +33,10 @@ function useInvalidateCharges(schoolId: string | null, studentId: string) {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    // A payment can pay a promotion fee, which then shows Paid in grading and
+    // may apply a waiting promotion (backlog §3.6 step 6).
+    void queryClient.invalidateQueries({ queryKey: ['student-grading'] });
+    void queryClient.invalidateQueries({ queryKey: ['grading-board'] });
     return queryClient.invalidateQueries({ queryKey: key(schoolId, studentId) });
   };
 }

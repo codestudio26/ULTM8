@@ -2071,6 +2071,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Promotievergoeding",
       },
+      feeList: {
+        title: "Promotievergoedingen",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Wacht op antwoord",
+          ACCEPTED: "Geaccepteerd",
+          PAID: "Betaald",
+          DECLINED: "Afgewezen",
+          WAIVED: "Kwijtgescholden",
+          CANCELLED: "Geannuleerd",
+        },
+        owed: "Factuur {invoice}: nog {amount} te betalen",
+        paidInvoice: "Factuur {invoice} betaald",
+        seePayments: "Bekijken bij Betalingen",
+      },
       skills: {
         title: "Technieken voor de volgende graad",
         failed: "Deze techniek kon niet worden gewijzigd. Probeer het opnieuw.",
@@ -4022,6 +4037,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Voer een heel aantal dagen in van 0 tot 30.",
       confirmRequired: "Vink het vakje aan om te bevestigen dat te-laatvergoedingen wettelijk zijn toegestaan waar je school actief is.",
       noCurrency: "Stel hierboven de valuta van de school in om een vast bedrag te gebruiken.",
+    },
+    promotionFee: {
+      badge: "Promotievergoeding",
+      forRank: "{style} · {rank}",
+      seeGrading: "Bekijken bij graduatie",
+      cancelHint: "Kwijtschelden of annuleren bij graduatie",
+      waivedLine: "Vergoeding op {date} door {name} kwijtgescholden bij graduatie",
+      cancelledLine: "Vergoeding op {date} door {name} geannuleerd bij graduatie",
     },
     lateFee: {
       badge: "Te-laatvergoeding",

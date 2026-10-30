@@ -2071,6 +2071,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "Beförderungsgebühr",
       },
+      feeList: {
+        title: "Beförderungsgebühren",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "Wartet auf Antwort",
+          ACCEPTED: "Angenommen",
+          PAID: "Bezahlt",
+          DECLINED: "Abgelehnt",
+          WAIVED: "Erlassen",
+          CANCELLED: "Storniert",
+        },
+        owed: "Rechnung {invoice}: noch {amount} zu zahlen",
+        paidInvoice: "Rechnung {invoice} bezahlt",
+        seePayments: "Unter Zahlungen ansehen",
+      },
       skills: {
         title: "Techniken für den nächsten Grad",
         failed: "Diese Technik konnte nicht geändert werden. Bitte versuche es erneut.",
@@ -4022,6 +4037,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "Gib eine ganze Zahl von Tagen von 0 bis 30 ein.",
       confirmRequired: "Setze das Häkchen, um zu bestätigen, dass Säumnisgebühren dort, wo deine Schule tätig ist, zulässig sind.",
       noCurrency: "Lege oben die Währung der Schule fest, um einen festen Betrag zu verwenden.",
+    },
+    promotionFee: {
+      badge: "Beförderungsgebühr",
+      forRank: "{style} · {rank}",
+      seeGrading: "In der Graduierung ansehen",
+      cancelHint: "In der Graduierung erlassen oder stornieren",
+      waivedLine: "Gebühr am {date} von {name} in der Graduierung erlassen",
+      cancelledLine: "Gebühr am {date} von {name} in der Graduierung storniert",
     },
     lateFee: {
       badge: "Säumnisgebühr",

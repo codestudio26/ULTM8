@@ -2038,6 +2038,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "ค่าธรรมเนียมเลื่อนระดับ",
       },
+      feeList: {
+        title: "ค่าเลื่อนระดับ",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "รอคำตอบ",
+          ACCEPTED: "ยอมรับแล้ว",
+          PAID: "ชำระแล้ว",
+          DECLINED: "ปฏิเสธแล้ว",
+          WAIVED: "ยกเว้นแล้ว",
+          CANCELLED: "ยกเลิกแล้ว",
+        },
+        owed: "ใบแจ้งหนี้ {invoice}: ยังต้องชำระ {amount}",
+        paidInvoice: "ใบแจ้งหนี้ {invoice} ชำระแล้ว",
+        seePayments: "ดูในการชำระเงิน",
+      },
       skills: {
         title: "ทักษะสำหรับระดับถัดไป",
         failed: "เปลี่ยนทักษะนี้ไม่ได้ โปรดลองอีกครั้ง",
@@ -3977,6 +3992,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "ใส่จำนวนวันเป็นจำนวนเต็มตั้งแต่ 0 ถึง 30",
       confirmRequired: "ติ๊กช่องเพื่อยืนยันว่าค่าปรับล่าช้าถูกกฎหมายในพื้นที่ที่โรงเรียนของคุณดำเนินการ",
       noCurrency: "ตั้งสกุลเงินของโรงเรียนด้านบนเพื่อใช้จำนวนคงที่",
+    },
+    promotionFee: {
+      badge: "ค่าเลื่อนระดับ",
+      forRank: "{style} · {rank}",
+      seeGrading: "ดูในการเลื่อนระดับ",
+      cancelHint: "ยกเว้นหรือยกเลิกได้ในการเลื่อนระดับ",
+      waivedLine: "ยกเว้นค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
+      cancelledLine: "ยกเลิกค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
     },
     lateFee: {
       badge: "ค่าปรับล่าช้า",

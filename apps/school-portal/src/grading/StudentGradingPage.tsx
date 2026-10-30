@@ -434,7 +434,7 @@ function DisciplineGradingCard({
   const waiting = fee?.status === 'waiting';
 
   return (
-    <section aria-label={discipline.name} style={{ marginBottom: 24 }}>
+    <section id={`grading-${discipline.id}`} aria-label={discipline.name} style={{ marginBottom: 24 }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div>
@@ -508,6 +508,8 @@ function DisciplineGradingCard({
             onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
           />
         ) : null}
+
+        <FeeRequestList requests={feeRequests} currency={feeCurrency} />
 
         {current && eligibility && studentRank && !archived ? (
           <Progress
@@ -892,6 +894,46 @@ function FeeBox({
           </>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+const FEE_STATUS_BADGE: Record<StudentFeeRequest['status'], 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
+  PENDING: 'warning',
+  ACCEPTED: 'info',
+  PAID: 'success',
+  DECLINED: 'danger',
+  WAIVED: 'default',
+  CANCELLED: 'default',
+};
+
+/**
+ * This style's promotion fees, newest first (backlog §3.6 step 6): what each
+ * is for, its answer, and once accepted its charge on the Payments card above
+ * ("Paid" once the charge is fully paid). Only the latest few.
+ */
+function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[]; currency: string | null }) {
+  const t = useT();
+  if (requests.length === 0) return null;
+  return (
+    <section aria-label={t('grading.student.feeList.title')} style={{ marginTop: 16 }} data-testid="promotion-fee-list">
+      <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>{t('grading.student.feeList.title')}</h3>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {requests.slice(0, 5).map((r) => (
+          <li key={r.id} style={{ padding: '4px 0', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>{t('grading.student.feeList.row', { rank: r.toRungName, amount: formatMoney(r.amountMinor, r.currency ?? currency) })}</span>
+            <Badge variant={FEE_STATUS_BADGE[r.status]}>{t(`grading.student.feeList.status.${r.status}` as TranslationKey)}</Badge>
+            {r.charge && r.charge.status !== 'CANCELLED' ? (
+              <span className="ultm8-field__hint">
+                {r.charge.owedAmount > 0
+                  ? t('grading.student.feeList.owed', { invoice: r.charge.invoiceLabel, amount: formatMoney(r.charge.owedAmount, r.charge.currency) })
+                  : t('grading.student.feeList.paidInvoice', { invoice: r.charge.invoiceLabel })}{' '}
+                · <a href="#student-payments">{t('grading.student.feeList.seePayments')}</a>
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

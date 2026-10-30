@@ -2038,6 +2038,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       fee: {
         aria: "승급 심사비",
       },
+      feeList: {
+        title: "승급비",
+        row: "{rank} · {amount}",
+        status: {
+          PENDING: "답변 대기 중",
+          ACCEPTED: "수락됨",
+          PAID: "결제됨",
+          DECLINED: "거절됨",
+          WAIVED: "면제됨",
+          CANCELLED: "취소됨",
+        },
+        owed: "청구서 {invoice}: 남은 금액 {amount}",
+        paidInvoice: "청구서 {invoice} 결제됨",
+        seePayments: "결제에서 보기",
+      },
       skills: {
         title: "다음 등급에 필요한 기술",
         failed: "이 기술을 변경하지 못했습니다. 다시 시도해 주세요.",
@@ -3977,6 +3992,14 @@ export const messages: PartialMessages<EnglishMessages> = {
       invalidGrace: "0~30 사이의 정수 일수를 입력하세요.",
       confirmRequired: "학원이 운영되는 지역에서 연체료가 합법임을 확인하려면 확인란을 선택하세요.",
       noCurrency: "고정 금액을 사용하려면 위에서 학원 통화를 설정하세요.",
+    },
+    promotionFee: {
+      badge: "승급비",
+      forRank: "{style} · {rank}",
+      seeGrading: "승급에서 보기",
+      cancelHint: "승급 화면에서 면제하거나 취소하세요",
+      waivedLine: "{date}에 {name}님이 승급 화면에서 면제",
+      cancelledLine: "{date}에 {name}님이 승급 화면에서 취소",
     },
     lateFee: {
       badge: "연체료",

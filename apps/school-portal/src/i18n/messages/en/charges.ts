@@ -213,6 +213,15 @@ export const charges = {
     confirmRequired: "Tick the box to confirm late fees are legal where your School operates.",
     noCurrency: "Set the School's currency above to use a fixed amount.",
   },
+  // Backlog 3.6 step 6 — a promotion fee is a charge (Decision 303 item 5).
+  promotionFee: {
+    badge: "Promotion fee",
+    forRank: "{style} · {rank}",
+    seeGrading: "See in grading",
+    cancelHint: "Waive or cancel it in grading",
+    waivedLine: "Fee waived in grading on {date} by {name}",
+    cancelledLine: "Fee cancelled in grading on {date} by {name}",
+  },
   lateFee: {
     badge: "Late fee",
     forInvoice: "For invoice {invoice} ({description}), due {date}",
