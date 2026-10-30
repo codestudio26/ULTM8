@@ -7,8 +7,9 @@ import { formatCalendarDay, useFreezeAction, useFreezeRequests } from '../member
 
 /**
  * Decision 404: freeze requests from members (or a child's Guardian) waiting
- * for the owner. Approve or decline here or on the student's page. Shown only
- * while there is one.
+ * for the owner, or for Branch Staff with "Can freeze memberships", who see
+ * their branches' students' (Decision 409). Approve or decline here or on
+ * the student's page. Shown only while there is one.
  */
 export function FreezeRequestsCard({ schoolId }: { schoolId: string }) {
   const t = useT();
