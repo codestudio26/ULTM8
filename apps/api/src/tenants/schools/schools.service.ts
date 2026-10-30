@@ -640,7 +640,7 @@ export class SchoolsService {
     const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.updateMany({
         where: { id: schoolId, franchiseId: oldFranchiseId },
-        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, stripeFranchiseFeeCustomerId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
       }),
     );
     if (count === 0) {
@@ -1206,10 +1206,11 @@ export class SchoolsService {
  * internals no screen reads, so they're left out of those replies. Internal
  * callers (leaveFranchise) still use findOne()'s full row.
  */
-export function withoutBillingIds<T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown }>(
-  school: T,
-): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
-  const { stripeFranchiseFeeSubscriptionId: _fee, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: status, ...rest } = school;
+export function withoutBillingIds<
+  T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripeFranchiseFeeCustomerId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown },
+>(school: T): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripeFranchiseFeeCustomerId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {
+  // Decision 407 — the franchise-fee Customer id is one of these too.
+  const { stripeFranchiseFeeSubscriptionId: _fee, stripeFranchiseFeeCustomerId: _feeCustomer, stripePlatformSubscriptionId: _platform, platformSubscriptionStatus: status, ...rest } = school;
   // Backlog 3.14: the status itself stays hidden, so a School that subscribes
   // shows no trial dates (its trial no longer matters).
   if ((status === 'ACTIVE' || status === 'PAST_DUE') && 'platformTrialEndsAt' in rest) {

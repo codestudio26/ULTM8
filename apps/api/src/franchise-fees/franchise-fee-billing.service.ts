@@ -49,11 +49,10 @@ export class FranchiseFeeBillingService {
    * Schools have already joined, Decision 98) — not failures to log loudly about
    * on every single monthly run.
    *
-   * A throwaway Stripe Customer is created per School, scoped to the Franchise's
-   * own connected account — the same "throwaway Customer per subscription, no
-   * persisted reusable id" simplification PaymentsService.subscribe() already
-   * documents and accepts as a known limitation for Membership Subscriptions,
-   * applied here School->Franchise instead of Student->School.
+   * Decision 407 — the subscription is created on the School's kept Customer
+   * (`ensureFeeCustomer` below), the one that holds the card the School Owner
+   * saves, not on a throwaway Customer with no card as it was before: Stripe
+   * then charges that card each month on its own.
    */
   async ensureSubscription(
     franchise: Franchise & { paymentAccount: PaymentAccount | null },
@@ -80,7 +79,7 @@ export class FranchiseFeeBillingService {
     }
 
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId);
-    const customer = await stripe.customers.create({ name: `Franchise fee — ${school.name}` });
+    const customerId = await this.ensureFeeCustomer(stripe, school, franchise.id);
 
     // Idempotency key, stable per School<->Franchise pair — guards against the
     // narrow but real crash-between-Stripe-call-and-DB-write window: if the
@@ -102,7 +101,7 @@ export class FranchiseFeeBillingService {
       const product = await stripe.products.create({ name: `Franchise fee — ${franchise.name}` });
       subscription = await stripe.subscriptions.create(
         {
-          customer: customer.id,
+          customer: customerId,
           items: [
             {
               price_data: {
@@ -120,7 +119,7 @@ export class FranchiseFeeBillingService {
       const { priceId } = await this.ensureMeterAndPrice(franchise, stripe);
       subscription = await stripe.subscriptions.create(
         {
-          customer: customer.id,
+          customer: customerId,
           items: [{ price: priceId }], // metered — no `quantity`, Stripe derives it from reported usage
           // Decision 337 (F18) — billing months run midnight to midnight UTC on the
           // 1st. Otherwise each month would end at the second this subscription was
@@ -139,6 +138,60 @@ export class FranchiseFeeBillingService {
       data: { stripeFranchiseFeeSubscriptionId: subscription.id, franchiseFeeSubscriptionStatus: 'ACTIVE' },
     });
     return subscription.id;
+  }
+
+  /**
+   * Decision 407 — the School's kept Stripe Customer on its Franchise's
+   * connected account (`stripe` must be that account's scoped client), the one
+   * the School Owner's card is saved to and the franchise-fee subscription is
+   * billed through. Used by the monthly job (ensureSubscription above) and by
+   * "Add card" (FranchiseFeesService.createCardSetupSession), whichever comes
+   * first:
+   * - already kept: returned as-is;
+   * - a subscription made before cards existed: its own (throwaway) Customer is
+   *   adopted, since a subscription's Customer can't change — so a card added
+   *   now pays that existing subscription too;
+   * - otherwise a new Customer is created.
+   *
+   * Both callers may race. The create carries an idempotency key from the same
+   * School row (the ensureSubscription key's shape), so concurrent callers get
+   * the one Customer, and the id is written only while still unset; the stored
+   * winner is returned. The write keeps `updatedAt` as it was: ensureSubscription's
+   * own idempotency key is built from it, and a retry after a crash between
+   * this write and the subscription create must rebuild the same key.
+   */
+  async ensureFeeCustomer(
+    stripe: Stripe,
+    school: Pick<School, 'id' | 'name' | 'updatedAt' | 'stripeFranchiseFeeCustomerId' | 'stripeFranchiseFeeSubscriptionId'>,
+    franchiseId: string,
+  ): Promise<string> {
+    if (school.stripeFranchiseFeeCustomerId) {
+      return school.stripeFranchiseFeeCustomerId;
+    }
+    let customerId: string;
+    if (school.stripeFranchiseFeeSubscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(school.stripeFranchiseFeeSubscriptionId);
+      customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+    } else {
+      const customer = await stripe.customers.create(
+        { name: `Franchise fee — ${school.name}`, metadata: { schoolId: school.id, franchiseId } },
+        { idempotencyKey: `franchise-fee-customer-${school.id}-${franchiseId}-${school.updatedAt.getTime()}` },
+      );
+      customerId = customer.id;
+    }
+    // Only while the School is still in this Franchise: the Customer lives on its account.
+    const unset = { id: school.id, franchiseId, stripeFranchiseFeeCustomerId: null };
+    const { count } = await this.prismaJobs.school.updateMany({
+      where: { ...unset, updatedAt: school.updatedAt },
+      data: { stripeFranchiseFeeCustomerId: customerId, updatedAt: school.updatedAt },
+    });
+    if (count === 0) {
+      // The row changed since it was read (an edit, or another caller won): an
+      // ordinary write, which also moves updatedAt on.
+      await this.prismaJobs.school.updateMany({ where: unset, data: { stripeFranchiseFeeCustomerId: customerId } });
+    }
+    const stored = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: school.id }, select: { stripeFranchiseFeeCustomerId: true } });
+    return stored.stripeFranchiseFeeCustomerId ?? customerId;
   }
 
   /**

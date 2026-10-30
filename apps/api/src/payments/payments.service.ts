@@ -236,6 +236,26 @@ export class PaymentsService {
     return found;
   }
 
+  /**
+   * GET /franchises/:franchiseId/payment-account/connect-status — Decision 407:
+   * the Franchise page's Connected / Action needed / Not connected. Franchise
+   * Owner only. Read live from Stripe (nothing stores whether onboarding
+   * finished; the account.updated webhook is still log-only): CONNECTED once
+   * Stripe has the business's details and lets it take charges, ACTION_NEEDED
+   * while onboarding was started but isn't finished (or Stripe wants more
+   * details), NOT_CONNECTED before it starts.
+   */
+  async getFranchiseConnectStatus(callerId: string, franchiseId: string): Promise<{ status: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED' }> {
+    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { franchiseId } }));
+    if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
+      return { status: 'NOT_CONNECTED' };
+    }
+    const stripeAccount = await this.stripeClient.platformClient().accounts.retrieve(account.stripeConnectedAccountId);
+    return { status: stripeAccount.details_submitted && stripeAccount.charges_enabled ? 'CONNECTED' : 'ACTION_NEEDED' };
+  }
+
   // ---------------------------------------------------------------------------
   // Stripe Connect Express onboarding (Decision 86).
   // ---------------------------------------------------------------------------

@@ -67,7 +67,9 @@ describeIfDb('Per-IP limit: only for callers who aren\'t signed in', () => {
       },
     });
     token = jwt.sign({ sub: user.id, email: user.email, grants: [] });
-  });
+    // The app is imported here, after the env is set, so compiling it counts
+    // against this hook's time: more than the 30 s default on a slow CI runner.
+  }, 120_000);
 
   afterAll(async () => {
     if (previousLimit === undefined) delete process.env.THROTTLE_IP_LIMIT_PER_MINUTE;

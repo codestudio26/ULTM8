@@ -239,6 +239,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Added to a School': 'studentAddedTitle',
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
   'Open mat': 'openMatTitle',
+  // Decision 407 — apps/api/src/jobs/stripe-webhook-processing.processor.ts.
+  'Franchise fee payment failed': 'franchiseFeeFailedTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -401,6 +403,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Your School declined your request to freeze (.+) from (\d{4}-\d{2}-\d{2})\.$/s,
     (m, { t, locale }) => n(t, 'freezeDeclinedBody', { plan: m[1], start: formatDay(m[2], locale) }),
+  ],
+  // Decision 407 — StripeWebhookProcessingProcessor.franchiseFeeFailedNotices.
+  [
+    /^The franchise fee of ([\d.]+) ([A-Z]{3}) for (.+) couldn't be charged\. Stripe will try again\. Add or update the card on the School page\.$/s,
+    (m, { t, locale }) => n(t, 'franchiseFeeFailedBody', { amount: formatAmount(m[1], m[2], locale), school: m[3] }),
   ],
 ];
 
