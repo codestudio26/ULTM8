@@ -104,6 +104,12 @@ export function MyMinorsScreen({ navigation }: Props) {
             variant="secondary"
             onPress={() => navigation.navigate('Lessons', { studentId: minor.studentId, name: minor.firstName })}
           />
+          {/* Their invoices and receipts (Decisions 303, 338). */}
+          <Button
+            title={t('charges.childButton')}
+            variant="secondary"
+            onPress={() => navigation.navigate('MyCharges', { studentId: minor.studentId, name: minor.firstName })}
+          />
           {/* Notes their School shows them (Decision 400). */}
           <Button
             title={t('guardians.myMinors.notes')}

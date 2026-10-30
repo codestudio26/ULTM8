@@ -53,6 +53,14 @@ function describe(t: T, e: StaffActivityEntry): string {
       return t('roleGrants.activity.inviteAccepted', vars);
     case 'OPEN_MAT_CHANGED':
       return t(d.on ? 'roleGrants.activity.openMatOn' : 'roleGrants.activity.openMatOff', vars);
+    // Decisions 303, 338: "Can create charges" and "Can cancel charges".
+    case 'CHARGE_ACCESS_CHANGED': {
+      const changes = (d.changes ?? []) as Array<{ switch: string; on: boolean }>;
+      const list = changes
+        .map((c) => t(c.on ? 'roleGrants.activity.switchOn' : 'roleGrants.activity.switchOff', { name: t(`charges.activity.${c.switch}` as TranslationKey) }))
+        .join(', ');
+      return t('roleGrants.activity.accessChanged', { ...vars, list });
+    }
     case 'SETTING_CHANGED':
       return t(d.mustAcceptFirst ? 'roleGrants.activity.mustAcceptOn' : 'roleGrants.activity.mustAcceptOff', vars);
     default:

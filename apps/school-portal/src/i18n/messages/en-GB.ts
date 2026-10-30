@@ -28,6 +28,7 @@ import { serverKeys as server } from '@ultm8/i18n';
 import { profile } from './en/profile';
 import { address } from './en/address';
 import { frontDesk } from './en/frontDesk';
+import { charges } from './en/charges';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -69,6 +70,7 @@ export const messages = {
   profile,
   address,
   frontDesk,
+  charges,
 };
 
 export type EnglishMessages = typeof messages;

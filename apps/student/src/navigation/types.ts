@@ -61,6 +61,8 @@ export type AppStackParamList = {
   /** No params: the signed-in student's own grading; a guardian passes the minor's id. */
   /** `openFeeId` opens that promotion fee's answer straight away (the Home card). */
   MyGrading: { studentId?: string; name?: string; openFeeId?: string } | undefined;
+  /** No params: the signed-in student's own invoices; a guardian passes the child's id (Decisions 303, 338). */
+  MyCharges: { studentId?: string; name?: string } | undefined;
   GradingHistory: { studentId: string; schoolId: string; title: string };
   GradingBoard: { schoolId: string; disciplineId: string; name: string };
   CoachStudent: { schoolId: string; disciplineId: string; studentId: string; name: string; styleName: string };

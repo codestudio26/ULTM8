@@ -18,6 +18,7 @@ import { ranks } from './en/ranks';
 import { transactions } from './en/transactions';
 import { waivers } from './en/waivers';
 import { lib } from './en/lib';
+import { charges } from './en/charges';
 import { serverKeys as server } from '@ultm8/i18n';
 
 /**
@@ -51,6 +52,7 @@ export const messages = {
   transactions,
   waivers,
   lib,
+  charges,
   server,
 };
 

@@ -152,6 +152,12 @@ function useItemLabel() {
     const plan = row.membershipPlanTitle ?? '';
     // Decision 404: a freeze fee names the frozen membership's plan.
     if (row.kind === 'FREEZE_FEE') return plan ? t('transactions.itemFreezeFee', { plan }) : t('transactions.kindFreezeFee');
+    // Decision 338 item 9: a desk payment toward a staff-created charge.
+    if (row.kind === 'CHARGE_PAYMENT') {
+      return row.chargeInvoiceLabel
+        ? t('charges.transactions.item', { invoice: row.chargeInvoiceLabel, description: row.chargeDescription ?? '' })
+        : t('charges.transactions.itemBalance');
+    }
     return row.kind === 'RENEWAL' ? t('transactions.itemRenewal', { plan }) : plan;
   };
 }
@@ -161,6 +167,7 @@ const KIND_LABELS = {
   RENEWAL: 'transactions.kindRenewal',
   LATE_CANCEL_FEE: 'transactions.kindLateFee',
   FREEZE_FEE: 'transactions.kindFreezeFee',
+  CHARGE_PAYMENT: 'charges.transactions.kind',
 } as const;
 
 /** "Record a payment" (Decision 346, G7): cash or a bank transfer the School

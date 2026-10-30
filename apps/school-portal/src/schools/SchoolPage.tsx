@@ -26,6 +26,7 @@ import {
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
+import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
@@ -74,6 +75,8 @@ export function SchoolPage() {
         <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 404: freezing memberships. */}
         <FreezeSettingsCard key={`freeze-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 411: tax on staff-created charges, set by the School. */}
+        <ChargeSettingsCard key={`charges-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 406: only where the School's country allows it. */}
         <CardSurchargeCard key={`surcharge-${schoolId}`} schoolId={schoolId} />
         {/* Decision 392: the tablet sign-up's "How did you hear about us?" list. */}

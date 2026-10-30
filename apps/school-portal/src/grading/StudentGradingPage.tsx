@@ -48,6 +48,7 @@ import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
 import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
+import { StudentChargesCard } from '../charges/StudentChargesCard';
 import { formatHours } from './hours';
 
 type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
@@ -222,6 +223,10 @@ export function StudentGradingPage() {
       {/* Decision 348: memberships, selling at the desk, Friend Pass and
           cancelling a Subscription. Owner only, like the API. */}
       {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
+
+      {/* Decisions 303, 338: charges, desk payments and the balance. Shown to
+          the owner and to staff with a charges switch (the API says who). */}
+      <StudentChargesCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
 
       {styles.length === 0 ? (
         <Card>

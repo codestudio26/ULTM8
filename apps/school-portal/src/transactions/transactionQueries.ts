@@ -12,7 +12,7 @@ export type RecordDeskPaymentInput = components['schemas']['RecordDeskPaymentDto
 export interface TransactionFilters {
   status: '' | 'SUCCESSFUL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'DISPUTED';
   paymentMethod: '' | 'STRIPE' | 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
-  kind: '' | 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE';
+  kind: '' | 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT';
   membershipPlanId: string;
   from: string;
   to: string;

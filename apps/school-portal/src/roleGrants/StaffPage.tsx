@@ -20,6 +20,7 @@ import {
 import { StaffListSection } from './StaffListSection';
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { OpenMatPermissions } from '../frontdesk/OpenMatPermissions';
+import { ChargePermissions } from '../charges/ChargePermissions';
 import { StaffActivitySection } from './StaffActivitySection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
@@ -294,6 +295,8 @@ export function StaffPage() {
       <CoachInvitesSection schoolId={schoolId} />
       {/* Decision 386: who may start an open mat from the Check-in page. */}
       <OpenMatPermissions schoolId={schoolId} />
+      {/* Decisions 303, 338: who may create and cancel charges. */}
+      <ChargePermissions schoolId={schoolId} />
       {/* Decision 408: who changed what on this page. */}
       <StaffActivitySection schoolId={schoolId} />
 
