@@ -1534,7 +1534,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
 
     const opened = transaction.status !== 'DISPUTED' && outcome.status === 'DISPUTED' && !outcome.lost;
-    const ended = outcome.lost || (outcome.status === 'SUCCESSFUL' && transaction.status === 'DISPUTED');
+    // Told once each: a later event for the same lost dispute finds it recorded.
+    const ended = (outcome.lost && !lostBefore) || (outcome.status === 'SUCCESSFUL' && transaction.status === 'DISPUTED');
     if ((!opened && !ended) || !(await chargeNoticeSwitches(tx, transaction.schoolId)).dispute) return [];
     const amount = noticeMoney(dispute.amount, dispute.currency);
     const body = outcome.lost
