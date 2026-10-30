@@ -3954,6 +3954,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "自动付款失败或费用逾期",
       noticeDispute: "银行卡付款争议",
       noticeDueReminder: "费用到期前 3 天提醒",
+      noticeRefund: "付款退款",
     },
     card: {
       title: "付款",

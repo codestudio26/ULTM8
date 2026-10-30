@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
+  — every refund sends the member a "Refund" notice with the amount and where
+  it went: refunded to the card, given back, or added to the balance as credit
+  (a Guardian gets the usual copy). That covers refunds of payments toward
+  charges, a Class Pack's share when a booking is cancelled (to the card, or
+  cash marked paid out), a payment refunded in the Stripe dashboard, and a
+  membership purchase that couldn't go through and was refunded ("… was
+  refunded to your card: {plan} couldn't be bought."). A lost card dispute
+  sends none (the dispute notice already says the money goes back). The
+  owner's notes are never included. New switch "A refund of a payment" among
+  the payment notifications on the School page, on by default. 15 languages.
 - **Billing reports: total revenue, charges and memberships** (Decision 414
   item 3) — the Overview now shows revenue in two parts and their total, for
   the period and for each month: **Charges** (payments toward charges less

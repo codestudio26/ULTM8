@@ -3954,6 +3954,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "자동 결제 실패 또는 요금 연체",
       noticeDispute: "카드 결제 분쟁",
       noticeDueReminder: "요금 기한 3일 전 알림",
+      noticeRefund: "결제 환불",
     },
     card: {
       title: "결제",

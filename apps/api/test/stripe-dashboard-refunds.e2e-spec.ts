@@ -130,6 +130,8 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
     await su.paymentAccount.deleteMany({ where });
     await su.roleGrant.deleteMany({ where });
     await su.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    // A refund now tells the member (Decision 415 item 4).
+    await su.notification.deleteMany({ where: { user: { email: { startsWith: TAG } } } });
     await su.user.deleteMany({ where: { email: { startsWith: TAG } } });
     await su.school.deleteMany({ where: { id: { in: schoolIds } } });
     await su.$disconnect();

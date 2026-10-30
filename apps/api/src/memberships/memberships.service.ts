@@ -32,6 +32,7 @@ import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -1082,9 +1083,20 @@ export class MembershipsService {
         // the async webhook path's queued/idempotency-keyed equivalent
         // (resolveMembershipCollision, stripe-webhook-processing.processor.ts).
         await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId);
-        await this.prismaApp.withTenantContext(studentId, (tx) =>
-          tx.transaction.update({ where: { id: transactionId }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
+        // Only while still Successful: Stripe's charge.refunded may have got
+        // here first (it then sent the member the "Refund" notice itself).
+        const marked = await this.prismaApp.withTenantContext(studentId, (tx) =>
+          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
         );
+        // Decision 415 item 4: the whole payment went back to the card, with
+        // any surcharge (the PaymentIntent is refunded in full).
+        if (marked.count > 0) {
+          await this.paymentsService.sendRefundNotice(
+            refusedPurchaseRefundNotice(`refund-refused-${transactionId}`, plan.price + surcharge, currency, plan.title),
+            studentId,
+            plan.schoolId,
+          );
+        }
         throw new ConflictException(`${err.message} Your saved card was charged and has now been refunded.`);
       }
       throw err;

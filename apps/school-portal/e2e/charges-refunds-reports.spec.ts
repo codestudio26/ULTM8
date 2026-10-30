@@ -7,7 +7,8 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
  * owner's side: a cash payment partly given back with a note, which leaves
  * the charge paid and marked Part refunded, and the Billing reports page
  * (Overview, with revenue split into charges, memberships and the total,
- * Decision 414 item 3; and Member balances). The rules behind each step are
+ * Decision 414 item 3; and Member balances); and the refund notice's switch on
+ * the School page (Decision 414 item 4). The rules behind each step are
  * covered by apps/api/test/charges-refunds-reports.e2e-spec.ts.
  */
 let s: GradingSchool;
@@ -83,4 +84,16 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   await expect(rows.nth(1)).toContainText(/60\.00 GBP\s*20\.00 GBP\s*40\.00 GBP\s*100\.00 GBP\s*140\.00 GBP/);
   await page.getByRole('tab', { name: 'Member balances' }).click();
   await expect(page.getByText('Every balance is zero')).toBeVisible();
+});
+
+test('the refund notice has its own switch among the payment notifications, on by default (Decision 414 item 4)', async ({ page }) => {
+  await page.goto('/school');
+  const settings = page.getByTestId('charge-settings');
+  const refundSwitch = settings.getByRole('switch', { name: 'A refund of a payment' });
+  await expect(refundSwitch).toBeChecked();
+  await refundSwitch.click();
+  await expect(refundSwitch).not.toBeChecked();
+  await settings.getByRole('button', { name: 'Save' }).click();
+  await expect(settings.getByText('Saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).chargeNoticeRefund).toBe(false);
 });

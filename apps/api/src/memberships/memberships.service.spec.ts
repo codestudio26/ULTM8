@@ -27,6 +27,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       transaction: {
         create: overrides.transactionCreate ?? jest.fn().mockResolvedValue({ id: 'transaction-1' }),
         update: overrides.transactionUpdate ?? jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
   }
@@ -41,6 +42,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     const paymentsService = {
       chargeOffSession: opts.chargeOffSession,
       refundOffSessionCharge: opts.refundOffSessionCharge ?? jest.fn().mockResolvedValue(undefined),
+      sendRefundNotice: jest.fn().mockResolvedValue(undefined),
     };
     const stepUpService = { assertVerified: opts.assertVerified ?? jest.fn() };
     const service = new MembershipsService(
@@ -160,10 +162,16 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
 
     expect(paymentsService.refundOffSessionCharge).toHaveBeenCalledWith('student-1', 'school-1', 'pi_collision');
     const createdTransactionId = tx.transaction.create.mock.calls[0][0].data.id;
-    expect(tx.transaction.update).toHaveBeenCalledWith({
-      where: { id: createdTransactionId },
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { id: createdTransactionId, status: 'SUCCESSFUL' },
       data: { status: 'REFUNDED', refundedAmount: plan.price },
     });
+    // Decision 415 item 4: the member is told why the card was refunded.
+    expect(paymentsService.sendRefundNotice).toHaveBeenCalledWith(
+      expect.objectContaining({ key: `refund-refused-${createdTransactionId}`, title: 'Refund', body: expect.stringMatching(/was refunded to your card: .+ couldn't be bought\.$/) }),
+      'student-1',
+      'school-1',
+    );
   });
 });
 

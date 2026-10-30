@@ -3999,6 +3999,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Een automatische betaling is mislukt, of kosten zijn te laat",
       noticeDispute: "Een geschil over een kaartbetaling",
       noticeDueReminder: "Een herinnering 3 dagen voordat kosten vervallen",
+      noticeRefund: "Een terugbetaling van een betaling",
     },
     card: {
       title: "Betalingen",

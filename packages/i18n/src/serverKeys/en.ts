@@ -209,6 +209,13 @@ export const server = {
     chargePaymentLabel: "charge payment",
     chargeDueReminderTitle: "Payment due soon",
     chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
+    // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
+    chargeRefundTitle: "Refund",
+    chargeRefundCardBody: "{amount} was refunded to your card.",
+    chargeRefundMoneyBackBody: "{amount} was given back to you.",
+    chargeRefundCreditBody: "{amount} was added to your balance as credit.",
+    // Decision 415 item 4 — a refused membership purchase refunded in full.
+    chargeRefundRefusedBody: "{amount} was refunded to your card: {plan} couldn't be bought.",
     // Decision 413 — late fees (jobs/late-fee.processor.ts, ChargesService waive).
     lateFeeAddedTitle: "Late fee added",
     lateFeeAddedChargeBody: "A late fee of {fee} was added to your balance because invoice {invoice} ({description}) is overdue. Pay it in the app or at the front desk.",

@@ -3999,6 +3999,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Otomatik ödeme başarısız oldu veya bir ücretin vadesi geçti",
       noticeDispute: "Kart ödemesine itiraz",
       noticeDueReminder: "Bir ücretin vadesinden 3 gün önce hatırlatma",
+      noticeRefund: "Bir ödemenin iadesi",
     },
     card: {
       title: "Ödemeler",

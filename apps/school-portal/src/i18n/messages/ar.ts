@@ -4207,6 +4207,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "فشل دفع تلقائي أو تأخرت رسوم",
       noticeDispute: "نزاع على دفعة بالبطاقة",
       noticeDueReminder: "تذكير قبل 3 أيام من استحقاق الرسوم",
+      noticeRefund: "استرداد دفعة",
     },
     card: {
       title: "المدفوعات",
