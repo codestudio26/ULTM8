@@ -7257,3 +7257,19 @@ The product owner confirmed these choices made while building, as built:
 ### Recorded by
 
 User (Code), 30 Oct 2026: "ok", to the list of these choices.
+
+## Decision 418 — Waivers page Signatures panel: first 100 with "Load more", search on the server, totals counted once
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 340, 354 (Waivers review W1, W8, W14) · **Answers:** stress test round 4, Q2 (`docs/handover/STRESS-TEST-ROUND4.md`)
+
+### Decision
+
+1. The Signatures panel shows **the first 100 entries** with a **"Load more"** button, instead of reading every page before showing anything (22–25 s and ~40 calls at a 3,700-student School).
+2. A **search box** finds an entry by the student's name or the name typed when signing (capitals and accents ignored). The search and the All / Signed / Not signed tabs run **on the server**, over the whole roster, not only the entries already shown.
+3. The **signed/unsigned totals** ("12 of 40 signed") are **counted once**, on the first page, for the whole roster whatever the tab or search; later pages don't recount them.
+
+Order is unchanged: current students A to Z, then former students (Decision 340, W1/W14). API: `GET /schools/{schoolId}/waivers/{id}/signatures` takes `filter` (`signed` | `unsigned`) and `q`; its cursor now carries the sort position; `summary` is on the first page only. No migration.
+
+### Recorded by
+
+User (Code), 30 Oct 2026, answering Q2 of stress test round 4: show the first 100 with "Load more" and a server-side search box, and compute the totals once (the recommended answer).

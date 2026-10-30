@@ -119,6 +119,48 @@ describeIfDb('Waivers review fixes', () => {
     await superuser.roleGrant.updateMany({ where: { userId: { in: [students[0].id, students[1].id] }, schoolId: school.id }, data: { revokedAt: null } });
   });
 
+  it('Stress test round 4 (Q2): the Signatures panel comes one page at a time, A to Z, with the totals on the first page only, and filters and searches on the server', async () => {
+    const waiver = await mkWaiver(owner, school.id, 'Paged');
+    expect((await sign(waiver.id, students[3], { signerFullName: 'Zoë Parent', signatureText: 'Zoë Parent' })).status).toBe(201);
+    expect((await sign(waiver.id, students[5])).status).toBe(201);
+    const list = (query: string) => http().get(`/v1/schools/${school.id}/waivers/${waiver.id}/signatures?${query}`).set(auth(owner));
+    const names = (res: request.Response) => res.body.items.map((i: { studentName: string | null; signerFullName: string | null }) => i.studentName ?? i.signerFullName);
+
+    const first = await list('limit=2');
+    expect(first.status).toBe(200);
+    expect(names(first)).toEqual(['student0 Review', 'student1 Review']);
+    expect(first.body.summary).toEqual({ total: 6, signed: 2, unsigned: 4, expired: 0, pending: 0 });
+    const second = await list(`limit=2&cursor=${first.body.nextCursor}`);
+    expect(names(second)).toEqual(['student2 Review', 'student3 Review']);
+    expect(second.body.summary).toBeUndefined();
+    const third = await list(`limit=2&cursor=${second.body.nextCursor}`);
+    expect(names(third)).toEqual(['student4 Review', 'student5 Review']);
+    expect(third.body.nextCursor).toBeNull();
+
+    const signed = await list('filter=signed');
+    expect(names(signed)).toEqual(['student3 Review', 'student5 Review']);
+    expect(signed.body.summary).toMatchObject({ total: 6, signed: 2 }); // the whole roster, not the filtered list
+    expect(names(await list('filter=unsigned'))).toEqual(['student0 Review', 'student1 Review', 'student2 Review', 'student4 Review']);
+    expect(names(await list('q=zoe'))).toEqual(['student3 Review']); // the typed name, accents ignored
+    expect(names(await list('q=STUDENT4'))).toEqual(['student4 Review']);
+    expect(names(await list('q=%25'))).toEqual([]); // "%" is a plain character
+    expect((await list('cursor=not-a-cursor')).status).toBe(400);
+    expect((await list('filter=everyone')).status).toBe(400);
+
+    // A former student's signature comes after everyone current.
+    await superuser.roleGrant.updateMany({ where: { userId: students[5].id, schoolId: school.id }, data: { revokedAt: new Date() } });
+    try {
+      const all = await list('limit=100');
+      expect(all.body.items.map((i: { studentId: string; formerStudent: boolean }) => [i.studentId, i.formerStudent])).toEqual([
+        ...students.slice(0, 5).map((s) => [s.id, false]),
+        [students[5].id, true],
+      ]);
+      expect(all.body.summary).toMatchObject({ total: 5, signed: 1 });
+    } finally {
+      await superuser.roleGrant.updateMany({ where: { userId: students[5].id, schoolId: school.id }, data: { revokedAt: null } });
+    }
+  });
+
   it('W3: a signature keeps the exact wording signed, and a signer who read an old version is sent back to read it again', async () => {
     const waiver = await mkWaiver(owner, school.id, 'Copy', 'Version ONE');
     expect(waiver.version).toBe(1);

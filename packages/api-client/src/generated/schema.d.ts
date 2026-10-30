@@ -19393,9 +19393,13 @@ export interface operations {
     WaiversController_findSignatures: {
         parameters: {
             query?: {
-                /** @description nextCursor from the previous page. */
+                /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description signed = SIGNED only; unsigned = everything not SIGNED (Unsigned, Pending, Expired). Leave out for everyone. */
+                filter?: "signed" | "unsigned";
+                /** @description Part of the student's name or the name typed when signing; capitals and accents ignored. */
+                q?: string;
             };
             header?: never;
             path: {

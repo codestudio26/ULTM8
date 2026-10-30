@@ -19,6 +19,11 @@ export function matchesPersonName(firstName: string | null | undefined, surname:
   return first.includes(q) || last.includes(q) || `${first} ${last}`.includes(q);
 }
 
+/** Lower case, accents removed, so "Sao Paulo" finds "São Paulo". */
+export function foldText(value: string): string {
+  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
 /** Trims a raw `search` query value; blank (or only spaces) means "no filter". */
 export function trimSearch(value: unknown): unknown {
   return typeof value === 'string' ? value.trim() : value;

@@ -12467,7 +12467,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "nextCursor from the previous page.",
+            "description": "Opaque cursor from a previous page's nextCursor.",
             "schema": {
               "type": "string"
             }
@@ -12481,6 +12481,28 @@
               "maximum": 100,
               "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "signed = SIGNED only; unsigned = everything not SIGNED (Unsigned, Pending, Expired). Leave out for everyone.",
+            "schema": {
+              "enum": [
+                "signed",
+                "unsigned"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Part of the student's name or the name typed when signing; capitals and accents ignored.",
+            "schema": {
+              "type": "string"
             }
           }
         ],

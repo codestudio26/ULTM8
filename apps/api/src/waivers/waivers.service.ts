@@ -7,7 +7,8 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { GuardiansService } from '../guardians/guardians.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { cursorPaginate, CursorPage, resolveLimit } from '../common/pagination/cursor-paginate';
+import { foldText } from '../common/search/name-search';
 import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../jobs/queue.constants';
 import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
@@ -15,6 +16,7 @@ import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
 import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto } from './dto/paper-signature.dto';
 import { UpdateWaiverSettingsDto } from './dto/waiver-settings.dto';
+import type { WaiverSignatureFilter } from './dto/waiver-signatures-query.dto';
 import type { WaiverSignatureRequestJobData } from '../jobs/waiver-signature-requests.processor';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { WaiverAssignmentService } from './waiver-assignment.service';
@@ -331,9 +333,8 @@ export class WaiversService {
     callerId: string,
     schoolId: string,
     waiverId: string,
-    cursor?: string,
-    limit?: number,
-  ): Promise<CursorPage<{ id: string }> & { summary: WaiverSignatureSummary }> {
+    query: { cursor?: string; limit?: number; filter?: WaiverSignatureFilter; q?: string } = {},
+  ): Promise<CursorPage<{ id: string }> & { summary?: WaiverSignatureSummary }> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
@@ -341,35 +342,54 @@ export class WaiversService {
     if (waiver.schoolId !== schoolId) {
       throw new NotFoundException('Waiver not found');
     }
+    const after = query.cursor ? decodeSignatureCursor(query.cursor) : null;
+    const take = resolveLimit(query.limit);
 
     // Waivers review W1: a student who has left the School is no longer
     // visible to its staff (User RLS), so names are read separately rather
     // than joined, which failed the whole list. A leaver's unsigned entry is
     // left out; their signature stays, flagged formerStudent.
+    //
+    // Decision 418 (stress test round 4, Q2): the panel used to fetch every page before
+    // showing anything (about 40 calls, 22 s at a 3,700-student School), each
+    // re-counting the totals. Now it asks for one page at a time. Ordering by
+    // name, and the tab and search, need the whole roster's names, so one
+    // light read (no signed text, no images) is sorted and filtered here, and
+    // only the page's own rows are read in full. The totals come from that
+    // same read, on the first page only.
     const { page, summary, names, activeIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const active = await tx.roleGrant.findMany({
-        where: { schoolId, role: 'STUDENT', revokedAt: null },
-        select: { userId: true },
-        distinct: ['userId'],
+      const activeIds = new Set(await this.activeStudentIds(tx, schoolId));
+      const rows = await tx.waiverSignature.findMany({
+        where: { waiverId, schoolId },
+        select: { id: true, studentId: true, status: true, signerFullName: true },
       });
-      const activeIds = new Set(active.map((g) => g.userId));
-      const where = {
-        waiverId,
-        schoolId,
-        OR: [{ status: { in: ['SIGNED' as const, 'EXPIRED' as const] } }, { studentId: { in: [...activeIds] } }],
-      };
-      const pageResult = await cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where }), cursor, limit);
-      const counts = await tx.waiverSignature.groupBy({
-        by: ['status'],
-        where: { waiverId, schoolId, studentId: { in: [...activeIds] } },
-        _count: { _all: true },
-      });
+      const listed = rows.filter((r) => r.status === 'SIGNED' || r.status === 'EXPIRED' || activeIds.has(r.studentId));
       const users = await tx.user.findMany({
-        where: { id: { in: pageResult.items.map((i) => i.studentId) } },
+        where: { id: { in: [...new Set(listed.map((r) => r.studentId))] } },
         select: { id: true, firstName: true, surname: true },
       });
       const names = new Map(users.map((u) => [u.id, `${u.firstName} ${u.surname}`.trim()]));
-      return { page: pageResult, summary: summarizeStatusCounts(counts), names, activeIds };
+
+      const q = query.q ? foldText(query.q) : '';
+      const keyed = listed
+        .filter((r) => (query.filter === 'signed' ? r.status === 'SIGNED' : query.filter === 'unsigned' ? r.status !== 'SIGNED' : true))
+        .map((r) => ({ row: r, key: { former: !activeIds.has(r.studentId), name: names.get(r.studentId) || r.signerFullName || '', id: r.id } }))
+        .filter(({ row, key }) => !q || foldText(key.name).includes(q) || (!!row.signerFullName && foldText(row.signerFullName).includes(q)))
+        .sort((a, b) => compareSignatureKeys(a.key, b.key));
+      const start = after ? keyed.findIndex(({ key }) => compareSignatureKeys(key, after) > 0) : 0;
+      const slice = start < 0 ? [] : keyed.slice(start, start + take + 1);
+      const hasMore = slice.length > take;
+      const pageKeys = hasMore ? slice.slice(0, take) : slice;
+      const full = await tx.waiverSignature.findMany({ where: { id: { in: pageKeys.map(({ row }) => row.id) } } });
+      const byId = new Map(full.map((f) => [f.id, f]));
+      const items = pageKeys.flatMap(({ row }) => byId.get(row.id) ?? []);
+      const counts = after ? null : countStatuses(rows.filter((r) => activeIds.has(r.studentId)));
+      return {
+        page: { items, nextCursor: hasMore ? encodeSignatureCursor(pageKeys[pageKeys.length - 1].key) : null },
+        summary: counts ? summarizeStatusCounts(counts) : undefined,
+        names,
+        activeIds,
+      };
     });
     // The signed copy of the text stays out of the list (one copy per row
     // would make a long waiver's roster megabytes); the detail call has it.
@@ -379,7 +399,7 @@ export class WaiversService {
         return { ...response, studentName: names.get(item.studentId) ?? null, formerStudent: !activeIds.has(item.studentId) };
       }),
     );
-    return { ...page, items, summary };
+    return { ...page, items, ...(summary ? { summary } : {}) };
   }
 
   /** One row of the Signatures panel, with the copy of the text as signed
@@ -932,6 +952,45 @@ export interface WaiverSignatureSummary {
   unsigned: number;
   expired: number;
   pending: number;
+}
+
+function countStatuses(rows: Array<{ status: string }>): Array<{ status: string; _count: { _all: number } }> {
+  const counts = new Map<string, number>();
+  for (const { status } of rows) counts.set(status, (counts.get(status) ?? 0) + 1);
+  return [...counts].map(([status, n]) => ({ status, _count: { _all: n } }));
+}
+
+/** The Signatures panel's order: current students, then former students,
+ * each A to Z ignoring capitals and accents; a row with no name at all goes
+ * last in its group, and the id breaks ties. */
+interface SignatureSortKey {
+  former: boolean;
+  name: string;
+  id: string;
+}
+
+function compareSignatureKeys(a: SignatureSortKey, b: SignatureSortKey): number {
+  if (a.former !== b.former) return a.former ? 1 : -1;
+  if (!a.name !== !b.name) return a.name ? -1 : 1;
+  return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/** The cursor carries the last row's sort key, so a student renamed or
+ * leaving between pages never makes the next page skip or repeat a row. */
+function encodeSignatureCursor(key: SignatureSortKey): string {
+  return Buffer.from(JSON.stringify({ f: key.former, n: key.name, i: key.id })).toString('base64url');
+}
+
+function decodeSignatureCursor(cursor: string): SignatureSortKey {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    if (typeof parsed?.f === 'boolean' && typeof parsed?.n === 'string' && typeof parsed?.i === 'string') {
+      return { former: parsed.f, name: parsed.n, id: parsed.i };
+    }
+  } catch {
+    // fall through
+  }
+  throw new BadRequestException('Invalid cursor');
 }
 
 function summarizeStatusCounts(counts: Array<{ status: string; _count: { _all: number } }>): WaiverSignatureSummary {
