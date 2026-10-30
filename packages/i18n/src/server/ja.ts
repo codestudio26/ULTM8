@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "サブスクリプションはキャンセルされるまで毎月更新されるため、有効期限はありません。日数は空欄にしてください。",
   "A Class Pack needs the number of classes it gives.": "回数券には含まれるクラス数が必要です。",
   "A Weekly Pass needs the number of days it lasts.": "週間パスには有効日数が必要です。",
-  "A Trial Membership must last between 1 and {v1} days.": "体験会員の期間は1〜{v1}日にしてください。",
+  "A Trial Membership needs the number of days it lasts.": "体験会員には有効日数が必要です。",
   "The title cannot be blank.": "タイトルを空欄にすることはできません。",
   "{v1} is not a supported currency. Pick one from the list.": "{v1}は対応していない通貨です。一覧から選んでください。",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "このプランには通貨がなく、スクールの既定の通貨も設定されていません。先にプランかスクールの設定で通貨を設定してください。",

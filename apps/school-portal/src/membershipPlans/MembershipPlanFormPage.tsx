@@ -315,10 +315,11 @@ function MembershipPlanForm({
       return;
     }
     // Memberships review M3/M4 (Decision 334): checked on Save from any step,
-    // not only while the Pricing step is on screen (the old max=30 only
-    // applied then). The API refuses the same.
+    // not only while the Pricing step is on screen. A Trial's length is the
+    // School's own choice, any whole number of days from 1 (Decision 410).
+    // The API refuses the same.
     const expiryDays = form.expiryDurationDays ? Number(form.expiryDurationDays) : null;
-    if (form.type === 'TRIAL_MEMBERSHIP' && (expiryDays === null || !Number.isInteger(expiryDays) || expiryDays < 1 || expiryDays > 30)) {
+    if (form.type === 'TRIAL_MEMBERSHIP' && (expiryDays === null || !Number.isInteger(expiryDays) || expiryDays < 1)) {
       setStepIndex(1);
       setError(t('membershipPlans.form.trialExpiryRequired'));
       return;
@@ -603,7 +604,6 @@ function MembershipPlanForm({
               <TextField
                 type="number"
                 min={1}
-                max={form.type === 'TRIAL_MEMBERSHIP' ? 30 : undefined}
                 value={form.expiryDurationDays}
                 onChange={(e) => setForm((f) => ({ ...f, expiryDurationDays: e.target.value }))}
               />

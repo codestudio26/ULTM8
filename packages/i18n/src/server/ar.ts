@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "يتجدد الاشتراك كل شهر حتى يُلغى، لذا ليس له تاريخ انتهاء. اترك عدد الأيام فارغًا.",
   "A Class Pack needs the number of classes it gives.": "تحتاج باقة الحصص إلى عدد الحصص التي تمنحها.",
   "A Weekly Pass needs the number of days it lasts.": "تحتاج التذكرة الأسبوعية إلى عدد الأيام التي تدومها.",
-  "A Trial Membership must last between 1 and {v1} days.": "يجب أن تدوم العضوية التجريبية بين يوم واحد و{v1} يومًا.",
+  "A Trial Membership needs the number of days it lasts.": "تحتاج العضوية التجريبية إلى عدد الأيام التي تدومها.",
   "The title cannot be blank.": "لا يمكن ترك العنوان فارغًا.",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} ليست عملة مدعومة. اختر عملة من القائمة.",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "ليس لهذه الخطة عملة وليس للمدرسة عملة افتراضية — حدّد عملة في الخطة أو في إعدادات المدرسة أولًا.",
