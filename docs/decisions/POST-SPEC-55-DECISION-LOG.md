@@ -7143,3 +7143,36 @@ User (Code), 30 Oct 2026: "school has to decided not us".
 ### Recorded by
 
 User (Code), 30 Oct 2026: "My mistake, the school should set the tax per country not the platform admin"; "rate per school, they will choose the country they are in and the right tax will be applied"; "yes it should display price ex tax, the tax and the price inc tax"; and chose "ULTM8 list, School can edit".
+
+---
+
+## Decision 413 — Late fees: the School's choice, with a legal confirmation
+
+**Date:** 30 Oct 2026. **Changes:** Decision 405 item 4 ("Platform Admin keeps a maximum late fee per country"): there is no Platform Admin limit. **Answers:** the rest of v1.3 backlog §3.7. **Builds on:** Decisions 303, 316 item 2, 338, 346, 405, 406, 411.
+
+### Decision
+
+1. **Off by default. The School decides.** The owner switches late fees on, and must tick **"I confirm late fees are legal where my School operates"** to do so, as for the card surcharge (Decision 406). **No Platform Admin limit**: late fees are illegal in some countries, and each School is responsible for its own.
+2. **A fixed amount or a %.** A % is more than 0 and at most 100, with up to two decimals; a fixed amount is more than 0, in the School's currency. **Grace period: 3 days by default, 0 to 30.**
+3. **Which payments:**
+   - a staff-created charge not fully paid after its due date plus the grace days;
+   - a card Subscription renewal Stripe couldn't collect (the RENEWAL Transaction left FAILED, keyed on the Stripe invoice, Decision 346) and still unpaid after the grace days.
+   Paid within the grace period: no fee. Cash and bank-transfer membership payments waiting at the desk never get one.
+4. **One late fee per overdue payment.** Never repeated, never compounded: a late fee never gets its own late fee. **Staff can waive it**: the owner, and staff with "Can cancel charges". Waiving is cancelling the charge (Decision 338 item 1), so the ledger stays right.
+5. **Never charged to a card automatically.** The fee is a charge, marked as a late fee and linked to what it is for, on the member's balance; the member pays it in the app or at the desk. Automatic payment of charges never takes a late fee.
+6. **How much:** the fixed amount, or the % of what is still unpaid at the time (a charge: what is left including tax; a renewal: the invoice's amount due). **Tax on the fee** follows the School's tax settings, as for any charge (Decision 411). Rounded as any charge is.
+7. **A daily job**, in the School's time zone, adds the fees. It is safe to run twice (one fee per payment, enforced in the database). It skips closed and degraded Schools and former students.
+8. **The member is told** when a late fee is added, and when one is waived (a Guardian gets the usual copy), in their language. Both apps label a late fee "Late fee" and say what it is for.
+
+### How it is built
+
+- `School.lateFeeEnabled` (default false), `lateFeeType` (`FIXED` / `PERCENT`), `lateFeeFixedAmount` (minor units), `lateFeePercentBps` (hundredths of a percent, 1 to 10000), `lateFeeGraceDays` (0 to 30, default 3), `lateFeeEnabledAt`, `lateFeeConfirmedAt`, `lateFeeConfirmedById`. Owner only: `GET`/`PUT /schools/{schoolId}/late-fees`; the tick is needed every time the setting is saved on.
+- A late fee is a `Charge` with `lateFeeForChargeId` or `lateFeeForTransactionId` (each unique, so one per payment), `lateFeeOverdueAmount`, `lateFeePercentBps` and `lateFeeWaived`. A database trigger refuses a late fee for a late fee. Waiving: `POST /schools/{schoolId}/charges/{chargeId}/waive-late-fee` (the cancel path, no reason asked for). Migration `20270116000000_late_fees`.
+- The job is `jobs/late-fee.processor.ts`, daily at 7am UTC (after `charge-auto-pay` at 6am), working in each School's time zone. `charge-auto-pay` skips late-fee charges.
+- **Not retroactive (build choice):** only a payment whose grace period ends on or after the day late fees were switched on gets one. A payment already late before that day never does.
+- **A renewal's due day** is its invoice date (the Transaction's billing date) in the School's time zone. A renewal paid after its late fee was added keeps the fee; staff can waive it.
+- **A fixed fee** is in the School's currency; a % fee is in the currency of the payment it is for.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "% should be down to each academy and in some countries is illegal. We must have a on and off toggle and default should be off"; chose "School confirms legality" and "Charges + failed renewals".

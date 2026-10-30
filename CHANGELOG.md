@@ -64,6 +64,23 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   student's **Payments** card shows card payments as paid in the app or paid
   automatically, and Pending or Failed ones. **Needs a database migration**
   (`20270113000000_charges_pay_in_app`).
+- **Late fees** (backlog 3.7; Decision 413) — a new **Late fees** card on the
+  School page (owner only) lets a School add a late fee to overdue payments.
+  It is **off by default**; switching it on needs the tick "I confirm late
+  fees are legal where my School operates". The fee is a fixed amount or a %
+  (up to 100%, two decimals), with a grace period of 3 days by default (0-30).
+  Once a day, a charge still not fully paid after its due date plus the grace
+  days, or a card membership renewal Stripe couldn't collect and still unpaid
+  after the grace days, gets **one** late fee: never repeated, never on a late
+  fee, and never for a payment that was already late before late fees were
+  switched on. A % is of what is still owed. The fee goes on the member's
+  balance as a charge, with the School's tax, to pay in the app or at the
+  desk; it is never charged to a card automatically, even with automatic
+  payment on. The member is notified. On the student's **Payments** card a
+  late fee shows a **Late fee** badge and what it is for, and the owner and
+  staff with "Can cancel charges" can **Waive** it; the student app labels it
+  "Late fee" too. **Needs a database migration**
+  (`20270116000000_late_fees`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30
