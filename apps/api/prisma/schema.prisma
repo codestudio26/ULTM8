@@ -584,6 +584,8 @@ model User {
   chargeAllocations                 ChargeAllocation[]          @relation("ChargeAllocationStudent")
   balanceEntries                    BalanceEntry[]              @relation("BalanceEntryStudent")
   balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
+  chargeRefunds                     ChargeRefund[]              @relation("ChargeRefundStudent")
+  chargeRefundsMade                 ChargeRefund[]              @relation("ChargeRefundBy")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
@@ -1163,6 +1165,23 @@ model School {
   taxId                          String?
   /// Decision 338 item 1: a reason must be typed when cancelling a charge (default on).
   chargeCancelReasonRequired     Boolean                         @default(true)
+  /// Decision 338 item 3: notes must be typed when refunding a payment
+  /// toward charges (default on). The notes are for staff only.
+  chargeRefundNotesRequired      Boolean                         @default(true)
+  /// Decision 338 item 6: the School's address and payment instructions,
+  /// shown on its invoices and receipts in the app. Null = not shown.
+  receiptAddress                 String?
+  receiptPaymentInstructions     String?
+  /// Decision 338 item 10: payment notifications to the member, each on by
+  /// default and switchable off by the owner. The receipt; a failed
+  /// automatic payment or an overdue charge; a dispute on a card payment.
+  /// "New invoice" and "Charge cancelled" are always sent (item 5, item 1).
+  chargeNoticeReceipt            Boolean                         @default(true)
+  chargeNoticeFailedOverdue      Boolean                         @default(true)
+  chargeNoticeDispute            Boolean                         @default(true)
+  /// "Payment due soon", 3 days before a charge's due date (lead time: product
+  /// owner, 30 Oct 2026). On by default.
+  chargeNoticeDueReminder        Boolean                         @default(true)
   /// Decision 413: late fees, the School's choice. Off by default; switching
   /// them on needs the owner's tick "I confirm late fees are legal where my
   /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed
@@ -1302,6 +1321,7 @@ model School {
   charges                Charge[]
   chargeAllocations      ChargeAllocation[]
   balanceEntries         BalanceEntry[]
+  chargeRefunds          ChargeRefund[]
   recurringCharges       RecurringCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
@@ -2447,6 +2467,7 @@ model Transaction {
 
   balanceEntries    BalanceEntry[]
   chargeAllocations ChargeAllocation[]
+  chargeRefunds     ChargeRefund[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5308,13 +5329,34 @@ enum ChargeDiscountType {
 }
 
 /// What a BalanceEntry records (Decisions 303, 338). CHARGE: a charge was
-/// raised (+ its total). CHARGE_CANCELLED: it was cancelled (− its total, so
-/// any part already paid becomes credit). PAYMENT: money taken at the desk
-/// (− the amount).
+/// raised (+ its total). CHARGE_CANCELLED: it was cancelled (− what was left
+/// of its total after refunds, so any part already paid becomes credit).
+/// PAYMENT: money taken (− the amount). Step 4 (Decision 338 item 3):
+/// REFUND: money given back to the member, to the card, in cash or by a lost
+/// dispute (+ the amount). CHARGE_REDUCED: a refund taken off a charge's total
+/// (− the amount), so a paid charge is never re-opened. CREDIT_GIVEN: credit
+/// the owner gave (− the amount), with a staff-only note.
 enum BalanceEntryKind {
   CHARGE
   CHARGE_CANCELLED
   PAYMENT
+  REFUND
+  CHARGE_REDUCED
+  CREDIT_GIVEN
+}
+
+/// How a payment toward charges was refunded (backlog §3.6 step 4; Decision
+/// 338 item 3). CARD: back to the card through Stripe, by the owner. MONEY_BACK:
+/// a cash, Pix, bank-transfer or card-terminal payment given back outside
+/// ULTM8; records only. CREDIT: onto the member's balance as credit.
+/// DISPUTE_LOST: a lost dispute on a card payment, treated as a refund to the
+/// card. STRIPE: a refund made in the Stripe dashboard (Decision 382).
+enum ChargeRefundKind {
+  CARD
+  MONEY_BACK
+  CREDIT
+  DISPUTE_LOST
+  STRIPE
 }
 
 /// A charge staff create outside a Membership Plan (Decision 303; backlog
@@ -5371,9 +5413,23 @@ model Charge {
   /// For staff only, never shown to the member.
   cancelReason  String?
 
+  /// Step 4 (Decision 338 item 3): how much of the total was refunded (to the
+  /// card, in cash or as credit). It comes off the total, so a refund never
+  /// re-opens a paid charge. What is owed = grossAmount − refundedAmount −
+  /// the sum of its allocations.
+  refundedAmount Int @default(0)
+
+  /// Decision 338 item 10: when the "overdue" notice was handled (sent, or
+  /// skipped because the School switched it off). Once per charge.
+  overdueNoticeAt DateTime?
+
+  /// When the "Payment due soon" reminder was handled (sent, or skipped
+  /// because the School switched it off). Once per charge.
+  dueReminderAt DateTime?
+
   allocations    ChargeAllocation[]
   balanceEntries BalanceEntry[]
-  transactions   Transaction[]     @relation("TransactionCharge")
+  transactions   Transaction[]      @relation("TransactionCharge")
 
   /// Decision 413: a late fee is a Charge like any other, linked to the one
   /// payment it is for: an overdue charge (lateFeeForChargeId) or a card
@@ -5412,7 +5468,9 @@ model Charge {
 /// Money put toward one charge: from a desk payment (transactionId) or from
 /// the member's credit (no transactionId). A charge's paid amount is the sum
 /// of its rows. Rows on a cancelled charge stay as history; that money counts
-/// as credit again. Jobs connection writes; same readers as Charge.
+/// as credit again. A refund (step 4) takes money back off the charge with a
+/// negative row marked with its refundId. Jobs connection writes; same
+/// readers as Charge.
 model ChargeAllocation {
   id String @id @default(uuid())
 
@@ -5429,6 +5487,9 @@ model ChargeAllocation {
 
   transactionId String?
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  refundId String?
+  refund   ChargeRefund? @relation(fields: [refundId], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
 
@@ -5465,10 +5526,58 @@ model BalanceEntry {
   recordedById  String?
   recordedBy    User?                   @relation("BalanceEntryRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
 
+  /// REFUND and CHARGE_REDUCED: the refund they belong to (step 4).
+  refundId String?
+  refund   ChargeRefund? @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  /// CREDIT_GIVEN: why the owner gave it. Staff only, never sent to the member.
+  note     String?
+
   createdAt DateTime @default(now())
 
   @@index([schoolId, studentId])
   @@index([chargeId])
+}
+
+/// One refund of a payment toward charges (backlog §3.6 step 4; Decision 338
+/// item 3, Decision 303 item 3: owner only). The total refunded on a payment,
+/// of every kind, never goes over what was paid. Its ledger rows are the
+/// BalanceEntry and ChargeAllocation rows with its id. Never deleted. Jobs
+/// connection writes; same readers as Charge.
+model ChargeRefund {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("ChargeRefundStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  /// The CHARGE_PAYMENT Transaction refunded.
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  kind     ChargeRefundKind
+  amount   Int
+  currency String
+
+  /// Staff only, never sent to the member. Required unless the owner made
+  /// refund notes optional (School.chargeRefundNotesRequired).
+  notes String?
+
+  /// Null for a lost dispute or a refund made in the Stripe dashboard.
+  refundedById String?
+  refundedBy   User?   @relation("ChargeRefundBy", fields: [refundedById], references: [id], onDelete: SetNull)
+
+  /// CARD: Stripe's Refund id.
+  stripeRefundId String? @unique
+
+  allocations    ChargeAllocation[]
+  balanceEntries BalanceEntry[]
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, studentId])
+  @@index([transactionId])
 }
 
 /// How often a recurring charge repeats (Decision 412).

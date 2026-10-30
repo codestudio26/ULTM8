@@ -216,6 +216,30 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
     }
   });
 
+  it('charge refunds are visible only within their School and never written by the app (backlog 3.6 step 4)', async () => {
+    const accountId = randomUUID();
+    const transactionId = randomUUID();
+    const refundId = randomUUID();
+    await superuser.paymentAccount.create({ data: { id: accountId, schoolId: schoolB.id, provider: 'CASH', accountTitle: 'RLS desk', country: 'GB' } });
+    try {
+      await superuser.transaction.create({
+        data: { id: transactionId, schoolId: schoolB.id, studentId: userB.id, paymentAccountId: accountId, kind: 'CHARGE_PAYMENT', amount: 1000, currency: 'GBP', status: 'SUCCESSFUL', paymentMethod: 'CASH' },
+      });
+      await superuser.chargeRefund.create({ data: { id: refundId, schoolId: schoolB.id, studentId: userB.id, transactionId, kind: 'MONEY_BACK', amount: 100, currency: 'GBP', notes: 'RLS' } });
+
+      expect(await withUser(userA.id, (tx) => tx.chargeRefund.findMany({ where: { id: refundId } }))).toHaveLength(0);
+      expect(await withUser(userB.id, (tx) => tx.chargeRefund.findMany({ where: { id: refundId } }))).toHaveLength(1);
+      await expect(
+        withUser(userA.id, (tx) => tx.chargeRefund.create({ data: { schoolId: schoolA.id, studentId: userA.id, transactionId, kind: 'CREDIT', amount: 1, currency: 'GBP' } })),
+      ).rejects.toThrow();
+      await expect(withUser(userB.id, (tx) => tx.chargeRefund.updateMany({ where: { id: refundId }, data: { amount: 1 } }))).rejects.toThrow();
+    } finally {
+      await superuser.chargeRefund.deleteMany({ where: { id: refundId } });
+      await superuser.transaction.deleteMany({ where: { id: transactionId } });
+      await superuser.paymentAccount.deleteMany({ where: { id: accountId } });
+    }
+  });
+
   it('a request with no tenant context set sees zero rows, not an error and not all rows', async () => {
     // Deliberately bypass withUser — no SET LOCAL app.current_user_id at all.
     const schools = await appDb.school.findMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });

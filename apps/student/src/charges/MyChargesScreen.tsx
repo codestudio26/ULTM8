@@ -169,6 +169,8 @@ function SchoolCharges({
       <Balance school={school} forChild={forChild} paying={paying} busy={busy} onPay={onPay} />
       {studentId && !forChild ? <AutoPay school={school} studentId={studentId} /> : null}
       {school.taxId ? <Muted>{t('charges.taxId', { taxId: school.taxId })}</Muted> : null}
+      {school.receiptAddress ? <Muted>{t('charges.address', { address: school.receiptAddress })}</Muted> : null}
+      {school.receiptPaymentInstructions ? <Muted>{t('charges.paymentInstructions', { instructions: school.receiptPaymentInstructions })}</Muted> : null}
       {school.charges.length > 0 ? <Text style={{ fontWeight: '700', marginTop: spacing[4], marginBottom: spacing[2] }}>{t('charges.invoicesHeading')}</Text> : null}
       {[...owed, ...cancelled].map((c) => (
         <ChargeRow key={c.id} charge={c} payInApp={school.payInApp} paying={paying} busy={busy} onPay={() => onPay(`charge-${c.id}`, school.schoolId, { chargeId: c.id })} />
@@ -177,6 +179,11 @@ function SchoolCharges({
       {school.payments.length > 0 ? <Text style={{ fontWeight: '700', marginTop: spacing[4], marginBottom: spacing[2] }}>{t('charges.receiptsHeading')}</Text> : null}
       {school.payments.map((p) => (
         <ReceiptRow key={p.id} payment={p} />
+      ))}
+      {school.credits.map((c) => (
+        <View key={c.id} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+          <Text style={{ fontWeight: '600' }}>{t('charges.creditGiven', { amount: formatMoney(c.amount, c.currency), date: formatDay(c.givenAt) })}</Text>
+        </View>
       ))}
     </View>
   );
@@ -300,12 +307,14 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
   const t = useT();
   const cancelled = c.status === 'CANCELLED';
   const statusColor = cancelled ? theme.textMuted : c.status === 'PAID' ? theme.textSuccess : c.overdue ? theme.textDanger : theme.textWarning;
+  // Step 4 (Decision 338 item 3): a refunded charge says so.
+  const statusKey = (c.refundStatus && !cancelled ? `charges.refundStatus.${c.refundStatus}` : `charges.status.${c.status}`) as TranslationKey;
   const key = `charge-${c.id}`;
   return (
     <View testID={`charge-${c.id}`} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border, opacity: cancelled ? 0.55 : 1 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={{ fontWeight: '600', flex: 1, marginRight: spacing[2] }}>{c.lateFee ? t('charges.lateFee.label') : c.description}</Text>
-        <Text style={{ color: statusColor, fontWeight: '600' }}>{t(`charges.status.${c.status}` as TranslationKey)}</Text>
+        <Text style={{ color: statusColor, fontWeight: '600' }}>{t(statusKey)}</Text>
       </View>
       <LateFeeFor charge={c} />
       <Muted>
@@ -319,6 +328,7 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
         <Muted>{t(c.lateFee?.waived ? 'charges.lateFee.waivedOn' : 'charges.cancelledOn', { date: formatDay(c.cancelledAt ?? c.createdAt) })}</Muted>
       ) : (
         <>
+          {c.refundedAmount > 0 ? <Line label={t('charges.refunded')} value={`− ${formatMoney(c.refundedAmount, c.currency)}`} /> : null}
           {c.paidAmount > 0 ? <Line label={t('charges.paid')} value={formatMoney(c.paidAmount, c.currency)} /> : null}
           {c.owedAmount > 0 ? <Line label={t('charges.stillOwed')} value={formatMoney(c.owedAmount, c.currency)} strong /> : null}
           {c.owedAmount > 0 && payInApp.available ? (
@@ -382,6 +392,10 @@ function ReceiptRow({ payment: p }: { payment: ChargePayment }) {
       {p.surchargeAmount > 0 ? <Muted>{t('charges.receiptSurcharge', { amount: formatMoney(p.surchargeAmount, p.currency) })}</Muted> : null}
       {p.allocations.length > 0 ? <Muted>{t('charges.toward', { invoices: p.allocations.map((a) => a.invoiceLabel).join(', ') })}</Muted> : null}
       {p.creditAmount > 0 ? <Muted>{t('charges.toCredit', { amount: formatMoney(p.creditAmount, p.currency) })}</Muted> : null}
+      {p.refundStatus ? <Text style={{ fontWeight: '600', color: theme.textSecondary }}>{t(`charges.refundStatus.${p.refundStatus}` as TranslationKey)}</Text> : null}
+      {p.refunds.map((r) => (
+        <Muted key={r.id}>{t(`charges.refund.${r.kind}` as TranslationKey, { amount: formatMoney(r.amount, p.currency), date: formatDay(r.refundedAt) })}</Muted>
+      ))}
     </View>
   );
 }

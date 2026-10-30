@@ -1053,6 +1053,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "أُضيف {amount} إلى رصيدك الدائن",
     payAtDesk: "للدفع، اسأل في استقبال مدرستك.",
     receiptSurcharge: "يشمل رسوم بطاقة قدرها {amount}",
+    address: "العنوان: {address}",
+    paymentInstructions: "طريقة الدفع: {instructions}",
+    refunded: "مُسترد",
+    creditGiven: "رصيد {amount} من مدرستك في {date}",
+    refundStatus: {
+      REFUNDED: "مُسترد",
+      PART_REFUNDED: "مُسترد جزئيًا",
+    },
+    refund: {
+      CARD: "استُرد {amount} إلى بطاقتك في {date}",
+      MONEY_BACK: "أُعيد إليك {amount} في {date}",
+      CREDIT: "استُرد {amount} كرصيد في {date}",
+      DISPUTE_LOST: "عاد {amount} إلى بطاقتك بعد نزاع في {date}",
+      STRIPE: "استُرد {amount} إلى بطاقتك في {date}",
+    },
     pay: {
       balance: "ادفع الرصيد ({amount})",
       charge: "ادفع {amount}",

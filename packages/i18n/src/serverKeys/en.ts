@@ -199,6 +199,16 @@ export const server = {
     freezeBookingsCancelledBody: "Your {plan} membership is frozen from {start} and you're back on {back}, so your bookings in between were cancelled: {list}. You can book again once the freeze ends.",
     chargeAutoPayFailedTitle: "Automatic payment failed",
     chargeAutoPayFailedBody: "We couldn't charge your saved card for invoice {invoice} ({description}, {amount}). Pay it in the app or at the front desk.",
+    // Backlog 3.6 step 4 — the overdue notice and the member's dispute notice.
+    chargeOverdueTitle: "Payment overdue",
+    chargeOverdueBody: "Invoice {invoice} for {description} was due on {due}. {amount} is still to pay.",
+    chargeDisputeTitle: "Payment dispute",
+    chargeDisputeOpenedBody: "Your card payment of {amount} is being disputed with your bank.",
+    chargeDisputeLostBody: "The dispute on your card payment of {amount} was decided in your favour. The money goes back to your card.",
+    chargeDisputeWonBody: "The dispute on your card payment of {amount} was decided in the School's favour. The payment stands.",
+    chargePaymentLabel: "charge payment",
+    chargeDueReminderTitle: "Payment due soon",
+    chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
     // Decision 413 — late fees (jobs/late-fee.processor.ts, ChargesService waive).
     lateFeeAddedTitle: "Late fee added",
     lateFeeAddedChargeBody: "A late fee of {fee} was added to your balance because invoice {invoice} ({description}) is overdue. Pay it in the app or at the front desk.",

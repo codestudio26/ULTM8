@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table, TextArea, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -13,9 +13,13 @@ import {
   rateText,
   useCancelCharge,
   useCreateCharge,
+  useGiveCredit,
   useRecordChargePayment,
+  useRefundChargePayment,
+  useResendInvoice,
   useStudentCharges,
   useStudentRecurringCharges,
+  type BalanceCredit,
   type Charge,
   type ChargeBalance,
   type ChargePayment,
@@ -90,6 +94,20 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   const [dialog, setDialog] = useState<'create' | 'recurring' | { pay: string | null } | null>(null);
   const [cancelling, setCancelling] = useState<Charge | null>(null);
   const [waiving, setWaiving] = useState<Charge | null>(null);
+  const [refunding, setRefunding] = useState<ChargePayment | null>(null);
+  const [crediting, setCrediting] = useState(false);
+  const resend = useResendInvoice(schoolId);
+  const [resent, setResent] = useState<'ok' | 'failed' | null>(null);
+
+  async function resendInvoice(charge: Charge) {
+    setResent(null);
+    try {
+      await resend.mutateAsync(charge.id);
+      setResent('ok');
+    } catch {
+      setResent('failed');
+    }
+  }
 
   if (charges.error instanceof ApiError && charges.error.status === 403) return null;
 
@@ -117,6 +135,11 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
                   {t('charges.card.recordPayment')}
                 </Button>
               ) : null}
+              {charges.data.can.addCredit && charges.data.settings.currency ? (
+                <Button variant="secondary" onClick={() => setCrediting(true)}>
+                  {t('charges.card.addCredit')}
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -126,7 +149,17 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           <ErrorBanner message={errorText(charges.error, t('charges.card.loadFailed'))} />
         ) : charges.data ? (
           <>
-            <ChargesBody data={charges.data} onPay={(id) => setDialog({ pay: id })} onCancel={setCancelling} onWaive={setWaiving} />
+            {resent === 'ok' ? <SuccessBanner message={t('charges.card.resent')} /> : null}
+            {resent === 'failed' ? <ErrorBanner message={t('charges.card.resendFailed')} /> : null}
+            <ChargesBody
+              data={charges.data}
+              onPay={(id) => setDialog({ pay: id })}
+              onCancel={setCancelling}
+              onWaive={setWaiving}
+              onRefund={setRefunding}
+              onResend={(c) => void resendInvoice(c)}
+              resending={resend.isPending}
+            />
             {recurring.data ? <RecurringChargesList schoolId={schoolId} studentId={studentId} data={recurring.data} /> : null}
           </>
         ) : null}
@@ -145,6 +178,24 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           data={charges.data}
           chargeId={dialog.pay}
           onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {refunding && charges.data ? (
+        <RefundModal
+          schoolId={schoolId}
+          studentId={studentId}
+          payment={refunding}
+          notesRequired={charges.data.settings.refundNotesRequired}
+          onClose={() => setRefunding(null)}
+        />
+      ) : null}
+      {crediting && charges.data?.settings.currency ? (
+        <GiveCreditModal
+          schoolId={schoolId}
+          studentId={studentId}
+          studentName={studentName}
+          currency={charges.data.settings.currency}
+          onClose={() => setCrediting(false)}
         />
       ) : null}
       {cancelling && charges.data ? (
@@ -187,19 +238,50 @@ function BalanceLine({ balances }: { balances: ChargeBalance[] }) {
   );
 }
 
+const REFUND_KIND_KEYS: Record<ChargePayment['refunds'][number]['kind'], TranslationKey> = {
+  CARD: 'charges.card.refundCard',
+  MONEY_BACK: 'charges.card.refundMoneyBack',
+  CREDIT: 'charges.card.refundCredit',
+  DISPUTE_LOST: 'charges.card.refundDisputeLost',
+  STRIPE: 'charges.card.refundStripe',
+};
+
+/** Each refund of a payment, with its staff-only notes (step 4). */
+function RefundLines({ payment }: { payment: ChargePayment }) {
+  const t = useT();
+  if (payment.refunds.length === 0) return null;
+  return (
+    <>
+      {payment.refunds.map((r) => (
+        <div key={r.id} className="ultm8-field__hint" data-testid="charge-refund-line">
+          {t(REFUND_KIND_KEYS[r.kind], { amount: formatMoney(r.amount, payment.currency), date: formatDay(r.refundedAt.slice(0, 10)) })}
+          {r.refundedByName ? ` · ${t('charges.card.refundBy', { name: r.refundedByName })}` : null}
+          {r.notes ? ` · ${r.notes}` : null}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function ChargesBody({
   data,
   onPay,
   onCancel,
   onWaive,
+  onRefund,
+  onResend,
+  resending,
 }: {
   data: StudentCharges;
   onPay: (chargeId: string) => void;
   onCancel: (charge: Charge) => void;
   onWaive: (charge: Charge) => void;
+  onRefund: (payment: ChargePayment) => void;
+  onResend: (charge: Charge) => void;
+  resending: boolean;
 }) {
   const t = useT();
-  if (data.charges.length === 0 && data.payments.length === 0) {
+  if (data.charges.length === 0 && data.payments.length === 0 && data.credits.length === 0) {
     return <EmptyState title={t('charges.card.emptyTitle')} description={t('charges.card.emptyDescription')} />;
   }
   const open = (c: Charge) => c.status === 'OPEN' || c.status === 'PART_PAID';
@@ -243,29 +325,46 @@ function ChargesBody({
               { key: 'tax', header: t('charges.card.columnTax'), render: (c) => `${formatMoney(c.taxAmount, c.currency)} (${rateText(c.taxRateBasisPoints)}%)` },
               { key: 'gross', header: t('charges.card.columnTotal'), render: (c) => formatMoney(c.grossAmount, c.currency) },
               { key: 'owed', header: t('charges.card.columnOwed'), render: (c) => formatMoney(c.owedAmount, c.currency) },
-              { key: 'status', header: t('charges.card.columnStatus'), render: (c) => <Badge variant={STATUS_BADGE[c.status]}>{t(`charges.status.${c.status}` as TranslationKey)}</Badge> },
+              {
+                key: 'status',
+                header: t('charges.card.columnStatus'),
+                render: (c) => (
+                  <>
+                    <Badge variant={STATUS_BADGE[c.status]}>{t(`charges.status.${c.status}` as TranslationKey)}</Badge>
+                    {c.refundStatus ? (
+                      <div className="ultm8-field__hint">
+                        {t(`charges.refundStatus.${c.refundStatus}` as TranslationKey)} ({formatMoney(c.refundedAmount, c.currency)})
+                      </div>
+                    ) : null}
+                  </>
+                ),
+              },
               {
                 key: 'actions',
                 header: t('charges.card.columnActions'),
-                render: (c) =>
-                  open(c) ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {data.can.recordPayment && data.settings.paymentsSetUp ? (
-                        <Button variant="secondary" onClick={() => onPay(c.id)}>
-                          {t('charges.card.pay')}
-                        </Button>
-                      ) : null}
-                      {data.can.cancel && c.lateFee ? (
-                        <Button variant="danger" onClick={() => onWaive(c)}>
-                          {t('charges.lateFee.waive')}
-                        </Button>
-                      ) : data.can.cancel ? (
-                        <Button variant="danger" onClick={() => onCancel(c)}>
-                          {t('charges.card.cancel')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  ) : null,
+                render: (c) => (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {open(c) && data.can.recordPayment && data.settings.paymentsSetUp ? (
+                      <Button variant="secondary" onClick={() => onPay(c.id)}>
+                        {t('charges.card.pay')}
+                      </Button>
+                    ) : null}
+                    {c.status !== 'CANCELLED' && data.can.resendInvoice ? (
+                      <Button variant="secondary" onClick={() => onResend(c)} disabled={resending}>
+                        {t('charges.card.resendInvoice')}
+                      </Button>
+                    ) : null}
+                    {open(c) && data.can.cancel && c.lateFee ? (
+                      <Button variant="danger" onClick={() => onWaive(c)}>
+                        {t('charges.lateFee.waive')}
+                      </Button>
+                    ) : open(c) && data.can.cancel ? (
+                      <Button variant="danger" onClick={() => onCancel(c)}>
+                        {t('charges.card.cancel')}
+                      </Button>
+                    ) : null}
+                  </div>
+                ),
               },
             ]}
           />
@@ -287,6 +386,9 @@ function ChargesBody({
                     {p.surchargeAmount > 0 ? <div className="ultm8-field__hint">{t('charges.card.surchargeLine', { amount: formatMoney(p.surchargeAmount, p.currency) })}</div> : null}
                     {p.status === 'PENDING' ? <Badge variant="warning">{t('charges.card.paymentPending')}</Badge> : null}
                     {p.status === 'FAILED' ? <Badge variant="danger">{t('charges.card.paymentFailed')}</Badge> : null}
+                    {p.status === 'DISPUTED' ? <Badge variant="danger">{t('charges.card.paymentDisputed')}</Badge> : null}
+                    {p.refundStatus ? <Badge variant="default">{t(`charges.refundStatus.${p.refundStatus}` as TranslationKey)}</Badge> : null}
+                    <RefundLines payment={p} />
                   </>
                 ),
               },
@@ -305,6 +407,34 @@ function ChargesBody({
                       ].join(', '),
               },
               { key: 'by', header: t('charges.card.columnRecordedBy'), render: (p) => p.recordedByName ?? '' },
+              ...(data.can.refund
+                ? [
+                    {
+                      key: 'refund',
+                      header: t('charges.card.columnActions'),
+                      render: (p: ChargePayment) =>
+                        p.refundable && (p.refundable.asMoney > 0 || p.refundable.asCredit > 0) ? (
+                          <Button variant="secondary" onClick={() => onRefund(p)}>
+                            {t('charges.card.refund')}
+                          </Button>
+                        ) : null,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </>
+      ) : null}
+      {data.credits.length > 0 ? (
+        <>
+          <h3 style={{ fontSize: 14, margin: '16px 0 4px' }}>{t('charges.card.creditsHeading')}</h3>
+          <Table<BalanceCredit>
+            rows={data.credits}
+            columns={[
+              { key: 'date', header: t('charges.card.columnDate'), render: (c) => formatDay(c.givenAt.slice(0, 10)) },
+              { key: 'amount', header: t('charges.card.columnAmount'), render: (c) => formatMoney(c.amount, c.currency) },
+              { key: 'note', header: t('charges.card.columnNote'), render: (c) => c.note ?? '' },
+              { key: 'by', header: t('charges.card.columnGivenBy'), render: (c) => c.givenByName ?? '' },
             ]}
           />
         </>
@@ -510,10 +640,16 @@ function RecordPaymentModal({
             options={CHARGE_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
           />
         </Field>
-        <Checkbox label={t('charges.pay.sendReceipt')} checked={sendReceipt} onChange={(e) => setSendReceipt(e.target.checked)} />
-        <p className="ultm8-field__hint" style={{ marginTop: 4 }}>
-          {t('charges.pay.sendReceiptHint')}
-        </p>
+        {data.settings.receiptNotice ? (
+          <>
+            <Checkbox label={t('charges.pay.sendReceipt')} checked={sendReceipt} onChange={(e) => setSendReceipt(e.target.checked)} />
+            <p className="ultm8-field__hint" style={{ marginTop: 4 }}>
+              {t('charges.pay.sendReceiptHint')}
+            </p>
+          </>
+        ) : (
+          <p className="ultm8-field__hint">{t('charges.pay.receiptsOff')}</p>
+        )}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           <Button type="submit" loading={record.isPending} disabled={!ready}>
             {t('charges.pay.submit')}
@@ -613,6 +749,158 @@ function WaiveLateFeeModal({ schoolId, studentId, charge, onClose }: { schoolId:
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('charges.lateFee.waiveKeep')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Step 4 (Decision 338 item 3): the owner refunds a payment, choosing each
+ * time where the money goes. A card payment goes back to the card or becomes
+ * credit; a desk payment is given back (records only) or becomes credit. */
+function RefundModal({
+  schoolId,
+  studentId,
+  payment,
+  notesRequired,
+  onClose,
+}: {
+  schoolId: string;
+  studentId: string;
+  payment: ChargePayment;
+  notesRequired: boolean;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const refund = useRefundChargePayment(schoolId, studentId);
+  const card = payment.paymentMethod === 'STRIPE';
+  const asMoney = payment.refundable?.asMoney ?? 0;
+  const asCredit = payment.refundable?.asCredit ?? 0;
+  const [destination, setDestination] = useState<'CARD' | 'MONEY_BACK' | 'CREDIT'>(asMoney > 0 ? (card ? 'CARD' : 'MONEY_BACK') : 'CREDIT');
+  const max = destination === 'CREDIT' ? asCredit : asMoney;
+  const [amount, setAmount] = useState<{ minorUnits: number | null; valid: boolean }>({ minorUnits: max, valid: true });
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const tooMuch = !!amount.minorUnits && amount.minorUnits > max;
+  const ready = !!amount.minorUnits && amount.valid && !tooMuch && (!notesRequired || notes.trim().length > 0);
+
+  function choose(next: 'CARD' | 'MONEY_BACK' | 'CREDIT') {
+    setDestination(next);
+    setAmount({ minorUnits: next === 'CREDIT' ? asCredit : asMoney, valid: true });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (notesRequired && notes.trim().length === 0) {
+      setError(t('charges.refundDialog.notesRequired'));
+      return;
+    }
+    if (!ready) return;
+    setError(null);
+    try {
+      await refund.mutateAsync({ transactionId: payment.id, amount: amount.minorUnits!, destination, ...(notes.trim() ? { notes: notes.trim() } : {}) });
+      onClose();
+    } catch (err) {
+      setError(errorText(err, t('charges.refundDialog.failed')));
+    }
+  }
+
+  const options = [
+    ...(asMoney > 0 ? [card ? { value: 'CARD', label: t('charges.refundDialog.toCard') } : { value: 'MONEY_BACK', label: t('charges.refundDialog.moneyBack') }] : []),
+    ...(asCredit > 0 ? [{ value: 'CREDIT', label: t('charges.refundDialog.asCredit') }] : []),
+  ];
+
+  return (
+    <Modal title={t('charges.refundDialog.title', { amount: formatMoney(payment.amount, payment.currency) })} onClose={onClose}>
+      <form onSubmit={handleSubmit} data-testid="refund-charge-payment-form">
+        <p>{t('charges.refundDialog.paidLine', { amount: formatMoney(payment.amount, payment.currency), date: formatDay(payment.receivedAt.slice(0, 10)) })}</p>
+        {payment.refundedAmount > 0 ? <p>{t('charges.refundDialog.alreadyRefunded', { amount: formatMoney(payment.refundedAmount, payment.currency) })}</p> : null}
+        {error ? <ErrorBanner message={error} /> : null}
+        <Field label={t('charges.refundDialog.destinationLabel')} htmlFor="charge-refund-destination">
+          <SelectField id="charge-refund-destination" value={destination} onChange={(e) => choose(e.target.value as 'CARD' | 'MONEY_BACK' | 'CREDIT')} options={options} />
+        </Field>
+        {destination === 'MONEY_BACK' ? <p className="ultm8-field__hint">{t('charges.refundDialog.moneyBackHint')}</p> : null}
+        {destination === 'CREDIT' ? <p className="ultm8-field__hint">{t('charges.refundDialog.asCreditHint')}</p> : null}
+        <Field
+          label={t('charges.refundDialog.amountLabel')}
+          htmlFor="charge-refund-amount"
+          hint={t('charges.refundDialog.amountHint', { amount: formatMoney(max, payment.currency) })}
+          error={!amount.valid ? t('charges.create.amountInvalid') : tooMuch ? t('charges.refundDialog.tooMuch', { amount: formatMoney(max, payment.currency) }) : undefined}
+        >
+          <MoneyField id="charge-refund-amount" value={amount.minorUnits} currency={payment.currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
+        </Field>
+        {payment.surchargeAmount > 0 ? <p className="ultm8-field__hint">{t('charges.refundDialog.surchargeNote')}</p> : null}
+        <Field label={notesRequired ? t('charges.refundDialog.notesLabel') : t('charges.refundDialog.notesOptional')} htmlFor="charge-refund-notes">
+          <TextArea id="charge-refund-notes" maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </Field>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button type="submit" variant="danger" loading={refund.isPending} disabled={!ready}>
+            {t('charges.refundDialog.submit')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Step 4: credit the owner gives (goodwill, say), with a staff-only note. */
+function GiveCreditModal({
+  schoolId,
+  studentId,
+  studentName,
+  currency,
+  onClose,
+}: {
+  schoolId: string;
+  studentId: string;
+  studentName: string;
+  currency: string;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const give = useGiveCredit(schoolId, studentId);
+  const [amount, setAmount] = useState<{ minorUnits: number | null; valid: boolean }>({ minorUnits: null, valid: true });
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const ready = !!amount.minorUnits && amount.valid && note.trim().length > 0;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (note.trim().length === 0) {
+      setError(t('charges.creditDialog.noteRequired'));
+      return;
+    }
+    if (!ready) return;
+    setError(null);
+    try {
+      await give.mutateAsync({ amount: amount.minorUnits!, note: note.trim() });
+      onClose();
+    } catch (err) {
+      setError(errorText(err, t('charges.creditDialog.failed')));
+    }
+  }
+
+  return (
+    <Modal title={t('charges.creditDialog.title', { name: studentName })} onClose={onClose}>
+      <form onSubmit={handleSubmit} data-testid="give-credit-form">
+        <p className="ultm8-field__hint">{t('charges.creditDialog.hint')}</p>
+        {error ? <ErrorBanner message={error} /> : null}
+        <Field label={t('charges.creditDialog.amountLabel')} htmlFor="charge-credit-amount" error={amount.valid ? undefined : t('charges.create.amountInvalid')}>
+          <MoneyField id="charge-credit-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
+        </Field>
+        <Field label={t('charges.creditDialog.noteLabel')} htmlFor="charge-credit-note">
+          <TextArea id="charge-credit-note" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button type="submit" loading={give.isPending} disabled={!ready}>
+            {t('charges.creditDialog.submit')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

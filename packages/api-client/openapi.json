@@ -18655,6 +18655,155 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/charge-payments/{transactionId}/refund": {
+      "post": {
+        "operationId": "ChargesController_refund",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundChargePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordChargePaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/credits": {
+      "post": {
+        "operationId": "ChargesController_giveCredit",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveCreditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeBalancesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charges/{chargeId}/resend-invoice": {
+      "post": {
+        "operationId": "ChargesController_resendInvoice",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chargeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendInvoiceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/charges": {
       "get": {
         "operationId": "ChargesController_listForMember",
@@ -18862,6 +19011,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChargePermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charge-reports/overview": {
+      "get": {
+        "operationId": "ChargeReportsController_overview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "months",
+            "required": false,
+            "in": "query",
+            "description": "How many months, this one included, the Paid total and revenue by month cover.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 24,
+              "default": 12,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeOverviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charge-reports/member-balances": {
+      "get": {
+        "operationId": "ChargeReportsController_memberBalances",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberBalancesResponseDto"
                 }
               }
             }
@@ -19644,6 +19875,38 @@
             "type": "boolean",
             "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
           },
+          "chargeRefundNotesRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only."
+          },
+          "receiptAddress": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 300,
+            "description": "Decision 338 item 6: the School's address on its invoices and receipts in the app. Empty or null clears it."
+          },
+          "receiptPaymentInstructions": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000,
+            "description": "Decision 338 item 6: how to pay (bank details, Pix key…), on its invoices in the app. Empty or null clears it."
+          },
+          "chargeNoticeReceipt": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: send the member a receipt for each payment toward charges (default on)."
+          },
+          "chargeNoticeFailedOverdue": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: tell the member when an automatic payment fails or a charge becomes overdue (default on)."
+          },
+          "chargeNoticeDispute": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on)."
+          },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -19931,6 +20194,36 @@
             "type": "boolean",
             "description": "Decision 338 item 1: a reason is required when cancelling a charge (default on)."
           },
+          "chargeRefundNotesRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 3: notes are required when refunding (default on)."
+          },
+          "receiptAddress": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 338 item 6: the School's address on its invoices and receipts."
+          },
+          "receiptPaymentInstructions": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 338 item 6: payment instructions on its invoices."
+          },
+          "chargeNoticeReceipt": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: payment receipts to the member (default on)."
+          },
+          "chargeNoticeFailedOverdue": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: failed or overdue payment notices to the member (default on)."
+          },
+          "chargeNoticeDispute": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: dispute notices to the member (default on)."
+          },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: \"Payment due soon\", 3 days before a charge is due (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -20051,6 +20344,11 @@
           "taxRateBasisPoints",
           "taxInclusive",
           "chargeCancelReasonRequired",
+          "chargeRefundNotesRequired",
+          "chargeNoticeReceipt",
+          "chargeNoticeFailedOverdue",
+          "chargeNoticeDispute",
+          "chargeNoticeDueReminder",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -20242,6 +20540,38 @@
           "chargeCancelReasonRequired": {
             "type": "boolean",
             "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
+          },
+          "chargeRefundNotesRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only."
+          },
+          "receiptAddress": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 300,
+            "description": "Decision 338 item 6: the School's address on its invoices and receipts in the app. Empty or null clears it."
+          },
+          "receiptPaymentInstructions": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000,
+            "description": "Decision 338 item 6: how to pay (bank details, Pix key…), on its invoices in the app. Empty or null clears it."
+          },
+          "chargeNoticeReceipt": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: send the member a receipt for each payment toward charges (default on)."
+          },
+          "chargeNoticeFailedOverdue": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: tell the member when an automatic payment fails or a charge becomes overdue (default on)."
+          },
+          "chargeNoticeDispute": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on)."
+          },
+          "chargeNoticeDueReminder": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: remind the member 3 days before a charge is due (default on)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -36538,6 +36868,14 @@
           "waived"
         ]
       },
+      "RefundStatus": {
+        "type": "string",
+        "description": "Refunded in full, in part, or not at all (null).",
+        "enum": [
+          "REFUNDED",
+          "PART_REFUNDED"
+        ]
+      },
       "ChargeResponseDto": {
         "type": "object",
         "properties": {
@@ -36664,6 +37002,14 @@
                 "$ref": "#/components/schemas/LateFeeDetailsDto"
               }
             ]
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge."
+          },
+          "refundStatus": {
+            "nullable": true,
+            "$ref": "#/components/schemas/RefundStatus"
           }
         },
         "required": [
@@ -36687,7 +37033,8 @@
           "status",
           "overdue",
           "createdAt",
-          "cardSurchargeAmount"
+          "cardSurchargeAmount",
+          "refundedAmount"
         ]
       },
       "ChargePaymentMethod": {
@@ -36738,6 +37085,67 @@
           "chargeId",
           "invoiceLabel",
           "amount"
+        ]
+      },
+      "ChargeRefundKind": {
+        "type": "string",
+        "description": "CARD: back to the card. MONEY_BACK: given back in cash, Pix, bank transfer or on the card terminal (records only). CREDIT: onto the balance as credit. DISPUTE_LOST: a lost card dispute. STRIPE: refunded in the Stripe dashboard.",
+        "enum": [
+          "CARD",
+          "MONEY_BACK",
+          "CREDIT",
+          "DISPUTE_LOST",
+          "STRIPE"
+        ]
+      },
+      "ChargeRefundResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChargeRefundKind"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "refundedAt": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only; never sent to the member."
+          },
+          "refundedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "refundedAt"
+        ]
+      },
+      "ChargePaymentRefundableDto": {
+        "type": "object",
+        "properties": {
+          "asMoney": {
+            "type": "number",
+            "description": "What can go back to the member: to the card for a card payment, otherwise given back in cash and recorded."
+          },
+          "asCredit": {
+            "type": "number",
+            "description": "What can be turned into credit: the part of the payment still on charges."
+          }
+        },
+        "required": [
+          "asMoney",
+          "asCredit"
         ]
       },
       "ChargePaymentResponseDto": {
@@ -36792,6 +37200,30 @@
           "creditAmount": {
             "type": "number",
             "description": "The part that went onto the balance as credit when it was taken."
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "Step 4: refunded so far, of every kind."
+          },
+          "refundStatus": {
+            "nullable": true,
+            "$ref": "#/components/schemas/RefundStatus"
+          },
+          "refunds": {
+            "description": "Oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeRefundResponseDto"
+            }
+          },
+          "refundable": {
+            "nullable": true,
+            "description": "The owner only, for a Successful payment; null otherwise.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChargePaymentRefundableDto"
+              }
+            ]
           }
         },
         "required": [
@@ -36805,7 +37237,42 @@
           "surchargeAmount",
           "receivedAt",
           "allocations",
-          "creditAmount"
+          "creditAmount",
+          "refundedAmount",
+          "refunds"
+        ]
+      },
+      "BalanceCreditResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "givenAt": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only; never sent to the member."
+          },
+          "givenByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          }
+        },
+        "required": [
+          "id",
+          "amount",
+          "currency",
+          "givenAt"
         ]
       },
       "ChargeAbilitiesDto": {
@@ -36819,12 +37286,27 @@
           },
           "recordPayment": {
             "type": "boolean"
+          },
+          "refund": {
+            "type": "boolean",
+            "description": "Refund a payment (owner only, Decision 303 item 3)."
+          },
+          "addCredit": {
+            "type": "boolean",
+            "description": "Give credit (owner only, Decision 303 item 3)."
+          },
+          "resendInvoice": {
+            "type": "boolean",
+            "description": "Resend a charge's invoice notice: whoever may create charges (Decision 338 item 5)."
           }
         },
         "required": [
           "create",
           "cancel",
-          "recordPayment"
+          "recordPayment",
+          "refund",
+          "addCredit",
+          "resendInvoice"
         ]
       },
       "ChargeSettingsDto": {
@@ -36850,13 +37332,23 @@
           "paymentsSetUp": {
             "type": "boolean",
             "description": "A desk payment can be recorded: the School has its payments set up."
+          },
+          "refundNotesRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 3: notes are required when refunding."
+          },
+          "receiptNotice": {
+            "type": "boolean",
+            "description": "Decision 338 item 10: the School sends payment receipts (on by default)."
           }
         },
         "required": [
           "taxRateBasisPoints",
           "taxInclusive",
           "cancelReasonRequired",
-          "paymentsSetUp"
+          "paymentsSetUp",
+          "refundNotesRequired",
+          "receiptNotice"
         ]
       },
       "StudentChargesResponseDto": {
@@ -36883,6 +37375,13 @@
               "$ref": "#/components/schemas/ChargePaymentResponseDto"
             }
           },
+          "credits": {
+            "description": "Credit the owner gave, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BalanceCreditResponseDto"
+            }
+          },
           "can": {
             "description": "What the caller may do here.",
             "allOf": [
@@ -36899,6 +37398,7 @@
           "balances",
           "charges",
           "payments",
+          "credits",
           "can",
           "settings"
         ]
@@ -37004,6 +37504,84 @@
           "balances"
         ]
       },
+      "ChargeRefundDestination": {
+        "type": "string",
+        "description": "CARD: back to the card (a card payment made in the app). MONEY_BACK: a desk payment given back in cash, Pix, bank transfer or on the terminal; records only. CREDIT: onto the member's balance as credit.",
+        "enum": [
+          "CARD",
+          "MONEY_BACK",
+          "CREDIT"
+        ]
+      },
+      "RefundChargePaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99999999,
+            "description": "Minor units. Part refunds are allowed; never more than is left to refund on the payment."
+          },
+          "destination": {
+            "$ref": "#/components/schemas/ChargeRefundDestination"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "For staff only. Required unless the School's owner made refund notes optional."
+          }
+        },
+        "required": [
+          "amount",
+          "destination"
+        ]
+      },
+      "GiveCreditDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99999999,
+            "description": "Minor units of the School's currency."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why: for staff only, never shown to the member."
+          }
+        },
+        "required": [
+          "amount",
+          "note"
+        ]
+      },
+      "ChargeBalancesResponseDto": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeBalanceDto"
+            }
+          }
+        },
+        "required": [
+          "balances"
+        ]
+      },
+      "ResendInvoiceResponseDto": {
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean",
+            "description": "The invoice notice was sent again to the member (and a Guardian)."
+          }
+        },
+        "required": [
+          "sent"
+        ]
+      },
       "PayInAppBlockedReason": {
         "type": "string",
         "description": "Why not: the School doesn't take card payments, or the account is restricted to cash and bank transfer (Decision 68).",
@@ -37057,6 +37635,16 @@
             "nullable": true,
             "description": "The School's tax ID, for its invoices (Decision 338 item 6)."
           },
+          "receiptAddress": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 338 item 6: the School's address for its invoices and receipts."
+          },
+          "receiptPaymentInstructions": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 338 item 6: the School's payment instructions for its invoices."
+          },
           "balances": {
             "type": "array",
             "items": {
@@ -37075,6 +37663,13 @@
               "$ref": "#/components/schemas/ChargePaymentResponseDto"
             }
           },
+          "credits": {
+            "description": "Credit the School gave, newest first (no note).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BalanceCreditResponseDto"
+            }
+          },
           "payInApp": {
             "$ref": "#/components/schemas/MemberPayInAppDto"
           }
@@ -37085,6 +37680,7 @@
           "balances",
           "charges",
           "payments",
+          "credits",
           "payInApp"
         ]
       },
@@ -37248,6 +37844,156 @@
         "required": [
           "canCreateCharges",
           "canCancelCharges"
+        ]
+      },
+      "ChargeRevenueMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "The month, in the School's time zone."
+          },
+          "received": {
+            "type": "number",
+            "description": "Payments toward charges received that month (desk, app and automatic), minor units."
+          },
+          "refunded": {
+            "type": "number",
+            "description": "Money given back that month: refunds to the card or in cash, and lost disputes. Refunds as credit are not money given back."
+          },
+          "net": {
+            "type": "number",
+            "description": "received − refunded."
+          }
+        },
+        "required": [
+          "month",
+          "received",
+          "refunded",
+          "net"
+        ]
+      },
+      "ChargeOverviewCurrencyDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "number",
+            "description": "Still owed on open charges that are not due yet (due today or later)."
+          },
+          "overdue": {
+            "type": "number",
+            "description": "Still owed on open charges past their due date."
+          },
+          "paid": {
+            "type": "number",
+            "description": "Paid over the months covered, less money given back (the sum of revenue by month)."
+          },
+          "revenueByMonth": {
+            "description": "Oldest month first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeRevenueMonthDto"
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "scheduled",
+          "overdue",
+          "paid",
+          "revenueByMonth"
+        ]
+      },
+      "ChargeOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "months": {
+            "type": "number",
+            "description": "The months covered."
+          },
+          "wholeSchool": {
+            "type": "boolean",
+            "description": "false: Branch Staff, who see their own branches' students only."
+          },
+          "currencies": {
+            "description": "One per currency; usually one.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeOverviewCurrencyDto"
+            }
+          }
+        },
+        "required": [
+          "months",
+          "wholeSchool",
+          "currencies"
+        ]
+      },
+      "MemberBalanceRowDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "owed": {
+            "type": "number",
+            "description": "Still to pay on open charges."
+          },
+          "credit": {
+            "type": "number",
+            "description": "In credit."
+          },
+          "net": {
+            "type": "number",
+            "description": "owed − credit. Positive = owes; negative = in credit."
+          },
+          "overdue": {
+            "type": "number",
+            "description": "Of what is owed, the part past its due date."
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "currency",
+          "owed",
+          "credit",
+          "net",
+          "overdue"
+        ]
+      },
+      "MemberBalancesResponseDto": {
+        "type": "object",
+        "properties": {
+          "wholeSchool": {
+            "type": "boolean",
+            "description": "false: Branch Staff, who see their own branches' students only."
+          },
+          "items": {
+            "description": "Every member whose balance is not zero: owes (overdue first, most owed first), then in credit.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberBalanceRowDto"
+            }
+          }
+        },
+        "required": [
+          "wholeSchool",
+          "items"
         ]
       },
       "RecurringChargeFrequency": {

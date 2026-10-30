@@ -9,7 +9,7 @@ import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
-import { allocate, freeCredit, lockBalance, noticeMoney, receiptNotice, settleChargePayment } from '../charges/charge-ledger';
+import { allocate, chargeNoticeSwitches, chargeRemaining, freeCredit, lockBalance, noticeMoney, receiptNotice, settleChargePayment } from '../charges/charge-ledger';
 import { formatInvoiceNumber } from '../charges/charge-maths';
 import { CHARGE_AUTO_PAY_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
@@ -173,7 +173,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         await lockBalance(tx, schoolId, studentId);
         const charge = await tx.charge.findUniqueOrThrow({ where: { id: chargeId }, include: { allocations: { select: { amount: true } } } });
         if (charge.cancelledAt) return null;
-        const owed = charge.grossAmount - charge.allocations.reduce((n, a) => n + a.amount, 0);
+        const owed = chargeRemaining(charge);
         const credit = await freeCredit(tx, schoolId, studentId, charge.currency);
         if (owed <= 0) return null;
         if (credit >= owed) {
@@ -256,16 +256,19 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         where: { id: a.transactionId, status: 'PENDING' },
         data: { status: 'FAILED', ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}) },
       });
-      await this.notify({
-        notificationId: `charge-auto-pay-failed-${a.transactionId}`,
-        userId: a.studentId,
-        title: 'Automatic payment failed',
-        body: `We couldn't charge your saved card for invoice ${a.invoiceLabel} (${a.description}, ${noticeMoney(a.amount + a.surcharge, a.currency)}). Pay it in the app or at the front desk.`,
-        type: 'CHARGE',
-        schoolId: a.schoolId,
-        targetType: 'PAYMENT',
-        targetId: a.transactionId,
-      });
+      // Decision 338 item 10: "failed or overdue payment", switchable off by the School.
+      if ((await chargeNoticeSwitches(this.prismaJobs, a.schoolId)).failedOverdue) {
+        await this.notify({
+          notificationId: `charge-auto-pay-failed-${a.transactionId}`,
+          userId: a.studentId,
+          title: 'Automatic payment failed',
+          body: `We couldn't charge your saved card for invoice ${a.invoiceLabel} (${a.description}, ${noticeMoney(a.amount + a.surcharge, a.currency)}). Pay it in the app or at the front desk.`,
+          type: 'CHARGE',
+          schoolId: a.schoolId,
+          targetType: 'PAYMENT',
+          targetId: a.transactionId,
+        });
+      }
       return false;
     }
 
@@ -274,7 +277,8 @@ export class ChargeAutoPayProcessor extends WorkerHost {
       await tx.transaction.updateMany({ where: { id: a.transactionId, stripePaymentIntentId: null }, data: { stripePaymentIntentId: paymentIntentId } });
       return settleChargePayment(tx, a.transactionId);
     });
-    if (settled) {
+    // Decision 338 item 10: the School may switch receipts off.
+    if (settled && (await chargeNoticeSwitches(this.prismaJobs, a.schoolId)).receipt) {
       const receipt = receiptNotice(a.transactionId, a.amount + a.surcharge, a.currency);
       await this.notify({
         notificationId: receipt.key,

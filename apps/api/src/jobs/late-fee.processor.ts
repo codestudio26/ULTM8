@@ -6,7 +6,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { dayIn, dayNumber, dayString, dayToDate } from '../memberships/freeze/membership-freeze';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
-import { lockBalance } from '../charges/charge-ledger';
+import { chargeRemaining, lockBalance } from '../charges/charge-ledger';
 import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
 import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
 import { LateFeeSetting, isLateFeeDue, lateFeeAmount } from '../late-fees/late-fee-maths';
@@ -292,7 +292,8 @@ export class LateFeeProcessor extends WorkerHost {
     await lockBalance(tx, school.id, head.studentId);
     const charge = await tx.charge.findUnique({ where: { id: chargeId }, include: { allocations: { select: { amount: true } }, lateFee: { select: { id: true } } } });
     if (!charge || charge.cancelledAt || charge.lateFee || charge.lateFeeForChargeId || charge.lateFeeForTransactionId) return null;
-    const owed = charge.grossAmount - charge.allocations.reduce((n, a) => n + a.amount, 0);
+    // Refund-aware (backlog 3.6 step 4): a refund comes off the total, never re-opening it.
+    const owed = chargeRemaining(charge);
     if (owed <= 0) return null;
     const invoice = formatInvoiceNumber(charge.invoiceNumber);
     return {

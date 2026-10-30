@@ -346,6 +346,47 @@ export class CreateSchoolDto {
   @IsBoolean()
   chargeCancelReasonRequired?: boolean;
 
+  @ApiPropertyOptional({ description: 'Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only.' })
+  @IsOptional()
+  @IsBoolean()
+  chargeRefundNotesRequired?: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 300, description: "Decision 338 item 6: the School's address on its invoices and receipts in the app. Empty or null clears it." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(300)
+  receiptAddress?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 1000, description: 'Decision 338 item 6: how to pay (bank details, Pix key…), on its invoices in the app. Empty or null clears it.' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(1000)
+  receiptPaymentInstructions?: string | null;
+
+  @ApiPropertyOptional({ description: 'Decision 338 item 10: send the member a receipt for each payment toward charges (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeReceipt?: boolean;
+
+  @ApiPropertyOptional({ description: 'Decision 338 item 10: tell the member when an automatic payment fails or a charge becomes overdue (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeFailedOverdue?: boolean;
+
+  @ApiPropertyOptional({ description: 'Decision 338 item 10: tell the member about a dispute on their card payment toward charges (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeDispute?: boolean;
+
+  @ApiPropertyOptional({ description: 'Decision 338 item 10: remind the member 3 days before a charge is due (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeDueReminder?: boolean;
+
   @ApiPropertyOptional({
     type: [String],
     nullable: true,

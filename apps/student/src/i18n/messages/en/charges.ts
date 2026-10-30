@@ -29,6 +29,21 @@ export const charges = {
   toCredit: '{amount} went onto your balance as credit',
   payAtDesk: "To pay, ask at your School's front desk.",
   receiptSurcharge: 'Includes a card surcharge of {amount}',
+  address: 'Address: {address}',
+  paymentInstructions: 'How to pay: {instructions}',
+  refunded: 'Refunded',
+  creditGiven: '{amount} credit from your School on {date}',
+  refundStatus: {
+    REFUNDED: 'Refunded',
+    PART_REFUNDED: 'Part refunded',
+  },
+  refund: {
+    CARD: '{amount} refunded to your card on {date}',
+    MONEY_BACK: '{amount} given back to you on {date}',
+    CREDIT: '{amount} refunded as credit on {date}',
+    DISPUTE_LOST: '{amount} returned to your card after a dispute on {date}',
+    STRIPE: '{amount} refunded to your card on {date}',
+  },
   pay: {
     balance: 'Pay balance ({amount})',
     charge: 'Pay {amount}',

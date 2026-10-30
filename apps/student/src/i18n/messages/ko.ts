@@ -983,6 +983,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     toCredit: "{amount}이(가) 잔액의 크레딧이 되었습니다",
     payAtDesk: "결제하려면 학교 데스크에 문의하세요.",
     receiptSurcharge: "카드 수수료 {amount} 포함",
+    address: "주소: {address}",
+    paymentInstructions: "결제 방법: {instructions}",
+    refunded: "환불됨",
+    creditGiven: "{date}에 학교에서 {amount} 크레딧",
+    refundStatus: {
+      REFUNDED: "환불됨",
+      PART_REFUNDED: "일부 환불됨",
+    },
+    refund: {
+      CARD: "{date}에 {amount}이(가) 카드로 환불되었습니다",
+      MONEY_BACK: "{date}에 {amount}을(를) 돌려받았습니다",
+      CREDIT: "{date}에 {amount}이(가) 크레딧으로 환불되었습니다",
+      DISPUTE_LOST: "{date} 분쟁 후 {amount}이(가) 카드로 돌아왔습니다",
+      STRIPE: "{date}에 {amount}이(가) 카드로 환불되었습니다",
+    },
     pay: {
       balance: "잔액 결제 ({amount})",
       charge: "{amount} 결제",

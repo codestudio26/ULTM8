@@ -256,7 +256,7 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       expect((await ledger(theirs.id, tokens.staffA)).status).toBe(403);
       const seen = await ledger(mine.id, tokens.staffA);
       expect(seen.status).toBe(200);
-      expect(seen.body.can).toEqual({ create: true, cancel: false, recordPayment: false });
+      expect(seen.body.can).toEqual({ create: true, cancel: false, recordPayment: false, refund: false, addCredit: false, resendInvoice: true });
     });
 
     it('a coach needs "Can create charges"; the switch is logged', async () => {

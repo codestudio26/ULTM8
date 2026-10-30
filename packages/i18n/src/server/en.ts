@@ -698,6 +698,16 @@ export const SERVER_PATTERNS: string[] = [
  "There is nothing to pay.",
  "Only the member can set automatic payment, with their own saved card.",
  "Save a card for this School first.",
+ // Refunds and credit (backlog 3.6 step 4).
+ "Add a note for this refund.",
+ "Payment not found",
+ "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.",
+ "A card payment goes back to the card, or onto the balance as credit.",
+ "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.",
+ "This is more than is left to refund on this payment.",
+ "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.",
+ "Part of this payment is credit that has already paid other charges, so it can't be given back.",
+ "Add a note saying why this credit is given.",
  // Late fees (Decision 413).
  "Set a late fee amount above 0.",
  "Set a late fee percentage above 0%, up to 100%.",

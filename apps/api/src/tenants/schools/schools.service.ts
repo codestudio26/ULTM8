@@ -993,6 +993,14 @@ export class SchoolsService {
           taxInclusive: dto.taxInclusive,
           taxId: dto.taxId,
           chargeCancelReasonRequired: dto.chargeCancelReasonRequired,
+          // Decision 338 items 3, 6 and 10 (backlog §3.6 step 4).
+          chargeRefundNotesRequired: dto.chargeRefundNotesRequired,
+          receiptAddress: dto.receiptAddress,
+          receiptPaymentInstructions: dto.receiptPaymentInstructions,
+          chargeNoticeReceipt: dto.chargeNoticeReceipt,
+          chargeNoticeFailedOverdue: dto.chargeNoticeFailedOverdue,
+          chargeNoticeDispute: dto.chargeNoticeDispute,
+          chargeNoticeDueReminder: dto.chargeNoticeDueReminder,
         },
       }),
     );

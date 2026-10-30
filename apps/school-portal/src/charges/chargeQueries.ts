@@ -13,6 +13,12 @@ export type RecordChargePaymentInput = components['schemas']['RecordChargePaymen
 export type ChargePermission = components['schemas']['ChargePermissionDto'];
 export type StandardTaxRate = components['schemas']['StandardTaxRateDto'];
 
+export type ChargeRefund = components['schemas']['ChargeRefundResponseDto'];
+export type BalanceCredit = components['schemas']['BalanceCreditResponseDto'];
+export type RefundChargePaymentInput = components['schemas']['RefundChargePaymentDto'];
+export type ChargeOverview = components['schemas']['ChargeOverviewResponseDto'];
+export type MemberBalanceRow = components['schemas']['MemberBalanceRowDto'];
+
 export const CHARGE_PAYMENT_METHODS = ['CASH', 'PIX', 'BANK_TRANSFER', 'CARD_TERMINAL'] as const satisfies readonly RecordChargePaymentInput['paymentMethod'][];
 
 const key = (schoolId: string | null, studentId: string) => ['charges', schoolId, studentId];
@@ -33,6 +39,7 @@ function useInvalidateCharges(schoolId: string | null, studentId: string) {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    void queryClient.invalidateQueries({ queryKey: ['charge-reports'] });
     return queryClient.invalidateQueries({ queryKey: key(schoolId, studentId) });
   };
 }
@@ -120,6 +127,58 @@ export function useRestartRecurringCharge(schoolId: string | null, studentId: st
   return useMutation({
     mutationFn: (id: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/recurring-charges/{id}/restart', { params: { path: { schoolId: schoolId!, id } } })),
     onSuccess: invalidate,
+  });
+}
+
+/** Step 4: refund a payment (owner only, Decision 338 item 3). */
+export function useRefundChargePayment(schoolId: string | null, studentId: string) {
+  const invalidate = useInvalidateCharges(schoolId, studentId);
+  return useMutation({
+    mutationFn: ({ transactionId, ...body }: RefundChargePaymentInput & { transactionId: string }) =>
+      unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/charge-payments/{transactionId}/refund', {
+          params: { path: { schoolId: schoolId!, transactionId } },
+          body,
+        }),
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** Step 4: credit the owner gives, with a staff-only note. */
+export function useGiveCredit(schoolId: string | null, studentId: string) {
+  const invalidate = useInvalidateCharges(schoolId, studentId);
+  return useMutation({
+    mutationFn: (body: { amount: number; note: string }) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/credits', { params: { path: { schoolId: schoolId!, studentId } }, body })),
+    onSuccess: invalidate,
+  });
+}
+
+/** Step 4: send a charge's invoice notice again (Decision 338 item 5). */
+export function useResendInvoice(schoolId: string | null) {
+  return useMutation({
+    mutationFn: (chargeId: string) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/charges/{chargeId}/resend-invoice', { params: { path: { schoolId: schoolId!, chargeId } } })),
+  });
+}
+
+/** The billing reports (Decision 338 item 11). A 403 means no access. */
+export function useChargeOverview(schoolId: string | null, months: number) {
+  return useQuery({
+    queryKey: ['charge-reports', 'overview', schoolId, months],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/charge-reports/overview', { params: { path: { schoolId: schoolId! }, query: { months } } })),
+    enabled: !!schoolId,
+    retry: false,
+  });
+}
+
+export function useMemberBalances(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['charge-reports', 'member-balances', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/charge-reports/member-balances', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+    retry: false,
   });
 }
 
