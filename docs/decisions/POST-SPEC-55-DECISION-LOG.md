@@ -7224,3 +7224,18 @@ User (Code), 30 Oct 2026: "% should be down to each academy and in some countrie
 ### Recorded by
 
 User (Code), 30 Oct 2026: "1a, 2 keep, 3 yes, 4 yes, 5 ok, 6 ok", answering the options put to them the same day ("tax applies to every charge unless it is not applicable by the country, for exemple some kids items in Uk are free of VAt"; "School should not be able to set an membership without setting the currency, we shpuld pop a warning for them to set the currency"); item 7: "Show Cancelled (Recommended)".
+
+## Decision 415 — Billing follow-ups: grading again after an unappliable promotion, other fees in revenue, refund notices for every refund
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 300, 307, 338, 346, 414 · **Answers:** the open points reported with the Decision 414 builds (PRs #411, #412, #413)
+
+### Decision
+
+1. **Grading again after a paid promotion fee whose promotion can't apply** (Decision 414 item 1): the money already paid **counts toward the new grade's fee**. Grading the style again cancels the old fee, so what was paid becomes credit on the student's balance; credit pays open charges, so it pays the new fee's invoice (the student pays only any difference, and anything left over stays as credit).
+2. **The Billing reports Overview's Memberships part** (Decision 414 item 3) **also counts the late-cancellation fee** (Decision 234) **and the membership freeze fee** (Decision 404). Total revenue then covers every kind of payment.
+3. **Memberships revenue is net of refunds**, part refunds included (what the School kept), as the Charges part already is. It can differ from the Transactions page's gross Revenue figure.
+4. **Every refund sends the member the Refund notice** (Decision 414 item 4), not only refunds of charges: a Class Pack refund when a booking is cancelled, a Membership or renewal refunded in the Stripe dashboard, and the automatic refund of a Membership purchase ULTM8 refused. The same School switch controls them all.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "Count it toward new fee (Recommended)"; "Under Memberships (Recommended)"; "Net of refunds (Recommended)"; "Yes, all refunds (Recommended)".
