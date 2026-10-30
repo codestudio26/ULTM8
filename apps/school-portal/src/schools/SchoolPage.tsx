@@ -25,6 +25,7 @@ import {
   type SchoolResponse,
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
+import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
@@ -71,6 +72,8 @@ export function SchoolPage() {
         <SchoolDetailsCard key={schoolId} schoolId={schoolId} school={school} />
         {closed ? null : <JoinCodeCard key={`join-${schoolId}`} schoolId={schoolId} joinCode={school.joinCode} />}
         <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 404: freezing memberships. */}
+        <FreezeSettingsCard key={`freeze-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 406: only where the School's country allows it. */}
         <CardSurchargeCard key={`surcharge-${schoolId}`} schoolId={schoolId} />
         {/* Decision 392: the tablet sign-up's "How did you hear about us?" list. */}

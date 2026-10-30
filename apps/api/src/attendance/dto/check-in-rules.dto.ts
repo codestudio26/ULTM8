@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsInt, Max, Min, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, Max, Min, ValidateIf } from 'class-validator';
 
 /** A School's check-in rules (Decision 394; Decision 317 item 1; handover
  * F9). Each default is what check-in did before the rules existed. */
@@ -36,6 +36,13 @@ export class CheckInRulesDto {
   @ApiProperty({ description: 'The front desk may check someone in to several Classes at once (default on; Decision 378).' })
   @IsBoolean()
   severalClasses!: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  frozenMembers?: boolean;
 
   @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length." })
   @IsIn([4, 6])

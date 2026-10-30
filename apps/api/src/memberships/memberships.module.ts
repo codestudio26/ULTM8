@@ -7,6 +7,8 @@ import { AuthModule } from '../auth/auth.module';
 import { QueueModule } from '../jobs/queue.module';
 import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
+import { MembershipFreezesController } from './freeze/membership-freezes.controller';
+import { MembershipFreezesService } from './freeze/membership-freezes.service';
 
 /**
  * Phase 9 scope: MembershipPlan CRUD + purchase (Stripe one-time/Subscription,
@@ -47,8 +49,9 @@ import { MembershipsService } from './memberships.service';
  */
 @Module({
   imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule],
-  controllers: [MembershipsController],
-  providers: [MembershipsService],
+  // Decision 404: freezing a membership.
+  controllers: [MembershipsController, MembershipFreezesController],
+  providers: [MembershipsService, MembershipFreezesService],
   // The locked front-desk tablet's welcome card (FrontDeskModule, Decision 380).
   exports: [MembershipsService],
 })

@@ -8402,6 +8402,379 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/memberships/{membershipId}/freezes": {
+      "post": {
+        "operationId": "MembershipFreezesController_createByStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMembershipFreezeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/freezes": {
+      "get": {
+        "operationId": "MembershipFreezesController_listForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Only freezes with this status. Omitted: every status.",
+            "schema": {
+              "enum": [
+                "REQUESTED",
+                "APPROVED",
+                "DECLINED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolMembershipFreezeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/freezes/{id}/approve": {
+      "post": {
+        "operationId": "MembershipFreezesController_approve",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/freezes/{id}/decline": {
+      "post": {
+        "operationId": "MembershipFreezesController_decline",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/freezes/{id}/end": {
+      "post": {
+        "operationId": "MembershipFreezesController_endByStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/memberships/{membershipId}/freeze-requests": {
+      "post": {
+        "operationId": "MembershipFreezesController_request",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMembershipFreezeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/memberships/freezes/me": {
+      "get": {
+        "operationId": "MembershipFreezesController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyFreezableMembershipListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/freezes/{id}/cancel": {
+      "post": {
+        "operationId": "MembershipFreezesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/freezes/{id}/end": {
+      "post": {
+        "operationId": "MembershipFreezesController_endByMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipFreezeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/transactions": {
       "get": {
         "operationId": "TransactionsController_findAllForSchool",
@@ -8472,7 +8845,8 @@
               "enum": [
                 "MEMBERSHIP",
                 "RENEWAL",
-                "LATE_CANCEL_FEE"
+                "LATE_CANCEL_FEE",
+                "FREEZE_FEE"
               ],
               "type": "string"
             }
@@ -8576,7 +8950,8 @@
               "enum": [
                 "MEMBERSHIP",
                 "RENEWAL",
-                "LATE_CANCEL_FEE"
+                "LATE_CANCEL_FEE",
+                "FREEZE_FEE"
               ],
               "type": "string"
             }
@@ -18405,6 +18780,15 @@
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
           },
+          "freezeMaxDaysPer12Months": {
+            "type": "number",
+            "description": "Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90)."
+          },
+          "freezeFeeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -18657,6 +19041,19 @@
             "type": "boolean",
             "description": "Decision 394: the front desk may check someone in to several Classes at once."
           },
+          "checkInFrozenMembers": {
+            "type": "boolean",
+            "description": "Decision 404: members whose membership is frozen may still check in (default off)."
+          },
+          "freezeMaxDaysPer12Months": {
+            "type": "number",
+            "description": "Decision 404: the most days a membership can be frozen in any 12 months (default 90)."
+          },
+          "freezeFeeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 404: the freeze fee in minor units of the School's currency; null = no fee."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -18772,6 +19169,8 @@
           "checkInOtherBranches",
           "checkInVisitors",
           "checkInSeveralClasses",
+          "checkInFrozenMembers",
+          "freezeMaxDaysPer12Months",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -18928,6 +19327,15 @@
             "type": "number",
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
+          },
+          "freezeMaxDaysPer12Months": {
+            "type": "number",
+            "description": "Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90)."
+          },
+          "freezeFeeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -19112,6 +19520,15 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Decision 404: a membership of theirs is frozen today."
+          },
+          "frozenUntil": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 404: the day they are back (YYYY-MM-DD) when frozen."
           }
         },
         "required": [
@@ -19122,7 +19539,8 @@
           "guardianManaged",
           "enrolledAt",
           "status",
-          "visitor"
+          "visitor",
+          "frozen"
         ]
       },
       "StudentListResponseDto": {
@@ -26311,6 +26729,35 @@
           }
         }
       },
+      "FreezeSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "APPROVED"
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "The first frozen day (YYYY-MM-DD)."
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "The day the member is back (YYYY-MM-DD), moved earlier when the freeze was ended early."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "startsAt",
+          "endsAt"
+        ]
+      },
       "StudentMembershipResponseDto": {
         "type": "object",
         "properties": {
@@ -26375,6 +26822,19 @@
           "live": {
             "type": "boolean",
             "description": "In effect now: Active, not past its expiry date, and not a used-up pack."
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Decision 404: an approved freeze covers today (a frozen membership stays live)."
+          },
+          "freeze": {
+            "nullable": true,
+            "description": "Decision 404: the freeze in effect or still to come, else a request waiting.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FreezeSummaryDto"
+              }
+            ]
           }
         },
         "required": [
@@ -26389,7 +26849,8 @@
           "updatedAt",
           "planTitle",
           "planType",
-          "live"
+          "live",
+          "frozen"
         ]
       },
       "StudentMembershipListResponseDto": {
@@ -26628,6 +27089,19 @@
           "visitPass": {
             "type": "boolean",
             "description": "Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list)."
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Decision 404: an approved freeze covers today."
+          },
+          "freeze": {
+            "nullable": true,
+            "description": "Decision 404: the freeze in effect or still to come, else a request waiting.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FreezeSummaryDto"
+              }
+            ]
           }
         },
         "required": [
@@ -26640,7 +27114,8 @@
           "frequency",
           "createdAt",
           "updatedAt",
-          "visitPass"
+          "visitPass",
+          "frozen"
         ]
       },
       "MyMembershipListResponseDto": {
@@ -26677,6 +27152,309 @@
           "status"
         ]
       },
+      "CreateMembershipFreezeDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "example": "2026-11-02",
+            "description": "The first frozen day (YYYY-MM-DD), today or later."
+          },
+          "endsAt": {
+            "type": "string",
+            "example": "2026-11-30",
+            "description": "The day the member is back (YYYY-MM-DD, not frozen itself). At least 7 days after startsAt."
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "MembershipFreezeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "The first frozen day (YYYY-MM-DD)."
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "The day the member is back as asked (YYYY-MM-DD, exclusive)."
+          },
+          "backOn": {
+            "type": "string",
+            "description": "The day the member is back, moved earlier when ended early (YYYY-MM-DD)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "APPROVED",
+              "DECLINED",
+              "CANCELLED"
+            ]
+          },
+          "frozenNow": {
+            "type": "boolean",
+            "description": "An approved freeze covers today."
+          },
+          "endedEarlyAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "feeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "The fee charged when approved, in minor units."
+          },
+          "feeTransactionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "membershipId",
+          "schoolId",
+          "studentId",
+          "startsAt",
+          "endsAt",
+          "backOn",
+          "status",
+          "frozenNow",
+          "createdAt"
+        ]
+      },
+      "SchoolMembershipFreezeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "The first frozen day (YYYY-MM-DD)."
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "The day the member is back as asked (YYYY-MM-DD, exclusive)."
+          },
+          "backOn": {
+            "type": "string",
+            "description": "The day the member is back, moved earlier when ended early (YYYY-MM-DD)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "REQUESTED",
+              "APPROVED",
+              "DECLINED",
+              "CANCELLED"
+            ]
+          },
+          "frozenNow": {
+            "type": "boolean",
+            "description": "An approved freeze covers today."
+          },
+          "endedEarlyAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "requestedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "feeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "The fee charged when approved, in minor units."
+          },
+          "feeTransactionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "membershipId",
+          "schoolId",
+          "studentId",
+          "startsAt",
+          "endsAt",
+          "backOn",
+          "status",
+          "frozenNow",
+          "createdAt",
+          "studentFirstName",
+          "studentSurname",
+          "planTitle",
+          "planType"
+        ]
+      },
+      "SchoolMembershipFreezeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolMembershipFreezeResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MyFreezableMembershipDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "self": {
+            "type": "boolean",
+            "description": "The caller's own membership (false: a Guardian's child's)."
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string"
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "An approved freeze covers today."
+          },
+          "freeze": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FreezeSummaryDto"
+              }
+            ]
+          },
+          "maxDaysPer12Months": {
+            "type": "number",
+            "description": "The School's most frozen days in any 12 months."
+          },
+          "feeAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "The School's freeze fee in minor units; null = none."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "today": {
+            "type": "string",
+            "description": "Today in the School's time zone (YYYY-MM-DD): the earliest start."
+          }
+        },
+        "required": [
+          "membershipId",
+          "studentId",
+          "studentFirstName",
+          "self",
+          "schoolId",
+          "schoolName",
+          "planTitle",
+          "planType",
+          "frozen",
+          "maxDaysPer12Months",
+          "today"
+        ]
+      },
+      "MyFreezableMembershipListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyFreezableMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "TransactionResponseDto": {
         "type": "object",
         "properties": {
@@ -26711,7 +27489,8 @@
             "enum": [
               "MEMBERSHIP",
               "RENEWAL",
-              "LATE_CANCEL_FEE"
+              "LATE_CANCEL_FEE",
+              "FREEZE_FEE"
             ]
           },
           "bookingId": {
@@ -31156,6 +31935,10 @@
           "severalClasses": {
             "type": "boolean",
             "description": "The front desk may check someone in to several Classes at once (default on; Decision 378)."
+          },
+          "frozenMembers": {
+            "type": "boolean",
+            "description": "Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is."
           },
           "codeDigits": {
             "type": "number",

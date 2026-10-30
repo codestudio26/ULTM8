@@ -13,6 +13,7 @@ import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
+import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
@@ -302,7 +303,10 @@ export class WaitlistService {
         locked = await lockClassShared(tx, cls.id);
       }
 
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls);
+      // Decision 404: a frozen membership (today or on the Class's day) can't pay.
+      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls, new Date(), (ids) =>
+        frozenMembershipIds(this.prismaJobs, cls.schoolId, ids, [new Date(), cls.startDate]),
+      );
 
       const bookingId = randomUUID();
       try {

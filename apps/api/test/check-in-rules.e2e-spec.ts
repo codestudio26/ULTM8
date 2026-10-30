@@ -28,6 +28,7 @@ const DEFAULT_RULES: {
   otherBranches: boolean;
   visitors: boolean;
   severalClasses: boolean;
+  frozenMembers: boolean;
   codeDigits: number;
 } = {
   opensMinutesBeforeStart: 30,
@@ -36,6 +37,8 @@ const DEFAULT_RULES: {
   otherBranches: true,
   visitors: true,
   severalClasses: true,
+  // Decision 404: frozen members can't check in by default.
+  frozenMembers: false,
   codeDigits: 4,
 };
 const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
@@ -126,7 +129,7 @@ describeIfDb('Check-in rules (Decision 394)', () => {
       where: { id: school.id },
       data: {
         checkInOpensMinutesBeforeStart: 30, checkInClosesMinutesAfterStart: null, checkInRequireWaiver: false,
-        checkInOtherBranches: true, checkInVisitors: true, checkInSeveralClasses: true, checkInCodeDigits: 4,
+        checkInOtherBranches: true, checkInVisitors: true, checkInSeveralClasses: true, checkInFrozenMembers: false, checkInCodeDigits: 4,
       },
     });
   });

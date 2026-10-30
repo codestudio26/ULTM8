@@ -2900,6 +2900,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/memberships/{membershipId}/freezes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_createByStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/freezes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipFreezesController_listForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/freezes/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/freezes/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/freezes/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_endByStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memberships/{membershipId}/freeze-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memberships/freezes/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipFreezesController_listMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/freezes/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/freezes/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipFreezesController_endByMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/transactions": {
         parameters: {
             query?: never;
@@ -6130,6 +6274,10 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
+            freezeMaxDaysPer12Months?: number;
+            /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
+            freezeFeeAmount?: number | null;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6217,6 +6365,12 @@ export interface components {
             checkInVisitors: boolean;
             /** @description Decision 394: the front desk may check someone in to several Classes at once. */
             checkInSeveralClasses: boolean;
+            /** @description Decision 404: members whose membership is frozen may still check in (default off). */
+            checkInFrozenMembers: boolean;
+            /** @description Decision 404: the most days a membership can be frozen in any 12 months (default 90). */
+            freezeMaxDaysPer12Months: number;
+            /** @description Decision 404: the freeze fee in minor units of the School's currency; null = no fee. */
+            freezeFeeAmount?: number | null;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6307,6 +6461,10 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
+            freezeMaxDaysPer12Months?: number;
+            /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
+            freezeFeeAmount?: number | null;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6376,6 +6534,10 @@ export interface components {
             visitor: boolean;
             /** Format: date-time */
             visitPassEndsAt?: string | null;
+            /** @description Decision 404: a membership of theirs is frozen today. */
+            frozen: boolean;
+            /** @description Decision 404: the day they are back (YYYY-MM-DD) when frozen. */
+            frozenUntil?: string | null;
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -8537,6 +8699,15 @@ export interface components {
             /** @description Guardian-only: the linked minor whose Subscription this is. */
             studentId?: string;
         };
+        FreezeSummaryDto: {
+            id: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "APPROVED";
+            /** @description The first frozen day (YYYY-MM-DD). */
+            startsAt: string;
+            /** @description The day the member is back (YYYY-MM-DD), moved earlier when the freeze was ended early. */
+            endsAt: string;
+        };
         StudentMembershipResponseDto: {
             id: string;
             studentId: string;
@@ -8558,6 +8729,10 @@ export interface components {
             planType: string;
             /** @description In effect now: Active, not past its expiry date, and not a used-up pack. */
             live: boolean;
+            /** @description Decision 404: an approved freeze covers today (a frozen membership stays live). */
+            frozen: boolean;
+            /** @description Decision 404: the freeze in effect or still to come, else a request waiting. */
+            freeze?: components["schemas"]["FreezeSummaryDto"] | null;
         };
         StudentMembershipListResponseDto: {
             items: components["schemas"]["StudentMembershipResponseDto"][];
@@ -8623,6 +8798,10 @@ export interface components {
             updatedAt: string;
             /** @description Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list). */
             visitPass: boolean;
+            /** @description Decision 404: an approved freeze covers today. */
+            frozen: boolean;
+            /** @description Decision 404: the freeze in effect or still to come, else a request waiting. */
+            freeze?: components["schemas"]["FreezeSummaryDto"] | null;
         };
         MyMembershipListResponseDto: {
             items: components["schemas"]["MyMembershipResponseDto"][];
@@ -8631,6 +8810,98 @@ export interface components {
         MembershipStatusResponseDto: {
             /** @enum {string} */
             status: "ACTIVE" | "EXPIRED" | "NONE";
+        };
+        CreateMembershipFreezeDto: {
+            /**
+             * @description The first frozen day (YYYY-MM-DD), today or later.
+             * @example 2026-11-02
+             */
+            startsAt: string;
+            /**
+             * @description The day the member is back (YYYY-MM-DD, not frozen itself). At least 7 days after startsAt.
+             * @example 2026-11-30
+             */
+            endsAt: string;
+        };
+        MembershipFreezeResponseDto: {
+            id: string;
+            membershipId: string;
+            schoolId: string;
+            studentId: string;
+            /** @description The first frozen day (YYYY-MM-DD). */
+            startsAt: string;
+            /** @description The day the member is back as asked (YYYY-MM-DD, exclusive). */
+            endsAt: string;
+            /** @description The day the member is back, moved earlier when ended early (YYYY-MM-DD). */
+            backOn: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "APPROVED" | "DECLINED" | "CANCELLED";
+            /** @description An approved freeze covers today. */
+            frozenNow: boolean;
+            endedEarlyAt?: string | null;
+            requestedById?: string | null;
+            decidedById?: string | null;
+            decidedAt?: string | null;
+            /** @description The fee charged when approved, in minor units. */
+            feeAmount?: number | null;
+            feeTransactionId?: string | null;
+            createdAt: string;
+        };
+        SchoolMembershipFreezeResponseDto: {
+            id: string;
+            membershipId: string;
+            schoolId: string;
+            studentId: string;
+            /** @description The first frozen day (YYYY-MM-DD). */
+            startsAt: string;
+            /** @description The day the member is back as asked (YYYY-MM-DD, exclusive). */
+            endsAt: string;
+            /** @description The day the member is back, moved earlier when ended early (YYYY-MM-DD). */
+            backOn: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "APPROVED" | "DECLINED" | "CANCELLED";
+            /** @description An approved freeze covers today. */
+            frozenNow: boolean;
+            endedEarlyAt?: string | null;
+            requestedById?: string | null;
+            decidedById?: string | null;
+            decidedAt?: string | null;
+            /** @description The fee charged when approved, in minor units. */
+            feeAmount?: number | null;
+            feeTransactionId?: string | null;
+            createdAt: string;
+            studentFirstName: string;
+            studentSurname: string;
+            planTitle: string;
+            planType: string;
+        };
+        SchoolMembershipFreezeListResponseDto: {
+            items: components["schemas"]["SchoolMembershipFreezeResponseDto"][];
+        };
+        MyFreezableMembershipDto: {
+            membershipId: string;
+            studentId: string;
+            studentFirstName: string;
+            /** @description The caller's own membership (false: a Guardian's child's). */
+            self: boolean;
+            schoolId: string;
+            schoolName: string;
+            planTitle: string;
+            planType: string;
+            expiryDate?: string | null;
+            /** @description An approved freeze covers today. */
+            frozen: boolean;
+            freeze?: components["schemas"]["FreezeSummaryDto"] | null;
+            /** @description The School's most frozen days in any 12 months. */
+            maxDaysPer12Months: number;
+            /** @description The School's freeze fee in minor units; null = none. */
+            feeAmount?: number | null;
+            currency?: string | null;
+            /** @description Today in the School's time zone (YYYY-MM-DD): the earliest start. */
+            today: string;
+        };
+        MyFreezableMembershipListResponseDto: {
+            items: components["schemas"]["MyFreezableMembershipDto"][];
         };
         TransactionResponseDto: {
             id: string;
@@ -8642,7 +8913,7 @@ export interface components {
             membershipPlanId?: string | null;
             membershipPlanTitle?: string | null;
             /** @enum {string} */
-            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
             bookingId?: string | null;
             bookingClassTitle?: string | null;
             recordedById?: string | null;
@@ -10057,6 +10328,8 @@ export interface components {
             visitors: boolean;
             /** @description The front desk may check someone in to several Classes at once (default on; Decision 378). */
             severalClasses: boolean;
+            /** @description Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is. */
+            frozenMembers?: boolean;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length.
              * @enum {number}
@@ -15829,6 +16102,208 @@ export interface operations {
             };
         };
     };
+    MembershipFreezesController_createByStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                membershipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMembershipFreezeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_listForSchool: {
+        parameters: {
+            query?: {
+                /** @description Only freezes with this status. Omitted: every status. */
+                status?: "REQUESTED" | "APPROVED" | "DECLINED" | "CANCELLED";
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolMembershipFreezeListResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_endByStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membershipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMembershipFreezeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_listMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyFreezableMembershipListResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipFreezesController_endByMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
     TransactionsController_findAllForSchool: {
         parameters: {
             query?: {
@@ -15837,7 +16312,7 @@ export interface operations {
                 limit?: number;
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD (UTC). */
                 from?: string;
@@ -15867,7 +16342,7 @@ export interface operations {
             query?: {
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD (UTC). */
                 from?: string;

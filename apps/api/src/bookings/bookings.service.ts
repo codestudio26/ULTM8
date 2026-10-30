@@ -24,6 +24,7 @@ import { daysInRange, defaultWeekRange, localDateRangeToInstants, MAX_SUMMARY_RA
 import { styleIdsOf } from '../classes/class-styles';
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
+import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
@@ -248,7 +249,10 @@ export class BookingsService {
       locked = await lockClassShared(tx, classId);
     }
 
-    const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass);
+    // Decision 404: a frozen membership (today or on the Class's day) can't pay.
+    const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass, new Date(), (ids) =>
+      frozenMembershipIds(this.prismaJobs, resolvedClass.schoolId, ids, [new Date(), resolvedClass.startDate]),
+    );
 
     const bookingId = randomUUID();
     try {

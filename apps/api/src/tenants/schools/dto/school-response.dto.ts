@@ -143,6 +143,15 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decision 394: the front desk may check someone in to several Classes at once.' })
   checkInSeveralClasses!: boolean;
 
+  @ApiProperty({ description: 'Decision 404: members whose membership is frozen may still check in (default off).' })
+  checkInFrozenMembers!: boolean;
+
+  @ApiProperty({ description: 'Decision 404: the most days a membership can be frozen in any 12 months (default 90).' })
+  freezeMaxDaysPer12Months!: number;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 404: the freeze fee in minor units of the School's currency; null = no fee." })
+  freezeFeeAmount!: number | null;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 

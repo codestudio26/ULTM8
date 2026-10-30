@@ -58,6 +58,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       // convention every other argument here already follows.
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
+      null as never, // PrismaJobsService (Decision 404 freezes)
     );
     return { service, prismaApp, paymentsService, stepUpService };
   }
@@ -203,6 +204,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
       null as never,
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
+      null as never, // PrismaJobsService (Decision 404 freezes)
     );
     return { service, prismaApp, paymentsService };
   }
@@ -305,6 +307,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       null as never,
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
+      null as never, // PrismaJobsService (Decision 404 freezes)
     );
     return { service, tx, paymentsService, guardiansService };
   }
