@@ -8846,7 +8846,8 @@
                 "MEMBERSHIP",
                 "RENEWAL",
                 "LATE_CANCEL_FEE",
-                "FREEZE_FEE"
+                "FREEZE_FEE",
+                "CHARGE_PAYMENT"
               ],
               "type": "string"
             }
@@ -8951,7 +8952,8 @@
                 "MEMBERSHIP",
                 "RENEWAL",
                 "LATE_CANCEL_FEE",
-                "FREEZE_FEE"
+                "FREEZE_FEE",
+                "CHARGE_PAYMENT"
               ],
               "type": "string"
             }
@@ -18340,6 +18342,355 @@
           }
         ]
       }
+    },
+    "/v1/tax-rates": {
+      "get": {
+        "operationId": "ChargesController_taxRates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardTaxRateListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/charges": {
+      "get": {
+        "operationId": "ChargesController_listForStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentChargesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ChargesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charges/{chargeId}/cancel": {
+      "post": {
+        "operationId": "ChargesController_cancel",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chargeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelChargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/charge-payments": {
+      "post": {
+        "operationId": "ChargesController_recordPayment",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordChargePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordChargePaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/charges": {
+      "get": {
+        "operationId": "ChargesController_listForMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberChargesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charge-permissions": {
+      "get": {
+        "operationId": "ChargesController_listPermissions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargePermissionListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/charge-permissions/{userId}": {
+      "put": {
+        "operationId": "ChargesController_setPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChargePermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargePermissionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -18789,6 +19140,32 @@
             "nullable": true,
             "description": "Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default)."
           },
+          "taxCountry": {
+            "type": "string",
+            "nullable": true,
+            "example": "GB",
+            "description": "Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 411: the School's one tax rate on charges, in hundredths of a percent (2000 = 20%; 0 = no tax). Each charge keeps the rate it was created with."
+          },
+          "taxInclusive": {
+            "type": "boolean",
+            "description": "Decision 411: true = the School's prices include tax; false = tax is added on top."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
+          },
+          "chargeCancelReasonRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -19054,6 +19431,28 @@
             "nullable": true,
             "description": "Decision 404: the freeze fee in minor units of the School's currency; null = no fee."
           },
+          "taxCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 411: the country the School is in, for its tax."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "description": "Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0)."
+          },
+          "taxInclusive": {
+            "type": "boolean",
+            "description": "Decision 411: the School's prices include tax (true, the default) or have it added on top."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 338 item 6: the School's tax ID for its invoices."
+          },
+          "chargeCancelReasonRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 1: a reason is required when cancelling a charge (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -19171,6 +19570,9 @@
           "checkInSeveralClasses",
           "checkInFrozenMembers",
           "freezeMaxDaysPer12Months",
+          "taxRateBasisPoints",
+          "taxInclusive",
+          "chargeCancelReasonRequired",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -19336,6 +19738,32 @@
             "type": "number",
             "nullable": true,
             "description": "Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default)."
+          },
+          "taxCountry": {
+            "type": "string",
+            "nullable": true,
+            "example": "GB",
+            "description": "Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 411: the School's one tax rate on charges, in hundredths of a percent (2000 = 20%; 0 = no tax). Each charge keeps the rate it was created with."
+          },
+          "taxInclusive": {
+            "type": "boolean",
+            "description": "Decision 411: true = the School's prices include tax; false = tax is added on top."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
+          },
+          "chargeCancelReasonRequired": {
+            "type": "boolean",
+            "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -21495,7 +21923,8 @@
               "INVITE_CANCELLED",
               "INVITE_ACCEPTED",
               "OPEN_MAT_CHANGED",
-              "SETTING_CHANGED"
+              "SETTING_CHANGED",
+              "CHARGE_ACCESS_CHANGED"
             ]
           },
           "actorId": {
@@ -27490,8 +27919,22 @@
               "MEMBERSHIP",
               "RENEWAL",
               "LATE_CANCEL_FEE",
-              "FREEZE_FEE"
+              "FREEZE_FEE",
+              "CHARGE_PAYMENT"
             ]
+          },
+          "chargeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "chargeDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "chargeInvoiceLabel": {
+            "type": "string",
+            "nullable": true,
+            "example": "#0000001"
           },
           "bookingId": {
             "type": "string",
@@ -35411,6 +35854,609 @@
         },
         "required": [
           "countryCode"
+        ]
+      },
+      "StandardTaxRateDto": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "example": "GB"
+          },
+          "rateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent (2000 = 20%)."
+          },
+          "national": {
+            "type": "boolean",
+            "description": "false: no single national rate; 0 is a placeholder and the School types its own."
+          }
+        },
+        "required": [
+          "country",
+          "rateBasisPoints",
+          "national"
+        ]
+      },
+      "StandardTaxRateListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StandardTaxRateDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ChargeBalanceDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "owed": {
+            "type": "number",
+            "description": "Still to pay on open charges."
+          },
+          "credit": {
+            "type": "number",
+            "description": "Money paid and not used yet (in credit)."
+          },
+          "net": {
+            "type": "number",
+            "description": "The balance: owed minus credit. Positive = the member owes; negative = in credit."
+          },
+          "overdue": {
+            "type": "number",
+            "description": "Of what is owed, the part past its due date."
+          }
+        },
+        "required": [
+          "schoolId",
+          "currency",
+          "owed",
+          "credit",
+          "net",
+          "overdue"
+        ]
+      },
+      "ChargeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "invoiceNumber": {
+            "type": "number",
+            "description": "The running number per School."
+          },
+          "invoiceLabel": {
+            "type": "string",
+            "example": "#0000001"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unitAmount": {
+            "type": "number",
+            "description": "The price as typed, before the discount."
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ],
+            "nullable": true
+          },
+          "discountValue": {
+            "type": "number",
+            "nullable": true
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "taxCountry": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent, as when the charge was created."
+          },
+          "taxInclusive": {
+            "type": "boolean"
+          },
+          "netAmount": {
+            "type": "number",
+            "description": "The price excluding tax."
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "grossAmount": {
+            "type": "number",
+            "description": "The price including tax: what is owed."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-11-15"
+          },
+          "paidAmount": {
+            "type": "number",
+            "description": "Paid so far (by desk payments and credit)."
+          },
+          "owedAmount": {
+            "type": "number",
+            "description": "Still to pay; 0 once paid or cancelled."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "PART_PAID",
+              "PAID",
+              "CANCELLED"
+            ]
+          },
+          "overdue": {
+            "type": "boolean",
+            "description": "Something is still owed and the due date has passed."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only; never sent to the member."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "invoiceNumber",
+          "invoiceLabel",
+          "description",
+          "unitAmount",
+          "discountAmount",
+          "taxRateBasisPoints",
+          "taxInclusive",
+          "netAmount",
+          "taxAmount",
+          "grossAmount",
+          "currency",
+          "dueDate",
+          "paidAmount",
+          "owedAmount",
+          "status",
+          "overdue",
+          "createdAt"
+        ]
+      },
+      "ChargePaymentAllocationDto": {
+        "type": "object",
+        "properties": {
+          "chargeId": {
+            "type": "string"
+          },
+          "invoiceLabel": {
+            "type": "string",
+            "example": "#0000001"
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "chargeId",
+          "invoiceLabel",
+          "amount"
+        ]
+      },
+      "ChargePaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Transaction id."
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "PIX",
+              "BANK_TRANSFER",
+              "CARD_TERMINAL"
+            ]
+          },
+          "receivedAt": {
+            "type": "string"
+          },
+          "recordedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "allocations": {
+            "description": "Which charges it paid.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargePaymentAllocationDto"
+            }
+          },
+          "creditAmount": {
+            "type": "number",
+            "description": "The part that went onto the balance as credit when it was taken."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "amount",
+          "currency",
+          "paymentMethod",
+          "receivedAt",
+          "allocations",
+          "creditAmount"
+        ]
+      },
+      "ChargeAbilitiesDto": {
+        "type": "object",
+        "properties": {
+          "create": {
+            "type": "boolean"
+          },
+          "cancel": {
+            "type": "boolean"
+          },
+          "recordPayment": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "create",
+          "cancel",
+          "recordPayment"
+        ]
+      },
+      "ChargeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxCountry": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
+          },
+          "cancelReasonRequired": {
+            "type": "boolean"
+          },
+          "paymentsSetUp": {
+            "type": "boolean",
+            "description": "A desk payment can be recorded: the School has its payments set up."
+          }
+        },
+        "required": [
+          "taxRateBasisPoints",
+          "taxInclusive",
+          "cancelReasonRequired",
+          "paymentsSetUp"
+        ]
+      },
+      "StudentChargesResponseDto": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "description": "One per currency; usually one.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeBalanceDto"
+            }
+          },
+          "charges": {
+            "description": "What is owed first (oldest due first), then paid, then cancelled.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeResponseDto"
+            }
+          },
+          "payments": {
+            "description": "Newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargePaymentResponseDto"
+            }
+          },
+          "can": {
+            "description": "What the caller may do here.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChargeAbilitiesDto"
+              }
+            ]
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ChargeSettingsDto"
+          }
+        },
+        "required": [
+          "balances",
+          "charges",
+          "payments",
+          "can",
+          "settings"
+        ]
+      },
+      "CreateChargeDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Rash guard"
+          },
+          "amount": {
+            "type": "number",
+            "description": "The price in minor units of the School's currency, as the School prices (with or without tax, by its tax setting).",
+            "minimum": 1,
+            "maximum": 99999999
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ],
+            "nullable": true
+          },
+          "discountValue": {
+            "type": "number",
+            "nullable": true,
+            "description": "PERCENT: hundredths of a percent (1250 = 12.5%). FIXED: minor units. Required with discountType."
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-11-15",
+            "description": "The due date (YYYY-MM-DD)."
+          }
+        },
+        "required": [
+          "description",
+          "amount",
+          "dueDate"
+        ]
+      },
+      "CancelChargeDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "For staff only. Required unless the School's owner made it optional."
+          }
+        }
+      },
+      "RecordChargePaymentDto": {
+        "type": "object",
+        "properties": {
+          "chargeId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The charge it was taken for. Null or missing: toward the balance, oldest charge first."
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99999999,
+            "description": "Minor units. More than is owed becomes credit; less leaves the rest owed."
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "PIX",
+              "BANK_TRANSFER",
+              "CARD_TERMINAL"
+            ]
+          },
+          "sendReceipt": {
+            "type": "boolean",
+            "default": true,
+            "description": "Send the member (or Guardian) a notification with the receipt."
+          }
+        },
+        "required": [
+          "amount",
+          "paymentMethod"
+        ]
+      },
+      "RecordChargePaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "payment": {
+            "$ref": "#/components/schemas/ChargePaymentResponseDto"
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeBalanceDto"
+            }
+          }
+        },
+        "required": [
+          "payment",
+          "balances"
+        ]
+      },
+      "MemberChargeSchoolDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's tax ID, for its invoices (Decision 338 item 6)."
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeBalanceDto"
+            }
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeResponseDto"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargePaymentResponseDto"
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "balances",
+          "charges",
+          "payments"
+        ]
+      },
+      "MemberChargesResponseDto": {
+        "type": "object",
+        "properties": {
+          "schools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberChargeSchoolDto"
+            }
+          }
+        },
+        "required": [
+          "schools"
+        ]
+      },
+      "ChargePermissionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BRANCH_STAFF",
+                "INSTRUCTOR"
+              ]
+            }
+          },
+          "canCreateCharges": {
+            "type": "boolean"
+          },
+          "canCancelCharges": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "roles",
+          "canCreateCharges",
+          "canCancelCharges"
+        ]
+      },
+      "ChargePermissionListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargePermissionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetChargePermissionDto": {
+        "type": "object",
+        "properties": {
+          "canCreateCharges": {
+            "type": "boolean"
+          },
+          "canCancelCharges": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canCreateCharges",
+          "canCancelCharges"
         ]
       }
     }
