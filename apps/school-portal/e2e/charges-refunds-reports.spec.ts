@@ -47,7 +47,8 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(card.getByText('Nothing owed')).toBeVisible();
 
-  await card.getByRole('button', { name: 'Refund' }).click();
+  // The payments table sits below the card's header (`student-charges`).
+  await page.getByRole('row', { name: /Cash/ }).getByRole('button', { name: 'Refund' }).click();
   const refund = page.getByTestId('refund-charge-payment-form');
   await expect(refund.getByLabel('Where the money goes')).toHaveValue('MONEY_BACK');
   await refund.getByLabel('Amount to refund').fill('20');
@@ -55,13 +56,13 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   await expect(refund.getByRole('button', { name: 'Refund' })).toBeDisabled();
   await refund.getByLabel('Notes (staff only)').fill('Wrong size');
   await refund.getByRole('button', { name: 'Refund' }).click();
-  await expect(card.getByTestId('charge-refund-line')).toContainText('given back');
-  await expect(card.getByText('Part refunded').first()).toBeVisible();
+  await expect(page.getByTestId('charge-refund-line')).toContainText('given back');
+  await expect(page.getByText('Part refunded').first()).toBeVisible();
   await expect(card.getByText('Nothing owed')).toBeVisible();
 
   await page.goto('/billing-reports');
   await expect(page.getByRole('heading', { name: 'Billing reports' })).toBeVisible();
-  await expect(page.getByTestId('charge-overview')).toContainText('£40.00');
+  await expect(page.getByTestId('charge-overview')).toContainText('Paid40.00 GBP');
   await page.getByRole('tab', { name: 'Member balances' }).click();
   await expect(page.getByText('Every balance is zero')).toBeVisible();
 });
