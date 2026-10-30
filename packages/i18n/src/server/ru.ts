@@ -700,4 +700,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "Это регулярное начисление завершено: дата окончания прошла или все платежи уже сделаны.",
   "This recurring charge isn't stopped.": "Это регулярное начисление не остановлено.",
   "Recurring charge not found": "Регулярное начисление не найдено",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Это сбор за повышение. Владелец школы освобождает от него или отменяет его в аттестации ученика, и это отменяет этот счёт.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Эта школа ещё не указала валюту, поэтому сбор нельзя оплатить. Обратитесь в школу.",
 };

@@ -700,4 +700,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "รายการเรียกเก็บประจำนี้สิ้นสุดแล้ว: เลยวันสิ้นสุดหรือชำระครบทุกครั้งแล้ว",
   "This recurring charge isn't stopped.": "รายการเรียกเก็บประจำนี้ไม่ได้หยุดอยู่",
   "Recurring charge not found": "ไม่พบรายการเรียกเก็บประจำ",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "นี่คือค่าเลื่อนระดับ เจ้าของโรงเรียนยกเว้นหรือยกเลิกได้จากหน้าการเลื่อนระดับของนักเรียน ซึ่งจะยกเลิกรายการเรียกเก็บนี้ด้วย",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "โรงเรียนนี้ยังไม่ได้ตั้งค่าสกุลเงิน จึงยังชำระค่าธรรมเนียมไม่ได้ โปรดสอบถามโรงเรียน",
 };

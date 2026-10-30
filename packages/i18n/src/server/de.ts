@@ -700,4 +700,6 @@ export const serverMessages: Record<string, string> = {
   "This recurring charge has ended: its end date has passed or all its payments were made.": "Diese wiederkehrende Gebühr ist beendet: Ihr Enddatum ist vorbei oder alle Zahlungen wurden geleistet.",
   "This recurring charge isn't stopped.": "Diese wiederkehrende Gebühr ist nicht gestoppt.",
   "Recurring charge not found": "Wiederkehrende Gebühr nicht gefunden",
+  "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dies ist eine Beförderungsgebühr. Der Schulinhaber erlässt oder storniert sie in der Graduierung des Schülers, wodurch diese Gebühr storniert wird.",
+  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Diese Schule hat ihre Währung noch nicht festgelegt, daher kann die Gebühr nicht bezahlt werden. Frag bei der Schule nach.",
 };
