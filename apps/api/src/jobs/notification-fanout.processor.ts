@@ -131,7 +131,8 @@ export class NotificationFanoutProcessor extends WorkerHost {
               targetId,
               inAppOnly,
             };
-            return { name: 'notify', data, opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } } };
+            // A parent's copy waits in the same line as the child's notice.
+            return { name: 'notify', data, opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 }, ...(job.opts?.priority ? { priority: job.opts.priority } : {}) } };
           }),
         );
         // A child with no login of their own: the in-app row above is enough.

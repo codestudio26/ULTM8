@@ -3,7 +3,7 @@ import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullm
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { NOTIFICATION_FANOUT_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from './queue.constants';
-import { NotificationFanoutJobData } from './notification-fanout.types';
+import { BULK_NOTIFICATION_PRIORITY, NotificationFanoutJobData } from './notification-fanout.types';
 
 /** Why a member is asked to sign (Decision 354). */
 export type WaiverNoticeReason = 'assigned' | 'reminder' | 'updated' | 'renewal' | 'adult';
@@ -125,7 +125,7 @@ export class WaiverSignatureRequestsProcessor extends WorkerHost {
           return {
             name: 'notify',
             data: { notificationId: id, userId: grant.userId, title, body, type: 'WAIVER_SIGNATURE_REQUEST', schoolId, targetType: 'WAIVER', targetId: waiverId } satisfies NotificationFanoutJobData,
-            opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
+            opts: { jobId: id, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 }, priority: BULK_NOTIFICATION_PRIORITY },
           };
         }),
       );

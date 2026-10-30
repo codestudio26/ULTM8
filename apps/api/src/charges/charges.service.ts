@@ -501,6 +501,7 @@ export class ChargesService {
               schoolId,
               fresh.stripePaymentIntentId!,
               dto.amount,
+              fresh.currency,
               `charge-refund-${fresh.id}-${before._sum.amount ?? 0}-${dto.amount}`,
             );
           }

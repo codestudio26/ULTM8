@@ -15,6 +15,7 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
+import { toStripeAmount } from './stripe-amount';
 import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
@@ -469,7 +470,7 @@ export class PaymentsService {
     const intent = await withIdempotencyRetry(() =>
       stripe.paymentIntents.create(
         {
-          amount: amount + surchargeAmount,
+          amount: toStripeAmount(amount + surchargeAmount, currency),
           currency: currency.toLowerCase(),
           description,
           automatic_payment_methods: { enabled: true },
@@ -547,7 +548,7 @@ export class PaymentsService {
       : {
           price_data: {
             currency: currency.toLowerCase(),
-            unit_amount: amount,
+            unit_amount: toStripeAmount(amount, currency),
             recurring: { interval: 'month' as const },
             product: (await withIdempotencyRetry(() => stripe.products.create({ name: productName }, key('product')))).id,
           },
@@ -622,7 +623,7 @@ export class PaymentsService {
     const productId = params.existingProductId ?? (await stripe.products.create({ name: params.productName })).id;
     const price = await stripe.prices.create({
       product: productId,
-      unit_amount: params.amount,
+      unit_amount: toStripeAmount(params.amount, params.currency),
       currency: params.currency.toLowerCase(),
       // Monthly, matching subscribe()'s own hardcoded interval above — same
       // "no MembershipPlan-level interval field exists" reasoning, flagged
@@ -844,7 +845,7 @@ export class PaymentsService {
         {
           price_data: {
             currency: currency.toLowerCase(),
-            unit_amount: amount,
+            unit_amount: toStripeAmount(amount, currency),
             // Inline product_data, same simplification charge()/subscribe()
             // above already use (no persisted MembershipPlan<->Stripe Product
             // mapping exists) — unlike subscribe()'s own Price, a Checkout
@@ -857,7 +858,7 @@ export class PaymentsService {
           quantity: 1,
         },
         ...(surchargeAmount > 0
-          ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: surchargeAmount, product_data: { name: CARD_SURCHARGE_LINE_NAME } }, quantity: 1 }]
+          ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(surchargeAmount, currency), product_data: { name: CARD_SURCHARGE_LINE_NAME } }, quantity: 1 }]
           : []),
       ],
       ...(surchargeAmount > 0 ? { payment_intent_data: { metadata: { surchargeAmount: String(surchargeAmount) } } } : {}),
@@ -919,7 +920,7 @@ export class PaymentsService {
     try {
       const intent = await stripe.paymentIntents.create(
         {
-          amount,
+          amount: toStripeAmount(amount, currency),
           currency: currency.toLowerCase(),
           description,
           customer: saved.stripeCustomerId,
@@ -968,10 +969,13 @@ export class PaymentsService {
    * idempotency key from the caller (one per cancelled seat) so a retry can
    * never refund the same seat twice. Returns the Stripe Refund id.
    */
-  async refundPayment(studentId: string, schoolId: string, paymentIntentId: string, amount: number, idempotencyKey: string): Promise<string> {
+  async refundPayment(studentId: string, schoolId: string, paymentIntentId: string, amount: number, currency: string | null, idempotencyKey: string): Promise<string> {
     const account = await this.resolveStripePaymentAccount(studentId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, amount }, { idempotencyKey });
+    // `amount` is in ULTM8 hundredths, in the payment's own currency; an older
+    // payment recorded without one asks Stripe.
+    const paidIn = currency ?? (await stripe.paymentIntents.retrieve(paymentIntentId)).currency;
+    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, amount: toStripeAmount(amount, paidIn) }, { idempotencyKey });
     return refund.id;
   }
 

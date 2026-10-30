@@ -272,7 +272,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     const res = await cancel(booking.id);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ refundResolution: 'MONEY_REFUNDED', refundAmount: 600 });
-    expect(refundSpy).toHaveBeenCalledWith(student.id, school.id, expect.stringMatching(/^pi_/), 600, `booking-refund-${booking.id}`);
+    expect(refundSpy).toHaveBeenCalledWith(student.id, school.id, expect.stringMatching(/^pi_/), 600, null, `booking-refund-${booking.id}`);
     const txn = await superuser.transaction.findFirstOrThrow({ where: { membershipId: pack.id } });
     expect(txn.refundedAmount).toBe(600);
   });
