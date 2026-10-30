@@ -10382,7 +10382,7 @@ export interface components {
             gradingDate?: string | null;
             /** @description Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
             toDecide: boolean;
-            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee then closes as PAID). Still ACCEPTED until then. */
+            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then. */
             promotionBlocked: boolean;
             /** @description When the paid fee's promotion was first found unable to apply. Kept after the owner decides. */
             promotionBlockedAt?: string | null;
