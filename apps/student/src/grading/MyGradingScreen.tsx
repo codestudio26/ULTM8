@@ -31,7 +31,8 @@ const Muted = ({ children }: { children: React.ReactNode }) => <Text style={{ co
  * requirement, hours trained (a record only, Decision 306), the skills needed
  * for it, and a link to their history. A guardian opens the same screen for a
  * linked minor (Decision 132). The one thing to answer here is a promotion
- * fee (Decisions 287, 300): accept or decline; nothing is charged by it. A
+ * fee (Decisions 287, 300): accept or decline; accepting makes it an invoice,
+ * paid from Invoices like any charge (backlog §3.6 step 6). A
  * student can also ask the School to correct a wrong belt (backlog 3.13).
  */
 export function MyGradingScreen({ route, navigation }: Props) {
@@ -61,7 +62,14 @@ export function MyGradingScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
       {feeItems.map((r) => (
-        <FeeCard key={r.id} request={r} studentId={studentId} childName={childName} initiallyOpen={r.id === route.params?.openFeeId} />
+        <FeeCard
+          key={r.id}
+          request={r}
+          studentId={studentId}
+          childName={childName}
+          initiallyOpen={r.id === route.params?.openFeeId}
+          onPay={() => navigation.navigate('MyCharges', isSelf || !studentId ? undefined : { studentId, name: childName ?? undefined })}
+        />
       ))}
       {items.length === 0 ? <Muted>{t('grading.myGrading.noRank')}</Muted> : null}
       {items.map((item) => (
@@ -222,25 +230,34 @@ function HoursTrained({ item }: { item: GradingStyle }) {
   );
 }
 
-/** A promotion fee to answer (Decisions 287, 300): the grade, the price and
- * Accept / Decline (Decline asks again). Accepting charges nothing by itself:
- * the School takes the payment, and the promotion goes through once it is paid. */
+/** A promotion fee to answer (Decisions 287, 300): the grade, the price
+ * (with any tax the School adds on top, Decision 411) and Accept / Decline
+ * (Decline asks again). Accepting puts it on the member's invoices (backlog
+ * §3.6 step 6, Decision 303 item 5): the card then shows the invoice and
+ * "Pay now", which opens Invoices to pay it like any charge; a waiting
+ * promotion goes through once it is paid. */
 function FeeCard({
   request: r,
   studentId,
   childName,
   initiallyOpen = false,
+  onPay,
 }: {
   request: FeeRequest;
   studentId: string | null;
   childName: string | null;
   initiallyOpen?: boolean;
+  onPay: () => void;
 }) {
   const t = useT();
   const answer = useAnswerFee(studentId);
   const [open, setOpen] = useState(initiallyOpen);
   const [confirmingDecline, setConfirmingDecline] = useState(false);
   const amount = formatMoney(r.amountMinor, r.currency);
+  // Tax added on top of the price (Decision 411): the total is what is charged.
+  const taxOnTop = r.taxPreview && !r.taxPreview.taxInclusive && r.taxPreview.taxAmount > 0 ? r.taxPreview : null;
+  const toAccept = taxOnTop ? formatMoney(taxOnTop.grossAmount, taxOnTop.currency) : amount;
+  const charge = r.charge && r.charge.status !== 'CANCELLED' ? r.charge : null;
   const graded = r.gradingDate ? formatDate(r.gradingDate) : formatDate(r.createdAt);
   const send = (a: 'accept' | 'decline') => answer.mutate({ id: r.id, answer: a }, { onSuccess: () => setConfirmingDecline(false) });
 
@@ -261,13 +278,30 @@ function FeeCard({
           : t('grading.fee.placeAmount', { place: r.disciplineName || r.schoolName || '', amount })}
       </Muted>
       {answer.error ? <ErrorBanner message={getApiErrorMessage(answer.error, t('grading.fee.answerError'))} /> : null}
-      {r.status === 'ACCEPTED' ? (
+      {r.status === 'ACCEPTED' && charge ? (
+        <View style={{ marginTop: spacing[2] }}>
+          {charge.owedAmount > 0 ? (
+            <>
+              <Text>{t('grading.fee.acceptedInvoice', { invoice: charge.invoiceLabel, amount: formatMoney(charge.owedAmount, charge.currency) })}</Text>
+              {r.promotionWaits && !r.promotionApplied ? <Muted>{t('grading.fee.waitsForPayment', { rank: r.toRungName })}</Muted> : null}
+              <Button title={t('grading.fee.payNow')} onPress={onPay} />
+            </>
+          ) : (
+            <Muted>{t('grading.fee.paid')}</Muted>
+          )}
+        </View>
+      ) : r.status === 'ACCEPTED' ? (
         <Muted>{t('grading.fee.accepted', { rank: r.toRungName })}</Muted>
       ) : !open ? (
         <Button title={t('grading.fee.seeAndAnswer')} variant="secondary" onPress={() => setOpen(true)} />
       ) : (
         <View style={{ marginTop: spacing[2] }}>
           <Text>{t('grading.fee.gradedOn', { date: graded })}</Text>
+          {taxOnTop ? (
+            <Text style={{ marginTop: spacing[1] }}>
+              {t('grading.fee.plusTax', { tax: formatMoney(taxOnTop.taxAmount, taxOnTop.currency), total: toAccept })}
+            </Text>
+          ) : null}
           <Text style={{ marginTop: spacing[1] }}>
             {childName ? t('grading.fee.nothingChargedChild', { name: childName }) : t('grading.fee.nothingChargedSelf')}
           </Text>
@@ -281,7 +315,7 @@ function FeeCard({
             </>
           ) : (
             <>
-              <Button title={t('grading.fee.accept', { amount })} loading={answer.isPending} onPress={() => send('accept')} />
+              <Button title={t('grading.fee.accept', { amount: toAccept })} loading={answer.isPending} onPress={() => send('accept')} />
               <Button title={t('grading.fee.decline')} variant="secondary" onPress={() => setConfirmingDecline(true)} />
             </>
           )}

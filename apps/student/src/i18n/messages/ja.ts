@@ -599,6 +599,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "やめる",
       accept: "{amount}を承諾",
       decline: "辞退",
+      plusTax: "税 {tax} が加算され、合計 {total} です。",
+      acceptedInvoice: "料金を承諾しました。請求書 {invoice}: {amount} をアプリまたは受付でお支払いください。",
+      waitsForPayment: "支払いが完了すると {rank} への昇級が反映されます。",
+      payNow: "今すぐ支払う",
+      paid: "支払済みです。ありがとうございます。",
     },
     history: {
       loadError: "履歴を読み込めませんでした。もう一度お試しください。",
@@ -1017,6 +1022,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "支払い：{invoice} {description}",
       itemBalance: "残高への支払い",
+    },
+    promotionFee: {
+      label: "昇級費",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "延滞料",

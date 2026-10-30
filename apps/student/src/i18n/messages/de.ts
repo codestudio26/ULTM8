@@ -605,6 +605,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "Behalten",
       accept: "{amount} akzeptieren",
       decline: "Ablehnen",
+      plusTax: "Zuzüglich {tax} Steuer: insgesamt {total}.",
+      acceptedInvoice: "Du hast die Gebühr akzeptiert. Rechnung {invoice}: {amount} zu zahlen, in der App oder an der Theke.",
+      waitsForPayment: "Die Beförderung zu {rank} gilt, sobald sie bezahlt ist.",
+      payNow: "Jetzt bezahlen",
+      paid: "Bezahlt. Danke.",
     },
     history: {
       loadError: "Der Verlauf konnte nicht geladen werden — bitte versuche es erneut.",
@@ -1024,6 +1029,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Zahlung: {invoice} {description}",
       itemBalance: "Zahlung auf dein Guthabenkonto",
+    },
+    promotionFee: {
+      label: "Beförderungsgebühr",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "Säumnisgebühr",

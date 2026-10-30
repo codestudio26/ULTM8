@@ -636,6 +636,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "تراجع",
       accept: "قبول {amount}",
       decline: "رفض",
+      plusTax: "بالإضافة إلى ضريبة {tax}: المجموع {total}.",
+      acceptedInvoice: "قبلت الرسوم. الفاتورة {invoice}: {amount} للدفع، في التطبيق أو في مكتب الاستقبال.",
+      waitsForPayment: "تتم الترقية إلى {rank} بمجرد دفعها.",
+      payNow: "ادفع الآن",
+      paid: "تم الدفع. شكرًا لك.",
     },
     history: {
       loadError: "تعذّر تحميل السجل، يُرجى المحاولة مرة أخرى.",
@@ -1087,6 +1092,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "دفعة: {invoice} {description}",
       itemBalance: "دفعة إلى رصيدك",
+    },
+    promotionFee: {
+      label: "رسوم الترقية",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "رسوم تأخير",

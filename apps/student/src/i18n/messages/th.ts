@@ -599,6 +599,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "เก็บไว้",
       accept: "ยอมรับ {amount}",
       decline: "ปฏิเสธ",
+      plusTax: "บวกภาษี {tax}: รวมทั้งหมด {total}",
+      acceptedInvoice: "คุณยอมรับค่าธรรมเนียมแล้ว ใบแจ้งหนี้ {invoice}: ต้องชำระ {amount} ในแอปหรือที่เคาน์เตอร์",
+      waitsForPayment: "การเลื่อนเป็น {rank} จะมีผลเมื่อชำระแล้ว",
+      payNow: "ชำระเลย",
+      paid: "ชำระแล้ว ขอบคุณ",
     },
     history: {
       loadError: "ไม่สามารถโหลดประวัติได้ โปรดลองอีกครั้ง",
@@ -1016,6 +1021,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "ชำระเงิน: {invoice} {description}",
       itemBalance: "ชำระเข้ายอดคงเหลือ",
+    },
+    promotionFee: {
+      label: "ค่าเลื่อนระดับ",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "ค่าปรับล่าช้า",

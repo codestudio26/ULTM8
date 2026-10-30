@@ -82,6 +82,11 @@ export const charges = {
     item: 'Payment: {invoice} {description}',
     itemBalance: 'Payment toward your balance',
   },
+  // Backlog 3.6 step 6 — an accepted promotion fee (Decision 303 item 5).
+  promotionFee: {
+    label: "Promotion fee",
+    forRank: "{rank} · {style}",
+  },
   // Decision 413 — late fees.
   lateFee: {
     label: "Late fee",

@@ -605,6 +605,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepIt: "Vazgeç",
       accept: "{amount} kabul et",
       decline: "Reddet",
+      plusTax: "Artı {tax} vergi: toplam {total}.",
+      acceptedInvoice: "Ücreti kabul ettin. Fatura {invoice}: uygulamada veya resepsiyonda ödenecek {amount}.",
+      waitsForPayment: "{rank} terfisi ödendiğinde gerçekleşir.",
+      payNow: "Şimdi öde",
+      paid: "Ödendi. Teşekkürler.",
     },
     history: {
       loadError: "Geçmiş yüklenemedi — lütfen tekrar deneyin.",
@@ -1024,6 +1029,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Ödeme: {invoice} {description}",
       itemBalance: "Bakiyenize ödeme",
+    },
+    promotionFee: {
+      label: "Terfi ücreti",
+      forRank: "{rank} · {style}",
     },
     lateFee: {
       label: "Gecikme ücreti",
