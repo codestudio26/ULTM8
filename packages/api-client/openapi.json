@@ -31149,12 +31149,13 @@
           "feeStatus": {
             "type": "string",
             "enum": [
+              "blocked",
               "waiting",
               "declined",
               "toDecide"
             ],
             "nullable": true,
-            "description": "Promotion fee (Decisions 300, 307): \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
+            "description": "Promotion fee (Decisions 300, 307, 414): \"blocked\" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; \"waiting\" — the promotion waits for its fee (\"Waiting for fee\"); \"declined\" — the fee was declined (\"Fee declined\"); \"toDecide\" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise."
           },
           "feeRequest": {
             "nullable": true,
@@ -32003,6 +32004,15 @@
             "type": "boolean",
             "description": "Open \"to decide\": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request."
           },
+          "promotionBlocked": {
+            "type": "boolean",
+            "description": "Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee then closes as PAID). Still ACCEPTED until then."
+          },
+          "promotionBlockedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the paid fee's promotion was first found unable to apply. Kept after the owner decides."
+          },
           "toDecideAt": {
             "type": "string",
             "nullable": true
@@ -32069,6 +32079,7 @@
           "promotionWaits",
           "promotionApplied",
           "toDecide",
+          "promotionBlocked",
           "createdAt"
         ]
       },
