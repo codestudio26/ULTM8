@@ -231,6 +231,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Twój karnet {plan} jest zamrożony od {start}. Wracasz {back}.",
     freezeDeclinedTitle: "Zamrożenie odrzucone",
     freezeDeclinedBody: "Twoja szkoła odrzuciła prośbę o zamrożenie {plan} od {start}.",
+    freezeBookingsCancelledTitle: "Rezerwacje anulowane",
+    freezeBookingsCancelledBody: "Twój karnet {plan} jest zamrożony od {start}, a wracasz {back}, więc twoje rezerwacje w tym czasie zostały anulowane: {list}. Po zakończeniu zamrożenia możesz znów rezerwować.",
     classMovedTitle: "Zajęcia przeniesione",
     classCancelledTitle: "Zajęcia odwołane",
     toDecideTitle: "Awans do decyzji",

@@ -231,6 +231,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Ваш абонемент «{plan}» заморожен с {start}. Вы возвращаетесь {back}.",
     freezeDeclinedTitle: "Заморозка отклонена",
     freezeDeclinedBody: "Школа отклонила ваш запрос на заморозку «{plan}» с {start}.",
+    freezeBookingsCancelledTitle: "Записи отменены",
+    freezeBookingsCancelledBody: "Ваш абонемент «{plan}» заморожен с {start}, вы возвращаетесь {back}, поэтому ваши записи на это время отменены: {list}. Записаться снова можно после окончания заморозки.",
     classMovedTitle: "Занятие перенесено",
     classCancelledTitle: "Занятие отменено",
     toDecideTitle: "Повышение ждёт решения",

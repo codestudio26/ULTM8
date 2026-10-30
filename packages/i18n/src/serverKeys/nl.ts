@@ -203,6 +203,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Je lidmaatschap {plan} is bevroren vanaf {start}. Je bent terug op {back}.",
     freezeDeclinedTitle: "Bevriezing afgewezen",
     freezeDeclinedBody: "Je school heeft je verzoek om {plan} vanaf {start} te bevriezen afgewezen.",
+    freezeBookingsCancelledTitle: "Boekingen geannuleerd",
+    freezeBookingsCancelledBody: "Je lidmaatschap {plan} is bevroren vanaf {start} en je bent terug op {back}, dus je boekingen in die periode zijn geannuleerd: {list}. Je kunt weer boeken zodra de bevriezing voorbij is.",
     classMovedTitle: "Les verplaatst",
     classCancelledTitle: "Les geannuleerd",
     toDecideTitle: "Promotie te beslissen",

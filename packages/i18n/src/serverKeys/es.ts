@@ -217,6 +217,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "Tu membresía {plan} está congelada desde el {start}. Vuelves el {back}.",
     freezeDeclinedTitle: "Congelación rechazada",
     freezeDeclinedBody: "Tu escuela rechazó tu solicitud de congelar {plan} desde el {start}.",
+    freezeBookingsCancelledTitle: "Reservas canceladas",
+    freezeBookingsCancelledBody: "Tu membresía {plan} está congelada desde el {start} y vuelves el {back}, así que se cancelaron tus reservas de ese periodo: {list}. Podrás reservar de nuevo cuando termine la congelación.",
     classMovedTitle: "Clase cambiada",
     classCancelledTitle: "Clase cancelada",
     toDecideTitle: "Promoción pendiente de decisión",

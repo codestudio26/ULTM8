@@ -259,6 +259,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeApprovedBody: "عضويتك {plan} مجمّدة اعتبارًا من {start}. تعود في {back}.",
     freezeDeclinedTitle: "تم رفض التجميد",
     freezeDeclinedBody: "رفضت مدرستك طلبك لتجميد {plan} اعتبارًا من {start}.",
+    freezeBookingsCancelledTitle: "تم إلغاء الحجوزات",
+    freezeBookingsCancelledBody: "عضويتك {plan} مجمّدة اعتبارًا من {start} وتعود في {back}، لذلك أُلغيت حجوزاتك خلال هذه الفترة: {list}. يمكنك الحجز مجددًا بعد انتهاء التجميد.",
     classMovedTitle: "تم نقل الحصة",
     classCancelledTitle: "تم إلغاء الحصة",
     toDecideTitle: "ترقية بانتظار القرار",

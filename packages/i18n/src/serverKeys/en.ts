@@ -187,6 +187,8 @@ export const server = {
     freezeApprovedBody: "Your {plan} membership is frozen from {start}. You're back on {back}.",
     freezeDeclinedTitle: "Freeze declined",
     freezeDeclinedBody: "Your School declined your request to freeze {plan} from {start}.",
+    freezeBookingsCancelledTitle: "Bookings cancelled",
+    freezeBookingsCancelledBody: "Your {plan} membership is frozen from {start} and you're back on {back}, so your bookings in between were cancelled: {list}. You can book again once the freeze ends.",
     classMovedTitle: 'Class moved',
     classCancelledTitle: 'Class cancelled',
     toDecideTitle: 'Promotion to decide',

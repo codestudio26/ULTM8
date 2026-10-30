@@ -635,6 +635,7 @@ export const serverMessages: Record<string, string> = {
   "Only the note's author or a School owner can change it.": "메모는 작성자나 학교 소유자만 바꿀 수 있어요.",
   "A note can't be empty.": "메모는 비워 둘 수 없어요.",
   "The School owner hasn't let you export the student list.": "학교 소유자가 학생 목록 내보내기를 허용하지 않았어요.",
+  "The School owner hasn't let you freeze memberships.": "학교 소유자가 멤버십 일시정지를 허용하지 않았어요.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
   "You are not on the staff of this School.": "이 학교의 직원이 아닙니다.",
   "Only the School owner can invite Branch Staff.": "지점 직원은 학교 소유자만 초대할 수 있습니다.",
