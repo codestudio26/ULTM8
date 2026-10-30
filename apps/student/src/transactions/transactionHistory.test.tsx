@@ -92,6 +92,24 @@ describe('TransactionHistoryScreen', () => {
     expect(getByText('SUCCESSFUL')).toBeTruthy();
   });
 
+  it('shows a cash payment the School cancelled as Cancelled, with the date (Decision 338 item 1)', async () => {
+    mocked(transactionQueries.useMyTransactions).mockReturnValue(
+      pagedQuery([
+        {
+          id: 'tx1', schoolId: 's1', studentId: 'me', paymentAccountId: 'pa1', membershipPlanId: 'mp1', membershipPlanTitle: '5-Class Pack',
+          membershipId: null, billingDate: '2026-10-01T12:00:00.000Z', amount: 5000, surchargeAmount: 0, currency: 'gbp',
+          status: 'FAILED', paymentMethod: 'CASH', disputedAmount: null, refundedAmount: null,
+          cancelledAt: '2026-10-02T12:00:00.000Z', cancelledById: null, cancelledByName: null, cancelReason: null,
+          createdAt: '2026-10-01T12:00:00.000Z', updatedAt: '2026-10-02T12:00:00.000Z',
+        },
+      ]),
+    );
+    const { getByText, queryByText } = await render(<TransactionHistoryScreen />);
+    expect(getByText('CANCELLED')).toBeTruthy();
+    expect(queryByText('FAILED')).toBeNull();
+    expect(getByText(/^Cancelled on .+\. Nothing to pay\.$/)).toBeTruthy();
+  });
+
   it('shows a card surcharge as its own line, with the total paid (Decision 406)', async () => {
     mocked(transactionQueries.useMyTransactions).mockReturnValue(
       pagedQuery([

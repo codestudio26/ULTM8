@@ -15,6 +15,8 @@ export const transactions = {
     lateCancelFeeNoClass: 'Late-cancellation fee',
     freezeFee: "Freeze fee: {plan}",
     freezeFeeNoPlan: "Freeze fee",
+    /** Decision 338 item 1: a cash or bank-transfer payment the School cancelled. */
+    cancelledOn: "Cancelled on {date}. Nothing to pay.",
   },
   /** A payment's status, shown in capitals on each row. */
   status: {
@@ -23,5 +25,6 @@ export const transactions = {
     failed: 'FAILED',
     refunded: 'REFUNDED',
     disputed: 'DISPUTED',
+    cancelled: 'CANCELLED',
   },
 };

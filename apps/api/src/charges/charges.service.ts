@@ -18,6 +18,7 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
+import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
 import {
   allocate,
   chargePaid,
@@ -62,12 +63,6 @@ const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] as co
 
 type Tx = Prisma.TransactionClient;
 
-export interface ChargeAbilities {
-  owner: boolean;
-  create: boolean;
-  cancel: boolean;
-  recordPayment: boolean;
-}
 
 type ChargeRow = Prisma.ChargeGetPayload<{ include: { allocations: { select: { amount: true } } } }>;
 type EntryRow = Prisma.BalanceEntryGetPayload<object>;
@@ -144,31 +139,10 @@ export class ChargesService {
   // Who may do what
   // ---------------------------------------------------------------------------
 
-  /** What the caller may do with this student's charges at this School. */
+  /** What the caller may do with this student's charges at this School
+   * (charge-abilities.ts, shared with a membership's cash-payment cancel). */
   async abilities(callerId: string, schoolId: string, studentId: string): Promise<ChargeAbilities> {
-    const none: ChargeAbilities = { owner: false, create: false, cancel: false, recordPayment: false };
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findMany({ where: { userId: callerId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null }, select: { role: true } }),
-    );
-    if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { owner: true, create: true, cancel: true, recordPayment: true };
-    if (grants.length === 0) return none;
-    try {
-      await this.tenantAuth.assertBranchCoversStudent(await this.tenantAuth.staffBranchCoverage(callerId, schoolId), schoolId, studentId);
-    } catch (err) {
-      if (err instanceof ForbiddenException) return none;
-      throw err;
-    }
-    const branchStaff = grants.some((g) => g.role === 'BRANCH_STAFF');
-    const [row, school] = await this.prismaApp.withTenantContext(callerId, async (tx) => [
-      await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canCreateCharges: true, canCancelCharges: true } }),
-      await tx.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } }),
-    ]);
-    return {
-      owner: false,
-      create: row?.canCreateCharges ?? branchStaff,
-      cancel: row?.canCancelCharges ?? false,
-      recordPayment: branchStaff && !!school?.branchStaffCanRecordPayments,
-    };
+    return chargeAbilities(this.prismaApp, this.tenantAuth, callerId, schoolId, studentId);
   }
 
   private async assertMay(callerId: string, schoolId: string, studentId: string, what: 'create' | 'cancel' | 'recordPayment' | 'read') {
@@ -204,6 +178,7 @@ export class ChargesService {
     const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, can.owner);
     return {
       ...view,
+      deskMembershipPayments: can.cancel ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
       can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
       settings: {
         currency: school.defaultCurrency?.toUpperCase() ?? null,
@@ -901,6 +876,46 @@ export class ChargesService {
     return this.prismaJobs.transaction.findMany({
       where: { schoolId, studentId, kind: 'CHARGE_PAYMENT' },
       select: { id: true, status: true, chargePaymentChannel: true, surchargeAmount: true, amount: true, currency: true, chargeId: true, paymentMethod: true, createdAt: true },
+    });
+  }
+
+  /** Decision 338 item 1 (last point): the student's membership payments by
+   * cash or bank transfer still waiting at the desk, and the ones cancelled,
+   * so the owner and staff with "Can cancel charges" can cancel them from the
+   * Payments card (PATCH /transactions/{id}/cancel). Read on the jobs
+   * connection after the caller's access was checked, as above. */
+  private async readDeskMembershipPayments(schoolId: string, studentId: string) {
+    const rows = await this.prismaJobs.transaction.findMany({
+      where: {
+        schoolId,
+        studentId,
+        kind: { not: 'CHARGE_PAYMENT' },
+        paymentMethod: { not: 'STRIPE' },
+        OR: [{ status: 'PENDING' }, { status: 'FAILED', cancelledAt: { not: null } }],
+      },
+      include: {
+        membershipPlan: { select: { title: true } },
+        membership: { select: { membershipPlan: { select: { title: true } } } },
+      },
+      orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
+      take: 50,
+    });
+    const names = await resolveUserNames(this.prismaAuth, rows.map((r) => r.cancelledById).filter((id): id is string => !!id));
+    return rows.map((r) => {
+      const n = r.cancelledById ? names.get(r.cancelledById) : undefined;
+      return {
+        id: r.id,
+        kind: r.kind as 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE',
+        membershipPlanTitle: r.membershipPlan?.title ?? r.membership?.membershipPlan.title ?? null,
+        amount: r.amount,
+        currency: r.currency ? r.currency.toUpperCase() : null,
+        paymentMethod: r.paymentMethod,
+        billingDate: r.billingDate.toISOString(),
+        status: r.cancelledAt ? ('CANCELLED' as const) : ('PENDING' as const),
+        cancelledAt: r.cancelledAt?.toISOString() ?? null,
+        cancelledByName: n ? `${n.firstName} ${n.surname}`.trim() : null,
+        cancelReason: r.cancelReason,
+      };
     });
   }
 

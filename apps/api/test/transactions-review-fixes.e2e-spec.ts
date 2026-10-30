@@ -61,6 +61,9 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: staff.id, schoolId: school.id, branchId: branch.id },
       ],
     });
+    // The student's home branch is the staff member's, so the staff member
+    // covers them (Decision 168) when "Can cancel charges" is on.
+    await su.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: student.id, branchId: branch.id } });
     const account = await su.paymentAccount.create({
       data: { id: randomUUID(), schoolId: school.id, provider, accountTitle: 'Desk', country: 'GB' },
     });
@@ -73,6 +76,7 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
       account,
       owner,
       student,
+      staff,
       studentGrantId,
       ownerToken: token(owner, 'SCHOOL_OWNER_MANAGER', school.id),
       studentToken: token(student, 'STUDENT', school.id),
@@ -84,7 +88,11 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
   const http = () => request(app.getHttpServer());
   const buy = (s: Seeded) => http().post(`/v1/membership-plans/${s.plan.id}/purchase`).set('Authorization', `Bearer ${s.studentToken}`).send({});
   const confirm = (s: Seeded, id: string, tok = s.ownerToken) => http().patch(`/v1/transactions/${id}/confirm`).set('Authorization', `Bearer ${tok}`);
-  const cancel = (s: Seeded, id: string, tok = s.ownerToken) => http().patch(`/v1/transactions/${id}/cancel`).set('Authorization', `Bearer ${tok}`);
+  const cancel = (s: Seeded, id: string, tok = s.ownerToken, reason: string | null = 'Never came in') =>
+    http()
+      .patch(`/v1/transactions/${id}/cancel`)
+      .set('Authorization', `Bearer ${tok}`)
+      .send(reason === null ? {} : { reason });
 
   /** Notification fan-out runs on the queue; wait for it rather than sleeping blind. */
   async function noticesFor(userId: string, title: string, expected = 1) {
@@ -111,6 +119,8 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
     const users = { email: { startsWith: TAG } };
     await su.notification.deleteMany({ where: { user: users } });
     await su.transaction.deleteMany({ where });
+    await su.staffPermission.deleteMany({ where });
+    await su.studentHomeBranch.deleteMany({ where });
     await su.membership.deleteMany({ where });
     await su.membershipPlan.deleteMany({ where });
     await su.paymentAccount.deleteMany({ where });
@@ -183,6 +193,7 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
         successful: 23,
         pending: 1,
         failedOrDisputed: 1,
+        cancelled: 0,
         revenue: [{ currency: 'GBP', amount: 23_000 }],
       });
     });
@@ -262,10 +273,12 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
   });
 
   describe('cancel a Pending cash payment', () => {
-    it('Owner only: Branch Staff and the Student are refused', async () => {
+    it('Branch Staff without "Can cancel charges" and the Student are refused', async () => {
       const s = await seedSchool();
       const p = await buy(s);
-      expect((await cancel(s, p.body.transactionId, s.staffToken)).status).toBe(404);
+      const staff = await cancel(s, p.body.transactionId, s.staffToken);
+      expect(staff.status).toBe(403);
+      expect(staff.body.error.code).toBe('STAFF_ACCESS_OFF');
       expect((await cancel(s, p.body.transactionId, s.studentToken)).status).toBe(403);
       expect((await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } })).status).toBe('PENDING');
     });
@@ -303,6 +316,149 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
         },
       });
       expect((await cancel(s, row.id)).status).toBe(400);
+    });
+  });
+
+  describe('cancelling follows the charge rule (Decision 338 item 1)', () => {
+    const allowStaffToCancel = (s: Seeded) =>
+      su.staffPermission.create({ data: { id: randomUUID(), schoolId: s.school.id, userId: s.staff.id, canCancelCharges: true } });
+
+    it('the owner cancels with a reason: stored FAILED with who, when and why', async () => {
+      const s = await seedSchool();
+      const p = await buy(s);
+      const res = await cancel(s, p.body.transactionId, s.ownerToken, 'Changed their mind');
+      expect(res.status).toBe(200);
+      expect(res.body.cancelled).toBe(true);
+      const row = await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } });
+      expect(row.status).toBe('FAILED');
+      expect(row.cancelledAt).not.toBeNull();
+      expect(row.cancelledById).toBe(s.owner.id);
+      expect(row.cancelReason).toBe('Changed their mind');
+      // The member's notice never carries the reason.
+      const notice = await noticesFor(s.student.id, 'Payment cancelled');
+      expect(notice[0].body).toBe('Your School cancelled your cash or bank payment of 150.00 GBP for 10-Class Pack.');
+    });
+
+    it('Branch Staff with "Can cancel charges" who cover the student can cancel', async () => {
+      const s = await seedSchool();
+      await allowStaffToCancel(s);
+      const p = await buy(s);
+      const res = await cancel(s, p.body.transactionId, s.staffToken, 'Wrong plan');
+      expect(res.status).toBe(200);
+      expect(res.body.cancelled).toBe(true);
+      const row = await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } });
+      expect(row.status).toBe('FAILED');
+      expect(row.cancelledById).toBe(s.staff.id);
+      expect(row.cancelReason).toBe('Wrong plan');
+    });
+
+    it('...but not for a student of a branch they are not assigned to', async () => {
+      const s = await seedSchool();
+      await allowStaffToCancel(s);
+      const other = await su.branch.create({ data: { id: randomUUID(), schoolId: s.school.id, name: 'Other' } });
+      await su.studentHomeBranch.update({ where: { schoolId_studentId: { schoolId: s.school.id, studentId: s.student.id } }, data: { branchId: other.id } });
+      const p = await buy(s);
+      expect((await cancel(s, p.body.transactionId, s.staffToken)).status).toBe(403);
+      expect((await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } })).status).toBe('PENDING');
+    });
+
+    it('a reason is required by default, and optional when the School says so', async () => {
+      const s = await seedSchool();
+      const p = await buy(s);
+      for (const reason of [null, '', '   ']) {
+        const res = await cancel(s, p.body.transactionId, s.ownerToken, reason);
+        expect(res.status).toBe(400);
+        expect(res.body.error.code).toBe('PAYMENT_CANCEL_REASON_REQUIRED');
+      }
+      expect((await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } })).status).toBe('PENDING');
+      await su.school.update({ where: { id: s.school.id }, data: { chargeCancelReasonRequired: false } });
+      const res = await cancel(s, p.body.transactionId, s.ownerToken, null);
+      expect(res.status).toBe(200);
+      const row = await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } });
+      expect(row.status).toBe('FAILED');
+      expect(row.cancelledAt).not.toBeNull();
+      expect(row.cancelReason).toBeNull();
+    });
+
+    it("another School's owner can't cancel it, or learn it exists", async () => {
+      const s = await seedSchool();
+      const other = await seedSchool();
+      const p = await buy(s);
+      expect((await cancel(s, p.body.transactionId, other.ownerToken)).status).toBe(404);
+      expect((await cancel(s, randomUUID(), other.ownerToken)).status).toBe(404);
+      expect((await su.transaction.findUniqueOrThrow({ where: { id: p.body.transactionId } })).status).toBe('PENDING');
+    });
+
+    it('the member sees it cancelled, with the date, never who or why', async () => {
+      const s = await seedSchool();
+      const p = await buy(s);
+      await cancel(s, p.body.transactionId, s.ownerToken, 'Staff-only reason');
+      const mine = await http().get('/v1/transactions/me').set('Authorization', `Bearer ${s.studentToken}`);
+      expect(mine.status).toBe(200);
+      const row = mine.body.items.find((t: { id: string }) => t.id === p.body.transactionId);
+      expect(row.status).toBe('FAILED');
+      expect(row.cancelledAt).toBeTruthy();
+      expect(row.cancelReason).toBeNull();
+      expect(row.cancelledById).toBeNull();
+      expect(row.cancelledByName).toBeNull();
+      expect(JSON.stringify(mine.body)).not.toContain('Staff-only reason');
+    });
+
+    it('the ledger shows who cancelled and why; Failed leaves it out, Cancelled finds it, and the tiles count it apart', async () => {
+      const s = await seedSchool();
+      const p = await buy(s);
+      await cancel(s, p.body.transactionId, s.ownerToken, 'No show');
+      const failedId = randomUUID();
+      await su.transaction.create({
+        data: {
+          id: failedId,
+          schoolId: s.school.id,
+          studentId: s.student.id,
+          paymentAccountId: s.account.id,
+          membershipPlanId: s.plan.id,
+          amount: 1000,
+          currency: 'GBP',
+          status: 'FAILED',
+          paymentMethod: 'CASH',
+        },
+      });
+      const list = (query: Record<string, string>) =>
+        http().get(`/v1/schools/${s.school.id}/transactions`).query(query).set('Authorization', `Bearer ${s.ownerToken}`);
+      const all = await list({});
+      const row = all.body.items.find((t: { id: string }) => t.id === p.body.transactionId);
+      expect(row.cancelReason).toBe('No show');
+      expect(row.cancelledByName).toBe('owner Tester');
+      const failed = await list({ status: 'FAILED' });
+      expect(failed.body.items.map((t: { id: string }) => t.id)).toEqual([failedId]);
+      const cancelled = await list({ status: 'CANCELLED' });
+      expect(cancelled.body.items.map((t: { id: string }) => t.id)).toEqual([p.body.transactionId]);
+      const summary = await http().get(`/v1/schools/${s.school.id}/transactions/summary`).set('Authorization', `Bearer ${s.ownerToken}`);
+      expect(summary.body).toMatchObject({ total: 2, failedOrDisputed: 1, cancelled: 1 });
+      const cancelledSummary = await http()
+        .get(`/v1/schools/${s.school.id}/transactions/summary`)
+        .query({ status: 'CANCELLED' })
+        .set('Authorization', `Bearer ${s.ownerToken}`);
+      expect(cancelledSummary.body).toMatchObject({ total: 1, failedOrDisputed: 0, cancelled: 1 });
+    });
+
+    it("the student's Payments card lists it for staff who may cancel, and for no one else", async () => {
+      const s = await seedSchool();
+      const p = await buy(s);
+      const card = (tok: string) => http().get(`/v1/schools/${s.school.id}/students/${s.student.id}/charges`).set('Authorization', `Bearer ${tok}`);
+      // Branch Staff may create charges by default, but not cancel: no rows.
+      const before = await card(s.staffToken);
+      expect(before.status).toBe(200);
+      expect(before.body.deskMembershipPayments).toEqual([]);
+      await allowStaffToCancel(s);
+      const pending = await card(s.staffToken);
+      expect(pending.body.deskMembershipPayments).toEqual([
+        expect.objectContaining({ id: p.body.transactionId, status: 'PENDING', membershipPlanTitle: '10-Class Pack', amount: 15000, currency: 'GBP' }),
+      ]);
+      await cancel(s, p.body.transactionId, s.staffToken, 'Paid elsewhere');
+      const after = await card(s.ownerToken);
+      expect(after.body.deskMembershipPayments).toEqual([
+        expect.objectContaining({ id: p.body.transactionId, status: 'CANCELLED', cancelledByName: 'staff Tester', cancelReason: 'Paid elsewhere' }),
+      ]);
     });
   });
 });

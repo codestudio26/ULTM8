@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Deze kosten zijn al geannuleerd.",
   "This charge is already paid.": "Deze kosten zijn al betaald.",
   "Give a reason for cancelling this charge.": "Geef een reden op om deze kosten te annuleren.",
+  "Give a reason for cancelling this payment.": "Geef een reden op om deze betaling te annuleren.",
   "Only the student, or their Guardian, can see their charges.": "Alleen de leerling, of de ouder/voogd, kan de kosten zien.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"Mag kosten aanmaken\" en \"Mag kosten annuleren\" zijn voor vestigingsmedewerkers en trainers van deze School.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Deze school accepteert geen kaartbetalingen in de app. Betaal bij de balie.",
