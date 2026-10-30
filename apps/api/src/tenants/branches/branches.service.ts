@@ -10,6 +10,7 @@ import { compareBranches, matchesBranchFilter, paginateSorted } from './branch-l
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { BranchDependentCounts, branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from './branch-dependents';
 import { CloseBranchDto, WHOLE_SCHOOL } from './dto/close-branch.dto';
+import { assertSchoolCurrencySet, setsNewPrice } from '../../common/school-currency';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -106,6 +107,11 @@ export class BranchesService {
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    // Decision 414 item 6: no price before the School's currency is set.
+    // The School's currency, not the Branch's own currency override.
+    if (setsNewPrice(dto.noShowFee, existing.noShowFee)) {
+      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+    }
 
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.branch.update({

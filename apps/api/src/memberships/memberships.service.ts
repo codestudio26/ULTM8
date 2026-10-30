@@ -32,6 +32,7 @@ import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -105,6 +106,9 @@ export class MembershipsService {
 
     if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, schoolId, dto.disciplineIds);
     const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
+    // Decision 414 item 6: no price is saved before the School's currency is
+    // set, even on a plan given its own currency. A free plan needs none.
+    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) await this.assertSchoolCurrencySet(callerId, schoolId);
 
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -210,6 +214,12 @@ export class MembershipsService {
     // value) was wrongly rejected as invalid, even though the write below would
     // have forced them correctly. Mirror createPlan's own create-time shape exactly.
     const nextPrice = nextType === 'FRIEND_PASS' ? 0 : dto.price ?? existing.price;
+    // Decision 414 item 6: a new non-zero price (or late-cancel charge) needs
+    // the School's currency. Editing anything else on a plan priced before the
+    // rule, or saving its price unchanged, is still allowed.
+    if (setsNewPrice(nextPrice, existing.price) || setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
+      await this.assertSchoolCurrencySet(callerId, existing.schoolId);
+    }
     // Decision 334 (Memberships review M2/M4): a type change clears the fields
     // the new type doesn't use (Class Pack -> Subscription used to keep its 10
     // credits). Required fields are only checked when this edit touches them or
@@ -589,6 +599,10 @@ export class MembershipsService {
       throw new BadRequestException(`${currency} is not a supported currency. Pick one from the list.`);
     }
     return code;
+  }
+
+  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
   }
 
   /**

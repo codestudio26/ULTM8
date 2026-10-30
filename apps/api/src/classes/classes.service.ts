@@ -16,6 +16,7 @@ import { applyCapacityChange, offerSeatsToWaitlist } from './class-seats';
 import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -69,6 +70,9 @@ export class ClassesService {
       qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : null,
       refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : null,
     });
+
+    // Decision 414 item 6: no price before the School's currency is set.
+    if (setsNewPrice(dto.cancellationCharge)) await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
 
     const classId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -257,6 +261,11 @@ export class ClassesService {
 
     if ((dto as { styles?: unknown }).styles === null) {
       throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
+    }
+
+    // Decision 414 item 6: no price before the School's currency is set.
+    if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
+      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
     }
 
     const branchChanges = dto.branchId !== undefined && dto.branchId !== existing.branchId;

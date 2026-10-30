@@ -38,6 +38,7 @@ import { stopSchoolBilling } from '../stop-tenant-billing';
 import { sendFranchiseNotice } from '../franchises/franchise-notifications';
 import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
+import { requireSchoolCurrency, setsNewPrice } from '../../common/school-currency';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
 const RETENTION_WINDOW_DAYS = 90;
@@ -141,6 +142,8 @@ export class SchoolsService {
       // other DB-defaulted column (id aside, which this codebase always
       // mints client-side for the RoleGrant-in-the-same-transaction reason
       // explained elsewhere, not relevant to joinCode).
+      // Decision 414 item 6: a no-show fee is a price, so it needs the currency.
+      if (setsNewPrice(dto.noShowFee)) requireSchoolCurrency(dto.defaultCurrency);
       const created = await tx.school.create({
         data: {
           id: schoolId,
@@ -939,6 +942,7 @@ export class SchoolsService {
     if (dto.defaultCurrency !== undefined) {
       await this.assertCurrencyChangeAllowed(callerId, schoolId, dto.defaultCurrency, dto.confirmCurrencyChange === true);
     }
+    await this.assertCurrencyForNewFees(callerId, schoolId, dto);
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -1016,6 +1020,18 @@ export class SchoolsService {
    * neither counts. Clearing is refused while any plan relies on it; changing
    * needs `confirmCurrencyChange`, so the portal can say how many plans move.
    */
+  /** Decision 414 item 6: the School's fees (no-show, freeze) are prices, so a
+   * new non-zero amount needs the School's currency, set before or in the same
+   * save. Unchanged amounts saved before the rule are left alone. */
+  private async assertCurrencyForNewFees(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
+    if (!setsNewPrice(dto.noShowFee) && !setsNewPrice(dto.freezeFeeAmount)) return;
+    const current = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, noShowFee: true, freezeFeeAmount: true } }),
+    );
+    if (!setsNewPrice(dto.noShowFee, current?.noShowFee) && !setsNewPrice(dto.freezeFeeAmount, current?.freezeFeeAmount)) return;
+    requireSchoolCurrency(dto.defaultCurrency !== undefined ? dto.defaultCurrency : current?.defaultCurrency);
+  }
+
   private async assertCurrencyChangeAllowed(callerId: string, schoolId: string, next: string | null, confirmed: boolean) {
     const { current, reliant } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const school = await tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });

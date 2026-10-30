@@ -19,6 +19,7 @@ import { ChargeMathsError, ChargeTotals, computeCharge, taxForCharge } from './c
 import { InvoiceNotice, runSeries, seriesState } from './recurring-occurrences';
 import { dayOf, dayValue, firstIndexOnOrAfter, nextDay, schoolToday, type RecurringFrequency } from './recurring-schedule';
 import { CreateRecurringChargeDto, RecurringChargeStatus } from './dto/recurring-charge.dto';
+import { schoolCurrencyRequired } from '../common/school-currency';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a charge or desk sale (DESK_REPEAT). */
@@ -114,7 +115,7 @@ export class RecurringChargesService {
     if (!school) throw new NotFoundException('School not found');
     const currency = school.defaultCurrency?.toUpperCase();
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });

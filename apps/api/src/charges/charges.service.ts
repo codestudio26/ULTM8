@@ -55,6 +55,7 @@ import {
   SetChargePermissionDto,
   StartChargeCheckoutDto,
 } from './dto/charge.dto';
+import { schoolCurrencyRequired } from '../common/school-currency';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a desk sale (DESK_REPEAT, memberships.service.ts). */
@@ -205,7 +206,7 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const currency = school.defaultCurrency?.toUpperCase();
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
@@ -345,7 +346,7 @@ export class ChargesService {
       currency = target.currency;
     }
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
 
     const transactionId = randomUUID();
@@ -528,7 +529,7 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const currency = school.defaultCurrency?.toUpperCase();
     if (!currency) {
-      throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+      throw schoolCurrencyRequired();
     }
     const note = dto.note.trim();
     if (!note) throw new BadRequestException({ code: 'CHARGE_CREDIT_NOTE_REQUIRED', message: 'Add a note saying why this credit is given.' });
