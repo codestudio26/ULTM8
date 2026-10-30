@@ -142,7 +142,7 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
   }
 
   async function seedSchoolWithOwnerAndStripe() {
-    const school = await superuser.school.create({ data: { id: randomUUID(), name: `Archive/PriceChange Fixture School ${randomUUID()}` } });
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: `Archive/PriceChange Fixture School ${randomUUID()}`, defaultCurrency: 'GBP' } });
     schoolIds.push(school.id);
     const owner = await mkUser('owner');
     const student = await mkUser('student');
@@ -160,7 +160,7 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
     });
     paymentAccountIds.push(paymentAccount.id);
 
-    const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: `Other School ${randomUUID()}` } });
+    const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: `Other School ${randomUUID()}`, defaultCurrency: 'GBP' } });
     schoolIds.push(otherSchool.id);
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: outsiderOwner.id, schoolId: otherSchool.id } });
 

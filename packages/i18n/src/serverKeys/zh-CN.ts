@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "这节课已经结束。请选择一个未来的结束时间。",
     schoolCurrencyChange: "按学校货币收费的会员计划：{count} 个。从现在起将以 {currency} 收费，金额不变。",
     schoolCurrencyInUse: "按学校货币收费的会员计划：{count} 个。清空货币前，请先为这些计划设置各自的货币。",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "设置价格前，请先在学校页面设置学校的货币。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",

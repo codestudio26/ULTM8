@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "キャンセル",
     save: "保存",
     none: "—",
+    currencyFirst: {
+      title: "まずスクールの通貨を設定してください。",
+      body: "スクールの通貨が設定されるまで、価格は保存できません。",
+      link: "スクールページで通貨を設定",
+    },
   },
   layout: {
     trial: {

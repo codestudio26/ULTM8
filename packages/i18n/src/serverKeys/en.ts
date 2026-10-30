@@ -85,6 +85,8 @@ export const server = {
     // School Settings review (Decision 368, Q3).
     schoolCurrencyChange: "Membership plans charged in the School's currency: {count}. From now on they're charged in {currency}, with the same amounts.",
     schoolCurrencyInUse: "Membership plans charged in the School's currency: {count}. Give those plans their own currency before clearing it.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Set your School's currency on the School page before setting prices.",
   },
   errors: {
     slotHasBookings: {

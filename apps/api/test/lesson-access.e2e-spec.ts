@@ -87,8 +87,8 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Access Dojo' } });
-    other = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Access Dojo' } });
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Access Dojo', defaultCurrency: 'GBP' } });
+    other = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Access Dojo', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id, other.id);
     for (const [name, schoolId] of [['BJJ', school.id], ['Judo', school.id], ['Elsewhere', other.id]] as const) {
       style[name] = (await superuser.discipline.create({ data: { id: randomUUID(), schoolId, name } })).id;

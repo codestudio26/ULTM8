@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { LateFeeSettingsDto, UpdateLateFeeSettingsDto } from './dto/late-fee.dto';
+import { schoolCurrencyRequired, setsNewPrice } from '../common/school-currency';
 
 /**
  * Late fees, the School's choice (v1.3 backlog §3.7; Decision 413, which
@@ -37,6 +38,9 @@ export class LateFeesService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const current = await this.readSettings(callerId, schoolId);
+    // Decision 414 item 6: a new fixed amount is a price, so it needs the
+    // School's currency even while late fees stay off (the amount is kept).
+    if (!current.currency && setsNewPrice(dto.fixedAmount, current.fixedAmount)) throw schoolCurrencyRequired();
     if (dto.enabled) {
       if (dto.type === 'FIXED' && !dto.fixedAmount) {
         throw new BadRequestException({ code: 'LATE_FEE_AMOUNT_REQUIRED', message: 'Set a late fee amount above 0.' });
@@ -45,7 +49,7 @@ export class LateFeesService {
         throw new BadRequestException({ code: 'LATE_FEE_PERCENT_REQUIRED', message: 'Set a late fee percentage above 0%, up to 100%.' });
       }
       if (dto.type === 'FIXED' && !current.currency) {
-        throw new BadRequestException({ code: 'CHARGE_NO_CURRENCY', message: "Set the School's currency on the School page before creating charges." });
+        throw schoolCurrencyRequired();
       }
       if (dto.legalConfirmed !== true) {
         throw new BadRequestException({ code: 'LATE_FEE_LEGAL_CONFIRM_REQUIRED', message: 'Confirm that late fees are legal where your School operates.' });

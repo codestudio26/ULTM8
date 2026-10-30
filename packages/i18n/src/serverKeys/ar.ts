@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "انتهى هذا الصف بالفعل. اختر وقت انتهاء في المستقبل.",
     schoolCurrencyChange: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. من الآن تُحصَّل بعملة {currency} بالمبالغ نفسها.",
     schoolCurrencyInUse: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. حدّد لهذه الخطط عملتها الخاصة قبل مسح العملة.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "حدّد عملة مدرستك في صفحة المدرسة قبل تحديد الأسعار.",
   },
   errors: {
     beltInHistoryDelete: "هذا الحزام موجود في سجل ترقيات الطلاب، لذا لا يمكن حذفه.",

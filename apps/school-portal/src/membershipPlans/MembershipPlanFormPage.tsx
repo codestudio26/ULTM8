@@ -19,6 +19,7 @@ import {
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
 import { OwnerOnly } from './MembershipPlansPage';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 /** `label`/`caption` are translation keys, resolved at render time; `value`
  * is the enum value sent to the API, never translated. */
@@ -100,6 +101,8 @@ export function MembershipPlanFormPage() {
       classes={classData?.items ?? []}
       disciplines={disciplineData?.items ?? []}
       defaultCurrency={school?.defaultCurrency ?? undefined}
+      // Decision 414 item 6: no price until the School's currency is set.
+      schoolCurrencyMissing={!!school && !school.defaultCurrency}
       // Memberships review M9 (Decision 334): the migrate-or-keep prompt is
       // about running subscriptions, the same count the API checks; active
       // members (cash Weekly Passes etc.) only lock the type (M14).
@@ -162,6 +165,7 @@ function MembershipPlanForm({
   classes,
   disciplines,
   defaultCurrency,
+  schoolCurrencyMissing = false,
   activeSubscriberCount,
   activeMemberCount,
   submitting,
@@ -173,6 +177,10 @@ function MembershipPlanForm({
   classes: ClassResponse[];
   disciplines: DisciplineResponse[];
   defaultCurrency?: string;
+  /** Decision 414 item 6 — the School has no currency yet, so the price
+   * fields are off (a free plan can still be saved) and a notice links to the
+   * School page setting. */
+  schoolCurrencyMissing?: boolean;
   /** v1.2 backend backlog — how many ACTIVE, Stripe-backed subscribers this
    * plan currently has. Always 0 on Create (nothing to migrate/grandfather
    * for a plan that doesn't exist yet). */
@@ -404,6 +412,7 @@ function MembershipPlanForm({
       </div>
       <PageHeader title={mode === 'edit' ? t('membershipPlans.form.editTitle') : t('membershipPlans.form.addTitle')} />
       {error ? <ErrorBanner message={error} /> : null}
+      {schoolCurrencyMissing ? <CurrencyFirstNotice /> : null}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         {STEPS.map((step, i) => (
           <Button
@@ -456,7 +465,7 @@ function MembershipPlanForm({
           >
             <MoneyField
               id="plan-price"
-              disabled={priceLocked}
+              disabled={priceLocked || schoolCurrencyMissing}
               value={form.price}
               currency={form.currency || null}
               onChange={(price, priceValid) => setForm((f) => ({ ...f, price, priceValid }))}
@@ -633,6 +642,7 @@ function MembershipPlanForm({
           >
             <MoneyField
               id="plan-cancellationCharge"
+              disabled={schoolCurrencyMissing}
               value={form.cancellationCharge}
               currency={form.currency || null}
               onChange={(cancellationCharge, cancellationValid) => setForm((f) => ({ ...f, cancellationCharge, cancellationValid }))}

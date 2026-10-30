@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Questa lezione è già finita. Scegli un orario di fine nel futuro.",
     schoolCurrencyChange: "Piani addebitati nella valuta della scuola: {count}. D'ora in poi sono addebitati in {currency}, con gli stessi importi.",
     schoolCurrencyInUse: "Piani addebitati nella valuta della scuola: {count}. Dai a questi piani una valuta propria prima di cancellarla.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Imposta la valuta della tua scuola nella pagina della scuola prima di impostare i prezzi.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",

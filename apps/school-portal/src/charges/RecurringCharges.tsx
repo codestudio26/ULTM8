@@ -17,6 +17,7 @@ import {
   type StudentCharges,
   type StudentRecurringCharges,
 } from './chargeQueries';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 const STATUS_BADGE: Record<RecurringCharge['status'], 'success' | 'default' | 'info'> = { ACTIVE: 'success', STOPPED: 'default', ENDED: 'info' };
 const FREQUENCIES = ['WEEKLY', 'MONTHLY', 'YEARLY'] as const;
@@ -232,7 +233,8 @@ export function CreateRecurringChargeModal({
     <Modal title={t('charges.recurring.create.title', { name: studentName })} onClose={onClose}>
       <form onSubmit={handleSubmit} data-testid="create-recurring-charge-form">
         {error ? <ErrorBanner message={error} /> : null}
-        {!currency ? <ErrorBanner message={t('charges.create.noCurrency')} /> : null}
+        {/* Decision 414 item 6: no price until the School's currency is set. */}
+        {!currency ? <CurrencyFirstNotice /> : null}
         <Field label={t('charges.create.descriptionLabel')} htmlFor="recurring-description">
           <TextField id="recurring-description" maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} required />
         </Field>
@@ -248,7 +250,7 @@ export function CreateRecurringChargeModal({
           }
           error={amount.valid ? undefined : t('charges.create.amountInvalid')}
         >
-          <MoneyField id="recurring-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
+          <MoneyField id="recurring-amount" disabled={!currency} value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
         <Field label={t('charges.create.discountLabel')} htmlFor="recurring-discount-type">
           <SelectField

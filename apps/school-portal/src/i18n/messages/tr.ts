@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "İptal",
     save: "Kaydet",
     none: "—",
+    currencyFirst: {
+      title: "Önce okulunuzun para birimini ayarlayın.",
+      body: "Okulun bir para birimi olana kadar fiyatlar kaydedilemez.",
+      link: "Para birimini Okul sayfasında ayarla",
+    },
   },
   layout: {
     trial: {

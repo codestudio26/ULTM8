@@ -65,6 +65,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the student app show "No tax". A tax rate is still never typed per charge.
   Late fees and promotion fees always take the School's tax settings.
   Migration `20270119000000_charges_no_tax`.
+- **Currency first** (backlog 3.6; Decision 414 item 6) — until the School has
+  set its currency on the School page, no price can be saved: membership
+  plans, belt prices for promotion fees, charges, recurring charges, credit,
+  the late fee's fixed amount, the freeze fee, the no-show fee (School and
+  Branch) and Class and timetable slot cancellation charges. Each of those
+  forms shows "Set your School's currency first" with a link to the setting,
+  and its price field is off. A price of 0 (free) is still allowed, and
+  anything priced before keeps its price and can still be edited. The API
+  refuses with `SCHOOL_CURRENCY_REQUIRED` (charges used `CHARGE_NO_CURRENCY`).
 - **Cancelling a cash or bank-transfer membership payment works like
   cancelling a charge** (backlog 3.6; Decision 338 item 1, Decision 414 item 7)
   — a membership payment waiting at the desk is cancelled by the owner, and

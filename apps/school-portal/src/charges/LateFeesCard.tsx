@@ -5,6 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { MoneyField } from '../lib/MoneyField';
 import { rateText } from './chargeQueries';
 import { parseGraceDays, parseLateFeePercent, useLateFeeSettings, useUpdateLateFeeSettings, type LateFeeSettings } from './lateFeeQueries';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 /**
  * Decision 413: late fees, the School's choice. Off by default. When on, a
@@ -92,15 +93,17 @@ function LateFeesForm({ schoolId, settings }: { schoolId: string; settings: Late
             ]}
           />
         </Field>
+        {/* Decision 414 item 6: no fixed amount until the School's currency is set. */}
+        {type === 'FIXED' && !settings.currency ? <CurrencyFirstNotice /> : null}
         {type === 'FIXED' ? (
           <Field
             label={t('charges.lateFees.amountLabel')}
             htmlFor="late-fees-amount"
-            hint={settings.currency ? undefined : t('charges.lateFees.noCurrency')}
             error={fixedOk ? undefined : t('charges.lateFees.invalidAmount')}
           >
             <MoneyField
               id="late-fees-amount"
+              disabled={!settings.currency}
               value={fixed.minorUnits}
               currency={settings.currency}
               onChange={(minorUnits, valid) => {

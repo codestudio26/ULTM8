@@ -117,6 +117,8 @@ test('a request can be declined on the Student page', async ({ page }) => {
 });
 
 test('the owner sets the freezing limit and fee on the School page, and lets frozen members check in', async ({ page }) => {
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   await page.goto('/school');
   const card = page.getByTestId('freeze-settings');
   await expect(page.getByRole('heading', { name: 'Freezing memberships' })).toBeVisible();

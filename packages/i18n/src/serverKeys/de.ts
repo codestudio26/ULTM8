@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "Dieser Kurs ist bereits vorbei. Wähle eine Endzeit in der Zukunft.",
     schoolCurrencyChange: "Mitgliedschaftstarife in der Währung der Schule: {count}. Ab jetzt werden sie in {currency} abgerechnet, mit denselben Beträgen.",
     schoolCurrencyInUse: "Mitgliedschaftstarife in der Währung der Schule: {count}. Gib diesen Tarifen eine eigene Währung, bevor du sie leerst.",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "Lege die Währung deiner Schule auf der Schulseite fest, bevor du Preise festlegst.",
   },
   errors: {
     beltInHistoryDelete: "Dieser Gürtel steht in der Graduierungshistorie von Schülern, daher kann er nicht gelöscht werden.",

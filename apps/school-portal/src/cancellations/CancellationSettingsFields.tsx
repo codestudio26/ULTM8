@@ -3,6 +3,7 @@ import { Checkbox, Field, SelectField, TextField } from '@ultm8/ui';
 import type { components } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { parseMoney, toText } from '../lib/MoneyField';
+import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 
 type School = components['schemas']['SchoolResponseDto'];
 
@@ -58,12 +59,16 @@ export function CancellationSettingsFields({
   onChange,
   disabled = false,
   currency,
+  schoolCurrencyMissing = false,
 }: {
   form: CancellationSettingsForm;
   onChange: (next: CancellationSettingsForm) => void;
   disabled?: boolean;
   /** Shown after the no-show fee box, e.g. "BRL". */
   currency?: string | null;
+  /** Decision 414 item 6: the School has no currency yet, so the no-show fee
+   * (a price) is off, with a notice linking to the School page setting. */
+  schoolCurrencyMissing?: boolean;
 }) {
   const t = useT();
   function set<K extends keyof CancellationSettingsForm>(key: K, value: CancellationSettingsForm[K]) {
@@ -113,13 +118,14 @@ export function CancellationSettingsFields({
         checked={form.chargeLateCancellationFee}
         onChange={(e) => set('chargeLateCancellationFee', e.target.checked)}
       />
+      {schoolCurrencyMissing && !disabled ? <CurrencyFirstNotice /> : null}
       <Field
         label={t('schools.cancellations.noShowFeeLabel')}
         htmlFor="cancel-no-show-fee"
         hint={t('schools.cancellations.noShowFeeHint')}
         error={parseMoney(form.noShowFee).valid ? undefined : t('schools.cancellations.noShowFeeInvalid')}
       >
-        <AmountInput value={form.noShowFee} onChange={(v) => set('noShowFee', v)} currency={currency} disabled={disabled} />
+        <AmountInput value={form.noShowFee} onChange={(v) => set('noShowFee', v)} currency={currency} disabled={disabled || schoolCurrencyMissing} />
       </Field>
       <Field label={t('schools.cancellations.classCancelledLabel')} htmlFor="cancel-class-resolution">
         <SelectField

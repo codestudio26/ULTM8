@@ -14,6 +14,7 @@ import { CreateStyleFromTemplateDto } from './dto/style-template.dto';
 import { buildIbjjfTemplate, IBJJF_CLASS_TYPES, TEMPLATES } from './templates/ibjjf';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
+import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
 
 /** The one include every Rank read uses, so shapeRankResponse() always gets
  * stripe tiers (in ladder order) with their per-rung required Skills. */
@@ -723,7 +724,8 @@ export class RanksService {
     if (dto.stripeTiers) {
       await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
     }
-    const showPrices = await this.assertPricesAllowed(callerId, actor, existing.schoolId, existing.disciplineId, dto.stripeTiers ?? []);
+    const currentPrices = new Map(existing.stripeTiers.map((t) => [t.id, t.promotionFeeMinor ?? null]));
+    const showPrices = await this.assertPricesAllowed(callerId, actor, existing.schoolId, existing.disciplineId, dto.stripeTiers ?? [], currentPrices);
 
     // See createRank's own comment on why this is one flat withTenantContext
     // call (already one transaction), not a nested tx.$transaction — the same
@@ -1221,13 +1223,27 @@ export class RanksService {
    * manage disciplines (Decision 383) leave prices as they are: a price they
    * send is refused, and the ones already set are kept. Returns whether
    * prices are shown in the response. */
-  private async assertPricesAllowed(callerId: string, actor: string, schoolId: string, disciplineId: string, tiers: RankStripeTierInputDto[]): Promise<boolean> {
+  private async assertPricesAllowed(
+    callerId: string,
+    actor: string,
+    schoolId: string,
+    disciplineId: string,
+    tiers: RankStripeTierInputDto[],
+    currentPrices: Map<string, number | null> = new Map(),
+  ): Promise<boolean> {
     const on = await this.promotionFeeOn(callerId, schoolId);
     const priced = tiers.some((t) => t.promotionFeeMinor !== undefined);
     if (!on && priced) {
       throw new BadRequestException('The promotion fee is off for this School, so grades have no price. The owner can turn it on in Grading settings.');
     }
-    if (actor === callerId) return on;
+    if (actor === callerId) {
+      // Decision 414 item 6: a new price needs the School's currency. A rung
+      // keeping the price it already has, or set free, needs none.
+      if (tiers.some((t) => setsNewPrice(t.promotionFeeMinor, t.id ? currentPrices.get(t.id) : null))) {
+        await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+      }
+      return on;
+    }
     if (priced) throw new ForbiddenException('Only the School owner sets the price of a grade.');
     return this.pricesVisible(callerId, schoolId, disciplineId);
   }

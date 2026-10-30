@@ -67,6 +67,8 @@ test('S2 and S5: saving the footer keeps unsaved School details, and a bare link
 });
 
 test('S3: the no-show fee is typed in normal units, and a wrong amount says so', async ({ page }) => {
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
   await signIn(page, s.ownerToken);
   await page.goto('/school');
   const card = page.locator('form').filter({ hasText: 'Class cancellations' });

@@ -78,6 +78,8 @@ export const server: PartialMessages<ServerKeys> = {
     classAlreadyEnded: "คลาสนี้จบไปแล้ว เลือกเวลาสิ้นสุดในอนาคต",
     schoolCurrencyChange: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน ต่อจากนี้จะเรียกเก็บเป็น {currency} ด้วยจำนวนเงินเท่าเดิม",
     schoolCurrencyInUse: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน กำหนดสกุลเงินของแผนเหล่านั้นเองก่อนล้างค่า",
+    // Decision 414 item 6.
+    schoolCurrencyRequired: "ตั้งค่าสกุลเงินของโรงเรียนในหน้าโรงเรียนก่อนกำหนดราคา",
   },
   errors: {
     beltInHistoryDelete: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงลบไม่ได้",

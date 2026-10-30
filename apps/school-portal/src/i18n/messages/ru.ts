@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "Отмена",
     save: "Сохранить",
     none: "—",
+    currencyFirst: {
+      title: "Сначала укажите валюту школы.",
+      body: "Цены нельзя сохранить, пока у школы не указана валюта.",
+      link: "Указать валюту на странице школы",
+    },
   },
   layout: {
     trial: {

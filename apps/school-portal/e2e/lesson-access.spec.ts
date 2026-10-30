@@ -12,6 +12,8 @@ const schoolIds: string[] = [];
 test.beforeEach(async () => {
   s = await seedGradingSchool(); // BJJ; one lesson, "Armbar from guard"
   schoolIds.push(s.schoolId);
+  // Decision 414 item 6: a price needs the School's currency.
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
 });
 
 test.afterAll(async () => {

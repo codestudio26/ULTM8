@@ -11,6 +11,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     cancel: "إلغاء",
     save: "حفظ",
     none: "—",
+    currencyFirst: {
+      title: "حدّد عملة مدرستك أولاً.",
+      body: "لا يمكن حفظ الأسعار قبل تحديد عملة المدرسة.",
+      link: "حدّد العملة في صفحة المدرسة",
+    },
   },
   layout: {
     trial: {

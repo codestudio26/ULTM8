@@ -98,7 +98,8 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await mkSchool('Memberships Fixes School');
+    // Decision 414 item 6: plans with a price need the School's currency.
+    school = await mkSchool('Memberships Fixes School', { defaultCurrency: 'GBP' });
     owner = await mkUser('owner');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id } });
     tokenOwner = sign(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
@@ -230,9 +231,16 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
   it('M6: no plan or School currency is refused; the School default is used when the plan has none', async () => {
     const plan = await mkPlan({ type: 'CLASS_PACK', title: 'No currency', price: 1000, classesIncluded: 1, currency: undefined });
     const { token } = await mkStudent('m6');
-    const refused = await purchase(plan.id, token);
-    expect(refused.status).toBe(400);
-    expect(refused.body.error.message).toContain('no currency');
+    // A plan priced before Decision 414 item 6, in a School whose currency was
+    // never set: the purchase is still refused rather than charged in dollars.
+    await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: null } });
+    try {
+      const refused = await purchase(plan.id, token);
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.message).toContain('no currency');
+    } finally {
+      await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'GBP' } });
+    }
 
     const euroSchool = await mkSchool('Memberships Fixes Euro School', { defaultCurrency: 'EUR' });
     const euroPlan = await superuser.membershipPlan.create({
