@@ -1183,6 +1183,10 @@ model School {
   /// "Payment due soon", 3 days before a charge's due date (lead time: product
   /// owner, 30 Oct 2026). On by default.
   chargeNoticeDueReminder        Boolean                         @default(true)
+  /// Decision 414 item 4: the "Refund" notice to the member when a payment is
+  /// refunded (Decision 415 item 4: every refund, charges or memberships; not
+  /// a lost dispute, which has its own notice). On by default.
+  chargeNoticeRefund             Boolean                         @default(true)
   /// Decision 413: late fees, the School's choice. Off by default; switching
   /// them on needs the owner's tick "I confirm late fees are legal where my
   /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed

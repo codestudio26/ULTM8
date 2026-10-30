@@ -1005,6 +1005,8 @@ export class SchoolsService {
           chargeNoticeFailedOverdue: dto.chargeNoticeFailedOverdue,
           chargeNoticeDispute: dto.chargeNoticeDispute,
           chargeNoticeDueReminder: dto.chargeNoticeDueReminder,
+          // Decision 414 item 4.
+          chargeNoticeRefund: dto.chargeNoticeRefund,
         },
       }),
     );

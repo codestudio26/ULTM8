@@ -29,6 +29,7 @@ export const charges = {
     noticeFailedOverdue: 'An automatic payment failed, or a charge is overdue',
     noticeDispute: 'A dispute on a card payment',
     noticeDueReminder: 'A reminder 3 days before a charge is due',
+    noticeRefund: 'A refund of a payment',
   },
   card: {
     title: 'Payments',

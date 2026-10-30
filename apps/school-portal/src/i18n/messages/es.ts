@@ -4004,6 +4004,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Un pago automático ha fallado o un cargo está vencido",
       noticeDispute: "Una disputa de un pago con tarjeta",
       noticeDueReminder: "Un recordatorio 3 días antes de que venza un cargo",
+      noticeRefund: "Un reembolso de un pago",
     },
     card: {
       title: "Pagos",

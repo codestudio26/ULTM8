@@ -7,6 +7,7 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { PaymentsService } from '../payments/payments.service';
+import { paymentRefundNotice } from '../charges/charge-ledger';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
@@ -299,13 +300,13 @@ export class CancellationService {
   }
 
   private async sendStripeRefund(studentId: string, schoolId: string, seat: SeatRef): Promise<void> {
-    await this.prismaApp.withTenantContext(
+    const sent = await this.prismaApp.withTenantContext(
       studentId,
       async (tx) => {
         const row = seat.attendeeId
           ? await tx.bookingAttendee.findUniqueOrThrow({ where: { id: seat.attendeeId } })
           : await tx.booking.findUniqueOrThrow({ where: { id: seat.bookingId } });
-        if (row.refundResolution !== 'PENDING' || !row.refundAmount) return;
+        if (row.refundResolution !== 'PENDING' || !row.refundAmount) return null;
         const payment = await tx.transaction.findFirst({
           where: { membershipId: seat.membershipId, status: 'SUCCESSFUL', paymentMethod: 'STRIPE', stripePaymentIntentId: { not: null } },
           orderBy: { billingDate: 'desc' },
@@ -337,9 +338,31 @@ export class CancellationService {
         } else {
           await tx.booking.update({ where: { id: seat.bookingId }, data });
         }
+        return { payerId: fresh.studentId, amount: row.refundAmount, currency: fresh.currency, planId: fresh.membershipPlanId };
       },
       { timeoutMs: 15_000 },
     );
+    // Decision 415 item 4: the member who paid is told, once per seat.
+    if (sent) await this.sendSeatRefundNotice(seat, 'CARD', sent, schoolId);
+  }
+
+  /** Decision 415 item 4: the "Refund" notice for one seat's money, to the
+   * member who paid. A payment with no currency of its own (older rows) takes
+   * its plan's. Best-effort (PaymentsService.sendRefundNotice). */
+  private async sendSeatRefundNotice(
+    seat: SeatRef,
+    way: 'CARD' | 'GIVEN_BACK',
+    refund: { payerId: string; amount: number; currency: string | null; planId: string | null },
+    schoolId: string,
+  ): Promise<void> {
+    try {
+      const currency =
+        refund.currency ?? (refund.planId ? (await this.prismaJobs.membershipPlan.findUnique({ where: { id: refund.planId }, select: { currency: true } }))?.currency : null);
+      if (!currency) return;
+      await this.paymentsService.sendRefundNotice(paymentRefundNotice(seatRefundKey(seat), way, refund.amount, currency), refund.payerId, schoolId);
+    } catch (err) {
+      this.logger.warn(`Failed to send the refund notice for Booking ${seat.bookingId}: ${err}`);
+    }
   }
 
   /**
@@ -597,6 +620,7 @@ export class CancellationService {
     }
 
     let stripe = false;
+    let givenBack: { payerId: string; amount: number; currency: string | null; planId: string | null } | null = null;
     await this.prismaApp.withTenantContext(booking.studentId, async (tx) => {
       // Re-checked under a row lock so two staff can't resolve the same seat twice.
       const table = seat.attendeeId ? 'BookingAttendee' : 'Booking';
@@ -615,6 +639,7 @@ export class CancellationService {
             where: { id: payment.id },
             data: { refundedAmount: newRefunded, status: newRefunded >= payment.amount ? 'REFUNDED' : payment.status },
           });
+          givenBack = { payerId: payment.studentId, amount, currency: payment.currency, planId: payment.membershipPlanId };
         }
         await this.writeSeat(tx, seat, { resolution: 'MONEY_REFUNDED', refundAmount: amount || null, stripeRefund: false }, callerId);
         return;
@@ -628,6 +653,10 @@ export class CancellationService {
       stripe = result.stripeRefund;
     });
 
+    // Decision 415 item 4: a cash or bank refund marked paid out tells the
+    // member who paid that the money was given back.
+    const back = givenBack as { payerId: string; amount: number; currency: string | null; planId: string | null } | null;
+    if (back) await this.sendSeatRefundNotice(seat, 'GIVEN_BACK', back, booking.schoolId);
     if (stripe) {
       const { failed } = await this.sendStripeRefunds([{ seat, studentId: booking.studentId, schoolId: booking.schoolId }]);
       if (failed > 0) {
@@ -656,4 +685,10 @@ export class CancellationService {
       this.logger.warn(`Failed to enqueue notification ${data.notificationId}: ${err}`);
     }
   }
+}
+
+/** One refund notice per cancelled seat (Decision 415 item 4): a seat's money
+ * goes back once, to the card or by hand, never both. */
+function seatRefundKey(seat: SeatRef): string {
+  return seat.attendeeId ? `refund-booking-guest-${seat.attendeeId}` : `refund-booking-${seat.bookingId}`;
 }

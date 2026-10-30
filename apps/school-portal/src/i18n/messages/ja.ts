@@ -3959,6 +3959,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "自動支払いの失敗、または請求の期限切れ",
       noticeDispute: "カード払いの異議申し立て",
       noticeDueReminder: "請求の期限の3日前にリマインダー",
+      noticeRefund: "お支払いの返金",
     },
     card: {
       title: "支払い",

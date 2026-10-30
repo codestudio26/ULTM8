@@ -4114,6 +4114,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Płatność automatyczna nie powiodła się lub należność jest zaległa",
       noticeDispute: "Spór o płatność kartą",
       noticeDueReminder: "Przypomnienie 3 dni przed terminem należności",
+      noticeRefund: "Zwrot płatności",
     },
     card: {
       title: "Płatności",

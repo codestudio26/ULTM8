@@ -13,7 +13,7 @@ import { cancelFutureBookingsFundedByExpiredMembership } from './membership-book
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
-import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, recordChargeRefund, settleChargePayment } from '../charges/charge-ledger';
+import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, paymentRefundNotice, recordChargeRefund, refundNotice, refusedPurchaseRefundNotice, settleChargePayment } from '../charges/charge-ledger';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
@@ -62,6 +62,8 @@ type DisputeSideEffects = {
 /** Card Transactions a payment_intent.succeeded may still settle. FAILED is
  * included because a failed attempt is not final (handlePaymentIntentSucceeded). */
 const SETTLEABLE: Transaction['status'][] = ['PENDING', 'FAILED'];
+/** A payment that went through (Decision 415 item 4: its refunds tell the member). */
+const PAID_STATUSES: Transaction['status'][] = ['SUCCESSFUL', 'REFUNDED', 'DISPUTED'];
 
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
@@ -719,9 +721,9 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       { idempotencyKey: `membership-collision-refund-${stripeEventId}-${paymentIntentId}` },
     );
 
-    await this.prismaJobs.$transaction(async (tx) => {
+    const marked = await this.prismaJobs.$transaction(async (tx) => {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-      await tx.transaction.updateMany({
+      return tx.transaction.updateMany({
         where: { id: transaction.id, status: { in: SETTLEABLE } },
         data: { status: 'REFUNDED', refundedAmount: transaction.amount },
       });
@@ -729,6 +731,38 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     this.logger.log(
       `PaymentIntent ${paymentIntentId} (Transaction ${transaction.id}) refunded${transaction.stripeSubscriptionId ? ' and its Subscription cancelled' : ''} — the Membership was refused (one active general-access Membership, or the School is closed) (event ${stripeEventId}).`,
     );
+    // Decision 415 item 4: the member is told the card was refunded and why,
+    // once (only the delivery that turned the row Refunded), after the commit.
+    // The PaymentIntent was refunded in full, surcharge included.
+    if (marked.count > 0) {
+      await this.sendRefusedPurchaseNotice(transaction);
+    }
+  }
+
+  /** Decision 415 item 4: the refused purchase's "Refund" notice. Best-effort,
+   * unless the School switched refund notices off. */
+  private async sendRefusedPurchaseNotice(transaction: Transaction): Promise<void> {
+    try {
+      if (!(await chargeNoticeSwitches(this.prismaJobs, transaction.schoolId)).refund) return;
+      const plan = transaction.membershipPlanId
+        ? await this.prismaJobs.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { title: true, currency: true } })
+        : null;
+      const currency = transaction.currency ?? plan?.currency;
+      if (!currency) return;
+      const notice = refusedPurchaseRefundNotice(`refund-refused-${transaction.id}`, transaction.amount + transaction.surchargeAmount, currency, plan?.title ?? 'the membership');
+      const data: NotificationFanoutJobData = {
+        notificationId: notice.key,
+        userId: transaction.studentId,
+        title: notice.title,
+        body: notice.body,
+        type: 'REFUND',
+        schoolId: transaction.schoolId,
+        targetType: 'PAYMENT',
+      };
+      await this.notificationFanoutQueue.add('notify', data, { jobId: notice.key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the refused-purchase refund notice for Transaction ${transaction.id}: ${err}`);
+    }
   }
 
   /** payment_intent.payment_failed — flips a PENDING Transaction to FAILED. No
@@ -1316,19 +1350,43 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // two never write the total over each other.
     await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
     let transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
+    // Decision 414 item 4: a dashboard refund on a payment toward charges sends
+    // the member the "Refund" notice, as a refund the owner makes in ULTM8 does.
+    let refundNotices: NotificationFanoutJobData[] = [];
     if (transaction.kind === 'CHARGE_PAYMENT') {
-      transaction = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+      const recorded = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+      transaction = recorded.transaction;
+      refundNotices = recorded.notices;
     }
+    const withNotices = { ...noSideEffects, notifications: refundNotices };
     const refunded = Math.min(charge.amount_refunded, transaction.amount);
     let status = transaction.status;
     if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
     else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
     const refundedAmount = refunded > 0 ? refunded : null;
-    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return noSideEffects;
+    if (refundedAmount === transaction.refundedAmount && status === transaction.status) return withNotices;
     await tx.transaction.update({ where: { id: transaction.id }, data: { refundedAmount, status } });
     this.logger.log(`Transaction ${transaction.id} refund total synced from charge ${charge.id}: ${refunded} of ${transaction.amount}, ${status} (event ${stripeEventId}).`);
-    if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return noSideEffects;
-    return { ...noSideEffects, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
+    // Decision 415 item 4: a membership (or renewal, or fee) payment refunded
+    // in the Stripe dashboard tells the member too, for what is new. Refunds
+    // ULTM8 sent itself (a Class Pack's share) already raised the total, so
+    // they add nothing here; a Pending or Failed row is a refused purchase,
+    // which resolveMembershipCollision() tells the member about.
+    const newlyRefunded = (refundedAmount ?? 0) - (transaction.refundedAmount ?? 0);
+    const tellMember = transaction.kind !== 'CHARGE_PAYMENT' && newlyRefunded > 0 && PAID_STATUSES.includes(transaction.status);
+    const currency = !tellMember
+      ? null
+      : (transaction.currency ??
+        (transaction.membershipPlanId ? (await tx.membershipPlan.findUnique({ where: { id: transaction.membershipPlanId }, select: { currency: true } }))?.currency : null));
+    if (tellMember && currency && (await chargeNoticeSwitches(tx, transaction.schoolId)).refund) {
+      const notice = paymentRefundNotice(`refund-${transaction.id}-${refundedAmount}`, 'CARD', newlyRefunded, currency);
+      withNotices.notifications = [
+        ...withNotices.notifications,
+        { notificationId: notice.key, userId: transaction.studentId, title: notice.title, body: notice.body, type: 'REFUND', schoolId: transaction.schoolId, targetType: 'PAYMENT' },
+      ];
+    }
+    if (status !== 'REFUNDED' || transaction.status !== 'SUCCESSFUL' || !transaction.membershipId) return withNotices;
+    return { ...withNotices, ...(await this.endMembershipPaidBy(tx, transaction, `Charge ${charge.id} fully refunded in Stripe (Decision 382)`)) };
   }
 
   /**
@@ -1338,30 +1396,48 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * (recordChargeRefund): the charge is never re-opened. Refunds ULTM8 sent
    * itself (kind CARD) are already recorded, so only what Stripe holds beyond
    * them is new. A refund that later fails is logged and left: the ledger is
-   * not put back. Returns the Transaction as it now stands.
+   * not put back. Returns the Transaction as it now stands, and the member's
+   * "Refund" notice for what went on the ledger (Decision 414 item 4), sent by
+   * process() after the commit, unless the School switched it off.
    */
-  private async recordStripeRefundOnLedger(tx: Prisma.TransactionClient, transaction: Transaction, refunded: number, stripeEventId: string): Promise<Transaction> {
-    if (!transaction.currency || transaction.status === 'PENDING' || transaction.status === 'FAILED') return transaction;
+  private async recordStripeRefundOnLedger(
+    tx: Prisma.TransactionClient,
+    transaction: Transaction,
+    refunded: number,
+    stripeEventId: string,
+  ): Promise<{ transaction: Transaction; notices: NotificationFanoutJobData[] }> {
+    const unchanged = { transaction, notices: [] };
+    if (!transaction.currency || transaction.status === 'PENDING' || transaction.status === 'FAILED') return unchanged;
     const recorded = await tx.chargeRefund.aggregate({ where: { transactionId: transaction.id, kind: { in: ['CARD', 'STRIPE'] } }, _sum: { amount: true } });
     const delta = refunded - (recorded._sum.amount ?? 0);
     if (delta < 0) {
       this.logger.warn(`Transaction ${transaction.id}: Stripe now holds less refunded than the ledger (a failed refund?) (event ${stripeEventId}). The ledger is left as it is.`);
-      return transaction;
+      return unchanged;
     }
-    if (delta === 0) return transaction;
+    if (delta === 0) return unchanged;
     const state = await paymentRefundable(tx, transaction);
     const amount = Math.min(delta, state.asMoney);
     if (amount < delta) {
       this.logger.warn(`Transaction ${transaction.id}: ${delta} refunded in Stripe, only ${amount} could go on the member's ledger (event ${stripeEventId}).`);
     }
-    if (amount <= 0) return transaction;
+    if (amount <= 0) return unchanged;
+    let refundId: string;
     try {
-      await recordChargeRefund(tx, { transaction, kind: 'STRIPE', amount, notes: null, refundedById: null });
+      refundId = await recordChargeRefund(tx, { transaction, kind: 'STRIPE', amount, notes: null, refundedById: null });
     } catch (err) {
       if (!(err instanceof ChargeRefundError)) throw err;
       this.logger.warn(`Transaction ${transaction.id}: the Stripe refund could not go on the ledger: ${err.message} (event ${stripeEventId}).`);
+      return { transaction: await tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } }), notices: [] };
     }
-    return tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    const after = await tx.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    const notice = (await chargeNoticeSwitches(tx, transaction.schoolId)).refund ? refundNotice(refundId, 'STRIPE', amount, transaction.currency) : null;
+    if (!notice) return { transaction: after, notices: [] };
+    return {
+      transaction: after,
+      notices: [
+        { notificationId: notice.key, userId: transaction.studentId, title: notice.title, body: notice.body, type: 'CHARGE', schoolId: transaction.schoolId, targetType: 'PAYMENT', targetId: transaction.id },
+      ],
+    };
   }
 
   /**

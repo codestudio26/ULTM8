@@ -4004,6 +4004,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Un pagamento automatico non è riuscito, o un addebito è scaduto",
       noticeDispute: "Una contestazione su un pagamento con carta",
       noticeDueReminder: "Un promemoria 3 giorni prima della scadenza di un addebito",
+      noticeRefund: "Un rimborso di un pagamento",
     },
     card: {
       title: "Pagamenti",

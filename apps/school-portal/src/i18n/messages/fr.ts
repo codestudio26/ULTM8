@@ -4004,6 +4004,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeFailedOverdue: "Un paiement automatique a échoué, ou des frais sont en retard",
       noticeDispute: "Une contestation d'un paiement par carte",
       noticeDueReminder: "Un rappel 3 jours avant l'échéance de frais",
+      noticeRefund: "Un remboursement d'un paiement",
     },
     card: {
       title: "Paiements",
