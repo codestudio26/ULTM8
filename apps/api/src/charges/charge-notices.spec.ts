@@ -13,6 +13,11 @@ const NOTICES = [
   { title: 'Charge cancelled', body: "Your charge 'Rash guard, 120.00 BRL' was cancelled. Nothing to pay. The 30.00 BRL already paid is now credit on your balance." },
   // Step 2: the daily charge-auto-pay job's notice when the saved card is declined.
   { title: 'Automatic payment failed', body: "We couldn't charge your saved card for invoice #0000012 (Rash guard, 120.00 BRL). Pay it in the app or at the front desk." },
+  // Step 4: the overdue notice and the member's dispute notices.
+  { title: 'Payment overdue', body: 'Invoice #0000012 for Rash guard was due on 2026-11-15. 70.00 BRL is still to pay.' },
+  { title: 'Payment dispute', body: 'Your card payment of 60.00 BRL is being disputed with your bank.' },
+  { title: 'Payment dispute', body: 'The dispute on your card payment of 60.00 BRL was decided in your favour. The money goes back to your card.' },
+  { title: 'Payment dispute', body: "The dispute on your card payment of 60.00 BRL was decided in the School's favour. The payment stands." },
 ];
 
 function lookup(tree: unknown, key: string): string | undefined {
@@ -39,7 +44,16 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
 
     const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
     const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
-    const [created, paid, cancelled, credit, autoFailed] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    const [created, paid, cancelled, credit, autoFailed, overdue, opened, lost, won] = NOTICES.map((n) => pt.notification({ ...n, type: 'CHARGE' }));
+    expect(overdue.title).toBe('Pagamento em atraso');
+    expect(overdue.body).toMatch(/^A fatura #0000012 de Rash guard venceu em .+\. Ainda falta pagar .*70,00\.$/);
+    expect(opened).toMatchObject({ title: 'Contestação de pagamento' });
+    expect(opened.body).toMatch(/^Seu pagamento com cartão de .*60,00 está sendo contestado/);
+    expect(lost.body).toMatch(/a seu favor\. O dinheiro volta para o seu cartão\.$/);
+    expect(won.body).toMatch(/a favor da Escola\. O pagamento continua válido\.$/);
+    // The owner's own dispute notice on a payment toward charges.
+    const ownerNotice = pt.notification({ title: 'Payment dispute lost', body: 'A disputed charge payment of 60.00 BRL was lost — the charge is no longer considered paid.', type: 'PAYMENT_DISPUTE' });
+    expect(ownerNotice.body).toContain('pagamento de cobrança');
     expect(autoFailed.title).toBe('Pagamento automático falhou');
     expect(autoFailed.body).toMatch(/^Não conseguimos cobrar no seu cartão salvo a fatura #0000012 \(Rash guard, .*120,00\)\. Pague no app ou na recepção\.$/);
     expect(created.title).toBe('Nova fatura');
