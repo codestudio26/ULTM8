@@ -228,6 +228,8 @@ export const grading = {
       cancel: 'Cancel fee',
       promoteTo: 'Promote to {rank}',
       dontPromote: "Don't promote",
+      blocked: "Paid — promotion can't apply",
+      blockedText: "{name}'s fee for {rank} is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee to give what was paid back as credit, or grade {name} again (the fee then stays paid).",
       priceFor: 'Promotion fee for {rank}: {amount}',
     },
     decide: {

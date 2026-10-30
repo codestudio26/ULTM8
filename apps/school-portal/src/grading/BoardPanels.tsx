@@ -32,6 +32,7 @@ export function Avatar({ person, size }: { person: { firstName: string; surname:
 /** The fee tag on a card or row, first among the tags (Decisions 300, 307, 313). */
 export function FeeTag({ item }: { item: GradingBoardItem }) {
   const t = useT();
+  if (item.feeStatus === 'blocked') return <Badge variant="danger">{t('grading.board.fee.blocked')}</Badge>;
   if (item.feeStatus === 'waiting') return <Badge variant="warning">{t('grading.board.fee.waiting')}</Badge>;
   if (item.feeStatus === 'declined') return <Badge variant="danger">{t('grading.board.fee.declined')}</Badge>;
   if (item.feeStatus === 'toDecide') return <Badge variant="info">{t('grading.board.fee.toDecide')}</Badge>;
@@ -108,8 +109,9 @@ export function StudentPanel({
     if (!request) return;
     const mutation = action === 'waive' ? waive : cancel;
     await mutation.mutateAsync(request.id);
-    // Waiving a waiting promotion applies it; anything else leaves it to a coach.
-    if (!(action === 'waive' && waiting)) onDecide();
+    // Waiving a waiting promotion applies it; a cancelled fee whose promotion
+    // couldn't apply goes to no coach (Decision 414 item 1); anything else leaves it to a coach.
+    if (!(action === 'waive' && waiting) && item.feeStatus !== 'blocked') onDecide();
   }
 
   return (
@@ -135,7 +137,7 @@ export function StudentPanel({
               marginTop: 16,
               padding: 12,
               borderRadius: 10,
-              background: item.feeStatus === 'declined' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
+              background: item.feeStatus === 'declined' || item.feeStatus === 'blocked' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
             }}
           >
             <FeeTag item={item} />
@@ -145,7 +147,9 @@ export function StudentPanel({
                 : t('grading.board.fee.amountFor', { amount, rank: request.toRungName })}
             </p>
             <p className="ultm8-field__hint" style={{ margin: 0 }}>
-              {item.feeStatus === 'waiting'
+              {item.feeStatus === 'blocked'
+                ? t('grading.board.fee.blockedText', { name: item.firstName, rank: request.toRungName })
+                : item.feeStatus === 'waiting'
                 ? t('grading.board.fee.waitingText', { name: item.firstName, rank: request.toRungName })
                 : item.feeStatus === 'declined'
                   ? t('grading.board.fee.declinedText', { name: item.firstName, rank: request.toRungName })
@@ -154,9 +158,11 @@ export function StudentPanel({
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               {item.feeStatus !== 'toDecide' && isOwner ? (
                 <>
-                  <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>
-                    {t('grading.board.fee.waive')}
-                  </Button>
+                  {item.feeStatus !== 'blocked' ? (
+                    <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>
+                      {t('grading.board.fee.waive')}
+                    </Button>
+                  ) : null}
                   <Button variant="secondary" onClick={() => closeFee('cancel')} loading={cancel.isPending}>
                     {t('grading.board.fee.cancel')}
                   </Button>

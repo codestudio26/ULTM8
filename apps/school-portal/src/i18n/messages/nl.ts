@@ -1784,6 +1784,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "Vergoeding annuleren",
         promoteTo: "Promoveren naar {rank}",
         dontPromote: "Niet promoveren",
+        blocked: "Betaald — promotie kan niet worden toegepast",
+        blockedText: "De vergoeding van {name} voor {rank} is betaald, maar de promotie kan niet worden toegepast: de graad of de bandenladder is veranderd sinds de gradering. Annuleer de vergoeding om het betaalde als tegoed terug te geven, of gradeer {name} opnieuw (de vergoeding blijft dan betaald).",
         priceFor: "Promotievergoeding voor {rank}: {amount}",
       },
       decide: {

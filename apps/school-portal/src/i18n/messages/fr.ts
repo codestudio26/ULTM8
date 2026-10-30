@@ -1784,6 +1784,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "Annuler les frais",
         promoteTo: "Promouvoir vers {rank}",
         dontPromote: "Ne pas promouvoir",
+        blocked: "Payés — la promotion ne peut pas s'appliquer",
+        blockedText: "Les frais de {name} pour {rank} sont payés, mais la promotion ne peut pas s'appliquer : son grade ou l'échelle des ceintures a changé depuis l'évaluation. Annulez les frais pour rendre ce qui a été payé en crédit, ou évaluez de nouveau {name} (les frais restent alors payés).",
         priceFor: "Frais de promotion pour {rank} : {amount}",
       },
       decide: {
