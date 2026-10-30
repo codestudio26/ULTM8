@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "Diese Gebühr wurde bereits storniert.",
   "This charge is already paid.": "Diese Gebühr ist bereits bezahlt.",
   "Give a reason for cancelling this charge.": "Gib einen Grund für die Stornierung dieser Gebühr an.",
+  "Give a reason for cancelling this payment.": "Gib einen Grund für die Stornierung dieser Zahlung an.",
   "Only the student, or their Guardian, can see their charges.": "Nur der Schüler oder sein Erziehungsberechtigter kann seine Gebühren sehen.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "„Darf Gebühren anlegen“ und „Darf Gebühren stornieren“ gelten für Standortpersonal und Trainer dieser Schule.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "Diese Schule nimmt in der App keine Kartenzahlungen an. Bitte am Empfang bezahlen.",

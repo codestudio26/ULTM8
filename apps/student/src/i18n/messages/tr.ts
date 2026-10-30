@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Geç iptal ücreti",
       freezeFee: "Dondurma ücreti: {plan}",
       freezeFeeNoPlan: "Dondurma ücreti",
+      cancelledOn: "{date} tarihinde iptal edildi. Ödenecek bir şey yok.",
     },
     status: {
       successful: "BAŞARILI",
@@ -910,6 +911,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "BAŞARISIZ",
       refunded: "İADE EDİLDİ",
       disputed: "İTİRAZLI",
+      cancelled: "İPTAL EDİLDİ",
     },
   },
   waivers: {

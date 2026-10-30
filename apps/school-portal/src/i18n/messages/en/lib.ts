@@ -5,6 +5,7 @@ export const lib = {
     failed: 'Failed',
     refunded: 'Refunded',
     disputed: 'Disputed',
+    cancelled: 'Cancelled',
   },
   paymentMethod: {
     stripe: 'Card (Stripe)',

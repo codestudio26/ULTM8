@@ -23,6 +23,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   notice already says the money goes back). The owner's notes are never
   included. New switch "A refund of a payment" among the payment
   notifications on the School page, on by default. 15 languages.
+- **Cancelling a cash or bank-transfer membership payment works like
+  cancelling a charge** (backlog 3.6; Decision 338 item 1, Decision 414 item 7)
+  — a membership payment waiting at the desk is cancelled by the owner, and
+  now also by staff the owner has given "Can cancel charges" (for the students
+  of their own branches). A reason is always asked for, required unless the
+  owner turned that off on the School page (the same setting as for charges),
+  and is for staff only. The payment is still stored as Failed but reads
+  **Cancelled** everywhere, with its date: the Transactions page (with who
+  cancelled it and why, a new Cancelled tile, a Cancelled status filter, and
+  three new CSV columns), and the student app's payment history (the date
+  only). Failed counts and the Failed filter leave cancelled payments out.
+  Staff who may cancel also see the student's waiting and cancelled
+  membership payments on the student's Payments card, with a Cancel button.
+  Migration `20270118000000_transaction_cancel_reason`.
 - **Charges, step 4: refunds, credit, billing reports and payment notices**
   (backlog 3.6; Decision 303 item 3, Decision 338 items 3, 5, 6, 10, 11) — the
   owner refunds a payment toward charges from the student's Payments card,

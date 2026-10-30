@@ -125,7 +125,10 @@ test('Receipt shows on card payments only; Mark as paid starts the membership', 
   await expect(page.getByText(/^Waiting for payment\s*0$/)).toBeVisible();
 });
 
-test('Cancel payment asks first and marks it Failed with no membership', async ({ page }) => {
+/** Decision 338 item 1 (Decision 414 item 7): cancelling follows the charge
+ * rule. A reason is asked for (required by default), the row stays FAILED in
+ * the data and reads Cancelled, with when, who and why. */
+test('Cancel payment asks for a reason and shows the payment as Cancelled', async ({ page }) => {
   const pending = await addTransaction({ status: 'PENDING', daysAgo: 1 });
 
   await signIn(page, s.ownerToken);
@@ -138,10 +141,66 @@ test('Cancel payment asks first and marks it Failed with no membership', async (
   expect((await db.transaction.findUniqueOrThrow({ where: { id: pending.id } })).status).toBe('PENDING');
 
   await row.getByRole('button', { name: 'Cancel payment' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel payment' }).click();
-  await expect(row).toContainText('Failed');
+  await expect(dialog).toContainText('stays on record as Cancelled');
+  await dialog.getByRole('button', { name: 'Cancel payment' }).click();
+  await expect(dialog).toContainText('Give a reason for cancelling this payment.');
+  await dialog.getByLabel('Reason (staff only)').fill('Never came in to pay');
+  await dialog.getByRole('button', { name: 'Cancel payment' }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await expect(row).toContainText('Cancelled');
+  await expect(row).toContainText('Never came in to pay');
+  await expect(row).not.toContainText('Failed');
+  await expect(page.getByText(/^Cancelled\s*1$/)).toBeVisible();
+  await expect(page.getByText(/^Failed \/ disputed\s*0$/)).toBeVisible();
   const cancelled = await db.transaction.findUniqueOrThrow({ where: { id: pending.id } });
-  expect(cancelled).toMatchObject({ status: 'FAILED', membershipId: null });
+  expect(cancelled).toMatchObject({ status: 'FAILED', membershipId: null, cancelledById: s.ownerId, cancelReason: 'Never came in to pay' });
+
+  // The Status filter tells Cancelled and Failed apart.
+  await page.getByLabel('Status').selectOption('FAILED');
+  await expect(page.getByText('No Transactions match these filters')).toBeVisible();
+  await page.getByLabel('Status').selectOption('CANCELLED');
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+});
+
+test('the reason is optional when the School says so', async ({ page }) => {
+  await db.school.update({ where: { id: s.schoolId }, data: { chargeCancelReasonRequired: false } });
+  const pending = await addTransaction({ status: 'PENDING', daysAgo: 1 });
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/transactions');
+  await page.locator('tbody tr').first().getByRole('button', { name: 'Cancel payment' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Reason (staff only, optional)')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel payment' }).click();
+  await expect(dialog).toHaveCount(0);
+  const cancelled = await db.transaction.findUniqueOrThrow({ where: { id: pending.id } });
+  expect(cancelled.cancelledAt).not.toBeNull();
+  expect(cancelled.cancelReason).toBeNull();
+});
+
+test('Branch Staff with "Can cancel charges" cancel it from the student\'s Payments card', async ({ page }) => {
+  const branch = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: branch.id } });
+  const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: branch.id }]);
+  await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, canCancelCharges: true } });
+  const pending = await addTransaction({ status: 'PENDING', daysAgo: 1 });
+
+  await signIn(page, staff.token);
+  await page.goto(`/students/${s.student.id}`);
+  const list = page.getByTestId('desk-membership-payments');
+  await expect(list).toContainText('10-Class Pack');
+  await list.getByRole('button', { name: 'Cancel payment' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Reason (staff only)').fill('Paid by card instead');
+  await dialog.getByRole('button', { name: 'Cancel payment' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(list).toContainText('Cancelled');
+  await expect(list).toContainText('Bea Desk');
+  await expect(list).toContainText('Paid by card instead');
+  await expect(list.getByRole('button', { name: 'Cancel payment' })).toHaveCount(0);
+  const cancelled = await db.transaction.findUniqueOrThrow({ where: { id: pending.id } });
+  expect(cancelled).toMatchObject({ status: 'FAILED', cancelledById: staff.id, cancelReason: 'Paid by card instead' });
 });
 
 test('confirming for a student who has left shows why', async ({ page }) => {
@@ -209,7 +268,7 @@ test('Export CSV downloads every filtered row', async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^transactions-\d{4}-\d{2}-\d{2}\.csv$/);
   const text = (await import('fs')).readFileSync((await file.path())!, 'utf8').replace(/^\uFEFF/, '');
   const lines = text.trim().split('\r\n');
-  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID');
+  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID,Cancelled on,Cancelled by,Cancel reason');
   expect(lines).toHaveLength(3);
   expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,0.00,GBP,Successful');
   expect(lines[2]).toContain('Late-cancellation fee,5.00,0.00,GBP,Failed');

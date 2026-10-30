@@ -942,6 +942,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Плата за позднюю отмену",
       freezeFee: "Плата за заморозку: {plan}",
       freezeFeeNoPlan: "Плата за заморозку",
+      cancelledOn: "Отменён {date}. Платить ничего не нужно.",
     },
     status: {
       successful: "УСПЕШНО",
@@ -949,6 +950,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "НЕ УДАЛСЯ",
       refunded: "ВОЗВРАЩЁН",
       disputed: "ОСПОРЕН",
+      cancelled: "ОТМЕНЁН",
     },
   },
   waivers: {
