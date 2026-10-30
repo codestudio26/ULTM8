@@ -7068,3 +7068,33 @@ The Staff build plan's last item was an activity log of staff changes. The produ
 ### Recorded by
 
 User (Code), 29 Oct 2026, choosing the suggested defaults for the Staff activity log (Decision 360, order of work (g)). Built 29 Oct 2026 in the Staff thread.
+
+---
+
+## Decision 409 — Freezing a membership: bookings, permission and Stripe timing
+
+**Date:** 30 Oct 2026. **Answers:** the open points left by #395 (backlog §3.4). **Changes:** Decision 404's judgement calls 1 (bookings inside a freeze were kept) and 2 (only the owner could freeze), and when Decision 404 item 3's Stripe change is sent. **Builds on:** Decisions 320, 387, 404, 408. **Migration:** `20270111000000_freeze_follow_ups`.
+
+### Decision
+
+1. **Bookings inside a freeze are cancelled.** When a freeze is approved (made by staff, or a member's request approved), the member's bookings for Classes on a frozen day are cancelled: from the first frozen day up to, not including, the day they are back, in the School's time zone, and only Classes that haven't ended yet.
+   - Only bookings the frozen membership paid for (`Booking.sourceMembershipId`). A booking another membership paid for, such as a class pack, stays.
+   - No late-cancellation fee, whatever the refund cut-off says. They are cancelled through the ordinary cancellation, as a School cancellation, so guests get their credit back and the freed place goes to the waitlist as usual.
+   - The member (and a child's Guardians, as usual) gets **one** notice listing the cancelled bookings, not one per booking.
+   - Ending a freeze early does not bring them back; the member can book again.
+2. **Who can act: a new access switch, "Can freeze memberships".** The School's owners, and any Branch Staff member the owner turns on with a new switch on their Access page (`StaffPermission.canFreezeMemberships`; labelled "Freeze memberships" there, like the other switches), **off by default**. Staff with it freeze, approve, decline and end freezes only for the students of their own branches (the Students page's rule), and see a short list of a student's memberships that can be frozen. The School's freeze settings (most days, fee) stay the owner's. Turning the switch on or off is written to the Staff activity log like the other switches (Decision 408).
+3. **Stripe: the billing shift is sent earlier.**
+   - As soon as a freeze is approved, when no renewal falls before its first day (the period already paid for runs to the freeze's start or later). Moving the trial end early changes nothing for the member before the freeze: ULTM8's own membership status, not Stripe's, decides access.
+   - Otherwise it is sent right after that renewal is paid (the `invoice.paid` webhook), with the 15-minute sweep as the backup on the start day.
+   - A freeze ended before it started has its whole shift taken back, so the next charge returns to the end of the period already paid for, never earlier than a minute from now. Requests declined or withdrawn were never shifted.
+   - A £0 renewal invoice (a trial-end move can raise one) is not recorded on the Transactions ledger.
+   - The School page's Freezing memberships card notes that Stripe shows a frozen card subscription as a trial, and that the School's Stripe account may send a trial-ending reminder email unless it is switched off in Stripe.
+4. **Not changed:** Trial memberships and the trial allowance (Decision 404 judgement call 7) stay as they are; that question is still open.
+
+### Not verified
+
+The Stripe behaviour was **not** checked against a live Stripe account: the session had no network access to Stripe. It is covered by tests with Stripe stubbed. Checking it with Stripe test clocks (approval before and after a renewal, an early end, the £0 invoice and the trial-ending email) is still to do.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "ok" on Claude's recommendations for §3.4's follow-ups.
