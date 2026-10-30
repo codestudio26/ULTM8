@@ -127,8 +127,9 @@ export class WaiverSignatureListResponseDto {
   nextCursor!: string | null;
 
   /** Only set by GET .../waivers/{id}/signatures (the Signatures-panel
-   * endpoint) — undefined on GET /waivers/me, which has no "roster" concept
-   * to roll up. */
+   * endpoint), and only on its first page: the whole roster's totals, whatever
+   * the filter or search (Decision 418). Undefined on later pages
+   * and on GET /waivers/me, which has no "roster" concept to roll up. */
   @ApiPropertyOptional({ type: WaiverSignatureSummaryDto })
   summary?: WaiverSignatureSummaryDto;
 }

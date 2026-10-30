@@ -1,11 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Branch } from '@prisma/client';
 import { CursorPage, resolveLimit } from '../../common/pagination/cursor-paginate';
-
-/** Lower case, accents removed, so "Sao Paulo" finds "São Paulo". */
-export function foldText(value: string): string {
-  return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
-}
+import { foldText } from '../../common/search/name-search';
 
 /** Postcodes compare without spaces ("sw1a1aa" finds "SW1A 1AA"). */
 function foldPostcode(value: string): string {

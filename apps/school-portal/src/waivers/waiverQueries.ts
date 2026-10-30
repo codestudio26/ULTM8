@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -71,8 +71,6 @@ export function useUnarchiveWaiver(schoolId: string) {
   });
 }
 
-/** v1.2 backend backlog — the "Signatures" panel's real data: who has
- * signed, with what status. Reads every page (Waivers review W8). */
 /** One signature with the text as it was signed — the list leaves that out. */
 export function useWaiverSignature(schoolId: string, waiverId: string, signatureId: string) {
   return useQuery({
@@ -86,25 +84,43 @@ export function useWaiverSignature(schoolId: string, waiverId: string, signature
   });
 }
 
-export function useWaiverSignatures(schoolId: string | null, waiverId: string | null) {
+export type WaiverSignatureFilter = 'signed' | 'unsigned';
+
+/** v1.2 backend backlog — the "Signatures" panel's real data: who has
+ * signed, with what status. One page of 100 at a time, A to Z, with "Load
+ * more"; the tab and the search run on the server (Decision 418:
+ * reading every page first took 22 s at a 3,700-student School). The first
+ * page carries the whole roster's totals. */
+export function useWaiverSignatures(schoolId: string | null, waiverId: string | null, filters: { filter?: WaiverSignatureFilter; q?: string } = {}) {
+  return useInfiniteQuery({
+    queryKey: ['waivers', schoolId, waiverId, 'signatures', 'list', filters.filter ?? 'all', filters.q ?? ''],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures', {
+          params: {
+            path: { schoolId: schoolId!, id: waiverId! },
+            query: { limit: 100, ...(pageParam ? { cursor: pageParam } : {}), ...(filters.filter ? { filter: filters.filter } : {}), ...(filters.q ? { q: filters.q } : {}) },
+          },
+        }),
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    // A new tab or search keeps the list on screen until its answer arrives.
+    placeholderData: keepPreviousData,
+    enabled: !!schoolId && !!waiverId,
+  });
+}
+
+/** Just the totals ("12 of 40 signed"): a one-row page, which still carries them. */
+export function useWaiverSignatureSummary(schoolId: string | null, waiverId: string | null) {
   return useQuery({
-    queryKey: ['waivers', schoolId, waiverId, 'signatures'],
-    queryFn: async () => {
-      const items: WaiverSignatureResponse[] = [];
-      let summary: WaiverSignatureSummary | undefined;
-      let cursor: string | undefined;
-      do {
-        const page = await unwrap(
-          apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures', {
-            params: { path: { schoolId: schoolId!, id: waiverId! }, query: { limit: 100, cursor } },
-          }),
-        );
-        items.push(...page.items);
-        summary = page.summary;
-        cursor = page.nextCursor ?? undefined;
-      } while (cursor);
-      return { items, summary };
-    },
+    queryKey: ['waivers', schoolId, waiverId, 'signatures', 'summary'],
+    queryFn: async () =>
+      (
+        await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/waivers/{id}/signatures', { params: { path: { schoolId: schoolId!, id: waiverId! }, query: { limit: 1 } } }),
+        )
+      ).summary ?? null,
     enabled: !!schoolId && !!waiverId,
   });
 }

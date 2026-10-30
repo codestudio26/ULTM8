@@ -7276,3 +7276,19 @@ Check-in codes (members' personal codes and staff tablet codes) default to 4 dig
 ### Recorded by
 
 User (Code), 30 Oct 2026, on stress test round 4 Q1: "a School with more than 500 members automatically switches to 6-digit codes, and 10 wrong member codes in a row lock the tablet until a staff code is entered" (Recommended). Items 1, 2 and 4's details (staff codes too, counted School-wide, no switching back, staff code carries on rather than ending the session, a right code resets the count) were stated to the user as the defaults being built. Item 3 was asked on a card ("Replace them all at once", recommended); the user answered 30 Oct 2026: "What if we just change every code to 6digit", taken as that option.
+
+## Decision 418 — Waivers page Signatures panel: first 100 with "Load more", search on the server, totals counted once
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 340, 354 (Waivers review W1, W8, W14) · **Answers:** stress test round 4, Q2 (`docs/handover/STRESS-TEST-ROUND4.md`)
+
+### Decision
+
+1. The Signatures panel shows **the first 100 entries** with a **"Load more"** button, instead of reading every page before showing anything (22–25 s and ~40 calls at a 3,700-student School).
+2. A **search box** finds an entry by the student's name or the name typed when signing (capitals and accents ignored). The search and the All / Signed / Not signed tabs run **on the server**, over the whole roster, not only the entries already shown.
+3. The **signed/unsigned totals** ("12 of 40 signed") are **counted once**, on the first page, for the whole roster whatever the tab or search; later pages don't recount them.
+
+Order is unchanged: current students A to Z, then former students (Decision 340, W1/W14). API: `GET /schools/{schoolId}/waivers/{id}/signatures` takes `filter` (`signed` | `unsigned`) and `q`; its cursor now carries the sort position; `summary` is on the first page only. No migration.
+
+### Recorded by
+
+User (Code), 30 Oct 2026, answering Q2 of stress test round 4: show the first 100 with "Load more" and a server-side search box, and compute the totals once (the recommended answer).

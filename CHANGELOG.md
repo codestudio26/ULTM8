@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
+  test round 4, Q2) — the panel shows the first 100 people with a "Load more"
+  button instead of loading everyone first (it took 22 s at a School with
+  3,700 students; now about a quarter of a second for the first 100 on the
+  same test data). New search box finds someone by name, capitals and accents
+  ignored; it and the All / Signed / Not signed tabs search the whole list, not
+  just what's shown. The "12 of 40 signed" totals are counted once. 15
+  languages. No migration.
 - **Stress test round 4** — 500 Schools in 40 countries (32 currencies, 60
   time zones, 126,428 students): a busy day, money, Staff, the front desk,
   members' features, tenant isolation, the portal in a browser and how far one

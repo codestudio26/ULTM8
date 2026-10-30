@@ -3296,6 +3296,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "Assinados",
       tab_unsigned: "Não assinados",
       noneInTab: "Ninguém aqui.",
+      search: "Buscar por nome",
+      noMatch: "Ninguém corresponde à busca.",
+      loadMore: "Carregar mais",
       formerStudents: "Ex-alunos",
     },
     signatureDetail: {

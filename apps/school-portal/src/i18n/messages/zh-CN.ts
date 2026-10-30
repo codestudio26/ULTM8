@@ -3254,6 +3254,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "已签署",
       tab_unsigned: "未签署",
       noneInTab: "这里没有人。",
+      search: "按姓名搜索",
+      noMatch: "没有与搜索匹配的人。",
+      loadMore: "加载更多",
       formerStudents: "以前的学员",
     },
     signatureDetail: {

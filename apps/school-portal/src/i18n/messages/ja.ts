@@ -3254,6 +3254,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "署名済み",
       tab_unsigned: "未署名",
       noneInTab: "該当者はいません。",
+      search: "名前で検索",
+      noMatch: "検索に一致する人はいません。",
+      loadMore: "さらに読み込む",
       formerStudents: "元生徒",
     },
     signatureDetail: {

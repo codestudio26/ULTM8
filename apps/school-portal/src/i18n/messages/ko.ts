@@ -3254,6 +3254,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       tab_signed: "서명함",
       tab_unsigned: "서명 안 함",
       noneInTab: "해당하는 사람이 없습니다.",
+      search: "이름으로 검색",
+      noMatch: "검색과 일치하는 사람이 없습니다.",
+      loadMore: "더 불러오기",
       formerStudents: "이전 수련생",
     },
     signatureDetail: {
