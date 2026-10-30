@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "ไม่มียอดที่ต้องชำระ",
   "Only the member can set automatic payment, with their own saved card.": "เฉพาะสมาชิกเท่านั้นที่ตั้งค่าการชำระอัตโนมัติด้วยบัตรที่บันทึกไว้ของตนเองได้",
   "Save a card for this School first.": "บันทึกบัตรสำหรับโรงเรียนนี้ก่อน",
+  "Add a note for this refund.": "เพิ่มบันทึกสำหรับการคืนเงินนี้",
+  "Payment not found": "ไม่พบการชำระเงิน",
+  "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.": "การชำระเงินนี้ไม่ได้ชำระด้วยบัตรในแอป จึงคืนเข้าบัตรไม่ได้ ให้บันทึกเงินที่คืนไป หรือให้เป็นเครดิต",
+  "A card payment goes back to the card, or onto the balance as credit.": "การชำระด้วยบัตรจะคืนเข้าบัตร หรือเข้ายอดคงเหลือเป็นเครดิต",
+  "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.": "คืนเงินได้เฉพาะการชำระเงินที่สำเร็จ การชำระที่มีข้อโต้แย้ง รอดำเนินการ ล้มเหลว หรือคืนเงินครบแล้วคืนไม่ได้",
+  "This is more than is left to refund on this payment.": "จำนวนนี้มากกว่าที่เหลือให้คืนจากการชำระเงินนี้",
+  "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.": "เฉพาะส่วนของการชำระเงินนี้ที่จ่ายค่าบริการแล้วเท่านั้นที่เปลี่ยนเป็นเครดิตได้ ส่วนที่เหลือเป็นเครดิตอยู่แล้ว",
+  "Part of this payment is credit that has already paid other charges, so it can't be given back.": "ส่วนหนึ่งของการชำระเงินนี้เป็นเครดิตที่จ่ายค่าบริการอื่นไปแล้ว จึงคืนไม่ได้",
+  "Add a note saying why this credit is given.": "เพิ่มบันทึกว่าทำไมจึงให้เครดิตนี้",
 };

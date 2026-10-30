@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "لا يوجد ما تدفعه.",
   "Only the member can set automatic payment, with their own saved card.": "لا يمكن إعداد الدفع التلقائي إلا للعضو نفسه، ببطاقته المحفوظة.",
   "Save a card for this School first.": "احفظ بطاقة لهذه المدرسة أولًا.",
+  "Add a note for this refund.": "أضف ملاحظة لهذا الاسترداد.",
+  "Payment not found": "لم يتم العثور على الدفعة",
+  "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.": "لم تتم هذه الدفعة بالبطاقة في التطبيق، لذا لا يمكن إعادتها إلى بطاقة. سجّل المال المُعاد أو امنحه كرصيد.",
+  "A card payment goes back to the card, or onto the balance as credit.": "تعود دفعة البطاقة إلى البطاقة، أو إلى الرصيد كرصيد دائن.",
+  "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.": "لا يمكن استرداد إلا دفعة ناجحة. لا يمكن استرداد دفعة متنازع عليها أو معلّقة أو فاشلة أو مستردة بالكامل.",
+  "This is more than is left to refund on this payment.": "هذا أكثر مما تبقى للاسترداد من هذه الدفعة.",
+  "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.": "يمكن تحويل الجزء الذي سدّد رسومًا فقط من هذه الدفعة إلى رصيد. الباقي رصيد بالفعل.",
+  "Part of this payment is credit that has already paid other charges, so it can't be given back.": "جزء من هذه الدفعة رصيد سدّد رسومًا أخرى بالفعل، لذا لا يمكن إعادته.",
+  "Add a note saying why this credit is given.": "أضف ملاحظة توضح سبب منح هذا الرصيد.",
 };

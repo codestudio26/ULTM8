@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "没有需要支付的款项。",
   "Only the member can set automatic payment, with their own saved card.": "只有会员本人可以用自己保存的卡设置自动付款。",
   "Save a card for this School first.": "请先为这所学校保存一张卡。",
+  "Add a note for this refund.": "请为此退款添加备注。",
+  "Payment not found": "未找到付款",
+  "This payment wasn't made by card in the app, so it can't go back to a card. Record the money given back, or give it as credit.": "此付款不是在应用中用银行卡支付的，因此无法退回银行卡。请记录已退还的钱款，或将其作为余额。",
+  "A card payment goes back to the card, or onto the balance as credit.": "银行卡付款可退回银行卡，或作为余额存入账户。",
+  "Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.": "只有成功的付款才能退款。有争议、待处理、失败或已全额退款的付款不能退款。",
+  "This is more than is left to refund on this payment.": "超出了此付款剩余可退款的金额。",
+  "Only the part of this payment that paid charges can be turned into credit. The rest is credit already.": "只有此付款中用于支付费用的部分可以转为余额。其余部分已经是余额。",
+  "Part of this payment is credit that has already paid other charges, so it can't be given back.": "此付款的一部分是已用于支付其他费用的余额，因此无法退还。",
+  "Add a note saying why this credit is given.": "请添加备注，说明发放此余额的原因。",
 };
