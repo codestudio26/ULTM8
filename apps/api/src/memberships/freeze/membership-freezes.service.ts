@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -9,6 +9,7 @@ import { PaymentsService, NoSavedPaymentMethodError } from '../../payments/payme
 import { StripeClientService } from '../../payments/stripe-client.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
+import { BookingsService } from '../../bookings/bookings.service';
 import { isMembershipLive } from '../membership-creation-guard';
 import { applyFreezeBillingShift, restoreFreezeBilling } from './freeze-billing';
 import {
@@ -17,6 +18,7 @@ import {
   currentFreeze,
   dayIn,
   dayNumber,
+  dayStart,
   dayString,
   dayToDate,
   FreezeRuleError,
@@ -24,19 +26,23 @@ import {
   FreezeSummary,
   isFreezablePlanType,
   isFrozenOn,
+  FREEZABLE_PLAN_TYPES,
 } from './membership-freeze';
 import { CreateMembershipFreezeDto } from './dto/membership-freeze.dto';
 import { loadFreezeStates } from './freeze-states';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FREEZE_NOT_FOUND = { code: 'FREEZE_NOT_FOUND', message: 'Freeze not found' };
+/** The most cancelled bookings one notice names (Decision 409). */
+const BOOKINGS_LISTED_IN_NOTICE = 10;
 
 /**
  * Decision 404: freezing a membership.
  *
- * - The School's owner freezes a membership straight away (createByStaff), and
- *   approves or declines what members ask for. Owner only, like selling and
- *   cancelling memberships (Decision 348).
+ * - Staff freeze a membership straight away (createByStaff), and approve or
+ *   decline what members ask for: the School's owners, and Branch Staff the
+ *   owner switched on ("Can freeze memberships", Decision 409) for the
+ *   students of their own branches.
  * - A member, or the Guardian for a child, asks for a freeze in the app
  *   (request), withdraws a request (cancel) or ends a freeze early (end).
  * - Length: at least 7 days, starting today or later, within the School's
@@ -47,6 +53,10 @@ const FREEZE_NOT_FOUND = { code: 'FREEZE_NOT_FOUND', message: 'Freeze not found'
  *   freeze fee once: on the member's saved card, else a pending cash charge the
  *   desk collects. Ending early moves both back by the days not frozen;
  *   billing restarts that day and the fee is kept.
+ * - Approval also cancels the member's bookings that this membership paid for
+ *   on the frozen days, as a School cancellation (credit back, no fee, the
+ *   waitlist told), with one notice for them all (Decision 409). Ending
+ *   early doesn't bring them back.
  *
  * MembershipFreeze is read and written on the jobs connection only, after the
  * checks here (its migration's comment says why). Every lookup by id is
@@ -62,29 +72,64 @@ export class MembershipFreezesService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly paymentsService: PaymentsService,
     private readonly stripeClient: StripeClientService,
+    private readonly bookings: BookingsService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
-  // Staff (the School's owner)
+  // Staff: the School's owners, and Branch Staff with "Can freeze memberships"
+  // for the students of their branches (Decision 409)
   // ---------------------------------------------------------------------------
 
   /** POST /schools/:schoolId/memberships/:membershipId/freezes — frozen at once. */
   async createByStaff(callerId: string, schoolId: string, membershipId: string, dto: CreateMembershipFreezeDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    const membership = await this.prismaJobs.membership.findFirst({ where: { id: membershipId, schoolId }, select: { id: true } });
+    const membership = await this.prismaJobs.membership.findFirst({ where: { id: membershipId, schoolId }, select: { id: true, studentId: true } });
     if (!membership) throw new NotFoundException('Membership not found');
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId, membership.studentId);
     const freeze = await this.approve({ membershipId, startsAt: dto.startsAt, endsAt: dto.endsAt, actorId: callerId, requestId: null });
-    await this.afterApproval(freeze);
+    await this.afterApproval(freeze, callerId);
     return this.toResponse(await this.reload(freeze.id));
   }
 
-  /** GET /schools/:schoolId/freezes — the School's freezes, newest first. */
+  /**
+   * GET /schools/:schoolId/students/:studentId/freezable-memberships (Decision
+   * 409): the student's live memberships of a kind that can be frozen, with
+   * their freeze or request. Read on the jobs connection after the check:
+   * Branch Staff can't read Membership rows (Spec 55 §8.2), so this returns
+   * only what freezing needs.
+   */
+  async listForStudent(callerId: string, schoolId: string, studentId: string) {
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId, studentId);
+    const rows = await this.prismaJobs.membership.findMany({
+      where: { schoolId, studentId, status: 'ACTIVE', membershipPlan: { type: { in: [...FREEZABLE_PLAN_TYPES] } } },
+      include: { membershipPlan: { select: { title: true, type: true } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    });
+    const now = new Date();
+    const live = rows.filter((m) => isMembershipLive(m, now));
+    const states = await loadFreezeStates(this.prismaJobs, live.map((m) => m.id));
+    return {
+      items: live.map((m) => ({
+        id: m.id,
+        planTitle: m.membershipPlan.title,
+        planType: m.membershipPlan.type,
+        expiryDate: m.expiryDate?.toISOString() ?? null,
+        cancelAt: m.cancelAt?.toISOString() ?? null,
+        frozen: states.get(m.id)?.frozen ?? false,
+        freeze: states.get(m.id)?.freeze ?? null,
+      })),
+    };
+  }
+
+  /** GET /schools/:schoolId/freezes — the School's freezes, newest first.
+   * Branch Staff see their branches' students' only. */
   async listForSchool(callerId: string, schoolId: string, status?: MembershipFreeze['status']) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const { isOwner } = await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId);
+    const covered = isOwner ? null : await this.coveredStudentIds(callerId, schoolId);
     const rows = await this.prismaJobs.membershipFreeze.findMany({
-      where: { schoolId, ...(status ? { status } : {}) },
+      where: { schoolId, ...(status ? { status } : {}), ...(covered ? { studentId: { in: covered } } : {}) },
       include: {
         student: { select: { firstName: true, surname: true } },
         membership: { select: { membershipPlan: { select: { title: true, type: true } } } },
@@ -106,9 +151,10 @@ export class MembershipFreezesService {
 
   /** POST /schools/:schoolId/freezes/:id/approve. */
   async approveRequest(callerId: string, schoolId: string, freezeId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const request = await this.findInSchool(schoolId, freezeId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId, request.studentId);
     if (request.status !== 'REQUESTED') throw this.alreadyDecided();
     const freeze = await this.approve({
       membershipId: request.membershipId,
@@ -117,14 +163,15 @@ export class MembershipFreezesService {
       actorId: callerId,
       requestId: request.id,
     });
-    await this.afterApproval(freeze);
+    await this.afterApproval(freeze, callerId);
     return this.toResponse(await this.reload(freeze.id));
   }
 
   /** POST /schools/:schoolId/freezes/:id/decline. */
   async declineRequest(callerId: string, schoolId: string, freezeId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId);
     const request = await this.findInSchool(schoolId, freezeId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId, request.studentId);
     const result = await this.prismaJobs.membershipFreeze.updateMany({
       where: { id: request.id, status: 'REQUESTED' },
       data: { status: 'DECLINED', decidedById: callerId, decidedAt: new Date() },
@@ -137,8 +184,9 @@ export class MembershipFreezesService {
 
   /** POST /schools/:schoolId/freezes/:id/end — staff end a freeze early. */
   async endByStaff(callerId: string, schoolId: string, freezeId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId);
     const freeze = await this.findInSchool(schoolId, freezeId);
+    await this.tenantAuth.assertMayFreezeMemberships(callerId, schoolId, freeze.studentId);
     return this.toResponse(await this.endEarly(freeze.id));
   }
 
@@ -266,6 +314,19 @@ export class MembershipFreezesService {
     if (callerId === studentId) return true;
     const link = await this.prismaJobs.guardianLink.findUnique({ where: { guardianId_studentId: { guardianId: callerId, studentId } }, select: { revokedAt: true } });
     return !!link && !link.revokedAt;
+  }
+
+  /** The students a Branch Staff member covers here (staffBranchCoverage):
+   * every student when the School has no branches (null), else those whose
+   * home branch is one of theirs. */
+  private async coveredStudentIds(callerId: string, schoolId: string): Promise<string[] | null> {
+    const coverage = await this.tenantAuth.staffBranchCoverage(callerId, schoolId);
+    if (!coverage.hasBranches) return null;
+    const homes = await this.prismaJobs.studentHomeBranch.findMany({
+      where: { schoolId, branchId: { in: [...coverage.branchIds] } },
+      select: { studentId: true },
+    });
+    return homes.map((h) => h.studentId);
   }
 
   private async findInSchool(schoolId: string, freezeId: string) {
@@ -405,10 +466,12 @@ export class MembershipFreezesService {
     return this.reload(id);
   }
 
-  /** After an approval commits: the Subscription's next charge (when the
-   * freeze starts today), the fee, and the member's notice. None of these
-   * undo the approval when they fail; the sweep retries the billing. */
-  private async afterApproval(freeze: MembershipFreeze) {
+  /** After an approval commits: the Subscription's next charge (at once,
+   * unless a renewal falls before the freeze starts: freeze-billing.ts), the
+   * fee, the member's notice, and the bookings inside the freeze cancelled
+   * (Decision 409). None of these undo the approval when they fail; the
+   * sweep retries the billing. */
+  private async afterApproval(freeze: MembershipFreeze, actorId: string) {
     try {
       await applyFreezeBillingShift(this.prismaJobs, this.stripeClient, freeze.id);
     } catch (err) {
@@ -420,7 +483,87 @@ export class MembershipFreezesService {
       // The freeze stands; the owner sees no fee on the Transactions page and can record one at the desk.
       this.logger.error(`Freeze ${freeze.id}: recording the freeze fee failed.`, err as Error);
     }
-    await this.notifyDecision(await this.reload(freeze.id), 'approved');
+    const approved = await this.reload(freeze.id);
+    await this.notifyDecision(approved, 'approved');
+    await this.cancelBookingsInFreeze(approved, actorId);
+  }
+
+  /**
+   * Decision 409: the member's bookings that this membership paid for
+   * (Booking.sourceMembershipId), for Classes starting on a frozen day (the
+   * first frozen day up to, not including, the day they are back, in the
+   * School's time zone) that haven't ended yet. A booking another membership
+   * paid for (a class pack, say) stays. Each goes through the ordinary
+   * cancellation (BookingsService.cancelBooking, as a School cancellation):
+   * guests' credit back, no late-cancellation fee whatever the cut-off says,
+   * and the freed seat offered to the waitlist. Then one notice lists them
+   * (a minor's Guardians get the fan-out's copy). Best-effort: a booking
+   * that fails is logged and left; ending the freeze early doesn't bring
+   * any back.
+   */
+  private async cancelBookingsInFreeze(freeze: MembershipFreeze & { school: { timezone: string | null } }, actorId: string) {
+    const zone = freeze.school.timezone;
+    const now = new Date();
+    try {
+      const bookings = await this.prismaJobs.booking.findMany({
+        where: {
+          sourceMembershipId: freeze.membershipId,
+          studentId: freeze.studentId,
+          status: 'UPCOMING',
+          class: {
+            startDate: { gte: dayStart(dayNumber(freeze.startsAt), zone), lt: dayStart(backDay(freeze, zone), zone) },
+            endDate: { gt: now },
+          },
+        },
+        include: { class: { select: { title: true, startDate: true } } },
+        orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
+      });
+      const cancelled: Array<{ title: string; day: string }> = [];
+      for (const b of bookings) {
+        try {
+          await this.bookings.cancelBooking(actorId, b.id, undefined, { frozenStudentId: freeze.studentId });
+          cancelled.push({ title: b.class.title, day: dayIn(b.class.startDate, zone) });
+        } catch (err) {
+          // A 409: cancelled, checked in or marked a no-show meanwhile.
+          if (!(err instanceof HttpException && err.getStatus() === 409)) {
+            this.logger.error(`Freeze ${freeze.id}: cancelling booking ${b.id} inside the freeze failed.`, err as Error);
+          }
+        }
+      }
+      if (cancelled.length > 0) await this.notifyBookingsCancelled(freeze, cancelled);
+    } catch (err) {
+      this.logger.error(`Freeze ${freeze.id}: cancelling the bookings inside the freeze failed.`, err as Error);
+    }
+  }
+
+  /**
+   * One notice for the bookings a freeze cancelled (Decision 409). The list is
+   * "Class title (YYYY-MM-DD)" joined with "; ", at most
+   * BOOKINGS_LISTED_IN_NOTICE, then "; +N" for the rest. The English shape is
+   * matched in @ultm8/i18n's server/translate.ts.
+   */
+  private async notifyBookingsCancelled(freeze: MembershipFreeze & { school: { timezone: string | null } }, cancelled: Array<{ title: string; day: string }>) {
+    try {
+      const membership = await this.prismaJobs.membership.findUniqueOrThrow({
+        where: { id: freeze.membershipId },
+        select: { membershipPlan: { select: { title: true } } },
+      });
+      const shown = cancelled.slice(0, BOOKINGS_LISTED_IN_NOTICE).map((c) => `${c.title} (${c.day})`);
+      if (cancelled.length > BOOKINGS_LISTED_IN_NOTICE) shown.push(`+${cancelled.length - BOOKINGS_LISTED_IN_NOTICE}`);
+      const start = dayString(dayNumber(freeze.startsAt));
+      const back = dayString(backDay(freeze, freeze.school.timezone));
+      const body =
+        `Your ${membership.membershipPlan.title} membership is frozen from ${start} and you're back on ${back}, ` +
+        `so your bookings in between were cancelled: ${shown.join('; ')}. You can book again once the freeze ends.`;
+      const key = `membership-freeze-bookings-${freeze.id}`;
+      await this.notificationFanoutQueue.add(
+        'notify',
+        { notificationId: key, userId: freeze.studentId, title: 'Bookings cancelled', body, type: 'MEMBERSHIP_FREEZE', schoolId: freeze.schoolId } satisfies NotificationFanoutJobData,
+        { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the cancelled-bookings notice for freeze ${freeze.id}: ${err}`);
+    }
   }
 
   /**

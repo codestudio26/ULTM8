@@ -12,6 +12,7 @@ import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restri
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
+import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -325,6 +326,24 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         `Stripe event ${stripeEventId} (${eventType}) — DB write committed but a post-commit side effect (Subscription cancellation, notification fan-out, chargeback-pattern check, or waitlist-cascade notify) failed and cannot be retried (the dedup row already committed). Needs manual follow-up.`,
         err as Error,
       );
+    }
+
+    // Decision 409: a Membership Subscription's renewal is paid, so a freeze
+    // that was waiting for it (a renewal fell before the freeze's first day)
+    // can have its next charge moved now. After the commit, like every other
+    // Stripe call here; a failure is left to the 15-minute sweep, which
+    // shifts it on the freeze's start day at the latest.
+    if (eventType === 'invoice.paid' && invoice) {
+      try {
+        const subRef = invoice.parent?.subscription_details?.subscription;
+        const subscriptionId = typeof subRef === 'string' ? subRef : subRef?.id;
+        const membership = subscriptionId
+          ? await this.prismaJobs.membership.findUnique({ where: { stripeSubscriptionId: subscriptionId }, select: { id: true } })
+          : null;
+        if (membership) await applyFreezeBillingAfterRenewal(this.prismaJobs, this.stripeClient, this.logger, membership.id);
+      } catch (err) {
+        this.logger.error(`Stripe event ${stripeEventId} (invoice.paid) — moving a waiting freeze's next charge failed; the membership sweep tries again.`, err as Error);
+      }
     }
   }
 
@@ -1133,7 +1152,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * only the first. Keyed on the Invoice id: a retried or redelivered event
    * updates the same row, and a Successful row never goes back to Failed. The
    * first Invoice (billing_reason subscription_create) is skipped, since the
-   * purchase already wrote its row. Returns false when the Subscription is not a
+   * purchase already wrote its row, and so is a £0 Invoice (Decision 409: a
+   * freeze moving trial_end can raise one). Returns false when the Subscription is not a
    * Membership's, so the franchise-fee and platform branches can try theirs.
    */
   private async recordMembershipRenewal(
@@ -1148,6 +1168,11 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       return false;
     }
     if (invoice.billing_reason === 'subscription_create') {
+      return true;
+    }
+    // Decision 409: nothing was paid or owed (moving trial_end for a freeze
+    // can raise a £0 invoice), so there is nothing to put on the ledger.
+    if ((status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due) === 0) {
       return true;
     }
     if (paymentIntentId) {

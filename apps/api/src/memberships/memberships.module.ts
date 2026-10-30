@@ -5,6 +5,7 @@ import { GuardiansModule } from '../guardians/guardians.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 import { AuthModule } from '../auth/auth.module';
 import { QueueModule } from '../jobs/queue.module';
+import { BookingsModule } from '../bookings/bookings.module';
 import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
 import { MembershipFreezesController } from './freeze/membership-freezes.controller';
@@ -46,9 +47,13 @@ import { MembershipFreezesService } from './freeze/membership-freezes.service';
  * the bulk Stripe-migration job the instant a MIGRATE decision is recorded,
  * same direct QueueModule-import pattern PaymentsModule's own header comment
  * already established for its own STRIPE_WEBHOOK_PROCESSING_QUEUE injection.
+ *
+ * Imports BookingsModule (Decision 409) for BookingsService.cancelBooking():
+ * approving a freeze cancels the bookings inside it. Not circular: nothing
+ * BookingsModule imports imports this module.
  */
 @Module({
-  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule],
+  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule, BookingsModule],
   // Decision 404: freezing a membership.
   controllers: [MembershipsController, MembershipFreezesController],
   providers: [MembershipsService, MembershipFreezesService],

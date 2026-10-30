@@ -177,10 +177,12 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
 
     this.logger.log(`membership-expiry-sweep: ${overdue.length} overdue Membership(s) found, ${swept} swept, ${freedClassIds.length} seat-freed job(s) enqueued.`);
 
-    // Decision 404: a card Subscription's next charge moves later once a
-    // freeze starts (freeze-billing.ts). A freeze approved for a later day is
-    // picked up here on its start day; an early end whose Stripe call failed
-    // is retried. Never reads or writes Membership.status.
+    // Decision 404: a card Subscription's next charge moves later by a
+    // freeze (freeze-billing.ts). Since Decision 409 that is done at approval,
+    // or after the renewal that falls before the freeze; this is the backup,
+    // picking up any freeze still not shifted by its start day. An early end
+    // whose Stripe call failed is retried. Never reads or writes
+    // Membership.status.
     const shifted = await applyDueFreezeBilling(this.prismaJobs, this.stripeClient, this.logger, now);
     if (shifted > 0) this.logger.log(`membership-expiry-sweep: moved the next charge of ${shifted} frozen Subscription(s).`);
   }
