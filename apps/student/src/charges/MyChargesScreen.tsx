@@ -326,7 +326,12 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
       </Muted>
       {c.discountAmount > 0 ? <Line label={t('charges.discount')} value={`− ${formatMoney(c.discountAmount, c.currency)}`} /> : null}
       <Line label={t('charges.exTax')} value={formatMoney(c.netAmount, c.currency)} />
-      <Line label={t('charges.tax', { rate: rate(c.taxRateBasisPoints) })} value={formatMoney(c.taxAmount, c.currency)} />
+      {/* Decision 414 item 5: a charge made with "No tax on this item". */}
+      {c.taxExempt ? (
+        <Line label={t('charges.noTax')} value={formatMoney(0, c.currency)} />
+      ) : (
+        <Line label={t('charges.tax', { rate: rate(c.taxRateBasisPoints) })} value={formatMoney(c.taxAmount, c.currency)} />
+      )}
       <Line label={t('charges.incTax')} value={formatMoney(c.grossAmount, c.currency)} strong />
       {cancelled ? (
         <Muted>{t(c.lateFee?.waived ? 'charges.lateFee.waivedOn' : 'charges.cancelledOn', { date: formatDay(c.cancelledAt ?? c.createdAt) })}</Muted>

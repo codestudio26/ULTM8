@@ -979,6 +979,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "세전 가격",
     tax: "세금({rate}%)",
     incTax: "세금 포함 가격",
+    noTax: "이 항목은 세금 없음",
     discount: "할인",
     paid: "결제함",
     stillOwed: "남은 금액",

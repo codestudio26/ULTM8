@@ -986,6 +986,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "Preço sem impostos",
     tax: "Imposto ({rate}%)",
     incTax: "Preço com impostos",
+    noTax: "Sem imposto neste item",
     discount: "Desconto",
     paid: "Pago",
     stillOwed: "Falta pagar",

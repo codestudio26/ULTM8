@@ -979,6 +979,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "税抜価格",
     tax: "税（{rate}%）",
     incTax: "税込価格",
+    noTax: "この品目は非課税",
     discount: "割引",
     paid: "支払い済み",
     stillOwed: "残りの支払い",

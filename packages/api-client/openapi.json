@@ -37082,6 +37082,10 @@
           "taxInclusive": {
             "type": "boolean"
           },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show \"No tax\"."
+          },
           "netAmount": {
             "type": "number",
             "description": "The price excluding tax."
@@ -37185,6 +37189,7 @@
           "discountAmount",
           "taxRateBasisPoints",
           "taxInclusive",
+          "taxExempt",
           "netAmount",
           "taxAmount",
           "grossAmount",
@@ -37596,6 +37601,11 @@
             "type": "string",
             "example": "2026-11-15",
             "description": "The due date (YYYY-MM-DD)."
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "default": false,
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply."
           }
         },
         "required": [
@@ -38198,7 +38208,7 @@
           },
           "taxRateBasisPoints": {
             "type": "number",
-            "description": "The School tax rate today, hundredths of a percent."
+            "description": "The School tax rate today, hundredths of a percent; 0 for a series with no tax."
           }
         },
         "required": [
@@ -38241,6 +38251,10 @@
           },
           "currency": {
             "type": "string"
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
           },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"
@@ -38302,6 +38316,7 @@
           "description",
           "unitAmount",
           "currency",
+          "taxExempt",
           "frequency",
           "firstDate",
           "createdCount",
@@ -38398,6 +38413,11 @@
             "minimum": 1,
             "maximum": 520,
             "description": "Optional: the number of payments. Not with endDate. Neither: until stopped."
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "default": false,
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): every charge of the series is made with no tax. Off by default."
           }
         },
         "required": [
@@ -38440,6 +38460,10 @@
           },
           "currency": {
             "type": "string"
+          },
+          "taxExempt": {
+            "type": "boolean",
+            "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
           },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"
@@ -38504,6 +38528,7 @@
           "description",
           "unitAmount",
           "currency",
+          "taxExempt",
           "frequency",
           "firstDate",
           "createdCount",

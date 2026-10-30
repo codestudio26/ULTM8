@@ -1049,6 +1049,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exTax: "السعر بدون ضريبة",
     tax: "الضريبة ({rate}%)",
     incTax: "السعر شامل الضريبة",
+    noTax: "لا ضريبة على هذا البند",
     discount: "الخصم",
     paid: "المدفوع",
     stillOwed: "المتبقي للدفع",
